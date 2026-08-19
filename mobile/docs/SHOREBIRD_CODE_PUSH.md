@@ -148,30 +148,109 @@ fails, treat the release build as incomplete and do not patch that release.
 
 ## Shipping a patch
 
-1. Land the Dart fix on `main` through the normal PR process. A patch is built
-   from the current checkout, so the fix must be merged first.
-1. Identify the target release: `shorebird patch` needs the version of the
-   build that is actually live. `shorebird releases list`, or the Shorebird
-   console, shows what exists.
-1. The workflow retrieves the private provenance for `RELEASE_VERSION` and
-   derives the patch baseline from it. `RELEASE_COMMIT` is optional; when used
-   as an extra operator assertion, it must be the recorded build commit, the
-   recorded patch baseline, or another commit with the exact recorded tree.
-   The workflow prints every commit and Dart file included after the verified
-   baseline. Read that list before treating the patch as safe: pure Dart merged
-   since the release is exactly what Shorebird can ship.
-   If the diff includes native, asset, dependency, or Shorebird config changes,
-   the workflow refuses to patch and tells you to cut a normal store release.
-1. Run `ios-patch` or `android-patch` in Codemagic with:
+Shorebird is an emergency repair path, not a second feature-delivery channel.
+Do not freeze `main` after a store release and do not build a patch from the
+current `main` tree. Build it from a release-specific patch line rooted at the
+immutable provenance baseline instead. That keeps unrelated work merged after
+the release out of the production payload.
+
+### Patch eligibility
+
+| Situation | Action |
+|---|---|
+| Small, understood Dart-only production regression | Shorebird candidate |
+| Native, Flutter/engine, plugin-native, or bundled-asset change | Store release |
+| Broad refactor, feature, or behavior expansion | Store release |
+| Database or persistent-data migration | Store release unless mobile and platform owners explicitly establish backward compatibility |
+| Fix needs substantial post-release architecture | Backport a smaller fix or cut a store release |
+| Cannot reproduce against the released baseline | Do not patch |
+| Cannot validate the exact release plus patch | Do not promote |
+| Zapstore APK or macOS build | Not patchable in the current setup |
+
+The preflight deliberately rejects every `pubspec.yaml` and `pubspec.lock`
+change even though some pure-Dart dependency changes can be patchable. That is
+a conservative operational boundary, not a claim about Shorebird's technical
+capability. Cut a store release unless this policy is deliberately revised and
+test-backed.
+
+### Prepare the release patch line
+
+1. Confirm the incident meets the eligibility policy and identify the exact
+   live release with `shorebird releases list` or the Shorebird console.
+1. Reproduce the failure against that release or explain why reproduction is
+   impossible. Establish the failing layer before changing code.
+1. Land the minimal fix and its regression test on `main` through the normal PR
+   process. The release line is a backport destination, never the source of a
+   product fix and never something merged back into `main`.
+1. Read the private provenance and create the remote branch at its recorded
+   `patch_baseline_commit`:
+
+   ```text
+   shorebird-patch/<platform>/<release-version>
+   ```
+
+   For example, iOS release `1.2.3+456` uses
+   `shorebird-patch/ios/1.2.3+456`. Create this operational worktree from the
+   recorded baseline, not `origin/main`; this is the sole exception to the
+   normal task-worktree rule. The authenticated record lives at
+   `releases/<platform>/<release-version>.json` in the private
+   `divinevideo/divine-release-provenance` repository. After reading its full
+   40-character baseline, create the line explicitly:
+
+   ```bash
+   git fetch origin
+   git worktree add \
+     .worktrees/shorebird-<platform>-<release-version> \
+     -b shorebird-patch/<platform>/<release-version> \
+     <patch-baseline-commit>
+   ```
+1. Cherry-pick the already-reviewed `main` fix onto the patch line. Do not add
+   cleanup, refactors, features, merge commits, or unrelated generated output.
+   If a backport needs adaptation, revise and review the portable fix on `main`
+   first, then backport it.
+1. If the release already has a patch, start from its existing patch line and
+   add the next fix. A Shorebird patch replaces the release's Dart program and
+   only one patch is active at a time, so every later patch must retain all
+   fixes from the currently active patch. Never recreate a later patch directly
+   from the bare release baseline.
+1. Push the exact patch branch. Its contents were reviewed through the `main`
+   PR; it is not a second product PR and must not be merged to `main`. Keep the
+   branch until the release is no longer supported so cumulative patches remain
+   reproducible. Repository rules prohibit deletion and non-fast-forward
+   updates under `shorebird-patch/**`; never bypass that protection. Before
+   pushing, compare the complete patch line and confirm every commit is an
+   intentional backport:
+
+   ```bash
+   git log --oneline <patch-baseline-commit>..HEAD
+   git diff --stat <patch-baseline-commit>..HEAD
+   git push -u origin shorebird-patch/<platform>/<release-version>
+   ```
+
+### Build, validate, and promote
+
+1. Start `ios-patch` or `android-patch` manually **from `main`** in Codemagic.
+   `main` supplies the current trusted workflow; `PATCH_BRANCH` supplies the
+   isolated app source. Use:
    - `CONFIRM_PATCH` = `YES` (defaults to `NO`; the build aborts otherwise)
    - `RELEASE_VERSION` = the exact release string, e.g. `1.0.9+247`
+   - `PATCH_BRANCH` = `shorebird-patch/<platform>/<RELEASE_VERSION>`
    - `RELEASE_COMMIT` = optional source assertion; normally leave it empty
    - `DEFAULT_ENV` = **the same value the release was built with**
-1. The workflow publishes to Shorebird's `staging` track, not directly to
-   `stable`.
-1. Validate the staged patch with `shorebird preview --track staging
-   --release-version <version>` or the Shorebird console.
-1. Promote the exact patch after validation:
+1. The workflow authenticates provenance and configuration before fetching the
+   exact remote patch branch. It then verifies the branch name, release
+   ancestry, linear history, blocked paths, and non-empty Dart diff. It prints
+   every included commit and Dart file. The incident owner and a mobile
+   reviewer must read that complete output before proceeding; the relevant iOS
+   or Android platform owner must approve promotion.
+1. The workflow publishes to `staging`, never directly to `stable`. Validate
+   the exact release plus staged patch on the affected platform with
+   `shorebird preview --track staging --release-version <version>` or an
+   equivalent installed build. Verify the regression, adjacent behavior,
+   startup, and the current patch number in logs or Crashlytics.
+1. Record the incident owner, mobile reviewer, platform owner, release version,
+   patch number, validation evidence, and rollback decision in the incident or
+   patch issue. Then promote the exact approved patch:
 
    ```
    shorebird patches set-track --release <version> --patch <n> --track stable
@@ -180,7 +259,11 @@ fails, treat the release build as incomplete and do not patch that release.
    `shorebird patches promote --release-version <version> --patch-number <n>`
    is the deprecated legacy shorthand in the pinned CLI. Do not use it in new
    automation.
-1. Both platforms need their own patch run. There is no combined workflow.
+1. Monitor patch installation/failure diagnostics and the original production
+   signal after promotion. If the patch regresses behavior, roll it back first
+   and investigate second; rollback is emergency recovery, not validation.
+1. iOS and Android have independent releases, provenance, patch branches,
+   approvals, and patch runs. Never assume success on one proves the other.
 
 The patch workflow fingerprints the regenerated dart-defines with the same
 key used by the release and fails before compiling when any key differs. It
