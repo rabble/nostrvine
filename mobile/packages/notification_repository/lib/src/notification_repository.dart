@@ -1718,11 +1718,24 @@ class NotificationRepository {
       // creator's video under "mentioned you".
       final trustsRootPayload =
           !isVideoMention || trustedRootAddressableId != null;
+      final groupRootEventPubkey = _groupRootEventPubkey(
+        group,
+        entry.key.eventId,
+      );
       final addressableId = isVideoMention
           ? trustedRootAddressableId ?? _sourceVideoAddressableId(video: video)
           : isListAdd
-          ? _listAddVideoAddressableId(group.first, dTag: dTag, video: video)
-          : _recipientScopedVideoAddressableId(dTag: dTag, video: video);
+          ? _listAddVideoAddressableId(
+              group.first,
+              dTag: dTag,
+              video: video,
+              rootEventPubkey: groupRootEventPubkey,
+            )
+          : _recipientScopedVideoAddressableId(
+              dTag: dTag,
+              video: video,
+              rootEventPubkey: groupRootEventPubkey,
+            );
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
       // only accept payload media when the root coordinate was trusted.
@@ -2031,18 +2044,70 @@ class NotificationRepository {
   /// Prefers the authoritative `VideoStats` d-tag over the payload [dTag] so a
   /// `referenced_video` block disagreeing with `referenced_event_id` cannot
   /// build a mismatched route.
+  ///
+  /// [rootEventPubkey] is the payload's root-video author. It is evidence
+  /// about the anchored video only when the anchor IS the thread root — a
+  /// comment with an empty `referenced_event_id`, or a like/repost/list-add
+  /// of the root video itself. Callers pass null otherwise: for a comment on
+  /// the user's own video *reply* inside someone else's thread, the root
+  /// author is the other creator while the anchored reply still belongs to
+  /// the user, and gating on the payload there would kill the legitimate
+  /// stable route (#4730) that #6369 must not regress.
   String? _recipientScopedVideoAddressableId({
     required String? dTag,
     required VideoStats? video,
+    String? rootEventPubkey,
   }) {
     // Defensive local invariant: metadata that resolves and names a different
     // owner never yields a recipient-scoped route. Unreachable via
     // _groupVideoAnchored (those are reclassified to actor rows, #4920).
     if (video != null && video.pubkey != _userPubkey) return null;
+
+    // Payload fallback for #6369: the anchor is the thread root, metadata
+    // could not resolve its owner (transient miss), and the payload's root
+    // author is someone else — minting `<userPubkey>:<d-tag>` would route to
+    // a video that does not exist. Resolved metadata wins over the payload
+    // (#6805), so this only fires on a metadata miss.
+    if (video == null &&
+        rootEventPubkey != null &&
+        rootEventPubkey.isNotEmpty &&
+        rootEventPubkey != _userPubkey) {
+      return null;
+    }
+
     final resolvedDTag = _nonEmpty(video?.dTag) ?? _nonEmpty(dTag);
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
         ':$_userPubkey:$resolvedDTag';
+  }
+
+  /// The payload's root-video author for [anchorEventId], derived across the
+  /// whole group instead of sampled from one member: notifications sharing an
+  /// anchor can disagree — a transient Funnelcake gap can leave the newest
+  /// member's `root_event_pubkey` empty while an older member carries it — and
+  /// a single sampled member would make the #6369 guard order-dependent.
+  ///
+  /// Only a member whose thread root IS the anchor describes the anchored
+  /// video's root author: for a comment on the user's own video *reply*
+  /// inside someone else's thread, the root author is the other creator while
+  /// the anchored reply still belongs to the user, and gating on the payload
+  /// there would kill the legitimate stable route (#4730) that #6369 must not
+  /// regress. A foreign author from any root-anchored member wins over the
+  /// user's own — minting `<userPubkey>:<d-tag>` on contradictory ownership
+  /// evidence is the #6369 failure.
+  String? _groupRootEventPubkey(
+    List<RelayNotification> group,
+    String anchorEventId,
+  ) {
+    String? ownAuthor;
+    for (final n in group) {
+      if (n.rootEventId != anchorEventId) continue;
+      final author = _nonEmpty(n.rootEventPubkey);
+      if (author == null) continue;
+      if (author != _userPubkey) return author;
+      ownAuthor ??= author;
+    }
+    return ownAuthor;
   }
 
   /// Returns the full source-video coordinate for video-sourced mention rows.
@@ -2462,16 +2527,28 @@ class NotificationRepository {
     return n.referencedEventId;
   }
 
+  /// [rootEventPubkey] is the group-derived root author from
+  /// [_groupRootEventPubkey], which already restricts the evidence to members
+  /// whose thread root IS the anchor. Deriving it across the group rather than
+  /// sampling [notification] matters for the same reason it does for comments:
+  /// a list-add group shares an anchor across several adders, and a transient
+  /// Funnelcake gap can leave the newest member's `root_event_pubkey` empty
+  /// while an older member carries the foreign one.
   String? _listAddVideoAddressableId(
     RelayNotification notification, {
     required String? dTag,
     required VideoStats? video,
+    String? rootEventPubkey,
   }) {
     final addressableId = _trustedListAddRootAddressableId(notification);
     if (addressableId != null) {
       return addressableId;
     }
-    return _recipientScopedVideoAddressableId(dTag: dTag, video: video);
+    return _recipientScopedVideoAddressableId(
+      dTag: dTag,
+      video: video,
+      rootEventPubkey: rootEventPubkey,
+    );
   }
 
   String? _trustedListAddRootAddressableId(RelayNotification notification) {

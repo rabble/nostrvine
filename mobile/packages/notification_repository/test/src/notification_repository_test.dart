@@ -1247,6 +1247,251 @@ void main() {
         verify(() => funnelcakeApiClient.getVideoStats('video_root')).called(1);
       });
 
+      test("comment on another creator's root video leaves the addressable "
+          'id null when metadata misses (#6369)', () async {
+        // Transient metadata miss (default getVideoStats stub throws) plus a
+        // payload root author naming another creator: synthesizing
+        // `userPubkey:<d-tag>` would route to a video that does not exist.
+        stubNotifications([
+          makeNotification(
+            id: 'c-foreign-root',
+            sourcePubkey: 'pub_a',
+            sourceKind: 1111,
+            notificationType: 'comment',
+            referencedEventId: '',
+            rootEventId: 'foreign_root',
+            rootEventPubkey: 'other_creator',
+            referencedDTag: 'foreign-vine',
+            content: 'nice one',
+          ),
+        ]);
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.comment));
+        expect(item.videoAddressableId, isNull);
+        expect(item.videoEventId, equals('foreign_root'));
+      });
+
+      test(
+        'comment group stays guarded when the newest member omits '
+        'root_event_pubkey but an older member carries a foreign one (#6369)',
+        () async {
+          // Notifications sharing an anchor can disagree: a transient
+          // Funnelcake gap leaves the newest member's root_event_pubkey empty
+          // while an older member carries it. Sampling only the newest member
+          // would miss the foreign root author and mint the #6369 route.
+          stubNotifications([
+            makeNotification(
+              id: 'c-newest-gap',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'foreign_root',
+              rootEventPubkey: '',
+              referencedDTag: 'foreign-vine',
+              content: 'newest',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'c-older-evidence',
+              sourcePubkey: 'pub_b',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'foreign_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'foreign-vine',
+              content: 'older',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.comment));
+          expect(item.videoAddressableId, isNull);
+          expect(item.videoEventId, equals('foreign_root'));
+        },
+      );
+
+      test(
+        'comment group stays guarded when the newest member names the user '
+        'but an older member names another creator (#6369)',
+        () async {
+          // Contradictory payloads on a metadata miss: any root-anchored
+          // member carrying a foreign root author suppresses the route —
+          // minting `userPubkey:<d-tag>` on contradictory ownership evidence
+          // is the #6369 failure.
+          stubNotifications([
+            makeNotification(
+              id: 'c-newest-own',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'disputed_root',
+              rootEventPubkey: userPubkey,
+              referencedDTag: 'disputed-vine',
+              content: 'newest',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'c-older-foreign',
+              sourcePubkey: 'pub_b',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'disputed_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'disputed-vine',
+              content: 'older',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.videoAddressableId, isNull);
+          expect(item.videoEventId, equals('disputed_root'));
+        },
+      );
+
+      test(
+        'comment group without root-author evidence still mints the '
+        'recipient-scoped route (#6369 guard does not over-fire)',
+        () async {
+          // No member carries a root author, so there is no foreign evidence
+          // to act on — the #4730 stable route must survive.
+          stubNotifications([
+            makeNotification(
+              id: 'c-newest-no-evidence',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'video_root',
+              referencedDTag: 'vine-id',
+              content: 'newest',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'c-older-no-evidence',
+              sourcePubkey: 'pub_b',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'video_root',
+              referencedDTag: 'vine-id',
+              content: 'older',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:vine-id',
+            ),
+          );
+        },
+      );
+
+      test(
+        "comment on the user's own video reply keeps the recipient-scoped "
+        'route when the thread root belongs to another creator',
+        () async {
+          // The payload root author describes the thread root, not the
+          // anchored reply video — the #6369 guard must not fire here, or
+          // every comment on a video reply loses its stable route (#4730).
+          stubNotifications([
+            makeNotification(
+              id: 'c-own-reply',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: 'reply_video_event',
+              rootEventId: 'foreign_thread_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'reply-video-dtag',
+              content: 'great reply',
+            ),
+          ]);
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.comment));
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:reply-video-dtag',
+            ),
+          );
+        },
+      );
+
+      test('resolved metadata wins over a contradictory payload root author '
+          '(#6805)', () async {
+        // Metadata resolves the anchored root video as the user's own; a
+        // stale payload `root_event_pubkey` must not override it.
+        stubNotifications([
+          makeNotification(
+            id: 'c-contradictory',
+            sourcePubkey: 'pub_a',
+            sourceKind: 1111,
+            notificationType: 'comment',
+            referencedEventId: '',
+            rootEventId: 'video_root',
+            rootEventPubkey: 'other_creator',
+            referencedDTag: 'vine-id',
+            content: 'nice one',
+          ),
+        ]);
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats('video_root', makeVideoStats(id: 'video_root'));
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:d_video_root',
+          ),
+        );
+      });
+
       test(
         'comment on a video reply anchors to the referenced video, not root',
         () async {
@@ -1798,6 +2043,130 @@ void main() {
           expect(item.listTitle, equals('Literature'));
           expect(item.listCoordinate, equals(listCoordinate));
           verifyNever(() => funnelcakeApiClient.getVideoStats(videoCoordinate));
+        },
+      );
+
+      test(
+        "list_add of another creator's root video leaves the addressable id "
+        'null when metadata misses (#6369)',
+        () async {
+          // Transient metadata miss plus a payload root author naming another
+          // creator: a recipient-scoped coordinate would route to a video
+          // that does not exist.
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_foreign_root',
+              sourceEventId: 'list_evt_foreign_root',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventId: 'foreign_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'foreign-vine',
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(item.videoEventId, equals('foreign_root'));
+          expect(item.videoAddressableId, isNull);
+        },
+      );
+
+      test(
+        'list_add group stays guarded when the newest member omits '
+        'root_event_pubkey but an older member carries a foreign one (#6369)',
+        () async {
+          // Same transient Funnelcake gap the comment path guards against:
+          // list_add notifications sharing an anchor can disagree, and the
+          // newest member is the one the row samples. Deriving the root author
+          // across the group is what keeps the guard order-independent.
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_newest_gap',
+              sourcePubkey: 'pub_a',
+              sourceEventId: 'list_evt_newest_gap',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventId: 'foreign_root',
+              rootEventPubkey: '',
+              referencedDTag: 'foreign-vine',
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'list_add_older_evidence',
+              sourcePubkey: 'pub_b',
+              sourceEventId: 'list_evt_older_evidence',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: null,
+              rootEventId: 'foreign_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'foreign-vine',
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(item.videoEventId, equals('foreign_root'));
+          expect(item.videoAddressableId, isNull);
+        },
+      );
+
+      test(
+        "list_add of the user's own video reply keeps the recipient-scoped "
+        'route when the thread root belongs to another creator',
+        () async {
+          // The payload root author describes the thread root, not the added
+          // reply video — the #6369 guard must not fire here.
+          stubNotifications([
+            makeNotification(
+              id: 'list_add_own_reply',
+              sourceEventId: 'list_evt_own_reply',
+              sourceKind: 30005,
+              notificationType: 'list_add',
+              referencedEventId: 'reply_video_event',
+              rootEventId: 'foreign_thread_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'reply-video-dtag',
+              listTitle: 'Literature',
+              listCoordinate: '30005:pubkey_alice:literature',
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.listAdd));
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:reply-video-dtag',
+            ),
+          );
         },
       );
 
