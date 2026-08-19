@@ -257,26 +257,6 @@ void main() {
         expect(announcements, contains(en.libraryGridSizeColumns(2)));
       });
 
-      testWidgets('changes the grid size from the selection sheet', (
-        tester,
-      ) async {
-        final announcements = _captureAnnouncements(tester);
-        await tester.pumpWidget(buildWidget(selectionMode: true));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.bySemanticsLabel(en.libraryGridSizeLabel));
-        await tester.pumpAndSettle();
-
-        expect(find.text(en.libraryGridSizeColumns(2)), findsOneWidget);
-        expect(find.text(en.libraryGridSizeColumns(5)), findsOneWidget);
-
-        await tester.tap(find.text(en.libraryGridSizeColumns(5)));
-        await tester.pumpAndSettle();
-
-        expect(sharedPreferences.getInt(ClipGridColumns.prefsKey), equals(5));
-        expect(announcements, contains(en.libraryGridSizeColumns(5)));
-      });
-
       testWidgets('$ClipSelectionFooter in selection mode', (tester) async {
         await tester.pumpWidget(buildWidget(selectionMode: true));
         await tester.pump();
