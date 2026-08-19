@@ -5693,12 +5693,19 @@ class DmRepository {
     }
   }
 
-  /// Remove a conversation, its messages, and queued sends atomically.
+  /// Remove a conversation, its messages, its queued sends, and its queued
+  /// reactions atomically.
   ///
   /// Records an owner-scoped tombstone first so relay replay cannot restore
   /// history at or before the removal time. The marker is kept for the
   /// account's lifetime: a newer message recreates the conversation while
   /// earlier history stays suppressed.
+  ///
+  /// The `dm_message_reactions` delete is not housekeeping. Those rows are
+  /// the durable outgoing queue for unpublished reactions and pending kind-5
+  /// removals, and the retry sweep selects them by owner alone. Left behind,
+  /// the sweep publishes a gift wrap into a conversation the user removed
+  /// (#7857) — the reaction counterpart of the `outgoing_dms` delete above.
   ///
   /// Throws:
   ///
@@ -5727,10 +5734,13 @@ class DmRepository {
         conversationId: conversationId,
         ownerPubkey: owner,
       );
+      await _reactionsRepository?.deleteForConversations([conversationId]);
     });
   }
 
-  /// Remove multiple conversations, messages, and queued sends atomically.
+  /// Remove multiple conversations, their messages, their queued sends, and
+  /// their queued reactions atomically. See [removeConversation] for why the
+  /// reaction rows go with them.
   ///
   /// No-op when [conversationIds] is empty.
   ///
@@ -5763,6 +5773,7 @@ class DmRepository {
         conversationIds: conversationIds,
         ownerPubkey: owner,
       );
+      await _reactionsRepository?.deleteForConversations(conversationIds);
     });
   }
 

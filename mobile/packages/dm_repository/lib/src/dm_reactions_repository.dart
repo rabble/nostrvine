@@ -163,6 +163,27 @@ class DmReactionsRepository {
     _messageService = null;
   }
 
+  /// Drop every reaction row this account holds for [conversationIds].
+  ///
+  /// Called by `DmRepository.removeConversation` from inside its removal
+  /// transaction, so a removed conversation leaves no queued reaction or
+  /// pending kind-5 removal behind (#7857). Without this the retry sweep
+  /// keeps re-driving those rows and publishes a gift wrap into a
+  /// conversation the user removed — [retryableReactions] and
+  /// [retryableDeletions] are owner-scoped only, and
+  /// [_resolveWrapRecipients] falls back to the target message's author
+  /// once the conversation row is gone.
+  ///
+  /// No-op when uninitialized (no owner to scope the delete to) or when
+  /// [conversationIds] is empty.
+  Future<void> deleteForConversations(Iterable<String> conversationIds) async {
+    if (_userPubkey.isEmpty) return;
+    await _reactionsDao.deleteForConversations(
+      conversationIds: conversationIds,
+      ownerPubkey: _userPubkey,
+    );
+  }
+
   /// Reactive stream of every live reaction in [conversationId] for the
   /// current account, collapsed to at most one reaction per reactor per
   /// target message (the cap-at-one invariant — see [_collapsePerReactor]).

@@ -476,6 +476,41 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     return (await query.get()).isNotEmpty;
   }
 
+  /// Delete every reaction row in [conversationId] for [ownerPubkey].
+  ///
+  /// Called from `DmRepository.removeConversation`, inside the same
+  /// transaction as the message/conversation/`outgoing_dms` deletes: a
+  /// removed conversation must leave no queued reaction or kind-5 removal
+  /// behind for the retry sweep to publish into it (#7857). Unlike
+  /// [deleteNonRetryableForOwner] this deletes the retryable rows too —
+  /// removal is an explicit intent to stop sending, not a data-portability
+  /// cleanup.
+  Future<int> deleteForConversation({
+    required String conversationId,
+    required String ownerPubkey,
+  }) {
+    return (delete(dmMessageReactions)..where(
+          (t) =>
+              t.conversationId.equals(conversationId) &
+              t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .go();
+  }
+
+  /// Delete every reaction row in [conversationIds] for [ownerPubkey].
+  /// No-op returning `0` when [conversationIds] is empty.
+  Future<int> deleteForConversations({
+    required Iterable<String> conversationIds,
+    required String ownerPubkey,
+  }) {
+    final ids = conversationIds.toList(growable: false);
+    if (ids.isEmpty) return Future.value(0);
+    return (delete(dmMessageReactions)..where(
+          (t) => t.conversationId.isIn(ids) & t.ownerPubkey.equals(ownerPubkey),
+        ))
+        .go();
+  }
+
   /// Delete everything owned by [ownerPubkey]. Sign-out cleanup.
   Future<int> deleteAllForOwner(String ownerPubkey) async {
     return (delete(
