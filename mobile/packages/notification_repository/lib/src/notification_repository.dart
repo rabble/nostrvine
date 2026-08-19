@@ -700,7 +700,6 @@ class NotificationRepository {
                       : _recipientScopedVideoAddressableId(
                           dTag: null,
                           video: video,
-                          rootEventPubkey: null,
                         )),
             );
           }(),
@@ -1605,15 +1604,6 @@ class NotificationRepository {
         eventIds.add(referencedEventId);
       }
 
-      // Ensure rootEventId is prefetched when it might be used as the anchor
-      // (e.g., for comments when referencedEventId is missing). Fixes #6369.
-      final rootEventId = notification.rootEventId;
-      if (rootEventId != null &&
-          rootEventId.isNotEmpty &&
-          _isEventId(rootEventId)) {
-        eventIds.add(rootEventId);
-      }
-
       final kind = _mapNotificationKind(notification);
       if (!_isVideoAnchoredNotification(kind, notification)) continue;
       final anchorEventId = _videoAnchorEventId(kind, notification);
@@ -1735,7 +1725,13 @@ class NotificationRepository {
           : _recipientScopedVideoAddressableId(
               dTag: dTag,
               video: video,
-              rootEventPubkey: group.first.rootEventPubkey,
+              // The payload's root author only describes the anchored video
+              // when the anchor is the thread root itself — not for a
+              // comment/like on the user's own video reply in someone
+              // else's thread.
+              rootEventPubkey: entry.key.eventId == group.first.rootEventId
+                  ? group.first.rootEventPubkey
+                  : null,
             );
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
@@ -2046,10 +2042,14 @@ class NotificationRepository {
   /// `referenced_video` block disagreeing with `referenced_event_id` cannot
   /// build a mismatched route.
   ///
-  /// When [rootEventPubkey] is provided from the API response and indicates a
-  /// different owner than the user, avoids synthesizing a recipient-scoped
-  /// coordinate. Fixes #6369 by preventing misattributed routes when ownership
-  /// checks pass but root metadata reveals a different creator.
+  /// [rootEventPubkey] is the payload's root-video author. It is evidence
+  /// about the anchored video only when the anchor IS the thread root — a
+  /// comment with an empty `referenced_event_id`, or a like/repost/list-add
+  /// of the root video itself. Callers pass null otherwise: for a comment on
+  /// the user's own video *reply* inside someone else's thread, the root
+  /// author is the other creator while the anchored reply still belongs to
+  /// the user, and gating on the payload there would kill the legitimate
+  /// stable route (#4730) that #6369 must not regress.
   String? _recipientScopedVideoAddressableId({
     required String? dTag,
     required VideoStats? video,
@@ -2060,9 +2060,13 @@ class NotificationRepository {
     // _groupVideoAnchored (those are reclassified to actor rows, #4920).
     if (video != null && video.pubkey != _userPubkey) return null;
 
-    // If the API response indicates the root event has a different owner than
-    // the user, don't synthesize a recipient-scoped coordinate. Fixes #6369.
-    if (rootEventPubkey != null &&
+    // Payload fallback for #6369: the anchor is the thread root, metadata
+    // could not resolve its owner (transient miss), and the payload's root
+    // author is someone else — minting `<userPubkey>:<d-tag>` would route to
+    // a video that does not exist. Resolved metadata wins over the payload
+    // (#6805), so this only fires on a metadata miss.
+    if (video == null &&
+        rootEventPubkey != null &&
         rootEventPubkey.isNotEmpty &&
         rootEventPubkey != _userPubkey) {
       return null;
@@ -2500,10 +2504,15 @@ class NotificationRepository {
     if (addressableId != null) {
       return addressableId;
     }
+    // The payload's root author only describes the added video when the
+    // anchor is the thread root itself (no distinct `referenced_event_id`).
+    final anchorIsRoot =
+        _nonEmpty(notification.referencedEventId) == null ||
+        notification.referencedEventId == notification.rootEventId;
     return _recipientScopedVideoAddressableId(
       dTag: dTag,
       video: video,
-      rootEventPubkey: notification.rootEventPubkey,
+      rootEventPubkey: anchorIsRoot ? notification.rootEventPubkey : null,
     );
   }
 
