@@ -685,101 +685,146 @@ void main() {
     });
 
     group('Key conflict recovery', () {
-      testWidgets(
-        'routes to login options with a localized message when the key is '
-        'already registered',
-        (tester) async {
-          when(
-            () => mockOAuth.headlessRegister(
-              email: any(named: 'email'),
-              password: any(named: 'password'),
-              nsec: any(named: 'nsec'),
-              scope: any(named: 'scope'),
+      Future<GoRouter> pumpConflict(WidgetTester tester) async {
+        await setRegistrationTestSurface(tester);
+        when(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            nsec: any(named: 'nsec'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            HeadlessRegisterResult.error(
+              'This Nostr key is already registered. '
+              'Please log in instead or use a different key.',
+              code: 'CONFLICT',
             ),
-          ).thenAnswer(
-            (_) async => (
-              HeadlessRegisterResult.error(
-                'This Nostr key is already registered. '
-                'Please log in instead or use a different key.',
-                code: 'CONFLICT',
-              ),
-              'test-verifier',
-            ),
-          );
+            'test-verifier',
+          ),
+        );
 
-          final router = GoRouter(
-            initialLocation: '/welcome',
-            routes: [
-              GoRoute(
-                path: '/welcome',
-                builder: (_, _) => const SecureAccountScreen(),
-              ),
-              GoRoute(
-                path: '/welcome/login-options',
-                builder: (_, _) => const SizedBox.shrink(),
-              ),
+        final router = GoRouter(
+          initialLocation: '/welcome',
+          routes: [
+            GoRoute(
+              path: '/welcome',
+              builder: (_, _) => const SecureAccountScreen(),
+            ),
+            GoRoute(
+              path: '/welcome/login-options',
+              builder: (_, state) =>
+                  Text('login-options:${state.uri.queryParameters['email']}'),
+            ),
+            GoRoute(
+              path: '/support-center',
+              builder: (_, _) => const Text('support-center-stub'),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...getStandardTestOverrides(),
+              oauthClientProvider.overrideWithValue(mockOAuth),
+              authServiceProvider.overrideWithValue(mockAuthService),
             ],
-          );
-
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                ...getStandardTestOverrides(),
-                oauthClientProvider.overrideWithValue(mockOAuth),
-                authServiceProvider.overrideWithValue(mockAuthService),
-              ],
-              child: MaterialApp.router(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                routerConfig: router,
-              ),
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          await tester.enterText(
-            find.descendant(
-              of: find.widgetWithText(DivineAuthTextField, 'Email'),
-              matching: find.byType(TextField),
-            ),
-            'existing@example.com',
-          );
-          await tester.enterText(
-            find.descendant(
-              of: find.widgetWithText(DivineAuthTextField, 'Password'),
-              matching: find.byType(TextField),
-            ),
-            'SecurePass123!',
-          );
-          await tester.enterText(
-            find.descendant(
-              of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
-              matching: find.byType(TextField),
-            ),
-            'SecurePass123!',
-          );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'existing@example.com',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
 
-          await tester.tap(
-            find.widgetWithText(DivineButton, 'Secure account'),
-          );
-          // Let the exportNsec microtask, the headlessRegister future, and the
-          // resulting context.go settle without pumpAndSettle (avoids a hang).
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
+        // Settle the exportNsec microtask + headlessRegister future without
+        // pumpAndSettle (avoids a hang on the loading spinner).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-          final uri = router.routeInformationProvider.value.uri;
-          final l10n = lookupAppLocalizations(const Locale('en'));
+        return router;
+      }
 
-          // Routes to the recovery hub with the localized message (not the raw
-          // server sentence), carrying the entered email.
-          expect(uri.path, '/welcome/login-options');
-          expect(
-            uri.queryParameters['error'],
-            l10n.authSecureAccountAlreadyRegistered,
-          );
-          expect(uri.queryParameters['email'], 'existing@example.com');
-        },
-      );
+      testWidgets('shows in-place recovery choices instead of navigating away', (
+        tester,
+      ) async {
+        final router = await pumpConflict(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        // Stays on the screen and offers both doors rather than auto-bouncing.
+        expect(router.routeInformationProvider.value.uri.path, '/welcome');
+        expect(
+          find.text(l10n.authSecureAccountAlreadyRegistered),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(DivineButton, l10n.authSignInButton),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(DivineButton, l10n.authContactSupport),
+          findsOneWidget,
+        );
+        // The raw server sentence never reaches the user.
+        expect(find.textContaining('Nostr key'), findsNothing);
+      });
+
+      testWidgets('Sign in routes to the recovery hub with the email', (
+        tester,
+      ) async {
+        await pumpConflict(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(
+          find.widgetWithText(DivineButton, l10n.authSignInButton),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('login-options:existing@example.com'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Contact support routes to the support center', (
+        tester,
+      ) async {
+        await pumpConflict(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(
+          find.widgetWithText(DivineButton, l10n.authContactSupport),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('support-center-stub'), findsOneWidget);
+      });
     });
   });
 }

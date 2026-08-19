@@ -3148,7 +3148,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get authSecureAccountAlreadyRegistered =>
-      'Looks like an account already exists. Sign in or reset your password to continue.';
+      'Looks like an account already exists. Sign in to it, or contact support if you can\'t get back in.';
 
   @override
   String get authFailedToSendResetEmail => 'リセットメールの送信がうまくいかなかった。';

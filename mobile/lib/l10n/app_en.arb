@@ -2085,9 +2085,9 @@
   "authUnableToAccessKeys": "Unable to access your keys. Please try again.",
   "authRegistrationFailed": "Registration failed",
   "authRegistrationComplete": "Registration complete. Please check your email.",
-  "authSecureAccountAlreadyRegistered": "Looks like an account already exists. Sign in or reset your password to continue.",
+  "authSecureAccountAlreadyRegistered": "Looks like an account already exists. Sign in to it, or contact support if you can't get back in.",
   "@authSecureAccountAlreadyRegistered": {
-    "description": "Shown when Secure account fails with a server CONFLICT, which covers both the key already being registered and the entered email already being taken. Deliberately does not assert the user owns the account, since the email case may belong to a different account. The user is routed to sign-in / forgot-password to continue."
+    "description": "Shown in place on the Secure account screen when registration fails with a server CONFLICT, which covers both the key already being registered and the entered email already being taken. Deliberately does not assert the user owns the account, since the email case may belong to a different account. The screen offers Sign in and Contact support choices."
   },
   "authFailedToSendResetEmail": "Failed to send reset email.",
   "authSending": "Sending...",
