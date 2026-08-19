@@ -710,6 +710,19 @@ class VideosRepository {
   /// This is the "New" feed mode - shows all public videos sorted by
   /// creation time.
   ///
+  /// Deliberately does not apply seen-freshness reordering. This feed is
+  /// surfaced as "New", and that label is a chronological promise: a video
+  /// watched in the last 24 hours keeps its position rather than sinking
+  /// below older ones. Because reordering ran after pagination it also
+  /// partitioned each page on its own, so timestamps descended, jumped
+  /// backwards at the page's recently-seen block, then descended again from
+  /// the next page's top — the feed read as unsorted rather than merely
+  /// re-prioritised.
+  ///
+  /// Discovery surfaces that do want the bias keep it: [getHomeFeedVideos]
+  /// still demotes via [prioritizeNotRecentlySeenVideos], and classics drop
+  /// recently-seen entirely via [filterOutRecentlySeenVideos].
+  ///
   /// Strategy:
   /// 1. If Funnelcake API is available, tries the REST API first (faster)
   /// 2. Falls back to Nostr relay query
@@ -731,20 +744,6 @@ class VideosRepository {
   /// more behind it.
   ///
   /// Returns an empty result if no videos are found or on error.
-  /// Fetches the newest videos, newest first.
-  ///
-  /// Deliberately does not apply seen-freshness reordering. This feed is
-  /// surfaced as "New", and that label is a chronological promise: a video
-  /// watched in the last 24 hours keeps its position rather than sinking
-  /// below older ones. Because reordering ran after pagination it also
-  /// partitioned each page on its own, so timestamps descended, jumped
-  /// backwards at the page's recently-seen block, then descended again from
-  /// the next page's top — the feed read as unsorted rather than merely
-  /// re-prioritised.
-  ///
-  /// Discovery surfaces that do want the bias keep it: [getHomeFeedVideos]
-  /// still demotes via [prioritizeNotRecentlySeenVideos], and classics drop
-  /// recently-seen entirely via [filterOutRecentlySeenVideos].
   Future<HomeFeedResult> getNewVideos({
     int limit = _defaultLimit,
     int? until,
