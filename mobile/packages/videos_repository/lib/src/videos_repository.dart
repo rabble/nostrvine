@@ -2672,6 +2672,15 @@ class VideosRepository {
       }
     }
 
+    // Every candidate is exhausted here and nowhere else: the per-candidate
+    // helper cannot tell a miss that a later fallback rescues from a net
+    // failure, so it reports at INFO and this is the only WARNING.
+    Log.warning(
+      'Route lookup failed for every candidate: ${attempted.join(', ')}',
+      name: 'VideosRepository',
+      category: LogCategory.video,
+    );
+
     final failure = apiFailure;
     if (failure != null) throw failure;
 
@@ -2763,7 +2772,7 @@ class VideosRepository {
       missed.add('relayStableId');
     }
 
-    Log.warning(
+    Log.info(
       'Route lookup exhausted every source for $routeId '
       '(eventId=${candidate.eventId}, '
       'addressableId=${candidate.addressableId}, '

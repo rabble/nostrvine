@@ -38,6 +38,13 @@ List<String> _logsMentioning(String routeId) => LogCaptureService()
     .map((e) => e.message)
     .toList();
 
+/// WARNING-level messages captured for this test's unique route id.
+List<String> _warningsMentioning(String routeId) => LogCaptureService()
+    .getRecentLogs()
+    .where((e) => e.level == LogLevel.warning && e.message.contains(routeId))
+    .map((e) => e.message)
+    .toList();
+
 void main() {
   setUpAll(() => registerFallbackValue(<Filter>[]));
 
@@ -133,6 +140,69 @@ void main() {
         parseFailures,
         isNotEmpty,
         reason: 'an unparseable route id must not fail silently',
+      );
+    });
+
+    test('does not warn when a fallback route id rescues the lookup', () async {
+      const missingId =
+          '5555555555555555555555555555555555555555555555555555555555555555';
+      const dTag =
+          '6666666666666666666666666666666666666666666666666666666666666666';
+      const fallbackRouteId = '34236:$_pubkey:$dTag';
+
+      // Only the fallback's d-tag resolves; the primary misses every source.
+      when(() => nostr.queryEvents(any())).thenAnswer((invocation) async {
+        final filters = invocation.positionalArguments.first as List<Filter>;
+        final matches = filters.any((f) => f.d?.contains(dTag) ?? false);
+        return matches ? [_videoEvent(id: missingId, dTag: dTag)] : <Event>[];
+      });
+
+      final result = await build().fetchVideoWithStatsForRouteId(
+        missingId,
+        fallbackRouteIds: const [fallbackRouteId],
+      );
+
+      expect(result, isNotNull, reason: 'the fallback must rescue the lookup');
+      expect(
+        _warningsMentioning(missingId),
+        isEmpty,
+        reason: 'a net-successful lookup must not log a warning',
+      );
+      expect(
+        _logsMentioning(missingId).join('\n'),
+        contains('exhausted every source'),
+        reason: 'the primary miss stays diagnosable below warning level',
+      );
+    });
+
+    test('warns once when every candidate fails', () async {
+      const missingId =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      const dTag =
+          '8888888888888888888888888888888888888888888888888888888888888888';
+      const fallbackRouteId = '34236:$_pubkey:$dTag';
+
+      final result = await build().fetchVideoWithStatsForRouteId(
+        missingId,
+        fallbackRouteIds: const [fallbackRouteId],
+      );
+
+      expect(result, isNull);
+      // Deduped across both candidates: reporting per candidate would leave
+      // two distinct warnings for one failed lookup.
+      final warnings = {
+        ..._warningsMentioning(missingId),
+        ..._warningsMentioning(dTag),
+      };
+      expect(
+        warnings,
+        hasLength(1),
+        reason: 'exhaustion is reported once, after every candidate failed',
+      );
+      expect(
+        warnings.single,
+        contains(fallbackRouteId),
+        reason: 'the warning must name every candidate it tried',
       );
     });
   });
