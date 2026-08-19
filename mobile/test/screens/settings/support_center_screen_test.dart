@@ -1,4 +1,4 @@
-// ABOUTME: Tests the Support Center account-deletion entry point and its auth gate
+// ABOUTME: Tests the Support Center resource links and account-deletion auth gate
 // ABOUTME: Regression cover for #6335, which was reported from this screen
 
 import 'package:flutter/material.dart';
@@ -11,6 +11,9 @@ import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+import '../../helpers/url_launcher_test_double.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -65,12 +68,21 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    // The list is taller than the 600px test viewport, and ListView does not
+    // build rows it cannot show. Anything below the fold has to be scrolled
+    // to before it can be found — which is what a real user does too.
+    Future<void> scrollToBottom(WidgetTester tester) async {
+      await tester.drag(find.byType(ListView), const Offset(0, -2000));
+      await tester.pumpAndSettle();
+    }
+
     // #6335 was filed from this screen by a user who could not find how to
     // delete their account. Deletion has to be reachable from here.
     testWidgets('shows the delete-account entry when authenticated', (
       tester,
     ) async {
       await pump(tester);
+      await scrollToBottom(tester);
 
       expect(find.text(en.nostrSettingsDeleteAccount), findsOneWidget);
       expect(find.text(en.nostrSettingsDeleteAccountSubtitle), findsOneWidget);
@@ -85,6 +97,8 @@ void main() {
       tester,
     ) async {
       await pump(tester, authState: AuthState.unauthenticated);
+      // Scroll first so "not found" means absent, not merely below the fold.
+      await scrollToBottom(tester);
 
       expect(find.text(en.nostrSettingsDeleteAccount), findsNothing);
       // The screen itself still renders, so the assertion above is about the
@@ -97,12 +111,72 @@ void main() {
       tester,
     ) async {
       await pump(tester);
+      await scrollToBottom(tester);
 
       await tester.tap(find.text(en.nostrSettingsDeleteAccount));
       await tester.pumpAndSettle();
 
       expect(find.text(en.deleteAccountFinalConfirmationTitle), findsOneWidget);
       expect(find.text(en.deleteAccountConfirmDeletePrompt), findsOneWidget);
+    });
+
+    group('family and kids resource links', () {
+      // Placement is the requirement, not just presence: both rows sit
+      // between FAQ and ProofMode.
+      testWidgets('render between the FAQ and ProofMode rows', (tester) async {
+        await pump(tester);
+
+        double topOf(String label) => tester.getTopLeft(find.text(label)).dy;
+
+        expect(topOf(en.supportFaq), lessThan(topOf(en.supportFamily)));
+        expect(topOf(en.supportFamily), lessThan(topOf(en.supportKids)));
+        expect(topOf(en.supportKids), lessThan(topOf(en.supportProofMode)));
+      });
+
+      testWidgets('read their subtitles from l10n', (tester) async {
+        await pump(tester);
+
+        expect(find.text(en.supportFamilySubtitle), findsOneWidget);
+        expect(find.text(en.supportKidsSubtitle), findsOneWidget);
+
+        // The titles are product names and identical in every locale, so the
+        // subtitles are what prove these rows are not hardcoded English.
+        final de = lookupAppLocalizations(const Locale('de'));
+        expect(find.text(de.supportFamilySubtitle), findsNothing);
+        expect(find.text(de.supportKidsSubtitle), findsNothing);
+      });
+
+      testWidgets('open the Divine Family page', (tester) async {
+        final launcher = UrlLauncherTestDouble();
+        final originalPlatform = UrlLauncherPlatform.instance;
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+        await pump(tester);
+        await tester.tap(find.text(en.supportFamily));
+        await tester.pumpAndSettle();
+
+        expect(
+          launcher.launched.map((call) => call.url),
+          equals(['https://divine.video/family']),
+        );
+      });
+
+      testWidgets('open the Divine Kids page', (tester) async {
+        final launcher = UrlLauncherTestDouble();
+        final originalPlatform = UrlLauncherPlatform.instance;
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+        await pump(tester);
+        await tester.tap(find.text(en.supportKids));
+        await tester.pumpAndSettle();
+
+        expect(
+          launcher.launched.map((call) => call.url),
+          equals(['https://divine.video/kids']),
+        );
+      });
     });
   });
 }

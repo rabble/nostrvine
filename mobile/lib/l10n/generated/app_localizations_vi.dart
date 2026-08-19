@@ -4997,6 +4997,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get supportFaqSubtitle => 'Câu hỏi & câu trả lời phổ biến';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Giúp phụ huynh và thanh thiếu niên xây dựng thói quen lành mạnh trực tuyến';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'Cách chúng tôi xử lý tài khoản theo độ tuổi';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

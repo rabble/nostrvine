@@ -5088,6 +5088,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get supportFaqSubtitle => 'Häufige Fragen & Antworten';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Eltern und Jugendliche beim Aufbau gesunder Online-Gewohnheiten unterstützen';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'Wie wir Konten je nach Alter behandeln';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

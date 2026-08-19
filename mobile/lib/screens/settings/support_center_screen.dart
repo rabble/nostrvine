@@ -82,6 +82,26 @@ class SupportCenterScreen extends ConsumerWidget {
                 ),
               ),
               _SupportTile(
+                icon: DivineIconName.users,
+                title: l10n.supportFamily,
+                subtitle: l10n.supportFamilySubtitle,
+                onTap: () => _launchUrl(
+                  context,
+                  'https://divine.video/family',
+                  l10n.supportFamily,
+                ),
+              ),
+              _SupportTile(
+                icon: DivineIconName.userFocus,
+                title: l10n.supportKids,
+                subtitle: l10n.supportKidsSubtitle,
+                onTap: () => _launchUrl(
+                  context,
+                  'https://divine.video/kids',
+                  l10n.supportKids,
+                ),
+              ),
+              _SupportTile(
                 icon: DivineIconName.shieldCheck,
                 title: l10n.supportProofMode,
                 subtitle: l10n.supportProofModeSubtitle,

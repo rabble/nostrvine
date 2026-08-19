@@ -4920,6 +4920,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportFaqSubtitle => 'የተለመዱ ጥያቄዎች እና መልሶች';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'ወላጆችና ታዳጊዎች በመስመር ላይ ጤናማ ልማዶችን እንዲገነቡ መርዳት';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle => 'መለያዎችን በዕድሜ መሠረት እንዴት እንደምናስተዳድር';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

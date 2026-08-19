@@ -5162,6 +5162,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get supportFaqSubtitle => 'Întrebări și răspunsuri comune';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Îi ajutăm pe părinți și adolescenți să își formeze obiceiuri sănătoase online';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'Cum gestionăm conturile în funcție de vârstă';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

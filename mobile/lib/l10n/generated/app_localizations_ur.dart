@@ -5034,6 +5034,20 @@ class AppLocalizationsUr extends AppLocalizations {
   String get supportFaqSubtitle => 'عام سوالات اور جوابات';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'والدین اور نوجوانوں کو آن لائن صحت مند عادات بنانے میں مدد';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'ہم عمر کے مطابق اکاؤنٹس کو کیسے سنبھالتے ہیں';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override

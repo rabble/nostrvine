@@ -8675,6 +8675,30 @@ abstract class AppLocalizations {
   /// **'Common questions & answers'**
   String get supportFaqSubtitle;
 
+  /// Title of the Support Center row linking to the Divine Family resource hub. Product name, left untranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Family'**
+  String get supportFamily;
+
+  /// Subtitle under the Divine Family row, describing resources that help parents and teenagers build healthy social media habits.
+  ///
+  /// In en, this message translates to:
+  /// **'Helping parents and teens build healthy habits online'**
+  String get supportFamilySubtitle;
+
+  /// Title of the Support Center row linking to the Divine Kids policy page. Product name, left untranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Kids'**
+  String get supportKids;
+
+  /// Subtitle under the Divine Kids row, describing the policy for how accounts are handled differently depending on the account holder's age.
+  ///
+  /// In en, this message translates to:
+  /// **'How we handle accounts by age'**
+  String get supportKidsSubtitle;
+
   /// No description provided for @supportProofMode.
   ///
   /// In en, this message translates to:

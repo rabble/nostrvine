@@ -5074,6 +5074,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get supportFaqSubtitle => 'Често задавани въпроси и отговори';
 
   @override
+  String get supportFamily => 'Divine Family';
+
+  @override
+  String get supportFamilySubtitle =>
+      'Помагаме на родители и тийнейджъри да изградят здравословни навици онлайн';
+
+  @override
+  String get supportKids => 'Divine Kids';
+
+  @override
+  String get supportKidsSubtitle =>
+      'Как управляваме профилите според възрастта';
+
+  @override
   String get supportProofMode => 'ProofMode';
 
   @override
