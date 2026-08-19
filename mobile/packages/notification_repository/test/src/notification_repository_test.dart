@@ -1277,6 +1277,152 @@ void main() {
       });
 
       test(
+        'comment group stays guarded when the newest member omits '
+        'root_event_pubkey but an older member carries a foreign one (#6369)',
+        () async {
+          // Notifications sharing an anchor can disagree: a transient
+          // Funnelcake gap leaves the newest member's root_event_pubkey empty
+          // while an older member carries it. Sampling only the newest member
+          // would miss the foreign root author and mint the #6369 route.
+          stubNotifications([
+            makeNotification(
+              id: 'c-newest-gap',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'foreign_root',
+              rootEventPubkey: '',
+              referencedDTag: 'foreign-vine',
+              content: 'newest',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'c-older-evidence',
+              sourcePubkey: 'pub_b',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'foreign_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'foreign-vine',
+              content: 'older',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.comment));
+          expect(item.videoAddressableId, isNull);
+          expect(item.videoEventId, equals('foreign_root'));
+        },
+      );
+
+      test(
+        'comment group stays guarded when the newest member names the user '
+        'but an older member names another creator (#6369)',
+        () async {
+          // Contradictory payloads on a metadata miss: any root-anchored
+          // member carrying a foreign root author suppresses the route —
+          // minting `userPubkey:<d-tag>` on contradictory ownership evidence
+          // is the #6369 failure.
+          stubNotifications([
+            makeNotification(
+              id: 'c-newest-own',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'disputed_root',
+              rootEventPubkey: userPubkey,
+              referencedDTag: 'disputed-vine',
+              content: 'newest',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'c-older-foreign',
+              sourcePubkey: 'pub_b',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'disputed_root',
+              rootEventPubkey: 'other_creator',
+              referencedDTag: 'disputed-vine',
+              content: 'older',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.videoAddressableId, isNull);
+          expect(item.videoEventId, equals('disputed_root'));
+        },
+      );
+
+      test(
+        'comment group without root-author evidence still mints the '
+        'recipient-scoped route (#6369 guard does not over-fire)',
+        () async {
+          // No member carries a root author, so there is no foreign evidence
+          // to act on — the #4730 stable route must survive.
+          stubNotifications([
+            makeNotification(
+              id: 'c-newest-no-evidence',
+              sourcePubkey: 'pub_a',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'video_root',
+              referencedDTag: 'vine-id',
+              content: 'newest',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'c-older-no-evidence',
+              sourcePubkey: 'pub_b',
+              sourceKind: 1111,
+              notificationType: 'comment',
+              referencedEventId: '',
+              rootEventId: 'video_root',
+              referencedDTag: 'vine-id',
+              content: 'older',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:vine-id',
+            ),
+          );
+        },
+      );
+
+      test(
         "comment on the user's own video reply keeps the recipient-scoped "
         'route when the thread root belongs to another creator',
         () async {

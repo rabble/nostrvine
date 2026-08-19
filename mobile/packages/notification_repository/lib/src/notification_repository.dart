@@ -1725,13 +1725,10 @@ class NotificationRepository {
           : _recipientScopedVideoAddressableId(
               dTag: dTag,
               video: video,
-              // The payload's root author only describes the anchored video
-              // when the anchor is the thread root itself — not for a
-              // comment/like on the user's own video reply in someone
-              // else's thread.
-              rootEventPubkey: entry.key.eventId == group.first.rootEventId
-                  ? group.first.rootEventPubkey
-                  : null,
+              rootEventPubkey: _groupRootEventPubkey(
+                group,
+                entry.key.eventId,
+              ),
             );
       // Normal video rows prefer payload media because it is stable after
       // metadata updates. Video mentions prefer the resolved source video, and
@@ -2076,6 +2073,35 @@ class NotificationRepository {
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
         ':$_userPubkey:$resolvedDTag';
+  }
+
+  /// The payload's root-video author for [anchorEventId], derived across the
+  /// whole group instead of sampled from one member: notifications sharing an
+  /// anchor can disagree — a transient Funnelcake gap can leave the newest
+  /// member's `root_event_pubkey` empty while an older member carries it — and
+  /// a single sampled member would make the #6369 guard order-dependent.
+  ///
+  /// Only a member whose thread root IS the anchor describes the anchored
+  /// video's root author: for a comment on the user's own video *reply*
+  /// inside someone else's thread, the root author is the other creator while
+  /// the anchored reply still belongs to the user, and gating on the payload
+  /// there would kill the legitimate stable route (#4730) that #6369 must not
+  /// regress. A foreign author from any root-anchored member wins over the
+  /// user's own — minting `<userPubkey>:<d-tag>` on contradictory ownership
+  /// evidence is the #6369 failure.
+  String? _groupRootEventPubkey(
+    List<RelayNotification> group,
+    String anchorEventId,
+  ) {
+    String? ownAuthor;
+    for (final n in group) {
+      if (n.rootEventId != anchorEventId) continue;
+      final author = _nonEmpty(n.rootEventPubkey);
+      if (author == null) continue;
+      if (author != _userPubkey) return author;
+      ownAuthor ??= author;
+    }
+    return ownAuthor;
   }
 
   /// Returns the full source-video coordinate for video-sourced mention rows.
