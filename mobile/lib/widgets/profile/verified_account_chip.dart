@@ -4,8 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:profile_repository/profile_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:verifier_client/verifier_client.dart';
 
 /// Pluggable URL launcher for tests.
 typedef ChipUrlLauncher = Future<bool> Function(Uri uri);
@@ -16,8 +16,7 @@ Future<bool> _defaultLauncher(Uri uri) =>
 /// Chip rendering a single verified [IdentityClaim].
 ///
 /// Tapping opens the platform profile via [launchUrl] (override [launcher] in
-/// tests). Platforms without a clean public URL fall through to the verifier
-/// lookup page.
+/// tests). Platforms without a public profile URL are not interactive.
 class VerifiedAccountChip extends StatelessWidget {
   /// Creates a chip for [claim]. [launcher] defaults to the system browser.
   const VerifiedAccountChip({
@@ -35,9 +34,30 @@ class VerifiedAccountChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final url = _platformUrl(claim);
+    final uri = platformProfileUrl(claim.platform, claim.identity);
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 6,
+        children: [
+          DivineIcon(
+            icon: DivineIconName.globe,
+            size: 14,
+            color: context.vineColors.mutedText,
+          ),
+          Text(
+            '${claim.platform}/${claim.identity}',
+            style: VineTheme.labelMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Semantics(
-      button: true,
+      button: uri != null,
       label: l10n.verifiedAccountChipSemanticLabel(
         claim.platform,
         claim.identity,
@@ -52,59 +72,14 @@ class VerifiedAccountChip extends StatelessWidget {
                 : VineTheme.neutral10,
           ),
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => launcher(Uri.parse(url)),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 6,
-              children: [
-                DivineIcon(
-                  icon: DivineIconName.globe,
-                  size: 14,
-                  color: context.vineColors.mutedText,
-                ),
-                Text(
-                  '${claim.platform}/${claim.identity}',
-                  style: VineTheme.labelMediumFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: uri == null
+            ? content
+            : InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => launcher(uri),
+                child: content,
+              ),
       ),
     );
-  }
-}
-
-/// Builds an external URL for [claim].
-///
-/// Platforms with a stable public profile URL (`github`, `twitter`, `bluesky`,
-/// `youtube`, `tiktok`) get a direct link. Everything else (mastodon, discord,
-/// telegram, unknown) routes through the verifier lookup page so the
-/// verifier itself can resolve the canonical URL.
-String _platformUrl(IdentityClaim claim) {
-  switch (claim.platform.toLowerCase()) {
-    case 'github':
-      return 'https://github.com/${claim.identity}';
-    case 'twitter':
-      return 'https://twitter.com/${claim.identity}';
-    case 'bluesky':
-      return 'https://bsky.app/profile/${claim.identity}';
-    case 'youtube':
-      return 'https://youtube.com/@${claim.identity}';
-    case 'tiktok':
-      return 'https://tiktok.com/@${claim.identity}';
-    case 'mastodon':
-    case 'discord':
-    case 'telegram':
-    default:
-      return 'https://verifier.divine.video/u'
-          '?platform=${claim.platform}'
-          '&identity=${Uri.encodeComponent(claim.identity)}';
   }
 }
