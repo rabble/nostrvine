@@ -86,7 +86,10 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
   // kills the socket), so gate on the HttpException type rather than
   // enumerating messages that keep arriving one Crashlytics issue at a time.
   // The string arm stays because a codec-wrapped load arrives already
-  // stringified, with the typed exception no longer reachable.
+  // stringified, with the typed exception no longer reachable. Being an `is`
+  // check it also takes flutter_cache_manager's HttpExceptionWithStatus, so a
+  // non-2xx CachedNetworkImage thumbnail ('Invalid statusCode: 404', which no
+  // string arm matches) is recoverable here rather than fatal.
   final isInterruptedMediaDownload =
       hasRecoverableMediaHost &&
       (details.exception is io.HttpException ||
