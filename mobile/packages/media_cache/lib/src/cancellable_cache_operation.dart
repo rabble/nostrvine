@@ -132,6 +132,13 @@ class CancellableCacheOperation {
   /// The completed download result.
   Future<CancellableDownloadResult> get result => _completer.future;
 
+  /// Cumulative response-body bytes received by the underlying download.
+  ///
+  /// Operations backed by an already-cached file or the legacy cache-manager
+  /// stream do not expose byte-level progress and return an empty stream.
+  Stream<int> get progressBytes =>
+      _download?.progressBytes ?? const Stream.empty();
+
   /// Whether this operation has been cancelled.
   bool get isCancelled => _isCancelled;
 

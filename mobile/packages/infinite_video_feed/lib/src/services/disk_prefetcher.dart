@@ -23,10 +23,10 @@ typedef PrefetchUrlsResolver = List<String> Function(VideoEvent video);
 /// late-arriving completions can detect they are stale and exit early.
 class DiskPrefetcher {
   /// Creates a prefetcher backed by [cache]. [log] receives diagnostic
-  /// messages for the active cycle. [stallTimeout] caps how long a single
-  /// download attempt may sit without completing before it is cancelled
-  /// and the next fallback URL is tried. Mobile networks can leave HTTP
-  /// connections silently idle (no bytes, no error event); without this
+  /// messages for the active cycle. [stallTimeout] is the maximum time a
+  /// download may go without receiving response-body bytes before it is
+  /// cancelled and the next fallback URL is tried. Mobile networks can leave
+  /// HTTP connections silently idle (no bytes, no error event); without this
   /// guard a stalled stream would block the entire prefetch cycle.
   DiskPrefetcher({
     required MediaCacheManager cache,
@@ -210,14 +210,34 @@ class DiskPrefetcher {
 
       CancellableDownloadResult? result;
       var didStall = false;
-      try {
-        result = await op.result.timeout(_stallTimeout);
-      } on TimeoutException {
+      final idle = Completer<void>();
+      Timer? idleTimer;
+      void armIdleTimer() {
+        idleTimer?.cancel();
+        idleTimer = Timer(_stallTimeout, () {
+          if (!idle.isCompleted) idle.complete();
+        });
+      }
+
+      final progressSubscription = op.progressBytes.listen(
+        (_) => armIdleTimer(),
+      );
+      armIdleTimer();
+      final outcome = await Future.any<Object?>([
+        op.result,
+        idle.future,
+      ]);
+      idleTimer?.cancel();
+      unawaited(progressSubscription.cancel());
+
+      if (outcome is CancellableDownloadResult) {
+        result = outcome;
+      } else {
         didStall = true;
         op.cancel();
         _log(
-          'Prefetch stalled index $index ($videoId) url=$url '
-          '— cancelling after ${_stallTimeout.inSeconds}s',
+          'Prefetch idle timeout index $index ($videoId) url=$url '
+          '— cancelling after ${_stallTimeout.inSeconds}s without bytes',
         );
       }
 

@@ -22,6 +22,9 @@ class _SynchronouslyThrowingStream extends Stream<FileResponse> {
 
 class _ThrowingDownload implements CancellableDownload {
   @override
+  Stream<int> get progressBytes => const Stream.empty();
+
+  @override
   Future<File?> get file => Future<File?>.error(Exception('download failed'));
 
   @override
@@ -49,6 +52,12 @@ void main() {
         final op = CancellableCacheOperation.completed(MockFile());
 
         expect(op.isCancelled, isFalse);
+      });
+
+      test('progress stream is empty', () async {
+        final op = CancellableCacheOperation.completed(MockFile());
+
+        expect(await op.progressBytes.toList(), isEmpty);
       });
     });
 
@@ -180,6 +189,24 @@ void main() {
     });
 
     group('fromDownload', () {
+      test('forwards download progress', () async {
+        final download = FakeCancellableDownload(
+          url: 'https://example.com/video.mp4',
+          targetFile: File('video.mp4'),
+          headers: null,
+        );
+        final op = CancellableCacheOperation.fromDownload(download);
+        final progress = <int>[];
+        final subscription = op.progressBytes.listen(progress.add);
+
+        download.reportProgress(128);
+
+        expect(progress, equals([128]));
+        await subscription.cancel();
+        download.completeNull();
+        await op.result;
+      });
+
       test('completes with null when download future throws', () async {
         final op = CancellableCacheOperation.fromDownload(
           _ThrowingDownload(),

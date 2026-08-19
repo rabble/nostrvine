@@ -149,7 +149,11 @@ class FakeCancellableDownload implements CancellableDownload {
   final Map<String, String>? headers;
 
   final _completer = Completer<CancellableDownloadResult>();
+  final _progressController = StreamController<int>.broadcast(sync: true);
   bool _isCancelled = false;
+
+  @override
+  Stream<int> get progressBytes => _progressController.stream;
 
   @override
   Future<io.File?> get file async => (await _completer.future).file;
@@ -165,25 +169,32 @@ class FakeCancellableDownload implements CancellableDownload {
     if (_isCancelled || _completer.isCompleted) return;
     _isCancelled = true;
     _completer.complete(const CancellableDownloadResult(file: null));
+    unawaited(_progressController.close());
   }
 
   /// Completes the download with [file] (typically a pre-created test file).
   void completeWith(io.File file) {
     if (_completer.isCompleted) return;
     _completer.complete(CancellableDownloadResult(file: file));
+    unawaited(_progressController.close());
   }
 
   /// Completes the download with an explicit [result].
   void completeResult(CancellableDownloadResult result) {
     if (_completer.isCompleted) return;
     _completer.complete(result);
+    unawaited(_progressController.close());
   }
 
   /// Completes the download with `null` (failure / no body).
   void completeNull() {
     if (_completer.isCompleted) return;
     _completer.complete(const CancellableDownloadResult(file: null));
+    unawaited(_progressController.close());
   }
+
+  /// Reports cumulative bytes received by this fake download.
+  void reportProgress(int bytes) => _progressController.add(bytes);
 }
 
 /// Records every [download] call and returns a controllable
