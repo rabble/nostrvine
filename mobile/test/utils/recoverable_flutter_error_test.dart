@@ -134,6 +134,40 @@ void main() {
       ));
     });
 
+    // The abort message dart:io uses when the OS kills the socket mid-download
+    // rather than the parser running dry. It reached Crashlytics as a FATAL
+    // (issue 198b20e41b65c26f4d7dcbd83993a011, 1.0.20) because the branch
+    // matched only the parser's wording, even though the failure is the same
+    // recoverable thumbnail load.
+    test('classifies aborted Divine media downloads as recoverable', () {
+      final details = FlutterErrorDetails(
+        exception: HttpException(
+          'Software caused connection abort',
+          uri: Uri.parse('https://media.divine.video/hash'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), (
+        reason: 'Recoverable media load failure',
+        report: true,
+      ));
+    });
+
+    // The type arm must not swallow an HttpException from anywhere else — a
+    // failing app API call is not a placeholder-recoverable thumbnail.
+    test('keeps aborted downloads from other hosts fatal', () {
+      final details = FlutterErrorDetails(
+        exception: HttpException(
+          'Software caused connection abort',
+          uri: Uri.parse('https://api.example.com/thing'),
+        ),
+        library: 'dart:_http',
+      );
+
+      expect(classifyRecoverableFlutterError(details), isNull);
+    });
+
     test('classifies dart:_http missing-host URI failures as recoverable', () {
       final details = FlutterErrorDetails(
         exception: ArgumentError('No host specified in URI https:///thumb.jpg'),

@@ -1,3 +1,7 @@
+import 'dart:io'
+    if (dart.library.js_interop) 'package:openvine/utils/platform_io_web.dart'
+    as io;
+
 import 'package:flutter/material.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:openvine/utils/expected_network_error.dart';
@@ -75,9 +79,18 @@ RecoverableFlutterError? classifyRecoverableFlutterError(
   final isMediaHostLookup =
       error.contains('SocketException') && hasRecoverableMediaHost;
 
+  // A media download the transport tears down mid-flight is recoverable — the
+  // widget falls back to a placeholder. dart:io words these differently per
+  // platform and per abort point ('Connection closed while receiving data'
+  // when the parser runs dry, 'Software caused connection abort' when the OS
+  // kills the socket), so gate on the HttpException type rather than
+  // enumerating messages that keep arriving one Crashlytics issue at a time.
+  // The string arm stays because a codec-wrapped load arrives already
+  // stringified, with the typed exception no longer reachable.
   final isInterruptedMediaDownload =
-      error.contains('Connection closed while receiving data') &&
-      hasRecoverableMediaHost;
+      hasRecoverableMediaHost &&
+      (details.exception is io.HttpException ||
+          error.contains('Connection closed while receiving data'));
 
   final isMissingHttpHost =
       library == 'dart:_http' && error.contains('No host specified in URI');
