@@ -59,18 +59,6 @@ class RemovedConversationsDao extends DatabaseAccessor<AppDatabase>
     return row?.removedAt;
   }
 
-  Future<int> clearFor({
-    required String conversationId,
-    required String ownerPubkey,
-  }) {
-    return (delete(removedConversations)..where(
-          (t) =>
-              t.conversationId.equals(conversationId) &
-              t.ownerPubkey.equals(ownerPubkey),
-        ))
-        .go();
-  }
-
   Future<int> clearAllForUser(String ownerPubkey) {
     return (delete(
       removedConversations,
