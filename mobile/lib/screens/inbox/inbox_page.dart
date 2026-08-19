@@ -42,7 +42,10 @@ class InboxPage extends ConsumerWidget {
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final reportingService = ref.watch(contentReportingServiceProvider).value;
-    final profileRepository = ref.watch(profileRepositoryProvider);
+    // Read once for constructor seeding; subsequent changes are handled by
+    // ref.listen below via _InboxRepositorySync, avoiding page rebuild on
+    // profileRepository null → instance transition at cold start.
+    final profileRepository = ref.read(profileRepositoryProvider);
     final currentUserPubkey =
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
     final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
