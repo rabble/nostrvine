@@ -293,6 +293,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         # Swift and podspec sources, so it needs the same blocked surfaces
         # as packages/.
         self.assertIn("(?:packages|overrides)/", self.patch_source_contents)
+        self.assertIn("BLOCKED_ROOT_SCRIPT", self.patch_source_contents)
         self.assertIn("cut a normal store release instead of a Shorebird patch", self.patch_source_contents)
         self.assertIn("no Dart changes found", self.patch_source_contents)
         self.assertIn("patch source contains merge commits", self.patch_source_contents)

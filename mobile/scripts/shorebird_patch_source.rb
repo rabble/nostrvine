@@ -9,6 +9,10 @@ RELEASE_VERSION = /\A[0-9A-Za-z][0-9A-Za-z._+-]*\z/
 PATCHABLE_PLATFORMS = %w[android ios].freeze
 BLOCKED_ROOTS = %w[android assets ios linux macos scripts shaders web windows].freeze
 BLOCKED_FILES = %w[pubspec.yaml pubspec.lock shorebird.yaml].freeze
+# Shell scripts at the app root are part of the native build, not the Dart
+# program: the Runner scheme runs pre_build_ios.sh as a build pre-action, so a
+# patch line could otherwise execute new code during a signed release build.
+BLOCKED_ROOT_SCRIPT = %r{\A[^/]+\.sh\z}
 # packages/ holds first-party plugins and overrides/ holds vendored
 # dependency_overrides forks. Both compile native code into the app, so both
 # carry the same blocked surfaces.
@@ -30,6 +34,7 @@ end
 def blocked_path?(path)
   BLOCKED_FILES.include?(path) ||
     BLOCKED_ROOTS.any? { |root| path == root || path.start_with?("#{root}/") } ||
+    path.match?(BLOCKED_ROOT_SCRIPT) ||
     path.match?(BLOCKED_PACKAGE_PATH) ||
     path.match?(BLOCKED_PACKAGE_PUBSPEC)
 end

@@ -160,6 +160,21 @@ class ShorebirdPatchSourceTest(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn(blocked_path, result.stderr)
 
+    def test_rejects_app_root_build_scripts(self) -> None:
+        # The Runner scheme runs pre_build_ios.sh as a build pre-action, so an
+        # app-root shell script executes during the signed patch build even
+        # though ios/ itself is blocked and cannot change.
+        for index, blocked_path in enumerate(("pre_build_ios.sh", "build_native.sh")):
+            with self.subTest(path=blocked_path):
+                self._git("reset", "--hard", self.baseline)
+                self._commit(blocked_path, f"echo blocked {index}\n", "blocked")
+                self._commit("lib/fix.dart", "const fixed = true;\n", "fix")
+
+                result = self._run()
+
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn(blocked_path, result.stderr)
+
     def test_accepts_dart_only_change_inside_a_vendored_override(self) -> None:
         # Blocking an override's native surfaces must not block a Dart-only
         # backport inside the same vendored package.
