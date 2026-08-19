@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -44,7 +45,15 @@ DeleteAccountConfirmation _divineUsername() => DeleteAccountConfirmation(
 /// Minimal router wrapper so [context.pop()] works inside the sheet.
 Widget _wrapWithRouter(Widget child) {
   final router = GoRouter(
-    routes: [GoRoute(path: '/', builder: (_, state) => child)],
+    routes: [
+      GoRoute(path: '/', builder: (_, state) => child),
+      GoRoute(
+        path: RoutePaths.supportCenter,
+        builder: (_, state) => const Scaffold(
+          body: Text('Support destination'),
+        ),
+      ),
+    ],
   );
   return MaterialApp.router(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -701,6 +710,11 @@ void main() {
         find.text(_englishL10n().deleteAccountAccountRestricted),
         findsOneWidget,
       );
+
+      await tester.tap(find.text(_englishL10n().supportContactSupport));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Support destination'), findsOneWidget);
     });
 
     testWidgets('shows failure when local data cleanup fails after sign-out', (

@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -584,9 +585,9 @@ Future<void> executeAccountDeletion({
       dismissProgressSheet();
       if (context.mounted) {
         final text = context.l10n.deleteAccountReauthRequired;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(text, error: true),
+        );
         announceOutcome(text);
       }
       return;
@@ -802,9 +803,26 @@ Future<void> executeAccountDeletion({
                 genericFailureText:
                     context.l10n.deleteAccountContentDeletionFailed,
               );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        final showSupportAction =
+            !burnCommitted &&
+            result.failureReason ==
+                DeleteAccountFailureReason.accountRestricted;
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            text,
+            error: true,
+            actionLabel: showSupportAction
+                ? context.l10n.supportContactSupport
+                : null,
+            onActionPressed: showSupportAction
+                ? () {
+                    messenger.hideCurrentSnackBar();
+                    context.push(RoutePaths.supportCenter);
+                  }
+                : null,
+          ),
+        );
         announceOutcome(text);
       }
     }
