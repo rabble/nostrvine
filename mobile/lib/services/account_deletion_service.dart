@@ -159,6 +159,20 @@ class AccountDeletionService {
     }
   }
 
+  void _assertSignerStillMatches(
+    String? expectedPubkey, {
+    required bool anyConfirmed,
+  }) {
+    try {
+      _assertSignerMatches(expectedPubkey);
+    } on AccountChangedDuringDeletion {
+      if (anyConfirmed) {
+        throw const AccountChangedAfterDeletion();
+      }
+      rethrow;
+    }
+  }
+
   /// Delete user's account using NIP-62 Request to Vanish
   /// First fetches all user events and publishes kind 5 deletion requests for each
   /// Then publishes kind 62 account deletion request
@@ -254,7 +268,10 @@ class AccountDeletionService {
           category: LogCategory.system,
         );
         return DeleteAccountResult.failure(
-          isAccountRestrictedOutcome(outcome)
+          isAccountRestrictedOutcome(
+                outcome,
+                trustedRelayUrl: _nostrService.defaultRelayUrl,
+              )
               ? DeleteAccountFailureReason.accountRestricted
               : DeleteAccountFailureReason.vanishNotConfirmed,
           diagnosticError: outcome.summary,
@@ -330,20 +347,19 @@ class AccountDeletionService {
         event,
         timeout: _vanishPublish.timeout,
       );
-      try {
-        _assertSignerMatches(expectedPubkey);
-      } on AccountChangedDuringDeletion {
-        if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
-          throw const AccountChangedAfterDeletion();
-        }
-        rethrow;
-      }
+      _assertSignerStillMatches(
+        expectedPubkey,
+        anyConfirmed: outcome.confirmed || _isAlreadyVanishedOutcome(outcome),
+      );
 
       if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
         return outcome;
       }
 
-      if (isAccountRestrictedOutcome(outcome)) {
+      if (isAccountRestrictedOutcome(
+        outcome,
+        trustedRelayUrl: _nostrService.defaultRelayUrl,
+      )) {
         return outcome;
       }
 
@@ -487,23 +503,28 @@ class AccountDeletionService {
         var outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
         if (isRateLimitedOutcome(outcome)) {
           await _retryDelay(_rateLimitRetryDelay);
-          try {
-            _assertSignerMatches(expectedPubkey);
-          } on AccountChangedDuringDeletion {
-            if (successCount > 0) {
-              throw const AccountChangedAfterDeletion();
-            }
-            rethrow;
-          }
+          _assertSignerStillMatches(
+            expectedPubkey,
+            anyConfirmed: successCount > 0,
+          );
           outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
         }
-        try {
-          _assertSignerMatches(expectedPubkey);
-        } on AccountChangedDuringDeletion {
-          if (outcome.confirmed || successCount > 0) {
-            throw const AccountChangedAfterDeletion();
-          }
-          rethrow;
+        _assertSignerStillMatches(
+          expectedPubkey,
+          anyConfirmed: outcome.confirmed || successCount > 0,
+        );
+        if (isAccountRestrictedOutcome(
+          outcome,
+          trustedRelayUrl: _nostrService.defaultRelayUrl,
+        )) {
+          Log.warning(
+            'Stopping batch deletion after the configured relay reported an '
+            'account restriction',
+            name: 'AccountDeletionService',
+            category: LogCategory.system,
+          );
+          onProgress?.call(successCount, total);
+          return successCount;
         }
         if (outcome.confirmed) {
           successCount += kindEvents.length;
@@ -525,14 +546,10 @@ class AccountDeletionService {
       onProgress?.call(successCount, total);
       if (batchIndex < batches.length - 1) {
         await _retryDelay(_interBatchDelay);
-        try {
-          _assertSignerMatches(expectedPubkey);
-        } on AccountChangedDuringDeletion {
-          if (successCount > 0) {
-            throw const AccountChangedAfterDeletion();
-          }
-          rethrow;
-        }
+        _assertSignerStillMatches(
+          expectedPubkey,
+          anyConfirmed: successCount > 0,
+        );
       }
     }
 

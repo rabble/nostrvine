@@ -149,6 +149,9 @@ void main() {
         () => mockNostrService.connectedRelays,
       ).thenReturn(['wss://relay.example.com']);
       when(
+        () => mockNostrService.defaultRelayUrl,
+      ).thenReturn('wss://relay.example.com');
+      when(
         () => mockNostrService.publishEventAwaitOk(any()),
       ).thenAnswer((_) async => _confirmed);
       when(
@@ -952,6 +955,69 @@ void main() {
           expect(result.deletedEventsCount, 1);
           expect(batchPublishes, 2);
           expect(delays, contains(const Duration(minutes: 1)));
+        },
+      );
+
+      test(
+        'restricted batch stops the sweep before publishing another kind',
+        () async {
+          final delays = <Duration>[];
+          final restrictedService = AccountDeletionService(
+            nostrService: mockNostrService,
+            authService: mockAuthService,
+            retryDelay: (delay) async => delays.add(delay),
+          );
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+                id: 'restricted_note',
+              ),
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 7,
+                tags: const [],
+                content: 'reaction',
+                id: 'unattempted_reaction',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _accountRestricted);
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => _accountRestricted);
+
+          final result = await restrictedService.deleteAccount();
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountRestricted,
+          );
+          verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
+          expect(delays, isEmpty);
         },
       );
 

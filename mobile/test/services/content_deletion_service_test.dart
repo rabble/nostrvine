@@ -144,6 +144,9 @@ void main() {
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(
+        () => mockNostrService.defaultRelayUrl,
+      ).thenReturn('wss://relay.example.com');
+      when(
         () => mockProfileStatsDao.deleteStats(any()),
       ).thenAnswer((_) async => 1);
 

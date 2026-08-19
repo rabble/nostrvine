@@ -17,33 +17,84 @@ void main() {
       isAccountRestrictedReason('blocked: pubkey is suspended for 24h'),
       isFalse,
     );
-    expect(
-      isAccountRestrictedReason('blocked: pubkey is not banned'),
-      isFalse,
-    );
+    expect(isAccountRestrictedReason('blocked: pubkey is not banned'), isFalse);
   });
 
-  test('requires every relay rejection to be an account restriction', () {
+  test('requires the trusted relay to report an account restriction', () {
     const restricted = PublishOutcome(
       eventId: 'event',
       acceptedBy: [],
       rejectedBy: {
-        'wss://one.example': 'blocked: pubkey is suspended',
-        'wss://two.example': 'blocked: pubkey is banned',
+        'wss://relay.divine.video/': 'blocked: pubkey is suspended',
+        'wss://third-party.example': 'blocked: policy',
       },
+      noResponseFrom: ['wss://silent.example'],
+    );
+    const untrustedRestriction = PublishOutcome(
+      eventId: 'event',
+      acceptedBy: [],
+      rejectedBy: {'wss://third-party.example': 'blocked: pubkey is suspended'},
+      noResponseFrom: ['wss://relay.divine.video'],
+    );
+
+    expect(
+      isAccountRestrictedOutcome(
+        restricted,
+        trustedRelayUrl: 'wss://relay.divine.video',
+      ),
+      isTrue,
+    );
+    expect(
+      isAccountRestrictedOutcome(
+        untrustedRestriction,
+        trustedRelayUrl: 'wss://relay.divine.video',
+      ),
+      isFalse,
+    );
+  });
+
+  test('an acceptance prevents an account restriction verdict', () {
+    const outcome = PublishOutcome(
+      eventId: 'event',
+      acceptedBy: ['wss://third-party.example'],
+      rejectedBy: {'wss://relay.divine.video': 'blocked: pubkey is banned'},
       noResponseFrom: [],
     );
-    const mixed = PublishOutcome(
+
+    expect(
+      isAccountRestrictedOutcome(
+        outcome,
+        trustedRelayUrl: 'wss://relay.divine.video',
+      ),
+      isFalse,
+    );
+  });
+
+  test('recognizes rate limits only when no relay accepted', () {
+    const rateLimited = PublishOutcome(
       eventId: 'event',
       acceptedBy: [],
       rejectedBy: {
-        'wss://one.example': 'blocked: pubkey is suspended',
+        'wss://one.example': '  RATE-LIMITED: slow down  ',
         'wss://two.example': 'blocked: policy',
       },
       noResponseFrom: [],
     );
+    const partlyAccepted = PublishOutcome(
+      eventId: 'event',
+      acceptedBy: ['wss://accepted.example'],
+      rejectedBy: {'wss://one.example': 'rate-limited: slow down'},
+      noResponseFrom: [],
+    );
+    const unrelated = PublishOutcome(
+      eventId: 'event',
+      acceptedBy: [],
+      rejectedBy: {'wss://one.example': 'blocked: policy'},
+      noResponseFrom: [],
+    );
 
-    expect(isAccountRestrictedOutcome(restricted), isTrue);
-    expect(isAccountRestrictedOutcome(mixed), isFalse);
+    expect(isRateLimitedOutcome(rateLimited), isTrue);
+    expect(isRateLimitedOutcome(partlyAccepted), isFalse);
+    expect(isRateLimitedOutcome(unrelated), isFalse);
   });
 }

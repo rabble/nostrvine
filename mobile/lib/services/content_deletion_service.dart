@@ -284,7 +284,10 @@ class ContentDeletionService {
         );
         return DeleteResult.failure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
-          isAccountRestrictedOutcome(publishOutcome)
+          isAccountRestrictedOutcome(
+                publishOutcome,
+                trustedRelayUrl: _nostrService.defaultRelayUrl,
+              )
               ? DeleteFailureKind.accountRestricted
               : publishOutcome.rejectedBy.isNotEmpty
               ? DeleteFailureKind.relayRejected
