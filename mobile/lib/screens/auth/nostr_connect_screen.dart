@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -328,7 +329,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
                   vertical: 18,
                 ),
               ),
-              onSubmitted: (value) => Navigator.pop(context, value.trim()),
+              onSubmitted: (value) => context.popModalIfMounted(value.trim()),
             ),
             const SizedBox(height: 16),
           ],

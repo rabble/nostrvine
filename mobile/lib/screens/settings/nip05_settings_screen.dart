@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -409,27 +410,33 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Row(
-            spacing: 16,
-            children: [
-              Expanded(
-                child: DivineButton(
-                  label: l10n.profileSetupNip05ConfirmCancel,
-                  type: DivineButtonType.secondary,
-                  expanded: true,
-                  onPressed: () => Navigator.of(context).pop(false),
+        // The buttons resolve the Navigator from the sheet's own subtree
+        // rather than from this screen's context: the settings screen can be
+        // rebuilt out from under an open sheet, and a caller context that has
+        // gone defunct leaves both buttons inert.
+        Builder(
+          builder: (sheetContext) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Row(
+              spacing: 16,
+              children: [
+                Expanded(
+                  child: DivineButton(
+                    label: l10n.profileSetupNip05ConfirmCancel,
+                    type: DivineButtonType.secondary,
+                    expanded: true,
+                    onPressed: () => sheetContext.popModalIfMounted(false),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: DivineButton(
-                  label: l10n.profileSetupNip05ConfirmContinue,
-                  expanded: true,
-                  onPressed: () => Navigator.of(context).pop(true),
+                Expanded(
+                  child: DivineButton(
+                    label: l10n.profileSetupNip05ConfirmContinue,
+                    expanded: true,
+                    onPressed: () => sheetContext.popModalIfMounted(true),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

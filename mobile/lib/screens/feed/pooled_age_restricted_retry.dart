@@ -9,6 +9,7 @@ import 'package:infinite_video_feed/infinite_video_feed.dart'
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -248,9 +249,9 @@ Future<void> _promptAdultContentHidden(BuildContext context) async {
         title: sheetContext.l10n.videoErrorAdultContentHiddenTitle,
         subtitle: sheetContext.l10n.videoErrorAdultContentHiddenBody,
         primaryButtonText: sheetContext.l10n.videoErrorAdultContentHiddenAction,
-        onPrimaryPressed: () => Navigator.of(sheetContext).pop(true),
+        onPrimaryPressed: () => sheetContext.popModalIfMounted(true),
         secondaryButtonText: sheetContext.l10n.commonNotNow,
-        onSecondaryPressed: () => Navigator.of(sheetContext).pop(false),
+        onSecondaryPressed: () => sheetContext.popModalIfMounted(false),
       ),
     ),
   );

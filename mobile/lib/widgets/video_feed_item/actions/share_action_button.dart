@@ -169,7 +169,17 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     super.dispose();
   }
 
+  /// Dismisses the share sheet from a context inside it.
+  ///
+  /// Not `popModalIfMounted`: this sheet is dismissed from bloc listeners
+  /// rather than from a button, so it has to survive being reached while
+  /// GoRouter is out of the tree. It shares that helper's mounted guard —
+  /// `canPop` reads an inherited widget and `Navigator.of` walks ancestors,
+  /// and both throw on a context whose route is already gone (#6512).
   void _safePop(BuildContext ctx) {
+    if (!ctx.mounted) {
+      return;
+    }
     try {
       if (ctx.canPop()) {
         ctx.pop();

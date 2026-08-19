@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_actions_sheet.dart';
 
@@ -80,10 +81,10 @@ class ReactionPickerOverlay {
                   _QuickRow(
                     emojis: emojis,
                     openLabel: l10n.dmReactionAddCustomA11yLabel,
-                    onEmojiTap: (emoji) => Navigator.of(sheetContext).pop(
+                    onEmojiTap: (emoji) => sheetContext.popModalIfMounted(
                       ReactionPickerResult(emoji: emoji),
                     ),
-                    onMoreTap: () => Navigator.of(sheetContext).pop(
+                    onMoreTap: () => sheetContext.popModalIfMounted(
                       const ReactionPickerResult(openFullPicker: true),
                     ),
                   ),
@@ -91,7 +92,7 @@ class ReactionPickerOverlay {
                 _ActionList(
                   isSent: isSent,
                   isVideoShare: isVideoShare,
-                  onSelected: (action) => Navigator.of(sheetContext).pop(
+                  onSelected: (action) => sheetContext.popModalIfMounted(
                     ReactionPickerResult(action: action),
                   ),
                 ),

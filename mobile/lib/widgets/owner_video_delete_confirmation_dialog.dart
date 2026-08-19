@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 Future<bool> showOwnerVideoDeleteConfirmationDialog(
@@ -22,11 +23,11 @@ Future<bool> showOwnerVideoDeleteConfirmationDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
+          onPressed: () => dialogContext.popModalIfMounted(false),
           child: Text(dialogContext.l10n.shareMenuCancel),
         ),
         TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
+          onPressed: () => dialogContext.popModalIfMounted(true),
           style: TextButton.styleFrom(foregroundColor: VineTheme.error),
           child: Text(dialogContext.l10n.shareMenuDelete),
         ),
