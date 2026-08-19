@@ -76,6 +76,11 @@ Localization and brand:
   keys up front, not at commit time. See
   [`localization.md`](localization.md).
 - [ ] Copy matches brand voice (`brand-guidelines/TONE_OF_VOICE.md`).
+- [ ] If the change writes or edits a non-English ARB value, it follows the
+  per-locale register, dialect, and locked-term decisions in
+  [`mobile/docs/LOCALIZATION_STYLE_GUIDE.md`](../../mobile/docs/LOCALIZATION_STYLE_GUIDE.md).
+  A green ARB parity guard proves the key exists, not that it reads like
+  Divine in that language.
 
 ---
 
