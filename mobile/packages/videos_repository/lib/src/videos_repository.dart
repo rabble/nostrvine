@@ -265,6 +265,7 @@ class VideosRepository {
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
+  ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
   /// source curated lists. Returns empty result if both [authors] is empty
