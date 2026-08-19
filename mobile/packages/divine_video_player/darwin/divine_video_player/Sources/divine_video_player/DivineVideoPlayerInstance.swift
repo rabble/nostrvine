@@ -12,6 +12,11 @@ import FlutterMacOS
 final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private let playerId: Int
+    /// Identifies this player in diagnostic logs.
+    ///
+    /// Mirrors the Dart side's `_logTarget` so a `Player 665404 (feed[0])`
+    /// line reads the same whichever half of the channel emitted it.
+    private let logTarget: String
     private let methodChannel: FlutterMethodChannel
     private let eventChannel: FlutterEventChannel
 
@@ -128,8 +133,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// Audio overlay manager for synchronized audio tracks.
     private let audioOverlayManager = AudioOverlayManager()
 
-    init(messenger: FlutterBinaryMessenger, playerId: Int) {
+    init(
+        messenger: FlutterBinaryMessenger,
+        playerId: Int,
+        debugLabel: String? = nil
+    ) {
         self.playerId = playerId
+        logTarget = debugLabel.map { "Player \(playerId) (\($0))" }
+            ?? "Player \(playerId)"
 
         methodChannel = FlutterMethodChannel(
             name: "divine_video_player/player_\(playerId)",
@@ -500,7 +511,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         for clipMap in clipsRaw {
             guard let uri = clipMap["uri"] as? String else {
                 DivineVideoPlayerLog.shared.warning(
-                    "Player \(playerId) skipped a clip: missing uri",
+                    "\(logTarget) skipped a clip: missing uri",
                     name: "DivineVideoPlayer.Load"
                 )
                 continue
@@ -520,7 +531,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 url = parsed
             } else {
                 DivineVideoPlayerLog.shared.warning(
-                    "Player \(playerId) skipped a clip: unparseable uri",
+                    "\(logTarget) skipped a clip: unparseable uri",
                     name: "DivineVideoPlayer.Load"
                 )
                 continue
@@ -538,7 +549,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
             guard let sourceVideoTrack = assetVideoTracks.first else {
                 DivineVideoPlayerLog.shared.warning(
-                    "Player \(playerId) skipped a clip: no video track",
+                    "\(logTarget) skipped a clip: no video track",
                     name: "DivineVideoPlayer.Load"
                 )
                 continue
@@ -549,7 +560,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let displaySize = naturalSize.applying(transform).absoluteSize
             guard displaySize.isPositive else {
                 DivineVideoPlayerLog.shared.warning(
-                    "Player \(playerId) skipped a clip: non-positive display size",
+                    "\(logTarget) skipped a clip: non-positive display size",
                     name: "DivineVideoPlayer.Load"
                 )
                 continue
@@ -579,7 +590,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     }
                 } catch {
                     DivineVideoPlayerLog.shared.warning(
-                        "Player \(playerId) could not read track durations: "
+                        "\(logTarget) could not read track durations: "
                             + "\(error.localizedDescription)",
                         name: "DivineVideoPlayer.Load"
                     )
@@ -589,7 +600,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let clipDuration = CMTimeSubtract(endTime, startTime)
             guard CMTimeCompare(clipDuration, .zero) > 0 else {
                 DivineVideoPlayerLog.shared.warning(
-                    "Player \(playerId) skipped a clip: non-positive duration",
+                    "\(logTarget) skipped a clip: non-positive duration",
                     name: "DivineVideoPlayer.Load"
                 )
                 continue
@@ -884,7 +895,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
         audioOverlayManager.setTracks(from: tracksRaw)
         DivineVideoPlayerLog.shared.info(
-            "Player \(playerId) set \(tracksRaw.count) audio overlay track(s)",
+            "\(logTarget) set \(tracksRaw.count) audio overlay track(s)",
             name: "DivineVideoPlayer.Audio"
         )
         syncAudioOverlays()

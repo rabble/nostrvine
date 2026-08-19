@@ -52,6 +52,14 @@ void main() {
     return matches.isEmpty ? null : matches.last;
   }
 
+  /// The most recent log line emitted when pausing a sibling threw.
+  LogEntry? latestSiblingPauseFailureLog() {
+    final matches = LogCaptureService().getRecentLogs().where(
+      (entry) => entry.message.contains('failed to pause sibling player'),
+    );
+    return matches.isEmpty ? null : matches.last;
+  }
+
   /// Registers platform channel mocks and initializes the controller.
   ///
   /// The event channel mock is set up inside the 'create' handler so that
@@ -197,6 +205,19 @@ void main() {
         expect(
           globalCalls.first.arguments,
           containsPair('id', isA<int>()),
+        );
+      });
+
+      test('passes debugLabel through create', () async {
+        controller = DivineVideoPlayerController(debugLabel: 'cover');
+
+        await initController();
+
+        // The native half builds its own log prefix from this, so its lines
+        // name the same screen the Dart lines do.
+        expect(
+          globalCalls.first.arguments,
+          containsPair('debugLabel', 'cover'),
         );
       });
 
@@ -381,6 +402,33 @@ void main() {
         expect(playerCalls, hasLength(2));
         expect(playerCalls.first.method, equals('pause'));
         expect(playerCalls.last.method, equals('play'));
+      });
+
+      test('names both players when pausing a sibling fails', () async {
+        final other = DivineVideoPlayerController(debugLabel: 'editor');
+        addTearDown(other.dispose);
+        await other.initialize();
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              MethodChannel(
+                'divine_video_player/player_${controller.playerId}',
+              ),
+              (call) async {
+                if (call.method == 'pause') {
+                  throw PlatformException(code: 'pause_failed');
+                }
+                return null;
+              },
+            );
+
+        await other.play();
+
+        final entry = latestSiblingPauseFailureLog();
+        expect(entry, isNotNull);
+        // Both halves matter: who tried to pause, and which player refused.
+        expect(entry!.message, contains('Player ${other.playerId} (editor)'));
+        expect(entry.message, contains('Player ${controller.playerId}'));
       });
 
       test('play leaves others alone when not exclusive', () async {

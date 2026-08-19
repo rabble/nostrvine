@@ -174,9 +174,11 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             PlayerRegistry.shared.remove(id)?.dispose()
 
             let messenger = Self.messenger(for: registrar)
+            let debugLabel = args["debugLabel"] as? String
             let instance = DivineVideoPlayerInstance(
                 messenger: messenger,
-                playerId: id
+                playerId: id,
+                debugLabel: debugLabel
             )
             // Record the owning engine by its binary messenger. The plugin
             // instance whose global channel received this `create` is the
@@ -186,8 +188,10 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
             PlayerRegistry.shared.set(instance, for: id, engine: messenger)
 
             let useTexture = args["useTexture"] as? Bool ?? false
+            let logTarget = debugLabel.map { "Player \(id) (\($0))" }
+                ?? "Player \(id)"
             DivineVideoPlayerLog.shared.info(
-                "Player \(id) created (useTexture=\(useTexture))",
+                "\(logTarget) created (useTexture=\(useTexture))",
                 name: "DivineVideoPlayer.Lifecycle"
             )
             if useTexture {

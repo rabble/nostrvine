@@ -71,7 +71,8 @@ class DivineVideoPlayerController {
   /// [debugLabel] names the surface that owns this player in diagnostic logs.
   /// Player IDs are wall-clock seeded and identical on both sides of the
   /// channel, so a `Player 665404` line in a bug report is only traceable
-  /// back to a screen if that screen labelled itself here.
+  /// back to a screen if that screen labelled itself here. The label is
+  /// forwarded to the native player, so its lines carry it too.
   DivineVideoPlayerController({
     this.useTexture = false,
     this.useLegacySurface = false,
@@ -150,7 +151,8 @@ class DivineVideoPlayerController {
 
   /// Names the surface that owns this player in diagnostic logs.
   ///
-  /// See the constructor docs. `null` when the owner did not label itself.
+  /// See the constructor docs. `null` when the owner did not label itself,
+  /// which leaves both halves logging a bare `Player <id>`.
   final String? debugLabel;
 
   static const _globalChannel = MethodChannel('divine_video_player');
@@ -409,6 +411,7 @@ class DivineVideoPlayerController {
           'useTexture': useTexture,
           'useLegacySurface': useLegacySurface,
           'bufferProfile': bufferProfile.wireValue,
+          'debugLabel': debugLabel,
         },
       );
       if (useTexture && result != null) {
@@ -667,7 +670,8 @@ class DivineVideoPlayerController {
           await controller.pause();
         } on Object catch (error) {
           Log.warning(
-            'Failed to pause sibling player before starting playback: $error',
+            '$_logTarget: failed to pause sibling player '
+            '${controller._logTarget} before starting playback: $error',
             name: _logName,
             category: LogCategory.video,
           );
