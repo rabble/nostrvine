@@ -181,6 +181,32 @@ class _InMemoryProcessedGiftWrapsDao extends Mock
 
 class _FakeOutgoingDm extends Fake implements OutgoingDm {}
 
+/// In-memory [RemovedConversationsDao] so a reopen → replay sequence can
+/// prove the tombstone survives reopening (a mock's static stub cannot show
+/// state changes). Mirrors the owner-scoped map contract. See #7804.
+class _InMemoryRemovedConversationsDao extends Mock
+    implements RemovedConversationsDao {
+  final Map<({String conversationId, String ownerPubkey}), int> _tombstones =
+      {};
+
+  @override
+  Future<void> record({
+    required String conversationId,
+    required String ownerPubkey,
+    required int removedAt,
+  }) async {
+    _tombstones[(conversationId: conversationId, ownerPubkey: ownerPubkey)] =
+        removedAt;
+  }
+
+  @override
+  Future<int?> removedAtFor({
+    required String conversationId,
+    required String ownerPubkey,
+  }) async =>
+      _tombstones[(conversationId: conversationId, ownerPubkey: ownerPubkey)];
+}
+
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockNIP17MessageService extends Mock implements NIP17MessageService {}
@@ -8814,6 +8840,7 @@ void main() {
       test('a removed conversation ignores replayed NIP-04 history', () async {
         final nip04Event = createNip04Event();
         final removedConversationsDao = _MockRemovedConversationsDao();
+        final ledger = _InMemoryProcessedGiftWrapsDao();
         when(
           () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
         ).thenAnswer((_) async => false);
@@ -8842,6 +8869,7 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository(
+          processedGiftWrapsDao: ledger,
           removedConversationsDao: removedConversationsDao,
           nip04Decryptor: (_, _) async => 'Decrypted NIP-04 text',
         );
@@ -8850,6 +8878,10 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
+        // Suppression is terminal: the event id lands in the processed-wraps
+        // ledger so a replay is skipped before decryption — matching the
+        // NIP-17 behavior. #7804.
+        expect(ledger.recorded, contains(_rumorEventId));
         verifyNever(
           () => mockDirectMessagesDao.insertMessage(
             id: any(named: 'id'),
@@ -8896,6 +8928,71 @@ void main() {
         await controller.close();
         await repository.stopListening();
       });
+
+      test(
+        'a replayed NIP-04 event suppressed by a removed conversation is '
+        'skipped before decryption',
+        () async {
+          final nip04Event = createNip04Event();
+          final removedConversationsDao = _MockRemovedConversationsDao();
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          var decryptCalls = 0;
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => removedConversationsDao.removedAtFor(
+              conversationId: any(named: 'conversationId'),
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => 1700000000);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            removedConversationsDao: removedConversationsDao,
+            nip04Decryptor: (_, _) async {
+              decryptCalls++;
+              return 'Decrypted NIP-04 text';
+            },
+          );
+          await repository.startListening();
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // First delivery: decrypt once, suppress, record terminally.
+          expect(decryptCalls, 1);
+          expect(ledger.recorded, contains(_rumorEventId));
+
+          // Relay replay delivers the same event again; the ledger hit skips
+          // it before paying a second decryption.
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(decryptCalls, 1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('decrypts and persists a NIP-04 message', () async {
         final nip04Event = createNip04Event();
@@ -12555,12 +12652,6 @@ void main() {
             dmProtocol: any(named: 'dmProtocol'),
           ),
         ).thenAnswer((_) async {});
-        when(
-          () => removedConversationsDao.clearFor(
-            conversationId: any(named: 'conversationId'),
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).thenAnswer((_) async => 1);
 
         final repository = createRepository(
           processedGiftWrapsDao: ledger,
@@ -12573,12 +12664,9 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
-        verify(
-          () => removedConversationsDao.clearFor(
-            conversationId: any(named: 'conversationId'),
-            ownerPubkey: _validPubkeyA,
-          ),
-        ).called(1);
+        // The tombstone is deliberately NOT cleared on reopen: it keeps
+        // replayed pre-removal history suppressed while newer messages
+        // recreate the conversation row. #7804.
         verify(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -12599,6 +12687,161 @@ void main() {
         await controller.close();
         await repository.stopListening();
       });
+
+      test(
+        'a reopened removed conversation keeps suppressing replayed '
+        'pre-removal history',
+        () async {
+          final removedConversationsDao = _InMemoryRemovedConversationsDao();
+          final conversationId = DmRepository.computeConversationId(const [
+            _validPubkeyA,
+            _validPubkeyB,
+          ]);
+          await removedConversationsDao.record(
+            conversationId: conversationId,
+            ownerPubkey: _validPubkeyA,
+            removedAt: 1700000000,
+          );
+
+          const newMessageAt = 1700000001;
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId2),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          Event giftWrap2() => Event.fromJson({
+            'id': _giftWrapEventId2,
+            'pubkey': _validPubkeyC,
+            'created_at': 1700000101,
+            'kind': EventKind.giftWrap,
+            'tags': [
+              ['p', _validPubkeyA],
+            ],
+            'content': 'wrapped',
+            'sig': '',
+          });
+
+          // First delivery: a genuinely newer message reopens the
+          // conversation.
+          var rumor = textRumor(createdAt: newMessageAt);
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            removedConversationsDao: removedConversationsDao,
+            rumorDecryptor: (_, _) async => rumor,
+          );
+          await repository.startListening();
+
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          // The tombstone survives the reopen — this is the #7804 invariant.
+          expect(
+            await removedConversationsDao.removedAtFor(
+              conversationId: conversationId,
+              ownerPubkey: _validPubkeyA,
+            ),
+            1700000000,
+          );
+
+          // Relay replay now redelivers the pre-removal message: with the
+          // tombstone intact it stays suppressed instead of resurrecting the
+          // removed history.
+          rumor = textRumor(id: _giftWrapEventId2);
+          controller.add(giftWrap2());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(ledger.recorded, contains(_giftWrapEventId2));
+          // Exactly one insert across both deliveries: the reopening message
+          // only.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by
       // whoever sent the wrap. Left unbounded, one such rumor advances the

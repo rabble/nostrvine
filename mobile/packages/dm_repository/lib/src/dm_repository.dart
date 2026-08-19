@@ -312,10 +312,13 @@ class DmRepository {
   /// Optional dedup ledger for gift wraps whose decrypted rumor writes no
   /// `directMessages` row — reactions (kind 7), deletions (kind 5),
   /// unsupported kinds, cross-protocol duplicates, degenerate participant
-  /// sets. Consulted alongside [DirectMessagesDao.hasGiftWrap] in the
-  /// pre-decrypt dedup so those wraps are not re-decrypted on every launch
-  /// (a serial remote-signer RPC each). Nullable to keep older test fixtures
-  /// working without rewiring. See #5452.
+  /// sets, and messages suppressed by a removed-conversation tombstone. The
+  /// ledger also carries NIP-04 event ids suppressed by a tombstone, so both
+  /// protocols treat replayed removed history as terminally processed.
+  /// Consulted alongside [DirectMessagesDao.hasGiftWrap] in the pre-decrypt
+  /// dedup so those wraps are not re-decrypted on every launch (a serial
+  /// remote-signer RPC each). Nullable to keep older test fixtures working
+  /// without rewiring. See #5452.
   final ProcessedGiftWrapsDao? _processedGiftWrapsDao;
 
   /// Durable owner-scoped removal markers. Relay events are replayable, so a
@@ -1656,11 +1659,12 @@ class DmRepository {
     }
   }
 
-  /// Pre-decrypt dedup: has this gift wrap already been processed, by either
-  /// path? Text/file messages (kind 14/15) leave a `directMessages` row; the
-  /// outcomes that write no message row (reactions, deletions, unsupported
-  /// kinds, cross-protocol dups, degenerate participants) leave a
-  /// `processed_gift_wraps` ledger row instead. Checking both means a
+  /// Pre-decrypt dedup: has this gift wrap (or NIP-04 event) already been
+  /// processed, by either path? Text/file messages (kind 14/15) leave a
+  /// `directMessages` row; the outcomes that write no message row (reactions,
+  /// deletions, unsupported kinds, cross-protocol dups, degenerate
+  /// participants, messages suppressed by a removed-conversation tombstone)
+  /// leave a `processed_gift_wraps` ledger row instead. Checking both means a
   /// re-delivered wrap of any kind is skipped before paying a decrypt. #5452.
   Future<bool> _alreadyProcessed(String giftWrapId) async {
     if (await _directMessagesDao.hasGiftWrap(giftWrapId)) return true;
@@ -1687,10 +1691,11 @@ class DmRepository {
     return present;
   }
 
-  /// Records a terminally-processed gift wrap in the dedup ledger so it is not
-  /// re-decrypted on a later launch. No-op when the ledger DAO is absent (older
-  /// test fixtures). Recorded AFTER the outcome write so a crash in between
-  /// only ever costs a benign re-decrypt, never a lost reaction/deletion. #5452.
+  /// Records a terminally-processed gift wrap (or suppressed NIP-04 event) in
+  /// the dedup ledger so it is not re-decrypted on a later launch. No-op when
+  /// the ledger DAO is absent (older test fixtures). Recorded AFTER the
+  /// outcome write so a crash in between only ever costs a benign re-decrypt,
+  /// never a lost reaction/deletion. #5452.
   Future<void> _recordProcessedWrap(String giftWrapId) async {
     await _processedGiftWrapsDao?.record(
       giftWrapId: giftWrapId,
@@ -1951,7 +1956,12 @@ class DmRepository {
 
       var inserted = false;
       var skippedByTransactionalGiftWrapDedup = false;
+      var suppressedByRemovedConversation = false;
+      int? removedAt;
       await _conversationsDao.runInTransaction(() async {
+        // Snapshot the owner for the whole transaction: an account switch
+        // mid-flight must not mix one account's reads with another's writes.
+        final ownerPubkey = _userPubkey;
         // Re-check dedup inside transaction (TOCTOU protection). The skip is
         // logged after the transaction below; logging here too would emit one
         // line per skip twice.
@@ -1960,11 +1970,12 @@ class DmRepository {
           return;
         }
 
-        final removedAt = await _removedConversationsDao?.removedAtFor(
+        removedAt = await _removedConversationsDao?.removedAtFor(
           conversationId: conversationId,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
         );
-        if (removedAt != null && persistedCreatedAt <= removedAt) {
+        if (removedAt != null && persistedCreatedAt <= removedAt!) {
+          suppressedByRemovedConversation = true;
           return;
         }
 
@@ -1989,14 +2000,14 @@ class DmRepository {
           dimensions: fileMetadata?.dimensions,
           blurhash: fileMetadata?.blurhash,
           thumbnailUrl: fileMetadata?.thumbnailUrl,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
           sendBatchId: sendBatchId,
         );
         if (!inserted) return;
 
         final existing = await _conversationsDao.getConversation(
           conversationId,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
         );
 
         await _conversationsDao.upsertConversation(
@@ -2011,21 +2022,32 @@ class DmRepository {
           isRead: isSentByMe,
           currentUserHasSent:
               isSentByMe || (existing?.currentUserHasSent ?? false),
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
           dmProtocol: 'nip17',
         );
-        if (removedAt != null) {
-          await _removedConversationsDao?.clearFor(
-            conversationId: conversationId,
-            ownerPubkey: _userPubkey,
-          );
-        }
+        // A newer message reopens a removed conversation: the row is
+        // recreated above, while the tombstone is deliberately kept so
+        // replayed history stamped at or before the removal stays
+        // suppressed. #7804.
       });
 
       if (skippedByTransactionalGiftWrapDedup) {
         Log.debug(
           'Skipping NIP-17 gift wrap ${giftWrapEvent.id}: already persisted '
           'during transaction',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      if (suppressedByRemovedConversation) {
+        // Terminal: record the wrap so replays skip it before decryption.
+        // The tombstone is authoritative for the account's lifetime, so the
+        // ledger is not racing a reopening that clears it.
+        await _recordProcessedWrap(giftWrapEvent.id);
+        Log.debug(
+          'Suppressed NIP-17 DM ${rumor.id} in removed conversation '
+          '$conversationId: createdAt $persistedCreatedAt is at or before '
+          'removal at $removedAt',
           category: LogCategory.system,
         );
         return;
@@ -2477,11 +2499,14 @@ class DmRepository {
 
   Future<void> _handleNip04Event(Event nip04Event) async {
     try {
-      // Dedup: use event ID as giftWrapId for the unique index.
-      if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
+      // Dedup: use event ID as giftWrapId for the unique index. The
+      // processed-wraps ledger also carries NIP-04 event ids that were
+      // suppressed by a removed-conversation tombstone, so replays skip
+      // decryption entirely — matching the terminal NIP-17 behavior. #7804.
+      if (await _alreadyProcessed(nip04Event.id)) {
         if (_historyDrain == null) {
           Log.debug(
-            'Skipping already-persisted NIP-04 event ${nip04Event.id}',
+            'Skipping already-processed NIP-04 event ${nip04Event.id}',
             category: LogCategory.system,
           );
         }
@@ -2549,7 +2574,12 @@ class DmRepository {
       // Persist message + conversation atomically inside a transaction.
       var inserted = false;
       var skippedByTransactionalGiftWrapDedup = false;
+      var suppressedByRemovedConversation = false;
+      int? removedAt;
       await _conversationsDao.runInTransaction(() async {
+        // Snapshot the owner for the whole transaction: an account switch
+        // mid-flight must not mix one account's reads with another's writes.
+        final ownerPubkey = _userPubkey;
         // Re-check dedup inside transaction (TOCTOU protection). The skip is
         // logged after the transaction below; logging here too would emit one
         // line per skip twice.
@@ -2558,11 +2588,12 @@ class DmRepository {
           return;
         }
 
-        final removedAt = await _removedConversationsDao?.removedAtFor(
+        removedAt = await _removedConversationsDao?.removedAtFor(
           conversationId: conversationId,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
         );
-        if (removedAt != null && nip04Event.createdAt <= removedAt) {
+        if (removedAt != null && nip04Event.createdAt <= removedAt!) {
+          suppressedByRemovedConversation = true;
           return;
         }
 
@@ -2574,13 +2605,13 @@ class DmRepository {
           createdAt: nip04Event.createdAt,
           giftWrapId: nip04Event.id,
           messageKind: EventKind.directMessage,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
         );
         if (!inserted) return;
 
         final existing = await _conversationsDao.getConversation(
           conversationId,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
         );
 
         await _conversationsDao.upsertConversation(
@@ -2594,21 +2625,33 @@ class DmRepository {
           isRead: isSentByMe,
           currentUserHasSent:
               isSentByMe || (existing?.currentUserHasSent ?? false),
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
           dmProtocol: existing?.dmProtocol ?? 'nip04',
         );
-        if (removedAt != null) {
-          await _removedConversationsDao?.clearFor(
-            conversationId: conversationId,
-            ownerPubkey: _userPubkey,
-          );
-        }
+        // A newer message reopens a removed conversation: the row is
+        // recreated above, while the tombstone is deliberately kept so
+        // replayed history stamped at or before the removal stays
+        // suppressed. #7804.
       });
 
       if (skippedByTransactionalGiftWrapDedup) {
         Log.debug(
           'Skipping NIP-04 event ${nip04Event.id}: already persisted during '
           'transaction',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      if (suppressedByRemovedConversation) {
+        // Terminal: record the event id in the processed-wraps ledger so
+        // replays skip it before decryption. The tombstone is authoritative
+        // for the account's lifetime, so the ledger is not racing a
+        // reopening that clears it.
+        await _recordProcessedWrap(nip04Event.id);
+        Log.debug(
+          'Suppressed NIP-04 DM ${nip04Event.id} in removed conversation '
+          '$conversationId: createdAt ${nip04Event.createdAt} is at or '
+          'before removal at $removedAt',
           category: LogCategory.system,
         );
         return;
@@ -5653,31 +5696,36 @@ class DmRepository {
   /// Remove a conversation, its messages, and queued sends atomically.
   ///
   /// Records an owner-scoped tombstone first so relay replay cannot restore
-  /// history at or before the removal time. A newer message clears the marker
-  /// after it successfully recreates the conversation.
+  /// history at or before the removal time. The marker is kept for the
+  /// account's lifetime: a newer message recreates the conversation while
+  /// earlier history stays suppressed.
   ///
   /// Throws:
   ///
   /// * `InvalidDataException` if a database constraint is violated.
   Future<void> removeConversation(String conversationId) {
     return _conversationsDao.runInTransaction(() async {
+      // Snapshot the owner for the whole transaction: an account switch
+      // mid-flight must not mix one account's reads with another's writes.
+      final owner = _userPubkey;
+      final ownerOrNull = owner.isEmpty ? null : owner;
       final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await _removedConversationsDao?.record(
         conversationId: conversationId,
-        ownerPubkey: _userPubkey,
+        ownerPubkey: owner,
         removedAt: removedAt,
       );
       await _directMessagesDao.deleteConversationMessages(
         conversationId,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: ownerOrNull,
       );
       await _conversationsDao.deleteConversation(
         conversationId,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: ownerOrNull,
       );
       await _outgoingDmsDao?.deleteForConversation(
         conversationId: conversationId,
-        ownerPubkey: _userPubkey,
+        ownerPubkey: owner,
       );
     });
   }
@@ -5693,23 +5741,27 @@ class DmRepository {
     if (conversationIds.isEmpty) return Future.value();
 
     return _conversationsDao.runInTransaction(() async {
+      // Snapshot the owner for the whole transaction: an account switch
+      // mid-flight must not mix one account's reads with another's writes.
+      final owner = _userPubkey;
+      final ownerOrNull = owner.isEmpty ? null : owner;
       final removedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await _removedConversationsDao?.recordAll(
         conversationIds: conversationIds,
-        ownerPubkey: _userPubkey,
+        ownerPubkey: owner,
         removedAt: removedAt,
       );
       await _directMessagesDao.deleteMultipleConversationMessages(
         conversationIds,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: ownerOrNull,
       );
       await _conversationsDao.deleteMultiple(
         conversationIds,
-        ownerPubkey: _ownerPubkey,
+        ownerPubkey: ownerOrNull,
       );
       await _outgoingDmsDao?.deleteForConversations(
         conversationIds: conversationIds,
-        ownerPubkey: _userPubkey,
+        ownerPubkey: owner,
       );
     });
   }
