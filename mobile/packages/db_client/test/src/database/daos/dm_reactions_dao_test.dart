@@ -28,6 +28,14 @@ const _sentId =
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const _giftWrapId =
     '1111111111111111111111111111111111111111111111111111111111111111';
+const _otherConversationId =
+    '2222222222222222222222222222222222222222222222222222222222222222';
+const _otherConversationReactionId =
+    '3333333333333333333333333333333333333333333333333333333333333333';
+const _otherOwnerReactionId =
+    '4444444444444444444444444444444444444444444444444444444444444444';
+const _otherTargetMessageId =
+    '5555555555555555555555555555555555555555555555555555555555555555';
 
 void main() {
   late AppDatabase database;
@@ -804,6 +812,156 @@ void main() {
         );
       },
     );
+
+    group('removed-conversation tombstone suppression', () {
+      /// The `createdAt` [insertPending] uses by default.
+      const reactionAt = 1_700_000_000;
+
+      Future<void> recordTombstone({
+        required int removedAt,
+        String conversationId = _conversationId,
+        String ownerPubkey = _ownerA,
+      }) {
+        return database.removedConversationsDao.record(
+          conversationId: conversationId,
+          ownerPubkey: ownerPubkey,
+          removedAt: removedAt,
+        );
+      }
+
+      test(
+        'a reaction stranded by an older removal is not retryable',
+        () async {
+          await insertPending();
+          await recordTombstone(removedAt: reactionAt);
+
+          expect(
+            await dao.getRetryableOwnReactions(ownerPubkey: _ownerA),
+            isEmpty,
+            reason:
+                'a removal at or after the reaction must take it out of the '
+                'sweep, so it can never be published into the removed thread',
+          );
+        },
+      );
+
+      test('a reaction created after the removal stays retryable', () async {
+        await insertPending(createdAt: reactionAt + 500);
+        await recordTombstone(removedAt: reactionAt);
+
+        expect(
+          await dao.getRetryableOwnReactions(ownerPubkey: _ownerA),
+          hasLength(1),
+          reason:
+              'the counterparty recreated the conversation after the removal; '
+              'that reaction is still owed delivery',
+        );
+      });
+
+      test("another owner's tombstone does not suppress this owner", () async {
+        await insertPending();
+        await recordTombstone(removedAt: reactionAt, ownerPubkey: _ownerB);
+
+        expect(
+          await dao.getRetryableOwnReactions(ownerPubkey: _ownerA),
+          hasLength(1),
+        );
+      });
+
+      test(
+        "another conversation's tombstone does not suppress this one",
+        () async {
+          await insertPending();
+          await recordTombstone(
+            removedAt: reactionAt,
+            conversationId: _otherConversationId,
+          );
+
+          expect(
+            await dao.getRetryableOwnReactions(ownerPubkey: _ownerA),
+            hasLength(1),
+          );
+        },
+      );
+
+      test('a pending kind-5 removal is suppressed the same way', () async {
+        await insertPending();
+        await dao.markOwnDeletionPending(
+          id: _pendingId,
+          ownerPubkey: _ownerA,
+          deletionRumorJson: '{"kind":5}',
+        );
+        expect(
+          await dao.getRetryableOwnDeletions(ownerPubkey: _ownerA),
+          hasLength(1),
+        );
+
+        await recordTombstone(removedAt: reactionAt);
+
+        expect(
+          await dao.getRetryableOwnDeletions(ownerPubkey: _ownerA),
+          isEmpty,
+        );
+      });
+
+      test('deleteSuppressedByRemoval purges only stranded rows', () async {
+        await insertPending();
+        await insertPending(
+          id: _otherConversationReactionId,
+          conversationId: _otherConversationId,
+          targetMessageId: _otherTargetMessageId,
+        );
+        await recordTombstone(removedAt: reactionAt);
+
+        final purged = await dao.deleteSuppressedByRemoval(
+          ownerPubkey: _ownerA,
+        );
+
+        expect(purged, equals(1));
+        expect(await dao.getById(id: _pendingId, ownerPubkey: _ownerA), isNull);
+        expect(
+          await dao.getById(
+            id: _otherConversationReactionId,
+            ownerPubkey: _ownerA,
+          ),
+          isNotNull,
+        );
+      });
+
+      test('deleteSuppressedByRemoval keeps post-removal rows', () async {
+        await insertPending(createdAt: reactionAt + 500);
+        await recordTombstone(removedAt: reactionAt);
+
+        expect(
+          await dao.deleteSuppressedByRemoval(ownerPubkey: _ownerA),
+          isZero,
+        );
+        expect(
+          await dao.getById(id: _pendingId, ownerPubkey: _ownerA),
+          isNotNull,
+        );
+      });
+
+      test('deleteSuppressedByRemoval is owner-scoped', () async {
+        await insertPending();
+        await insertPending(
+          id: _otherOwnerReactionId,
+          ownerPubkey: _ownerB,
+          reactorPubkey: _ownerB,
+        );
+        await recordTombstone(removedAt: reactionAt);
+        await recordTombstone(removedAt: reactionAt, ownerPubkey: _ownerB);
+
+        expect(
+          await dao.deleteSuppressedByRemoval(ownerPubkey: _ownerA),
+          equals(1),
+        );
+        expect(
+          await dao.getById(id: _otherOwnerReactionId, ownerPubkey: _ownerB),
+          isNotNull,
+        );
+      });
+    });
 
     test('deleteForConversations is a no-op for an empty id list', () async {
       await insertPending();

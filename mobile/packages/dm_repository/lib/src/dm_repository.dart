@@ -6013,6 +6013,43 @@ class DmRepository {
     await _cleanupSelfConversations();
     await _backfillCurrentUserHasSent();
     await _backfillConversationPreviews();
+    await _purgeReactionsStrandedByRemoval();
+  }
+
+  /// Drops reaction rows left behind by a conversation removal on a build that
+  /// predates the removal-time cleanup (#7857).
+  ///
+  /// Those rows are an outgoing queue, not a render cache, so the retry sweep
+  /// keeps re-driving them and can publish a gift wrap into a conversation the
+  /// user removed. The sweep's attempt budget is in memory, so it resets on
+  /// every cold start and they never age out.
+  ///
+  /// The read side is guarded independently — the retry queries exclude
+  /// tombstoned rows — so a sweep that fires before this finishes still cannot
+  /// publish one. This reclaims the rows.
+  ///
+  /// Idempotent — a no-op once the account has none left.
+  Future<void> _purgeReactionsStrandedByRemoval() async {
+    final owner = _ownerPubkey;
+    if (owner == null) return;
+    try {
+      final purged = await _reactionsRepository?.purgeStrandedByRemoval(
+        ownerPubkey: owner,
+      );
+      if (purged != null && purged > 0) {
+        Log.info(
+          'Purged $purged DM reaction rows stranded by a removed conversation',
+          category: LogCategory.system,
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to purge reactions stranded by removed conversations: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Backfills `currentUserHasSent` for conversations where the column

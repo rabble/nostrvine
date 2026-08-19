@@ -361,7 +361,8 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
                 t.reactorPubkey.equals(ownerPubkey) &
                 t.isDeleted.equals(false) &
                 t.rumorEventJson.isNotNull() &
-                t.publishStatus.isIn(const ['failed', 'pending']),
+                t.publishStatus.isIn(const ['failed', 'pending']) &
+                _notSuppressedByRemoval(t),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .get();
@@ -423,7 +424,8 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
                 t.reactorPubkey.equals(ownerPubkey) &
                 t.isDeleted.equals(true) &
                 t.rumorEventJson.isNotNull() &
-                t.publishStatus.equals(_deletionPendingStatus),
+                t.publishStatus.equals(_deletionPendingStatus) &
+                _notSuppressedByRemoval(t),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .get();
@@ -469,6 +471,50 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
       )
       ..limit(1);
     return (await query.get()).isNotEmpty;
+  }
+
+  /// `true` when this reaction is NOT suppressed by a removed-conversation
+  /// tombstone — i.e. no `removed_conversations` marker for the same
+  /// `(conversation_id, owner_pubkey)` covers its `created_at`.
+  ///
+  /// Mirrors the message-suppression rule in `DmRepository`
+  /// (`createdAt <= removedAt` is removed history): a reaction created *after*
+  /// the removal belongs to a conversation the counterparty has since
+  /// recreated, so it must still be delivered. Tombstones outlive the
+  /// `conversations` row on purpose, which is why this keys on them rather
+  /// than on conversation existence — a plain existence check would silently
+  /// drop every queued reaction after an account switch, which clears
+  /// `conversations` wholesale while preserving the retry queue (#6984).
+  Expression<bool> _notSuppressedByRemoval($DmMessageReactionsTable t) {
+    final tombstones = attachedDatabase.removedConversations;
+    return notExistsQuery(
+      selectOnly(tombstones)
+        ..addColumns([tombstones.conversationId])
+        ..where(
+          tombstones.conversationId.equalsExp(t.conversationId) &
+              tombstones.ownerPubkey.equalsExp(t.ownerPubkey) &
+              t.createdAt.isSmallerOrEqual(tombstones.removedAt),
+        ),
+    );
+  }
+
+  /// Delete reaction rows stranded by a conversation removal that predates the
+  /// removal-time cleanup (#7857).
+  ///
+  /// Before that fix, removing a conversation left its `dm_message_reactions`
+  /// rows behind. Those rows are an outgoing queue, so the retry sweep kept
+  /// re-driving them and could publish a gift wrap into a conversation the
+  /// user had removed. Rows written after the tombstone belong to a recreated
+  /// conversation and are kept — same rule as [_notSuppressedByRemoval].
+  ///
+  /// Idempotent: a no-op once the account has none left.
+  Future<int> deleteSuppressedByRemoval({required String ownerPubkey}) {
+    return (delete(dmMessageReactions)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) &
+              _notSuppressedByRemoval(t).not(),
+        ))
+        .go();
   }
 
   /// Delete every reaction row in [conversationIds] for [ownerPubkey].

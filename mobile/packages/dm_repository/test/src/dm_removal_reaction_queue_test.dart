@@ -1,6 +1,7 @@
 // ABOUTME: Regression coverage for #7857 — removing a conversation must drop
 // ABOUTME: its queued DM reactions and pending kind-5 removals, so the retry
 // ABOUTME: sweep can never publish a gift wrap into a removed conversation.
+// ABOUTME: Also covers rows stranded by a removal on an older build.
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
@@ -132,8 +133,124 @@ void main() {
       nostrClient: _MockNostrClient(),
       directMessagesDao: messagesDao,
       conversationsDao: conversationsDao,
+      removedConversationsDao: db.removedConversationsDao,
       userPubkey: _owner,
       reactionsRepository: reactions,
+    );
+
+    /// Reproduce the on-disk state an older build left behind: the
+    /// conversation and its messages are gone and the tombstone is recorded,
+    /// but the reaction rows were never touched.
+    Future<void> removeTheWayOldBuildsDid(
+      String conversationId, {
+      Duration ago = Duration.zero,
+    }) async {
+      final removedAt =
+          (DateTime.now().millisecondsSinceEpoch ~/ 1000) - ago.inSeconds;
+      await db.removedConversationsDao.record(
+        conversationId: conversationId,
+        ownerPubkey: _owner,
+        removedAt: removedAt,
+      );
+      await messagesDao.deleteConversationMessages(
+        conversationId,
+        ownerPubkey: _owner,
+      );
+      await conversationsDao.deleteConversation(
+        conversationId,
+        ownerPubkey: _owner,
+      );
+    }
+
+    test(
+      'a reaction stranded by an older build is never swept up again',
+      () async {
+        stubOfflineWire();
+        final conversationId = await seedConversation([_owner, _peer]);
+        await reactions.publish(
+          conversationId: conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _peer,
+          emoji: '🔥',
+        );
+        expect(await reactions.retryableReactions(), hasLength(1));
+
+        await removeTheWayOldBuildsDid(conversationId);
+
+        expect(
+          await reactions.retryableReactions(),
+          isEmpty,
+          reason:
+              'the sweep re-derives the recipient from the reaction row, so a '
+              'stranded row would publish to the counterparty of a '
+              'conversation the user removed',
+        );
+      },
+    );
+
+    test('post-auth maintenance reclaims the stranded rows', () async {
+      stubOfflineWire();
+      final conversationId = await seedConversation([_owner, _peer]);
+      await reactions.publish(
+        conversationId: conversationId,
+        targetMessageId: _targetMessageId,
+        targetMessageAuthor: _peer,
+        emoji: '🔥',
+      );
+      final stranded = (await reactionsDao.getRetryableOwnReactions(
+        ownerPubkey: _owner,
+      )).single.id;
+      await removeTheWayOldBuildsDid(conversationId);
+      expect(
+        await reactionsDao.getById(id: stranded, ownerPubkey: _owner),
+        isNotNull,
+        reason: 'the older build left the row on disk',
+      );
+
+      final purged = await reactions.purgeStrandedByRemoval(
+        ownerPubkey: _owner,
+      );
+
+      expect(purged, equals(1));
+      expect(
+        await reactionsDao.getById(id: stranded, ownerPubkey: _owner),
+        isNull,
+      );
+    });
+
+    test(
+      'a reaction in a conversation recreated after removal still sends',
+      () async {
+        stubOfflineWire();
+        final conversationId = await seedConversation([_owner, _peer]);
+        // Removed a while back, so the new reaction is unambiguously later —
+        // `removed_at` has second granularity and the rule suppresses ties.
+        await removeTheWayOldBuildsDid(
+          conversationId,
+          ago: const Duration(minutes: 1),
+        );
+
+        // The counterparty writes again, so the thread comes back.
+        await seedConversation([_owner, _peer]);
+        await reactions.publish(
+          conversationId: conversationId,
+          targetMessageId: _targetMessageId,
+          targetMessageAuthor: _peer,
+          emoji: '🔥',
+        );
+
+        expect(
+          await reactions.retryableReactions(),
+          hasLength(1),
+          reason:
+              'the tombstone outlives the conversation row on purpose; only '
+              'reactions from the removed era are suppressed',
+        );
+        expect(
+          await reactions.purgeStrandedByRemoval(ownerPubkey: _owner),
+          isZero,
+        );
+      },
     );
 
     test('a queued reaction is not retryable after removal', () async {

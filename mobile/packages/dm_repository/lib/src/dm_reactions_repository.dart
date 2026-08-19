@@ -189,6 +189,24 @@ class DmReactionsRepository {
     );
   }
 
+  /// Purge reaction rows stranded by a conversation removal that happened
+  /// before removal started dropping them (#7857).
+  ///
+  /// [deleteForConversations] only closes the leak going forward. An install
+  /// that removed a conversation on an older build still holds that
+  /// conversation's rows, and because the retry sweep selects by owner alone
+  /// they stay in the outgoing queue — the sweep's in-memory attempt budget
+  /// resets on every cold start, so they never age out on their own.
+  ///
+  /// Rows created after the removal marker are kept: they belong to a
+  /// conversation the counterparty has since recreated and are still owed
+  /// delivery.
+  ///
+  /// Idempotent — a no-op once the account has none left.
+  Future<int> purgeStrandedByRemoval({required String ownerPubkey}) {
+    return _reactionsDao.deleteSuppressedByRemoval(ownerPubkey: ownerPubkey);
+  }
+
   /// Reactive stream of every live reaction in [conversationId] for the
   /// current account, collapsed to at most one reaction per reactor per
   /// target message (the cap-at-one invariant — see [_collapsePerReactor]).
