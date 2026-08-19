@@ -5734,7 +5734,10 @@ class DmRepository {
         conversationId: conversationId,
         ownerPubkey: owner,
       );
-      await _reactionsRepository?.deleteForConversations([conversationId]);
+      await _reactionsRepository?.deleteForConversations(
+        [conversationId],
+        ownerPubkey: owner,
+      );
     });
   }
 
@@ -5773,7 +5776,10 @@ class DmRepository {
         conversationIds: conversationIds,
         ownerPubkey: owner,
       );
-      await _reactionsRepository?.deleteForConversations(conversationIds);
+      await _reactionsRepository?.deleteForConversations(
+        conversationIds,
+        ownerPubkey: owner,
+      );
     });
   }
 

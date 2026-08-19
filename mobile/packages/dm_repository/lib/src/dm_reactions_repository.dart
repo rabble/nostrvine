@@ -174,13 +174,18 @@ class DmReactionsRepository {
   /// [_resolveWrapRecipients] falls back to the target message's author
   /// once the conversation row is gone.
   ///
-  /// No-op when uninitialized (no owner to scope the delete to) or when
-  /// [conversationIds] is empty.
-  Future<void> deleteForConversations(Iterable<String> conversationIds) async {
-    if (_userPubkey.isEmpty) return;
+  /// [ownerPubkey] is supplied by the caller rather than read from this
+  /// repository's mutable credentials so an account transition cannot change
+  /// the owner midway through the enclosing removal transaction.
+  ///
+  /// No-op when [conversationIds] is empty.
+  Future<void> deleteForConversations(
+    Iterable<String> conversationIds, {
+    required String ownerPubkey,
+  }) async {
     await _reactionsDao.deleteForConversations(
       conversationIds: conversationIds,
-      ownerPubkey: _userPubkey,
+      ownerPubkey: ownerPubkey,
     );
   }
 

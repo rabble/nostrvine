@@ -179,7 +179,6 @@ void main() {
         rumorId: result.rumorId,
         targetMessageAuthor: _peer,
       );
-      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(
         await reactionsDao.getRetryableOwnDeletions(ownerPubkey: _owner),
         hasLength(1),
@@ -189,6 +188,29 @@ void main() {
 
       expect(
         await reactionsDao.getRetryableOwnDeletions(ownerPubkey: _owner),
+        isEmpty,
+      );
+    });
+
+    test('removal keeps its owner snapshot when credentials clear', () async {
+      stubOfflineWire();
+      final conversationId = await seedConversation([_owner, _peer]);
+      await reactions.publish(
+        conversationId: conversationId,
+        targetMessageId: _targetMessageId,
+        targetMessageAuthor: _peer,
+        emoji: '🔥',
+      );
+      expect(
+        await reactionsDao.getRetryableOwnReactions(ownerPubkey: _owner),
+        hasLength(1),
+      );
+
+      reactions.clearCredentials();
+      await buildDmRepository().removeConversation(conversationId);
+
+      expect(
+        await reactionsDao.getRetryableOwnReactions(ownerPubkey: _owner),
         isEmpty,
       );
     });

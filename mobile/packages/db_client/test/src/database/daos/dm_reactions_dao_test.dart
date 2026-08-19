@@ -57,6 +57,7 @@ void main() {
   group('DmReactionsDao', () {
     Future<List<String>> insertPending({
       String id = _pendingId,
+      String conversationId = _conversationId,
       String ownerPubkey = _ownerA,
       String reactorPubkey = _reactorA,
       String emoji = '🔥',
@@ -65,7 +66,7 @@ void main() {
     }) {
       return dao.insertOwnReactionSuperseding(
         placeholderId: id,
-        conversationId: _conversationId,
+        conversationId: conversationId,
         targetMessageId: targetMessageId,
         targetMessageAuthor: _targetAuthor,
         reactorPubkey: reactorPubkey,
@@ -757,6 +758,66 @@ void main() {
       expect(deleted, equals(1));
       expect(await dao.getById(id: _pendingId, ownerPubkey: _ownerA), isNull);
       expect(await dao.getById(id: _sentId, ownerPubkey: _ownerB), isNotNull);
+    });
+
+    test(
+      'deleteForConversations clears only selected conversations for owner',
+      () async {
+        const otherConversationId =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        const otherConversationReactionId =
+            '3333333333333333333333333333333333333333333333333333333333333333';
+        const otherOwnerReactionId =
+            '4444444444444444444444444444444444444444444444444444444444444444';
+        const otherTargetMessageId =
+            '5555555555555555555555555555555555555555555555555555555555555555';
+
+        await insertPending();
+        await insertPending(
+          id: otherConversationReactionId,
+          conversationId: otherConversationId,
+          targetMessageId: otherTargetMessageId,
+        );
+        await insertPending(
+          id: otherOwnerReactionId,
+          ownerPubkey: _ownerB,
+          reactorPubkey: _ownerB,
+        );
+
+        final deleted = await dao.deleteForConversations(
+          conversationIds: [_conversationId],
+          ownerPubkey: _ownerA,
+        );
+
+        expect(deleted, equals(1));
+        expect(await dao.getById(id: _pendingId, ownerPubkey: _ownerA), isNull);
+        expect(
+          await dao.getById(
+            id: otherConversationReactionId,
+            ownerPubkey: _ownerA,
+          ),
+          isNotNull,
+        );
+        expect(
+          await dao.getById(id: otherOwnerReactionId, ownerPubkey: _ownerB),
+          isNotNull,
+        );
+      },
+    );
+
+    test('deleteForConversations is a no-op for an empty id list', () async {
+      await insertPending();
+
+      final deleted = await dao.deleteForConversations(
+        conversationIds: const [],
+        ownerPubkey: _ownerA,
+      );
+
+      expect(deleted, equals(0));
+      expect(
+        await dao.getById(id: _pendingId, ownerPubkey: _ownerA),
+        isNotNull,
+      );
     });
 
     test(

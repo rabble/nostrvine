@@ -200,15 +200,14 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     required String id,
     required String ownerPubkey,
   }) async {
-    await (update(dmMessageReactions)..where(
-          (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
-        ))
-        .write(
-          const DmMessageReactionsCompanion(
-            publishStatus: Value(_blockedStatus),
-            rumorEventJson: Value(null),
-          ),
-        );
+    await (update(
+      dmMessageReactions,
+    )..where((t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey))).write(
+      const DmMessageReactionsCompanion(
+        publishStatus: Value(_blockedStatus),
+        rumorEventJson: Value(null),
+      ),
+    );
   }
 
   /// Soft-delete a row (NIP-09 kind 5 deletion received, or own-reaction
@@ -305,9 +304,7 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
           await (update(dmMessageReactions)..where(
                 (t) => t.id.equals(r.id) & t.ownerPubkey.equals(ownerPubkey),
               ))
-              .write(
-                const DmMessageReactionsCompanion(isDeleted: Value(true)),
-              );
+              .write(const DmMessageReactionsCompanion(isDeleted: Value(true)));
         }
       }
       await into(dmMessageReactions).insert(
@@ -385,16 +382,15 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     required String ownerPubkey,
     required String deletionRumorJson,
   }) async {
-    await (update(dmMessageReactions)..where(
-          (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
-        ))
-        .write(
-          DmMessageReactionsCompanion(
-            isDeleted: const Value(true),
-            publishStatus: const Value(_deletionPendingStatus),
-            rumorEventJson: Value(deletionRumorJson),
-          ),
-        );
+    await (update(
+      dmMessageReactions,
+    )..where((t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey))).write(
+      DmMessageReactionsCompanion(
+        isDeleted: const Value(true),
+        publishStatus: const Value(_deletionPendingStatus),
+        rumorEventJson: Value(deletionRumorJson),
+      ),
+    );
   }
 
   /// Mark a pending own-reaction deletion as delivered: clears the stored
@@ -404,15 +400,14 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     required String id,
     required String ownerPubkey,
   }) async {
-    await (update(dmMessageReactions)..where(
-          (t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey),
-        ))
-        .write(
-          const DmMessageReactionsCompanion(
-            publishStatus: Value(_deletionSentStatus),
-            rumorEventJson: Value(null),
-          ),
-        );
+    await (update(
+      dmMessageReactions,
+    )..where((t) => t.id.equals(id) & t.ownerPubkey.equals(ownerPubkey))).write(
+      const DmMessageReactionsCompanion(
+        publishStatus: Value(_deletionSentStatus),
+        rumorEventJson: Value(null),
+      ),
+    );
   }
 
   /// Fetch this user's own soft-deleted reactions whose kind-5 deletion still
@@ -476,28 +471,13 @@ class DmReactionsDao extends DatabaseAccessor<AppDatabase>
     return (await query.get()).isNotEmpty;
   }
 
-  /// Delete every reaction row in [conversationId] for [ownerPubkey].
-  ///
-  /// Called from `DmRepository.removeConversation`, inside the same
-  /// transaction as the message/conversation/`outgoing_dms` deletes: a
-  /// removed conversation must leave no queued reaction or kind-5 removal
-  /// behind for the retry sweep to publish into it (#7857). Unlike
-  /// [deleteNonRetryableForOwner] this deletes the retryable rows too —
-  /// removal is an explicit intent to stop sending, not a data-portability
-  /// cleanup.
-  Future<int> deleteForConversation({
-    required String conversationId,
-    required String ownerPubkey,
-  }) {
-    return (delete(dmMessageReactions)..where(
-          (t) =>
-              t.conversationId.equals(conversationId) &
-              t.ownerPubkey.equals(ownerPubkey),
-        ))
-        .go();
-  }
-
   /// Delete every reaction row in [conversationIds] for [ownerPubkey].
+  ///
+  /// Conversation removal calls this inside the same transaction as the
+  /// message/conversation/`outgoing_dms` deletes. Unlike
+  /// [deleteNonRetryableForOwner], this deletes retryable rows too: removal is
+  /// an explicit intent to stop sending, not a data-portability cleanup.
+  ///
   /// No-op returning `0` when [conversationIds] is empty.
   Future<int> deleteForConversations({
     required Iterable<String> conversationIds,
