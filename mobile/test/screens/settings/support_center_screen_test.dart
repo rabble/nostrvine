@@ -89,11 +89,21 @@ void main() {
 
       expect(find.text(en.nostrSettingsDeleteAccount), findsOneWidget);
       expect(find.text(en.nostrSettingsDeleteAccountSubtitle), findsOneWidget);
+    });
 
-      // Proves the row reads from l10n rather than a hardcoded English
-      // string: the same key in another locale must not be on screen.
+    // Rendering in another locale is what proves the row reads from l10n.
+    // Asserting the German string is absent from an English render passes
+    // whether or not the row is hardcoded.
+    testWidgets('translates the delete-account entry with the locale', (
+      tester,
+    ) async {
+      await pump(tester, locale: const Locale('de'));
+      await scrollToBottom(tester);
+
       final de = lookupAppLocalizations(const Locale('de'));
-      expect(find.text(de.nostrSettingsDeleteAccount), findsNothing);
+      expect(find.text(de.nostrSettingsDeleteAccount), findsOneWidget);
+      expect(find.text(de.nostrSettingsDeleteAccountSubtitle), findsOneWidget);
+      expect(find.text(en.nostrSettingsDeleteAccount), findsNothing);
     });
 
     testWidgets('hides the delete-account entry when signed out', (
