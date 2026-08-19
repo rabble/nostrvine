@@ -5059,7 +5059,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get supportFamilySubtitle =>
-      'Ajudamos pais e adolescentes a criar hábitos saudáveis on-line';
+      'Ajudamos pais e adolescentes a criar hábitos saudáveis online';
 
   @override
   String get supportKids => 'Divine Kids';
