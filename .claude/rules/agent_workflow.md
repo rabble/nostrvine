@@ -31,6 +31,24 @@ superseded on the remote.
   rebasing onto fresh `origin/main`.
 - Branching from `main` without `git fetch origin` first.
 
+### Shorebird release-patch exception
+
+The only branch allowed to start somewhere other than `origin/main` is an
+operational Shorebird patch line named
+`shorebird-patch/<platform>/<release-version>`. It starts at the immutable
+`patch_baseline_commit` recorded for that release, after the product fix and
+regression test have merged normally to `main`. Only the reviewed fix is
+cherry-picked onto the linear patch line. If the release already has an active
+patch, extend its existing line so the next patch preserves every prior fix.
+
+This is not a development shortcut: do not implement on the release line, open
+an ordinary product PR from it, merge it back to `main`, add merge commits, or
+mix cleanup with the backport. Keep the remote branch while the release remains
+supported so later cumulative patches are reproducible. Never bypass the
+deletion and non-fast-forward rules protecting `shorebird-patch/**`. The
+complete runbook and approval requirements are in
+`mobile/docs/SHOREBIRD_CODE_PUSH.md`.
+
 One task per worktree. If the current worktree is dirty, commit, stash
 intentionally, or discard intentionally before starting new work
 elsewhere. Do not mix unrelated work into one worktree.
@@ -126,6 +144,12 @@ being true, rebase onto fresh `origin/main`.
 ## 3. Never stack PRs — combine dependent features into one bigger PR
 
 **Every PR targets `main`.** Never `gh pr create --base <other-branch>`.
+
+Shorebird patch lines do not create a second product PR. Their commits are
+mechanical backports of a fix already reviewed and merged through a `main` PR;
+promotion receives a separate operational approval under the Shorebird
+runbook. A backport that needs code adaptation goes back through `main` review
+before it is placed on the patch line.
 
 If features depend on each other, ship them as **one combined PR** on a
 single branch. Use clearly delineated commits and a PR description with

@@ -337,46 +337,30 @@ definitions:
     - &prepare_patch_source
       name: Verify patch source
       script: |
+        set -euo pipefail
         if [ "$CM_BRANCH" != "main" ]; then
-          echo "Refusing to patch from branch '$CM_BRANCH'."
-          echo "Patch workflows must run from main after the fix has merged."
+          echo "Refusing to load the patch workflow from branch '$CM_BRANCH'."
+          echo "Start the manual workflow on main; PATCH_BRANCH selects the isolated release source."
           exit 1
         fi
         . build/shorebird/patch_source.env
-        BLOCKED_PATCH_PATHS=$(git diff --name-only "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD" -- \
-          'android/**' \
-          'ios/**' \
-          'macos/**' \
-          'web/**' \
-          'assets/**' \
-          'shaders/**' \
-          'pubspec.yaml' \
-          'pubspec.lock' \
-          'shorebird.yaml' \
-          'packages/**/android/**' \
-          'packages/**/assets/**' \
-          'packages/**/shaders/**' \
-          'packages/**/darwin/**' \
-          'packages/**/ios/**' \
-          'packages/**/macos/**' \
-          'packages/**/pubspec.yaml')
-        if [ -n "$BLOCKED_PATCH_PATHS" ]; then
-          echo "Refusing to patch: this diff contains native, asset, dependency, or Shorebird config changes."
-          echo
-          echo "$BLOCKED_PATCH_PATHS"
-          echo
-          echo "Cut a normal store release instead of a Shorebird patch."
-          exit 1
-        fi
-        echo "Patch source diff from release commit to current HEAD:"
-        git log --oneline --no-merges "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD"
-        if git diff --quiet "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD" -- '*.dart'; then
-          echo "No Dart changes found between release commit and HEAD."
-        else
-          echo
-          echo "Dart files changed since the release commit:"
-          git diff --name-only "$SHOREBIRD_PATCH_BASELINE_COMMIT..HEAD" -- '*.dart'
-        fi
+        cp scripts/shorebird_patch_source.rb build/shorebird/shorebird_patch_source.rb
+        ruby build/shorebird/shorebird_patch_source.rb \
+          --baseline "$SHOREBIRD_PATCH_BASELINE_COMMIT" \
+          --platform "$SHOREBIRD_PLATFORM" \
+          --release-version "${{ inputs.RELEASE_VERSION }}" \
+          --branch "${{ inputs.PATCH_BRANCH }}" \
+          --identity-only
+        git fetch --quiet origin \
+          "refs/heads/${{ inputs.PATCH_BRANCH }}:refs/remotes/origin/${{ inputs.PATCH_BRANCH }}"
+        git fetch --quiet origin \
+          "refs/heads/main:refs/remotes/origin/main"
+        git checkout --detach "refs/remotes/origin/${{ inputs.PATCH_BRANCH }}"
+        ruby build/shorebird/shorebird_patch_source.rb \
+          --baseline "$SHOREBIRD_PATCH_BASELINE_COMMIT" \
+          --platform "$SHOREBIRD_PLATFORM" \
+          --release-version "${{ inputs.RELEASE_VERSION }}" \
+          --branch "${{ inputs.PATCH_BRANCH }}"
     - &preflight_shorebird_android_release
       name: Preflight Android Shorebird release
       script: |
@@ -1116,6 +1100,12 @@ workflows:
           number (e.g. 1.0.9+247). Get it from `shorebird releases list` or the
           Shorebird console — a value with no matching release fails the build.
         type: string
+      PATCH_BRANCH:
+        description: >-
+          Exact remote release-patch branch to build. It must be named
+          shorebird-patch/ios/<RELEASE_VERSION>, start at the recorded release
+          baseline, and contain only the cumulative reviewed Dart backports.
+        type: string
       RELEASE_COMMIT:
         description: >-
           Optional source assertion. When supplied, it must be the recorded
@@ -1199,6 +1189,13 @@ workflows:
           Release to patch, exactly as Shorebird lists it, including the build
           number (e.g. 1.0.9+247). Get it from `shorebird releases list` or the
           Shorebird console — a value with no matching release fails the build.
+        type: string
+      PATCH_BRANCH:
+        description: >-
+          Exact remote release-patch branch to build. It must be named
+          shorebird-patch/android/<RELEASE_VERSION>, start at the recorded
+          release baseline, and contain only the cumulative reviewed Dart
+          backports.
         type: string
       RELEASE_COMMIT:
         description: >-

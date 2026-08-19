@@ -171,6 +171,11 @@ If a Divine Brain search or ask tool is available, you may use it for company me
   Shorebird `staging` track first. Validate the staged patch, then promote it
   to `stable`. Rollback exists, but it is emergency recovery rather than a
   substitute for staging and review.
+- Start the manual patch workflow from `main`, but build app code only from the
+  exact `shorebird-patch/<platform>/<release-version>` branch rooted at the
+  provenance-recorded release baseline. Product fixes land on `main` first and
+  are backported onto that linear operational branch. Keep prior patch fixes in
+  every later patch for the release; never patch from an advanced `main` tree.
 - Full detail, including the patch runbook and known gotchas:
   `mobile/docs/SHOREBIRD_CODE_PUSH.md`.
 

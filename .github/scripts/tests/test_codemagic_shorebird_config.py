@@ -20,6 +20,12 @@ PROVENANCE_STORE_PATH = (
     / "scripts"
     / "shorebird_provenance_store.sh"
 )
+PATCH_SOURCE_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "mobile"
+    / "scripts"
+    / "shorebird_patch_source.rb"
+)
 CAPTION_GENERATOR_GRADLE_PATH = (
     Path(__file__).resolve().parents[3]
     / "mobile"
@@ -37,6 +43,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.mise_contents = MISE_PATH.read_text()
         self.shorebird_doc_contents = SHOREBIRD_DOC_PATH.read_text()
         self.provenance_store_contents = PROVENANCE_STORE_PATH.read_text()
+        self.patch_source_contents = PATCH_SOURCE_PATH.read_text()
         self.caption_generator_gradle_contents = CAPTION_GENERATOR_GRADLE_PATH.read_text()
 
     def test_codemagic_yaml_parses_with_aliases(self) -> None:
@@ -182,12 +189,38 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
 
     def test_shorebird_patch_workflows_use_private_provenance(self) -> None:
         self.assertIn('if [ "$CM_BRANCH" != "main" ]; then', self.contents)
+        self.assertIn("PATCH_BRANCH:", self._workflow_block("ios-patch"))
+        self.assertIn("PATCH_BRANCH:", self._workflow_block("android-patch"))
+        self.assertIn("shorebird-patch/ios/<RELEASE_VERSION>", self.contents)
+        self.assertIn("shorebird-patch/android/<RELEASE_VERSION>", self.contents)
         self.assertIn("RELEASE_COMMIT:", self.contents)
         self.assertIn("*fetch_and_verify_shorebird_provenance", self.contents)
         self.assertIn("shorebird_provenance_store.sh fetch", self.contents)
         self.assertIn("shorebird_provenance.rb verify", self.contents)
-        self.assertIn("git diff --name-only", self.contents)
+        self.assertIn("cp scripts/shorebird_patch_source.rb", self.contents)
+        self.assertIn("--identity-only", self.contents)
+        self.assertIn('git checkout --detach "refs/remotes/origin/${{ inputs.PATCH_BRANCH }}"', self.contents)
         self.assertIn("*prepare_patch_source", self.contents)
+
+    def test_prepare_patch_source_fails_closed(self) -> None:
+        # Codemagic does not abort a multi-line script when a command fails, so
+        # the step must set -e: a rejected identity check or a failed
+        # fetch/checkout must never leave the build validating and patching the
+        # main checkout it started on.
+        start = self.contents.index("- &prepare_patch_source")
+        end = self.contents.index("- &", start + 1)
+        step = self.contents[start:end]
+        self.assertIn("script: |\n        set -euo pipefail\n", step)
+
+    def test_prepare_patch_source_fetches_main_ref_deterministically(self) -> None:
+        # The validator rejects patch sources that contain commits already on
+        # main; that check needs refs/remotes/origin/main to exist at
+        # validation time, so the step fetches it explicitly rather than
+        # relying on the provenance step's opportunistic ref update.
+        start = self.contents.index("- &prepare_patch_source")
+        end = self.contents.index("- &", start + 1)
+        step = self.contents[start:end]
+        self.assertIn('"refs/heads/main:refs/remotes/origin/main"', step)
 
     def test_shorebird_workflows_define_every_variable_their_scripts_read(self) -> None:
         resolved = json.loads(
@@ -253,18 +286,17 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("flutterDebugEmbeddingJar.absolutePath", self.caption_generator_gradle_contents)
 
     def test_shorebird_patch_workflows_block_native_asset_and_dependency_changes(self) -> None:
-        self.assertIn("BLOCKED_PATCH_PATHS=$(git diff --name-only", self.contents)
-        self.assertIn("'android/**'", self.contents)
-        self.assertIn("'ios/**'", self.contents)
-        self.assertIn("'assets/**'", self.contents)
-        self.assertIn("'shaders/**'", self.contents)
-        self.assertIn("'pubspec.yaml'", self.contents)
-        self.assertIn("'pubspec.lock'", self.contents)
-        self.assertIn("'packages/**/android/**'", self.contents)
-        self.assertIn("'packages/**/assets/**'", self.contents)
-        self.assertIn("'packages/**/shaders/**'", self.contents)
-        self.assertIn("'packages/**/darwin/**'", self.contents)
-        self.assertIn("Cut a normal store release instead of a Shorebird patch.", self.contents)
+        self.assertIn("BLOCKED_ROOTS = %w[android assets ios linux macos scripts shaders web windows]", self.patch_source_contents)
+        self.assertIn("pubspec.yaml pubspec.lock shorebird.yaml", self.patch_source_contents)
+        self.assertIn("android|assets|shaders|darwin|ios|linux|macos|windows", self.patch_source_contents)
+        # overrides/ is a live dependency_overrides path root carrying Kotlin,
+        # Swift and podspec sources, so it needs the same blocked surfaces
+        # as packages/.
+        self.assertIn("(?:packages|overrides)/", self.patch_source_contents)
+        self.assertIn("BLOCKED_ROOT_SCRIPT", self.patch_source_contents)
+        self.assertIn("cut a normal store release instead of a Shorebird patch", self.patch_source_contents)
+        self.assertIn("no Dart changes found", self.patch_source_contents)
+        self.assertIn("patch source contains merge commits", self.patch_source_contents)
         for command in self._shorebird_patch_commands():
             self.assertNotRegex(command, r"--allow-native-diffs|--allow-asset-diffs")
 
