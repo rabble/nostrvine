@@ -80,9 +80,15 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
-  /// Clears the floating close button: its 16px offset plus the 48px box a
-  /// [DivineIconButton] occupies at either size.
-  static const double _contentTopPadding = 64;
+  /// Offset of the floating close button from the top-start corner.
+  static const double _closeButtonInset = 16;
+
+  /// Clears the floating close button: its inset plus the box a small
+  /// [DivineIconButton] occupies. That box is `scaleSize(48)`, so it grows
+  /// with the icon text scale and a fixed 64 would let the button sit on the
+  /// content at large accessibility sizes.
+  double _contentTopPadding(BuildContext context) =>
+      _closeButtonInset + DivineIcon.scaleSize(context, 48);
 
   bool _isTokenMode = false;
   StreamSubscription<AuthState>? _authSubscription;
@@ -552,9 +558,9 @@ class _EmailVerificationScreenState
                         SliverFillRemaining(
                           hasScrollBody: false,
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(
+                            padding: EdgeInsets.fromLTRB(
                               24,
-                              _contentTopPadding,
+                              _contentTopPadding(context),
                               24,
                               32,
                             ),
@@ -612,8 +618,8 @@ class _EmailVerificationScreenState
                   // scrolling content so it never shifts with it.
                   if (showCloseButton)
                     PositionedDirectional(
-                      top: 16,
-                      start: 16,
+                      top: _closeButtonInset,
+                      start: _closeButtonInset,
                       child: DivineIconButton(
                         type: .secondary,
                         onPressed: startsOver

@@ -1675,6 +1675,39 @@ void main() {
       );
     });
 
+    // The floating close button clears the content by a padding derived from
+    // the button's own box, which follows the icon text scale. A fixed value
+    // lets the button sit on the content once the scale grows.
+    testWidgets('keeps the close button clear of the content at large text', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(360, 560);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            email: 'user@example.com',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.polling,
+              pendingEmail: 'user@example.com',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getRect(find.byType(DivineIconButton)).bottom,
+        lessThanOrEqualTo(tester.getRect(find.byType(DivineSticker)).top),
+        reason: 'the close button must not overlap the content it floats over',
+      );
+    });
+
     // Success and error are `Spacer`-centred columns. Before the screen owned
     // the scrolling they had no scroll view at all, so a short viewport at a
     // large text scale overflowed instead of scrolling.
