@@ -5759,6 +5759,12 @@ abstract class AppLocalizations {
   /// **'Registration complete. Please check your email.'**
   String get authRegistrationComplete;
 
+  /// Shown when Secure account fails because the key already has an account (server CONFLICT). The user is routed to sign-in / forgot-password to recover.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have an account. Sign in or reset your password to get back in.'**
+  String get authSecureAccountAlreadyRegistered;
+
   /// No description provided for @authFailedToSendResetEmail.
   ///
   /// In en, this message translates to:

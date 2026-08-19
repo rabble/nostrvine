@@ -3461,6 +3461,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înscriere finalizată. Verifică-ți emailul.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'N-am putut trimite emailul de resetare.';
 

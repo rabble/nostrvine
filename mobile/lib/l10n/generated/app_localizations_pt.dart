@@ -3382,6 +3382,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Registro completo. Verifique seu e-mail.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'Falha ao enviar o e-mail de redefinição.';
 

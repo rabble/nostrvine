@@ -3358,6 +3358,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'رجسٹریشن مکمل۔ براہ کرم اپنی ای میل چیک کریں۔';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail => 'ری سیٹ ای میل نہیں بھیجی جا سکی۔';
 
   @override

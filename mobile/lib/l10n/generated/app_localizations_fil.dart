@@ -3377,6 +3377,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kumpleto na ang registration. Pakitsek ang iyong email.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail => 'Hindi naipadala ang reset email.';
 
   @override

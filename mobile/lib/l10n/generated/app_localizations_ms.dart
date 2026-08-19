@@ -3353,6 +3353,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pendaftaran lengkap. Sila semak e-mel anda.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'Gagal menghantar e-mel tetapan semula.';
 

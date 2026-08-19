@@ -3332,6 +3332,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đăng ký hoàn tất. Vui lòng kiểm tra email của bạn.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail => 'Không gửi được email đặt lại.';
 
   @override

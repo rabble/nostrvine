@@ -2085,6 +2085,10 @@
   "authUnableToAccessKeys": "Unable to access your keys. Please try again.",
   "authRegistrationFailed": "Registration failed",
   "authRegistrationComplete": "Registration complete. Please check your email.",
+  "authSecureAccountAlreadyRegistered": "You already have an account. Sign in or reset your password to get back in.",
+  "@authSecureAccountAlreadyRegistered": {
+    "description": "Shown when Secure account fails because the key already has an account (server CONFLICT). The user is routed to sign-in / forgot-password to recover."
+  },
   "authFailedToSendResetEmail": "Failed to send reset email.",
   "authSending": "Sending...",
   "authSignInButton": "Sign in",

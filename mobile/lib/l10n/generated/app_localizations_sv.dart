@@ -3352,6 +3352,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authRegistrationComplete => 'Registrering klar. Kolla din e-post.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'Kunde inte skicka återställningsmejl.';
 

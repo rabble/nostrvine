@@ -3405,6 +3405,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Регистрацията е готова. Провери имейла си.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'Не успяхме да изпратим имейл за нулиране.';
 

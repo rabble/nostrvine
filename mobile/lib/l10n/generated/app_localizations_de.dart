@@ -3399,6 +3399,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Registrierung abgeschlossen. Bitte prüf deine E-Mails.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'Reset-E-Mail konnte nicht gesendet werden.';
 

@@ -490,6 +490,9 @@ const _knownUntranslatedDebt = <String>{
   // pass tracked in #7673, and required before any non-English campaign.
   'exploreFeaturedPaidPartnership',
   'exploreFeaturedSponsoredPillSemanticLabel',
+  // Secure-account key-conflict recovery copy is new; translation pass
+  // tracked in #7782.
+  'authSecureAccountAlreadyRegistered',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.
 };

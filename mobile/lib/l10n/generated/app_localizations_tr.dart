@@ -3298,6 +3298,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kayıt tamamlandı. Lütfen e-postanı kontrol et.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail => 'Sıfırlama e-postası gönderilemedi.';
 
   @override

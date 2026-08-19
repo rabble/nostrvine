@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/routes/router_guards.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
@@ -141,6 +142,19 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     );
 
     if (!result.success) {
+      // CONFLICT means this key already has an account (the app fell back to
+      // anonymous while the registered key stayed on device). Route to the
+      // recovery hub instead of dead-ending on the raw server text.
+      if (result.errorCode == 'CONFLICT') {
+        if (!mounted) return;
+        context.go(
+          WelcomeScreen.loginOptionsPathWithRecovery(
+            email: email,
+            error: context.l10n.authSecureAccountAlreadyRegistered,
+          ),
+        );
+        return;
+      }
       _setGeneralError(
         result.errorDescription ?? context.l10n.authRegistrationFailed,
       );

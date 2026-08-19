@@ -3160,6 +3160,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authRegistrationComplete => '注册完成。请查收你的邮箱。';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail => '重置邮件发送失败。';
 
   @override

@@ -683,5 +683,101 @@ void main() {
         );
       });
     });
+
+    group('Key conflict recovery', () {
+      testWidgets(
+        'routes to login options with a localized message when the key is '
+        'already registered',
+        (tester) async {
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              nsec: any(named: 'nsec'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              HeadlessRegisterResult.error(
+                'This Nostr key is already registered. '
+                'Please log in instead or use a different key.',
+                code: 'CONFLICT',
+              ),
+              'test-verifier',
+            ),
+          );
+
+          final router = GoRouter(
+            initialLocation: '/welcome',
+            routes: [
+              GoRoute(
+                path: '/welcome',
+                builder: (_, _) => const SecureAccountScreen(),
+              ),
+              GoRoute(
+                path: '/welcome/login-options',
+                builder: (_, _) => const SizedBox.shrink(),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...getStandardTestOverrides(),
+                oauthClientProvider.overrideWithValue(mockOAuth),
+                authServiceProvider.overrideWithValue(mockAuthService),
+              ],
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'existing@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+
+          await tester.tap(
+            find.widgetWithText(DivineButton, 'Secure account'),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          final uri = router.routeInformationProvider.value.uri;
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          expect(uri.path, '/welcome/login-options');
+          expect(
+            uri.queryParameters['error'],
+            l10n.authSecureAccountAlreadyRegistered,
+          );
+          // The raw server sentence must not leak through to the user.
+          expect(uri.queryParameters['error'], isNot(contains('Nostr key')));
+          expect(uri.queryParameters['email'], 'existing@example.com');
+        },
+      );
+    });
   });
 }

@@ -3147,6 +3147,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authRegistrationComplete => '登録完了。メールを確認してね。';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'You already have an account. Sign in or reset your password to get back in.';
+
+  @override
   String get authFailedToSendResetEmail => 'リセットメールの送信がうまくいかなかった。';
 
   @override
