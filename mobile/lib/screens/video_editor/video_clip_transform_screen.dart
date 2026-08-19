@@ -64,7 +64,10 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
         widget.clip.requireVideo,
       );
 
-      final player = DivineVideoPlayerController(useTexture: true);
+      final player = DivineVideoPlayerController(
+        useTexture: true,
+        debugLabel: 'editor_transform',
+      );
       await player.initialize();
       await player.setSource(
         VideoClip(

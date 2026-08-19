@@ -429,6 +429,7 @@ class _SoundOverlayControls extends StatelessWidget {
 
     final timingResult = await Navigator.of(context).push<AudioTimingResult>(
       PageRouteBuilder(
+        settings: const RouteSettings(name: 'audio_timing'),
         opaque: false,
         barrierColor: VineTheme.transparent,
         transitionsBuilder: (_, animation, _, child) =>

@@ -140,17 +140,21 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
                 val bufferProfile = BufferProfile.fromWireValue(
                     call.argument<String>("bufferProfile"),
                 )
+                val debugLabel = call.argument<String>("debugLabel")
                 val instance = DivineVideoPlayerInstance(
                     binding.binaryMessenger,
                     binding.applicationContext,
                     id,
+                    debugLabel = debugLabel,
                     bufferProfile = bufferProfile,
                 )
                 PlayerRegistry.put(id, instance)
 
                 val useTexture = call.argument<Boolean>("useTexture") ?: false
+                val logTarget =
+                    if (debugLabel == null) "Player $id" else "Player $id ($debugLabel)"
                 DivineVideoPlayerLog.info(
-                    "Player $id created " +
+                    "$logTarget created " +
                         "(useTexture=$useTexture, bufferProfile=$bufferProfile)",
                     name = "DivineVideoPlayer.Lifecycle",
                 )

@@ -367,6 +367,7 @@ class _AudioSelectionBottomSheetState
             (VideoEditorConstants.maxDuration.inMilliseconds / 1000.0)) {
       final timingResult = await Navigator.of(context).push<AudioTimingResult>(
         PageRouteBuilder(
+          settings: const RouteSettings(name: 'audio_timing'),
           opaque: false,
           barrierColor: VineTheme.transparent,
           transitionsBuilder: (_, animation, _, child) =>

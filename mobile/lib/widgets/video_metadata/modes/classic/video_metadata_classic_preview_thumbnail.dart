@@ -78,7 +78,10 @@ class _VideoMetadataClassicPreviewThumbnailState
     // Avoid re-initializing for the same source.
     if (_controller != null) return;
 
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'metadata_classic_thumbnail',
+    );
     try {
       await controller.initialize();
       if (!mounted) {

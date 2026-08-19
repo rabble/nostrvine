@@ -41,6 +41,8 @@ internal class DivineVideoPlayerInstance(
     messenger: BinaryMessenger,
     private val context: Context,
     private val playerId: Int,
+    /** Names the screen that owns this player, as sent by the Dart side. */
+    private val debugLabel: String? = null,
     private val playerFactory: ((Context) -> ExoPlayer)? = null,
     private val bufferProfile: BufferProfile = BufferProfile.FULL,
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
@@ -135,6 +137,16 @@ internal class DivineVideoPlayerInstance(
     private var clipSpeeds = listOf<Float>()
     private var clipCount = 0
     private var isLooping = false
+
+    /**
+     * Identifies this player in diagnostic logs.
+     *
+     * Mirrors the Dart side's `_logTarget` so a `Player 665404 (feed[0])`
+     * line reads the same whichever half of the channel emitted it.
+     */
+    private val logTarget: String =
+        if (debugLabel == null) "Player $playerId" else "Player $playerId ($debugLabel)"
+
     private var volume = 1.0
     private var speed = 1.0
     private var firstFrameRendered = false
@@ -196,7 +208,7 @@ internal class DivineVideoPlayerInstance(
         deferredSetClips?.let { deferred ->
             trackDurationProbingDisabled = true
             DivineVideoPlayerLog.warning(
-                "Player $playerId applied clips unclamped: track lengths not " +
+                "$logTarget applied clips unclamped: track lengths not " +
                     "read within ${TRACK_DURATION_RESOLVE_TIMEOUT_MS}ms; " +
                     "metadata probing disabled for this instance",
                 name = "DivineVideoPlayer.Load",
@@ -247,7 +259,7 @@ internal class DivineVideoPlayerInstance(
     private val setClipsTimeoutRunnable = Runnable {
         if (pendingSetClipsResult != null) {
             DivineVideoPlayerLog.warning(
-                "Player $playerId load froze: never reached ready within " +
+                "$logTarget load froze: never reached ready within " +
                     "${SET_CLIPS_TIMEOUT_MS}ms",
                 name = "DivineVideoPlayer.Freeze",
             )
@@ -270,7 +282,7 @@ internal class DivineVideoPlayerInstance(
     private val bufferingWatchdogRunnable = Runnable {
         bufferingStallReported = true
         DivineVideoPlayerLog.warning(
-            "Player $playerId appears frozen: still buffering after " +
+            "$logTarget appears frozen: still buffering after " +
                 "${BUFFERING_STALL_MS}ms",
             name = "DivineVideoPlayer.Freeze",
         )
@@ -529,7 +541,7 @@ internal class DivineVideoPlayerInstance(
         } catch (e: RejectedExecutionException) {
             // Disposed while a call was in flight; nothing left to play into.
             DivineVideoPlayerLog.warning(
-                "Player $playerId dropped setClips after dispose: $e",
+                "$logTarget dropped setClips after dispose: $e",
                 name = "DivineVideoPlayer.Load",
             )
             if (claimDeferredSetClips(deferred)) {
@@ -557,7 +569,7 @@ internal class DivineVideoPlayerInstance(
             }
         } catch (e: RejectedExecutionException) {
             DivineVideoPlayerLog.warning(
-                "Player $playerId dropped background track-duration read: $e",
+                "$logTarget dropped background track-duration read: $e",
                 name = "DivineVideoPlayer.Load",
             )
         }
@@ -611,7 +623,7 @@ internal class DivineVideoPlayerInstance(
         if (changed) {
             refreshClipOffsets(exoPlayer)
             DivineVideoPlayerLog.info(
-                "Player $playerId applied resolved track-end clamp",
+                "$logTarget applied resolved track-end clamp",
                 name = "DivineVideoPlayer.Load",
             )
         }
@@ -677,7 +689,7 @@ internal class DivineVideoPlayerInstance(
             val uri = map["uri"] as? String
             if (uri == null) {
                 DivineVideoPlayerLog.warning(
-                    "Player $playerId skipped a clip: missing uri",
+                    "$logTarget skipped a clip: missing uri",
                     name = "DivineVideoPlayer.Load",
                 )
                 continue
@@ -774,7 +786,7 @@ internal class DivineVideoPlayerInstance(
         exoPlayer.prepare()
         isResettingPlayer = false
         DivineVideoPlayerLog.info(
-            "Player $playerId prepared $clipCount clip(s)",
+            "$logTarget prepared $clipCount clip(s)",
             name = "DivineVideoPlayer.Load",
         )
         // Apply the starting clip's per-clip volume immediately so the correct
@@ -929,7 +941,7 @@ internal class DivineVideoPlayerInstance(
             }
         } catch (e: Exception) {
             DivineVideoPlayerLog.warning(
-                "Player $playerId could not read track durations: $e",
+                "$logTarget could not read track durations: $e",
                 name = "DivineVideoPlayer.Load",
             )
             return
@@ -1136,7 +1148,7 @@ internal class DivineVideoPlayerInstance(
         }
         audioOverlayManager.setTracks(tracksRaw, speed.toFloat())
         DivineVideoPlayerLog.info(
-            "Player $playerId set ${tracksRaw.size} audio overlay track(s)",
+            "$logTarget set ${tracksRaw.size} audio overlay track(s)",
             name = "DivineVideoPlayer.Audio",
         )
         syncAudioOverlays()
@@ -1221,6 +1233,27 @@ internal class DivineVideoPlayerInstance(
         }
         sink.success(map)
     }
+
+    /** Human-readable name for a media3 `PLAY_WHEN_READY_CHANGE_REASON_*`. */
+    private fun playWhenReadyReasonName(reason: Int): String =
+        when (reason) {
+            Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST -> "user_request"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS -> "audio_focus_loss"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY -> "audio_becoming_noisy"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "remote"
+            Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM -> "end_of_media_item"
+            else -> "unknown($reason)"
+        }
+
+    /** Human-readable name for a media3 `Player.STATE_*`. */
+    private fun playbackStateName(state: Int?): String =
+        when (state) {
+            Player.STATE_IDLE -> "idle"
+            Player.STATE_BUFFERING -> "buffering"
+            Player.STATE_READY -> "ready"
+            Player.STATE_ENDED -> "ended"
+            else -> "unknown($state)"
+        }
 
     private fun errorCodeFor(error: PlaybackException): String =
         when (error.errorCode) {
@@ -1384,11 +1417,66 @@ internal class DivineVideoPlayerInstance(
             sendStateUpdate()
         }
 
+        /**
+         * The decisive signal when a video stops with no user action: media3
+         * names *why* `playWhenReady` flipped, which separates our own
+         * `pause()` (`USER_REQUEST`) from the platform taking playback away
+         * (`AUDIO_FOCUS_LOSS`, `AUDIO_BECOMING_NOISY`, `REMOTE`).
+         */
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            val message =
+                "$logTarget playWhenReady=$playWhenReady " +
+                    "(${playWhenReadyReasonName(reason)})"
+            if (playWhenReady) {
+                DivineVideoPlayerLog.debug(message, name = "DivineVideoPlayer.Playback")
+            } else {
+                DivineVideoPlayerLog.info(message, name = "DivineVideoPlayer.Playback")
+            }
+        }
+
+        /**
+         * Reports a stop that nobody asked for.
+         *
+         * `playWhenReady` still true means this player was not paused — it
+         * stopped on its own. The buffering watchdog only fires after 8s, so
+         * a shorter stall would otherwise leave no trace at all.
+         *
+         * Three routine transitions reach the same callback and are not
+         * anomalies: a seek drives the player through `STATE_BUFFERING` on
+         * its way to the new position, a non-looping clip reaching its end
+         * lands in `STATE_ENDED`, and a requested `stop()` lands in
+         * `STATE_IDLE`. The last covers Dart's `stop()`, Activity detach, and
+         * a fatal error — none of which clear `playWhenReady`, and the error
+         * is already reported by [onPlayerError]. All are reported at debug so
+         * the info line keeps meaning "stopped for no reason we asked for".
+         */
+        private fun reportUnrequestedStop() {
+            val exoPlayer = player ?: return
+            if (!exoPlayer.playWhenReady) return
+
+            val state = exoPlayer.playbackState
+            val expected =
+                seekCompletionResult != null ||
+                    state == Player.STATE_ENDED ||
+                    state == Player.STATE_IDLE
+            val message =
+                "$logTarget stopped playing while still requested to play " +
+                    "(state=${playbackStateName(state)}" +
+                    (if (seekCompletionResult != null) ", seeking" else "") +
+                    ")"
+            if (expected) {
+                DivineVideoPlayerLog.debug(message, name = "DivineVideoPlayer.Playback")
+            } else {
+                DivineVideoPlayerLog.info(message, name = "DivineVideoPlayer.Playback")
+            }
+        }
+
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             if (isPlaying) {
                 syncAudioOverlays()
             } else {
                 audioOverlayManager.pauseAndDeactivateAll()
+                reportUnrequestedStop()
             }
             sendStateUpdate()
         }
@@ -1471,7 +1559,7 @@ internal class DivineVideoPlayerInstance(
             val currentUri = player?.currentMediaItem?.localConfiguration?.uri
             val nativeErrorCode = errorCodeFor(error)
             val message =
-                "Player $playerId playback error [${error.errorCodeName}]: " +
+                "$logTarget playback error [${error.errorCodeName}]: " +
                     "source=${currentUri ?: "unknown"} " +
                     (error.message ?: "unknown")
             if (nativeErrorCode == "media_processing") {
@@ -1556,7 +1644,7 @@ internal class DivineVideoPlayerInstance(
         val recoveringPlayer = player ?: return false
         decoderRetryCount++
         DivineVideoPlayerLog.warning(
-            "Player $playerId decoder error [${error.errorCodeName}] — " +
+            "$logTarget decoder error [${error.errorCodeName}] — " +
                 "retry $decoderRetryCount/$MAX_DECODER_RETRIES " +
                 "in ${DECODER_RETRY_DELAY_MS}ms",
             name = "DivineVideoPlayer.Playback",

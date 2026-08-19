@@ -210,7 +210,10 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       return;
     }
 
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'subtitle_editor',
+    );
     try {
       await controller.initialize();
       await controller.setSource(VideoClip.network(url));

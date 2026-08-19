@@ -66,6 +66,7 @@ class VideoEditorAudioChip extends StatelessWidget {
       // screen so the user can adjust the start offset or remove the sound.
       final timingResult = await Navigator.of(context).push<AudioTimingResult>(
         PageRouteBuilder(
+          settings: const RouteSettings(name: 'audio_timing'),
           opaque: false,
           barrierColor: VineTheme.transparent,
           pageBuilder: (_, _, _) =>

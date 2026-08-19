@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,22 @@ void main() {
         createDefaultWebVideoPlayerBackend;
     await eventController.close();
   });
+
+  /// The most recent log line emitted by the exclusive-playback rule.
+  LogEntry? latestExclusivePauseLog() {
+    final matches = LogCaptureService().getRecentLogs().where(
+      (entry) => entry.message.contains('exclusive playback pausing'),
+    );
+    return matches.isEmpty ? null : matches.last;
+  }
+
+  /// The most recent log line emitted when pausing a sibling threw.
+  LogEntry? latestSiblingPauseFailureLog() {
+    final matches = LogCaptureService().getRecentLogs().where(
+      (entry) => entry.message.contains('failed to pause sibling player'),
+    );
+    return matches.isEmpty ? null : matches.last;
+  }
 
   /// Registers platform channel mocks and initializes the controller.
   ///
@@ -188,6 +205,19 @@ void main() {
         expect(
           globalCalls.first.arguments,
           containsPair('id', isA<int>()),
+        );
+      });
+
+      test('passes debugLabel through create', () async {
+        controller = DivineVideoPlayerController(debugLabel: 'cover');
+
+        await initController();
+
+        // The native half builds its own log prefix from this, so its lines
+        // name the same screen the Dart lines do.
+        expect(
+          globalCalls.first.arguments,
+          containsPair('debugLabel', 'cover'),
         );
       });
 
@@ -374,6 +404,33 @@ void main() {
         expect(playerCalls.last.method, equals('play'));
       });
 
+      test('names both players when pausing a sibling fails', () async {
+        final other = DivineVideoPlayerController(debugLabel: 'editor');
+        addTearDown(other.dispose);
+        await other.initialize();
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              MethodChannel(
+                'divine_video_player/player_${controller.playerId}',
+              ),
+              (call) async {
+                if (call.method == 'pause') {
+                  throw PlatformException(code: 'pause_failed');
+                }
+                return null;
+              },
+            );
+
+        await other.play();
+
+        final entry = latestSiblingPauseFailureLog();
+        expect(entry, isNotNull);
+        // Both halves matter: who tried to pause, and which player refused.
+        expect(entry!.message, contains('Player ${other.playerId} (editor)'));
+        expect(entry.message, contains('Player ${controller.playerId}'));
+      });
+
       test('play leaves others alone when not exclusive', () async {
         final backdrop = DivineVideoPlayerController(exclusivePlayback: false);
         addTearDown(backdrop.dispose);
@@ -396,6 +453,36 @@ void main() {
         await controller.play();
 
         expect(playerCalls.map((call) => call.method), equals(['play']));
+      });
+
+      test('play names the siblings the exclusive rule paused', () async {
+        final editor = DivineVideoPlayerController(debugLabel: 'cover');
+        addTearDown(editor.dispose);
+        await editor.initialize();
+
+        await editor.play();
+
+        final entry = latestExclusivePauseLog();
+        expect(entry, isNotNull);
+        // The victim is identified so a stopped player in a bug report can be
+        // traced back to the screen that stopped it.
+        expect(entry!.message, contains('Player ${controller.playerId}'));
+        expect(
+          entry.message,
+          contains('Player ${editor.playerId} (cover)'),
+        );
+      });
+
+      test('play logs no sibling pause when it is the only player', () async {
+        await controller.dispose();
+        final solo = DivineVideoPlayerController(debugLabel: 'solo');
+        addTearDown(solo.dispose);
+        await solo.initialize();
+        await LogCaptureService().clearAllLogs();
+
+        await solo.play();
+
+        expect(latestExclusivePauseLog(), isNull);
       });
 
       test('pause invokes native method', () async {

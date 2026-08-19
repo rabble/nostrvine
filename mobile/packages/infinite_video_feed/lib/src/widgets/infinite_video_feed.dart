@@ -1105,6 +1105,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       // read-ahead buffer so short-form playback doesn't OOM on low-RAM
       // Android devices (#3419).
       bufferProfile: VideoBufferProfile.feed,
+      debugLabel: 'feed[$index]',
     );
     _controllers[index] = controller;
 

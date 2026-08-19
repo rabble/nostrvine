@@ -1493,7 +1493,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // fast Done-tap (release) or a newer init can replace/null `_videoPlayer`
     // mid-flight. Whoever supersedes us owns disposing this controller, so we
     // just abandon it rather than resurrecting a released player.
-    final player = DivineVideoPlayerController(useTexture: true);
+    final player = DivineVideoPlayerController(
+      useTexture: true,
+      debugLabel: 'editor_canvas',
+    );
     _videoPlayer = player;
 
     await player.initialize();

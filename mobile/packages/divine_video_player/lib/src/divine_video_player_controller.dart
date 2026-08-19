@@ -15,6 +15,12 @@ import 'package:unified_logger/unified_logger.dart';
 /// Default maximum cache size on disk (500 MB).
 const int kDefaultCacheMaxSizeBytes = 500 * 1024 * 1024;
 
+/// Logger name for the Dart half of the player.
+///
+/// Native diagnostics arrive under their own `DivineVideoPlayer.*` names, so
+/// this one marks the lines that come from a Dart-side call.
+const _logName = 'DivineVideoPlayerController';
+
 /// Controls a native multi-clip video player that treats multiple clips
 /// as a single continuous timeline.
 ///
@@ -61,11 +67,18 @@ class DivineVideoPlayerController {
   /// part of another player's picture rather than a video of its own, such as
   /// the chroma-key backdrop composited behind a keyed clip. See
   /// [_pauseOtherLiveControllers].
+  ///
+  /// [debugLabel] names the surface that owns this player in diagnostic logs.
+  /// Player IDs are wall-clock seeded and identical on both sides of the
+  /// channel, so a `Player 665404` line in a bug report is only traceable
+  /// back to a screen if that screen labelled itself here. The label is
+  /// forwarded to the native player, so its lines carry it too.
   DivineVideoPlayerController({
     this.useTexture = false,
     this.useLegacySurface = false,
     this.bufferProfile = VideoBufferProfile.full,
     this.exclusivePlayback = true,
+    this.debugLabel,
   }) {
     _ensureNativeLogHandler();
   }
@@ -135,6 +148,12 @@ class DivineVideoPlayerController {
   /// Whether this player takes part in the one-video-at-a-time rule.
   /// See the constructor docs and [_pauseOtherLiveControllers].
   final bool exclusivePlayback;
+
+  /// Names the surface that owns this player in diagnostic logs.
+  ///
+  /// See the constructor docs. `null` when the owner did not label itself,
+  /// which leaves both halves logging a bare `Player <id>`.
+  final String? debugLabel;
 
   static const _globalChannel = MethodChannel('divine_video_player');
 
@@ -392,6 +411,7 @@ class DivineVideoPlayerController {
           'useTexture': useTexture,
           'useLegacySurface': useLegacySurface,
           'bufferProfile': bufferProfile.wireValue,
+          'debugLabel': debugLabel,
         },
       );
       if (useTexture && result != null) {
@@ -457,6 +477,11 @@ class DivineVideoPlayerController {
   /// Starts or resumes playback.
   Future<void> play() async {
     _ensureInitialized();
+    Log.debug(
+      '$_logTarget: play() requested',
+      name: _logName,
+      category: LogCategory.video,
+    );
     if (exclusivePlayback) await _pauseOtherLiveControllers();
     if (_isWebBackend) return _webBackend!.play();
     if (_isLinuxBackend) return _linuxBackend!.play();
@@ -466,6 +491,11 @@ class DivineVideoPlayerController {
   /// Pauses playback.
   Future<void> pause() async {
     _ensureInitialized();
+    Log.debug(
+      '$_logTarget: pause() requested',
+      name: _logName,
+      category: LogCategory.video,
+    );
     if (_isWebBackend) return _webBackend!.pause();
     if (_isLinuxBackend) return _linuxBackend!.pause();
     await _methodChannel.invokeMethod<void>('pause');
@@ -478,6 +508,11 @@ class DivineVideoPlayerController {
   /// be reused by calling [setSource] or [setClips] again.
   Future<void> stop() async {
     _ensureInitialized();
+    Log.debug(
+      '$_logTarget: stop() requested',
+      name: _logName,
+      category: LogCategory.video,
+    );
     if (_isWebBackend) return _webBackend!.stop();
     if (_isLinuxBackend) return _linuxBackend!.stop();
     await _methodChannel.invokeMethod<void>('stop');
@@ -616,6 +651,18 @@ class DivineVideoPlayerController {
               !controller._disposed,
         )
         .toList(growable: false);
+    if (otherControllers.isEmpty) return;
+
+    // The only record that a player was stopped by *someone else* rather than
+    // by its own screen. Without it a pause from this rule is indistinguishable
+    // from the user pressing pause.
+    Log.info(
+      '$_logTarget: exclusive playback pausing ${otherControllers.length} '
+      'sibling player(s): '
+      '${otherControllers.map((c) => c._logTarget).join(', ')}',
+      name: _logName,
+      category: LogCategory.video,
+    );
 
     await Future.wait<void>(
       otherControllers.map((controller) async {
@@ -623,14 +670,22 @@ class DivineVideoPlayerController {
           await controller.pause();
         } on Object catch (error) {
           Log.warning(
-            'Failed to pause sibling player before starting playback: $error',
-            name: 'DivineVideoPlayerController',
+            '$_logTarget: failed to pause sibling player '
+            '${controller._logTarget} before starting playback: $error',
+            name: _logName,
             category: LogCategory.video,
           );
         }
       }),
     );
   }
+
+  /// Identifies this player in diagnostic logs.
+  ///
+  /// Reads [_playerId], so it is only safe after [initialize] has run.
+  String get _logTarget => debugLabel == null
+      ? 'Player $_playerId'
+      : 'Player $_playerId ($debugLabel)';
 
   void _ensureInitialized() {
     if (!_initialized) {
