@@ -8994,6 +8994,87 @@ void main() {
         },
       );
 
+      test(
+        'a NIP-04 event ignored by database dedup is recorded so redelivery '
+        'skips decrypt',
+        () async {
+          final nip04Event = createNip04Event();
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          var decryptCalls = 0;
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => false);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            nip04Decryptor: (_, _) async {
+              decryptCalls++;
+              return 'Decrypted NIP-04 text';
+            },
+          );
+          await repository.startListening();
+
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(decryptCalls, 1);
+          expect(ledger.recorded, contains(_rumorEventId));
+
+          controller.add(nip04Event);
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(decryptCalls, 1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
       test('decrypts and persists a NIP-04 message', () async {
         final nip04Event = createNip04Event();
 
@@ -9395,8 +9476,10 @@ void main() {
         await repository.stopListening();
       });
 
-      test('skips NIP-04 events when decryption fails', () async {
+      test('failed NIP-04 decrypt stays retryable on redelivery', () async {
         final nip04Event = createNip04Event();
+        final ledger = _InMemoryProcessedGiftWrapsDao();
+        var decryptCalls = 0;
 
         when(
           () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
@@ -9411,12 +9494,24 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final repository = createRepository(
-          nip04Decryptor: (_, _) async => null,
+          processedGiftWrapsDao: ledger,
+          nip04Decryptor: (_, _) async {
+            decryptCalls++;
+            return null;
+          },
         );
 
         await repository.startListening();
         controller.add(nip04Event);
         await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        controller.add(nip04Event);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(decryptCalls, 2);
+        expect(ledger.recorded, isEmpty);
 
         verifyNever(
           () => mockDirectMessagesDao.insertMessage(

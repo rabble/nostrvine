@@ -2521,6 +2521,8 @@ class DmRepository {
           break;
         }
       }
+      // A missing recipient is rejected before decryption, so recording it in
+      // the processed ledger would not avoid cryptographic work on replay.
       if (recipientPubkey == null) return;
 
       // Determine sender and the other party's pubkey for decryption
@@ -2530,6 +2532,8 @@ class DmRepository {
 
       // Decrypt using injected decryptor or signer fallback
       final signer = _signer;
+      // Keep missing-decryptor events retryable: signer availability can
+      // change without the relay event changing.
       if (signer == null && _nip04Decryptor == null) return;
       final decryptor =
           _nip04Decryptor ??
@@ -2537,6 +2541,7 @@ class DmRepository {
               signer!.decrypt(pubkey, ciphertext);
       final plaintext = await decryptor(peerPubkey, nip04Event.content);
       if (plaintext == null) {
+        // Keep failed decryptions retryable; a later attempt may succeed.
         Log.debug(
           'Failed to decrypt NIP-04 event ${nip04Event.id}',
           category: LogCategory.system,
@@ -2657,6 +2662,11 @@ class DmRepository {
         return;
       }
       if (!inserted) {
+        // Terminal: local uniqueness constraints already represent this
+        // event in the message store. Record it even though hasGiftWrap will
+        // normally catch the same row, preserving the terminal outcome if
+        // the conflicting constraint was the message id instead.
+        await _recordProcessedWrap(nip04Event.id);
         Log.debug(
           'Skipped duplicate NIP-04 event ${nip04Event.id}: insert was '
           'ignored by local dedup constraints',
