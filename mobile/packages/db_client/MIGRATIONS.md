@@ -4,7 +4,7 @@ This document describes how to manage database migrations for the `db_client` pa
 
 ## Current Schema Version
 
-**Version: 8** (see `app_database.dart`).
+**Version: 9** (see `app_database.dart`).
 
 Version 2 is the legacy-normalization baseline. Earlier releases kept Drift's
 user-version at 1 while startup repair SQL added tables, columns, indexes, and
@@ -50,6 +50,10 @@ repair chain: `hadUpgrade` suppresses the `beforeOpen` repair on an upgrading
 open, so a damaged older database would otherwise keep its damage until some
 later launch that happens to perform no upgrade.
 
+Version 9 adds owner-scoped `removed_conversations` tombstones. Relay history
+at or before the removal timestamp stays suppressed after local DM rows are
+deleted, while a genuinely newer message can reopen the conversation.
+
 Going forward, schema changes must be versioned Drift migrations. Do not add new
 tables, columns, indexes, or schema backfills to `beforeOpen`; that hook is only
 for startup cleanup and guarded recovery of damaged local databases.
@@ -71,7 +75,9 @@ db_client/
 │       ├── drift_schema_v4.json
 │       ├── drift_schema_v5.json
 │       ├── drift_schema_v6.json
-│       └── drift_schema_v7.json
+│       ├── drift_schema_v7.json
+│       ├── drift_schema_v8.json
+│       └── drift_schema_v9.json
 ├── test/drift/
 │   └── app_database/
 │       ├── migration_test.dart
@@ -83,7 +89,9 @@ db_client/
 │           ├── schema_v4.dart
 │           ├── schema_v5.dart
 │           ├── schema_v6.dart
-│           └── schema_v7.dart
+│           ├── schema_v7.dart
+│           ├── schema_v8.dart
+│           └── schema_v9.dart
 └── build.yaml                  # Drift build configuration
 ```
 

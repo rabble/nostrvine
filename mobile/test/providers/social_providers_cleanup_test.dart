@@ -425,5 +425,78 @@ void main() {
         expect(deletion!.publishStatus, equals('deletion_pending'));
       },
     );
+
+    // The removal tombstone is what keeps a removed conversation from being
+    // rebuilt by relay replay (#7804). It is the one DM table deliberately
+    // NOT wiped on a plain sign-out, so these two cases pin the gate: move
+    // the clear out of the `deleteUserData` branch and every tombstone dies
+    // on logout, silently regressing #7804 on the next history drain.
+    test('non-destructive cleanup preserves removal tombstones', () async {
+      await db.removedConversationsDao.record(
+        conversationId: _dmConversationId,
+        ownerPubkey: _pubkeyA,
+        removedAt: 1700000000,
+      );
+
+      final subscription = container.listen(
+        userDataCleanupServiceProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final service = subscription.read();
+
+      expect(service.onDatabaseCleanup, isNotNull);
+      await service.onDatabaseCleanup!(userPubkey: _pubkeyA);
+
+      expect(
+        await db.removedConversationsDao.removedAtFor(
+          conversationId: _dmConversationId,
+          ownerPubkey: _pubkeyA,
+        ),
+        1700000000,
+      );
+    });
+
+    test('destructive cleanup purges removal tombstones', () async {
+      await db.removedConversationsDao.record(
+        conversationId: _dmConversationId,
+        ownerPubkey: _pubkeyA,
+        removedAt: 1700000000,
+      );
+      await db.removedConversationsDao.record(
+        conversationId: _dmConversationId,
+        ownerPubkey: _pubkeyB,
+        removedAt: 1700000000,
+      );
+
+      final subscription = container.listen(
+        userDataCleanupServiceProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final service = subscription.read();
+
+      expect(service.onDatabaseCleanup, isNotNull);
+      await service.onDatabaseCleanup!(
+        userPubkey: _pubkeyA,
+        deleteUserData: true,
+      );
+
+      expect(
+        await db.removedConversationsDao.removedAtFor(
+          conversationId: _dmConversationId,
+          ownerPubkey: _pubkeyA,
+        ),
+        isNull,
+      );
+      // Owner-scoped: the other account's tombstone must survive.
+      expect(
+        await db.removedConversationsDao.removedAtFor(
+          conversationId: _dmConversationId,
+          ownerPubkey: _pubkeyB,
+        ),
+        1700000000,
+      );
+    });
   });
 }

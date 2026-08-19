@@ -119,6 +119,59 @@ void main() {
     });
   });
 
+  group('conversation removal', () {
+    test('deletes only the selected conversation for the owner', () async {
+      await dao.enqueue(makeDm(id: 'owner-a-target'));
+      await dao.enqueue(
+        makeDm(id: 'owner-a-other', conversationIdValue: conversationId2),
+      );
+      await dao.enqueue(makeDm(id: 'owner-b-target', owner: ownerB));
+
+      expect(
+        await dao.deleteForConversation(
+          conversationId: conversationId,
+          ownerPubkey: ownerA,
+        ),
+        1,
+      );
+      expect(await dao.getById('owner-a-target'), isNull);
+      expect(await dao.getById('owner-a-other'), isNotNull);
+      expect(await dao.getById('owner-b-target'), isNotNull);
+    });
+
+    test('deletes multiple selected conversations for the owner', () async {
+      await dao.enqueue(makeDm(id: 'owner-a-first'));
+      await dao.enqueue(
+        makeDm(id: 'owner-a-second', conversationIdValue: conversationId2),
+      );
+      await dao.enqueue(makeDm(id: 'owner-b-first', owner: ownerB));
+
+      expect(
+        await dao.deleteForConversations(
+          conversationIds: [conversationId, conversationId2],
+          ownerPubkey: ownerA,
+        ),
+        2,
+      );
+      expect(await dao.getById('owner-a-first'), isNull);
+      expect(await dao.getById('owner-a-second'), isNull);
+      expect(await dao.getById('owner-b-first'), isNotNull);
+    });
+
+    test('an empty selection deletes nothing', () async {
+      await dao.enqueue(makeDm(id: 'owner-a-queued'));
+
+      expect(
+        await dao.deleteForConversations(
+          conversationIds: const [],
+          ownerPubkey: ownerA,
+        ),
+        0,
+      );
+      expect(await dao.getById('owner-a-queued'), isNotNull);
+    });
+  });
+
   group('OutgoingDmsDao', () {
     group('enqueue', () {
       test('inserts a new row in pending/pending state', () async {
