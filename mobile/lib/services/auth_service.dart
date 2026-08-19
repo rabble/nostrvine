@@ -3253,7 +3253,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       if (token == null) {
         Log.warning(
           'Could not sign NIP-98 proof for account deletion; '
-          'falling back to bearer token',
+          'the refused bearer attempt stands',
           name: 'AuthService',
           category: LogCategory.auth,
         );
