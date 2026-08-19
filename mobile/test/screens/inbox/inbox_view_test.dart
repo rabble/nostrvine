@@ -1553,6 +1553,39 @@ void main() {
         );
       }
 
+      // A text scale whose extent formula lands on a fraction the chips' own
+      // text layout does not reproduce: `_filterChipsExtent` computes
+      // 8*2 + 6*2 + scale(20), so 1.12 declares 50.4 while the chips lay out
+      // at 50.0. The header then reports paintExtent 50.0 against layoutExtent
+      // 50.4, which fails SliverGeometry's contract inside the viewport's
+      // performLayout and blanks every sliver below — the whole conversation
+      // list. Integer-extent scales (1.0, 1.15, 1.2, 1.5, 2.0) never diverge,
+      // which is why the two scales already covered here did not catch it.
+      for (final scale in <double>[1.06, 1.12]) {
+        testWidgets(
+          'the pinned header keeps a valid sliver geometry at text scale '
+          '$scale',
+          (tester) async {
+            final size = await pumpChips(
+              tester,
+              textScaler: TextScaler.linear(scale),
+            );
+
+            expect(
+              tester.takeException(),
+              isNull,
+              reason: 'a fractional header extent must not throw out of layout',
+            );
+            expect(
+              size.laidOut,
+              8 * 2 + 6 * 2 + TextScaler.linear(scale).scale(20),
+              reason: 'the chips must fill the extent the header declares',
+            );
+            expect(find.byType(ConversationTile), findsWidgets);
+          },
+        );
+      }
+
       testWidgets('the pinned header fits the chips at the default text scale', (
         tester,
       ) async {

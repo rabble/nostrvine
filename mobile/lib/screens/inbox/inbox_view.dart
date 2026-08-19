@@ -1207,12 +1207,25 @@ class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
-    return ColoredBox(
-      color: context.vineColors.surfaceContainerHigh,
-      child: InboxFilterChips(
-        selected: selected,
-        hasBlocked: hasBlocked,
-        onChanged: onChanged,
+    // Pin the child to exactly [extent]. A persistent header lays its child
+    // out under LOOSE constraints, so the chips settle at whatever height
+    // their own text layout produces — which is not always [extent], because
+    // that value is a formula over `textScaler.scale(...)` while the real
+    // height comes from font metrics that snap to whole pixels. When the two
+    // diverge the sliver reports paintExtent (child) < layoutExtent (extent),
+    // which violates the SliverGeometry contract, throws out of the
+    // viewport's performLayout, and leaves every sliver below it — the
+    // support row, the requests banner, the whole conversation list — with
+    // null geometry, rendering the Messages pane blank.
+    return SizedBox(
+      height: extent,
+      child: ColoredBox(
+        color: context.vineColors.surfaceContainerHigh,
+        child: InboxFilterChips(
+          selected: selected,
+          hasBlocked: hasBlocked,
+          onChanged: onChanged,
+        ),
       ),
     );
   }
