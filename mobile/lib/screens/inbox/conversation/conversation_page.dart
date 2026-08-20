@@ -55,24 +55,34 @@ class ConversationPage extends ConsumerWidget {
     final dmRepository = ref.watch(dmRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
+    // Route guard (#176): a DM-restricted user (protected minor, or an
+    // unresolved status that fails closed) must not open a conversation with a
+    // non-approved counterparty, even via a deep link or a stale route (the
+    // send gate and the inbox list already block those paths).
+    //
+    // Watched, not read: the restriction resolves asynchronously and can flip
+    // for an account that is already signed in, and this screen used to
+    // re-evaluate the guard on every rebuild. Both signals are part of the key
+    // so a flip rebuilds the cubit and re-runs the gate rather than leaving an
+    // open thread behind.
+    final isDmRestricted = ref.watch(isDmRestrictedProvider);
+    final officialAccounts = ref.watch(officialAccountsServiceProvider);
 
     return BlocProvider(
-      // Same identity-keying as the blocs below: a stale dmRepository would
+      // Also keyed on the captured dependencies: a stale dmRepository would
       // resolve participants against the previous account.
-      key: ValueKey((dmRepository, currentPubkey, 'participants')),
+      key: ValueKey((
+        dmRepository,
+        currentPubkey,
+        isDmRestricted,
+        officialAccounts,
+      )),
       create: (_) => ConversationParticipantsCubit(
         dmRepository: dmRepository,
         conversationId: conversationId,
         initialParticipantPubkeys: participantPubkeys,
-        // Route guard (#176): a DM-restricted user (protected minor, or an
-        // unresolved status that fails closed) must not open a conversation
-        // with a non-approved counterparty, even via a deep link or a stale
-        // route (the send gate and the inbox list already block those paths).
-        // Both callbacks read live state at load time.
-        isDmRestricted: () => ref.read(isDmRestrictedProvider),
-        isApprovedRecipient: ref
-            .read(officialAccountsServiceProvider)
-            .isApprovedMinorDmRecipientSync,
+        isDmRestricted: () => isDmRestricted,
+        isApprovedRecipient: officialAccounts.isApprovedMinorDmRecipientSync,
       )..load(),
       child: _ConversationPageContent(conversationId: conversationId),
     );
