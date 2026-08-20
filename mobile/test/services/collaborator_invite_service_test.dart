@@ -170,13 +170,17 @@ void main() {
       );
     });
 
-    test('still matches invites published before the brand-casing fix', () {
-      // Nostr events are immutable: correcting the ARB casing did not
-      // rewrite invites already on relays. Matching only the new spelling
-      // would un-suppress every one of them and put the useless plaintext
-      // bubble back in the conversation (#3559).
-      for (final legacy
-          in CollaboratorInviteService.legacyInvitePlaintextSuffixes) {
+    // Nostr events are immutable: correcting the ARB casing did not rewrite
+    // the invites already on relays. Matching only the new spelling would
+    // un-suppress every one of them and put the useless plaintext bubble
+    // back in the conversation (#3559). These spellings are written out
+    // rather than read from `legacyInvitePlaintextSuffixes`, so that
+    // dropping an entry from that list fails here instead of shrinking the
+    // assertion along with it.
+    const historicalWireTexts = ['Open diVine to review and accept.'];
+
+    for (final legacy in historicalWireTexts) {
+      test('still matches invites published as "$legacy"', () {
         expect(
           CollaboratorInviteService.hasInvitePlaintextSuffix(
             'You were invited to collaborate on Skate loop: https://x\n\n'
@@ -185,8 +189,8 @@ void main() {
           isTrue,
           reason: 'legacy wire text $legacy must stay suppressed',
         );
-      }
-    });
+      });
+    }
 
     test('leaves an ordinary message alone', () {
       expect(
