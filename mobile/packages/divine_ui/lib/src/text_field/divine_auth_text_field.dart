@@ -199,6 +199,9 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
   @override
   void dispose() {
     _focusNode.removeListener(_handleFocusChange);
+    // The caller's controller outlives this State, so the listener has to come
+    // off here — otherwise a later notification hits setState on a dead State.
+    _controller.removeListener(_handleTextChange);
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
