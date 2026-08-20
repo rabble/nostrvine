@@ -160,12 +160,9 @@ abstract final class ClipCategoryActions {
         };
         var clearCategory = false;
         if (filedCategoryIds.isNotEmpty) {
-          final filedCount = selected
-              .where((clip) => clip.categoryId != null)
-              .length;
           final categoryChoice = await showArchiveCategoryPrompt(
             context: context,
-            clipCount: filedCount,
+            categoryCount: filedCategoryIds.length,
             categoryName: filedCategoryIds.length == 1
                 ? _categoryName(state.categories, filedCategoryIds.first)
                 : null,
@@ -215,15 +212,17 @@ abstract final class ClipCategoryActions {
   /// Asks whether archiving should leave the clips filed under their
   /// category or take them out of it.
   ///
-  /// [clipCount] counts only the clips the question applies to — the ones
-  /// that are filed under a category. [categoryName] names that category
-  /// when they all share one; pass `null` for a selection spanning several,
-  /// which drops the name from the wording.
+  /// [categoryCount] is how many distinct categories the selection spans,
+  /// not how many clips it holds: the sheet asks about the destination, and
+  /// three clips filed under one category are still one category to keep
+  /// them in. [categoryName] names that category when there is only one;
+  /// pass `null` for a selection spanning several, which drops the name
+  /// from the wording.
   ///
   /// Returns null when the sheet is dismissed without an answer.
   static Future<ClipArchiveCategoryChoice?> showArchiveCategoryPrompt({
     required BuildContext context,
-    required int clipCount,
+    required int categoryCount,
     String? categoryName,
   }) async {
     final l10n = context.l10n;
@@ -231,7 +230,7 @@ abstract final class ClipCategoryActions {
     await VineBottomSheetActionMenu.show(
       context: context,
       title: Text(
-        l10n.libraryArchiveKeepCategoryTitle(clipCount),
+        l10n.libraryArchiveKeepCategoryTitle(categoryCount),
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       options: [

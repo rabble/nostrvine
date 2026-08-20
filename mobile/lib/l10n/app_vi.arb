@@ -7033,7 +7033,7 @@
   "libraryCategoryMoveNewCategory": "Danh mục mới",
   "libraryArchiveAction": "Lưu trữ",
   "libraryUnarchiveAction": "Bỏ lưu trữ",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{Giữ trong danh mục?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Giữ trong danh mục này?} other{Giữ trong các danh mục này?}}",
   "libraryArchiveKeepCategoryAction": "Giữ trong {name}",
   "libraryArchiveKeepCategoryActionMixed": "Giữ trong danh mục của chúng",
   "libraryArchiveRemoveCategoryAction": "Xóa khỏi {name}",

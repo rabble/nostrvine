@@ -20626,10 +20626,10 @@ abstract class AppLocalizations {
   /// **'Unarchive'**
   String get libraryUnarchiveAction;
 
-  /// Title of the sheet asking whether clips being archived should stay visible in the category they are filed under.
+  /// Title of the sheet asking whether clips being archived should stay visible in the categories they are filed under. {count} is how many distinct categories the selection spans, not how many clips it holds — the title names the destination, and the action labels below it name the same one or several.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Keep it in its category?} other{Keep them in their categories?}}'**
+  /// **'{count, plural, =1{Keep in this category?} other{Keep in these categories?}}'**
   String libraryArchiveKeepCategoryTitle(int count);
 
   /// Archive-question option that archives the clips but leaves them filed under the named category.

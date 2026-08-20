@@ -12128,8 +12128,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Behåll dem i kategorierna?',
-      one: 'Behåll den i kategorin?',
+      other: 'Behåll i de här kategorierna?',
+      one: 'Behåll i den här kategorin?',
     );
     return '$_temp0';
   }

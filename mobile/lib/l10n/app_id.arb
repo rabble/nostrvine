@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "Kategori baru",
   "libraryArchiveAction": "Arsipkan",
   "libraryUnarchiveAction": "Batalkan arsip",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{Tetap di kategorinya?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, other{Tetap di kategori ini?}}",
   "libraryArchiveKeepCategoryAction": "Tetap di {name}",
   "libraryArchiveKeepCategoryActionMixed": "Tetap di kategorinya",
   "libraryArchiveRemoveCategoryAction": "Keluarkan dari {name}",

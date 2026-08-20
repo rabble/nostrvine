@@ -4549,7 +4549,7 @@
   "libraryCategoryMoveNewCategory": "새 카테고리",
   "libraryArchiveAction": "보관",
   "libraryUnarchiveAction": "보관 취소",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{카테고리에 계속 표시할까요?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{이 카테고리에 유지할까요?} other{이 카테고리들에 유지할까요?}}",
   "libraryArchiveKeepCategoryAction": "{name}에 유지",
   "libraryArchiveKeepCategoryActionMixed": "카테고리에 유지",
   "libraryArchiveRemoveCategoryAction": "{name}에서 제거",

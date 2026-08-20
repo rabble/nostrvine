@@ -7033,7 +7033,7 @@
   "libraryCategoryMoveNewCategory": "نیا زمرہ",
   "libraryArchiveAction": "آرکائیو کریں",
   "libraryUnarchiveAction": "آرکائیو سے نکالیں",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{کیا اسے اپنے زمرے میں رکھیں؟}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{اس زمرے میں رکھیں؟} other{ان زمروں میں رکھیں؟}}",
   "libraryArchiveKeepCategoryAction": "{name} میں رکھیں",
   "libraryArchiveKeepCategoryActionMixed": "اپنے زمروں میں رکھیں",
   "libraryArchiveRemoveCategoryAction": "{name} سے ہٹائیں",

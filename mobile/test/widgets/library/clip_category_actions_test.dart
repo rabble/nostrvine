@@ -202,7 +202,7 @@ void main() {
       completed = false;
     });
 
-    Widget buildHost({String? categoryName, int clipCount = 1}) {
+    Widget buildHost({String? categoryName, int categoryCount = 1}) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -214,7 +214,7 @@ void main() {
                 onPressed: () async {
                   choice = await ClipCategoryActions.showArchiveCategoryPrompt(
                     context: context,
-                    clipCount: clipCount,
+                    categoryCount: categoryCount,
                     categoryName: categoryName,
                   );
                   completed = true;
@@ -263,7 +263,7 @@ void main() {
     testWidgets('a selection spanning categories drops the name', (
       tester,
     ) async {
-      await tester.pumpWidget(buildHost(clipCount: 3));
+      await tester.pumpWidget(buildHost(categoryCount: 3));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
@@ -301,6 +301,12 @@ void main() {
       createdAt: DateTime(2026),
     );
 
+    final work = ClipCategory(
+      id: 'cat-work',
+      name: 'Work',
+      createdAt: DateTime(2026),
+    );
+
     DivineVideoClip clip(String id, {String? categoryId}) => DivineVideoClip(
       id: id,
       video: EditorVideo.file('/path/to/$id.mp4'),
@@ -323,7 +329,7 @@ void main() {
         ClipsLibraryState(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          categories: [travel],
+          categories: [travel, work],
         ),
       );
       return MaterialApp(
@@ -398,6 +404,46 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(capturedArchiveEvent().clearCategory, isTrue);
+    });
+
+    testWidgets('several clips in one category are still one category', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildHost([
+          clip('one', categoryId: travel.id),
+          clip('two', categoryId: travel.id),
+          clip('three', categoryId: travel.id),
+        ]),
+      );
+      await openAndArchive(tester);
+
+      // The title asks about the destination, so three clips filed under
+      // Travel must not read as several categories while the buttons below
+      // name exactly one.
+      expect(find.text(en.libraryArchiveKeepCategoryTitle(1)), findsOneWidget);
+      expect(
+        find.text(en.libraryArchiveKeepCategoryAction('Travel')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a selection spanning two categories asks about both', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildHost([
+          clip('one', categoryId: travel.id),
+          clip('two', categoryId: work.id),
+        ]),
+      );
+      await openAndArchive(tester);
+
+      expect(find.text(en.libraryArchiveKeepCategoryTitle(2)), findsOneWidget);
+      expect(
+        find.text(en.libraryArchiveKeepCategoryActionMixed),
+        findsOneWidget,
+      );
     });
 
     testWidgets('dismissing the question cancels the archive entirely', (

@@ -12380,8 +12380,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Le păstrezi în categoriile lor?',
-      one: 'Îl păstrezi în categoria lui?',
+      other: 'Păstrezi în aceste categorii?',
+      one: 'Păstrezi în această categorie?',
     );
     return '$_temp0';
   }

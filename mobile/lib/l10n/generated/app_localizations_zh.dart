@@ -11427,7 +11427,8 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '仍保留在分类中吗？',
+      other: '保留在这些分类中吗？',
+      one: '保留在此分类中吗？',
     );
     return '$_temp0';
   }

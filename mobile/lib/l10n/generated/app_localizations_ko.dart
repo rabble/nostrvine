@@ -11558,7 +11558,8 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '카테고리에 계속 표시할까요?',
+      other: '이 카테고리들에 유지할까요?',
+      one: '이 카테고리에 유지할까요?',
     );
     return '$_temp0';
   }

@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "Ny kategori",
   "libraryArchiveAction": "Arkivera",
   "libraryUnarchiveAction": "Avarkivera",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Behåll den i kategorin?} other{Behåll dem i kategorierna?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Behåll i den här kategorin?} other{Behåll i de här kategorierna?}}",
   "libraryArchiveKeepCategoryAction": "Behåll i {name}",
   "libraryArchiveKeepCategoryActionMixed": "Behåll i kategorierna",
   "libraryArchiveRemoveCategoryAction": "Ta bort från {name}",

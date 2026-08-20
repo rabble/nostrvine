@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "فئة جديدة",
   "libraryArchiveAction": "أرشفة",
   "libraryUnarchiveAction": "إلغاء الأرشفة",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{هل تبقى في فئتها؟}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{الإبقاء في هذه الفئة؟} two{الإبقاء في هاتين الفئتين؟} other{الإبقاء في هذه الفئات؟}}",
   "libraryArchiveKeepCategoryAction": "الإبقاء في {name}",
   "libraryArchiveKeepCategoryActionMixed": "الإبقاء في فئاتها",
   "libraryArchiveRemoveCategoryAction": "الإزالة من {name}",

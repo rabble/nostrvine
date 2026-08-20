@@ -11817,7 +11817,8 @@ class AppLocalizationsAm extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'በምድቡ ውስጥ ይቆይ?',
+      other: 'በእነዚህ ምድቦች ውስጥ ማቆየት?',
+      one: 'በዚህ ምድብ ውስጥ ማቆየት?',
     );
     return '$_temp0';
   }

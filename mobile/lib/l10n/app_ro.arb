@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "Categorie nouă",
   "libraryArchiveAction": "Arhivează",
   "libraryUnarchiveAction": "Dezarhivează",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Îl păstrezi în categoria lui?} other{Le păstrezi în categoriile lor?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Păstrezi în această categorie?} other{Păstrezi în aceste categorii?}}",
   "libraryArchiveKeepCategoryAction": "Păstrează în {name}",
   "libraryArchiveKeepCategoryActionMixed": "Păstrează în categoriile lor",
   "libraryArchiveRemoveCategoryAction": "Scoate din {name}",

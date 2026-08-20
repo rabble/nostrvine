@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "Neue Kategorie",
   "libraryArchiveAction": "Archivieren",
   "libraryUnarchiveAction": "Aus Archiv holen",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{In der Kategorie behalten?} other{In den Kategorien behalten?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{In dieser Kategorie behalten?} other{In diesen Kategorien behalten?}}",
   "libraryArchiveKeepCategoryAction": "In {name} behalten",
   "libraryArchiveKeepCategoryActionMixed": "In den Kategorien behalten",
   "libraryArchiveRemoveCategoryAction": "Aus {name} entfernen",

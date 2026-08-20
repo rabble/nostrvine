@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "新しいカテゴリ",
   "libraryArchiveAction": "アーカイブ",
   "libraryUnarchiveAction": "アーカイブ解除",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{カテゴリに残しますか？}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{このカテゴリに残しますか？} other{これらのカテゴリに残しますか？}}",
   "libraryArchiveKeepCategoryAction": "{name}に残す",
   "libraryArchiveKeepCategoryActionMixed": "カテゴリに残す",
   "libraryArchiveRemoveCategoryAction": "{name}から外す",

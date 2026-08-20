@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "Nieuwe categorie",
   "libraryArchiveAction": "Archiveren",
   "libraryUnarchiveAction": "Uit archief halen",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{In de categorie houden?} other{In de categorieën houden?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{In deze categorie houden?} other{In deze categorieën houden?}}",
   "libraryArchiveKeepCategoryAction": "In {name} houden",
   "libraryArchiveKeepCategoryActionMixed": "In hun categorieën houden",
   "libraryArchiveRemoveCategoryAction": "Uit {name} verwijderen",

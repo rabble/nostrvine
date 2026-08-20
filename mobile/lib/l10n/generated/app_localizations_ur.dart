@@ -12118,7 +12118,8 @@ class AppLocalizationsUr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'کیا اسے اپنے زمرے میں رکھیں؟',
+      other: 'ان زمروں میں رکھیں؟',
+      one: 'اس زمرے میں رکھیں؟',
     );
     return '$_temp0';
   }

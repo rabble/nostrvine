@@ -5328,7 +5328,7 @@
   "libraryCategoryMoveNewCategory": "አዲስ ምድብ",
   "libraryArchiveAction": "መዝገብ ውስጥ አስቀምጥ",
   "libraryUnarchiveAction": "ከመዝገብ አውጣ",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{በምድቡ ውስጥ ይቆይ?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{በዚህ ምድብ ውስጥ ማቆየት?} other{በእነዚህ ምድቦች ውስጥ ማቆየት?}}",
   "libraryArchiveKeepCategoryAction": "በ{name} ውስጥ አቆይ",
   "libraryArchiveKeepCategoryActionMixed": "በምድቦቻቸው ውስጥ አቆይ",
   "libraryArchiveRemoveCategoryAction": "ከ{name} አስወግድ",

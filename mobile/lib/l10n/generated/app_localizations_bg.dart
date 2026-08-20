@@ -12249,8 +12249,8 @@ class AppLocalizationsBg extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Да останат ли в категориите си?',
-      one: 'Да остане ли в категорията си?',
+      other: 'Оставяне в тези категории?',
+      one: 'Оставяне в тази категория?',
     );
     return '$_temp0';
   }

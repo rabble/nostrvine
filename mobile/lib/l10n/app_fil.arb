@@ -3797,7 +3797,7 @@
   "libraryCategoryMoveNewCategory": "Bagong kategorya",
   "libraryArchiveAction": "I-archive",
   "libraryUnarchiveAction": "I-unarchive",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Panatilihin sa kategorya nito?} other{Panatilihin sa mga kategorya nila?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Panatilihin sa kategoryang ito?} other{Panatilihin sa mga kategoryang ito?}}",
   "libraryArchiveKeepCategoryAction": "Panatilihin sa {name}",
   "libraryArchiveKeepCategoryActionMixed": "Panatilihin sa mga kategorya nila",
   "libraryArchiveRemoveCategoryAction": "Alisin sa {name}",

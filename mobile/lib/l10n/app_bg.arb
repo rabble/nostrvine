@@ -5334,7 +5334,7 @@
   "libraryCategoryMoveNewCategory": "Нова категория",
   "libraryArchiveAction": "Архивирай",
   "libraryUnarchiveAction": "Извади от архива",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Да остане ли в категорията си?} other{Да останат ли в категориите си?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Оставяне в тази категория?} other{Оставяне в тези категории?}}",
   "libraryArchiveKeepCategoryAction": "Остави в {name}",
   "libraryArchiveKeepCategoryActionMixed": "Остави в категориите им",
   "libraryArchiveRemoveCategoryAction": "Премахни от {name}",

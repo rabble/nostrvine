@@ -5203,7 +5203,7 @@
   "libraryCategoryMoveNewCategory": "Yeni kategori",
   "libraryArchiveAction": "Arşivle",
   "libraryUnarchiveAction": "Arşivden çıkar",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Kategorisinde kalsın mı?} other{Kategorilerinde kalsınlar mı?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Bu kategoride kalsın mı?} other{Bu kategorilerde kalsın mı?}}",
   "libraryArchiveKeepCategoryAction": "{name} içinde kalsın",
   "libraryArchiveKeepCategoryActionMixed": "Kategorilerinde kalsın",
   "libraryArchiveRemoveCategoryAction": "{name} içinden çıkar",

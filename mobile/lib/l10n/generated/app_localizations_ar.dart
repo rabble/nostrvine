@@ -12037,7 +12037,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'هل تبقى في فئتها؟',
+      other: 'الإبقاء في هذه الفئات؟',
+      two: 'الإبقاء في هاتين الفئتين؟',
+      one: 'الإبقاء في هذه الفئة؟',
     );
     return '$_temp0';
   }

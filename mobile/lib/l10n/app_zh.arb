@@ -7033,7 +7033,7 @@
   "libraryCategoryMoveNewCategory": "新建分类",
   "libraryArchiveAction": "归档",
   "libraryUnarchiveAction": "取消归档",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{仍保留在分类中吗？}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{保留在此分类中吗？} other{保留在这些分类中吗？}}",
   "libraryArchiveKeepCategoryAction": "保留在{name}",
   "libraryArchiveKeepCategoryActionMixed": "保留在各自的分类中",
   "libraryArchiveRemoveCategoryAction": "从{name}中移除",

@@ -12248,8 +12248,8 @@ class AppLocalizationsFil extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Panatilihin sa mga kategorya nila?',
-      one: 'Panatilihin sa kategorya nito?',
+      other: 'Panatilihin sa mga kategoryang ito?',
+      one: 'Panatilihin sa kategoryang ito?',
     );
     return '$_temp0';
   }

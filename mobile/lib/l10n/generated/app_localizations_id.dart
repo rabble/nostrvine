@@ -12050,7 +12050,7 @@ class AppLocalizationsId extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tetap di kategorinya?',
+      other: 'Tetap di kategori ini?',
     );
     return '$_temp0';
   }

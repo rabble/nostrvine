@@ -12088,7 +12088,8 @@ class AppLocalizationsVi extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Giữ trong danh mục?',
+      other: 'Giữ trong các danh mục này?',
+      one: 'Giữ trong danh mục này?',
     );
     return '$_temp0';
   }

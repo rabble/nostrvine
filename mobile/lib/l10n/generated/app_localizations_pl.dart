@@ -12363,8 +12363,8 @@ class AppLocalizationsPl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Zostawić w kategoriach?',
-      one: 'Zostawić w kategorii?',
+      other: 'Zostawić w tych kategoriach?',
+      one: 'Zostawić w tej kategorii?',
     );
     return '$_temp0';
   }

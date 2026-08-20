@@ -12059,8 +12059,8 @@ class AppLocalizationsTr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Kategorilerinde kalsınlar mı?',
-      one: 'Kategorisinde kalsın mı?',
+      other: 'Bu kategorilerde kalsın mı?',
+      one: 'Bu kategoride kalsın mı?',
     );
     return '$_temp0';
   }

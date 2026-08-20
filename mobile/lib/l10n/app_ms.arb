@@ -7033,7 +7033,7 @@
   "libraryCategoryMoveNewCategory": "Kategori baharu",
   "libraryArchiveAction": "Arkibkan",
   "libraryUnarchiveAction": "Nyaharkib",
-  "libraryArchiveKeepCategoryTitle": "{count, plural, other{Kekal dalam kategorinya?}}",
+  "libraryArchiveKeepCategoryTitle": "{count, plural, other{Kekal dalam kategori ini?}}",
   "libraryArchiveKeepCategoryAction": "Kekal dalam {name}",
   "libraryArchiveKeepCategoryActionMixed": "Kekal dalam kategorinya",
   "libraryArchiveRemoveCategoryAction": "Keluarkan dari {name}",

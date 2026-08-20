@@ -12149,7 +12149,7 @@ class AppLocalizationsMs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Kekal dalam kategorinya?',
+      other: 'Kekal dalam kategori ini?',
     );
     return '$_temp0';
   }

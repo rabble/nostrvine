@@ -12311,8 +12311,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Les garder dans leurs catégories ?',
-      one: 'Le garder dans sa catégorie ?',
+      other: 'Garder dans ces catégories ?',
+      one: 'Garder dans cette catégorie ?',
     );
     return '$_temp0';
   }
