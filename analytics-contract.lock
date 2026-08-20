@@ -1,0 +1,7 @@
+{
+  "artifact": "mobile/lib/generated/product_analytics.dart",
+  "artifact_sha256": "3673f8a652a0524532ab97b4b40b70a912c058197f060663eedf134775f6e3d4",
+  "contract_commit": "687df20125fac8b8643892e7cfaefbd84606c83c",
+  "schema_version": 1,
+  "source_artifact": "analytics/generated/product_analytics.dart"
+}
