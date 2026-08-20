@@ -7971,7 +7971,7 @@ class AppLocalizationsFil extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count tao ang nag-react ng $emoji',
-      one: '1 tao ang nag-react ng $emoji',
+      one: '$count tao ang nag-react ng $emoji',
     );
     return '$_temp0. Mag-react gamit ang $emoji';
   }

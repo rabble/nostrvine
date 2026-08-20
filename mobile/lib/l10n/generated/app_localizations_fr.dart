@@ -8020,7 +8020,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count personnes ont réagi avec $emoji',
-      one: '1 personne a réagi avec $emoji',
+      one: '$count personne a réagi avec $emoji',
     );
     return '$_temp0. Réagir avec $emoji';
   }

@@ -7966,7 +7966,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count pessoas reagiram com $emoji',
-      one: '1 pessoa reagiu com $emoji',
+      one: '$count pessoa reagiu com $emoji',
     );
     return '$_temp0. Reagir com $emoji';
   }

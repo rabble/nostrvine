@@ -7735,7 +7735,7 @@ class AppLocalizationsAm extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል',
-      one: '1 ሰው በ$emoji ምላሽ ሰጥቷል',
+      one: '$count ሰው በ$emoji ምላሽ ሰጥቷል',
     );
     return '$_temp0። በ$emoji ምላሽ ይስጡ';
   }

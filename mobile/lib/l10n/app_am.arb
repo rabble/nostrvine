@@ -3979,7 +3979,7 @@
     "commentsErrorVoteFailed": "በአስተያየቱ ላይ መምረጥ አልተሳካም",
     "commentsErrorReactionFailed": "ለአስተያየቱ ምላሽ ማከል አልተሳካም",
     "commentReactWithEmojiSemanticLabel": "በ{emoji} ምላሽ ይስጡ",
-    "commentReactionChipSemanticLabel": "{count, plural, one{1 ሰው በ{emoji} ምላሽ ሰጥቷል} other{{count} ሰዎች በ{emoji} ምላሽ ሰጥተዋል}}። በ{emoji} ምላሽ ይስጡ",
+    "commentReactionChipSemanticLabel": "{count, plural, one{{count} ሰው በ{emoji} ምላሽ ሰጥቷል} other{{count} ሰዎች በ{emoji} ምላሽ ሰጥተዋል}}። በ{emoji} ምላሽ ይስጡ",
     "commentReactionChipOwnSemanticLabel": "{count, plural, =1{እርስዎ በ{emoji} ምላሽ ሰጥተዋል} other{{count} ሰዎች በ{emoji} ምላሽ ሰጥተዋል፣ እርስዎን ጨምሮ}}። ምላሽዎን ያስወግዱ",
     "commentsErrorReportFailed": "አስተያየቱን ሪፖርት ማድረግ አልተሳካም",
     "commentsErrorBlockFailed": "ተጠቃሚውን ማገድ አልተሳካም",

@@ -3847,7 +3847,7 @@
     "commentsErrorVoteFailed": "Não foi possível votar no comentário",
     "commentsErrorReactionFailed": "Falha ao reagir ao comentário",
     "commentReactWithEmojiSemanticLabel": "Reagir com {emoji}",
-    "commentReactionChipSemanticLabel": "{count, plural, one{1 pessoa reagiu com {emoji}} other{{count} pessoas reagiram com {emoji}}}. Reagir com {emoji}",
+    "commentReactionChipSemanticLabel": "{count, plural, one{{count} pessoa reagiu com {emoji}} other{{count} pessoas reagiram com {emoji}}}. Reagir com {emoji}",
     "commentReactionChipOwnSemanticLabel": "{count, plural, =1{Você reagiu com {emoji}} other{{count} pessoas reagiram com {emoji}, incluindo você}}. Remover sua reação",
     "commentsErrorReportFailed": "Não foi possível denunciar o comentário",
     "commentsErrorBlockFailed": "Não foi possível bloquear a pessoa",

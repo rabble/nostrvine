@@ -2650,7 +2650,7 @@
     "commentsErrorVoteFailed": "Hindi naiboto ang komento",
     "commentsErrorReactionFailed": "Hindi nagawa ang reaksyon sa komento",
     "commentReactWithEmojiSemanticLabel": "Mag-react gamit ang {emoji}",
-    "commentReactionChipSemanticLabel": "{count, plural, one{1 tao ang nag-react ng {emoji}} other{{count} tao ang nag-react ng {emoji}}}. Mag-react gamit ang {emoji}",
+    "commentReactionChipSemanticLabel": "{count, plural, one{{count} tao ang nag-react ng {emoji}} other{{count} tao ang nag-react ng {emoji}}}. Mag-react gamit ang {emoji}",
     "commentReactionChipOwnSemanticLabel": "{count, plural, =1{Nag-react ka ng {emoji}} other{{count} tao ang nag-react ng {emoji}, kasama ka}}. Alisin ang iyong reaksyon",
     "commentsErrorReportFailed": "Hindi na-report ang komento",
     "commentsErrorBlockFailed": "Hindi na-block ang user",
