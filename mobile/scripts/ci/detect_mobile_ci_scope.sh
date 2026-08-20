@@ -59,6 +59,9 @@ app=false
 native=false
 while IFS= read -r path; do
   case "$path" in
+    analytics-contract.lock|analytics-contract.manifest.json)
+      app=true
+      ;;
     .github/ci-timing-budgets.json)
       app=true
       ;;

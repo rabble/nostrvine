@@ -1,36 +1,36 @@
 // @generated from analytics/event-contract.yaml.
-// Source contract commit: 687df20125fac8b8643892e7cfaefbd84606c83c
+// Source contract commit: 0aa587e38a9aea3bee70fd1d0bf492dac8266dd4
 // DO NOT EDIT. Update the contract and run analytics/codegen/generate.py.
-const String productAnalyticsContractCommit =
-    '687df20125fac8b8643892e7cfaefbd84606c83c';
-const int productAnalyticsSchemaVersion = 1;
-const bool? productAnalyticsConsentDefaultEnabled = null;
+const String productAnalyticsV2ContractCommit =
+    '0aa587e38a9aea3bee70fd1d0bf492dac8266dd4';
+const int productAnalyticsV2SchemaVersion = 2;
+const bool? productAnalyticsV2ConsentDefaultEnabled = null;
 
-enum ProductAnalyticsSource {
+enum ProductAnalyticsV2Source {
   mobile('mobile'),
   web('web');
 
-  const ProductAnalyticsSource(this.wireName);
+  const ProductAnalyticsV2Source(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsPlatform {
+enum ProductAnalyticsV2Platform {
   ios('ios'),
   android('android'),
   web('web');
 
-  const ProductAnalyticsPlatform(this.wireName);
+  const ProductAnalyticsV2Platform(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsConsentCategory {
+enum ProductAnalyticsV2ConsentCategory {
   productAnalytics('product_analytics');
 
-  const ProductAnalyticsConsentCategory(this.wireName);
+  const ProductAnalyticsV2ConsentCategory(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsSurface {
+enum ProductAnalyticsV2Surface {
   feed('feed'),
   following('following'),
   discovery('discovery'),
@@ -43,11 +43,11 @@ enum ProductAnalyticsSurface {
   settings('settings'),
   unknown('unknown');
 
-  const ProductAnalyticsSurface(this.wireName);
+  const ProductAnalyticsV2Surface(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsPlaybackEndReason {
+enum ProductAnalyticsV2PlaybackEndReason {
   ended('ended'),
   paused('paused'),
   navigation('navigation'),
@@ -55,11 +55,11 @@ enum ProductAnalyticsPlaybackEndReason {
   error('error'),
   unknown('unknown');
 
-  const ProductAnalyticsPlaybackEndReason(this.wireName);
+  const ProductAnalyticsV2PlaybackEndReason(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsNavigationAction {
+enum ProductAnalyticsV2NavigationAction {
   open('open'),
   back('back'),
   tab('tab'),
@@ -68,20 +68,20 @@ enum ProductAnalyticsNavigationAction {
   swipe('swipe'),
   unknown('unknown');
 
-  const ProductAnalyticsNavigationAction(this.wireName);
+  const ProductAnalyticsV2NavigationAction(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsOnboardingFlow {
+enum ProductAnalyticsV2OnboardingFlow {
   accountSetup('account_setup'),
   viewerSetup('viewer_setup'),
   creatorSetup('creator_setup');
 
-  const ProductAnalyticsOnboardingFlow(this.wireName);
+  const ProductAnalyticsV2OnboardingFlow(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsOnboardingStep {
+enum ProductAnalyticsV2OnboardingStep {
   welcome('welcome'),
   identity('identity'),
   interests('interests'),
@@ -89,50 +89,50 @@ enum ProductAnalyticsOnboardingStep {
   notifications('notifications'),
   complete('complete');
 
-  const ProductAnalyticsOnboardingStep(this.wireName);
+  const ProductAnalyticsV2OnboardingStep(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsOnboardingResult {
+enum ProductAnalyticsV2OnboardingResult {
   viewed('viewed'),
   completed('completed'),
   skipped('skipped'),
   failed('failed');
 
-  const ProductAnalyticsOnboardingResult(this.wireName);
+  const ProductAnalyticsV2OnboardingResult(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsOnboardingReason {
+enum ProductAnalyticsV2OnboardingReason {
   none('none'),
   dismissed('dismissed'),
   validation('validation'),
   network('network'),
   unknown('unknown');
 
-  const ProductAnalyticsOnboardingReason(this.wireName);
+  const ProductAnalyticsV2OnboardingReason(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsAssignmentSource {
+enum ProductAnalyticsV2AssignmentSource {
   client('client'),
   server('server');
 
-  const ProductAnalyticsAssignmentSource(this.wireName);
+  const ProductAnalyticsV2AssignmentSource(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsLandingPage {
+enum ProductAnalyticsV2LandingPage {
   home('home'),
   download('download'),
   invite('invite'),
   registration('registration');
 
-  const ProductAnalyticsLandingPage(this.wireName);
+  const ProductAnalyticsV2LandingPage(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsReferrerClass {
+enum ProductAnalyticsV2ReferrerClass {
   direct('direct'),
   search('search'),
   social('social'),
@@ -140,23 +140,23 @@ enum ProductAnalyticsReferrerClass {
   campaign('campaign'),
   unknown('unknown');
 
-  const ProductAnalyticsReferrerClass(this.wireName);
+  const ProductAnalyticsV2ReferrerClass(this.wireName);
   final String wireName;
 }
 
-enum ProductAnalyticsRegistrationEntryPoint {
+enum ProductAnalyticsV2RegistrationEntryPoint {
   landing('landing'),
   invite('invite'),
   deepLink('deep_link'),
   downloadPrompt('download_prompt'),
   unknown('unknown');
 
-  const ProductAnalyticsRegistrationEntryPoint(this.wireName);
+  const ProductAnalyticsV2RegistrationEntryPoint(this.wireName);
   final String wireName;
 }
 
-class ProductAnalyticsEnvelope {
-  const ProductAnalyticsEnvelope({
+class ProductAnalyticsV2Envelope {
+  const ProductAnalyticsV2Envelope({
     required this.eventId,
     required this.schemaVersion,
     required this.occurredAt,
@@ -173,10 +173,10 @@ class ProductAnalyticsEnvelope {
   final DateTime occurredAt;
   final String anonymousId;
   final String sessionId;
-  final ProductAnalyticsSource source;
-  final ProductAnalyticsPlatform platform;
+  final ProductAnalyticsV2Source source;
+  final ProductAnalyticsV2Platform platform;
   final String release;
-  final ProductAnalyticsConsentCategory consentCategory;
+  final ProductAnalyticsV2ConsentCategory consentCategory;
 
   Map<String, Object?> toJson() => {
     'event_id': eventId,
@@ -192,8 +192,8 @@ class ProductAnalyticsEnvelope {
 }
 
 /// Wire event name: `content_impression_recorded`.
-class ContentImpressionRecordedProperties {
-  const ContentImpressionRecordedProperties({
+class ProductAnalyticsV2ContentImpressionRecordedProperties {
+  const ProductAnalyticsV2ContentImpressionRecordedProperties({
     required this.contentId,
     required this.surface,
     required this.position,
@@ -202,7 +202,7 @@ class ContentImpressionRecordedProperties {
   });
 
   final String contentId;
-  final ProductAnalyticsSurface surface;
+  final ProductAnalyticsV2Surface surface;
   final int position;
   final int visibleMs;
   final String? recommendationId;
@@ -217,8 +217,8 @@ class ContentImpressionRecordedProperties {
 }
 
 /// Wire event name: `playback_session_recorded`.
-class PlaybackSessionRecordedProperties {
-  const PlaybackSessionRecordedProperties({
+class ProductAnalyticsV2PlaybackSessionRecordedProperties {
+  const ProductAnalyticsV2PlaybackSessionRecordedProperties({
     required this.playbackSessionId,
     required this.contentId,
     required this.surface,
@@ -231,12 +231,12 @@ class PlaybackSessionRecordedProperties {
 
   final String playbackSessionId;
   final String contentId;
-  final ProductAnalyticsSurface surface;
+  final ProductAnalyticsV2Surface surface;
   final int durationMs;
   final int watchedMs;
   final int loopCount;
   final bool completed;
-  final ProductAnalyticsPlaybackEndReason endReason;
+  final ProductAnalyticsV2PlaybackEndReason endReason;
 
   Map<String, Object?> toJson() => {
     'playback_session_id': playbackSessionId,
@@ -251,8 +251,8 @@ class PlaybackSessionRecordedProperties {
 }
 
 /// Wire event name: `navigation_context_recorded`.
-class NavigationContextRecordedProperties {
-  const NavigationContextRecordedProperties({
+class ProductAnalyticsV2NavigationContextRecordedProperties {
+  const ProductAnalyticsV2NavigationContextRecordedProperties({
     required this.fromSurface,
     required this.toSurface,
     required this.action,
@@ -260,9 +260,9 @@ class NavigationContextRecordedProperties {
     this.recommendationId,
   });
 
-  final ProductAnalyticsSurface fromSurface;
-  final ProductAnalyticsSurface toSurface;
-  final ProductAnalyticsNavigationAction action;
+  final ProductAnalyticsV2Surface fromSurface;
+  final ProductAnalyticsV2Surface toSurface;
+  final ProductAnalyticsV2NavigationAction action;
   final String? contentId;
   final String? recommendationId;
 
@@ -276,18 +276,18 @@ class NavigationContextRecordedProperties {
 }
 
 /// Wire event name: `onboarding_step_recorded`.
-class OnboardingStepRecordedProperties {
-  const OnboardingStepRecordedProperties({
+class ProductAnalyticsV2OnboardingStepRecordedProperties {
+  const ProductAnalyticsV2OnboardingStepRecordedProperties({
     required this.flow,
     required this.step,
     required this.result,
     this.reason,
   });
 
-  final ProductAnalyticsOnboardingFlow flow;
-  final ProductAnalyticsOnboardingStep step;
-  final ProductAnalyticsOnboardingResult result;
-  final ProductAnalyticsOnboardingReason? reason;
+  final ProductAnalyticsV2OnboardingFlow flow;
+  final ProductAnalyticsV2OnboardingStep step;
+  final ProductAnalyticsV2OnboardingResult result;
+  final ProductAnalyticsV2OnboardingReason? reason;
 
   Map<String, Object?> toJson() => {
     'flow': flow.wireName,
@@ -298,8 +298,8 @@ class OnboardingStepRecordedProperties {
 }
 
 /// Wire event name: `experiment_exposure`.
-class ExperimentExposureProperties {
-  const ExperimentExposureProperties({
+class ProductAnalyticsV2ExperimentExposureProperties {
+  const ProductAnalyticsV2ExperimentExposureProperties({
     required this.experimentKey,
     required this.variantKey,
     required this.assignmentSource,
@@ -307,7 +307,7 @@ class ExperimentExposureProperties {
 
   final String experimentKey;
   final String variantKey;
-  final ProductAnalyticsAssignmentSource assignmentSource;
+  final ProductAnalyticsV2AssignmentSource assignmentSource;
 
   Map<String, Object?> toJson() => {
     'experiment_key': experimentKey,
@@ -317,8 +317,8 @@ class ExperimentExposureProperties {
 }
 
 /// Wire event name: `landing_viewed`.
-class LandingViewedProperties {
-  const LandingViewedProperties({
+class ProductAnalyticsV2LandingViewedProperties {
+  const ProductAnalyticsV2LandingViewedProperties({
     required this.landingPage,
     required this.referrerClass,
     this.utmSource,
@@ -327,8 +327,8 @@ class LandingViewedProperties {
     this.utmContent,
   });
 
-  final ProductAnalyticsLandingPage landingPage;
-  final ProductAnalyticsReferrerClass referrerClass;
+  final ProductAnalyticsV2LandingPage landingPage;
+  final ProductAnalyticsV2ReferrerClass referrerClass;
   final String? utmSource;
   final String? utmMedium;
   final String? utmCampaign;
@@ -345,8 +345,8 @@ class LandingViewedProperties {
 }
 
 /// Wire event name: `registration_started`.
-class RegistrationStartedProperties {
-  const RegistrationStartedProperties({
+class ProductAnalyticsV2RegistrationStartedProperties {
+  const ProductAnalyticsV2RegistrationStartedProperties({
     required this.entryPoint,
     this.utmSource,
     this.utmMedium,
@@ -354,7 +354,7 @@ class RegistrationStartedProperties {
     this.utmContent,
   });
 
-  final ProductAnalyticsRegistrationEntryPoint entryPoint;
+  final ProductAnalyticsV2RegistrationEntryPoint entryPoint;
   final String? utmSource;
   final String? utmMedium;
   final String? utmCampaign;
@@ -369,10 +369,10 @@ class RegistrationStartedProperties {
   };
 }
 
-sealed class ProductAnalyticsEvent {
-  const ProductAnalyticsEvent({required this.envelope});
+sealed class ProductAnalyticsV2Event {
+  const ProductAnalyticsV2Event({required this.envelope});
 
-  final ProductAnalyticsEnvelope envelope;
+  final ProductAnalyticsV2Envelope envelope;
   String get eventName;
   Map<String, Object?> get propertiesJson;
 
@@ -383,13 +383,14 @@ sealed class ProductAnalyticsEvent {
   };
 }
 
-final class ContentImpressionRecordedEvent extends ProductAnalyticsEvent {
-  const ContentImpressionRecordedEvent({
+final class ProductAnalyticsV2ContentImpressionRecordedEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2ContentImpressionRecordedEvent({
     required super.envelope,
     required this.properties,
   });
 
-  final ContentImpressionRecordedProperties properties;
+  final ProductAnalyticsV2ContentImpressionRecordedProperties properties;
 
   @override
   String get eventName => 'content_impression_recorded';
@@ -398,13 +399,14 @@ final class ContentImpressionRecordedEvent extends ProductAnalyticsEvent {
   Map<String, Object?> get propertiesJson => properties.toJson();
 }
 
-final class PlaybackSessionRecordedEvent extends ProductAnalyticsEvent {
-  const PlaybackSessionRecordedEvent({
+final class ProductAnalyticsV2PlaybackSessionRecordedEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2PlaybackSessionRecordedEvent({
     required super.envelope,
     required this.properties,
   });
 
-  final PlaybackSessionRecordedProperties properties;
+  final ProductAnalyticsV2PlaybackSessionRecordedProperties properties;
 
   @override
   String get eventName => 'playback_session_recorded';
@@ -413,13 +415,14 @@ final class PlaybackSessionRecordedEvent extends ProductAnalyticsEvent {
   Map<String, Object?> get propertiesJson => properties.toJson();
 }
 
-final class NavigationContextRecordedEvent extends ProductAnalyticsEvent {
-  const NavigationContextRecordedEvent({
+final class ProductAnalyticsV2NavigationContextRecordedEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2NavigationContextRecordedEvent({
     required super.envelope,
     required this.properties,
   });
 
-  final NavigationContextRecordedProperties properties;
+  final ProductAnalyticsV2NavigationContextRecordedProperties properties;
 
   @override
   String get eventName => 'navigation_context_recorded';
@@ -428,13 +431,14 @@ final class NavigationContextRecordedEvent extends ProductAnalyticsEvent {
   Map<String, Object?> get propertiesJson => properties.toJson();
 }
 
-final class OnboardingStepRecordedEvent extends ProductAnalyticsEvent {
-  const OnboardingStepRecordedEvent({
+final class ProductAnalyticsV2OnboardingStepRecordedEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2OnboardingStepRecordedEvent({
     required super.envelope,
     required this.properties,
   });
 
-  final OnboardingStepRecordedProperties properties;
+  final ProductAnalyticsV2OnboardingStepRecordedProperties properties;
 
   @override
   String get eventName => 'onboarding_step_recorded';
@@ -443,13 +447,14 @@ final class OnboardingStepRecordedEvent extends ProductAnalyticsEvent {
   Map<String, Object?> get propertiesJson => properties.toJson();
 }
 
-final class ExperimentExposureEvent extends ProductAnalyticsEvent {
-  const ExperimentExposureEvent({
+final class ProductAnalyticsV2ExperimentExposureEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2ExperimentExposureEvent({
     required super.envelope,
     required this.properties,
   });
 
-  final ExperimentExposureProperties properties;
+  final ProductAnalyticsV2ExperimentExposureProperties properties;
 
   @override
   String get eventName => 'experiment_exposure';
@@ -458,10 +463,14 @@ final class ExperimentExposureEvent extends ProductAnalyticsEvent {
   Map<String, Object?> get propertiesJson => properties.toJson();
 }
 
-final class LandingViewedEvent extends ProductAnalyticsEvent {
-  const LandingViewedEvent({required super.envelope, required this.properties});
+final class ProductAnalyticsV2LandingViewedEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2LandingViewedEvent({
+    required super.envelope,
+    required this.properties,
+  });
 
-  final LandingViewedProperties properties;
+  final ProductAnalyticsV2LandingViewedProperties properties;
 
   @override
   String get eventName => 'landing_viewed';
@@ -470,13 +479,14 @@ final class LandingViewedEvent extends ProductAnalyticsEvent {
   Map<String, Object?> get propertiesJson => properties.toJson();
 }
 
-final class RegistrationStartedEvent extends ProductAnalyticsEvent {
-  const RegistrationStartedEvent({
+final class ProductAnalyticsV2RegistrationStartedEvent
+    extends ProductAnalyticsV2Event {
+  const ProductAnalyticsV2RegistrationStartedEvent({
     required super.envelope,
     required this.properties,
   });
 
-  final RegistrationStartedProperties properties;
+  final ProductAnalyticsV2RegistrationStartedProperties properties;
 
   @override
   String get eventName => 'registration_started';
