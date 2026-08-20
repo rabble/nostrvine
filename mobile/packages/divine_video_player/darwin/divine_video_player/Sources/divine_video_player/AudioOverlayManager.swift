@@ -52,7 +52,11 @@ final class AudioOverlayManager {
 
     /// Sets volume for the overlay at `index`.
     func setTrackVolume(at index: Int, volume: Float) {
-        guard index >= 0, index < overlays.count else { return }
+        guard index >= 0, index < overlays.count else { 
+            logger.warning("setTrackVolume: index out of bounds")
+            return 
+        }
+        logger.debug("setTrackVolume: index \(index) volume \(volume)")
         overlays[index].player.volume = volume
     }
 
@@ -69,14 +73,14 @@ final class AudioOverlayManager {
     func pauseAndDeactivateAll() {
         for entry in overlays {
             entry.player.pause()
-            entry.player.pause()
             entry.isActive = false
-                        entry.logger.info("pausing track")
+            entry.logger.info("pausing track")
         }
     }
 
     /// Updates playback speed on currently active overlay players.
     func setSpeed(_ speed: Double) {
+        logger.debug("setSpeed: \(speed)")
         for entry in overlays where entry.isActive {
             entry.player.rate = Float(speed)
         }
@@ -87,6 +91,7 @@ final class AudioOverlayManager {
     /// Starts, pauses, or drift-corrects each overlay based on whether
     /// the video position falls within that track's active range.
     func update(videoPositionSec: Double, isPlaying: Bool, speed: Double) {
+        logger.debug("update: position \(videoPositionSec)")
         logger.debug("update called")
         for entry in overlays {
             let inRange = videoPositionSec >= entry.videoStartSec &&
@@ -100,7 +105,6 @@ final class AudioOverlayManager {
                 if let trackEnd = entry.trackEndSec, expectedAudioSec >= trackEnd {
                     if entry.isActive {
                         entry.player.pause()
-                        entry.player.pause()
                         entry.isActive = false
                         entry.logger.info("pausing track")
                     }
@@ -109,6 +113,7 @@ final class AudioOverlayManager {
 
                 if !entry.isActive {
                     let audioTime = CMTime(seconds: expectedAudioSec, preferredTimescale: 600)
+                    logger.info("update: starting playback")
                     entry.player.seek(to: audioTime, toleranceBefore: .zero, toleranceAfter: .zero)
                     entry.player.play()
                     entry.player.rate = Float(speed)
@@ -118,6 +123,7 @@ final class AudioOverlayManager {
                     let actualSec = CMTimeGetSeconds(entry.player.currentTime())
                     let drift = abs(expectedAudioSec - actualSec)
                     if drift > driftThreshold {
+                        logger.debug("update: drift correction \(drift)")
                         let audioTime = CMTime(seconds: expectedAudioSec, preferredTimescale: 600)
                         entry.player.seek(to: audioTime, toleranceBefore: .zero, toleranceAfter: .zero)
                     }
@@ -125,9 +131,8 @@ final class AudioOverlayManager {
             } else {
                 if entry.isActive {
                     entry.player.pause()
-                    entry.player.pause()
                     entry.isActive = false
-                        entry.logger.info("pausing track")
+                    entry.logger.info("pausing track")
                 }
             }
         }
@@ -167,5 +172,7 @@ final class AudioOverlayEntry {
         self.videoEndSec = videoEndSec
         self.trackStartSec = trackStartSec
         self.trackEndSec = trackEndSec
+        self.trackIndex = 0
+        self.logger = Logger(subsystem: "divine_video_player", category: "AudioOverlayEntry")
     }
 }
