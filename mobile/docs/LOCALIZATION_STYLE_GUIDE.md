@@ -406,38 +406,50 @@ command in the next section, and **none of them require reading the language.**
 This tier is where a non-speaking reviewer adds real value, and it is exactly
 where the drift in this repo has come from.
 
-**Tier 3 — naturalness. Native speaker required.**
-Idiom, humor, whether the copy sounds like a person. No command finds this.
+**Tier 3 — naturalness. A native speaker, or the people using the app.**
+Idiom, humor, whether the copy sounds like a person. No command finds this,
+and for most of our locales no reviewer here finds it either.
 
-### When a native speaker is required
+### The review we actually have
 
-Not for every ARB change — that rule would be unfollowable at 21 locales and
-would simply be ignored. Require it for:
+We have native speakers for a few of the 21 locales and nobody for the rest.
+So any rule beginning "a native speaker must" resolves in practice to one of
+two things: it gets ignored, or that locale stops shipping. Neither is review.
 
-- a **new locale**,
-- **onboarding and first-run** copy, which sets the voice for everything after,
-- **safety, consent, deletion, age-gate, and money** copy, where a soft
-  rendering changes what was disclosed,
-- any string carrying **humor or wordplay**,
-- a **register change** to this guide's table.
+What we actually have is three loops, and the third one is not a fallback:
 
-Everything else — a fixed typo, a new setting label, a restored missing key —
+1. the guards, on every push;
+2. a non-speaking reviewer running the Tier 2 checks;
+3. **users telling us when a string is wrong.**
+
+Ask a native speaker when there is one to ask, and spend that scarce attention
+on a new locale, onboarding and first-run copy, safety / consent / deletion /
+age-gate / money copy, and changes to this guide's register and variety
+tables. Everything else — a typo, a setting label, a restored key, a joke —
 ships on Tier 1 + Tier 2.
 
-### When no native speaker is available
+### When nobody speaks the language — the normal case
 
-This is the common case, and it has an answer.
+1. **Ship it.** A playful string that turns out slightly off is a smaller
+   problem than a locale frozen at English or flattened into a register
+   nobody enjoys reading. Being unreviewable is not a reason to be boring
+   (see [Voice](#voice-making-the-english-tone-survive)).
+2. **Except for load-bearing copy.** If a safety, consent, deletion, age or
+   money string cannot be checked by anyone, defer it rather than guess:
+   leave the key out of that locale, add it to `_knownUntranslatedDebt` in
+   `mobile/test/l10n/arb_consistency_test.dart` with a comment naming the
+   reason and a tracking issue, and let it fall back to English. English is a
+   worse experience; a confidently wrong safety string is a worse outcome.
+3. **Never block a bug fix on review that cannot happen.** Approve on Tier 1 +
+   Tier 2 and say in the review that naturalness was not assessed.
 
-1. Ship the **plain** variant, not the clever one. Drop the joke, keep the
-   meaning (see [Voice](#voice-making-the-english-tone-survive)).
-2. If the string is on the required-review list above and no reviewer exists,
-   **defer instead of guessing**: leave the key out of that locale, add it to
-   `_knownUntranslatedDebt` in `mobile/test/l10n/arb_consistency_test.dart`
-   with a comment naming the reason and a tracking issue, and let it fall back
-   to English. English is a worse experience; a confidently wrong safety
-   string is a worse outcome.
-3. Do **not** block a bug fix on Tier 3 review. Approve on Tier 1 + Tier 2 and
-   say in the review that naturalness was not assessed.
+### How a user reports bad copy
+
+Settings → Support Center (`/support-center`) → Bug Report, which arrives with
+device and locale diagnostics already attached. A report naming a screen and a
+locale is a Tier 3 finding with a source behind it — the thing this repo
+otherwise cannot generate. Treat it as an ordinary bug, fix the key, and if it
+overturns a decision in this file, change the file too.
 
 ### Who signs off
 
@@ -448,9 +460,10 @@ there is no per-locale owner today. So:
   Tier 1 (read CI) and Tier 2 (run the checks). Approving with "looks fine" on
   a language you do not read is not a review — the parity guard already told
   you that much.
-- **Tier 3 sign-off** is a named native speaker, in a review comment, on the
-  triggers listed above. If that person is not a repo reviewer, quote their
-  verdict in the PR and link the source.
+- **Tier 3 sign-off**, where a speaker exists, is that named person in a
+  review comment. If they are not a repo reviewer, quote their verdict in the
+  PR and link the source. Where no speaker exists, nobody signs off on
+  naturalness — say so in the review and let the user reports do that job.
 - **This guide's decisions** are changed by a PR to this file, not by a
   translation PR that quietly disagrees with it.
 
