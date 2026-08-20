@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 
 /// Manages audio overlay tracks that play alongside the main video.
 ///
@@ -7,15 +8,20 @@ import AVFoundation
 /// aligned within ``driftThreshold``.
 final class AudioOverlayManager {
 
+    private let logger = Logger(subsystem: "divine_video_player", category: "AudioOverlay")
     private var overlays: [AudioOverlayEntry] = []
     private let driftThreshold: Double = 0.25
 
     /// Replaces all audio overlays with the given track definitions.
     func setTracks(from tracksRaw: [[String: Any]]) {
+        logger.debug("setTracks: replacing overlays")
         disposeAll()
 
-        for map in tracksRaw {
-            guard let uri = map["uri"] as? String else { continue }
+        for (index, map) in tracksRaw.enumerated() {
+            guard let uri = map["uri"] as? String else {
+                logger.warning("setTracks: skipping track - no uri")
+                continue
+            }
             let vol = (map["volume"] as? NSNumber)?.floatValue ?? 1.0
             let videoStartMs = (map["videoStartMs"] as? NSNumber)?.doubleValue ?? 0
             let videoEndMs = (map["videoEndMs"] as? NSNumber)?.doubleValue
@@ -53,6 +59,7 @@ final class AudioOverlayManager {
     /// Resumes playback of currently active overlays at the given speed.
     func resumeActive(speed: Double) {
         for entry in overlays where entry.isActive {
+            entry.logger.debug("playing track")
             entry.player.play()
             entry.player.rate = Float(speed)
         }
@@ -62,7 +69,9 @@ final class AudioOverlayManager {
     func pauseAndDeactivateAll() {
         for entry in overlays {
             entry.player.pause()
+            entry.player.pause()
             entry.isActive = false
+                        entry.logger.info("pausing track")
         }
     }
 
@@ -78,6 +87,7 @@ final class AudioOverlayManager {
     /// Starts, pauses, or drift-corrects each overlay based on whether
     /// the video position falls within that track's active range.
     func update(videoPositionSec: Double, isPlaying: Bool, speed: Double) {
+        logger.debug("update called")
         for entry in overlays {
             let inRange = videoPositionSec >= entry.videoStartSec &&
                 (entry.videoEndSec == nil || videoPositionSec < entry.videoEndSec!)
@@ -90,7 +100,9 @@ final class AudioOverlayManager {
                 if let trackEnd = entry.trackEndSec, expectedAudioSec >= trackEnd {
                     if entry.isActive {
                         entry.player.pause()
+                        entry.player.pause()
                         entry.isActive = false
+                        entry.logger.info("pausing track")
                     }
                     continue
                 }
@@ -113,7 +125,9 @@ final class AudioOverlayManager {
             } else {
                 if entry.isActive {
                     entry.player.pause()
+                    entry.player.pause()
                     entry.isActive = false
+                        entry.logger.info("pausing track")
                 }
             }
         }
@@ -121,6 +135,7 @@ final class AudioOverlayManager {
 
     /// Releases all overlay players and clears the list.
     func disposeAll() {
+        logger.debug("disposeAll called")
         for entry in overlays {
             entry.player.pause()
             entry.player.replaceCurrentItem(with: nil)
@@ -137,6 +152,8 @@ final class AudioOverlayEntry {
     let trackStartSec: Double
     let trackEndSec: Double?
     var isActive: Bool = false
+    let trackIndex: Int
+    let logger: Logger
 
     init(
         player: AVPlayer,
