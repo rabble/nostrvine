@@ -230,11 +230,16 @@ test-backed.
    git push -u origin shorebird-patch/<platform>/<release-version>
    ```
 
-   A brand-new worktree treats its `mobile/mise.toml` as untrusted because
-   mise trust is keyed to the config file's path. Every pre-push hook step
-   runs through `mise exec`, so the hook otherwise stops with
-   `mise ERROR Config files in .../mobile/mise.toml are not trusted.` Run
-   `mise trust` in the patch worktree's `mobile/` directory first. Then run
+   Config trust is shared across git worktrees, so a patch worktree is
+   already trusted whenever the main checkout's `mobile/mise.toml` is — the
+   normal case, and why this step is usually a no-op. It bites on a machine
+   whose main checkout was never trusted (a clone cut fresh for the drill),
+   under `paranoid` mode, or on mise older than `2026.7.5`, which predates
+   that sharing. Then every `mise exec` step in the hook aborts, and because
+   the analyze step sends stderr to `/dev/null` the trust error never reaches
+   the terminal: the hook prints a bare `Analysis failed!` with nothing above
+   it. Check with `mise trust --show` from the patch worktree's `mobile/`
+   directory and run `mise trust` there if it reports `untrusted`. Then run
    `flutter pub get` explicitly and confirm `git status --short` is clean so
    no lockfile churn joins the patch payload — `flutter analyze` would
    resolve dependencies itself, but a `pubspec.lock` change is a blocked path
