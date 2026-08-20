@@ -1,5 +1,9 @@
 // ABOUTME: Utility for resolving file paths for iOS compatibility
-// ABOUTME: iOS changes container paths on app updates, so we store only filenames
+// ABOUTME: iOS changes container paths on app updates, so we store basenames
+//
+// Draft-local audio is the exception: it lives in per-draft subdirectories
+// and keeps its whole documents-relative subpath. See
+// `utils/draft_audio_path_resolver.dart`.
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
