@@ -428,6 +428,16 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
         location == WelcomeScreen.loginOptionsPath) {
       return deepLinkRewrite;
     }
+    // Allow an anonymously-authenticated user through to login options when
+    // they arrive from the Secure account key-conflict recovery flow, which
+    // deep-links here with a prefilled `email` param. Without this they would
+    // be bounced to the feed and the "sign in to the existing account"
+    // recovery affordance would dead-end.
+    if (authService.isAnonymous &&
+        location == WelcomeScreen.loginOptionsPath &&
+        state.uri.queryParameters.containsKey('email')) {
+      return deepLinkRewrite;
+    }
     if (_suppressNextAuthenticatedAuthRouteRedirect) {
       _suppressNextAuthenticatedAuthRouteRedirect = false;
       Log.info(
