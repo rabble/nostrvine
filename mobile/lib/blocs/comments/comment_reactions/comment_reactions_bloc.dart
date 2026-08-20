@@ -52,12 +52,15 @@ class CommentReactionsBloc
        _rootAddressableId = rootAddressableId,
        super(const CommentReactionsState()) {
     on<CommentVoteToggled>(_onVoteToggled, transformer: droppable());
-    // droppable() for the same reason as votes: rapid taps on the same
-    // comment within publish-RTT must not interleave kind-7 / kind-5
-    // publishes for the cap-at-one supersede flow.
+    // concurrent() so reactions on different comments proceed
+    // independently; the handler suppresses re-entry per comment via
+    // [CommentReactionsState.pendingReactionCommentIds], which is what
+    // actually protects the cap-at-one supersede flow from interleaved
+    // kind-7 / kind-5 publishes. A whole-event-type droppable() here
+    // silently discarded taps on other comments while one was pending.
     on<CommentEmojiReactionToggled>(
       _onEmojiReactionToggled,
-      transformer: droppable(),
+      transformer: concurrent(),
     );
     // restartable(): on a fast comment stream the UI bridge dispatches a
     // fetch for each new id batch. Without this, a slow earlier fetch
@@ -185,6 +188,10 @@ class CommentReactionsBloc
         ...state.ownReactionEmojiByCommentId,
         ...voteStatuses.reactedEmojiByTargetId,
       };
+      final mergedEmojiCounts = {
+        ...state.commentEmojiReactionCounts,
+        ...voteCounts.emojiReactions,
+      };
       emit(
         state.copyWith(
           commentUpvoteCounts: {
@@ -195,10 +202,10 @@ class CommentReactionsBloc
             ...state.commentDownvoteCounts,
             ...voteCounts.downvotes,
           },
-          commentEmojiReactionCounts: _withOwnReactionsVisible({
-            ...state.commentEmojiReactionCounts,
-            ...voteCounts.emojiReactions,
-          }, mergedOwnEmoji),
+          commentEmojiReactionCounts: _withOwnReactionsVisible(
+            mergedEmojiCounts,
+            mergedOwnEmoji,
+          ),
           upvotedCommentIds: {
             ...state.upvotedCommentIds,
             ...voteStatuses.upvotedIds,
@@ -376,6 +383,11 @@ class CommentReactionsBloc
     }
   }
 
+  /// The current pending set without [commentId], read at call time so a
+  /// concurrent handler's marker for another comment is never dropped.
+  Set<String> _pendingWithout(String commentId) =>
+      Set<String>.from(state.pendingReactionCommentIds)..remove(commentId);
+
   Future<void> _onEmojiReactionToggled(
     CommentEmojiReactionToggled event,
     Emitter<CommentReactionsState> emit,
@@ -386,7 +398,26 @@ class CommentReactionsBloc
     }
 
     final commentId = event.commentId;
-    final emoji = event.emoji;
+    // Suppress re-entry per target: a second tap on the same comment
+    // within publish-RTT must not interleave kind-7 / kind-5 publishes
+    // for the cap-at-one supersede flow. Other comments proceed.
+    if (state.pendingReactionCommentIds.contains(commentId)) return;
+
+    final emoji = emojiReactionContentOf(event.emoji);
+    if (emoji == null) {
+      // The same classifier gates the repository, so only a picker/data
+      // defect can dispatch non-emoji content — reportable, while the
+      // user sees the ordinary failure surface instead of a crash path.
+      _logFailure(
+        ArgumentError.value(event.emoji, 'emoji', 'not an emoji reaction'),
+        StackTrace.current,
+        CommentReactionsBlocReportableSites.onEmojiReactionToggled,
+        'Error toggling comment emoji reaction',
+      );
+      emit(state.copyWith(error: ReactionsError.reactionFailed));
+      return;
+    }
+
     final previousOwnEmoji = state.ownReactionEmojiByCommentId[commentId];
     final isRemoval = previousOwnEmoji == emoji;
     final previousCounts = Map<String, int>.from(
@@ -422,6 +453,10 @@ class CommentReactionsBloc
           commentId: newCounts,
         },
         ownReactionEmojiByCommentId: newOwn,
+        pendingReactionCommentIds: {
+          ...state.pendingReactionCommentIds,
+          commentId,
+        },
       ),
     );
 
@@ -451,9 +486,16 @@ class CommentReactionsBloc
           addressableId: event.addressableId,
         );
       }
+      // Success: the optimistic update is final; only the pending marker
+      // comes off.
+      emit(
+        state.copyWith(pendingReactionCommentIds: _pendingWithout(commentId)),
+      );
     } on AlreadyReactedException catch (e) {
-      // State-sync sentinel (silent): the repo already holds a reaction for
-      // this target; reconcile the own-emoji marker to it.
+      // State-sync sentinel (silent): the repo already holds a reaction
+      // for this target and nothing was published. Restore the pre-tap
+      // counts — the tapped emoji's optimistic increment must not survive
+      // — then reconcile the own-emoji marker to the repo's emoji.
       emit(
         state.copyWith(
           ownReactionEmojiByCommentId: {
@@ -461,9 +503,10 @@ class CommentReactionsBloc
             commentId: e.emoji,
           },
           commentEmojiReactionCounts: _withOwnReactionsVisible(
-            state.commentEmojiReactionCounts,
+            {...state.commentEmojiReactionCounts, commentId: previousCounts},
             {commentId: e.emoji},
           ),
+          pendingReactionCommentIds: _pendingWithout(commentId),
         ),
       );
     } catch (e, stackTrace) {
@@ -490,6 +533,7 @@ class CommentReactionsBloc
             commentId: previousCounts,
           },
           ownReactionEmojiByCommentId: revertedOwn,
+          pendingReactionCommentIds: _pendingWithout(commentId),
           error: ReactionsError.reactionFailed,
         ),
       );

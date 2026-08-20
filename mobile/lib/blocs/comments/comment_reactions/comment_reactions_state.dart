@@ -62,6 +62,7 @@ final class CommentReactionsState extends Equatable {
     this.downvotedCommentIds = const {},
     this.commentEmojiReactionCounts = const {},
     this.ownReactionEmojiByCommentId = const {},
+    this.pendingReactionCommentIds = const {},
     this.error,
     this.outbox,
   });
@@ -89,6 +90,15 @@ final class CommentReactionsState extends Equatable {
   /// Absent key = no own reaction on that comment.
   final Map<String, String> ownReactionEmojiByCommentId;
 
+  /// Comment IDs with an emoji reaction publish currently in flight.
+  ///
+  /// A second toggle on a pending comment is suppressed so kind-7/kind-5
+  /// publishes for the cap-at-one supersede flow cannot interleave, while
+  /// toggles on other comments proceed independently. Fetch merges keep a
+  /// pending comment's optimistic values: the fetch sampled the relay
+  /// before the in-flight publish landed.
+  final Set<String> pendingReactionCommentIds;
+
   /// Error type for l10n-friendly error handling.
   final ReactionsError? error;
 
@@ -102,6 +112,7 @@ final class CommentReactionsState extends Equatable {
     Set<String>? downvotedCommentIds,
     Map<String, Map<String, int>>? commentEmojiReactionCounts,
     Map<String, String>? ownReactionEmojiByCommentId,
+    Set<String>? pendingReactionCommentIds,
     ReactionsError? error,
     ReactionsOutbox? outbox,
     bool clearError = false,
@@ -117,6 +128,8 @@ final class CommentReactionsState extends Equatable {
           commentEmojiReactionCounts ?? this.commentEmojiReactionCounts,
       ownReactionEmojiByCommentId:
           ownReactionEmojiByCommentId ?? this.ownReactionEmojiByCommentId,
+      pendingReactionCommentIds:
+          pendingReactionCommentIds ?? this.pendingReactionCommentIds,
       error: clearError ? null : (error ?? this.error),
       outbox: clearOutbox ? null : (outbox ?? this.outbox),
     );
@@ -130,6 +143,7 @@ final class CommentReactionsState extends Equatable {
     downvotedCommentIds,
     commentEmojiReactionCounts,
     ownReactionEmojiByCommentId,
+    pendingReactionCommentIds,
     error,
     outbox,
   ];

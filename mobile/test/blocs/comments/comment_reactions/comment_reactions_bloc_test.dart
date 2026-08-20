@@ -3,6 +3,8 @@
 // ABOUTME: Asserts #4478 cache-fix: rootAddressableId threaded into
 // ABOUTME: CommentsRepository.deleteComment.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
@@ -10,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
@@ -92,6 +95,7 @@ void main() {
       expect(bloc.state.commentDownvoteCounts, isEmpty);
       expect(bloc.state.upvotedCommentIds, isEmpty);
       expect(bloc.state.downvotedCommentIds, isEmpty);
+      expect(bloc.state.pendingReactionCommentIds, isEmpty);
       expect(bloc.state.error, isNull);
       expect(bloc.state.outbox, isNull);
       bloc.close();
@@ -862,6 +866,20 @@ void main() {
                 (s) => s.ownReactionEmojiByCommentId[validId('c1')],
                 'own',
                 '😂',
+              )
+              .having((s) => s.pendingReactionCommentIds, 'pending', {
+                validId('c1'),
+              }),
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'counts kept',
+                {'😂': 1},
+              )
+              .having(
+                (s) => s.pendingReactionCommentIds,
+                'pending cleared',
+                isEmpty,
               ),
         ],
         verify: (_) {
@@ -907,7 +925,15 @@ void main() {
                 (s) => s.ownReactionEmojiByCommentId[validId('c1')],
                 'own',
                 '😂',
-              ),
+              )
+              .having((s) => s.pendingReactionCommentIds, 'pending', {
+                validId('c1'),
+              }),
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'pending cleared',
+            isEmpty,
+          ),
         ],
         verify: (_) {
           verifyInOrder([
@@ -944,7 +970,15 @@ void main() {
                 (s) => s.ownReactionEmojiByCommentId.containsKey(validId('c1')),
                 'own removed',
                 false,
-              ),
+              )
+              .having((s) => s.pendingReactionCommentIds, 'pending', {
+                validId('c1'),
+              }),
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'pending cleared',
+            isEmpty,
+          ),
         ],
         verify: (_) {
           verify(
@@ -989,6 +1023,11 @@ void main() {
                 '😂',
               )
               .having((s) => s.error, 'error', isNull),
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'pending cleared',
+            isEmpty,
+          ),
         ],
         verify: (_) {
           verify(
@@ -1016,6 +1055,11 @@ void main() {
           ).thenThrow(AlreadyReactedException(validId('c1'), '🔥'));
         },
         build: createBloc,
+        seed: () => CommentReactionsState(
+          commentEmojiReactionCounts: {
+            validId('c1'): const {'🎉': 2},
+          },
+        ),
         act: (b) => b.add(toggled('😂')),
         expect: () => [
           isA<CommentReactionsState>().having(
@@ -1029,12 +1073,20 @@ void main() {
                 'reconciled own',
                 '🔥',
               )
-              // The reconcile must keep own ⊆ counts — a highlighted chip
-              // with no count behind it is the #7784 ghost state.
+              // The reconcile restores the pre-tap counts, then keeps
+              // own ⊆ counts. The tapped emoji's optimistic increment must
+              // not survive — nothing was published for it — while a
+              // highlighted chip with no count behind it is the #7784
+              // ghost state.
               .having(
-                (s) => s.commentEmojiReactionCounts[validId('c1')]?['🔥'],
-                'reconciled count',
-                1,
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'reconciled counts',
+                {'🎉': 2, '🔥': 1},
+              )
+              .having(
+                (s) => s.pendingReactionCommentIds,
+                'pending cleared',
+                isEmpty,
               )
               .having((s) => s.error, 'error', isNull),
         ],
@@ -1109,6 +1161,11 @@ void main() {
                 (s) => s.ownReactionEmojiByCommentId.containsKey(validId('c1')),
                 'reverted own',
                 false,
+              )
+              .having(
+                (s) => s.pendingReactionCommentIds,
+                'pending cleared',
+                isEmpty,
               )
               .having((s) => s.error, 'error', ReactionsError.reactionFailed),
         ],
@@ -1202,6 +1259,178 @@ void main() {
                 '😂',
               ),
         ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'a pending publish on one comment does not drop a tap on another',
+        build: createBloc,
+        act: (b) async {
+          final gate = Completer<String>();
+          when(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) => gate.future);
+          b.add(toggled('😂'));
+          await Future<void>.delayed(Duration.zero);
+          b.add(
+            CommentEmojiReactionToggled(
+              commentId: validId('c2'),
+              authorPubkey: validId('author1'),
+              emoji: '❤️',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          gate.complete(validId('reaction'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'first pending',
+            {validId('c1')},
+          ),
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c2')],
+                'second comment reacts while the first is pending',
+                '❤️',
+              )
+              .having((s) => s.pendingReactionCommentIds, 'both pending', {
+                validId('c1'),
+                validId('c2'),
+              }),
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'first cleared',
+            {validId('c2')},
+          ),
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'second cleared',
+            isEmpty,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: validId('c1'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: '😂',
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).called(1);
+          verify(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: validId('c2'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: '❤️',
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'a second tap on the same comment is suppressed while its publish '
+        'is pending',
+        build: createBloc,
+        act: (b) async {
+          final gate = Completer<String>();
+          when(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) => gate.future);
+          b.add(toggled('😂'));
+          await Future<void>.delayed(Duration.zero);
+          b.add(toggled('❤️'));
+          await Future<void>.delayed(Duration.zero);
+          gate.complete(validId('reaction'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+            'first tap lands',
+            '😂',
+          ),
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'second tap suppressed',
+                '😂',
+              )
+              .having(
+                (s) => s.pendingReactionCommentIds,
+                'pending cleared',
+                isEmpty,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: '😂',
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockLikesRepository.removeEmojiReaction(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'rejects non-emoji content without touching the repository',
+        build: createBloc,
+        act: (b) => b.add(toggled('not emoji')),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<ArgumentError>(),
+          ),
+        ],
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.error,
+            'error',
+            ReactionsError.reactionFailed,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+          verifyNever(
+            () => mockLikesRepository.removeEmojiReaction(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
       );
     });
   });
