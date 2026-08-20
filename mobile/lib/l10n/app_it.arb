@@ -4395,7 +4395,7 @@
     "deleteAccountRemoveKeysBody": "Questo rimuove l'accesso locale per questo account da questo dispositivo. Non eliminerà il tuo account Divine né la tua identità Nostr.\n\nLe tue bozze e i tuoi clip restano salvati su questo dispositivo per questo account. Se questo è il tuo ultimo account locale, tornerai alla schermata di accesso.",
     "deleteAccountRemoveKeysConfirm": "Rimuovi dal dispositivo",
     "deleteAccountRemoveKeysTitle": "Rimuovere questo account da questo dispositivo?",
-    "deleteAccountServerDeletionFailed": "Impossibile eliminare il tuo account dal server. Controlla la connessione e riprova.",
+    "deleteAccountServerDeletionFailed": "Le richieste di eliminazione dei tuoi post sono state inviate, ma non siamo riusciti a completare l'eliminazione del tuo account. Riprova tra poco.",
     "deleteAccountServerDeletionRequiresReauth": "Le richieste di eliminazione dei tuoi post sono state inviate, ma non siamo riusciti a completare l'eliminazione del tuo account. Accedi di nuovo per completarla.",
     "deleteAccountSuccess": "Richieste di eliminazione inviate. Sei disconnesso su questo dispositivo.",
     "deleteAccountSuccessContentUnverified": "Eliminazione dell'account richiesta. Per alcuni post esistenti non è stato possibile confermare l'eliminazione singolarmente.",

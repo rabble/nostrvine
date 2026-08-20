@@ -1078,11 +1078,13 @@ void main() {
         ).thenAnswer(
           (_) async => DeleteAccountResult.createSuccess('event-id'),
         );
-        // Content deletion succeeded; the server-side account deletion did not.
+        // Content deletion succeeded; the server-side account deletion did
+        // not, and not for a credential reason — keycast answers a genuine
+        // database failure with 503, which sets no reauth flag (#7875).
         when(authService.deleteKeycastAccount).thenAnswer(
           (_) async => (
             success: false,
-            error: 'server refused',
+            error: 'Server error (503). Please try again later.',
             requiresReauthentication: false,
           ),
         );
@@ -1127,6 +1129,12 @@ void main() {
         // failure happened after publishing, so the gate is not involved.
         expect(find.text(l10n.deleteAccountSuccess), findsNothing);
         expect(find.text(l10n.deleteAccountReauthRequired), findsNothing);
+        // #7875: a 503 is not a credential problem, so the user must not be
+        // sent to a re-login that cannot clear it.
+        expect(
+          find.text(l10n.deleteAccountServerDeletionRequiresReauth),
+          findsNothing,
+        );
       },
     );
 
@@ -1203,8 +1211,8 @@ void main() {
           find.text(l10n.deleteAccountServerDeletionRequiresReauth),
           findsOneWidget,
         );
-        // Not the connectivity copy, which would send the user into a retry
-        // loop that cannot succeed.
+        // Not the retry copy: a refused credential fails identically on the
+        // next attempt, so "try again" is the wrong instruction here.
         expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
         // Not the pre-flight copy, which claims nothing has been deleted.
         expect(find.text(l10n.deleteAccountReauthRequired), findsNothing);
@@ -1913,7 +1921,8 @@ void main() {
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       );
 
-      // The user is told to sign in again, not that their network is at fault.
+      // The user is told to sign in again, and never the post-publish copy that
+      // reports deletion requests as already sent.
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.deleteAccountReauthRequired), findsOneWidget);
       expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);

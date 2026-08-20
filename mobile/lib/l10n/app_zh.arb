@@ -3839,7 +3839,7 @@
   "@deleteAccountReauthRequired": {
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
-  "deleteAccountServerDeletionFailed": "无法从服务器删除你的账号。请检查网络连接后重试。",
+  "deleteAccountServerDeletionFailed": "你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。",
   "deleteAccountServerDeletionRequiresReauth": "你的帖子删除请求已发送，但我们没能完成账号删除。请重新登录以完成。",
   "@deleteAccountServerDeletionRequiresReauth": {
     "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."

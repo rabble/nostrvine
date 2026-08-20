@@ -3856,7 +3856,7 @@
     "deleteAccountRemoveKeysBody": "이 기기에서 이 계정의 로컬 로그인을 제거해요. Divine 계정이나 Nostr 신원은 삭제되지 않아요.\n\n이 계정의 초안과 클립은 이 기기에 그대로 저장돼 있어요. 이게 마지막 로컬 계정이면 로그인 화면으로 돌아가요.",
     "deleteAccountRemoveKeysConfirm": "기기에서 제거",
     "deleteAccountRemoveKeysTitle": "이 기기에서 이 계정을 제거할까요?",
-    "deleteAccountServerDeletionFailed": "서버에서 계정을 삭제하지 못했어요. 연결을 확인하고 다시 시도해주세요.",
+    "deleteAccountServerDeletionFailed": "게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 잠시 후 다시 시도해주세요.",
     "deleteAccountServerDeletionRequiresReauth": "게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 다시 로그인해서 마무리해주세요.",
     "deleteAccountSuccess": "삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.",
     "deleteAccountSuccessContentUnverified": "계정 삭제를 요청했어요. 기존 게시물 중 일부는 개별적으로 삭제를 확인하지 못했어요.",

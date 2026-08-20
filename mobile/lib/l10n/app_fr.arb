@@ -4395,7 +4395,7 @@
     "deleteAccountRemoveKeysBody": "Ça retire la connexion locale de ce compte de cet appareil. Ça ne supprimera pas ton compte Divine ni ton identité Nostr.\n\nTes brouillons et clips restent enregistrés sur cet appareil pour ce compte. Si c'est ton dernier compte local, tu reviendras à l'écran de connexion.",
     "deleteAccountRemoveKeysConfirm": "Retirer de l'appareil",
     "deleteAccountRemoveKeysTitle": "Retirer ce compte de cet appareil ?",
-    "deleteAccountServerDeletionFailed": "Impossible de supprimer ton compte du serveur. Vérifie ta connexion et réessaie.",
+    "deleteAccountServerDeletionFailed": "Les demandes de suppression de tes publications ont été envoyées, mais on n'a pas pu terminer la suppression de ton compte. Réessaie dans un moment.",
     "deleteAccountServerDeletionRequiresReauth": "Les demandes de suppression de tes publications ont été envoyées, mais on n'a pas pu terminer la suppression de ton compte. Reconnecte-toi pour terminer.",
     "deleteAccountSuccess": "Demandes de suppression envoyées. Tu es déconnecté sur cet appareil.",
     "deleteAccountSuccessContentUnverified": "Suppression du compte demandée. La suppression de certaines publications existantes n'a pas pu être confirmée individuellement.",

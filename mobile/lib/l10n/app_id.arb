@@ -4395,7 +4395,7 @@
     "deleteAccountRemoveKeysBody": "Ini menghapus login lokal untuk akun ini dari perangkat ini. Ini tidak akan menghapus akun Divine atau identitas Nostr-mu.\n\nDraf dan klipmu tetap tersimpan di perangkat ini untuk akun ini. Kalau ini akun lokal terakhirmu, kamu akan kembali ke layar login.",
     "deleteAccountRemoveKeysConfirm": "Hapus dari perangkat",
     "deleteAccountRemoveKeysTitle": "Hapus akun ini dari perangkat ini?",
-    "deleteAccountServerDeletionFailed": "Tidak bisa menghapus akunmu dari server. Silakan periksa koneksimu dan coba lagi.",
+    "deleteAccountServerDeletionFailed": "Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Coba lagi sebentar lagi.",
     "deleteAccountServerDeletionRequiresReauth": "Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Masuk lagi untuk menyelesaikannya.",
     "deleteAccountSuccess": "Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.",
     "deleteAccountSuccessContentUnverified": "Penghapusan akun sudah diminta. Penghapusan beberapa postingan yang ada tidak bisa dikonfirmasi satu per satu.",

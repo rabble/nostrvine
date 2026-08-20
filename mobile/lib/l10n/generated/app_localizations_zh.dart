@@ -6410,7 +6410,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountReauthRequired => '请重新登录后再删除账号。目前还没有删除任何内容。';
 
   @override
-  String get deleteAccountServerDeletionFailed => '无法从服务器删除你的账号。请检查网络连接后重试。';
+  String get deleteAccountServerDeletionFailed =>
+      '你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

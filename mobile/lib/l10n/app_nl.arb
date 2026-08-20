@@ -4395,7 +4395,7 @@
     "deleteAccountRemoveKeysBody": "Hiermee wordt de lokale login voor dit account van dit apparaat verwijderd. Je Divine-account of Nostr-identiteit wordt hierdoor niet verwijderd.\n\nJe concepten en clips blijven voor dit account op dit apparaat bewaard. Als dit je laatste lokale account is, keer je terug naar het inlogscherm.",
     "deleteAccountRemoveKeysConfirm": "Van apparaat verwijderen",
     "deleteAccountRemoveKeysTitle": "Dit account van dit apparaat verwijderen?",
-    "deleteAccountServerDeletionFailed": "Je account kon niet van de server worden verwijderd. Controleer je verbinding en probeer het opnieuw.",
+    "deleteAccountServerDeletionFailed": "Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Probeer het straks opnieuw.",
     "deleteAccountServerDeletionRequiresReauth": "Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Log opnieuw in om dit af te ronden.",
     "deleteAccountSuccess": "Verwijderverzoeken verstuurd. Je bent op dit apparaat afgemeld.",
     "deleteAccountSuccessContentUnverified": "Accountverwijdering aangevraagd. Voor sommige bestaande posts kon de verwijdering niet afzonderlijk worden bevestigd.",

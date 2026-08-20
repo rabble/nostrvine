@@ -3191,7 +3191,7 @@
     "deleteAccountRemoveKeysBody": "Inaalis nito ang lokal na login para sa account na ito sa device na ito. Hindi nito buburahin ang iyong Divine account o Nostr identity.\n\nMananatiling naka-save sa device na ito ang iyong mga draft at clip para sa account na ito. Kung ito ang huli mong lokal na account, babalik ka sa login screen.",
     "deleteAccountRemoveKeysConfirm": "Alisin sa device",
     "deleteAccountRemoveKeysTitle": "Alisin ang account na ito sa device na ito?",
-    "deleteAccountServerDeletionFailed": "Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.",
+    "deleteAccountServerDeletionFailed": "Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Subukan ulit mamaya.",
     "deleteAccountServerDeletionRequiresReauth": "Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Mag-sign in ulit para tapusin.",
     "deleteAccountSuccess": "Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.",
     "deleteAccountSuccessContentUnverified": "Na-request na ang pag-delete ng account. May ilang existing na post na hindi makumpirma nang isa-isa para sa pag-delete.",

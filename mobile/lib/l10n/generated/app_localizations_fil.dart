@@ -6830,7 +6830,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.';
+      'Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Subukan ulit mamaya.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

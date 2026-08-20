@@ -3839,7 +3839,7 @@
   "@deleteAccountReauthRequired": {
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
-  "deleteAccountServerDeletionFailed": "Tidak dapat memadam akaun anda daripada pelayan. Sila semak sambungan anda dan cuba lagi.",
+  "deleteAccountServerDeletionFailed": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi sebentar lagi.",
   "deleteAccountServerDeletionRequiresReauth": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Log masuk semula untuk melengkapkannya.",
   "@deleteAccountServerDeletionRequiresReauth": {
     "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."

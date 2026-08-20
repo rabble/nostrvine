@@ -4395,7 +4395,7 @@
     "deleteAccountRemoveKeysBody": "Dadurch wird der lokale Login für dieses Konto von diesem Gerät entfernt. Dein Divine-Konto oder deine Nostr-Identität werden nicht gelöscht.\n\nDeine Entwürfe und Clips bleiben für dieses Konto auf diesem Gerät gespeichert. Wenn dies dein letztes lokales Konto ist, gelangst du zurück zum Anmeldebildschirm.",
     "deleteAccountRemoveKeysConfirm": "Vom Gerät entfernen",
     "deleteAccountRemoveKeysTitle": "Dieses Konto von diesem Gerät entfernen?",
-    "deleteAccountServerDeletionFailed": "Dein Konto konnte nicht vom Server gelöscht werden. Bitte prüfe deine Verbindung und versuch es erneut.",
+    "deleteAccountServerDeletionFailed": "Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Versuch es später noch mal.",
     "deleteAccountServerDeletionRequiresReauth": "Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Melde dich erneut an, um das abzuschließen.",
     "deleteAccountSuccess": "Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.",
     "deleteAccountSuccessContentUnverified": "Kontolöschung angefragt. Für einige vorhandene Beiträge konnte die Löschung nicht einzeln bestätigt werden.",

@@ -4395,7 +4395,7 @@
     "deleteAccountRemoveKeysBody": "To usuwa lokalne logowanie do tego konta z tego urządzenia. Nie usunie to twojego konta Divine ani tożsamości Nostr.\n\nTwoje wersje robocze i klipy pozostaną zapisane na tym urządzeniu dla tego konta. Jeśli to twoje ostatnie lokalne konto, wrócisz do ekranu logowania.",
     "deleteAccountRemoveKeysConfirm": "Usuń z urządzenia",
     "deleteAccountRemoveKeysTitle": "Usunąć to konto z tego urządzenia?",
-    "deleteAccountServerDeletionFailed": "Nie udało się usunąć twojego konta z serwera. Sprawdź połączenie i spróbuj ponownie.",
+    "deleteAccountServerDeletionFailed": "Prośby o usunięcie twoich postów zostały wysłane, ale nie udało się dokończyć usuwania twojego konta. Spróbuj ponownie za chwilę.",
     "deleteAccountServerDeletionRequiresReauth": "Prośby o usunięcie twoich postów zostały wysłane, ale nie udało się dokończyć usuwania twojego konta. Zaloguj się ponownie, aby dokończyć.",
     "deleteAccountSuccess": "Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.",
     "deleteAccountSuccessContentUnverified": "Wysłano żądanie usunięcia konta. Usunięcia niektórych istniejących postów nie udało się potwierdzić osobno.",
