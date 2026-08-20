@@ -481,6 +481,9 @@ const _knownUntranslatedDebt = <String>{
   'videoDetailHiddenByContentFilterBody',
   'videoDetailHiddenShowAnyway',
   'videoDetailHiddenOpenSettings',
+  'videoDetailHiddenByProvenanceFilterBody',
+  'safetySettingsShowVerifiedOnly',
+  'safetySettingsShowVerifiedOnlySubtitle',
   // Restricted-account deletion guidance tracked in #7879.
   'shareMenuDeleteFailedAccountRestricted',
   'deleteAccountAccountRestricted',

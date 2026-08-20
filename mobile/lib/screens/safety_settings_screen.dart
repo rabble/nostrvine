@@ -42,6 +42,9 @@ class SafetySettingsScreen extends ConsumerWidget {
     final contentBlocklistRepository = ref.watch(
       contentBlocklistRepositoryProvider,
     );
+    final provenanceFilterService = ref.watch(
+      videoProvenanceFilterServiceProvider,
+    );
     final isAdultContentLocked = ref.watch(isProtectedMinorProvider);
     return BlocProvider(
       // Auth-flippable services are re-keyed so the Cubit reloads with the
@@ -51,6 +54,7 @@ class SafetySettingsScreen extends ConsumerWidget {
         contentFilterService,
         videoEventService,
         divineHostFilterService,
+        provenanceFilterService,
         moderationLabelService,
         followRepository,
         contentBlocklistRepository,
@@ -61,6 +65,7 @@ class SafetySettingsScreen extends ConsumerWidget {
         contentFilterService: contentFilterService,
         videoEventService: videoEventService,
         divineHostFilterService: divineHostFilterService,
+        provenanceFilterService: provenanceFilterService,
         moderationLabelService: moderationLabelService,
         followRepository: followRepository,
         contentBlocklistRepository: contentBlocklistRepository,
@@ -104,6 +109,7 @@ class SafetySettingsView extends StatelessWidget {
                   const _AgeVerificationTile(),
                   const SizedBox(height: 8),
                   const _DivineHostedOnlyTile(),
+                  const _VerifiedOnlyTile(),
                   DivineSectionHeader(context.l10n.safetySettingsModeration),
                   const _DivineProviderTile(),
                   const _PeopleIFollowProviderTile(),
@@ -193,6 +199,25 @@ class _DivineHostedOnlyTile extends StatelessWidget {
       value: showDivineHostedOnly,
       onChanged: (value) =>
           context.read<SafetySettingsCubit>().setShowDivineHostedOnly(value),
+    );
+  }
+}
+
+class _VerifiedOnlyTile extends StatelessWidget {
+  const _VerifiedOnlyTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final showVerifiedOnly = context.select(
+      (SafetySettingsCubit cubit) => cubit.state.showVerifiedOnly,
+    );
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.sealCheck,
+      title: context.l10n.safetySettingsShowVerifiedOnly,
+      subtitle: context.l10n.safetySettingsShowVerifiedOnlySubtitle,
+      value: showVerifiedOnly,
+      onChanged: (value) =>
+          context.read<SafetySettingsCubit>().setShowVerifiedOnly(value),
     );
   }
 }

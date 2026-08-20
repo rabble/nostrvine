@@ -25,6 +25,7 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {
@@ -110,6 +111,7 @@ void main() {
     late _MockContentFilterService mockContentFilterService;
     late _MockVideoEventService mockVideoEventService;
     late DivineHostFilterService divineHostFilterService;
+    late VideoProvenanceFilterService provenanceFilterService;
     const blockedPubkey =
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     const labelerPubkey =
@@ -127,6 +129,7 @@ void main() {
       mockContentFilterService = _MockContentFilterService();
       mockVideoEventService = _MockVideoEventService();
       divineHostFilterService = DivineHostFilterService(prefs);
+      provenanceFilterService = VideoProvenanceFilterService(prefs);
 
       when(
         () => mockModerationLabelService.ensureLoaded(),
@@ -194,6 +197,9 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           divineHostFilterServiceProvider.overrideWithValue(
             divineHostFilterService,
+          ),
+          videoProvenanceFilterServiceProvider.overrideWithValue(
+            provenanceFilterService,
           ),
           isProtectedMinorProvider.overrideWithValue(isProtectedMinor),
           userProfileReactiveProvider.overrideWith(

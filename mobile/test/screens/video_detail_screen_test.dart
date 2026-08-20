@@ -21,6 +21,7 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:videos_repository/videos_repository.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
 import '../test_data/video_test_data.dart';
@@ -35,6 +36,9 @@ class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
+
+class _MockVideoProvenanceFilterService extends Mock
+    implements VideoProvenanceFilterService {}
 
 Finder _divineSticker(DivineStickerName name) =>
     find.byWidgetPredicate((w) => w is DivineSticker && w.sticker == name);
@@ -102,6 +106,7 @@ void main() {
     Widget buildSubject({
       String videoId = 'test_video_id',
       List<String> fallbackVideoIds = const [],
+      List<dynamic> extraOverrides = const <dynamic>[],
     }) {
       return testMaterialApp(
         mockNostrService: mockNostrClient,
@@ -112,6 +117,7 @@ void main() {
             mockBlocklistRepository,
           ),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          ...extraOverrides,
         ],
         home: VideoDetailScreen(
           videoId: videoId,
@@ -400,6 +406,44 @@ void main() {
             ),
           ),
           findsOneWidget,
+        );
+      });
+
+      testWidgets('names the provenance setting when that is the cause', (
+        tester,
+      ) async {
+        // Divine-hosted, so the hosting axis is satisfied — only the
+        // capture-chain preference can be responsible.
+        stubHidden(
+          createTestVideoEvent(
+            id: 'unverified_video',
+            videoUrl: 'https://cdn.divine.video/abc.mp4',
+          ),
+        );
+        final provenanceFilter = _MockVideoProvenanceFilterService();
+        when(() => provenanceFilter.showVerifiedOnly).thenReturn(true);
+
+        await tester.pumpWidget(
+          buildSubject(
+            extraOverrides: [
+              videoProvenanceFilterServiceProvider.overrideWithValue(
+                provenanceFilter,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text(l10n.videoDetailHiddenByProvenanceFilterBody),
+          findsOneWidget,
+        );
+        // Must not blame the hosting setting for a Divine-hosted video.
+        expect(
+          find.text(
+            l10n.videoDetailHiddenByHostFilterBody('cdn.divine.video'),
+          ),
+          findsNothing,
         );
       });
 

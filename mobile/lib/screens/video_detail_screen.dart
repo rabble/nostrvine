@@ -261,6 +261,24 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
   }
 
+  /// Which source preference is responsible, so the panel names the setting
+  /// the viewer actually has to change rather than guessing.
+  ///
+  /// Both can apply at once; hosting is reported first because it is on by
+  /// default and is therefore the likelier surprise.
+  _HiddenReason _hiddenReason(VideoEvent video) {
+    if (!video.isFromDivineServer &&
+        ref.read(divineHostFilterServiceProvider).showDivineHostedOnly) {
+      return _HiddenReason.divineHostedOnly;
+    }
+    if (!video.hasProofMode &&
+        !video.isOriginalVine &&
+        ref.read(videoProvenanceFilterServiceProvider).showVerifiedOnly) {
+      return _HiddenReason.verifiedOnly;
+    }
+    return _HiddenReason.otherContentFilter;
+  }
+
   /// Renders the filtered video for this screen only.
   ///
   /// The lookup already parsed it, so the override is a state change rather
@@ -331,9 +349,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         ),
         _VideoDetailError.hiddenBySettings => _HiddenBySettingsScreen(
           video: _hiddenVideo!,
-          isHostFilter:
-              !_hiddenVideo!.isFromDivineServer &&
-              ref.read(divineHostFilterServiceProvider).showDivineHostedOnly,
+          reason: _hiddenReason(_hiddenVideo!),
           onShowAnyway: _showHiddenVideoAnyway,
           onClose: () => _handleExit(context),
         ),
@@ -453,20 +469,22 @@ enum _VideoDetailError { notFound, loadFailed, hiddenBySettings }
 /// Explains that a content filter — not a missing video — is why nothing
 /// played, and offers both ways out: change the setting, or override it for
 /// this one video.
+/// Which source preference hid the video.
+enum _HiddenReason { divineHostedOnly, verifiedOnly, otherContentFilter }
+
 class _HiddenBySettingsScreen extends StatelessWidget {
   const _HiddenBySettingsScreen({
     required this.video,
-    required this.isHostFilter,
+    required this.reason,
     required this.onShowAnyway,
     required this.onClose,
   });
 
   final VideoEvent video;
 
-  /// Whether the "only show Divine-hosted videos" setting is responsible, as
-  /// opposed to some other content filter. Drives which explanation is shown
-  /// so the copy never names a setting that is not the cause.
-  final bool isHostFilter;
+  /// Drives which explanation is shown, so the copy never names a setting
+  /// that is not the cause.
+  final _HiddenReason reason;
 
   final VoidCallback onShowAnyway;
   final VoidCallback onClose;
@@ -482,9 +500,14 @@ class _HiddenBySettingsScreen extends StatelessWidget {
     return TvStaticMessageScreen(
       sticker: .alert,
       title: context.l10n.videoDetailHiddenBySettingsTitle,
-      description: isHostFilter
-          ? context.l10n.videoDetailHiddenByHostFilterBody(_host())
-          : context.l10n.videoDetailHiddenByContentFilterBody,
+      description: switch (reason) {
+        _HiddenReason.divineHostedOnly =>
+          context.l10n.videoDetailHiddenByHostFilterBody(_host()),
+        _HiddenReason.verifiedOnly =>
+          context.l10n.videoDetailHiddenByProvenanceFilterBody,
+        _HiddenReason.otherContentFilter =>
+          context.l10n.videoDetailHiddenByContentFilterBody,
+      },
       actionLabel: context.l10n.videoDetailHiddenShowAnyway,
       onAction: onShowAnyway,
       onClose: onClose,
