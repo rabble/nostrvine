@@ -6072,8 +6072,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxLoadErrorTitle => 'Los mensajes no cargaron';
 
   @override
-  String get inboxLoadErrorSubtitle =>
-      'Revisa tu conexión e inténtalo otra vez.';
+  String get inboxLoadErrorSubtitle => 'Revisá tu conexión y probá de nuevo.';
 
   @override
   String get inboxFilterAll => 'Todos';
@@ -6106,7 +6105,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inboxUnreadEmptySubtitle =>
-      'No tienes mensajes sin leer ahora mismo.';
+      'No tenés mensajes sin leer ahora mismo.';
 
   @override
   String get inboxSearchHint => 'Buscar mensajes';
@@ -6123,7 +6122,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inboxSearchEmptySubtitle =>
-      'Prueba con otro nombre u otra palabra.';
+      'Probá con otro nombre u otra palabra.';
 
   @override
   String get inboxActionMute => 'Silenciar conversación';
@@ -6404,7 +6403,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'No leídos, Conversación con $displayName';
+    return 'No leída, conversación con $displayName';
   }
 
   @override

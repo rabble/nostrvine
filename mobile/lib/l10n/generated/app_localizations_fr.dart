@@ -6106,7 +6106,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Vérifie ta connexion et réessaie.';
 
   @override
-  String get inboxFilterAll => 'Tous';
+  String get inboxFilterAll => 'Tout';
 
   @override
   String get inboxFilterUnread => 'Non lus';
@@ -6432,7 +6432,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Non lus, Conversation avec $displayName';
+    return 'Non lue, conversation avec $displayName';
   }
 
   @override

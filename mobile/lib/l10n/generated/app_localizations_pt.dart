@@ -6059,8 +6059,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxLoadErrorTitle => 'As mensagens não carregaram';
 
   @override
-  String get inboxLoadErrorSubtitle =>
-      'Verifica a tua ligação e tenta de novo.';
+  String get inboxLoadErrorSubtitle => 'Verifique sua conexão e tente de novo.';
 
   @override
   String get inboxFilterAll => 'Todas';
@@ -6089,11 +6088,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxBlockedNoMessages => 'Sem mensagens';
 
   @override
-  String get inboxUnreadEmptyTitle => 'Estás em dia';
+  String get inboxUnreadEmptyTitle => 'Você está em dia';
 
   @override
-  String get inboxUnreadEmptySubtitle =>
-      'Nenhuma mensagem por ler neste momento.';
+  String get inboxUnreadEmptySubtitle => 'Sem mensagens não lidas no momento.';
 
   @override
   String get inboxSearchHint => 'Pesquisar mensagens';
@@ -6109,7 +6107,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxSearchEmptyTitle => 'Sem resultados';
 
   @override
-  String get inboxSearchEmptySubtitle => 'Tenta outro nome ou outra palavra.';
+  String get inboxSearchEmptySubtitle => 'Tente outro nome ou outra palavra.';
 
   @override
   String get inboxActionMute => 'Silenciar conversa';
@@ -6392,7 +6390,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Não lidas, Conversa com $displayName';
+    return 'Não lida, conversa com $displayName';
   }
 
   @override

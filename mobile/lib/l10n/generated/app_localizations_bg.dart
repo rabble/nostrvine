@@ -6405,7 +6405,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Непрочетени, Разговор с $displayName';
+    return 'Непрочетен, разговор с $displayName';
   }
 
   @override

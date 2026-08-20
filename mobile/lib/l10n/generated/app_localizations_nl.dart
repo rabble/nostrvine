@@ -6046,7 +6046,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Check je verbinding en probeer het opnieuw.';
 
   @override
-  String get inboxFilterAll => 'Alle';
+  String get inboxFilterAll => 'Alles';
 
   @override
   String get inboxFilterUnread => 'Ongelezen';

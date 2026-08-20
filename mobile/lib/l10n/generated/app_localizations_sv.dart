@@ -6344,7 +6344,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Olästa, Konversation med $displayName';
+    return 'Oläst, konversation med $displayName';
   }
 
   @override
