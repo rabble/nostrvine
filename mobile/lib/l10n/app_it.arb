@@ -4441,7 +4441,7 @@
     "originalSoundByCreator": "Audio originale - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
-  "ogBetaTesterBadgeLabel": "OG Beta Tester",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Questa persona ha pubblicato un Vine originale che Divine ha trovato nell'archivio. Non è un badge di verifica dell'account.",
     "profileBadgeCheckmarkTitle": "Spunta del profilo",
     "profileBadgeCheckmarkBody": "Divine assegna questa spunta agli account del team e a un piccolo gruppo di profili approvati manualmente. È separato da NIP-05, dai link di account verificati e dallo status OG Viner.",

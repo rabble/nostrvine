@@ -4006,7 +4006,7 @@
     }
   },
   "ogVinerBadgeLabel": "OG Viner",
-  "ogBetaTesterBadgeLabel": "OG Beta Tester",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.",
   "profileBadgeCheckmarkTitle": "Dấu tích hồ sơ",
   "profileBadgeCheckmarkBody": "Divine trao dấu tích này cho các tài khoản của đội ngũ và một số ít hồ sơ được duyệt thủ công. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.",

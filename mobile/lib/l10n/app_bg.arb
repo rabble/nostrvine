@@ -4572,7 +4572,7 @@
     "originalSoundByCreator": "Оригинален звук - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
-  "ogBetaTesterBadgeLabel": "OG Beta Tester",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.",
     "profileBadgeCheckmarkTitle": "Отметка на профила",
     "profileBadgeCheckmarkBody": "Divine дава тази отметка на профилите на екипа и на малка група ръчно одобрени профили. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.",

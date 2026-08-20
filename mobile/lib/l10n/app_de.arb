@@ -4441,7 +4441,7 @@
     "originalSoundByCreator": "Originalton – {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
-  "ogBetaTesterBadgeLabel": "OG Beta Tester",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.",
     "profileBadgeCheckmarkTitle": "Profil-Häkchen",
     "profileBadgeCheckmarkBody": "Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.",

@@ -4006,7 +4006,7 @@
     }
   },
   "ogVinerBadgeLabel": "OG Viner",
-  "ogBetaTesterBadgeLabel": "OG Beta Tester",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。",
   "profileBadgeCheckmarkTitle": "个人资料对勾",
   "profileBadgeCheckmarkBody": "Divine 把这个对勾给团队账号，以及少数经过人工审核的个人资料。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。",
