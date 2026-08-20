@@ -366,10 +366,11 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     // build a repeat without dragging the copy back into place.
     final insertIndex = state.currentClipIndex + 1;
     final newClips = [...state.clips]..insert(insertIndex, copy);
-    // Markers on the source and earlier clips keep their positions; markers on
-    // later clips shift right by the copy's duration — the id-based rebase
-    // carries both, and persists them in the same history entry as the clip
-    // change.
+    // Markers strictly inside the source and earlier clips keep their
+    // positions; markers on later clips shift right by the copy's duration,
+    // as does one sitting exactly on the source's trailing seam, which
+    // anchors to the following clip. The id-based rebase carries both, and
+    // persists them in the same history entry as the clip change.
     final rebasedMarkers = rebaseTimelineMarkersForClipState(
       oldClips: state.clips,
       newClips: newClips,
