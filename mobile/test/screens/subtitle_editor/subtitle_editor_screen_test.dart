@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/providers/subtitle_repository_provider.dart';
@@ -430,6 +432,46 @@ void main() {
       reason:
           'the picture is a fixed height, so a lower sheet would only '
           'open a band of empty background under it',
+    );
+  });
+
+  testWidgets('the stage plays the renditions the feed would pick', (
+    tester,
+  ) async {
+    const hash =
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    when(() => cubit.state).thenReturn(
+      const SubtitleEditorState(
+        status: SubtitleEditorStatus.ready,
+        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+      ),
+    );
+    await tester.pumpWidget(pump(videoUrl: 'https://media.divine.video/$hash'));
+    await tester.pump();
+
+    final stage = tester.widget<SubtitleEditorStage>(
+      find.byType(SubtitleEditorStage),
+    );
+
+    // The editor must not carry its own ladder: #7550 is what happens when it
+    // does. The bare blob answers a Range request with a cached NoSuchKey body
+    // dressed up as a 206 (divine-blossom#198), so it is absent here, and the
+    // HLS rung is the master playlist the native player takes directly.
+    expect(
+      stage.playbackUrls,
+      equals(
+        resolvePlaybackSources(
+          _video(videoUrl: 'https://media.divine.video/$hash'),
+          urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+        ),
+      ),
+    );
+    expect(
+      stage.playbackUrls,
+      equals([
+        'https://media.divine.video/$hash/720p.mp4',
+        'https://media.divine.video/$hash/hls/master.m3u8',
+      ]),
     );
   });
 

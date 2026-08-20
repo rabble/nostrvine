@@ -91,6 +91,34 @@ void main() {
       );
     });
 
+    test('leaves every source untrimmed when the caller opts out', () async {
+      final clips = <VideoClip>[];
+      // One 202 first, so the assertion covers the retried clip as well as the
+      // first attempt — the flag has to reach both construction sites.
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [Exception('CoreMediaErrorDomain error -12667 - HTTP 202')],
+      );
+      addTearDown(controller.dispose);
+
+      await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: ['processingUrl'],
+        log: logs.add,
+        trimToCommonTrackEnd: false,
+        delay: (_) async {},
+      );
+
+      expect(
+        clips.map((clip) => clip.trimToCommonTrackEnd),
+        equals([false, false]),
+        reason:
+            'A caller measuring playback against the container duration loses '
+            'the tail of its axis if the clip is clamped to the shorter track.',
+      );
+    });
+
     test('passes headers for the selected source', () async {
       final controller = FakeController();
       addTearDown(controller.dispose);

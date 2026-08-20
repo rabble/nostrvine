@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
@@ -47,6 +48,9 @@ void main() {
       required List<EditableCue> cues,
       EditableCue? selectedCue,
       TimelineFrameLoader loadFrames = _noFrames,
+      List<String> playbackUrls = const ['https://example.com/video.mp4'],
+      SubtitlePreviewControllerInitializer? initializePreviewController,
+      SubtitlePreviewSourceLoader? loadPreviewSources,
     }) => MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -56,6 +60,9 @@ void main() {
           width: 400,
           child: SubtitleEditorStage(
             videoUrl: 'https://example.com/video.mp4',
+            playbackUrls: playbackUrls,
+            initializePreviewController: initializePreviewController,
+            loadPreviewSources: loadPreviewSources,
             videoId:
                 '0000000000000000000000000000000000000000000000000000000000000000',
             cues: cues,
@@ -198,5 +205,144 @@ void main() {
 
       expect(frame.existsSync(), isFalse);
     });
+
+    testWidgets('hands every playback candidate to the shared loader', (
+      tester,
+    ) async {
+      final loadedSources = <List<String>>[];
+
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          playbackUrls: const [
+            'https://example.com/720p.mp4',
+            'https://example.com/hls/master.m3u8',
+          ],
+          initializePreviewController: (_) async {},
+          loadPreviewSources:
+              ({
+                required controller,
+                required sources,
+                required log,
+                required isLoadCurrent,
+              }) async {
+                loadedSources.add(sources);
+              },
+        ),
+      );
+      for (var i = 0; i < 10 && loadedSources.isEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(
+        loadedSources,
+        equals([
+          [
+            'https://example.com/720p.mp4',
+            'https://example.com/hls/master.m3u8',
+          ],
+        ]),
+      );
+    });
+
+    testWidgets('cancels preview source loading after disposal', (
+      tester,
+    ) async {
+      late bool Function() currentLoadIsMounted;
+      final loaderEntered = Completer<void>();
+      final releaseLoader = Completer<void>();
+
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          initializePreviewController: (_) async {},
+          loadPreviewSources:
+              ({
+                required controller,
+                required sources,
+                required log,
+                required isLoadCurrent,
+              }) async {
+                currentLoadIsMounted = isLoadCurrent;
+                loaderEntered.complete();
+                await releaseLoader.future;
+              },
+        ),
+      );
+      for (var i = 0; i < 10 && !loaderEntered.isCompleted; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(loaderEntered.isCompleted, isTrue);
+      expect(currentLoadIsMounted(), isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(currentLoadIsMounted(), isFalse);
+      releaseLoader.complete();
+    });
+
+    testWidgets('treats aborted preview source loading as cancellation', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pump(
+          cues: const [EditableCue(start: 0, end: 1000, text: 'one')],
+          initializePreviewController: (_) async {},
+          loadPreviewSources:
+              ({
+                required controller,
+                required sources,
+                required log,
+                required isLoadCurrent,
+              }) async {
+                throw const SourceLoadAborted(
+                  index: 0,
+                  source: 'https://example.com/video.mp4',
+                );
+              },
+        ),
+      );
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.subtitleEditorPreviewUnavailable), findsNothing);
+    });
+
+    test('plays the preview to the container duration, untrimmed', () async {
+      final controller = _RecordingController();
+      addTearDown(controller.dispose);
+
+      await loadSubtitlePreviewSources(
+        controller: controller,
+        sources: const ['https://example.com/720p.mp4'],
+        log: (_) {},
+        isLoadCurrent: () => true,
+      );
+
+      // The cue timeline is drawn from the container duration, so a clip
+      // clamped to the shorter of the two tracks would put the last half-second
+      // of the axis out of reach — a cue timed into it could never be watched
+      // against the picture. The feed opts in; the editor must not.
+      expect(controller.lastSource?.trimToCommonTrackEnd, isFalse);
+      expect(controller.lastSource?.end, isNull);
+    });
   });
+}
+
+/// Records the clip handed to the player, so the preview's source contract can
+/// be asserted without a platform channel.
+class _RecordingController extends DivineVideoPlayerController {
+  VideoClip? lastSource;
+
+  @override
+  int get playerId => 0;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> setSource(VideoClip clip) async => lastSource = clip;
+
+  @override
+  Future<void> dispose() async {}
 }

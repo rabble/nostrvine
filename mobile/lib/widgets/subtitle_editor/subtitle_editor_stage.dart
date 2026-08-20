@@ -9,13 +9,56 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
-import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/subtitle_editor/timeline_frame.dart';
 import 'package:openvine/widgets/caption_pill.dart';
 import 'package:openvine/widgets/subtitle_editor/subtitle_cue_timeline.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Loads the preview player's candidate sources into [controller].
+@visibleForTesting
+typedef SubtitlePreviewSourceLoader =
+    Future<void> Function({
+      required DivineVideoPlayerController controller,
+      required List<String> sources,
+      required void Function(String message) log,
+      required bool Function() isLoadCurrent,
+    });
+
+/// Initializes the preview player controller before source loading.
+@visibleForTesting
+typedef SubtitlePreviewControllerInitializer =
+    Future<void> Function(DivineVideoPlayerController controller);
+
+Future<void> _initializeSubtitlePreviewController(
+  DivineVideoPlayerController controller,
+) async {
+  await controller.initialize();
+}
+
+/// The preview's own [SubtitlePreviewSourceLoader], used when none is injected.
+@visibleForTesting
+Future<void> loadSubtitlePreviewSources({
+  required DivineVideoPlayerController controller,
+  required List<String> sources,
+  required void Function(String message) log,
+  required bool Function() isLoadCurrent,
+}) async {
+  await setSourceWithFallbacks(
+    index: 0,
+    controller: controller,
+    sources: sources,
+    log: log,
+    isLoadCurrent: isLoadCurrent,
+    // The feed trims the loop seam; the editor cannot. Its timeline is drawn
+    // from the container duration, so a clamp to the shorter of the two tracks
+    // would put the last half-second of the axis out of the preview's reach —
+    // and a cue timed into it could never be watched against the picture.
+    trimToCommonTrackEnd: false,
+  );
+}
 
 /// The video being captioned, with its cues laid out on a timeline beneath it.
 ///
@@ -31,11 +74,34 @@ class SubtitleEditorStage extends StatefulWidget {
     required this.totalDuration,
     required this.selectedCue,
     required this.loadFrames,
+    required this.playbackUrls,
+    this.initializePreviewController,
+    this.loadPreviewSources,
     super.key,
   });
 
   /// Playable URL of the published video.
+  ///
+  /// Addresses the video itself — the filmstrip reads frames from it. The
+  /// preview player uses [playbackUrls] instead, which may resolve to a
+  /// different rendition of the same video.
   final String videoUrl;
+
+  /// Ordered playback candidates for the preview player, tried in order.
+  ///
+  /// Build these with `VideoEvent.previewPlaybackSources` so the editor and
+  /// the feed pick renditions the same way. The preview runs them through the
+  /// feed's source loader, minus its loop-seam trim: playback has to reach the
+  /// end of the timeline the cues are laid out on.
+  final List<String> playbackUrls;
+
+  /// Loads [playbackUrls] into the preview player.
+  @visibleForTesting
+  final SubtitlePreviewSourceLoader? loadPreviewSources;
+
+  /// Initializes the preview player controller.
+  @visibleForTesting
+  final SubtitlePreviewControllerInitializer? initializePreviewController;
 
   /// Full event id of the video, used as the media-cache key.
   final String videoId;
@@ -199,14 +265,15 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
   }
 
   Future<void> _openPlayer() async {
-    // An m3u8 source has to be resolved to its MP4 before the native player
-    // can take it; for anything else this hands back the URL unchanged.
-    final url = await VideoEventAppExtensions.resolvePlayableUrl(
-      widget.videoUrl,
-    );
-    if (!mounted) return;
-    if (url == null || url.isEmpty) {
-      setState(() => _failed = true);
+    // Handed to the player as-is: an HLS master playlist is a source it takes
+    // natively on both platforms, so resolving one to an MP4 first would only
+    // buy a round-trip and a downgrade to the lowest-bandwidth variant.
+    final urls = orderedUniqueSources(widget.playbackUrls);
+    if (urls.isEmpty) {
+      // Reached synchronously from initState, before the first build, so the
+      // flag is picked up without a setState that would mark a building
+      // element dirty.
+      _failed = true;
       return;
     }
 
@@ -215,8 +282,26 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       debugLabel: 'subtitle_editor',
     );
     try {
-      await controller.initialize();
-      await controller.setSource(VideoClip.network(url));
+      final initializePreviewController =
+          widget.initializePreviewController ??
+          _initializeSubtitlePreviewController;
+      await initializePreviewController(controller);
+      final loadPreviewSources =
+          widget.loadPreviewSources ?? loadSubtitlePreviewSources;
+      await loadPreviewSources(
+        controller: controller,
+        sources: urls,
+        isLoadCurrent: () => mounted,
+        log: (message) => Log.debug(
+          message,
+          name: 'SubtitleEditorStage',
+          category: LogCategory.video,
+        ),
+      );
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
       await controller.setLooping(looping: true);
       if (!mounted) {
         await controller.dispose();
@@ -228,6 +313,15 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
       // has somewhere to land. A player that never plays never decodes one,
       // and the preview would sit on its placeholder forever.
       await controller.play();
+    } on SourceLoadAborted catch (error) {
+      Log.debug(
+        'Subtitle editor preview source load cancelled: $error',
+        name: 'SubtitleEditorStage',
+        category: LogCategory.video,
+      );
+      unawaited(_playerStates?.cancel());
+      _playerStates = null;
+      unawaited(controller.dispose());
     } on Object catch (error) {
       // Without this the failure would be an unhandled async error and the
       // preview would show an unexplained black box.

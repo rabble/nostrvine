@@ -9,9 +9,6 @@ const _mediaProcessingRetryDelays = <Duration>[
   Duration(seconds: 8),
 ];
 
-/// Waits before a same-source retry after media returns HTTP 202.
-typedef SourceLoadDelay = Future<void> Function(Duration duration);
-
 /// Signals that source loading was cancelled because the owning controller
 /// window moved on while fallbacks were still in flight.
 class SourceLoadAborted implements Exception {
@@ -38,6 +35,12 @@ class SourceLoadAborted implements Exception {
 /// [maxPlaybackDuration] becomes the clip's end position, so the native
 /// player stops (and loops) there. Sources shorter than the cap are
 /// unaffected — both backends clamp the clip end to the real duration.
+///
+/// [trimToCommonTrackEnd] hides the loop seam left by a source whose audio and
+/// video tracks end a few milliseconds apart, and is what a looping feed wants.
+/// Turn it off wherever playback is measured against the container duration —
+/// an editor timeline, for instance — because the clamp can end playback up to
+/// 500 ms before the duration such an axis is drawn from.
 Future<(String, int)> setSourceWithFallbacks({
   required int index,
   required DivineVideoPlayerController controller,
@@ -46,7 +49,8 @@ Future<(String, int)> setSourceWithFallbacks({
   Map<String, String>? Function(String source)? httpHeadersForSource,
   bool Function()? isLoadCurrent,
   Duration? maxPlaybackDuration,
-  SourceLoadDelay delay = Future<void>.delayed,
+  bool trimToCommonTrackEnd = true,
+  Future<void> Function(Duration duration) delay = Future<void>.delayed,
   void Function(String source)? onFailoverSourceFailure,
   void Function(String source)? onSourceLoadFailure,
 }) async {
@@ -68,7 +72,7 @@ Future<(String, int)> setSourceWithFallbacks({
           source,
           end: maxPlaybackDuration,
           httpHeaders: httpHeadersForSource?.call(source) ?? const {},
-          trimToCommonTrackEnd: true,
+          trimToCommonTrackEnd: trimToCommonTrackEnd,
         ),
       );
       abortIfStale(source);
@@ -112,7 +116,7 @@ Future<(String, int)> setSourceWithFallbacks({
                 source,
                 end: maxPlaybackDuration,
                 httpHeaders: httpHeadersForSource?.call(source) ?? const {},
-                trimToCommonTrackEnd: true,
+                trimToCommonTrackEnd: trimToCommonTrackEnd,
               ),
             );
             abortIfStale(source);
