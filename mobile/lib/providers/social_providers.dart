@@ -583,6 +583,18 @@ ProductEventQueue productEventQueue(Ref ref) {
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
+String resolveProductAnalyticsRelease({
+  required String runtimeVersion,
+  required String environment,
+  required String stagingOverride,
+}) {
+  final isStaging = environment.toUpperCase() == 'STAGING';
+  final isSmokeMarker = RegExp(
+    r'^staging-smoke-[0-9a-f]{32}$',
+  ).hasMatch(stagingOverride);
+  return isStaging && isSmokeMarker ? stagingOverride : runtimeVersion;
+}
+
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
   final db = ref.watch(databaseProvider);
@@ -590,7 +602,13 @@ AnalyticsService analyticsService(Ref ref) {
   final viewPublisher = ref.watch(viewEventPublisherProvider);
   final retryService = ref.watch(viewEventRetryServiceProvider);
   final productQueue = ref.watch(productEventQueueProvider);
-  final appVersion = ref.watch(appVersionProvider);
+  final appVersion = resolveProductAnalyticsRelease(
+    runtimeVersion: ref.watch(appVersionProvider),
+    environment: const String.fromEnvironment('DEFAULT_ENV'),
+    stagingOverride: const String.fromEnvironment(
+      'PRODUCT_ANALYTICS_RELEASE',
+    ),
+  );
   final service = AnalyticsService(
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
