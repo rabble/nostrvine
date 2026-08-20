@@ -445,11 +445,16 @@ ships on Tier 1 + Tier 2.
 
 ### How a user reports bad copy
 
-Settings → Support Center (`/support-center`) → Bug Report, which arrives with
-device and locale diagnostics already attached. A report naming a screen and a
-locale is a Tier 3 finding with a source behind it — the thing this repo
-otherwise cannot generate. Treat it as an ordinary bug, fix the key, and if it
-overturns a decision in this file, change the file too.
+Settings → Support Center (`/support-center`) → Bug Report. A report naming a
+screen and a language is a Tier 3 finding with a source behind it — the thing
+this repo otherwise cannot generate. Treat it as an ordinary bug, fix the key,
+and if it overturns a decision in this file, change the file too.
+
+The report carries platform, device model, OS and app version
+(`bug_report_service.dart`) but **not the app's locale**, so a copy report
+arrives without the one field that would route it — tracked in
+[#7939](https://github.com/divinevideo/divine-mobile/issues/7939). Until that
+lands, ask which language they were reading.
 
 ### Who signs off
 
