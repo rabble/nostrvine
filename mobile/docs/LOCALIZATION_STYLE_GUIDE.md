@@ -272,11 +272,22 @@ mainland vocabulary (`视频`, `账号`, `设置`, `上传`), not Taiwan/HK form
 the other: `unggah`/`unduh`/`akun`/`pengaturan` are Indonesian;
 `muat naik`/`muat turun`/`akaun`/`tetapan` are Malay.
 
-### No regional slang, anywhere
+### Slang and loanwords are allowed
 
-Slang dates fast and localizes worse than plain language. The English source
-gets to be playful because we can review it; a regional idiom in a language
-nobody on the team reads is a liability with no upside.
+- **Use the slang your readers actually use.** The bar is that it is current
+  and ordinary in the variety we ship, not that it is safe. A translation with
+  every edge filed off is not the neutral option; it is a different product.
+- **Keep the English loanword wherever speakers keep it.** `fil` is the
+  clearest case: Taglish *is* the register, and ~750 keys carry an English
+  tech noun. Coining a pure Filipino word for `upload` would be translating
+  something nobody says. French keeping `relay` in 54 of its 72 relay keys is
+  the same instinct — it just has to settle on one rendering, per
+  [Terminology](#terminology).
+- **What to avoid is dated slang and coinages**, not informality. Something
+  that was funny in 2019, or a phrase you invented because the English pun
+  would not go over, ages badly in a file nobody re-reads.
+- **The limit is load-bearing copy** — safety, consent, deletion, age and
+  money strings say exactly what they say.
 
 ---
 
@@ -285,22 +296,32 @@ nobody on the team reads is a liability with no upside.
 [`brand-guidelines/TONE_OF_VOICE.md`](../../brand-guidelines/TONE_OF_VOICE.md)
 sets the dial — in-app UI is low-rebel, high-playful; error
 messages are low-rebel, medium-playful; legal is neither. That dial applies to
-translations too, with three additions.
+translations too.
+
+Start from what Divine is: silly, weird, eccentric social media. Not business
+software, and not an app auditioning for respectability. A translation that
+comes back correct and lifeless has failed at the only thing this section is
+about — and no guard will ever flag it, which is exactly why it is written
+down here.
 
 **Translate the intent, not the words.** The brand guide's own no-results
 example — "Nada. Try something different?" — is an instruction about register,
 not a lexical puzzle. The target should be as light in its own language as the
 English is in ours.
 
-**When the joke does not travel, drop the joke and keep the meaning.** Do not
-substitute a *different* joke — you are inventing untested brand voice in a
-language nobody on the review path can check. Plain and correct beats clever
-and unverifiable. `authWelcomeToDivine` is the counter-example: English
-"Welcome to Divine!" became Japanese `やった！入れたよ！` ("Yes! I'm in!"),
-which is charming, casual beside a large polite corpus, and no longer
-contains the product name or the "Welcome Home" arrival language the brand
-guide asks for. Restoring the missing product name across affected locales is
-tracked in [#7913](https://github.com/divinevideo/divine-mobile/issues/7913).
+**When the joke does not travel, find the joke that does.** Every language
+has its own way of being funny — reach for that rather than flattening the
+string into a statement. A joke that lands in Polish beats the Polish for a
+joke that only works in English.
+
+Two things to keep hold of while doing it, and `authWelcomeToDivine` misses
+both. English "Welcome to Divine!" became Japanese `やった！入れたよ！` ("Yes!
+I'm in!"): charming, but casual beside a large polite corpus, and it drops
+both the product name and the "Welcome Home" arrival the brand guide asks
+for. Be funny **in the register the rest of that locale uses**, and **keep
+what the string had to say**. Restoring the missing product name across
+affected locales is tracked in
+[#7913](https://github.com/divinevideo/divine-mobile/issues/7913).
 
 **Never soften a load-bearing word.** Safety, consent, money, deletion and age
 copy carry meaning that a friendlier synonym destroys. The repo already treats
