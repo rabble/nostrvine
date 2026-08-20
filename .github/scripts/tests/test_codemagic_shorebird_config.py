@@ -358,6 +358,37 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         for workflow in ("ios-build", "android-build", "ios-patch", "android-patch"):
             self.assertIn("- $HOME/.shorebird", self._workflow_block(workflow))
 
+    def test_android_shorebird_builds_precache_android_engine_artifacts(self) -> None:
+        # Shorebird's bundled Flutter precaches only host artifacts, and
+        # shorebird_install rm -rf's ~/.shorebird on any pin change, so every
+        # Shorebird Android build has to precache. Without it the Gradle build
+        # dies on a missing flutter.jar (#7987).
+        for workflow_name, build_step in (
+            ("android-build", "- *build_aab"),
+            ("android-patch", "- *patch_android"),
+        ):
+            workflow = self._workflow_block(workflow_name)
+            self.assertIn("- *precache_shorebird_android_artifacts", workflow)
+            self.assertLess(
+                workflow.index("- *precache_shorebird_android_artifacts"),
+                workflow.index(build_step),
+                f"{workflow_name} must precache before {build_step}",
+            )
+
+        # The e2e workflow builds with Codemagic's own Flutter, not
+        # Shorebird's, so it neither needs nor should pay for the download.
+        self.assertNotIn(
+            "- *precache_shorebird_android_artifacts",
+            self._workflow_block("e2e-smoke-android"),
+        )
+
+        # The revision has to come from the CLI, not a second hardcoded pin
+        # that could drift from EXPECTED_SHOREBIRD_REVISION.
+        self.assertIn(
+            "FLUTTER_REVISION=$(shorebird --version",
+            self.contents,
+        )
+
     def test_shorebird_install_runs_before_ios_dependency_resolution(self) -> None:
         for workflow_name in ("ios-build", "ios-patch"):
             workflow = self._workflow_block(workflow_name)
