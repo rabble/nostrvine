@@ -25,6 +25,36 @@ class _MockViewEventPublisher extends Mock implements ViewEventPublisher {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('a staging dogfood build may use a unique smoke-test release', () {
+    expect(
+      resolveProductAnalyticsRelease(
+        runtimeVersion: '1.2.3',
+        environment: 'STAGING',
+        stagingOverride: 'staging-smoke-0123456789abcdef0123456789abcdef',
+      ),
+      'staging-smoke-0123456789abcdef0123456789abcdef',
+    );
+  });
+
+  test('production and malformed overrides use the real app version', () {
+    expect(
+      resolveProductAnalyticsRelease(
+        runtimeVersion: '1.2.3',
+        environment: 'PRODUCTION',
+        stagingOverride: 'staging-smoke-0123456789abcdef0123456789abcdef',
+      ),
+      '1.2.3',
+    );
+    expect(
+      resolveProductAnalyticsRelease(
+        runtimeVersion: '1.2.3',
+        environment: 'STAGING',
+        stagingOverride: 'anything-else',
+      ),
+      '1.2.3',
+    );
+  });
+
   test('product analytics reports the running app version', () async {
     SharedPreferences.setMockInitialValues({});
     final database = AppDatabase.test(NativeDatabase.memory());
