@@ -157,7 +157,16 @@ ArticlesPageRoute(date: '07162024', category: 'all').go(context);
 ```
 
 ### Avoid Extra Parameter
-Don't use `extra` for passing objects - breaks deep linking and web:
+Don't use `extra` for passing objects - breaks deep linking and web.
+
+In this repo `extra` is a **warm-start cache only**: every route resolves from
+path parameters, query parameters and repositories, and no route builder may
+dead-end because `extra` was absent (#3335). Read it through `extraAs<T>` /
+`extraValue<T>` from `mobile/lib/router/routes/route_extras.dart` — a restored
+`extra` comes back as a plain `Map<String, dynamic>`, so a raw cast crashes the
+builder. The per-route inventory of what each hint saves, and what a URL-only
+entry falls back to, lives in
+[`mobile/docs/DEEP_LINK_URL_REFERENCE.md`](../../mobile/docs/DEEP_LINK_URL_REFERENCE.md#route-state-and-extra).
 
 ```dart
 // Bad - breaks deep linking

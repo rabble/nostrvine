@@ -8,6 +8,7 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
@@ -205,6 +206,104 @@ void main() {
       expect(find.text(l10n.appsSandboxUnavailableBody), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'resolves the web-sandbox route from the directory when extra is absent',
+    (tester) async {
+      // The route has no in-app caller, so `extra` is always null: a pasted
+      // URL or a browser refresh is the only way in (#3335).
+      await _pumpRouterAt(
+        tester,
+        WebIframeSandboxScreen.pathForAppId('primal-app'),
+        approvedApps: [_sandboxApp()],
+      );
+
+      expect(find.byType(WebIframeSandboxScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'web-sandbox route shows integration unavailable when unresolvable',
+    (tester) async {
+      await _pumpRouterAt(
+        tester,
+        WebIframeSandboxScreen.pathForAppId('missing-app'),
+        approvedApps: const [],
+      );
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.byType(WebIframeSandboxScreen), findsNothing);
+      expect(find.text(l10n.appsSandboxUnavailableTitle), findsOneWidget);
+    },
+  );
+
+  testWidgets('web-sandbox route resolves by slug as well as id', (
+    tester,
+  ) async {
+    await _pumpRouterAt(
+      tester,
+      WebIframeSandboxScreen.pathForAppId('primal'),
+      approvedApps: [_sandboxApp()],
+    );
+
+    expect(find.byType(WebIframeSandboxScreen), findsOneWidget);
+  });
+}
+
+/// Pumps the real router at [location] with the app directory stubbed to
+/// [approvedApps], then settles the resolver's async fetch.
+Future<void> _pumpRouterAt(
+  WidgetTester tester,
+  String location, {
+  required List<NostrAppDirectoryEntry> approvedApps,
+}) async {
+  SharedPreferences.setMockInitialValues({
+    'current_user_pubkey_hex': 'f' * 64,
+    'following_list_${'f' * 64}': '["npub1followed"]',
+  });
+  final sharedPreferences = await SharedPreferences.getInstance();
+  final mockAuth = createMockAuthService();
+  final mockDirectoryService = _MockNostrAppDirectoryService();
+  when(() => mockAuth.isAuthenticated).thenReturn(true);
+  when(() => mockAuth.currentPublicKeyHex).thenReturn('f' * 64);
+  when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+  when(
+    () => mockAuth.authStateStream,
+  ).thenAnswer((_) => const Stream<AuthState>.empty());
+  when(
+    mockDirectoryService.fetchApprovedApps,
+  ).thenAnswer((_) async => approvedApps);
+
+  final container = ProviderContainer(
+    overrides: [
+      ...getStandardTestOverrides(
+        mockSharedPreferences: sharedPreferences,
+        mockAuthService: mockAuth,
+      ),
+      currentMinorAccountReviewStatusProvider.overrideWith(
+        (ref) async => MinorAccountReviewStatus.active(),
+      ),
+      nostrAppDirectoryServiceProvider.overrideWithValue(mockDirectoryService),
+    ],
+  );
+  addTearDown(container.dispose);
+  await container.read(currentMinorAccountReviewStatusProvider.future);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: container.read(goRouterProvider),
+      ),
+    ),
+  );
+
+  container.read(goRouterProvider).go(location);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pump(const Duration(milliseconds: 100));
 }
 
 class _FakeWebViewPlatform extends WebViewPlatform {

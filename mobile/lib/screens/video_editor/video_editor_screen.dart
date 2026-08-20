@@ -81,6 +81,30 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
 
   static const draftPathWithId = '$path/:draftId';
 
+  /// Query parameter carrying how the editor was entered.
+  static const originQueryParameter = 'from';
+
+  /// Value of [originQueryParameter] for an entry from the clip library.
+  static const libraryOrigin = 'library';
+
+  /// Builds the editor location, optionally for an existing [draftId].
+  ///
+  /// The origin rides in the URL rather than `extra` so a restored session
+  /// keeps the library exit behaviour instead of silently falling back to the
+  /// recorder one (#3335).
+  static String pathFor({String? draftId, bool fromLibrary = false}) {
+    return Uri(
+      path: draftId == null || draftId.isEmpty ? path : '$path/$draftId',
+      queryParameters: fromLibrary
+          ? {originQueryParameter: libraryOrigin}
+          : null,
+    ).toString();
+  }
+
+  /// Whether [uri] entered the editor from the clip library.
+  static bool fromLibraryForRoute(Uri uri) =>
+      uri.queryParameters[originQueryParameter] == libraryOrigin;
+
   @override
   ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }

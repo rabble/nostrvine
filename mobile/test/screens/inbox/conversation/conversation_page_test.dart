@@ -4,21 +4,34 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/minor_dm_approval.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/connection_status_service.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+/// The real service arms a 30s periodic timer in its constructor, which
+/// would still be pending when the tree is torn down.
+class _MockConnectionStatusService extends Mock
+    implements ConnectionStatusService {}
 
 void main() {
   const testPubkey =
@@ -118,6 +131,170 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ConversationView), findsOneWidget);
+      });
+
+      testWidgets('resolves the counterparty from the conversation row when '
+          'the route carried no extra (deep link / browser refresh)', (
+        tester,
+      ) async {
+        when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+        when(
+          () => mockDmRepository.getConversation(testConversationId),
+        ).thenAnswer(
+          (_) async => DmConversation(
+            id: testConversationId,
+            participantPubkeys: const [testPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: 1700000000,
+          ),
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: const ConversationPage(
+              conversationId: testConversationId,
+              participantPubkeys: [],
+            ),
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
+              dmRepositoryProvider.overrideWithValue(mockDmRepository),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Without this the thread renders with no identity in its header and
+        // an unaddressable send bar (#3335).
+        final view = tester.widget<ConversationView>(
+          find.byType(ConversationView),
+        );
+        expect(view.participantPubkeys, equals([otherPubkey]));
+      });
+
+      testWidgets('a DM-restricted user deep-linking without extras is '
+          'bounced to the inbox and never reads the thread (#176)', (
+        tester,
+      ) async {
+        when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+        final router = GoRouter(
+          initialLocation: ConversationPage.pathForId(testConversationId),
+          routes: [
+            GoRoute(
+              path: ConversationPage.pathPattern,
+              builder: (_, _) => const ConversationPage(
+                conversationId: testConversationId,
+                participantPubkeys: [],
+              ),
+            ),
+            GoRoute(
+              path: InboxPage.path,
+              builder: (_, _) => const Scaffold(body: Text('inbox')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          testProviderScope(
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(true),
+              dmRepositoryProvider.overrideWithValue(mockDmRepository),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ConversationView), findsNothing);
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          equals(InboxPage.path),
+        );
+        // Resolving counterparties is itself a read of conversation data the
+        // restricted user may not access, so the gate precedes the fallback.
+        verifyNever(() => mockDmRepository.getConversation(any()));
+      });
+
+      testWidgets('ejects an already-open thread when the DM restriction '
+          'flips mid-session (#176)', (tester) async {
+        when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+        final restrictedFlag = StateProvider<bool>((ref) => false);
+        final router = GoRouter(
+          initialLocation: ConversationPage.pathForId(testConversationId),
+          routes: [
+            GoRoute(
+              path: ConversationPage.pathPattern,
+              builder: (_, _) => const ConversationPage(
+                conversationId: testConversationId,
+                participantPubkeys: [otherPubkey],
+              ),
+            ),
+            GoRoute(
+              path: InboxPage.path,
+              builder: (_, _) => const Scaffold(body: Text('inbox')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            // testProviderScope adds this one on top of the standard set; a
+            // hand-rolled container has to mirror it or the real
+            // VideoEventService builds its own ConnectionStatusService.
+            videoEventServiceProvider.overrideWithValue(
+              createMockVideoEventService(),
+            ),
+            connectionStatusServiceProvider.overrideWithValue(
+              _MockConnectionStatusService(),
+            ),
+            isDmRestrictedProvider.overrideWith(
+              (ref) => ref.watch(restrictedFlag),
+            ),
+            dmRepositoryProvider.overrideWithValue(mockDmRepository),
+            fetchUserProfileProvider(
+              otherPubkey,
+            ).overrideWith((ref) async => null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byType(ConversationView), findsOneWidget);
+
+        // The restriction resolves asynchronously and can land after the
+        // thread is on screen; it must not survive the flip.
+        container.read(restrictedFlag.notifier).state = true;
+        // Discrete pumps rather than pumpAndSettle: the mounted DM machinery
+        // arms a periodic timer that settling would leave pending at teardown.
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(ConversationView), findsNothing);
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          equals(InboxPage.path),
+        );
       });
     });
   });

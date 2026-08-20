@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
-import 'package:openvine/blocs/dm/minor_dm_approval.dart';
+import 'package:openvine/blocs/dm/conversation/conversation_participants_cubit.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -35,6 +35,10 @@ class ConversationPage extends ConsumerWidget {
   final String conversationId;
 
   /// Pubkeys of the other participants (excludes current user).
+  ///
+  /// Only a hint: the route has it after in-app navigation and not after a
+  /// deep link or a browser refresh, so [ConversationParticipantsCubit]
+  /// resolves it from the conversation row when it is empty (#3335).
   final List<String> participantPubkeys;
 
   /// Route name for this screen.
@@ -49,6 +53,103 @@ class ConversationPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
+    final authService = ref.watch(authServiceProvider);
+    final currentPubkey = authService.currentPublicKeyHex ?? '';
+    // Route guard (#176): a DM-restricted user (protected minor, or an
+    // unresolved status that fails closed) must not open a conversation with a
+    // non-approved counterparty, even via a deep link or a stale route (the
+    // send gate and the inbox list already block those paths).
+    //
+    // Watched, not read: the restriction resolves asynchronously and can flip
+    // for an account that is already signed in, and this screen used to
+    // re-evaluate the guard on every rebuild. Both signals are part of the key
+    // so a flip rebuilds the cubit and re-runs the gate rather than leaving an
+    // open thread behind.
+    final isDmRestricted = ref.watch(isDmRestrictedProvider);
+    final officialAccounts = ref.watch(officialAccountsServiceProvider);
+
+    return BlocProvider(
+      // Also keyed on the captured dependencies: a stale dmRepository would
+      // resolve participants against the previous account.
+      key: ValueKey((
+        dmRepository,
+        currentPubkey,
+        isDmRestricted,
+        officialAccounts,
+      )),
+      create: (_) => ConversationParticipantsCubit(
+        dmRepository: dmRepository,
+        conversationId: conversationId,
+        initialParticipantPubkeys: participantPubkeys,
+        isDmRestricted: () => isDmRestricted,
+        isApprovedRecipient: officialAccounts.isApprovedMinorDmRecipientSync,
+      )..load(),
+      child: _ConversationPageContent(conversationId: conversationId),
+    );
+  }
+}
+
+class _ConversationPageContent extends ConsumerWidget {
+  const _ConversationPageContent({required this.conversationId});
+
+  final String conversationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return BlocBuilder<
+      ConversationParticipantsCubit,
+      ConversationParticipantsState
+    >(
+      builder: (context, state) {
+        return switch (state.status) {
+          ConversationParticipantsStatus.denied => const _DeniedConversation(),
+          ConversationParticipantsStatus.loading => const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          ),
+          ConversationParticipantsStatus.ready => _ConversationBlocScope(
+            conversationId: conversationId,
+            participantPubkeys: state.participantPubkeys,
+          ),
+        };
+      },
+    );
+  }
+}
+
+/// Bounces a DM-restricted user back to the inbox, where the filtered
+/// conversation list still reaches anything they may access (#176).
+class _DeniedConversation extends StatefulWidget {
+  const _DeniedConversation();
+
+  @override
+  State<_DeniedConversation> createState() => _DeniedConversationState();
+}
+
+class _DeniedConversationState extends State<_DeniedConversation> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.go(InboxPage.path);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: SizedBox.shrink());
+}
+
+class _ConversationBlocScope extends ConsumerWidget {
+  const _ConversationBlocScope({
+    required this.conversationId,
+    required this.participantPubkeys,
+  });
+
+  final String conversationId;
+  final List<String> participantPubkeys;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dmRepository = ref.watch(dmRepositoryProvider);
     final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
     final inviteStateStore = ref.watch(collaboratorInviteStateStoreProvider);
     final inviteResponseService = ref.watch(
@@ -59,24 +160,6 @@ class ConversationPage extends ConsumerWidget {
     );
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
-
-    // Route guard (#176): a DM-restricted user (protected minor, or an
-    // unresolved status that fails closed) must not open a conversation with a
-    // non-approved counterparty, even via a deep-link or a stale route (the send
-    // gate and the inbox list already block those paths). Bounce to the inbox.
-    if (ref.watch(isDmRestrictedProvider)) {
-      final officials = ref.watch(officialAccountsServiceProvider);
-      final allApproved = allParticipantsApprovedForMinor(
-        participantPubkeys,
-        officials.isApprovedMinorDmRecipientSync,
-      );
-      if (!allApproved) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) context.go(InboxPage.path);
-        });
-        return const Scaffold(body: SizedBox.shrink());
-      }
-    }
 
     return MultiBlocProvider(
       providers: [

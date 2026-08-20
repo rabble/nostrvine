@@ -324,6 +324,61 @@ Any feed URL can be shared:
 - User shares link
 - Recipient opens at same video (index 12)
 
+## Route State And `extra`
+
+Every route must be reachable from its URL alone. `GoRouterState.extra` is
+process-local: it survives an in-app `push`, and nothing else. A universal
+link, a `divine://` link, a browser refresh on the web build, a restored
+session and an account switch that re-seeds the router all arrive with
+`extra == null`. Flutter can also hand a *restored* `extra` back as a plain
+`Map<String, dynamic>` rather than the typed object that was passed, which is
+why route builders read it through `extraAs<T>` / `extraValue<T>`
+(`lib/router/routes/route_extras.dart`) instead of casting.
+
+**The contract (#3335).** A route resolves its screen from path parameters,
+query parameters and repositories. `extra` is only a **warm-start cache** that
+skips a fetch the route could do anyway. A route builder must never dead-end —
+no blank screen, no unusable screen — because `extra` was absent.
+
+Three shapes satisfy the contract, all of them already in the codebase:
+
+| Shape | Example |
+|---|---|
+| Resolve by id, `extra` skips the fetch | `/apps/:appId/sandbox` → `SandboxRouteCubit`; `/inbox/conversation/:id` → `ConversationParticipantsCubit` |
+| Scalar in a query parameter | `/video-recorder?entry_point=`, `/video-metadata?mode=`, `/video-editor?from=library` |
+| `extra` is a display hint the screen already defaults | `/profile/:npub` display-name and avatar hints |
+
+### What each `extra`-bearing route loses without it
+
+All of these render and function; the hint only saves a fetch or improves the
+first frame.
+
+| Route | Hint | Without it |
+|---|---|---|
+| `/apps/:appId/sandbox`, `/apps/:appId/web-sandbox` | `NostrAppDirectoryEntry` | Resolved from the approved-integrations directory by id or slug; a spinner first |
+| `/apps/:slug` | `NostrAppDirectoryEntry` | Resolved by slug |
+| `/inbox/conversation/:id` | counterparty pubkeys | Read from the conversation row. A DM-restricted account (#176) is bounced to the inbox instead, by design |
+| `/inbox/message-requests/:id` | counterparty pubkeys | Same, via `RequestPreviewCubit` |
+| `/list/:listId` | list name, video ids, author | Videos resolve from the list id; the title falls back until the local list loads. `/list/:pubkey/:listId` resolves from relays by author + d-tag |
+| `/categories/:categoryName` | `VideoCategory` | Rebuilt from the path segment with a zero video count |
+| `/video/:id` | prefetched video, comment autoscroll | Loaded by id |
+| `/sound/:id` | `AudioEvent` (+ source video) | `SoundDetailLoader` fetches by id |
+| `/original-sound/:pubkey` | source video | Creator resolves from the pubkey; the source-video card is omitted |
+| `/video-edit/:videoId`, `/subtitle-edit/:videoId` | prefetched video | Loaded by id |
+| `/creator-analytics/:videoId` | `VideoPerformance` | Recomputed for that video |
+| `/profile/:npub` | display name, avatar url | Read from the profile; the hint only covers accounts with no kind-0 |
+| `/followers/:pubkey`, `/following/:pubkey` | display name | Title falls back until the profile loads |
+| `/pooled-video-feed` | in-memory feed args | Redirects to `/video/:id` from the `?video=` parameter, else to the home feed |
+
+### Screens reachable only by URL must also be exitable
+
+`go_router` nests by route *tree*, not by path string, so a flat top-level
+route with a multi-segment path (`/apps/:appId/sandbox`) matches as a **single**
+stack entry on a cold entry. `context.pop` throws `GoError: There is nothing to
+pop` there — a dead back button, and previously a FATAL (#6112). Back
+affordances on these screens use `context.safePop(fallback: …)`; the
+`check_unsafe_back_pop_ceiling.sh` ratchet freezes the remaining raw pops.
+
 ## Testing URLs
 
 ### Real Working Examples
