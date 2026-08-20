@@ -286,6 +286,27 @@ void main() {
     );
 
     test(
+      'turning the experiment off drops a confirmation already assigned',
+      () async {
+        var enabled = true;
+        final killSwitchExperiment = PostPublishExperiment(
+          analytics: analytics,
+          isEnabled: () => enabled,
+        );
+        final treatmentUser = _pubkeyForVariant(PostPublishVariant.viewShare);
+
+        await killSwitchExperiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: killSwitchExperiment.variantForUser(treatmentUser),
+        );
+        enabled = false;
+
+        expect(killSwitchExperiment.completed({'publish-1'}), isNull);
+      },
+    );
+
+    test(
       'an exposure recording failure does not affect the publish flow',
       () async {
         final experimentWithFailure = PostPublishExperiment(

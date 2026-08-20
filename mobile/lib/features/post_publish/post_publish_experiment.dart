@@ -115,7 +115,10 @@ class PostPublishExperiment {
           assignedVariant == PostPublishVariant.viewShare ||
           assignedToTreatment;
     }
-    final showConfirmation = assignedToTreatment && _isTreatmentEnabled();
+    // The master switch is re-read here, not just at assignment time, so
+    // flipping it off also drops a publish that was already in flight.
+    final showConfirmation =
+        assignedToTreatment && _isEnabled() && _isTreatmentEnabled();
     return showConfirmation
         ? PostPublishConfirmationOffer(publishedAt: _now())
         : null;
