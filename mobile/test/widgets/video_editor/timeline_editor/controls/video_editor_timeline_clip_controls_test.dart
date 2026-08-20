@@ -168,10 +168,10 @@ void main() {
     // needs an existing sound passes its serialized audio key here.
     void stubEditor({
       required _MockProImageEditorState editor,
-      required _MockStateManager stateManager,
       required _MockTimelineOverlayBloc overlayBloc,
       Map<String, dynamic> activeMeta = const {},
     }) {
+      final stateManager = _MockStateManager();
       when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
       when(
         () => overlayBloc.stream,
@@ -787,7 +787,6 @@ void main() {
       // plain clip-state path.
       stubEditor(
         editor: editor,
-        stateManager: _MockStateManager(),
         overlayBloc: overlayBloc,
       );
 
@@ -846,7 +845,6 @@ void main() {
         overlayBloc = _MockTimelineOverlayBloc();
         stubEditor(
           editor: editor,
-          stateManager: _MockStateManager(),
           overlayBloc: overlayBloc,
           activeMeta: {
             VideoEditorConstants.audioStateHistoryKey: [coveringSound.toJson()],
