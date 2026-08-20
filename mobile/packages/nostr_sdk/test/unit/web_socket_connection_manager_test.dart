@@ -764,6 +764,41 @@ void main() {
         expect(manager.state, equals(ConnectionState.disconnected));
       });
 
+      test('a handshake superseded by a newer connect closes its own '
+          'socket', () async {
+        final gate = Completer<void>();
+        mockFactory.readyGate = gate;
+
+        final superseded = manager.connect();
+        await Future<void>.delayed(Duration.zero);
+        final supersededChannel = mockFactory.lastChannel!;
+
+        // A newer connect lands while the first handshake is still parked,
+        // and takes ownership of the manager.
+        mockFactory.readyGate = null;
+        expect(await manager.reconnect(), isTrue);
+        expect(mockFactory.createdChannels, hasLength(2));
+        final owner = mockFactory.lastChannel!;
+
+        gate.complete();
+
+        expect(
+          await superseded,
+          isFalse,
+          reason: 'the newer connect owns the manager now',
+        );
+
+        // Adopting the stale channel would repoint the message subscription
+        // at a socket nobody is writing to.
+        final received = <dynamic>[];
+        manager.messageStream.listen(received.add);
+        owner.simulateMessage('still listening to the live socket');
+        await Future<void>.delayed(Duration.zero);
+
+        expect(received, equals(['still listening to the live socket']));
+        expect(supersededChannel.isClosed, isTrue);
+      });
+
       test('a handshake that completes after dispose closes its own '
           'socket', () async {
         final factory = MockWebSocketChannelFactory();
