@@ -3902,6 +3902,7 @@
     "originalSoundByCreator": "오리지널 사운드 - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
+  "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "이 사람은 Divine이 아카이브에서 찾은 오리지널 Vine을 올렸어요. 계정 인증 배지는 아니에요.",
     "profileBadgeCheckmarkTitle": "프로필 체크마크",
     "profileBadgeCheckmarkBody": "Divine는 이 체크마크를 팀 계정과 직접 승인한 소수의 프로필에 부여해요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.",

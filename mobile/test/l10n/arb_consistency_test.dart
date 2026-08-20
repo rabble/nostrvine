@@ -493,6 +493,10 @@ const _knownUntranslatedDebt = <String>{
   // Secure-account key-conflict recovery copy is new; translation pass
   // tracked in #7984.
   'authSecureAccountAlreadyRegistered',
+  // OG Beta Tester explainer copy is new; translation pass tracked in #7947.
+  // The sibling label ogBetaTesterBadgeLabel is mirrored into every locale
+  // verbatim, matching ogVinerBadgeLabel, so only the body is deferred.
+  'profileBadgeOgBetaTesterBody',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.
 };

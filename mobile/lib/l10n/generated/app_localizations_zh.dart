@@ -6639,6 +6639,13 @@ class AppLocalizationsZh extends AppLocalizations {
       '这个人发过一条原版 Vine，被 Divine 在存档里找到了。这不是账号认证徽章。';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => '个人资料对勾';
 
   @override

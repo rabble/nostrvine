@@ -2,8 +2,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 
@@ -160,6 +162,13 @@ class UserName extends ConsumerWidget {
             (service) => service.isOgViner(effectivePubkey),
           ),
         );
+    // The rosters are disjoint by construction — anyone holding a Vine
+    // archive video is excluded from the beta roster — so this guard only
+    // makes the "one chit per name" rule explicit at the render site.
+    final isOgBetaTester =
+        showProfileBadges &&
+        !isOgViner &&
+        isOgBetaTesterPubkey(effectivePubkey);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -183,6 +192,7 @@ class UserName extends ConsumerWidget {
             shouldShowSpecialProfileCheckmark(effectivePubkey))
           const SpecialProfileCheckmark(),
         if (isOgViner) const OgVinerBadge(),
+        if (isOgBetaTester) const OgBetaBadge(),
       ],
     );
   }

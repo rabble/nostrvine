@@ -4302,6 +4302,14 @@
   "@profileBadgeOgVinerBody": {
     "description": "Body copy explaining that the OG Viner profile badge identifies original Vine archive participation, not account verification."
   },
+  "ogBetaTesterBadgeLabel": "OG Beta Tester",
+  "@ogBetaTesterBadgeLabel": {
+    "description": "Label for the badge marking accounts that tested Divine during the beta. Kept in English across locales, matching ogVinerBadgeLabel."
+  },
+  "profileBadgeOgBetaTesterBody": "This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.",
+  "@profileBadgeOgBetaTesterBody": {
+    "description": "Body copy explaining that the OG Beta Tester profile badge identifies early beta participation, not account verification."
+  },
   "profileBadgeCheckmarkTitle": "Profile checkmark",
   "@profileBadgeCheckmarkTitle": {
     "description": "Title for the dialog explaining the special profile checkmark badge."

@@ -7102,6 +7102,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Този човек е публикувал оригинален Vine, който Divine намери в архива. Това не е значка за потвърден профил.';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => 'Отметка на профила';
 
   @override

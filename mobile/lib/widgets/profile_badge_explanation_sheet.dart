@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
-enum ProfileBadgeExplanationType { ogViner, profileCheckmark }
+enum ProfileBadgeExplanationType { ogViner, ogBetaTester, profileCheckmark }
 
 /// Opens the explainer for a compact profile badge.
 ///
@@ -75,6 +75,7 @@ extension on ProfileBadgeExplanationType {
   String title(AppLocalizations l10n) {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => l10n.ogVinerBadgeLabel,
+      ProfileBadgeExplanationType.ogBetaTester => l10n.ogBetaTesterBadgeLabel,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkTitle,
     };
@@ -83,6 +84,8 @@ extension on ProfileBadgeExplanationType {
   String body(AppLocalizations l10n) {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => l10n.profileBadgeOgVinerBody,
+      ProfileBadgeExplanationType.ogBetaTester =>
+        l10n.profileBadgeOgBetaTesterBody,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkBody,
     };
@@ -91,6 +94,7 @@ extension on ProfileBadgeExplanationType {
   DivineIconName get icon {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => DivineIconName.videoCamera,
+      ProfileBadgeExplanationType.ogBetaTester => DivineIconName.sparkle,
       ProfileBadgeExplanationType.profileCheckmark => DivineIconName.check,
     };
   }
@@ -98,6 +102,7 @@ extension on ProfileBadgeExplanationType {
   Color get iconColor {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => VineTheme.primary,
+      ProfileBadgeExplanationType.ogBetaTester => VineTheme.primary,
       ProfileBadgeExplanationType.profileCheckmark => VineTheme.info,
     };
   }

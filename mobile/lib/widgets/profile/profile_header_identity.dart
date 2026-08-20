@@ -141,6 +141,9 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
         (service) => service.isOgViner(userIdHex),
       ),
     );
+    // Rosters are disjoint by construction; the guard keeps the "one chit
+    // per name" rule explicit at the callsite.
+    final isOgBetaTester = !isOgViner && isOgBetaTesterPubkey(userIdHex);
     final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
     final name = isVanished
         // Deliberately not a UserName: that widget re-resolves the profile
@@ -179,7 +182,7 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
             showProfileBadges: false,
           );
 
-    if (!isOgViner && !showCheckmark) return name;
+    if (!isOgViner && !isOgBetaTester && !showCheckmark) return name;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -193,6 +196,10 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
         if (isOgViner)
           const _ProfileHeaderBadgeExplanationButton(
             type: ProfileBadgeExplanationType.ogViner,
+          ),
+        if (isOgBetaTester)
+          const _ProfileHeaderBadgeExplanationButton(
+            type: ProfileBadgeExplanationType.ogBetaTester,
           ),
       ],
     );
@@ -248,6 +255,7 @@ extension on ProfileBadgeExplanationType {
   String title(AppLocalizations l10n) {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => l10n.ogVinerBadgeLabel,
+      ProfileBadgeExplanationType.ogBetaTester => l10n.ogBetaTesterBadgeLabel,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkTitle,
     };
@@ -256,6 +264,8 @@ extension on ProfileBadgeExplanationType {
   String body(AppLocalizations l10n) {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => l10n.profileBadgeOgVinerBody,
+      ProfileBadgeExplanationType.ogBetaTester =>
+        l10n.profileBadgeOgBetaTesterBody,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkBody,
     };
@@ -264,6 +274,10 @@ extension on ProfileBadgeExplanationType {
   Widget get badge {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => const OgVinerBadge(
+        size: _profileHeaderBadgeDiameter,
+        leadingGap: 0,
+      ),
+      ProfileBadgeExplanationType.ogBetaTester => const OgBetaBadge(
         size: _profileHeaderBadgeDiameter,
         leadingGap: 0,
       ),

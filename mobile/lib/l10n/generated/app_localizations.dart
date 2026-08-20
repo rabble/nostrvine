@@ -12035,6 +12035,18 @@ abstract class AppLocalizations {
   /// **'This person posted an original Vine that Divine found in the archive. It is not an account verification badge.'**
   String get profileBadgeOgVinerBody;
 
+  /// Label for the badge marking accounts that tested Divine during the beta. Kept in English across locales, matching ogVinerBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OG Beta Tester'**
+  String get ogBetaTesterBadgeLabel;
+
+  /// Body copy explaining that the OG Beta Tester profile badge identifies early beta participation, not account verification.
+  ///
+  /// In en, this message translates to:
+  /// **'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.'**
+  String get profileBadgeOgBetaTesterBody;
+
   /// Title for the dialog explaining the special profile checkmark badge.
   ///
   /// In en, this message translates to:

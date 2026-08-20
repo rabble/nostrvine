@@ -7098,6 +7098,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esta persona publicó un Vine original que Divine encontró en el archivo. No es una insignia de verificación de cuenta.';
 
   @override
+  String get ogBetaTesterBadgeLabel => 'OG Beta Tester';
+
+  @override
+  String get profileBadgeOgBetaTesterBody =>
+      'This person was testing Divine during the beta, before it opened to everyone. It is not an account verification badge.';
+
+  @override
   String get profileBadgeCheckmarkTitle => 'Tilde de perfil';
 
   @override

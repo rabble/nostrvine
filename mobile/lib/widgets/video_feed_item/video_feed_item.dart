@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -24,6 +25,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -300,6 +302,10 @@ class VideoOverlayActions extends ConsumerWidget {
                         (service) => service.isOgViner(authorPubkey),
                       ),
                     );
+                    // Rosters are disjoint by construction; the guard keeps
+                    // the "one chit per name" rule explicit at the callsite.
+                    final isOgBetaTester =
+                        !isOgViner && isOgBetaTesterPubkey(authorPubkey);
 
                     void navigateToProfile() {
                       onInteracted?.call();
@@ -379,6 +385,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                     ))
                                       const SpecialProfileCheckmark(),
                                     if (isOgViner) const OgVinerBadge(),
+                                    if (isOgBetaTester) const OgBetaBadge(),
                                   ],
                                 ),
                                 _VideoCardMetaLine(
