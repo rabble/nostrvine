@@ -38,7 +38,9 @@ Future<void> _initializeSubtitlePreviewController(
   await controller.initialize();
 }
 
-Future<void> _loadSubtitlePreviewSources({
+/// The preview's own [SubtitlePreviewSourceLoader], used when none is injected.
+@visibleForTesting
+Future<void> loadSubtitlePreviewSources({
   required DivineVideoPlayerController controller,
   required List<String> sources,
   required void Function(String message) log,
@@ -50,6 +52,11 @@ Future<void> _loadSubtitlePreviewSources({
     sources: sources,
     log: log,
     isLoadCurrent: isLoadCurrent,
+    // The feed trims the loop seam; the editor cannot. Its timeline is drawn
+    // from the container duration, so a clamp to the shorter of the two tracks
+    // would put the last half-second of the axis out of the preview's reach —
+    // and a cue timed into it could never be watched against the picture.
+    trimToCommonTrackEnd: false,
   );
 }
 
@@ -83,8 +90,9 @@ class SubtitleEditorStage extends StatefulWidget {
   /// Ordered playback candidates for the preview player, tried in order.
   ///
   /// Build these with `VideoEvent.previewPlaybackSources` so the editor and
-  /// the feed pick renditions the same way. The preview uses the feed's source
-  /// loader too, so loop playback clamps to the shared audio/video track end.
+  /// the feed pick renditions the same way. The preview runs them through the
+  /// feed's source loader, minus its loop-seam trim: playback has to reach the
+  /// end of the timeline the cues are laid out on.
   final List<String> playbackUrls;
 
   /// Loads [playbackUrls] into the preview player.
@@ -279,7 +287,7 @@ class _SubtitleEditorStageState extends State<SubtitleEditorStage>
           _initializeSubtitlePreviewController;
       await initializePreviewController(controller);
       final loadPreviewSources =
-          widget.loadPreviewSources ?? _loadSubtitlePreviewSources;
+          widget.loadPreviewSources ?? loadSubtitlePreviewSources;
       await loadPreviewSources(
         controller: controller,
         sources: urls,
