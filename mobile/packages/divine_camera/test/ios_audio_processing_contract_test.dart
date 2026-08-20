@@ -1,4 +1,5 @@
-// ABOUTME: Static guards for the iOS unprocessed-audio capture contract (#7796).
+// ABOUTME: Static guards for the iOS unprocessed-audio capture contract.
+// ABOUTME: Pins the Music mode audio-session mode mapping (#7796).
 
 import 'dart:io';
 
