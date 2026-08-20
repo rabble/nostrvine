@@ -2,7 +2,7 @@
 
 Status: Current
 Validated against: `mobile/lib/l10n/app_*.arb` (21 non-English locales) and the
-l10n guards under `mobile/test/l10n/` on 2026-08-19.
+l10n guards under `mobile/test/l10n/` on 2026-08-20.
 
 This is the source of truth for **what translated copy should sound like**:
 how to address the reader in each locale, which variety of a pluricentric
@@ -34,8 +34,9 @@ place, the video editor.
   `Revisá tu Wi-Fi`, `Ingresá tu código`, `No tenés permiso` — present since
   the original l10n commit (#2930). *Tuteo* (`Inténtalo de nuevo`) arrived
   later through feature work and clusters in the video editor. Counting only
-  markers that actually discriminate, roughly 230 keys are voseo and 25 are
-  unambiguously tuteo.
+  markers that actually discriminate, 233 keys are voseo and 75 are
+  unambiguously tuteo — and 41 of those 75 are the same sentence,
+  `Inténtalo de nuevo`, copied across error copy.
 - **Turkish** answers the same action two ways: `publishErrorServerUnreachable`
   says `Lütfen birazdan tekrar dene` (informal) and `videoEditorSplitFailed`
   says `Lütfen tekrar deneyin` (formal).
@@ -98,7 +99,7 @@ produces copy that reads as rude, not as friendly.
 | `ar` Arabic | MSA; impersonal phrasing, masculine-singular imperative where a verb is unavoidable | consistent | No feminine or plural address anywhere in the file today. Prefer the verbal noun (الإرسال) to a command (أرسل) in new copy. No dialect. |
 | `bg` Bulgarian | `ти` + familiar imperatives | **split** | The pronoun `Вие` is absent, but courtesy in Bulgarian is the 2nd-person **plural verb**, and it appears — including inside single strings: `Докосни ... за да започнете` and `Докосни за редактиране. Задръжте и плъзнете`. Checking the pronoun alone reports this file as clean. |
 | `de` German | `du` | consistent | A handful of `Sie`/`Ihr` hits are pronoun ambiguity, not courtesy address. |
-| `es` Spanish | `tú` (tuteo) | **split** | See [Variety and dialect](#variety-and-dialect). No *voseo*, no *vosotros*. |
+| `es` Spanish | `vos` (Rioplatense voseo) | **split** | The register the file has used since #2930 (233 keys), and the dialect Divine's own Spanish-speaking team writes — decided in #7908. The 75 tuteo keys are the drift. No *vosotros*. See [Variety and dialect](#variety-and-dialect). |
 | `fil` Filipino | Informal — no `po`/`kayo` | consistent | Taglish is the register: ~750 keys carry an English tech noun. Do not "purify" those into coined Filipino. |
 | `fr` French | `tu` | **36 keys use `vous`** | Almost all are genuine vouvoiement drift, not plural. Only `userPickerEmptyFollowListBody` ("vous pouvez collaborer" = you-and-them) is a true plural; the two `minorAccountReview*EmailBody` keys are email templates the user sends to support, where formal is correct. The rest cluster in the video editor, recorder and database-failure copy. |
 | `id` Indonesian | `kamu` | mostly consistent | ~13 keys use formal `Anda`, and `feedForYouEmpty` manages both in one sentence: `Feed Untuk Anda kamu kosong.` |
@@ -124,8 +125,9 @@ review cannot disappear into this guide: [`am` #7906](https://github.com/divinev
 [`ko` #7910](https://github.com/divinevideo/divine-mobile/issues/7910),
 [`pt` #7911](https://github.com/divinevideo/divine-mobile/issues/7911), and
 [`tr` #7912](https://github.com/divinevideo/divine-mobile/issues/7912).
-The Spanish tracker first requires the product decision between the current
-voseo majority and the provisional pan-regional tuteo target.
+The Spanish dialect question those trackers waited on is now settled — voseo,
+decided in #7908 — so its reconciliation moves 75 keys toward the file's own
+majority rather than rewriting the corpus.
 
 "Current tree" is the shape of today's corpus, measured with the checks in
 [Checks you can run](#checks-you-can-run-without-speaking-the-language) —
@@ -145,30 +147,42 @@ is its own change, with its own issue and its own native-speaker review.
 
 ## Variety and dialect
 
-### Spanish — neutral, pan-regional, tuteo
+### Spanish — Rioplatense voseo
 
-One `es` file serves every Spanish-speaking market we ship to.
+One `es` file serves every Spanish-speaking market we ship to, and it is
+written in the dialect Divine's own Spanish-speaking team members speak:
+Rioplatense *voseo*. @rabble decided that in #7908 — it is a product decision,
+so it changes there, not in a translation PR.
 
-**Read this before "fixing" the register.** The file's baseline is *voseo*, not
-*tuteo*. `git log -S'Probá' -- mobile/lib/l10n/app_es.arb` traces it to #2930,
-the original l10n commit; tuteo (`Inténtalo`) enters later, at #3142 and other
-video-editor work. So the majority register is the Rioplatense one, and the
-minority is standard tuteo — the opposite of what a quick read suggests.
+The decision keeps the file's baseline rather than replacing it.
+`git log -S'Probá' -- mobile/lib/l10n/app_es.arb` traces voseo to #2930, the
+original l10n commit; tuteo (`Inténtalo`) enters later, at #3142 and other
+video-editor work. So the 233 voseo keys are the house style and the 75 tuteo
+keys are the drift — the opposite of what a quick read suggests.
 
-- **Address: `tú` (tuteo).** This is a product decision, not a drift cleanup,
-  and it is worth stating plainly: *voseo* is Rioplatense, so it reads as
-  regional to the large majority of Spanish speakers, while `tú` is understood
-  everywhere. Choosing it means rewriting the file's baseline (~230 keys), not
-  patching an outlier — schedule it as its own change with native review, and
-  do not half-apply it. If a maintainer prefers to keep voseo, change this row
-  instead; what is not defensible is shipping both.
+- **Address: `vos`.** Voseo forms throughout — `tenés`, `podés`, `sos`, and
+  the accent-final imperatives `Revisá`, `Probá`, `Elegí`, `Compartí`. Not
+  `tienes`/`puedes`, not `Inténtalo de nuevo`. The possessive is `tu`/`tus` in
+  both dialects, so it needs no change.
+- **The regional cost is accepted, not overlooked.** Voseo reads as marked
+  outside the Río de la Plata, and there is no second `es` file for the
+  markets that read it that way. We take that cost to ship copy the team can
+  vouch for, in the voice they actually write in, rather than a neutral
+  register nobody here speaks.
 - **No *vosotros*** — it is Spain-only, and the corpus already contains none.
-- **Vocabulary: whichever word is understood everywhere.** Prefer the
-  pan-regional term over a marked one in either direction: not `ordenador`
-  (Spain) and not `computadora` where `dispositivo` works.
+- **Reconciling the 75 tuteo keys is its own PR (#7908)**, not something to
+  fold into a feature. They cluster in error copy and the video editor, and 41
+  of them are the same sentence, `Inténtalo de nuevo`. `categoryDiy` carries
+  both dialects in one string — `Hazlo vos mismo`, a tuteo imperative with a
+  voseo pronoun.
+- **Vocabulary: whichever word is understood everywhere.** The dialect call is
+  about how we address the reader, not a licence to regionalize every noun.
+  Prefer the pan-regional term over a marked one in either direction: not
+  `ordenador` (Spain) and not `computadora` where `dispositivo` works.
 - **Spelling: `video`, not `vídeo`.** Both are correct Spanish; `video` is the
-  Latin-American form and the majority in the current file. This is the single
-  most repeated noun in the app, so it is worth pinning.
+  Latin-American form and the majority in the current file, though 24 keys
+  still carry `vídeo`. This is the single most repeated noun in the app, so it
+  is worth pinning.
 - Keep `enlace`/`link`, `correo`/`email` consistent *within the file* — see
   [Terminology](#terminology).
 
@@ -385,9 +399,9 @@ PY
 ```
 
 Swap the pattern for the locale you are reviewing: `de` `\b(Sie|Ihnen|Ihre?)\b`,
-`nl` `\b(u|uw)\b`, `it` `\b(Lei|Suo|Sua)\b` **case-sensitively**, `es` voseo
-`\b(vos|sos|tenés|podés|Revisá|Probá|Elegí|Usá|Compartí)\b`, `ja`
-`(だよ|してね|するよ|ないよ)`, `ko` `(습니다|ㅂ니다)` and
+`nl` `\b(u|uw)\b`, `it` `\b(Lei|Suo|Sua)\b` **case-sensitively**, `es`
+`\b(tú|tienes|puedes|quieres|Inténtalo)\b` — tuteo is the drift there, since
+the target is voseo — `ja` `(だよ|してね|するよ|ないよ)`, `ko` `(습니다|ㅂ니다)` and
 `(있어|없어|이야)`, `zh` `您`, `id` `\bAnda\b`. The Korean 반말 pattern is
 deliberately unanchored: real values carry punctuation, and this command is a
 candidate finder rather than a claim that every occurrence is sentence-final.
