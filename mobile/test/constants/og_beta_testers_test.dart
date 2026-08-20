@@ -6,6 +6,13 @@ import 'package:openvine/constants/og_beta_testers.dart';
 
 void main() {
   group('ogBetaTesterPubkeys', () {
+    test('holds the full frozen roster', () {
+      // The roster is frozen, so its length is a constant. Without this a
+      // truncated or paginated regeneration still satisfies every shape
+      // check below and ships silently.
+      expect(ogBetaTesterPubkeys, hasLength(2947));
+    });
+
     test('contains only lowercase 64-character hex pubkeys', () {
       final hex = RegExp(r'^[0-9a-f]{64}$');
       final malformed = ogBetaTesterPubkeys.where(

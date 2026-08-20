@@ -25,6 +25,7 @@ void main() {
   Future<Widget> buildSubject({
     required String pubkey,
     bool cachedOgViner = false,
+    bool showProfileBadges = true,
   }) async {
     SharedPreferences.setMockInitialValues({
       if (cachedOgViner) ogVinerPubkeysCacheKey: jsonEncode([pubkey]),
@@ -39,6 +40,7 @@ void main() {
         home: Scaffold(
           body: Center(
             child: UserName.fromUserProfile(
+              showProfileBadges: showProfileBadges,
               UserProfile(
                 pubkey: pubkey,
                 name: 'Alice',
@@ -89,6 +91,20 @@ void main() {
 
     expect(find.text(l10n.profileBadgeOgBetaTesterBody), findsNothing);
     expect(find.text(l10n.commonClose), findsNothing);
+  });
+
+  testWidgets('hides the badge when showProfileBadges is false', (
+    tester,
+  ) async {
+    // The profile header passes false and renders its own full-size,
+    // tappable explanation button instead of the inline chit.
+    await tester.pumpWidget(
+      await buildSubject(pubkey: rosterPubkey, showProfileBadges: false),
+    );
+    await tester.pump();
+
+    expect(find.text('Alice'), findsOneWidget);
+    expect(find.byType(OgBetaBadge), findsNothing);
   });
 
   testWidgets('yields to the OG Viner badge so only one chit renders', (
