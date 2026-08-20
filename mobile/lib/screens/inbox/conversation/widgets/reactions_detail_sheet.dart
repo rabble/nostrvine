@@ -247,7 +247,10 @@ class _Trailing extends StatelessWidget {
   Widget build(BuildContext context) {
     // Natural leading — a forced line-height drops the colour-emoji glyph low
     // on Android (see ReactionsRow emoji styling).
-    final emojiText = Text(emoji, style: const TextStyle(fontSize: 18));
+    final emojiText = DivineHeartText(
+      emoji,
+      style: const TextStyle(fontSize: 18),
+    );
     if (!isOwn) return emojiText;
 
     final Widget action;

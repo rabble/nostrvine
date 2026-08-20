@@ -4,6 +4,8 @@ export 'src/bottom_sheet/bottom_sheet.dart';
 export 'src/button/button.dart';
 export 'src/checkbox/checkbox.dart';
 export 'src/divine_snackbar_container.dart';
+export 'src/emoji/divine_heart_spans.dart';
+export 'src/emoji/divine_heart_text.dart';
 export 'src/icon/icon.dart';
 export 'src/info_card/info_card.dart';
 export 'src/list_tile/list_tile.dart';

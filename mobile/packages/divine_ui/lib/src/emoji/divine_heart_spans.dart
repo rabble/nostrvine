@@ -1,0 +1,110 @@
+// ABOUTME: Paints the green-heart codepoint in Divine's brand green instead
+// ABOUTME: of the platform emoji font's own green, for user-authored text.
+
+import 'package:divine_ui/src/icon/divine_icon.dart';
+import 'package:divine_ui/src/theme/vine_theme.dart';
+import 'package:flutter/widgets.dart';
+
+/// The green heart Divine paints in [VineTheme.vineGreen].
+///
+/// Divine keeps publishing this standard codepoint, so other clients still
+/// render a green heart of their own; only the local painting changes.
+const String divineGreenHeart = '\u{1F49A}';
+
+/// Heart size as a multiple of the surrounding run's scaled font size.
+///
+/// Emoji glyphs sit slightly larger than their nominal point size, so a 1:1
+/// heart reads as undersized beside the text it replaces.
+const double kDivineHeartFontScale = 1.2;
+
+/// Size assumed for a run whose style carries no explicit font size.
+const double kDivineHeartFallbackFontSize = 14;
+
+/// The most hearts painted as brand-green widgets in a single run.
+///
+/// Each painted heart is a real widget — an SVG-backed [DivineIcon] — and
+/// user-authored text is arbitrary remote content, so an uncapped split is a
+/// jank vector a note author controls for free. Past the cap, remaining
+/// hearts fall back to the platform emoji font.
+const int kDivineHeartMaxPainted = 32;
+
+/// Splits [text] on [divineGreenHeart], painting each occurrence as a
+/// brand-green heart and leaving every other character to the platform.
+///
+/// Returns a single [TextSpan] when [text] holds no green heart, so callers
+/// pay nothing on the common path.
+///
+/// [maxPainted] bounds how many hearts this call turns into widgets; the
+/// rest stay on the platform font. Callers that split one string into
+/// several runs (the linkifier) must thread a shared budget through it —
+/// a per-call default would reset on every run.
+List<InlineSpan> divineHeartSpans(
+  String text, {
+  required TextStyle style,
+  int maxPainted = kDivineHeartMaxPainted,
+}) {
+  if (!text.contains(divineGreenHeart) || maxPainted <= 0) {
+    return [TextSpan(text: text, style: style)];
+  }
+
+  final fontSize = style.fontSize ?? kDivineHeartFallbackFontSize;
+  final spans = <InlineSpan>[];
+
+  var rest = text;
+  var painted = 0;
+  while (painted < maxPainted) {
+    final index = rest.indexOf(divineGreenHeart);
+    if (index < 0) break;
+
+    final segment = rest.substring(0, index);
+    if (segment.isNotEmpty) spans.add(TextSpan(text: segment, style: style));
+    spans.add(_heartSpan(fontSize));
+    painted++;
+
+    rest = rest.substring(index + divineGreenHeart.length);
+    // A VS16 (U+FE0F) after a painted heart has no base character left and
+    // would apply to whatever follows it. Hearts left to the platform font
+    // keep theirs — there it is the standard emoji presentation sequence.
+    if (rest.startsWith('\u{FE0F}')) rest = rest.substring(1);
+  }
+
+  if (rest.isNotEmpty) spans.add(TextSpan(text: rest, style: style));
+  return spans;
+}
+
+InlineSpan _heartSpan(double fontSize) => WidgetSpan(
+  alignment: PlaceholderAlignment.middle,
+  child: Semantics(
+    label: divineGreenHeart,
+    child: _DivineHeartGlyph(fontSize: fontSize),
+  ),
+);
+
+/// The heart glyph, sized off the run's *scaled* font size.
+///
+/// A [WidgetSpan] child is laid out at its own intrinsic size, so the run's
+/// font size arrives here unscaled — hence the explicit scaler read. Chrome
+/// caps how far it grows; a glyph standing in for a character must not, so
+/// this tracks the run 1:1 rather than [DivineIcon.maxScaleFactor].
+class _DivineHeartGlyph extends StatelessWidget {
+  const _DivineHeartGlyph({required this.fontSize});
+
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final size =
+        MediaQuery.textScalerOf(context).scale(fontSize) *
+        kDivineHeartFontScale;
+
+    // [DivineIcon] scales `size` by the ambient scaler itself, which would
+    // apply it a second time on top of the one already baked into [size].
+    return MediaQuery.withNoTextScaling(
+      child: DivineIcon(
+        icon: DivineIconName.heartFill,
+        size: size,
+        color: VineTheme.vineGreen,
+      ),
+    );
+  }
+}

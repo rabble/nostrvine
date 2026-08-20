@@ -35,7 +35,7 @@ class SelectableLinkifiedText extends ConsumerStatefulWidget {
 
 class _SelectableLinkifiedTextState
     extends ConsumerState<SelectableLinkifiedText> {
-  List<TextSpan> _currentSpans = const [];
+  List<InlineSpan> _currentSpans = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +75,9 @@ class _SelectableLinkifiedTextState
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
       onMentionTap: (username) => _navigateToMention(context, username),
       onUrlTap: _handleUrlTap,
+      // A WidgetSpan seeds the editing controller with U+FFFC, so a copied
+      // bio would lose the character. Copy fidelity over brand color here.
+      allowWidgetSpans: false,
     ).build();
 
     if (!_hasClickableOrStylableToken(spans, defaultStyle)) {
@@ -143,10 +146,17 @@ class _SelectableLinkifiedTextState
     );
   }
 
-  bool _hasClickableOrStylableToken(List<TextSpan> spans, TextStyle style) =>
-      spans.any((span) => span.recognizer != null || span.style != style);
+  /// Defensive: a non-[TextSpan] cannot be painted by the plain
+  /// `SelectableText` fast path. None is emitted for this widget today — the
+  /// builder runs with `allowWidgetSpans: false` — but if one ever arrives it
+  /// takes the rich path rather than being dropped.
+  bool _hasClickableOrStylableToken(List<InlineSpan> spans, TextStyle style) =>
+      spans.any(
+        (span) =>
+            span is! TextSpan || span.recognizer != null || span.style != style,
+      );
 
-  void _replaceCurrentSpans(List<TextSpan> spans) {
+  void _replaceCurrentSpans(List<InlineSpan> spans) {
     final previousSpans = _currentSpans;
     _currentSpans = spans;
     LinkifiedTextSupport.disposeSpans(previousSpans);

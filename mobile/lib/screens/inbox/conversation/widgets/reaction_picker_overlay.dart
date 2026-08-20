@@ -159,7 +159,10 @@ class _EmojiButton extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: onTap,
             child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 28)),
+              child: DivineHeartText(
+                emoji,
+                style: const TextStyle(fontSize: 28),
+              ),
             ),
           ),
         ),

@@ -461,13 +461,25 @@ class _MessageTextState extends ConsumerState<_MessageText> {
     final codeStyle = VineTheme.codeFont(color: defaultStyle.color);
 
     final ast = const InlineMarkdownParser().parse(widget.message);
+    // The heart budget spans the whole message: each markdown leaf below
+    // builds its own linkifier, so a per-leaf cap would reset on every
+    // emphasis boundary (`**x**<heart>` x N would paint N SVG widgets).
+    var heartBudget = kDivineHeartMaxPainted;
     final builder = MarkdownTextSpanBuilder(
       defaultStyle: defaultStyle,
       codeStyle: codeStyle,
       codeBackgroundColor: codeBackground,
       linkStyle: referenceStyle,
-      buildPlainSpans: (text, effectiveStyle) =>
-          _buildLinkifiedPlain(text, effectiveStyle, referenceStyle),
+      buildPlainSpans: (text, effectiveStyle) {
+        final run = _buildLinkifiedPlain(
+          text,
+          effectiveStyle,
+          referenceStyle,
+          heartBudget,
+        );
+        heartBudget -= run.whereType<WidgetSpan>().length;
+        return run;
+      },
       onLinkTap: (rawUrl) => _openLink(context, rawUrl),
     );
     final spans = builder.build(ast);
@@ -482,10 +494,14 @@ class _MessageTextState extends ConsumerState<_MessageText> {
   /// Delegates plain markdown leaves to [LinkifiedTextSpanBuilder] so
   /// the linkifier's URL / @mention / #hashtag / nostr-ref pipeline
   /// runs inside markdown wrappers.
+  ///
+  /// [heartBudget] is the message-wide cap on painted brand hearts, shared
+  /// across leaves by the caller.
   List<InlineSpan> _buildLinkifiedPlain(
     String text,
     TextStyle plainStyle,
     TextStyle linkStyle,
+    int heartBudget,
   ) {
     if (text.isEmpty) return const [];
     // Apply the surrounding emphasis to linked / mentioned tokens too
@@ -508,6 +524,7 @@ class _MessageTextState extends ConsumerState<_MessageText> {
       defaultStyle: plainStyle,
       linkStyle: emphasizedLink,
       mentionStyle: emphasizedLink,
+      initialHeartBudget: heartBudget,
       videoLabel: Localizations.of<AppLocalizations>(
         context,
         AppLocalizations,

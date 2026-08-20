@@ -805,7 +805,10 @@ class _ReactionEmojiButtonState extends State<_ReactionEmojiButton>
           child: Center(
             child: ScaleTransition(
               scale: _scale,
-              child: Text(widget.emoji, style: const TextStyle(fontSize: 28)),
+              child: DivineHeartText(
+                widget.emoji,
+                style: const TextStyle(fontSize: 28),
+              ),
             ),
           ),
         ),

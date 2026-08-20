@@ -108,6 +108,47 @@ void main() {
     expect(find.text('Likes'), findsOneWidget);
   });
 
+  testWidgets('paints a brand-green heart in the author name', (tester) async {
+    await tester.pumpWidget(
+      testProviderScope(
+        additionalOverrides: [
+          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+          userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+            yield UserProfile(
+              pubkey: pubkey,
+              displayName: 'Alice $divineGreenHeart',
+              rawData: const {},
+              createdAt: DateTime(2026),
+              eventId: 'kind0_event_id',
+            );
+          }),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<VideoInteractionsBloc>.value(
+              value: mockInteractionsBloc,
+              child: VideoOverlayActions(
+                video: testVideo,
+                isVisible: true,
+                isActive: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final heartFinder = find.byWidgetPredicate(
+      (w) => w is DivineIcon && w.icon == DivineIconName.heartFill,
+    );
+    expect(heartFinder, findsOneWidget);
+    expect(tester.widget<DivineIcon>(heartFinder).color, VineTheme.vineGreen);
+  });
+
   testWidgets('author line uses localized singular loop label for 1', (
     tester,
   ) async {

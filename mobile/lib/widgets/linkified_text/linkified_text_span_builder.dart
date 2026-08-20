@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/widgets.dart' show WidgetSpan;
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -38,6 +40,8 @@ class LinkifiedTextSpanBuilder {
     this.profileLabelForHex,
     this.profilePubkeyForMention,
     this.videoLabel,
+    this.allowWidgetSpans = true,
+    this.initialHeartBudget = kDivineHeartMaxPainted,
   });
 
   static final _combinedRegex = RegExp(
@@ -84,6 +88,22 @@ class LinkifiedTextSpanBuilder {
   /// Display label for video/event references.
   final String? videoLabel;
 
+  /// Whether plain runs may be split into non-text spans — today, the
+  /// brand-green heart.
+  ///
+  /// Selectable text seeds its editing controller from the span plain text,
+  /// where a [WidgetSpan] contributes U+FFFC, so a copied run silently loses
+  /// the character. Selectable callers pass false to keep copied text intact.
+  final bool allowWidgetSpans;
+
+  /// Starting budget of brand-green hearts one [build] may paint as widgets.
+  ///
+  /// Callers that run one builder per fragment of a larger string (the DM
+  /// markdown path builds one per leaf) pass the remaining budget down from
+  /// the fragment's owner, so the cap bounds the whole rendered message
+  /// rather than each fragment.
+  final int initialHeartBudget;
+
   /// Builds spans preserving the token precedence from [LinkifiedText].
   ///
   /// Unpaired UTF-16 surrogates are normalized here rather than at each
@@ -93,14 +113,23 @@ class LinkifiedTextSpanBuilder {
   /// references. This is the one point every span passes through, so guarding
   /// it covers both. Sanitizing is code-unit-for-code-unit, so match offsets
   /// stay valid.
-  List<TextSpan> build() {
+  List<InlineSpan> build() {
     final safeText = sanitizeUtf16(text);
-    final spans = <TextSpan>[];
+    final spans = <InlineSpan>[];
     var lastEnd = 0;
+    // The heart budget is shared across every run of one build: the splitter
+    // is invoked once per plain run between tokens, so a per-run cap would
+    // let an interleaved note (one heart per hashtag, say) reset it to full.
+    var heartBudget = initialHeartBudget;
 
     for (final match in _combinedRegex.allMatches(safeText)) {
       if (match.start > lastEnd) {
-        spans.add(_plainSpan(safeText.substring(lastEnd, match.start)));
+        final run = _plainSpans(
+          safeText.substring(lastEnd, match.start),
+          heartBudget,
+        );
+        heartBudget -= run.whereType<WidgetSpan>().length;
+        spans.addAll(run);
       }
 
       final matchedUrl = match.group(1);
@@ -110,7 +139,9 @@ class LinkifiedTextSpanBuilder {
       final plainMention = match.group(5);
 
       if (matchedUrl != null) {
-        spans.addAll(_buildUrlSpans(matchedUrl));
+        final urlSpans = _buildUrlSpans(matchedUrl, heartBudget);
+        heartBudget -= urlSpans.whereType<WidgetSpan>().length;
+        spans.addAll(urlSpans);
       } else if (hashtag != null) {
         spans.add(_buildHashtagSpan(hashtag));
       } else if (nostrId != null) {
@@ -125,17 +156,34 @@ class LinkifiedTextSpanBuilder {
     }
 
     if (lastEnd < safeText.length) {
-      spans.add(_plainSpan(safeText.substring(lastEnd)));
+      final run = _plainSpans(safeText.substring(lastEnd), heartBudget);
+      heartBudget -= run.whereType<WidgetSpan>().length;
+      spans.addAll(run);
     }
 
-    if (spans.isEmpty) return [_plainSpan(safeText)];
+    if (spans.isEmpty) return _plainSpans(safeText, heartBudget);
     return spans;
   }
 
-  TextSpan _plainSpan(String value) =>
-      TextSpan(text: value, style: defaultStyle);
+  /// Plain runs are split on the green heart so Divine paints it in the
+  /// brand green rather than the platform emoji font's own green — unless
+  /// [allowWidgetSpans] is false, for surfaces where a widget span cannot
+  /// survive, such as selectable text.
+  ///
+  /// [heartBudget] is the shared per-build cap on painted hearts; past it,
+  /// hearts stay on the platform emoji font.
+  List<InlineSpan> _plainSpans(String value, int heartBudget) {
+    if (!allowWidgetSpans || heartBudget == 0) {
+      return [TextSpan(text: value, style: defaultStyle)];
+    }
+    return divineHeartSpans(
+      value,
+      style: defaultStyle,
+      maxPainted: heartBudget,
+    );
+  }
 
-  List<TextSpan> _buildUrlSpans(String matchedUrl) {
+  List<InlineSpan> _buildUrlSpans(String matchedUrl, int heartBudget) {
     final linkText = _trimTrailingUrlPunctuation(matchedUrl);
     final trailingText = matchedUrl.substring(linkText.length);
     return [
@@ -148,7 +196,7 @@ class LinkifiedTextSpanBuilder {
             if (callback != null) unawaited(callback(linkText));
           },
       ),
-      if (trailingText.isNotEmpty) _plainSpan(trailingText),
+      if (trailingText.isNotEmpty) ..._plainSpans(trailingText, heartBudget),
     ];
   }
 
