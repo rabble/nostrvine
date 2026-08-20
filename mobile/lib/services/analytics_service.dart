@@ -86,7 +86,9 @@ class AnalyticsService implements BackgroundAwareService {
 
   bool _analyticsEnabled = true; // Default to enabled
   bool _isInitialized = false;
-  late final String _anonymousId = _uuid.v4();
+  // Not final: rotated when an account session is torn down so a later
+  // account's events cannot be joined to the previous account's rows.
+  late String _anonymousId = _uuid.v4();
   late String _sessionId = _uuid.v4();
   final Map<String, String> _productAnalyticsUtm = {};
 
@@ -114,6 +116,21 @@ class AnalyticsService implements BackgroundAwareService {
       final prefs = await SharedPreferences.getInstance();
       _analyticsEnabled = prefs.getBool(_analyticsEnabledKey) ?? true;
       _isInitialized = true;
+      if (!_analyticsEnabled) {
+        // Stored opt-out: rows persisted before the preference loaded (or by
+        // an older version) must neither linger nor be recovered later.
+        _productAnalyticsUtm.clear();
+        try {
+          await _productEventQueue?.clear();
+        } catch (error) {
+          Log.warning(
+            'Failed to clear queued product analytics for stored opt-out: '
+            '$error',
+            name: 'AnalyticsService',
+            category: LogCategory.system,
+          );
+        }
+      }
       _productEventQueue?.setSendingEnabled(
         _productAnalyticsEnabled && _analyticsEnabled,
       );
@@ -239,10 +256,19 @@ class AnalyticsService implements BackgroundAwareService {
   }
 
   /// Clears queued events owned by the outgoing account before logout/switch.
+  ///
+  /// Also rotates the anonymous and session identifiers: the queue purge
+  /// establishes that data must not cross an account boundary, and keeping the
+  /// old identifiers would let the backend join the next account's batches to
+  /// the outgoing account's rows. The anonymous-to-first-login boundary
+  /// (null previous pubkey) deliberately keeps the identifiers so acquisition
+  /// events stay attributable to the signup they produced.
   Future<void> handleIdentityChange(String? previousPubkey) async {
     _productAnalyticsUtm.clear();
     if (previousPubkey == null || previousPubkey.isEmpty) return;
     await _productEventQueue?.clearOwner(previousPubkey);
+    if (_anonymousIdOverride == null) _anonymousId = _uuid.v4();
+    if (_sessionIdOverride == null) _sessionId = _uuid.v4();
   }
 
   Future<String?> recordContentImpression({
@@ -378,7 +404,14 @@ class AnalyticsService implements BackgroundAwareService {
     ProductAnalyticsV2Event Function(ProductAnalyticsV2Envelope) build, {
     bool anonymous = false,
   }) async {
-    if (_isDisposed || !_analyticsEnabled || !_productAnalyticsEnabled) {
+    // Fail closed until the stored consent preference has been loaded:
+    // `_analyticsEnabled` defaults to true, so without the `_isInitialized`
+    // gate an opted-out user's events could be persisted in the startup
+    // window before `initialize()` resolves.
+    if (_isDisposed ||
+        !_isInitialized ||
+        !_analyticsEnabled ||
+        !_productAnalyticsEnabled) {
       return null;
     }
     final queue = _productEventQueue;

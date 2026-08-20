@@ -398,6 +398,158 @@ void main() {
       },
     );
 
+    test(
+      'stored opt-out clears queued events and never recovers them',
+      () async {
+        SharedPreferences.setMockInitialValues({'analytics_enabled': false});
+        final queue = _MockProductEventQueue();
+        when(queue.clear).thenAnswer((_) async {});
+        when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+          currentUserPubkey: () => 'a' * 64,
+        );
+
+        await analyticsService.initialize();
+
+        expect(analyticsService.analyticsEnabled, isFalse);
+        verify(queue.clear).called(1);
+        verify(() => queue.setSendingEnabled(false)).called(1);
+        verifyNever(queue.recoverPublishingAndFlush);
+
+        final eventId = await analyticsService.recordContentImpression(
+          contentId: 'b' * 64,
+          surface: ProductAnalyticsV2Surface.feed,
+          position: 0,
+          visibleMs: 1000,
+        );
+
+        expect(eventId, isNull);
+        verifyNever(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        );
+      },
+    );
+
+    test(
+      'does not record product events before initialize loads consent',
+      () async {
+        final queue = _MockProductEventQueue();
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+          currentUserPubkey: () => 'a' * 64,
+        );
+        // No initialize() call: consent state is still unknown.
+
+        final eventId = await analyticsService.recordContentImpression(
+          contentId: 'b' * 64,
+          surface: ProductAnalyticsV2Surface.feed,
+          position: 0,
+          visibleMs: 1000,
+        );
+
+        expect(eventId, isNull);
+        verifyNever(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        );
+      },
+    );
+
+    test(
+      'rotates identifiers when an account session is torn down',
+      () async {
+        final queue = _MockProductEventQueue();
+        when(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((_) async {});
+        when(queue.flush).thenAnswer((_) async {});
+        when(() => queue.clearOwner(any())).thenAnswer((_) async {});
+        when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+          currentUserPubkey: () => 'a' * 64,
+        );
+        await analyticsService.initialize();
+
+        await analyticsService.recordContentImpression(
+          contentId: 'b' * 64,
+          surface: ProductAnalyticsV2Surface.feed,
+          position: 0,
+          visibleMs: 1000,
+        );
+        await analyticsService.handleIdentityChange('a' * 64);
+        await analyticsService.recordContentImpression(
+          contentId: 'c' * 64,
+          surface: ProductAnalyticsV2Surface.feed,
+          position: 1,
+          visibleMs: 1000,
+        );
+
+        final envelopes =
+            verify(
+                  () => queue.enqueue(
+                    captureAny(),
+                    ownerPubkey: any(named: 'ownerPubkey'),
+                  ),
+                ).captured
+                .cast<ProductAnalyticsV2Event>()
+                .map((event) => event.envelope)
+                .toList();
+        expect(envelopes, hasLength(2));
+        expect(envelopes[1].anonymousId, isNot(envelopes[0].anonymousId));
+        expect(envelopes[1].sessionId, isNot(envelopes[0].sessionId));
+      },
+    );
+
+    test(
+      'keeps identifiers across the anonymous-to-first-login boundary',
+      () async {
+        final queue = _MockProductEventQueue();
+        when(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((_) async {});
+        when(queue.flush).thenAnswer((_) async {});
+        when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+          currentUserPubkey: () => null,
+        );
+        await analyticsService.initialize();
+
+        await analyticsService.recordRegistrationStarted(
+          entryPoint: ProductAnalyticsV2RegistrationEntryPoint.landing,
+        );
+        // First login has no outgoing account: the acquisition funnel join
+        // must survive.
+        await analyticsService.handleIdentityChange(null);
+        await analyticsService.recordRegistrationStarted(
+          entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
+        );
+
+        final envelopes =
+            verify(
+                  () => queue.enqueue(
+                    captureAny(),
+                    ownerPubkey: any(named: 'ownerPubkey'),
+                  ),
+                ).captured
+                .cast<ProductAnalyticsV2Event>()
+                .map((event) => event.envelope)
+                .toList();
+        expect(envelopes, hasLength(2));
+        expect(envelopes[1].anonymousId, envelopes[0].anonymousId);
+        expect(envelopes[1].sessionId, envelopes[0].sessionId);
+      },
+    );
+
     test('enqueues eligible view_end before triggering a retry flush', () async {
       final tempDir = Directory.systemTemp.createTempSync(
         'analytics_pending_view_test_',
