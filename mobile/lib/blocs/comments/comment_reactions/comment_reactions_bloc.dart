@@ -184,13 +184,25 @@ class CommentReactionsBloc
       // previously-fetched counts for ids not in this batch so an
       // incremental fetch (only newly-loaded comments) doesn't lose
       // already-known counts.
+      //
+      // Reaction state is authoritative for the ids this fetch covered,
+      // including absence: a reaction removed on another client must clear
+      // the local chip rather than survive a union merge. Comments with an
+      // in-flight publish keep their optimistic values — the fetch sampled
+      // the relay before that publish landed.
+      final authoritativeIds = event.commentIds.toSet()
+        ..removeAll(state.pendingReactionCommentIds);
       final mergedOwnEmoji = {
-        ...state.ownReactionEmojiByCommentId,
-        ...voteStatuses.reactedEmojiByTargetId,
+        for (final entry in state.ownReactionEmojiByCommentId.entries)
+          if (!authoritativeIds.contains(entry.key)) entry.key: entry.value,
+        for (final entry in voteStatuses.reactedEmojiByTargetId.entries)
+          if (authoritativeIds.contains(entry.key)) entry.key: entry.value,
       };
       final mergedEmojiCounts = {
-        ...state.commentEmojiReactionCounts,
-        ...voteCounts.emojiReactions,
+        for (final entry in state.commentEmojiReactionCounts.entries)
+          if (!authoritativeIds.contains(entry.key)) entry.key: entry.value,
+        for (final entry in voteCounts.emojiReactions.entries)
+          if (authoritativeIds.contains(entry.key)) entry.key: entry.value,
       };
       emit(
         state.copyWith(

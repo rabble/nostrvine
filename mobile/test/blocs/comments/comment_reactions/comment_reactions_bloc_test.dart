@@ -1262,6 +1262,99 @@ void main() {
       );
 
       blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'fetch clears stale reaction state absent from the snapshot while '
+        'preserving comments outside the batch',
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          commentEmojiReactionCounts: {
+            validId('c1'): const {'😂': 1},
+            validId('c2'): const {'❤️': 2},
+          },
+          ownReactionEmojiByCommentId: {
+            validId('c1'): '😂',
+            validId('c2'): '❤️',
+          },
+        ),
+        // The default stubs return no reaction and no count for c1 — the
+        // relay no longer holds the reaction (removed on another client),
+        // so the fetched absence must clear the local chip.
+        act: (b) => b.add(CommentVoteCountsFetchRequested([validId('c1')])),
+        expect: () => [
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId.containsKey(validId('c1')),
+                'stale own cleared',
+                false,
+              )
+              .having(
+                (s) => s.commentEmojiReactionCounts.containsKey(validId('c1')),
+                'stale counts cleared',
+                false,
+              )
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c2')],
+                'out-of-batch own kept',
+                '❤️',
+              )
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c2')],
+                'out-of-batch counts kept',
+                {'❤️': 2},
+              ),
+        ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'fetch keeps optimistic values for a comment whose publish is '
+        'still in flight',
+        build: createBloc,
+        act: (b) async {
+          final gate = Completer<String>();
+          when(
+            () => mockLikesRepository.reactToEventWithEmoji(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              emoji: any(named: 'emoji'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) => gate.future);
+          b.add(toggled('😂'));
+          await Future<void>.delayed(Duration.zero);
+          // The fetch sampled the relay before the publish landed: both
+          // reads return nothing for c1, but the optimistic state must
+          // survive because the publish is still pending.
+          b.add(CommentVoteCountsFetchRequested([validId('c1')]));
+          await Future<void>.delayed(Duration.zero);
+          gate.complete(validId('reaction'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.pendingReactionCommentIds,
+            'pending',
+            {validId('c1')},
+          ),
+          isA<CommentReactionsState>()
+              .having(
+                (s) => s.ownReactionEmojiByCommentId[validId('c1')],
+                'optimistic own survives the fetch',
+                '😂',
+              )
+              .having(
+                (s) => s.commentEmojiReactionCounts[validId('c1')],
+                'optimistic counts survive the fetch',
+                {'😂': 1},
+              )
+              .having(
+                (s) => s.pendingReactionCommentIds,
+                'pending cleared',
+                isEmpty,
+              ),
+        ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
         'a pending publish on one comment does not drop a tap on another',
         build: createBloc,
         act: (b) async {
