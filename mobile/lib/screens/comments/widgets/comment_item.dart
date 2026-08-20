@@ -698,7 +698,7 @@ class _ReactionChip extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 spacing: 4,
                 children: [
-                  Text(
+                  DivineHeartText(
                     emoji,
                     style: VineTheme.emojiBadgeFont(
                       color: context.vineColors.onSurface,

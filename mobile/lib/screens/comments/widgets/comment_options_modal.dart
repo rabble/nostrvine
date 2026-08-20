@@ -272,7 +272,7 @@ class _QuickReactionButton extends StatelessWidget {
           width: 48,
           height: 48,
           child: Center(
-            child: Text(
+            child: DivineHeartText(
               emoji,
               style: VineTheme.emojiPickerFont(
                 color: context.vineColors.onSurface,
