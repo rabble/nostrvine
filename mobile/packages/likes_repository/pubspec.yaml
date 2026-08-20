@@ -8,6 +8,7 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  characters: ^1.4.0
   db_client:
     path: ../db_client
   equatable: ^2.0.5

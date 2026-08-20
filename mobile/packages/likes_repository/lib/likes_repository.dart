@@ -10,6 +10,7 @@ library;
 
 export 'src/blocked_liker_filter.dart';
 export 'src/db_likes_local_storage.dart';
+export 'src/emoji_text.dart';
 export 'src/exceptions.dart';
 export 'src/likes_local_storage.dart';
 export 'src/likes_repository.dart';
