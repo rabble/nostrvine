@@ -123,11 +123,9 @@ List<RouteBase> videoRoutes() {
     GoRoute(
       path: VideoEditorScreen.path,
       name: VideoEditorScreen.routeName,
-      builder: (_, st) {
-        final fromLibrary = extraValue<bool>(st.extra, 'fromLibrary') ?? false;
-
-        return VideoEditorScreen(fromLibrary: fromLibrary);
-      },
+      builder: (_, st) => VideoEditorScreen(
+        fromLibrary: VideoEditorScreen.fromLibraryForRoute(st.uri),
+      ),
     ),
     GoRoute(
       path: VideoEditorScreen.draftPathWithId,
@@ -136,11 +134,10 @@ List<RouteBase> videoRoutes() {
         // The draft ID is optional if the user wants to continue editing
         // the draft.
         final draftId = st.pathParameters['draftId'];
-        final fromLibrary = extraValue<bool>(st.extra, 'fromLibrary') ?? false;
 
         return VideoEditorScreen(
           draftId: draftId == null || draftId.isEmpty ? null : draftId,
-          fromLibrary: fromLibrary,
+          fromLibrary: VideoEditorScreen.fromLibraryForRoute(st.uri),
         );
       },
     ),

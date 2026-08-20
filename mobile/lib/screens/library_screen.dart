@@ -456,7 +456,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
       context.pop(newClips);
     } else {
       if (!context.mounted) return;
-      await context.push(VideoEditorScreen.path, extra: {'fromLibrary': true});
+      await context.push(VideoEditorScreen.pathFor(fromLibrary: true));
       // Re-sync selection with ClipManager after returning from editor.
       if (!context.mounted) return;
       final currentClipIds = ref

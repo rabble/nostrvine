@@ -126,18 +126,39 @@ void main() {
       expect(decodedExtra, isA<SoundDetailLoader>());
     });
 
-    testWidgets('video editor routes accept restored object maps', (
+    testWidgets('video editor routes read the origin from the URL, not extra', (
       tester,
     ) async {
       final routes = videoRoutes();
       final editorRoute = _routeNamed(routes, VideoEditorScreen.routeName);
       final draftRoute = _routeNamed(routes, VideoEditorScreen.draftRouteName);
-      late VideoEditorScreen editor;
+      late VideoEditorScreen fromLibrary;
+      late VideoEditorScreen fromRecorder;
+      late VideoEditorScreen legacyExtra;
       late VideoEditorScreen draft;
-      late VideoEditorScreen malformed;
 
       await _buildWithContext(tester, (context) {
-        editor =
+        fromLibrary =
+            editorRoute.builder!(
+                  context,
+                  _FakeGoRouterState(
+                    location: VideoEditorScreen.pathFor(fromLibrary: true),
+                    pathParameters: const {},
+                  ),
+                )
+                as VideoEditorScreen;
+        fromRecorder =
+            editorRoute.builder!(
+                  context,
+                  _FakeGoRouterState(
+                    location: VideoEditorScreen.pathFor(),
+                    pathParameters: const {},
+                  ),
+                )
+                as VideoEditorScreen;
+        // The map extra this route used to read is no longer consulted, so a
+        // restored session cannot resurrect a half-migrated origin (#3335).
+        legacyExtra =
             editorRoute.builder!(
                   context,
                   _FakeGoRouterState(
@@ -151,28 +172,39 @@ void main() {
             draftRoute.builder!(
                   context,
                   _FakeGoRouterState(
-                    location: '/video-editor/draft-1',
+                    location: VideoEditorScreen.pathFor(
+                      draftId: 'draft-1',
+                      fromLibrary: true,
+                    ),
                     pathParameters: const {'draftId': 'draft-1'},
-                    extra: const <Object?, Object?>{'fromLibrary': true},
-                  ),
-                )
-                as VideoEditorScreen;
-        malformed =
-            editorRoute.builder!(
-                  context,
-                  _FakeGoRouterState(
-                    location: VideoEditorScreen.path,
-                    pathParameters: const {},
-                    extra: const <Object?, Object?>{'fromLibrary': 'true'},
                   ),
                 )
                 as VideoEditorScreen;
       });
 
-      expect(editor.fromLibrary, isTrue);
+      expect(fromLibrary.fromLibrary, isTrue);
+      expect(fromRecorder.fromLibrary, isFalse);
+      expect(legacyExtra.fromLibrary, isFalse);
       expect(draft.draftId, 'draft-1');
       expect(draft.fromLibrary, isTrue);
-      expect(malformed.fromLibrary, isFalse);
+    });
+
+    test('video editor locations round-trip the origin through the URL', () {
+      expect(VideoEditorScreen.pathFor(), VideoEditorScreen.path);
+      expect(
+        VideoEditorScreen.pathFor(fromLibrary: true),
+        '${VideoEditorScreen.path}?from=library',
+      );
+      expect(
+        VideoEditorScreen.pathFor(draftId: 'draft-1', fromLibrary: true),
+        '${VideoEditorScreen.path}/draft-1?from=library',
+      );
+      expect(
+        VideoEditorScreen.fromLibraryForRoute(
+          Uri.parse(VideoEditorScreen.pathFor(fromLibrary: true)),
+        ),
+        isTrue,
+      );
     });
 
     testWidgets('video metadata route restores draft recorder modes', (
