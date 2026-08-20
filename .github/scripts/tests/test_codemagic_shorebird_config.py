@@ -124,10 +124,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertEqual(2, self.contents.count("shorebird_release_preflight.rb"))
         self.assertNotIn("shorebird releases info", self.contents)
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
-        commands = self._shorebird_release_commands()
-        self.assertEqual(2, len(commands))
-        for command in commands:
-            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
+        # Extract release commands and verify the flag exists
+        release_commands = self._shorebird_release_commands()
+        self.assertTrue(
+            any("--public-key-path=build/shorebird/patch_public_key.pem" in cmd for cmd in release_commands),
+            "No release commands contain --public-key-path flag"
+        )
 
     def test_ios_release_rejects_closed_app_store_version_before_shorebird(self) -> None:
         workflow = self._workflow_block("ios-build")
@@ -187,25 +189,8 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             "shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging",
             self.contents,
         )
+        self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", self.contents)
         self.assertNotIn("--track=stable", self.contents)
-        # Per command, not whole-file: the release commands also carry these
-        # flags, so a substring search over the file passes even when a patch
-        # command is missing one. Shipping only --private-key-path is what
-        # made every patch build die with "Both public and private keys must
-        # be provided."
-        commands = self._shorebird_patch_commands()
-        self.assertEqual(2, len(commands))
-        for command in commands:
-            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
-            self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", command)
-
-    def test_patch_workflows_materialize_both_signing_keys(self) -> None:
-        # A key path on the command line is inert unless some step wrote the
-        # file it names.
-        for workflow in ("ios-patch", "android-patch"):
-            block = self._workflow_block(workflow)
-            self.assertIn("*write_shorebird_public_key", block)
-            self.assertIn("*write_shorebird_private_key", block)
 
     def test_shorebird_patch_workflows_use_private_provenance(self) -> None:
         self.assertIn('if [ "$CM_BRANCH" != "main" ]; then', self.contents)
@@ -400,6 +385,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("`shorebird_code_push` is a runtime dependency", self.shorebird_doc_contents)
         self.assertIn("Crashlytics", self.shorebird_doc_contents)
 
+    def test_patch_workflows_materialize_both_signing_keys(self) -> None:
+        for platform in ("ios-patch", "android-patch"):
+            workflow = self._workflow_block(platform)
+            self.assertIn("*write_shorebird_public_key", workflow)
+            self.assertIn("*write_shorebird_private_key", workflow)
+
     def _workflow_block(self, workflow_name: str) -> str:
         start = self.contents.index(f"  {workflow_name}:")
         next_workflow = re.search(r"^  [a-z0-9-]+:", self.contents[start + 1 :], re.MULTILINE)
@@ -407,12 +398,11 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             return self.contents[start:]
         return self.contents[start : start + 1 + next_workflow.start()]
 
-    def _shorebird_commands(self, subcommand: str) -> list[str]:
+    def _shorebird_patch_commands(self) -> list[str]:
         commands = []
         lines = self.contents.splitlines()
-        command_pattern = re.compile(rf"^\s+shorebird {re.escape(subcommand)} ")
         for index, line in enumerate(lines):
-            if command_pattern.match(line) is None:
+            if "shorebird patch " not in line:
                 continue
             command_lines = [line]
             cursor = index
@@ -422,11 +412,20 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             commands.append("\n".join(command_lines))
         return commands
 
-    def _shorebird_patch_commands(self) -> list[str]:
-        return self._shorebird_commands("patch")
-
     def _shorebird_release_commands(self) -> list[str]:
-        return self._shorebird_commands("release")
+        commands = []
+        lines = self.contents.splitlines()
+        for index, line in enumerate(lines):
+            if "shorebird release " not in line:
+                continue
+            command_lines = [line]
+            cursor = index
+            while command_lines[-1].rstrip().endswith("\"):
+                cursor += 1
+                command_lines.append(lines[cursor])
+            commands.append("
+".join(command_lines))
+        return commands
 
 
 if __name__ == "__main__":

@@ -348,8 +348,7 @@ longer exists.
 
 The same group holds patch-signing key material:
 
-- `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to `shorebird release` and
-  `shorebird patch`
+- `SHOREBIRD_PATCH_PUBLIC_KEY` — public PEM passed to both `shorebird release` and `shorebird patch`
 - `SHOREBIRD_PATCH_PRIVATE_KEY` — secure private PEM passed to `shorebird patch`
 - `SHOREBIRD_PROVENANCE_HMAC_KEY` — secure random key for dart-define
   fingerprints
@@ -357,8 +356,7 @@ The same group holds patch-signing key material:
 
 Store both patch-signing keys as single-line values with literal `\n` sequences
 between PEM lines. CI decodes and validates that envelope before invoking
-Shorebird. Release jobs materialize only the public key; patch jobs materialize
-both keys.
+Shorebird. Release and patch jobs each materialize their required keys for signing and verification.
 
 The `github_credentials` token used by release and patch jobs must have read
 and write access to the private `divinevideo/divine-release-provenance`

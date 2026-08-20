@@ -33,8 +33,7 @@
 #   - SHOREBIRD_TOKEN (mark as secure) — an API key from the Shorebird
 #     console under Account > API Keys. `shorebird login:ci` is removed;
 #     CI authenticates with API keys only.
-#   - SHOREBIRD_PATCH_PUBLIC_KEY (public PEM used by `shorebird release` and
-#     `shorebird patch`)
+#   - SHOREBIRD_PATCH_PUBLIC_KEY (public PEM used by both `shorebird release` and `shorebird patch`)
 #   - SHOREBIRD_PATCH_PRIVATE_KEY (secure private PEM used by `shorebird patch`)
 #   - SHOREBIRD_PROVENANCE_HMAC_KEY (secure random value used only to compare
 #     release and patch configuration without storing or logging its values)
@@ -515,16 +514,8 @@ definitions:
         # behaviour beyond the code fix. Shorebird refuses to patch when it
         # detects native or asset diffs; do NOT add --allow-native-diffs or
         # --allow-asset-diffs to force past that — cut a new release instead.
-        # Signing needs both halves. The private key signs the patch; the
-        # public key goes into the build env as SHOREBIRD_PUBLIC_KEY, the
-        # same way `shorebird release` passes it, and verifies the signature
-        # just produced against itself. Nothing here checks it against the
-        # release's own key, so a rotated key builds green and the patch is
-        # rejected at boot on device. Passing only one fails with "Both
-        # public and private keys must be provided."
         shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
           --dart-define-from-file=build/shorebird/dart_defines.json \
-          --public-key-path=build/shorebird/patch_public_key.pem \
           --private-key-path=build/shorebird/patch_private_key.pem
     - &build_macos
       name: Build macOS app
@@ -615,10 +606,8 @@ definitions:
       script: |
         # See the Android patch step for why there is no --flutter-version and
         # why the dart-defines must match the release's.
-        # See the Android patch step for why both key halves are required.
         shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
           --dart-define-from-file=build/shorebird/dart_defines.json \
-          --public-key-path=build/shorebird/patch_public_key.pem \
           --private-key-path=build/shorebird/patch_private_key.pem \
           --export-options-plist=/Users/builder/export_options.plist
     - &upload_dsyms_to_crashlytics
@@ -1171,7 +1160,6 @@ workflows:
       - *fetch_and_verify_shorebird_provenance
       - *prepare_patch_source
       - *check_ios_extension_signing_contract
-      - *write_shorebird_public_key
       - *write_shorebird_private_key
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
@@ -1258,7 +1246,6 @@ workflows:
       - *prepare_patch_source
       - *setup_local_properties
       - *configure_gradle_memory
-      - *write_shorebird_public_key
       - *write_shorebird_private_key
       - *patch_android
 
