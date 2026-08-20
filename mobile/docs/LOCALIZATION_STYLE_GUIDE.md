@@ -124,7 +124,7 @@ How to *refer* to people, as opposed to addressing them, is
 | `tr` Turkish | `sen` | **split** | Register lives in the suffix, not the pronoun. At least 26 keys use formal 2nd-person plural forms, clustered in the video editor, sound-sync, database-failure and auth copy. Direct collision for the same action: `publishErrorServerUnreachable` = `...tekrar dene`, `videoEditorSplitFailed` = `...tekrar deneyin`. |
 | `ur` Urdu | `آپ` | consistent | `آپ` is the neutral form. `تم` reads as brusque, not friendly. |
 | `vi` Vietnamese | `bạn` | consistent | |
-| `zh` Chinese | `你` | consistent | Never `您`. Simplified script, mainland vocabulary — see below. |
+| `zh` Chinese | `你` | consistent | Never `您`. Simplified script and matching vocabulary; whether we also ship Traditional for readers outside the mainland is open — see [Variety and dialect](#variety-and-dialect) and [#7940](https://github.com/divinevideo/divine-mobile/issues/7940). |
 
 The unreconciled `split` rows are tracked separately so their native-speaker
 review cannot disappear into this guide: [`am` #7906](https://github.com/divinevideo/divine-mobile/issues/7906),
@@ -259,12 +259,23 @@ users are, and Portugal reads Brazilian Portuguese perfectly well.
 - Colloquial contractions are welcome — the invite copy already says `pro`
   and `pra`.
 
-### Chinese — Simplified, mainland vocabulary
+### Chinese — Simplified today, with the audience question open
 
-The picker advertises **简体中文**. Ship Simplified characters only, with
-mainland vocabulary (`视频`, `账号`, `设置`, `上传`), not Taiwan/HK forms
-(`影片`, `帳號`, `設定`). Mixed script inside one file is a bug, and
-`arb_script_integrity_test.dart` will not catch it — both scripts are `CJK`.
+The picker advertises **简体中文**, and the file is Simplified with mainland
+vocabulary (`视频`, `账号`, `设置`, `上传`) rather than Taiwan/HK forms
+(`影片`, `帳號`, `設定`). Keep it that way *within this file* — the script and
+the vocabulary have to agree, and half-converting either is worse than
+neither.
+
+What is genuinely open is who this file is for. We should not plan around
+mainland distribution, which puts a lot of our likely Chinese-reading audience
+in Taiwan and Hong Kong, where Traditional is the norm — so `zh-Hant` beside
+`zh` is a real possibility rather than a nicety. That is a product decision:
+[#7940](https://github.com/divinevideo/divine-mobile/issues/7940).
+
+Mixed script inside one file is a bug either way, and
+`arb_script_integrity_test.dart` will not catch it — both scripts are `CJK` to
+that guard.
 
 ### Malay and Indonesian are not the same locale
 
