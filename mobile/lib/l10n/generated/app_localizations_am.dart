@@ -6213,7 +6213,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'ያልተነበቡ፣ የ$displayName ውይይት';
+    return 'ያልተነበበ፣ የ$displayName ውይይት';
   }
 
   @override

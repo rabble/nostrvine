@@ -6509,7 +6509,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Necitite, Conversație cu $displayName';
+    return 'Necitită, conversație cu $displayName';
   }
 
   @override

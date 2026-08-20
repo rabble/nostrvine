@@ -6392,7 +6392,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Não lidas, Conversa com $displayName';
+    return 'Não lida, conversa com $displayName';
   }
 
   @override

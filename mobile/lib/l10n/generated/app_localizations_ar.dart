@@ -6297,7 +6297,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'غير المقروءة، محادثة $displayName';
+    return 'غير مقروءة، محادثة $displayName';
   }
 
   @override
