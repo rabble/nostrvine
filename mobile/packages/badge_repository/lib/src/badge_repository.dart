@@ -928,7 +928,8 @@ class BadgeRepository {
   /// pin whose award event is missing. Nobody is notified: a `kind:5` from
   /// the issuer reaches no notification path.
   ///
-  /// Does nothing when no award for [coordinate] names [recipientPubkey].
+  /// Publishes no award or deletion when nothing names [recipientPubkey],
+  /// but still takes down the current user's own pin.
   ///
   /// Throws:
   ///
@@ -957,27 +958,37 @@ class BadgeRepository {
       for (final award in awards)
         if (award.recipientPubkeys.contains(recipientPubkey)) award,
     ];
-    if (revoked.isEmpty) return;
 
-    final remaining = <String>{
-      for (final award in revoked)
-        for (final recipient in award.recipientPubkeys)
-          if (recipient != recipientPubkey) recipient,
-    }.toList(growable: false);
-    if (remaining.isNotEmpty) {
-      await awardBadge(coordinate: coordinate, recipientPubkeys: remaining);
+    if (revoked.isNotEmpty) {
+      final remaining = <String>{
+        for (final award in revoked)
+          for (final recipient in award.recipientPubkeys)
+            if (recipient != recipientPubkey) recipient,
+      }.toList(growable: false);
+      if (remaining.isNotEmpty) {
+        await awardBadge(coordinate: coordinate, recipientPubkeys: remaining);
+      }
+
+      // No `a` tag here, unlike [deleteBadge]: that one addresses the
+      // definition, and a revoke must leave the badge itself standing.
+      await _signAndPublish(
+        kind: EventKind.eventDeletion,
+        label: 'badge award revocation',
+        tags: [
+          for (final award in revoked) ['e', award.event.id],
+          ['k', '${EventKind.badgeAward}'],
+        ],
+      );
     }
 
-    // No `a` tag here, unlike [deleteBadge]: that one addresses the
-    // definition, and a revoke must leave the badge itself standing.
-    await _signAndPublish(
-      kind: EventKind.eventDeletion,
-      label: 'badge award revocation',
-      tags: [
-        for (final award in revoked) ['e', award.event.id],
-        ['k', '${EventKind.badgeAward}'],
-      ],
-    );
+    // Taking a badge back from yourself is the one case where the pin is
+    // ours to take down too. For anyone else the profile badge list is their
+    // event and can only be asked about; leaving your own behind shows the
+    // badge on your profile with the award already gone. Outside the block
+    // above so a retry still reaches it once the awards are already deleted.
+    if (recipientPubkey == pubkey) {
+      await _unpinCoordinate(coordinate.value);
+    }
   }
 
   /// Requests deletion of the badge at [coordinate] and every award the
@@ -1235,17 +1246,22 @@ class BadgeRepository {
   /// * [StateError] if there is no current pubkey or the profile badge event
   ///   cannot be signed.
   /// * [BadgePublishException] when no relay confirms the published list.
-  Future<void> removeAward(BadgeAwardViewData award) async {
+  Future<void> removeAward(BadgeAwardViewData award) =>
+      _unpinCoordinate(award.definitionCoordinate);
+
+  /// Drops the badge at [coordinate] from the current user's profile badge
+  /// list, publishing nothing when it was not pinned in the first place.
+  Future<void> _unpinCoordinate(String coordinate) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
-    final refs =
-        (currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[])
-            .where(
-              (ref) => ref.definitionCoordinate != award.definitionCoordinate,
-            )
-            .toList(growable: false);
+    final refs = currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[];
+    final remaining = [
+      for (final ref in refs)
+        if (ref.definitionCoordinate != coordinate) ref,
+    ];
+    if (remaining.length == refs.length) return;
 
-    await _publishProfileBadges(refs);
+    await _publishProfileBadges(remaining);
   }
 
   /// Brings the dismissed badge at [definitionCoordinate] back into the

@@ -2942,6 +2942,122 @@ void main() {
         verifyNever(() => nostrClient.publishEventAwaitOk(any()));
       });
 
+      test('takes down your own pin when you revoke yourself', () async {
+        // The award goes, but the pin is a separate event of the viewer's
+        // own — left behind, the badge keeps rendering on their profile.
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(67),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(1)],
+            ),
+          ],
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(68),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate.value],
+                ['e', _eventId(67)],
+              ],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(1),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published.map((event) => event.kind), [
+          EventKind.eventDeletion,
+          EventKind.profileBadges,
+        ]);
+        expect(published.last.tags, isEmpty);
+      });
+
+      test('unpins on a retry after the awards are already gone', () async {
+        // The first attempt deleted the award but failed before the unpin,
+        // so the retry finds no award to revoke and must still get there.
+        _stubQueries(nostrClient, {
+          'profileCurrent:${_pubkey(1)}': [
+            _profileBadgesEvent(
+              id: _eventId(69),
+              pubkey: _pubkey(1),
+              tags: [
+                ['a', coordinate.value],
+                ['e', _eventId(67)],
+              ],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(1),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published.single.kind, EventKind.profileBadges);
+      });
+
+      test('leaves the profile badge list alone for anyone else', () async {
+        // Their pin is their own event; publishing ours would not reach it.
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(70),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2)],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(2),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published.single.kind, EventKind.eventDeletion);
+      });
+
+      test(
+        'publishes no profile list when the badge was never pinned',
+        () async {
+          _stubQueries(nostrClient, {
+            'awardsFor:${coordinate.value}': [
+              _awardEvent(
+                id: _eventId(71),
+                issuerPubkey: _pubkey(1),
+                definitionCoordinate: coordinate.value,
+                recipients: [_pubkey(1)],
+              ),
+            ],
+          });
+
+          await repository.revokeAward(
+            coordinate: coordinate,
+            recipientPubkey: _pubkey(1),
+          );
+
+          final published = verify(
+            () => nostrClient.publishEventAwaitOk(captureAny()),
+          ).captured.cast<Event>();
+          expect(published.single.kind, EventKind.eventDeletion);
+        },
+      );
+
       test("refuses to revoke someone else's badge", () async {
         await expectLater(
           repository.revokeAward(
