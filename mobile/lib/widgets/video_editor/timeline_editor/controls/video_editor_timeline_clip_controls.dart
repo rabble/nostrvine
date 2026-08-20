@@ -361,10 +361,16 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
           '${DateTime.now().millisecondsSinceEpoch}',
     );
 
-    final newClips = [...state.clips, copy];
-    // The copy is appended at the end, so existing markers keep their
-    // positions; rebase for consistency and to persist markers in the
-    // same history entry as the clip change.
+    // The copy lands directly after its source rather than at the end of the
+    // timeline, matching the stop-motion frame duplicate and letting the user
+    // build a repeat without dragging the copy back into place.
+    final insertIndex = state.currentClipIndex + 1;
+    final newClips = [...state.clips]..insert(insertIndex, copy);
+    // Markers strictly inside the source and earlier clips keep their
+    // positions; markers on later clips shift right by the copy's duration,
+    // as does one sitting exactly on the source's trailing seam, which
+    // anchors to the following clip. The id-based rebase carries both, and
+    // persists them in the same history entry as the clip change.
     final rebasedMarkers = rebaseTimelineMarkersForClipState(
       oldClips: state.clips,
       newClips: newClips,
@@ -372,12 +378,12 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     );
 
     bloc
-      ..add(ClipEditorClipInserted(index: state.clips.length, clip: copy))
+      ..add(ClipEditorClipInserted(index: insertIndex, clip: copy))
       ..add(const ClipEditorEditingStopped());
 
     overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-    // Appending the copy lengthens the composition, so a sound that covered
-    // the old end has to grow with it (#6401).
+    // The copy lengthens the composition, so a sound that covered the old end
+    // has to grow with it (#6401).
     editor.setLengthenedClipState(
       previousClips: state.clips,
       clips: newClips,
