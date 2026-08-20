@@ -310,8 +310,10 @@ jobs:
           bash scripts/check_countable_plural_floor.sh
       - name: 🗑️ Verify every ARB key is actually rendered (l10n ratchet)
         run: |
-          # Issue #3630. Freezes the set of app_en.arb keys that no
-          # non-generated Dart file references. An orphaned key is translated
+          # Issue #3630. Freezes the set of app_en.arb keys that nothing
+          # under mobile/lib renders (lib only — a test cannot render a string,
+          # and a findsNothing assertion is evidence the key is DEAD). An
+          # orphaned key is translated
           # into 21 locales and compiled into AppLocalizations, yet never
           # rendered — usually while the string it was written for sits
           # hardcoded in a widget, still broken for non-English users. Nothing

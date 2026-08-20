@@ -1,6 +1,8 @@
 // ABOUTME: Tests for the orphaned-ARB-key detector and its floor ratchet
 // ABOUTME: (scripts/lib/orphaned_arb_key_detector.dart, #3630).
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 // ignore: avoid_relative_lib_imports, scripts are outside lib/ and not importable through package:openvine.
@@ -148,6 +150,21 @@ extension SomethingElse on BuildContext {
       // Over-reporting is the safe direction: a broken file is a pre-existing
       // `flutter analyze` failure, and the baseline review catches the noise.
       expect(collectCodeIdentifiers('class {{{'), isEmpty);
+    });
+  });
+
+  group('scan scope', () {
+    test('defaults to lib/ only, so a test cannot vouch for a key', () {
+      // The detector's roots default to ['lib']. Counting test/ hid 9
+      // product-orphans, four of them propped up by
+      // `expect(find.text(l10n.x), findsNothing)` — a test asserting the
+      // string is NOT on screen, which is evidence the key is dead. Widening
+      // this back to test/ silently re-hides them, so the default is pinned.
+      final source = File(
+        'scripts/lib/orphaned_arb_key_detector.dart',
+      ).readAsStringSync();
+      expect(source, contains("const ['lib']"));
+      expect(source, isNot(contains("'test', 'integration_test'")));
     });
   });
 

@@ -1,5 +1,5 @@
 // ABOUTME: Detector behind check_orphaned_arb_key_floor.sh — lists app_en.arb
-// ABOUTME: keys that no non-generated Dart file references (#3630).
+// ABOUTME: keys that nothing under lib/ renders (#3630).
 
 import 'dart:convert';
 import 'dart:io';
@@ -149,9 +149,13 @@ void main(List<String> args) {
   final arbPath = positional.isNotEmpty
       ? positional.first
       : 'lib/l10n/app_en.arb';
+  // lib/ ONLY, deliberately. A test cannot make a key rendered, and taking
+  // test references as evidence hid 9 product-orphans — four of them held up
+  // by a `findsNothing` assertion, which proves the string is NOT on screen.
+  // Pass roots explicitly to widen the scan.
   final scanRoots = positional.length > 1
       ? positional.sublist(1)
-      : const ['lib', 'test', 'integration_test'];
+      : const ['lib'];
 
   final arbFile = File(arbPath);
   if (!arbFile.existsSync()) {

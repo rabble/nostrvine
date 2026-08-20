@@ -65,6 +65,11 @@ Nothing in the ordinary toolchain notices:
 | `flutter gen-l10n` | Has no notion of an unused message; it emits the getter regardless. |
 | `flutter analyze` | Cannot report an unused public getter on a generated class. |
 
+The scan is `mobile/lib` **only**. A test cannot render a string, so a test
+reference is not evidence a key is live — and taking it as evidence hid 9
+product-orphans, four of them propped up by a `find.text(l10n.x), findsNothing`
+assertion, which is a test *proving* the string is not on screen.
+
 So the set is frozen by a shrink-only ratchet (#3630),
 `mobile/scripts/check_orphaned_arb_key_floor.sh`, baseline
 `mobile/scripts/baseline/orphaned_arb_keys.txt`. It runs in CI in the
@@ -95,9 +100,11 @@ Every entry carries a trailing reason in one of two shapes:
   key is right and the call site is wrong; fixing it is a real localization fix
   for 21 locales, not a cleanup.
 - `# staged: <why>` — deliberately ahead of its call site.
+- `# test-only: <where>` — nothing in `lib/` renders it and only a test names
+  it. Resolving one means editing that test too, so they are tracked in #7968.
 
-A key with no live counterpart at all belongs in neither category. **Delete it**
-from `app_en.arb` and every `app_*.arb` locale rather than baselining it.
+A key in none of those categories: **delete it** from `app_en.arb` and every
+`app_*.arb` locale rather than baselining it.
 
 ```bash
 cd mobile && dart run scripts/lib/orphaned_arb_key_detector.dart --detail
