@@ -267,6 +267,7 @@ class _BadgeDetailBody extends StatelessWidget {
                             pubkey: recipient.pubkey,
                             isAccepted: recipient.isAccepted,
                             showRevokeAction: detail.isOwner,
+                            isRevoking: state.isRevoking(recipient.pubkey),
                             onRevoke: state.isBusy
                                 ? null
                                 : () => _revoke(context, recipient),

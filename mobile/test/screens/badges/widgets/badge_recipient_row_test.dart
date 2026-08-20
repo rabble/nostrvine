@@ -18,6 +18,7 @@ void main() {
       WidgetTester tester, {
       required bool? isAccepted,
       bool showRevokeAction = false,
+      bool isRevoking = false,
       VoidCallback? onRevoke,
     }) {
       return tester.pumpWidget(
@@ -32,6 +33,7 @@ void main() {
                     '123456789012345678901234',
                 isAccepted: isAccepted,
                 showRevokeAction: showRevokeAction,
+                isRevoking: isRevoking,
                 onRevoke: onRevoke,
               ),
             ),
@@ -97,6 +99,45 @@ void main() {
         tester.getSemantics(find.byType(DivineIconButton)).label,
         l10n.badgeDetailRevokeAction,
       );
+    });
+
+    testWidgets('shows progress on the row whose award is going', (
+      tester,
+    ) async {
+      // A greyed-out button is indistinguishable from every other greyed-out
+      // button on the screen, so the row doing the work says so itself.
+      await pumpRow(
+        tester,
+        isAccepted: true,
+        showRevokeAction: true,
+        isRevoking: true,
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DivineIconButton), findsNothing);
+    });
+
+    testWidgets('leaves the row geometry untouched while revoking', (
+      tester,
+    ) async {
+      // The spinner takes the button's box, so the list does not jump when
+      // the swap happens.
+      await pumpRow(
+        tester,
+        isAccepted: true,
+        showRevokeAction: true,
+        onRevoke: () {},
+      );
+      final idle = tester.getSize(find.byType(BadgeRecipientRow));
+
+      await pumpRow(
+        tester,
+        isAccepted: true,
+        showRevokeAction: true,
+        isRevoking: true,
+      );
+
+      expect(tester.getSize(find.byType(BadgeRecipientRow)), idle);
     });
 
     testWidgets('greys the revoke action out instead of removing it', (

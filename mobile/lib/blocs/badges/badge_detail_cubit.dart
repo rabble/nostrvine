@@ -110,6 +110,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
         coordinate: state.coordinate,
         recipientPubkey: recipientPubkey,
       ),
+      recipient: recipientPubkey,
       completedStatus: BadgeDetailActionStatus.revoked,
       // Revoking a just-published award is the case the issue exists for,
       // and it is the one a relay is most likely to refuse — same refusal,
@@ -162,6 +163,9 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
 
   /// Runs [action], optionally reloading the badge once it lands.
   ///
+  /// [recipient] names the awardee an action targets, so the UI can show the
+  /// work on that row rather than across the whole list.
+  ///
   /// [completedStatus] and [rejectionStatus] let one action carry its own
   /// outcome where the UI has something better to say than the shared
   /// [BadgeDetailActionStatus.completed] / [BadgeDetailActionStatus.failure]
@@ -170,10 +174,13 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
     BadgeDetailActionStatus actionStatus,
     Future<void> Function() action, {
     bool reload = true,
+    String? recipient,
     BadgeDetailActionStatus completedStatus = BadgeDetailActionStatus.completed,
     BadgeDetailActionStatus? rejectionStatus,
   }) async {
-    emit(state.copyWith(actionStatus: actionStatus));
+    emit(
+      state.copyWith(actionStatus: actionStatus, actionRecipient: recipient),
+    );
     try {
       await action();
       if (!reload) {

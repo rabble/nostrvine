@@ -73,6 +73,7 @@ class BadgeDetailState extends Equatable {
     this.status = BadgeDetailStatus.initial,
     this.actionStatus = BadgeDetailActionStatus.idle,
     this.detail,
+    this.actionRecipient,
   });
 
   /// Address of the badge being shown.
@@ -86,6 +87,19 @@ class BadgeDetailState extends Equatable {
 
   /// The loaded badge, once available.
   final BadgeDetailData? detail;
+
+  /// The recipient the running action targets, for the actions that target
+  /// one. Never read on its own — [isRevoking] gates it on [actionStatus],
+  /// so a settled action needs no second emit to clear it.
+  final String? actionRecipient;
+
+  /// Whether [pubkey]'s award is being taken back right now.
+  ///
+  /// Per recipient rather than per screen: [isBusy] disables every row, but
+  /// only the row actually going away should show that it is working.
+  bool isRevoking(String pubkey) =>
+      actionStatus == BadgeDetailActionStatus.revoking &&
+      actionRecipient == pubkey;
 
   /// Whether a mutation is in flight.
   bool get isBusy =>
@@ -115,15 +129,23 @@ class BadgeDetailState extends Equatable {
     BadgeDetailStatus? status,
     BadgeDetailActionStatus? actionStatus,
     BadgeDetailData? detail,
+    String? actionRecipient,
   }) {
     return BadgeDetailState(
       coordinate: coordinate,
       status: status ?? this.status,
       actionStatus: actionStatus ?? this.actionStatus,
       detail: detail ?? this.detail,
+      actionRecipient: actionRecipient ?? this.actionRecipient,
     );
   }
 
   @override
-  List<Object?> get props => [coordinate, status, actionStatus, detail];
+  List<Object?> get props => [
+    coordinate,
+    status,
+    actionStatus,
+    detail,
+    actionRecipient,
+  ];
 }

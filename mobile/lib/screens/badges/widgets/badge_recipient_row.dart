@@ -19,6 +19,7 @@ class BadgeRecipientRow extends StatelessWidget {
     required this.isAccepted,
     this.showRevokeAction = false,
     this.onRevoke,
+    this.isRevoking = false,
     super.key,
   });
 
@@ -40,6 +41,13 @@ class BadgeRecipientRow extends StatelessWidget {
   /// rather than removing it — the same shape [showRevokeAction] keeps
   /// stable across rebuilds.
   final VoidCallback? onRevoke;
+
+  /// Whether this recipient's award is being taken back right now.
+  ///
+  /// Replaces the button with a spinner in the same 48px box, so the row does
+  /// not reflow and the work is visible on the row it belongs to rather than
+  /// only as a greyed-out button.
+  final bool isRevoking;
 
   @override
   Widget build(BuildContext context) {
@@ -68,15 +76,17 @@ class BadgeRecipientRow extends StatelessWidget {
               // its node and a screen reader reads the two as one control.
               Semantics(
                 container: true,
-                child: DivineIconButton(
-                  icon: DivineIconName.userMinus,
-                  type: DivineIconButtonType.ghostSecondary,
-                  size: DivineIconButtonSize.small,
-                  showShadow: false,
-                  tooltip: context.l10n.badgeDetailRevokeAction,
-                  semanticLabel: context.l10n.badgeDetailRevokeAction,
-                  onPressed: onRevoke,
-                ),
+                child: isRevoking
+                    ? const _RevokeProgress()
+                    : DivineIconButton(
+                        icon: DivineIconName.userMinus,
+                        type: DivineIconButtonType.ghostSecondary,
+                        size: DivineIconButtonSize.small,
+                        showShadow: false,
+                        tooltip: context.l10n.badgeDetailRevokeAction,
+                        semanticLabel: context.l10n.badgeDetailRevokeAction,
+                        onPressed: onRevoke,
+                      ),
               ),
           ],
         ),
@@ -91,6 +101,33 @@ class BadgeRecipientRow extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Spinner shown in place of the revoke button while the award is going.
+///
+/// Sized to the button's own tap target and icon so swapping the two leaves
+/// the row's geometry untouched.
+class _RevokeProgress extends StatelessWidget {
+  const _RevokeProgress();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: DivineIcon.scaleSize(context, 48),
+      child: Center(
+        child: SizedBox.square(
+          dimension: DivineIcon.scaleSize(context, 24),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            semanticsLabel: context.l10n.commonLoading,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              context.vineColors.onSurface,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

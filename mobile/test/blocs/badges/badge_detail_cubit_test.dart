@@ -245,18 +245,38 @@ void main() {
       },
       skip: 2,
       expect: () => [
-        isA<BadgeDetailState>().having(
-          (state) => state.actionStatus,
-          'actionStatus',
-          BadgeDetailActionStatus.revoking,
-        ),
+        isA<BadgeDetailState>()
+            .having(
+              (state) => state.actionStatus,
+              'actionStatus',
+              BadgeDetailActionStatus.revoking,
+            )
+            // Only the row being revoked reports work, not every row.
+            .having(
+              (state) => state.isRevoking(_pubkey(2)),
+              'isRevoking(target)',
+              isTrue,
+            )
+            .having(
+              (state) => state.isRevoking(_pubkey(3)),
+              'isRevoking(other)',
+              isFalse,
+            ),
         // Its own outcome, not the shared `completed`: the detail screen
         // announces a revoke, and stays quiet for the rest.
-        isA<BadgeDetailState>().having(
-          (state) => state.actionStatus,
-          'actionStatus',
-          BadgeDetailActionStatus.revoked,
-        ),
+        isA<BadgeDetailState>()
+            .having(
+              (state) => state.actionStatus,
+              'actionStatus',
+              BadgeDetailActionStatus.revoked,
+            )
+            // The settled action stops reporting work without a second emit
+            // to clear the target.
+            .having(
+              (state) => state.isRevoking(_pubkey(2)),
+              'isRevoking(target)',
+              isFalse,
+            ),
       ],
       verify: (_) {
         verify(
