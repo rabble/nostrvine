@@ -57,7 +57,7 @@ class SecureKeyContainer {
         ..attach(this, _publicKeyBytes);
 
       _log.info(
-        '📱 SecureKeyContainer created for ${_maskKey(_npub)}',
+        '📱 SecureKeyContainer created for $_npub',
       );
     } on Exception catch (e) {
       // Clean up any allocated memory on error
@@ -83,7 +83,7 @@ class SecureKeyContainer {
       _finalizer.attach(this, _publicKeyBytes);
 
       _log.info(
-        '📱 SecureKeyContainer created for ${_maskKey(_npub)}',
+        '📱 SecureKeyContainer created for $_npub',
       );
     } on Exception catch (e) {
       // Clean up any allocated memory on error
@@ -291,15 +291,7 @@ class SecureKeyContainer {
     }
   }
 
-  /// Mask a key for display purposes (show first 8 and last 4 characters)
-  static String _maskKey(String key) {
-    if (key.length < 12) return key;
-    final start = key.substring(0, 8);
-    final end = key.substring(key.length - 4);
-    return '$start...$end';
-  }
-
   @override
   String toString() =>
-      'SecureKeyContainer(npub: ${_maskKey(_npub)}, disposed: $_isDisposed)';
+      'SecureKeyContainer(npub: $_npub, disposed: $_isDisposed)';
 }
