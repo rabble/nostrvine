@@ -219,18 +219,25 @@ class _ReactionQuickRow extends StatelessWidget {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: onFullPickerRequested,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: context.vineColors.containerLow,
-                ),
+              // 48dp hit area around the 44dp visual circle.
+              child: SizedBox(
+                width: 48,
+                height: 48,
                 child: Center(
-                  child: DivineIcon(
-                    icon: DivineIconName.plus,
-                    size: 18,
-                    color: context.vineColors.onSurface,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.vineColors.containerLow,
+                    ),
+                    child: Center(
+                      child: DivineIcon(
+                        icon: DivineIconName.plus,
+                        size: 18,
+                        color: context.vineColors.onSurface,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -262,8 +269,8 @@ class _QuickReactionButton extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           child: Center(
             child: Text(
               emoji,

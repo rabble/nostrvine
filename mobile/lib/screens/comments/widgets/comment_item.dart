@@ -637,11 +637,13 @@ class _CommentReactionChips extends StatelessWidget {
             if (byCount != 0) return byCount;
             return a.key.compareTo(b.key);
           });
+        // The chips carry a 48dp minimum hit area around a ~28dp visual
+        // pill, so the reduced padding/runSpacing keep the visual rhythm
+        // the pill-sized layout had.
         return Padding(
-          padding: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.only(top: 2),
           child: Wrap(
             spacing: 8,
-            runSpacing: 8,
             children: [
               for (final entry in entries)
                 _ReactionChip(
@@ -698,36 +700,46 @@ class _ReactionChip extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.vineColors.containerLow,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isOwn
-                  ? context.vineColors.accentPositive
-                  : VineTheme.transparent,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 4,
-            children: [
-              Text(
-                emoji,
-                style: VineTheme.emojiBadgeFont(
-                  color: context.vineColors.onSurface,
-                ),
-              ),
-              Text(
-                count.formatScore,
-                style: VineTheme.labelMediumFont(
+        // The visual pill stays compact; the tappable box around it meets
+        // the 48dp minimum touch target without forcing a fixed height on
+        // the text-bearing pill.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: context.vineColors.containerLow,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
                   color: isOwn
                       ? context.vineColors.accentPositive
-                      : context.vineColors.onSurfaceMuted,
+                      : VineTheme.transparent,
                 ),
               ),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4,
+                children: [
+                  Text(
+                    emoji,
+                    style: VineTheme.emojiBadgeFont(
+                      color: context.vineColors.onSurface,
+                    ),
+                  ),
+                  Text(
+                    count.formatScore,
+                    style: VineTheme.labelMediumFont(
+                      color: isOwn
+                          ? context.vineColors.accentPositive
+                          : context.vineColors.onSurfaceMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

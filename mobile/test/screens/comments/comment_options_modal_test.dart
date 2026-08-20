@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/services/content_moderation_types.dart';
+import 'package:openvine/widgets/reactions/quick_reaction_emojis.dart';
 
 void main() {
   group(CommentOptionsModal, () {
@@ -544,6 +545,41 @@ void main() {
           expect(result, isA<CommentReactFullPickerRequested>());
         },
       );
+
+      testWidgets('quick-row targets meet the 48dp minimum touch target', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildOtherUserHarness((_) {}));
+
+        await tester.tap(find.text('Open options'));
+        await tester.pumpAndSettle();
+
+        for (final emoji in kQuickReactionEmojis) {
+          final tapTarget = tester.getSize(
+            find
+                .ancestor(
+                  of: find.text(emoji),
+                  matching: find.byType(GestureDetector),
+                )
+                .first,
+          );
+          expect(tapTarget.width, greaterThanOrEqualTo(48), reason: emoji);
+          expect(tapTarget.height, greaterThanOrEqualTo(48), reason: emoji);
+        }
+
+        final fullPickerTarget = tester.getSize(
+          find
+              .descendant(
+                of: find.bySemanticsIdentifier(
+                  'comment_reaction_full_picker',
+                ),
+                matching: find.byType(GestureDetector),
+              )
+              .first,
+        );
+        expect(fullPickerTarget.width, greaterThanOrEqualTo(48));
+        expect(fullPickerTarget.height, greaterThanOrEqualTo(48));
+      });
 
       testWidgets('quick-row buttons expose activatable button semantics', (
         tester,

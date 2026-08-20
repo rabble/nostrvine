@@ -589,6 +589,43 @@ void main() {
       },
     );
 
+    testWidgets('reaction chips meet the 48dp minimum touch target', (
+      tester,
+    ) async {
+      final mocks = buildMocks();
+      final comment = buildComment();
+      when(() => mocks.reactions.state).thenReturn(
+        CommentReactionsState(
+          commentEmojiReactionCounts: {
+            comment.id: const {'😂': 3, '❤️': 5},
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          'hello',
+          composerBloc: mocks.composer,
+          reactionsBloc: mocks.reactions,
+          comment: comment,
+        ),
+      );
+      await tester.pump();
+
+      for (final emoji in ['😂', '❤️']) {
+        final tapTarget = tester.getSize(
+          find
+              .ancestor(
+                of: find.text(emoji),
+                matching: find.byType(GestureDetector),
+              )
+              .first,
+        );
+        expect(tapTarget.width, greaterThanOrEqualTo(48), reason: emoji);
+        expect(tapTarget.height, greaterThanOrEqualTo(48), reason: emoji);
+      }
+    });
+
     testWidgets('renders no chips without reactions', (tester) async {
       final mocks = buildMocks();
 
