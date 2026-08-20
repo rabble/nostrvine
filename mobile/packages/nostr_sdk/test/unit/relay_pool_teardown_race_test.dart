@@ -134,6 +134,28 @@ void main() {
       );
     });
 
+    test('Nostr.close() leaves the pool closed to new connections', () async {
+      await setUpPool();
+
+      nostr.close();
+
+      expect(nostr.relayPool.isClosed, isTrue);
+
+      final lateFactory = FakeWebSocketChannelFactory();
+      final added = await nostr.relayPool.add(
+        RelayBase(otherUrl, RelayStatus(otherUrl), channelFactory: lateFactory),
+      );
+
+      expect(added, isFalse);
+      expect(
+        lateFactory.createdChannels,
+        isEmpty,
+        reason:
+            'close() is what marks the pool terminally closed, so a '
+            'relay added afterwards must not open a socket',
+      );
+    });
+
     test('add() after teardown began does not connect the relay', () async {
       await setUpPool();
       nostr.relayPool.beginClose();
