@@ -75,6 +75,12 @@ Localization and brand:
 - [ ] Every user-facing string will come from `context.l10n` — plan ARB
   keys up front, not at commit time. See
   [`localization.md`](localization.md).
+- [ ] Every ARB key this change **adds** is read through `context.l10n` in
+  the same change. A key that lands ahead of its call site gets translated
+  into 21 locales and never rendered; the orphan ratchet (#3630) fails CI on
+  it, and `arb_consistency_test` will not — an orphan exists in all 22
+  locales, so parity passes. See
+  [`localization.md`](localization.md#orphaned-keys-never-add-a-key-ahead-of-its-call-site).
 - [ ] Copy matches brand voice (`brand-guidelines/TONE_OF_VOICE.md`).
 - [ ] If the change writes or edits a non-English ARB value, it follows the
   per-locale register, dialect, and locked-term decisions in
