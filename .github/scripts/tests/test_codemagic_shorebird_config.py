@@ -423,8 +423,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             while command_lines[-1].rstrip().endswith("\\"):
                 cursor += 1
                 command_lines.append(lines[cursor])
-            commands.append("
-".join(command_lines))
+            commands.append("\n".join(command_lines))
         return commands
 
 
