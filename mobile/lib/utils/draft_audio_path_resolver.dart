@@ -58,6 +58,11 @@ Map<String, dynamic> resolveAudioPaths(
 }
 
 /// The `<audio-root>/…` tail of [path], or `null` when it has no audio root.
+///
+/// Matches on the segment name alone, not on whether [path] sits under the
+/// documents directory, so a file placed in a `voice_over_recordings/` folder
+/// anywhere else would also be rebased onto documents on load. Nothing writes
+/// those two names outside the documents directory today.
 String? _belowAudioRoot(String path) {
   if (path.isEmpty) return null;
   final segments = p.split(path);
@@ -114,6 +119,10 @@ Object? _rewriteAudioUrls(
 }
 
 /// The on-disk url of [node] when it is a draft-local audio event, else `null`.
+///
+/// Mirrors [AudioEvent.isLocalImport] and [AudioEvent.localFilePath] against a
+/// raw map: the persisted tree is walked without deserializing, so a malformed
+/// audio entry is skipped rather than throwing. Keep the predicate in step.
 String? _localImportAudioUrl(Map<Object?, Object?> node) {
   final id = node['id'];
   if (id is! String || !id.startsWith('${AudioEvent.localImportMarker}_')) {
