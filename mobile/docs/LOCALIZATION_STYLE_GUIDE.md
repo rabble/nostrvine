@@ -90,14 +90,15 @@ alongside `zh`) is a product decision — raise it as an issue.
 
 ## Register: how to address the reader
 
-**Principle: use the register a popular consumer app in that language uses to
-talk to its own users.** Not the most formal option, not the most familiar —
-the unmarked one.
+**Principle: sound friendly in that language, which is not the same as
+sounding informal in English.** The target is the register a person uses with
+someone they like — and in several of our languages that register is a polite
+one.
 
-"Informal" is not a universal answer. German `du` and Japanese です/ます are
-both correct here, and so is Urdu آپ, because each is what an ordinary app in
-that language uses. Copying English's T-form instinct into Urdu or Japanese
-produces copy that reads as rude, not as friendly.
+German `du`, Japanese です/ます and Urdu آپ are all correct answers to the
+same question. Copying English's T-form instinct into Urdu or Japanese does
+not read as warm, it reads as rude, which is the opposite of the goal.
+Politeness there is not stiffness; it is how friendliness is spelled.
 
 How to *refer* to people, as opposed to addressing them, is
 [Gender](#gender-never-the-masculine-default) below.
@@ -105,7 +106,7 @@ How to *refer* to people, as opposed to addressing them, is
 | Locale | Address the reader as | Current tree | Notes |
 |---|---|---|---|
 | `am` Amharic | Polite እርስዎ / -ዎ; avoid gendered singular | **split** | Familiar and polite forms both appear, and they flip per verb: `ሰርዝ` 55 / `ይሰርዙ` 4 for delete, but `ተመልከት` 4 / `ይመልከቱ` 40 for watch. Adjacent keys disagree — `authCreateNewAccount` is polite, `authCreateNewAccountShort` familiar. Every familiar form is **masculine**; the feminine is used zero times, so those strings address every reader as male. That is the reason to prefer the polite form or a verbal noun, not tidiness. |
-| `ar` Arabic | MSA; impersonal phrasing, masculine-singular imperative where a verb is unavoidable | consistent | No feminine or plural address anywhere in the file today. Prefer the verbal noun (الإرسال) to a command (أرسل) in new copy. No dialect. |
+| `ar` Arabic | MSA; impersonal phrasing and the verbal noun, so no gender is chosen — see [Gender](#gender-never-the-masculine-default) | consistent | No feminine or plural address anywhere in the file today, so every verb that does address the reader addresses a man — a known gap, not the target. Prefer the verbal noun (الإرسال) to a command (أرسل) in new copy. No dialect. |
 | `bg` Bulgarian | `ти` + familiar imperatives | **split** | The pronoun `Вие` is absent, but courtesy in Bulgarian is the 2nd-person **plural verb**, and it appears — including inside single strings: `Докосни ... за да започнете` and `Докосни за редактиране. Задръжте и плъзнете`. Checking the pronoun alone reports this file as clean. |
 | `de` German | `du` | consistent | A handful of `Sie`/`Ihr` hits are pronoun ambiguity, not courtesy address. |
 | `es` Spanish | `vos` (Rioplatense voseo) | **split** | The register the file has used since #2930 (233 keys), and the dialect our own Spanish-speaking team writes, Uruguayan — decided in #7908. The 75 tuteo keys are the drift. No *vosotros*. See [Variety and dialect](#variety-and-dialect). |
