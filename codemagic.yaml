@@ -146,6 +146,29 @@ definitions:
     - &pod_install
       name: Run pod install
       script: find . -name "Podfile" -execdir pod install \;
+    - &precache_shorebird_android_artifacts
+      name: Precache Shorebird Android engine artifacts
+      script: |
+        set -euo pipefail
+        # Shorebird ships its own Flutter and precaches only what the host
+        # needs, which on a macOS runner is iOS and desktop. Both Android
+        # workflows build through that Flutter, so without this they fail with
+        # "Flutter debug embedding JAR not found ... Run 'flutter precache
+        # --android'". shorebird_install also rm -rf's ~/.shorebird on any pin
+        # change, discarding whatever an earlier run precached, so this cannot
+        # be a one-time setup step. See #7987.
+        FLUTTER_REVISION=$(shorebird --version 2>/dev/null \
+          | sed -n 's/^Flutter .* revision \([0-9a-f]\{40\}\).*/\1/p')
+        if [ -z "$FLUTTER_REVISION" ]; then
+          echo "ERROR: could not read the Shorebird Flutter revision from 'shorebird --version'."
+          exit 1
+        fi
+        SHOREBIRD_FLUTTER="$HOME/.shorebird/bin/cache/flutter/$FLUTTER_REVISION/bin/flutter"
+        if [ ! -x "$SHOREBIRD_FLUTTER" ]; then
+          echo "ERROR: Shorebird Flutter not found at $SHOREBIRD_FLUTTER"
+          exit 1
+        fi
+        "$SHOREBIRD_FLUTTER" precache --android
     - &setup_local_properties
       name: Set up local.properties
       script: echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/mobile/android/local.properties"
@@ -1060,6 +1083,7 @@ workflows:
       - *preflight_shorebird_android_release
       - *write_shorebird_dart_defines
       - *build_apk
+      - *precache_shorebird_android_artifacts
       - *build_aab
       - *emit_shorebird_provenance
       - *publish_github_release
@@ -1260,6 +1284,7 @@ workflows:
       - *configure_gradle_memory
       - *write_shorebird_public_key
       - *write_shorebird_private_key
+      - *precache_shorebird_android_artifacts
       - *patch_android
 
   macos-build:
