@@ -142,12 +142,14 @@ void main() {
       final keyStorage = SecureKeyStorage(
         securityConfig: const SecurityConfig(requireHardwareBacked: false),
       );
-      return AuthService(
+      final authService = AuthService(
         userDataCleanupService: mockCleanupService,
         keyStorage: keyStorage,
         oauthClient: mockOAuthClient,
         startupNetworkOperationTimeout: startupNetworkOperationTimeout,
       );
+      addTearDown(authService.dispose);
+      return authService;
     }
 
     test('divineOAuth local restore starts in upgrading state '
@@ -562,7 +564,6 @@ void main() {
 
       expect(authService.authState, equals(AuthState.unauthenticated));
       expect(authService.hasExpiredOAuthSession, isTrue);
-      await authService.dispose();
     });
 
     test('no local key + hanging refresh reaches unauthenticated', () async {
@@ -593,7 +594,6 @@ void main() {
 
       expect(authService.authState, equals(AuthState.unauthenticated));
       expect(authService.hasExpiredOAuthSession, isTrue);
-      await authService.dispose();
     });
 
     test(
@@ -636,7 +636,6 @@ void main() {
 
         refreshCompleter.complete(null);
         expect(await retry, isFalse);
-        await authService.dispose();
       },
     );
   });
