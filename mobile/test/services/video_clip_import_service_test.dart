@@ -462,12 +462,21 @@ cue text $loneSurrogate here
     expect(success.clip.originalAspectRatio, closeTo(1920 / 1080, 0.001));
   });
 
-  test('uses imeta dimensions before probing file metadata', () async {
+  test('prefers imeta dimensions over the probed resolution', () async {
     var metadataRead = false;
     final service = buildService(
       readVideoMetadata: (video) async {
         metadataRead = true;
-        throw StateError('metadata should not be read');
+        // A resolution that disagrees with the imeta `dim` tag, so the
+        // assertions below can tell which source won.
+        return VideoMetadata(
+          duration: const Duration(seconds: 5),
+          extension: 'mp4',
+          fileSize: 1024,
+          resolution: const Size(720, 720),
+          rotation: 0,
+          bitrate: 1000,
+        );
       },
     );
 
@@ -492,7 +501,9 @@ cue text $loneSurrogate here
     );
 
     final success = result as VideoClipImportSuccess;
-    expect(metadataRead, isFalse);
+    // The file is still probed — the duration needs it — but the ratio comes
+    // from the event.
+    expect(metadataRead, isTrue);
     expect(success.clip.targetAspectRatio, models.AspectRatio.vertical);
     expect(success.clip.originalAspectRatio, closeTo(1080 / 1920, 0.001));
   });
@@ -551,5 +562,96 @@ cue text $loneSurrogate here
       ),
     );
     verifyNever(() => clipLibraryService.saveClip(any()));
+  });
+
+  group('clip duration', () {
+    VideoMetadata metadataWith(Duration duration) => VideoMetadata(
+      duration: duration,
+      extension: 'mp4',
+      fileSize: 1024,
+      resolution: const Size(480, 480),
+      rotation: 0,
+      bitrate: 1000,
+    );
+
+    test(
+      'measures the file instead of trusting the archive duration tag',
+      () async {
+        // Every Vine archive event advertises `duration 6`; the real assets
+        // measure 5.201s-6.548s. Trusting the tag makes the export cut a
+        // full-length Vine short and lets custom audio outlive the video on
+        // Android (#7920).
+        final service = buildService(
+          readVideoMetadata: (video) async =>
+              metadataWith(const Duration(milliseconds: 6548)),
+        );
+
+        final result = await service.importToLibrary(_video());
+
+        final success = result as VideoClipImportSuccess;
+        expect(success.clip.duration, const Duration(milliseconds: 6548));
+      },
+    );
+
+    test('measures a Vine shorter than the advertised tag', () async {
+      final service = buildService(
+        readVideoMetadata: (video) async =>
+            metadataWith(const Duration(milliseconds: 5201)),
+      );
+
+      final result = await service.importToLibrary(_video());
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.duration, const Duration(milliseconds: 5201));
+    });
+
+    test('extracts the ghost frame at the measured duration', () async {
+      Duration? ghostFrameDuration;
+      final service = buildService(
+        readVideoMetadata: (video) async =>
+            metadataWith(const Duration(milliseconds: 5201)),
+        extractLastFrame: ({required videoPath, required videoDuration}) async {
+          ghostFrameDuration = videoDuration;
+          return null;
+        },
+      );
+
+      await service.importToLibrary(_video());
+
+      expect(ghostFrameDuration, const Duration(milliseconds: 5201));
+    });
+
+    test('falls back to the event tag when the probe reports zero', () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => metadataWith(Duration.zero),
+      );
+
+      final result = await service.importToLibrary(_video(duration: 7));
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.duration, const Duration(seconds: 7));
+    });
+
+    test('falls back to the event tag when the probe throws', () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => throw StateError('probe failed'),
+      );
+
+      final result = await service.importToLibrary(_video(duration: 7));
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.duration, const Duration(seconds: 7));
+    });
+
+    test('falls back to six seconds when neither source is usable', () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => metadataWith(Duration.zero),
+      );
+
+      final result = await service.importToLibrary(_video(duration: null));
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.duration, const Duration(seconds: 6));
+    });
   });
 }
