@@ -110,14 +110,14 @@ void main() {
     // `Relay` reference — `checkAndGenTempRelay` and `getRelay` both hand one
     // out — must not be able to bring a dead relay back to life.
     test('a disposed relay opens no further socket', () async {
-      final factory = FakeWebSocketChannelFactory();
+      final relayFactory = FakeWebSocketChannelFactory();
       final relay = RelayBase(
         relayUrl,
         RelayStatus(relayUrl),
-        channelFactory: factory,
+        channelFactory: relayFactory,
       );
       expect(await relay.connect(), isTrue);
-      expect(factory.createdChannels, hasLength(1));
+      expect(relayFactory.createdChannels, hasLength(1));
 
       relay.dispose();
 
@@ -126,7 +126,7 @@ void main() {
       expect(await relay.forceReconnect(), isFalse);
       expect(await relay.connect(), isFalse);
       expect(
-        factory.createdChannels,
+        relayFactory.createdChannels,
         hasLength(1),
         reason:
             'a socket opened by a disposed relay has no owner left to '
