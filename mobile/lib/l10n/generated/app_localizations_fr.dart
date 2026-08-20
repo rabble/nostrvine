@@ -3410,6 +3410,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Inscription terminée. Vérifie ton e-mail.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
+
+  @override
   String get authFailedToSendResetEmail =>
       'Échec de l\'envoi de l\'e-mail de réinitialisation.';
 

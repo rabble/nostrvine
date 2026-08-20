@@ -1,11 +1,28 @@
 // ABOUTME: Unit tests for the router-refresh gate that keeps a resume/background
-// ABOUTME: review-status refetch from tearing down a reel pushed on top mid-init.
+// ABOUTME: review-status refetch from tearing down a reel pushed on top mid-init,
+// ABOUTME: plus the anonymous Secure-account conflict recovery redirect exception.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/minor_account_review_providers.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/providers/redirect_provider.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/services/auth_service.dart';
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockGoRouterState extends Mock implements GoRouterState {}
+
+/// Exposes the container's [Ref] so tests can invoke [appRouterRedirect],
+/// which reads providers off the ref GoRouter hands it in production.
+final _refProbeProvider = Provider<Ref>((ref) => ref);
 
 /// The retained-value loading emission a `ref.watch`-driven reload produces for
 /// a provider currently holding [value]: an `AsyncLoading` that still carries
@@ -177,5 +194,102 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  group('anonymous Secure-account conflict recovery redirect', () {
+    late _MockAuthService authService;
+
+    setUp(() {
+      resetNavigationState();
+      authService = _MockAuthService();
+      when(() => authService.authState).thenReturn(AuthState.authenticated);
+      when(() => authService.isAnonymous).thenReturn(true);
+      when(() => authService.hasExpiredOAuthSession).thenReturn(false);
+    });
+
+    // Defaults to a resolved active status so the minor-account-review gates
+    // fall through to the authenticated auth-route handling this group
+    // exercises; pass a restricted status to assert the gate ordering holds.
+    Future<ProviderContainer> buildContainer({
+      MinorAccountReviewStatus? reviewStatus,
+    }) async {
+      final status = reviewStatus ?? MinorAccountReviewStatus.active();
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => status,
+          ),
+          checkEmptyFollowingRedirectProvider.overrideWith(
+            (ref, location) => null,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      return container;
+    }
+
+    GoRouterState stateFor(String location) {
+      final uri = Uri.parse(location);
+      final state = _MockGoRouterState();
+      when(() => state.uri).thenReturn(uri);
+      when(() => state.matchedLocation).thenReturn(uri.path);
+      return state;
+    }
+
+    test(
+      'lets an anonymous authenticated user reach login options when arriving '
+      'from conflict recovery (email param present)',
+      () async {
+        final container = await buildContainer();
+        final ref = container.read(_refProbeProvider);
+
+        final result = appRouterRedirect(
+          ref,
+          stateFor('/welcome/login-options?email=user%40example.com'),
+        );
+
+        // Null: no redirect, the recovery sign-in destination stays visible.
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'still bounces an anonymous authenticated user to the feed on plain '
+      'login options with no recovery param',
+      () async {
+        final container = await buildContainer();
+        final ref = container.read(_refProbeProvider);
+
+        final result = appRouterRedirect(
+          ref,
+          stateFor('/welcome/login-options'),
+        );
+
+        expect(result, VideoFeedPage.pathForIndex(0));
+      },
+    );
+
+    test(
+      'still routes a restricted-minor anonymous user to review even with the '
+      'recovery email param — the recovery exception must not outrank the '
+      'load-bearing minor-review gate',
+      () async {
+        final container = await buildContainer(
+          reviewStatus: const MinorAccountReviewStatus(
+            restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+          ),
+        );
+        final ref = container.read(_refProbeProvider);
+
+        final result = appRouterRedirect(
+          ref,
+          stateFor('/welcome/login-options?email=user%40example.com'),
+        );
+
+        expect(result, MinorAccountReviewScreen.path);
+      },
+    );
   });
 }

@@ -3371,6 +3371,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Registratie voltooid. Check je e-mail.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
+
+  @override
   String get authFailedToSendResetEmail => 'Resetmail versturen mislukt.';
 
   @override

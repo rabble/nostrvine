@@ -459,9 +459,7 @@ void main() {
             'SecurePass123!',
           );
 
-          await tester.tap(
-            find.widgetWithText(DivineButton, 'Secure account'),
-          );
+          await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
 
@@ -681,6 +679,255 @@ void main() {
           find.text('Unable to access your keys. Please try again.'),
           findsOneWidget,
         );
+      });
+    });
+
+    group('Key conflict recovery', () {
+      Future<GoRouter> pumpConflict(WidgetTester tester) async {
+        await setRegistrationTestSurface(tester);
+        when(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            nsec: any(named: 'nsec'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            HeadlessRegisterResult.error(
+              'This Nostr key is already registered. '
+              'Please log in instead or use a different key.',
+              code: 'CONFLICT',
+            ),
+            'test-verifier',
+          ),
+        );
+
+        final router = GoRouter(
+          initialLocation: '/welcome',
+          routes: [
+            GoRoute(
+              path: '/welcome',
+              builder: (_, _) => const SecureAccountScreen(),
+            ),
+            GoRoute(
+              path: '/welcome/login-options',
+              builder: (_, state) =>
+                  Text('login-options:${state.uri.queryParameters['email']}'),
+            ),
+            GoRoute(
+              path: '/support-center',
+              builder: (_, _) => const Text('support-center-stub'),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...getStandardTestOverrides(),
+              oauthClientProvider.overrideWithValue(mockOAuth),
+              authServiceProvider.overrideWithValue(mockAuthService),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'existing@example.com',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+
+        await tester.tap(
+          find.widgetWithText(
+            DivineButton,
+            lookupAppLocalizations(const Locale('en')).authSecureAccountTitle,
+          ),
+        );
+        // Settle the exportNsec microtask + headlessRegister future without
+        // pumpAndSettle (avoids a hang on the loading spinner).
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        return router;
+      }
+
+      testWidgets(
+        'shows in-place recovery choices instead of navigating away',
+        (tester) async {
+          final router = await pumpConflict(tester);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          // Stays on the screen and offers recovery choices rather than
+          // auto-bouncing.
+          expect(router.routeInformationProvider.value.uri.path, '/welcome');
+          expect(
+            find.text(l10n.authSecureAccountAlreadyRegistered),
+            findsOneWidget,
+          );
+          // Retry stays available (form is not locked) alongside the
+          // sign-in and contact-support doors.
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSecureAccountTitle),
+            findsOneWidget,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSignInButton),
+            findsOneWidget,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authContactSupport),
+            findsOneWidget,
+          );
+          // The form stays editable so a different email can be tried in place.
+          final emailField = tester.widget<TextField>(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+          );
+          expect(emailField.enabled, isTrue);
+          // The raw server sentence never reaches the user.
+          expect(find.textContaining('Nostr key'), findsNothing);
+        },
+      );
+
+      testWidgets('editing the email clears the conflict for a fresh retry', (
+        tester,
+      ) async {
+        await pumpConflict(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        expect(
+          find.text(l10n.authSecureAccountAlreadyRegistered),
+          findsOneWidget,
+        );
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'different@example.com',
+        );
+        await tester.pump();
+
+        // The conflict message and its recovery doors clear on edit.
+        expect(
+          find.text(l10n.authSecureAccountAlreadyRegistered),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(DivineButton, l10n.authContactSupport),
+          findsNothing,
+        );
+      });
+
+      testWidgets(
+        'resubmitting clears stale recovery actions and renders the new result',
+        (tester) async {
+          await pumpConflict(tester);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final retry = Completer<(HeadlessRegisterResult, String)>();
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              nsec: any(named: 'nsec'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer((_) => retry.future);
+
+          await tester.tap(
+            find.widgetWithText(DivineButton, l10n.authSecureAccountTitle),
+          );
+          await tester.pump();
+
+          expect(
+            find.text(l10n.authSecureAccountAlreadyRegistered),
+            findsNothing,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSignInButton),
+            findsNothing,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authContactSupport),
+            findsNothing,
+          );
+
+          retry.complete((
+            HeadlessRegisterResult(
+              success: true,
+              pubkey: 'test-pubkey',
+              verificationRequired: false,
+              email: 'existing@example.com',
+            ),
+            'test-verifier',
+          ));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text(l10n.authRegistrationComplete), findsOneWidget);
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSignInButton),
+            findsNothing,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authContactSupport),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets('Sign in routes to the recovery hub with the email', (
+        tester,
+      ) async {
+        await pumpConflict(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(
+          find.widgetWithText(DivineButton, l10n.authSignInButton),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('login-options:existing@example.com'), findsOneWidget);
+      });
+
+      testWidgets('Contact support routes to the support center', (
+        tester,
+      ) async {
+        await pumpConflict(tester);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.tap(
+          find.widgetWithText(DivineButton, l10n.authContactSupport),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('support-center-stub'), findsOneWidget);
       });
     });
   });

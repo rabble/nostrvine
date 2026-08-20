@@ -7,9 +7,8 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 /// Mirrors that redirect in `goRouterProvider` (`app_router.dart`): an
 /// authenticated user is only redirected home from the sign-in entry points
 /// (`/welcome`, `/nostr-connect`, `/welcome/invite`, `/welcome/create-account`,
-/// `/welcome/login-options`), with the same expired-session exception for login
-/// options (an expired-session user must reach login options to re-authenticate
-/// rather than be bounced home).
+/// `/welcome/login-options`), with the same expired-session and anonymous
+/// recovery exceptions for login options.
 ///
 /// It is deliberately narrower than `app_router.dart`'s broad auth-entry check:
 /// auth-entry routes an authenticated user is intentionally left on —
@@ -26,13 +25,21 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 bool authenticatedRedirectsFromAuthEntry(
   String location, {
   required bool hasExpiredOAuthSession,
+  required bool isAnonymous,
 }) {
-  if (hasExpiredOAuthSession && location == WelcomeScreen.loginOptionsPath) {
+  final uri = Uri.parse(location);
+  final path = uri.path;
+  if (hasExpiredOAuthSession && path == WelcomeScreen.loginOptionsPath) {
     return false;
   }
-  return location == WelcomeScreen.path ||
-      location == NostrConnectScreen.path ||
-      location == WelcomeScreen.inviteGatePath ||
-      location == WelcomeScreen.createAccountPath ||
-      location == WelcomeScreen.loginOptionsPath;
+  if (isAnonymous &&
+      path == WelcomeScreen.loginOptionsPath &&
+      uri.queryParameters.containsKey('email')) {
+    return false;
+  }
+  return path == WelcomeScreen.path ||
+      path == NostrConnectScreen.path ||
+      path == WelcomeScreen.inviteGatePath ||
+      path == WelcomeScreen.createAccountPath ||
+      path == WelcomeScreen.loginOptionsPath;
 }

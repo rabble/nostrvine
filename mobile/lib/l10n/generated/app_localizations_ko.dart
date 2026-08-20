@@ -3163,6 +3163,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authRegistrationComplete => '가입이 완료됐어요. 이메일을 확인해주세요.';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
+
+  @override
   String get authFailedToSendResetEmail => '재설정 이메일을 보내지 못했어요.';
 
   @override

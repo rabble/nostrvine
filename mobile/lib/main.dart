@@ -1921,11 +1921,12 @@ class _DivineAppState extends ConsumerState<DivineApp>
       currentAuthState: () => authService.authState,
       locationListenable: router.routerDelegate,
       currentLocation: () =>
-          router.routerDelegate.currentConfiguration.uri.path,
+          router.routerDelegate.currentConfiguration.uri.toString(),
       authenticatedRedirectPending: (location) =>
           authenticatedRedirectsFromAuthEntry(
             location,
             hasExpiredOAuthSession: authService.hasExpiredOAuthSession,
+            isAnonymous: authService.isAnonymous,
           ),
     );
     // Start deferred startup after the first frame so the shell can paint first.

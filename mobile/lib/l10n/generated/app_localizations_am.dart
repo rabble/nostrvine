@@ -3291,6 +3291,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authRegistrationComplete => 'ምዝገባው ተጠናቅቋል። እባክህ ኢሜልህን አረጋግጥ።';
 
   @override
+  String get authSecureAccountAlreadyRegistered =>
+      'Looks like an account already exists. Try a different email, or sign in to the existing account with this email address. If neither works, contact support.';
+
+  @override
   String get authFailedToSendResetEmail => 'ዳግም ማስጀመር ኢሜይል መላክ አልተሳካም።';
 
   @override
