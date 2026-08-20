@@ -123,6 +123,18 @@ Composition and style:
 - [ ] Check `context.mounted` after every `await` before using
   `BuildContext`.
 
+Nostr identifiers:
+
+- [ ] No Nostr identifier is shortened on its way into a log, analytics or
+  debug sink. Drop the `.substring(0, 8)`, the `preview` local, and the mask
+  helper — the full value is in scope at every site this has ever fired on. UI
+  shortening stays allowed, but prefer `maxLines` + `TextOverflow.ellipsis` to
+  cutting the string. Frozen at zero by `check_nostr_id_log_truncation.sh`
+  (#3372); see [`AGENTS.md`](../../AGENTS.md) → Nostr And Async Rules.
+- [ ] A **secret** — `nsec`, `ncryptsec`, a raw private key — is not logged at
+  all, whole or shortened. Truncation is not a security control; omit or redact
+  whole (`BugReportConfig.sensitivePatterns`, `sanitizeForCrashReport`).
+
 Scroll and navigation:
 
 - [ ] `NestedScrollView` with a pinned `SliverPersistentHeader` needs a
