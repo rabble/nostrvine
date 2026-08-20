@@ -591,6 +591,23 @@ void main() {
       );
     });
 
+    test('shifts later markers right when a copy is inserted mid-timeline', () {
+      // Mirrors the clip-duplication call site: the copy lands directly
+      // after its source, so markers on later clips move right by the
+      // copy's duration while earlier markers stay put.
+      final oldClips = [_clip('a', 3), _clip('b', 5)];
+      final newClips = [_clip('a', 3), _clip('a_copy', 3), _clip('b', 5)];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 1), const Duration(seconds: 6)],
+        ),
+        equals([const Duration(seconds: 1), const Duration(seconds: 9)]),
+      );
+    });
+
     test('keeps earlier markers in place when a clip is appended', () {
       // Mirrors the clip-duplication call site: the copy is added at the
       // end, so markers on the existing clips must not move.
