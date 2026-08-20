@@ -70,8 +70,6 @@
     "settingsCreatorAnalytics": "クリエイター分析",
     "settingsSupportCenter": "サポート",
     "settingsNotifications": "通知",
-    "settingsContentPreferences": "コンテンツ設定",
-    "settingsModerationControls": "モデレーション設定",
     "settingsBlueskyPublishing": "Bluesky 公開",
     "settingsBlueskyPublishingSubtitle": "Bluesky へのクロス投稿を管理",
     "settingsNostrSettings": "Nostr 設定",
@@ -209,15 +207,10 @@
             }
         }
     },
-    "profileEditProfile": "プロフィールを編集",
-    "profileCreatorAnalytics": "クリエイター分析",
-    "profileShareProfile": "プロフィールを共有",
     "profileCopyPublicKey": "公開鍵 (npub) をコピー",
     "profileGetEmbedCode": "埋め込みコードを取得",
     "profilePublicKeyCopied": "公開鍵をコピーしたよ",
     "profileEmbedCodeCopied": "埋め込みコードをコピーしたよ",
-    "profileRefreshTooltip": "更新",
-    "profileRefreshSemanticLabel": "プロフィールを更新",
     "profileMoreTooltip": "その他",
     "profileMoreSemanticLabel": "その他のオプション",
     "profileFollowingLabel": "フォロー中",
@@ -302,10 +295,6 @@
     },
     "profileReportDisplayName": "{displayName}を報告",
     "profileAddToListDisplayName": "{displayName}をリストに追加",
-    "profileUserBlockedTitle": "ブロックしたよ",
-    "profileUserBlockedContent": "このユーザーのコンテンツはフィードに出なくなるよ。",
-    "profileUserBlockedUnblockHint": "いつでもプロフィールか [設定] > [安全] からブロック解除できるよ。",
-    "profileCloseButton": "閉じる",
     "profileNoCollabsTitle": "コラボ動画はまだないよ",
     "profileCollabsOwnEmpty": "あなたがコラボした動画がここに表示されるよ",
     "profileCollabsOtherEmpty": "この人がコラボした動画がここに表示されるよ",
@@ -342,27 +331,13 @@
     "profileShowLess": "閉じる",
     "profileCompleteYourProfile": "プロフィールを完成させよう",
     "profileCompleteSubtitle": "名前、自己紹介、画像を追加して始めよう",
-    "profileSetUpButton": "設定する",
-    "profileVerifyingEmail": "メールを確認中...",
-    "profileCheckEmailVerification": "{email} に届いた認証リンクを確認してね",
-    "@profileCheckEmailVerification": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "profileWaitingForVerification": "メール認証を待ってるよ",
-    "profileVerificationFailed": "認証がうまくいかなかった",
     "profilePleaseTryAgain": "もう一回試してみて",
     "profileSecureYourAccount": "アカウントを守ろう",
     "profileSecureSubtitle": "メールとパスワードを追加すれば、どのデバイスからでもアカウントを復元できるよ",
     "profileRetryButton": "もう一回",
-    "profileRegisterButton": "登録",
     "profileSessionExpired": "セッション切れちゃった",
     "profileSignInToRestore": "もう一回サインインして、フルアクセスを取り戻そう",
     "profileSignInButton": "サインイン",
-    "profileDismissTooltip": "閉じる",
     "profileLinkCopied": "プロフィールのリンクをコピーしたよ",
     "profileSetupEditProfileTitle": "プロフィールを編集",
     "profileSetupBackLabel": "戻る",
@@ -380,18 +355,15 @@
     "profileSetupClaimFailed": "ユーザー名の取得がうまくいかなかった。もう一回試してみて。",
     "profileSetupPublishFailed": "プロフィールの公開がうまくいかなかった。もう一回試してみて。",
     "profileSetupNoRelaysConnected": "ネットワークに接続できなかった。接続を確認してもう一回試してみて。",
-    "profileSetupRetryLabel": "再試行",
     "profileSetupDisplayNameLabel": "表示名",
     "profileSetupDisplayNameRequired": "表示名を入力してね",
     "profileSetupBioLabel": "自己紹介 (任意)",
     "profileSetupPublicKeyLabel": "公開鍵 (npub)",
     "profileSetupUsernameLabel": "ユーザー名 (任意)",
     "profileSetupUsernameHelper": "Divine での固有の ID だよ",
-    "profileSetupProfileColorLabel": "プロフィールカラー (任意)",
     "profileSetupSaveButton": "保存",
     "profileSetupSavingButton": "保存中...",
     "profileSetupImageUrlTitle": "画像 URL を追加",
-    "profileSetupPictureUploaded": "プロフィール画像をアップロードしたよ！",
     "profileSetupImageSelectionFailed": "画像の選択がうまくいかなかった。代わりに下に画像 URL を貼り付けてね。",
     "profileSetupCameraAccessFailed": "カメラにアクセスできなかった: {error}",
     "@profileSetupCameraAccessFailed": {
@@ -407,7 +379,6 @@
     "profileSetupUploadAuthError": "認証エラー: 一度ログアウトしてもう一回ログインしてみて。",
     "profileSetupUploadFileTooLarge": "ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。",
     "profileSetupUploadServerError": "画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。",
-    "profileSetupUploadUnsupportedOnWeb": "プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。",
     "profileSetupBannerClearButton": "バナーをクリア",
     "profileSetupBannerChangeColor": "バナーの色",
     "profileSetupBannerColorPickerTitle": "バナーの色を変更",
@@ -452,8 +423,6 @@
     "profileSetupSupportRequestSent": "サポートリクエストを送ったよ！ すぐに連絡するね。",
     "profileSetupCouldntOpenEmail": "メールアプリが開けなかった。送信先: names@divine.video",
     "profileSetupSendRequest": "リクエストを送る",
-    "profileSetupPickColorTitle": "色を選ぼう",
-    "profileSetupSelectButton": "選択",
     "profileSetupUseOwnNip05": "自分の NIP-05 アドレスを使う",
     "profileSetupNip05AddressLabel": "NIP-05 アドレス",
     "profileSetupProfilePicturePreview": "プロフィール画像のプレビュー",
@@ -471,7 +440,6 @@
     "nostrInfoUsernameDescription": " 人間が読める名前 (例: @name.divine.video) で、npub にリンクしてる。メールアドレスみたいに、Nostr ID を認識・確認しやすくしてくれるよ。",
     "nostrInfoLearnMoreAt": "もっと詳しく: ",
     "nostrInfoGotIt": "了解！",
-    "profileTabRefreshTooltip": "更新",
     "videoGridRefreshLabel": "さらに動画を探し中",
     "videoGridOptionsTitle": "動画オプション",
     "videoGridEditVideo": "動画を編集",
@@ -479,14 +447,6 @@
     "videoGridDeleteVideo": "動画を削除",
     "videoGridDeleteVideoSubtitle": "この動画をDivineから削除します。他のNostrクライアントには、まだ表示される場合があります。",
     "videoGridDeletingContent": "コンテンツを削除中...",
-    "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabFeatured": "おすすめ",
   "exploreTabClassics": "クラシック",
     "exploreTabNew": "新着",
@@ -540,12 +500,9 @@
             }
         }
     },
-    "videoPlayerLoadingVideo": "動画を読み込み中...",
     "videoPlayerPlayVideo": "動画を再生",
     "videoPlayerMute": "動画をミュート",
     "videoPlayerUnmute": "動画のミュートを解除",
-    "videoPlayerEditVideo": "動画を編集",
-    "videoPlayerEditVideoTooltip": "動画を編集",
     "contentWarningLabel": "コンテンツ警告",
     "contentWarningNudity": "ヌード",
     "contentWarningSexualContent": "性的コンテンツ",
@@ -596,15 +553,10 @@
     "communitySuggestActionLabel": "分類",
     "@communitySuggestActionLabel": {"description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."},
     "videoErrorNotFound": "動画が見つからない",
-    "videoErrorNetwork": "ネットワークエラー",
-    "videoErrorTimeout": "読み込みがタイムアウトした",
-    "videoErrorFormat": "動画フォーマットエラー\n(もう一回試すか、別のブラウザを使ってみて)",
-    "videoErrorUnsupportedFormat": "対応してない動画フォーマット",
     "videoErrorPlayback": "動画の再生エラー",
     "videoErrorAgeRestricted": "年齢制限のあるコンテンツ",
     "videoErrorUnavailable": "動画を見れないよ",
     "videoErrorUnavailableBody": "この動画は現在利用できません。",
-    "videoErrorVerifyAge": "年齢を確認",
     "videoErrorRetry": "もう一回",
     "videoErrorContentRestricted": "コンテンツが制限されてる",
     "videoErrorContentRestrictedBody": "この動画はコンテンツルール違反のため削除されました。",
@@ -613,7 +565,6 @@
     "videoErrorVerifyAgeButton": "年齢を確認",
     "videoErrorVerifyAgeFailed": "年齢を確認できませんでした。もう一回試してみて",
     "videoErrorVerifyAgeSignerUnreachable": "確認がタイムアウトしました。接続を確認するか、少し時間をおいてもう一回試してみて",
-    "videoFollowButtonFollowing": "フォロー中",
     "videoFollowButtonFollow": "フォロー",
     "audioAttributionOriginalSound": "オリジナルサウンド",
     "audioAttributionUnavailableSound": "サウンドが見つからないよ",
@@ -693,21 +644,11 @@
     "videoActionRepost": "リポスト",
     "videoActionViewComments": "コメントを見る",
     "videoActionMoreOptions": "その他のオプション",
-    "videoActionHideSubtitles": "字幕を隠す",
-    "videoActionShowSubtitles": "字幕を表示",
     "videoEngagementLikersTitle": "いいねしたユーザー",
     "videoEngagementRepostersTitle": "リポストしたユーザー",
     "videoEngagementLikersEmpty": "まだいいねがありません",
     "videoEngagementRepostersEmpty": "まだリポストがありません",
     "videoEngagementLoadFailed": "リストを読み込めませんでした",
-    "videoDescriptionLoops": "{count}ループ",
-    "@videoDescriptionLoops": {
-        "placeholders": {
-            "count": {
-                "type": "String"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Divine 以外",
     "metadataBadgeHumanMade": "人間が制作",
     "metadataSoundsLabel": "サウンド",
@@ -1044,11 +985,6 @@
     "notificationSettingsResetToDefaults": "設定を既定値にリセットしたよ",
     "notificationSettingsAbout": "通知について",
     "notificationSettingsAboutDescription": "通知は Nostr プロトコルで動いてるよ。リアルタイム更新は Nostr リレーへの接続に依存するから、遅れることもあるよ。",
-    "safetySettingsTitle": "安全とプライバシー",
-    "@safetySettingsTitle": {
-        "description": "Safety settings screen app bar title"
-    },
-    "safetySettingsLabel": "設定",
     "safetySettingsShowDivineHostedOnly": "Divine ホスト動画だけ表示",
     "safetySettingsShowDivineHostedOnlySubtitle": "他のメディアホストの動画を隠す",
     "safetySettingsModeration": "モデレーション",
@@ -1369,14 +1305,6 @@
     "authUnableToAccessKeys": "鍵にアクセスできなかった。もう一回試してみて。",
     "authRegistrationFailed": "登録がうまくいかなかった",
     "authRegistrationComplete": "登録完了。メールを確認してね。",
-    "authVerificationFailedTitle": "認証がうまくいかなかった",
-    "authClose": "閉じる",
-    "authAccountSecured": "アカウントを守ったよ！",
-    "authAccountLinkedToEmail": "アカウントがメールアドレスに紐づいたよ。",
-    "authVerifyYourEmail": "メールアドレスを確認してね",
-    "authClickLinkContinue": "メール内のリンクをクリックして登録を完了してね。その間もアプリは使えるよ。",
-    "authWaitingForVerificationEllipsis": "認証を待ってるよ...",
-    "authContinueToApp": "アプリに進む",
     "authFailedToSendResetEmail": "リセットメールの送信がうまくいかなかった。",
     "authSending": "送信中...",
     "authSignInButton": "サインイン",
@@ -1406,7 +1334,6 @@
     "shareSheetAddToList": "リストに追加",
     "shareSheetCopy": "コピー",
     "shareSheetShareVia": "他のアプリで共有",
-    "shareSheetReport": "報告",
     "shareSheetEventJson": "イベント JSON",
     "shareSheetEventId": "イベント ID",
     "shareSheetMoreActions": "その他のアクション",
@@ -1448,103 +1375,7 @@
     "watermarkDownloadStageDownloadingDesc": "ネットワークから動画を取ってるよ...",
     "watermarkDownloadStageWatermarkingDesc": "Divine ウォーターマークを追加してるよ...",
     "watermarkDownloadStageSavingDesc": "ウォーターマーク付き動画をカメラロールに保存してるよ...",
-    "uploadProgressVideoUpload": "動画アップロード",
-    "uploadProgressPause": "一時停止",
-    "uploadProgressResume": "再開",
-    "uploadProgressGoBack": "戻る",
-    "uploadProgressRetryWithCount": "もう一回 (残り{count}回)",
-    "@uploadProgressRetryWithCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressDelete": "削除",
-    "uploadProgressDaysAgo": "{count}日前",
-    "@uploadProgressDaysAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressHoursAgo": "{count}時間前",
-    "@uploadProgressHoursAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressMinutesAgo": "{count}分前",
-    "@uploadProgressMinutesAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressJustNow": "たった今",
-    "uploadProgressUploadingPercent": "アップロード中 {percent}%",
-    "@uploadProgressUploadingPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressPausedPercent": "一時停止 {percent}%",
-    "@uploadProgressPausedPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "shareMenuTitle": "動画を共有",
-    "shareMenuReportAiContent": "AI コンテンツを報告",
-    "shareMenuReportAiContentSubtitle": "AI 生成の疑いがあるコンテンツをサクッと報告",
-    "shareMenuReportingAiContent": "AI コンテンツを報告中...",
-    "shareMenuFailedToReportContent": "コンテンツの報告がうまくいかなかった: {error}",
-    "@shareMenuFailedToReportContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFailedToReportAiContent": "AI コンテンツの報告がうまくいかなかった: {error}",
-    "@shareMenuFailedToReportAiContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuVideoStatus": "動画のステータス",
-    "shareMenuViewAllLists": "すべてのリストを見る →",
-    "shareMenuShareWith": "共有相手",
-    "shareMenuShareViaOtherApps": "他のアプリで共有",
-    "shareMenuShareViaOtherAppsSubtitle": "他のアプリで共有するかリンクをコピー",
-    "shareMenuSaveToGallery": "ギャラリーに保存",
-    "shareMenuSaveOriginalSubtitle": "オリジナル動画をカメラロールに保存",
-    "shareMenuSaveWithWatermark": "ウォーターマーク付きで保存",
-    "shareMenuSaveVideo": "動画を保存",
-    "shareMenuDownloadWithWatermark": "Divine ウォーターマーク付きでダウンロード",
-    "shareMenuSaveVideoSubtitle": "動画をカメラロールに保存",
-    "shareMenuLists": "リスト",
-    "shareMenuAddToList": "リストに追加",
-    "shareMenuAddToListSubtitle": "キュレートしたリストに追加",
-    "shareMenuCreateNewList": "新しいリストを作る",
-    "shareMenuCreateNewListSubtitle": "新しいキュレーションコレクションを始めよう",
-    "shareMenuRemovedFromList": "リストから削除したよ",
-    "shareMenuFailedToRemoveFromList": "リストからの削除がうまくいかなかった",
     "shareMenuBookmarks": "ブックマーク",
-    "shareMenuFollowSets": "フォローセット",
-    "shareMenuCreateFollowSet": "フォローセットを作る",
-    "shareMenuCreateFollowSetSubtitle": "このクリエイターで新しいコレクションを始めよう",
-    "shareMenuAddToFollowSet": "フォローセットに追加",
     "shareMenuFollowSetsAvailable": "フォローセット{count}個あるよ",
     "@shareMenuFollowSetsAvailable": {
         "placeholders": {
@@ -1553,21 +1384,8 @@
             }
         }
     },
-    "shareMenuAddedToBookmarks": "ブックマークに追加したよ！",
-    "shareMenuFailedToAddBookmark": "ブックマークの追加がうまくいかなかった",
-    "shareMenuCreatedListAndAddedVideo": "リスト「{name}」を作って動画を追加したよ",
-    "@shareMenuCreatedListAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuManageContent": "コンテンツを管理",
     "shareMenuEditVideo": "動画を編集",
-    "shareMenuEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "shareMenuDeleteVideo": "動画を削除",
-    "shareMenuVideoInTheseLists": "この動画が入ってるリスト:",
     "shareMenuVideoCount": "{count}本の動画",
     "@shareMenuVideoCount": {
         "placeholders": {
@@ -1576,43 +1394,11 @@
             }
         }
     },
-    "shareMenuClose": "閉じる",
     "shareMenuDeleteConfirmation": "この動画はDivineから完全に削除されます。他のリレーを使うサードパーティのNostrクライアントには、まだ表示される場合があります。",
     "shareMenuCancel": "キャンセル",
     "shareMenuDelete": "削除",
-    "shareMenuDeletingContent": "コンテンツを削除中...",
-    "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFollowSetName": "フォローセット名",
-    "shareMenuFollowSetNameHint": "例: クリエイター、ミュージシャンなど",
-    "shareMenuDescriptionOptional": "説明 (任意)",
-    "shareMenuCreate": "作成",
-    "shareMenuCreatedFollowSetAndAddedCreator": "フォローセット「{name}」を作ってクリエイターを追加したよ",
-    "@shareMenuCreatedFollowSetAndAddedCreator": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuDone": "完了",
-    "shareMenuEditTitle": "タイトル",
-    "shareMenuEditTitleHint": "動画のタイトルを入れてね",
-    "shareMenuEditDescription": "説明",
-    "shareMenuEditDescriptionHint": "動画の説明を入れてね",
-    "shareMenuEditHashtags": "ハッシュタグ",
-    "shareMenuEditHashtagsHint": "カンマ, 区切り, ハッシュタグ",
-    "shareMenuEditMetadataNote": "注意: 編集できるのはメタデータだけだよ。動画の中身は変えられないよ。",
-    "shareMenuDeleting": "削除中...",
     "shareMenuUpdate": "更新",
     "shareMenuChangeCover": "カバーを変更",
-    "shareMenuCoverUploadingBackground": "サムネイルをバックグラウンドでアップロード中",
     "shareMenuVideoUpdated": "動画を更新したよ",
     "shareMenuVideoUpdatedWithInviteFailures": "動画を更新しましたが、{count, plural, =1{1件のコラボレーター招待が送信されませんでした。} other{{count}件のコラボレーター招待が送信されませんでした。}}",
     "shareMenuFailedToUpdateVideo": "動画の更新がうまくいかなかった: {error}",
@@ -1625,39 +1411,8 @@
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuVideoDeletionRequested": "動画を削除しました",
-    "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuContentLabels": "コンテンツラベル",
-    "shareMenuAddContentLabels": "コンテンツラベルを追加",
-    "shareMenuClearAll": "すべてクリア",
-    "shareMenuCollaborators": "コラボレーター",
-    "shareMenuAddCollaborator": "コラボレーターを追加",
-    "shareMenuMutualFollowRequired": "コラボレーターとして追加するには、{name}と相互フォローになってる必要があるよ。",
-    "@shareMenuMutualFollowRequired": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuLoading": "読み込み中...",
-    "shareMenuInspiredBy": "インスパイア元",
-    "shareMenuAddInspirationCredit": "インスピレーションクレジットを追加",
-    "shareMenuCreatorCannotBeReferenced": "このクリエイターは参照できないよ。",
-    "shareMenuUnknown": "不明",
-    "shareMenuUseThisSound": "このサウンドを使う",
-    "shareMenuOriginalSound": "オリジナルサウンド",
     "authSessionExpired": "セッションが切れちゃった。もう一回サインインしてね。",
     "authSignInFailed": "サインインがうまくいかなかった。もう一回試してみて。",
-    "localeAppLanguage": "アプリの言語",
-    "localeDeviceDefault": "デバイスの既定",
-    "localeSelectLanguage": "言語を選ぶ",
     "webAuthNotSupportedSecureMode": "セキュアモードではウェブ認証は対応してないよ。安全な鍵管理にはモバイルアプリを使ってね。",
     "webAuthIntegrationFailed": "認証連携がうまくいかなかった: {error}",
     "@webAuthIntegrationFailed": {
@@ -1689,34 +1444,14 @@
     "webAuthNostrHelp": "一番簡単なのは Alby や nos2x みたいなブラウザ拡張をインストールする方法だよ。安全なリモート署名なら nsec bunker を使ってね。",
     "soundsTitle": "サウンド",
     "soundsSearchHint": "サウンドを検索...",
-    "soundsPreviewUnavailable": "サウンドをプレビューできない - 音声がないよ",
-    "soundsPreviewFailed": "プレビューの再生がうまくいかなかった: {error}",
-    "@soundsPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "soundsPreviewFailedGeneric": "プレビューの再生がうまくいかなかった",
-    "soundsFeaturedSounds": "注目のサウンド",
-    "soundsTrendingSounds": "トレンドのサウンド",
-    "soundsAllSounds": "すべてのサウンド",
     "soundSyncStatusSyncing": "サウンドを同期しています…",
     "soundSyncStatusSynced": "サウンドは最新です",
     "soundSyncStatusFailed": "サウンドを同期できませんでした。もう一度試します。",
     "soundSyncStatusLocked": "この端末では同期済みライブラリのロックを解除できません。",
     "soundsSearchResults": "検索結果",
-    "soundsNoSoundsAvailable": "使えるサウンドがないよ",
-    "soundsNoSoundsDescription": "クリエイターが音声を共有するとここに出るよ",
     "soundsNoSoundsFound": "サウンドが見つからない",
     "soundsNoSoundsFoundDescription": "別のキーワードで検索してみて",
-    "soundsFailedToLoad": "サウンドの読み込みがうまくいかなかった",
-    "soundsRetry": "もう一回",
-    "soundsScreenLabel": "サウンド画面",
     "profileTitle": "プロフィール",
-    "profileRefresh": "更新",
-    "profileRefreshLabel": "プロフィールを更新",
     "profileMoreOptions": "その他のオプション",
     "profileBlockedUser": "{name}をブロックしたよ",
     "@profileBlockedUser": {
@@ -1742,14 +1477,6 @@
             }
         }
     },
-    "profileError": "エラー: {error}",
-    "@profileError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsTabAll": "すべて",
     "notificationsTabLikes": "いいね",
     "notificationsTabComments": "コメント",
@@ -1758,25 +1485,6 @@
     "notificationsFailedToLoad": "通知の読み込みがうまくいかなかった",
     "notificationsRetry": "もう一回",
     "notificationsRefreshError": "更新できませんでした — 既存の通知を表示しています",
-    "notificationsCheckingNew": "新しい通知をチェック中",
-    "notificationsNoneYet": "通知はまだないよ",
-    "notificationsNoneForType": "{type}の通知はないよ",
-    "@notificationsNoneForType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
-    "notificationsEmptyDescription": "誰かがあなたのコンテンツに反応したらここに出るよ",
-    "notificationsLoadingType": "{type}の通知を読み込み中...",
-    "@notificationsLoadingType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsInviteSingular": "友達に送れる招待が1つあるよ！",
     "notificationsInvitePlural": "友達に送れる招待が{count}個あるよ！",
     "@notificationsInvitePlural": {
@@ -1786,9 +1494,7 @@
             }
         }
     },
-    "notificationsVideoNotFound": "動画が見つからない",
     "notificationsVideoUnavailable": "動画を見れないよ",
-    "notificationsFromNotification": "通知から",
     "feedFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
     "feedRetry": "もう一回",
     "feedNoFollowedUsers": "まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。",
@@ -1818,50 +1524,13 @@
     "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
     "feedClassicEmpty": "クラシック動画はまだありません。\nしばらくしてからもう一度確認してください。",
     "feedExploreVideos": "動画を探しに行こう",
-    "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
-    "feedSkip": "スキップ",
-    "uploadWaitingToUpload": "アップロード待ち",
     "uploadUploadingVideo": "動画をアップロード中",
-    "uploadProcessingVideo": "動画を処理中",
-    "uploadProcessingComplete": "処理完了",
-    "uploadPublishedSuccessfully": "公開したよ",
-    "uploadFailed": "アップロードがうまくいかなかった",
-    "uploadRetrying": "アップロードを再試行中",
-    "uploadPaused": "アップロード一時停止",
-    "uploadPercentComplete": "{percent}% 完了",
-    "@uploadPercentComplete": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadQueuedMessage": "動画はアップロード待ちだよ",
-    "uploadUploadingMessage": "サーバーにアップロード中...",
-    "uploadProcessingMessage": "動画を処理中 - 数分かかるかも",
-    "uploadReadyToPublishMessage": "動画の処理が完了、公開の準備OKだよ",
-    "uploadPublishedMessage": "動画をプロフィールに公開したよ",
     "postPublishConfirmationTitle": "プロフィールに公開したよ",
     "postPublishConfirmationView": "表示",
     "postPublishConfirmationShare": "共有",
     "postPublishConfirmationThumbnailLabel": "公開したばかりの動画のサムネイル",
   "uploadPublishedCountMessage": "{count, plural, =1{動画をプロフィールに公開したよ} other{{count}本の動画をプロフィールに公開したよ}}",
-    "uploadFailedMessage": "アップロードがうまくいかなかった - もう一回試してみて",
-    "uploadRetryingMessage": "アップロードを再試行中...",
-    "uploadPausedMessage": "アップロードを一時停止したよ",
-    "uploadRetryButton": "もう一回",
-    "uploadRetryFailed": "アップロードの再試行がうまくいかなかった: {error}",
-    "@uploadRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "userSearchPrompt": "ユーザーを検索",
     "userSearchNoResults": "ユーザーが見つからない",
-    "userSearchFailed": "検索がうまくいかなかった",
-    "userPickerSearchByName": "名前で検索",
     "userPickerFilterByNameHint": "名前で絞り込み...",
     "userPickerSearchByNameHint": "名前で検索...",
     "userPickerClearSearchSemantics": "検索をクリア",
@@ -1900,27 +1569,13 @@
     "ageVerificationCreationQuestion": "16歳以上?",
     "ageVerificationNo": "いいえ",
     "ageVerificationYes": "はい",
-    "shareLinkCopied": "リンクをコピーしたよ",
-    "shareFailedToCopy": "リンクのコピーがうまくいかなかった",
-    "shareVideoSubject": "Divine でこの動画見てみて",
-    "shareFailedToShare": "共有がうまくいかなかった",
-    "shareVideoTitle": "動画を共有",
-    "shareToApps": "アプリで共有",
-    "shareToAppsSubtitle": "メッセージアプリや SNS で共有",
-    "shareCopyWebLink": "ウェブリンクをコピー",
-    "shareCopyWebLinkSubtitle": "共有できるウェブリンクをコピー",
-    "shareCopyNostrLink": "Nostr リンクをコピー",
-    "shareCopyNostrLinkSubtitle": "Nostr クライアント用の nevent リンクをコピー",
     "navHome": "ホーム",
     "navExplore": "探索",
     "navInbox": "受信箱",
     "navProfile": "プロフィール",
     "navMyProfile": "マイプロフィール",
-    "navSearch": "検索",
     "navNotifications": "通知",
-    "navSearchTooltip": "検索",
     "navOpenCamera": "カメラを開く",
-    "navUnknown": "不明",
     "navExploreClassics": "クラシック",
     "navExploreNewVideos": "新着動画",
     "navExploreTrending": "トレンド",
@@ -1981,10 +1636,8 @@
             }
         }
     },
-    "reportTitle": "コンテンツを報告",
     "reportWhyReporting": "このコンテンツを報告する理由は?",
     "reportPolicyNotice": "Divine はコンテンツの報告に24時間以内に対応して、問題のあるコンテンツを削除し、違反ユーザーを排除するよ。",
-    "reportAdditionalDetails": "追加の詳細 (任意)",
     "reportBlockUser": "このユーザーをブロック",
     "reportCancel": "キャンセル",
     "reportSubmit": "報告",
@@ -2011,7 +1664,6 @@
     "reportReceivedTitle": "報告を受け付けたよ",
     "reportReceivedThankYou": "Divine を安全に保つために協力してくれてありがとう。",
     "reportReceivedReviewNotice": "チームが報告を確認して、適切に対応するね。ダイレクトメッセージでアップデートが届くかも。",
-    "reportLearnMore": "もっと詳しく",
     "reportSafetyUrl": "divine.video/safety",
     "reportClose": "閉じる",
     "listAddToList": "リストに追加",
@@ -2332,7 +1984,6 @@
     "commonCancel": "キャンセル",
     "commonDelete": "削除",
     "commonRetry": "もう一回",
-    "commonNext": "次へ",
     "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2368,7 +2019,6 @@
             }
         }
     },
-    "featureRequestCancel": "キャンセル",
     "followersFailedToLoadList": "フォロワーリストの読み込みがうまくいかなかった",
     "followingFailedToLoadList": "フォロー中リストの読み込みがうまくいかなかった",
     "inboxActionBlock": "{displayName}をブロック",
@@ -2484,8 +2134,6 @@
             }
         }
     },
-    "libraryAddClips": "追加",
-    "libraryClipSelectionTitle": "クリップ",
     "libraryClipsDeletedCount": "{count, plural, other{{count}件のクリップを削除しました}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2523,15 +2171,6 @@
     "libraryCreateVideo": "動画を作成 ({count})",
     "libraryDeleteClipMessage": "このクリップを削除しますか？",
     "libraryDeleteClipTitle": "クリップを削除",
-    "libraryDeleteClipsMessage": "選択した{count}件のクリップを削除しますか？",
-    "@libraryDeleteClipsMessage": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "libraryDeleteClipsTitle": "クリップを削除",
     "libraryDeleteClipsWarning": "この操作は取り消せません。動画ファイルは端末から完全に削除されます。",
     "libraryDeleteConfirm": "削除",
     "libraryDeleteDraftMessage": "「{title}」を削除しますか？",
@@ -2601,15 +2240,6 @@
     "videoClipSemanticHintDisabled": "無効",
     "videoClipSemanticHintSelect": "タップして選択、長押しでプレビュー",
     "videoClipSemanticHintDeselect": "タップして選択解除、長押しでプレビュー",
-    "librarySaveToCameraRollTooltip": "カメラロールに保存",
-    "librarySecondsRemaining": "残り{seconds}秒",
-    "@librarySecondsRemaining": {
-        "placeholders": {
-            "seconds": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipDuration": "{seconds}秒",
     "libraryTabClips": "クリップ",
     "libraryTabDrafts": "下書き",
@@ -2631,8 +2261,6 @@
     "dmConversationLoadError": "メッセージを読み込めなかった",
     "dmMessageInputHint": "何か書いてみましょう…",
     "dmMessageSendLabel": "メッセージを送信",
-    "reportDialogCancel": "キャンセル",
-    "reportDialogReport": "報告",
     "routerInvalidCreator": "無効なクリエイター",
     "routerInvalidHashtagRoute": "無効なハッシュタグルート",
     "searchDiscoverSomethingInteresting": "面白いものを見つけよう",
@@ -2864,10 +2492,8 @@
     "cameraPermissionAllowAccessTitle": "カメラとマイクへのアクセスを許可",
     "cameraPermissionAllowAccessDescription": "これにより、アプリ内で動画の撮影と編集ができるようになります。それ以外の用途はありません。",
     "cameraPermissionGoToSettings": "設定に移動",
-    "videoEditorAddClipFromLibrary": "ライブラリからクリップを追加",
     "videoEditorAddElementSemanticLabel": "要素を追加",
     "videoEditorAddTitle": "追加",
-    "videoEditorAdjustVolumeTitle": "音量を調整",
     "videoEditorAudioAddAudio": "オーディオを追加",
     "videoEditorAudioFailedToLoadTitle": "サウンドの読み込みに失敗",
     "videoEditorAudioCategoryDivine": "Divine",
@@ -2886,8 +2512,6 @@
     "videoEditorAudioUntitled": "タイトルなし",
     "videoEditorAudioUntitledSound": "タイトルなしのサウンド",
     "videoEditorVolumeLongPressHint": "すべてのトラックをミュートまたはミュート解除",
-    "videoEditorCannotSplitProcessing": "処理中はクリップを分割できません。しばらくお待ちください。",
-    "videoEditorClipDeleted": "クリップを削除しました",
     "videoEditorClipSaveFailed": "クリップの保存に失敗しました",
     "videoEditorClipSavedSuccess": "クリップをライブラリに保存しました",
     "videoEditorCameraLabel": "カメラ",
@@ -2903,8 +2527,6 @@
         }
     },
     "videoEditorConfirmColorSemanticLabel": "色を確定",
-    "videoEditorCropSemanticLabel": "トリミング",
-    "videoEditorDeleteClip": "クリップを削除",
     "videoEditorDeleteLabel": "削除",
     "videoEditorDeleteLayerDropZone": "レイヤー削除のドロップゾーン",
     "videoEditorDeleteSelectedItemSemanticLabel": "選択したアイテムを削除",
@@ -2946,7 +2568,6 @@
     "videoEditorHueSemanticLabel": "色相",
     "videoEditorKeepEditingButton": "編集を続ける",
     "videoEditorLevelSemanticLabel": "レベル",
-    "videoEditorMuteAudioSemanticLabel": "音声をミュート",
     "videoEditorNoStickersAvailable": "ステッカーがありません",
     "videoEditorNoStickersFound": "ステッカーが見つかりません",
     "videoEditorOpenAudioSemanticLabel": "オーディオエディタを開く",
@@ -3012,7 +2633,6 @@
     "videoEditorPickColorTitle": "色を選択",
     "videoEditorPlayPauseSemanticLabel": "動画を再生または一時停止",
     "videoEditorPlaySemanticLabel": "再生",
-    "videoEditorRecordedAudioLabel": "録音済みオーディオ",
     "videoEditorVoiceOverLabel": "ナレーション",
     "videoEditorVoiceOverTakeName": "録音 {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "ナレーションを録音",
@@ -3048,7 +2668,6 @@
     "videoEditorSaveSelectedClip": "選択したクリップを保存",
     "videoEditorSelectFontSemanticLabel": "フォントを選択",
     "videoEditorShowTimelineSemanticLabel": "タイムラインを表示",
-    "videoEditorSplitClip": "クリップを分割",
     "videoEditorSplitLabel": "分割",
     "videoEditorSplitFailed": "分割に失敗しました。もう一度お試しください。",
     "videoEditorSplitPlayheadOutsideClip": "分割するには再生ヘッドを選択したクリップ内に置いてください。",
@@ -3149,27 +2768,12 @@
     "videoEditorTimelineTrimEndSemanticLabel": "終端をトリム",
     "videoEditorTimelineTrimStartSemanticLabel": "始端をトリム",
     "videoEditorUndoSemanticLabel": "元に戻す",
-    "videoEditorUnmuteAudioSemanticLabel": "音声のミュートを解除",
     "videoEditorVideoTimelineSemanticLabel": "動画タイムライン",
     "videoMetadataAddCollaboratorSemanticLabel": "コラボレーターを追加",
     "videoMetadataClosePostDetailsSemanticLabel": "投稿の詳細を閉じる",
     "videoMetadataClassicDoneButton": "完了",
     "videoMetadataClosePreviewSemanticLabel": "動画プレビューを閉じる",
-    "videoMetadataCollaboratorsCount": "{count}/{max}人のコラボレーター",
-    "@videoMetadataCollaboratorsCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "videoMetadataCollaboratorsHelpMessage": "コラボレーターはこの投稿の共同クリエイターとしてタグ付けされます。相互フォローしている人のみ追加でき、公開時に投稿メタデータに表示されます。",
-    "videoMetadataCollaboratorsHelpTooltip": "コラボレーターの仕組み",
     "videoMetadataCollaboratorsLabel": "コラボレーター",
-    "videoMetadataContentWarningDoneButton": "完了",
     "videoMetadataContentWarningLabel": "コンテンツ警告",
     "videoMetadataContentWarningSelectAllThatApply": "コンテンツに該当するものをすべて選択",
     "videoMetadataCreatorCannotBeReferencedSnackbar": "このクリエイターは参照できません。",
@@ -3181,7 +2785,6 @@
             }
         }
     },
-    "videoMetadataDeleteTagSemanticLabel": "削除",
     "videoMetadataDescriptionLabel": "説明",
     "videoMetadataDismissHelpDialogSemanticLabel": "ヘルプダイアログを閉じる",
     "videoMetadataExpirationLabel": "有効期限",
@@ -3189,19 +2792,8 @@
     "videoMetadataFormNotReadyHint": "有効にするにはフォームを入力してください",
     "videoMetadataGoToLibraryButton": "ライブラリへ",
     "videoMetadataGotItButton": "わかりました！",
-    "videoMetadataInspiredByHelpMessage": "帰属のために使用します。インスパイアクレジットはコラボレーターとは異なります。影響を認めますが、共同クリエイターとしてタグ付けはしません。",
-    "videoMetadataInspiredByHelpTooltip": "インスピレーションクレジットの仕組み",
     "videoMetadataInspiredByLabel": "インスパイア元",
-    "videoMetadataInspiredByNone": "なし",
     "videoMetadataLimitReachedWarning": "64KBの上限に達しました。続けるにはコンテンツを削除してください。",
-    "videoMetadataMustMutuallyFollowSnackbar": "{name}をコラボレーターとして追加するには、相互フォローが必要です。",
-    "@videoMetadataMustMutuallyFollowSnackbar": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "videoMetadataMutualFollowersSearchText": "相互フォロワー",
     "videoMetadataOpenPreviewSemanticLabel": "投稿プレビュー画面を開く",
     "videoMetadataPausePreviewSemanticLabel": "プレビューを一時停止",
@@ -3210,8 +2802,6 @@
     "videoMetadataPostDetailsTitle": "投稿の詳細",
     "videoMetadataPostSemanticLabel": "投稿ボタン",
     "videoMetadataPublishVideoHint": "フィードに動画を公開",
-    "videoMetadataRemoveCollaboratorSemanticLabel": "コラボレーターを削除",
-    "videoMetadataRemoveInspiredBySemanticLabel": "インスパイア元を削除",
     "videoMetadataRemoveSemanticLabel": "削除",
     "videoMetadataSaveForLaterButton": "後で保存",
     "videoMetadataSaveForLaterSemanticLabel": "後で保存ボタン",
@@ -3358,7 +2948,6 @@
     "shareMenuDeleteFailedRelayNoResponse": "リレーに接続できませんでした。接続を確認してもう一度お試しください。",
     "shareMenuDeletePartiallyConfirmed": "削除しました。すべてのリレーが確認したわけではないので、他のアプリではまだ表示されることがあります。",
     "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
-    "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
     "fullscreenFeedRemovedMessage": "動画を削除しました",
     "fullscreenFeedEmptyMessage": "ここに再生できる動画はもうありません",
     "invitesGenerateCardTitle": "{count, plural, other{{count} 件の招待を作成できます}}",
@@ -3402,9 +2991,7 @@
         }
     },
     "notificationSystemUpdate": "新しいお知らせがあります",
-    "notificationSomeoneLikedYourVideo": "誰かがあなたの動画にいいねしました",
     "peopleListsAddToList": "リストに追加",
-    "peopleListsAddToListSubtitle": "このクリエイターをリストに追加する",
     "peopleListsSheetTitle": "リストに追加",
     "peopleListsEmptyTitle": "リストがありません",
     "peopleListsEmptySubtitle": "リストを作成して人々をグループ化しましょう。",
@@ -3810,14 +3397,6 @@
     "bugReportDiagnosticsNotice": "デバイス情報とログは自動で添付されるよ。",
     "bugReportSuccessMessage": "ありがとう！レポートを受け取ったよ。Divine をよくするのに使うね。",
     "bugReportSendFailed": "バグレポートの送信に失敗。あとでもう一回試してみて。",
-    "bugReportFailedWithError": "バグレポートの送信に失敗: {error}",
-    "@bugReportFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "featureRequestSendRequest": "リクエストを送信",
     "featureRequestSubjectHint": "アイデアの概要",
     "featureRequestDescriptionRequiredLabel": "どんな機能がほしい? *",
@@ -3828,14 +3407,6 @@
     "featureRequestWhenHint": "この機能が役立つシーンを教えてね",
     "featureRequestSuccessMessage": "ありがとう！機能リクエストを受け取ったよ。チェックするね。",
     "featureRequestSendFailed": "機能リクエストの送信に失敗。あとでもう一回試してみて。",
-    "featureRequestFailedWithError": "機能リクエストの送信に失敗: {error}",
-    "@featureRequestFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "followingTitle": "フォロー中",
     "followingTitleForName": "{displayName}のフォロー中",
     "@followingTitleForName": {
@@ -3862,9 +3433,6 @@
     "followSortTitle": "並べ替え",
     "followSortNewest": "新しい順",
     "followSortOldest": "古い順",
-    "reportMessageTitle": "メッセージを報告",
-    "reportMessageWhyReporting": "このメッセージを報告する理由は?",
-    "reportMessageSelectReason": "このメッセージを報告する理由を選んでね",
     "newMessageTitle": "新しいメッセージ",
     "newMessageFindPeople": "人を探す",
     "newMessageNoContacts": "連絡先が見つからなかった。\n人をフォローするとここに出るよ。",
@@ -4034,8 +3602,6 @@
     "authInfoBrowserExtensionTitle": "ブラウザ拡張機能",
     "authInfoBrowserExtensionDescription": "Alby や nos2x のような NIP-07 ブラウザ拡張機能でサインインします。鍵は拡張機能内に保持され、Divine からは見えません。",
     "soundsAlreadySavedToLibrary": "すでにサウンドにあります",
-    "soundsAvailabilityCommunity": "コミュニティ",
-    "soundsAvailabilityPrivate": "プライベート",
     "soundsRemoveSavedSound": "サウンドを削除",
     "savedSoundSaveAction": "保存",
     "savedSoundPausePreviewAction": "プレビューを一時停止",
@@ -4052,11 +3618,8 @@
     "soundsSavedToLibrary": "サウンドに保存しました",
     "videoEditorAudioCategoryFeatured": "おすすめ",
     "videoEditorAudioCategoryMySounds": "マイサウンド",
-    "videoEditorAudioFeaturedEmptySubtitle": "準備ができ次第、おすすめサウンドをここに掲載します。",
-    "videoEditorAudioFeaturedEmptyTitle": "おすすめサウンドは近日公開",
     "videoMetadataAudioReuseSubtitle": "他のユーザーがこの動画の音声を保存して再利用できるようにします。",
     "publishAudioReuseDegradedWarning": "動画は公開されましたが、サウンドは公開されませんでした。共有するには動画を編集してください。",
-    "videoMetadataAudioReuseTitle": "このサウンドを公開",
     "videoMetadataShareReplyToFeedTitle": "自分のフィードにも共有",
     "videoMetadataShareReplyToFeedSubtitle": "オフにすると、この動画はコメントスレッド内にのみ表示されます。",
     "commentsRecordVideoButtonLabel": "動画コメントを録画",
@@ -4217,14 +3780,12 @@
     "videoEditorChromaKeyRemoveFailed": "グリーンバックを削除できませんでした。クリップは変更されていません。",
     "videoEditorChromaKeyApplying": "グリーンバックを適用しています…",
     "videoEditorChromaKeyPreviewUnavailable": "この端末ではライブプレビューを表示できません。設定は書き出し時にきちんと反映されます。",
-    "videoEditorOriginalAudioLabel": "元の音声",
     "videoEditorClipVolumeLabel": "クリップ {index}",
     "dmReactionAddCustomA11yLabel": "カスタム絵文字リアクションを追加",
     "dmReelReplyComposerHint": "{name}さんにメッセージ…",
     "dmReelReplyComposerHintSelf": "自分に返信…",
     "dmReelReplyComposerSemanticLabel": "このリールに返信",
     "dmReelReplyViewChat": "チャットを見る",
-    "dmReelReplyViewChatA11yLabel": "チャットを開く",
     "dmReelReplySentAnnouncement": "返信を送信しました",
     "dmReelReactionSentAnnouncement": "{emoji}でリアクションしました",
     "dmReelReplyFailed": "送信できませんでした",
@@ -4278,7 +3839,6 @@
     "reportReasonCsam": "児童性的虐待",
     "reportReasonCsamSubtitle": "未成年者への性的虐待を描写したコンテンツ",
     "minorAccountReviewWelcomePageTitle": "ファミリーガイド",
-    "minorAccountReviewWelcomeCta": "まだ16歳じゃない？大丈夫。できることを紹介します。",
     "minorAccountReviewWelcomeTitle": "まだ16歳じゃない？大丈夫。",
     "minorAccountReviewWelcomeBody": "入れる答えを選ぶんじゃなくて、このページまで来てくれたこと。それって大事なことだよ。誠実さと芯の強さ、そして周りの人への本当の思いやりが表れてる。\n\n16歳未満の人に関するルールは、住んでいる場所によって違うんだ。Divine では、家族で一緒に話し合って、健全なソーシャルメディアの使い方って何かを決めてほしいと思ってるよ。",
     "minorAccountReviewModerationTitle": "もう一歩だけ必要です",
@@ -4292,7 +3852,6 @@
     "minorAccountReviewChooseAgeBandTitle": "合う道を選んでください",
     "minorAccountReviewUnder13Cta": "13歳未満",
     "minorAccountReviewTeenCta": "13〜15歳",
-    "minorAccountReviewFamilyResourcesTitle": "ご家族に役立つ情報",
     "minorAccountReviewFamilyResourcesBody": "10代がソーシャルメディアをより安全に使えるようにする実践的なヒント、会話のためのツール、資料は Divine ファミリーガイドをご覧ください。",
     "minorAccountReviewFamilyResourcesCta": "ファミリーガイドとヒントを見る",
     "minorAccountReviewFooter": "16歳以上なのに間違ってここに来てしまった場合は、Divine サポートにご連絡ください。担当者が確認します。",
@@ -4481,15 +4040,6 @@
             }
         }
     },
-    "notificationSettingsSystem": "システム",
-    "notificationSettingsSystemSubtitle": "アプリの更新とシステムメッセージ",
-    "notificationSettingsPushNotificationsSection": "プッシュ通知",
-    "notificationSettingsPushNotifications": "プッシュ通知",
-    "notificationSettingsPushNotificationsSubtitle": "アプリを閉じているときも通知を受け取る",
-    "notificationSettingsSound": "サウンド",
-    "notificationSettingsSoundSubtitle": "通知音を鳴らす",
-    "notificationSettingsVibration": "バイブレーション",
-    "notificationSettingsVibrationSubtitle": "通知時に振動する",
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4510,7 +4060,6 @@
     "videoEditorTransformFrameFailed": "フレームを変換できませんでした。もう一度お試しください。",
     "videoEditorTransformRotateLabel": "回転",
     "videoEditorTransformFlipLabel": "反転",
-    "videoEditorTransformRatioLabel": "比率",
     "videoEditorTransformResetLabel": "リセット",
     "videoEditorTransformApplySemanticLabel": "変形を適用",
     "videoEditorTransformCancelSemanticLabel": "変形をキャンセル",
@@ -4851,12 +4400,6 @@
     "deleteAccountSuccess": "削除リクエストを送信したよ。このデバイスからサインアウトしたよ。",
     "deleteAccountSuccessContentUnverified": "アカウントの削除をリクエストしたよ。既存の投稿の一部は、個別に削除を確認できなかったよ。",
     "deleteAccountWarningBody": "これはアカウントとコンテンツの削除リクエストを送信して、可能なら Divine アカウントを削除し、このデバイスからサインアウトするよ。一部のリレーやクライアント、検索インデックスにはコピーが残ることがあるよ。ほかのサインイン中のデバイスは、そこで鍵を削除するまで有効なままだよ。",
-    "exportProgressStageApplyingTextOverlay": "テキストオーバーレイを追加中...",
-    "exportProgressStageComplete": "書き出し完了！",
-    "exportProgressStageConcatenating": "クリップを結合中...",
-    "exportProgressStageError": "書き出しに失敗したよ",
-    "exportProgressStageGeneratingThumbnail": "サムネイルを生成中...",
-    "exportProgressStageMixingAudio": "サウンドを追加中...",
     "findPeopleAnonymousUser": "匿名",
     "findPeopleNoContacts": "連絡先が見つからないよ。\n誰かをフォローすると、ここに表示されるよ。",
     "geoBlockedCityLabel": "市区町村",
@@ -4892,21 +4435,15 @@
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "このサウンドは見つからなかったよ",
     "soundDetailNotFoundTitle": "サウンドが見つからないよ",
-    "videoFeedDescriptionSemanticLabel": "動画の説明",
     "videoFeedLoopCountLabel": "🔁 {count}ループ",
     "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
-    "videoFeedLoopCountSemanticLabel": "動画のループ数",
     "originalSoundUnavailableBody": "この動画の音声は個別には利用できないよ。",
     "originalSoundByCreator": "オリジナルサウンド - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
-    "globalUploadPendingCount": "保留中のアップロード ({count})",
-    "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。",
     "profileBadgeCheckmarkTitle": "プロフィールのチェックマーク",
     "profileBadgeCheckmarkBody": "Divine はこのチェックマークをチームのアカウントと、手動で承認したごく少数のプロフィールに付けてるよ。 NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。",
-    "shareVideoInListsCount": "{count, plural, =1{1件のリストに含まれてるよ} other{{count}件のリストに含まれてるよ}}",
-    "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "フォロー解除",
     "videoClipSaveFailed": "クリップの保存に失敗したよ",
     "videoClipSaveTo": "{destination}に保存",
@@ -4927,7 +4464,6 @@
     "@searchVideosSortRecent": {"description": "Label for the video search sort option that shows the newest results first."},
     "minorAccountReviewUnder13HonestyTitle": "「とりあえず戻って」って言わない理由",
     "minorAccountReviewUnder13HonestyBody": "ネットの多くは、ゲートを通るためなら何とでも言えるように仕向けられてるよね。それって良くないと思うんだ。確かに、戻って本当の年齢よりも上だって言うこともできるけど、それは正直じゃないし、欲しいものを手に入れるために嘘をつくよう仕向けるつもりはないよ。",
-    "minorAccountReviewUnder13LegalTitle": "それでも答えが「ノー」な理由",
     "minorAccountReviewUnder13LegalBody": "私たちは、若い人たちが自分自身や周りの人にとって健康的でポジティブな形で Divine を使えるよう手助けしたいと思ってるよ。それに、場所によって違う法律も守らなきゃいけないんだ。だから、もし13歳未満なら、今は自分のアカウントを持つことはできないよ。",
     "minorAccountReviewParentConsentHonestyTitle": "保護者に関わってもらうようお願いする理由",
     "minorAccountReviewParentConsentHonestyBody": "Divine は世界中の年齢に関する法律を守らなきゃいけないよ。それに、技術的な年齢確認のほとんどが完璧じゃないこともわかってる。ルールなんてないふりをしたり、年齢について嘘をつくのがカッコいいみたいにするんじゃなくて、10代の人や家族に Divine の一番いい使い方を一緒に考えてほしいんだ。だから13〜15歳の人には、アカウント作成に保護者が参加するようお願いしてるよ。",
@@ -5067,8 +4603,6 @@
   "authSignInOptionsHintCta": "すべてのサインイン方法を見る",
     "videoEditorStopMotionFramesPerImageLabel": "1枚あたりのフレーム数",
     "videoEditorStopMotionFramesPerImageValueSemanticLabel": "1枚あたり{count}フレーム",
-    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "1枚あたりのフレーム数を増やす",
-    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "1枚あたりのフレーム数を減らす",
     "videoEditorStopMotionFrameSemanticLabel": "ストップモーションのフレーム {total}枚中{position}枚目",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count}フレーム}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "フレーム",

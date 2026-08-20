@@ -308,6 +308,21 @@ jobs:
           # permanent (units, percentages, ordinals, ratios) and must NEVER be
           # pluralized — each carries a trailing '# reason'.
           bash scripts/check_countable_plural_floor.sh
+      - name: 🗑️ Verify every ARB key is actually rendered (l10n ratchet)
+        run: |
+          # Issue #3630. Freezes the set of app_en.arb keys that nothing
+          # under mobile/lib renders (lib only — a test cannot render a string,
+          # and a findsNothing assertion is evidence the key is DEAD). An
+          # orphaned key is translated
+          # into 21 locales and compiled into AppLocalizations, yet never
+          # rendered — usually while the string it was written for sits
+          # hardcoded in a widget, still broken for non-English users. Nothing
+          # else sees it: arb_consistency_test proves a key exists in every
+          # locale (an orphan passes in all 22), and `flutter analyze` cannot
+          # report an unused getter on a generated class. Baseline entries are
+          # a worklist, each carrying '# wire: <path>:<line>' or
+          # '# staged: <why>'.
+          bash scripts/check_orphaned_arb_key_floor.sh
       - name: 🔐 Verify no profile publish reaches the ungated read provider (#6423)
         run: bash scripts/check_profile_read_write_split.sh
       - name: 🔨 Verify generated files are up-to-date

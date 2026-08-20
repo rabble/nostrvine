@@ -122,12 +122,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsNotifications => 'Bildirimler';
 
   @override
-  String get settingsContentPreferences => 'İçerik Tercihleri';
-
-  @override
-  String get settingsModerationControls => 'Moderasyon Kontrolleri';
-
-  @override
   String get settingsBlueskyPublishing => 'Bluesky Yayınlama';
 
   @override
@@ -418,15 +412,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get profileEditProfile => 'Profili düzenle';
-
-  @override
-  String get profileCreatorAnalytics => 'İçerik üretici analitikleri';
-
-  @override
-  String get profileShareProfile => 'Profili paylaş';
-
-  @override
   String get profileCopyPublicKey => 'Açık anahtarı (npub) kopyala';
 
   @override
@@ -437,12 +422,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => 'Gömme kodu panoya kopyalandı';
-
-  @override
-  String get profileRefreshTooltip => 'Yenile';
-
-  @override
-  String get profileRefreshSemanticLabel => 'Profili yenile';
 
   @override
   String get profileMoreTooltip => 'Daha fazla';
@@ -635,20 +614,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Kullanıcı Engellendi';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Bu kullanıcının içeriğini artık akışında görmeyeceksin.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Profilinden veya Ayarlar > Güvenlik\'ten istediğin zaman engelini kaldırabilirsin.';
-
-  @override
-  String get profileCloseButton => 'Kapat';
-
-  @override
   String get profileNoCollabsTitle => 'Henüz İşbirliği Yok';
 
   @override
@@ -759,23 +724,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Başlamak için adını, biyografini ve resmini ekle';
 
   @override
-  String get profileSetUpButton => 'Ayarla';
-
-  @override
-  String get profileVerifyingEmail => 'E-posta Doğrulanıyor...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Doğrulama bağlantısı için $email adresini kontrol et';
-  }
-
-  @override
-  String get profileWaitingForVerification => 'E-posta doğrulaması bekleniyor';
-
-  @override
-  String get profileVerificationFailed => 'Doğrulama Başarısız';
-
-  @override
   String get profilePleaseTryAgain => 'Lütfen tekrar dene';
 
   @override
@@ -787,9 +735,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Tekrar Dene';
-
-  @override
-  String get profileRegisterButton => 'Kaydol';
 
   @override
   String get profileSessionExpired => 'Oturum Sona Erdi';
@@ -830,9 +775,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileUserFallback => 'kullanıcı';
-
-  @override
-  String get profileDismissTooltip => 'Kapat';
 
   @override
   String get profileLinkCopied => 'Profil bağlantısı kopyalandı';
@@ -892,9 +834,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ağa ulaşılamadı. Bağlantını kontrol et ve tekrar dene.';
 
   @override
-  String get profileSetupRetryLabel => 'Tekrar dene';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Görünen Ad';
 
   @override
@@ -916,9 +855,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupUsernameHelper => 'Divine\'deki benzersiz kimliğin';
 
   @override
-  String get profileSetupProfileColorLabel => 'Profil Rengi (Opsiyonel)';
-
-  @override
   String get profileSetupSaveButton => 'Kaydet';
 
   @override
@@ -926,9 +862,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileSetupImageUrlTitle => 'Görsel URL\'si ekle';
-
-  @override
-  String get profileSetupPictureUploaded => 'Profil resmi başarıyla yüklendi!';
 
   @override
   String get profileSetupImageSelectionFailed =>
@@ -964,10 +897,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Görsel yüklenemedi. Sunucularımız geçici olarak kullanılamıyor. Lütfen birazdan tekrar dene.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Profil resmi yükleme henüz web\'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL\'si yapıştır.';
 
   @override
   String get profileSetupBannerClearButton => 'Afişi temizle';
@@ -1093,12 +1022,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupSendRequest => 'Talebi gönder';
 
   @override
-  String get profileSetupPickColorTitle => 'Bir renk seç';
-
-  @override
-  String get profileSetupSelectButton => 'Seç';
-
-  @override
   String get profileSetupUseOwnNip05 => 'Kendi NIP-05 adresini kullan';
 
   @override
@@ -1198,9 +1121,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get nostrInfoGotIt => 'Anlaşıldı!';
 
   @override
-  String get profileTabRefreshTooltip => 'Yenile';
-
-  @override
   String get videoGridRefreshLabel => 'Daha fazla video aranıyor';
 
   @override
@@ -1222,11 +1142,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'İçerik siliniyor...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'İçerik silinemedi: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Öne çıkanlar';
@@ -1332,9 +1247,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Video yükleniyor...';
-
-  @override
   String get videoPlayerPlayVideo => 'Videoyu oynat';
 
   @override
@@ -1342,12 +1254,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'Videonun sesini aç';
-
-  @override
-  String get videoPlayerEditVideo => 'Videoyu düzenle';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'Videoyu düzenle';
 
   @override
   String get videoPlayerTapHint =>
@@ -1564,19 +1470,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoErrorNotFound => 'Video bulunamadı';
 
   @override
-  String get videoErrorNetwork => 'Ağ hatası';
-
-  @override
-  String get videoErrorTimeout => 'Yükleme zaman aşımı';
-
-  @override
-  String get videoErrorFormat =>
-      'Video format hatası\n(Tekrar dene veya farklı tarayıcı kullan)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'Desteklenmeyen video formatı';
-
-  @override
   String get videoErrorPlayback => 'Video oynatma hatası';
 
   @override
@@ -1587,9 +1480,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoErrorUnavailableBody => 'Bu video şu anda kullanılamıyor.';
-
-  @override
-  String get videoErrorVerifyAge => 'Yaşı Doğrula';
 
   @override
   String get videoErrorRetry => 'Tekrar Dene';
@@ -1655,9 +1545,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Video oynatıcıyı kapat';
-
-  @override
-  String get videoFollowButtonFollowing => 'Takip ediliyor';
 
   @override
   String get videoFollowButtonFollow => 'Takip et';
@@ -1845,12 +1732,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionMoreOptions => 'Daha fazla seçenek';
 
   @override
-  String get videoActionHideSubtitles => 'Altyazıları gizle';
-
-  @override
-  String get videoActionShowSubtitles => 'Altyazıları göster';
-
-  @override
   String get videoEngagementLikersTitle => 'Beğenenler';
 
   @override
@@ -1885,11 +1766,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoOverlayCommentPostFailedSnackbar => 'Yorum yayınlanamadı';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count döngü';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2631,36 +2507,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'İzlediğin biri paylaştığında';
 
   @override
-  String get notificationSettingsSystem => 'Sistem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Uygulama güncellemeleri ve sistem mesajları';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Anlık bildirimler';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Anlık bildirimler';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Uygulama kapalıyken de bildirim al';
-
-  @override
-  String get notificationSettingsSound => 'Ses';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'Bildirimlerde ses çal';
-
-  @override
-  String get notificationSettingsVibration => 'Titreşim';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Bildirimlerde titret';
-
-  @override
   String get notificationSettingsActions => 'İşlemler';
 
   @override
@@ -2689,12 +2535,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Bildirimler Nostr protokolüyle desteklenir. Gerçek zamanlı güncellemeler Nostr rölelerine olan bağlantına bağlıdır. Bazı bildirimler gecikebilir.';
-
-  @override
-  String get safetySettingsTitle => 'Güvenlik ve Gizlilik';
-
-  @override
-  String get safetySettingsLabel => 'AYARLAR';
 
   @override
   String get safetySettingsWhatYouSee => 'GÖRDÜKLERİN';
@@ -3458,31 +3298,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kayıt tamamlandı. Lütfen e-postanı kontrol et.';
 
   @override
-  String get authVerificationFailedTitle => 'Doğrulama Başarısız';
-
-  @override
-  String get authClose => 'Kapat';
-
-  @override
-  String get authAccountSecured => 'Hesap Güvenceye Alındı!';
-
-  @override
-  String get authAccountLinkedToEmail => 'Hesabın artık e-postana bağlı.';
-
-  @override
-  String get authVerifyYourEmail => 'E-Postanı Doğrula';
-
-  @override
-  String get authClickLinkContinue =>
-      'Kaydı tamamlamak için e-postandaki bağlantıya tıkla. Bu arada uygulamayı kullanmaya devam edebilirsin.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'Doğrulama bekleniyor...';
-
-  @override
-  String get authContinueToApp => 'Uygulamaya Devam Et';
-
-  @override
   String get authFailedToSendResetEmail => 'Sıfırlama e-postası gönderilemedi.';
 
   @override
@@ -3605,9 +3420,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'Şununla paylaş';
-
-  @override
-  String get shareSheetReport => 'Bildir';
 
   @override
   String get shareSheetEventJson => 'Olay JSON\'u';
@@ -3742,148 +3554,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Filigranlı video kamera rulosuna kaydediliyor...';
 
   @override
-  String get uploadProgressVideoUpload => 'Video Yüklemesi';
-
-  @override
-  String get uploadProgressPause => 'Duraklat';
-
-  @override
-  String get uploadProgressResume => 'Devam Et';
-
-  @override
-  String get uploadProgressGoBack => 'Geri Dön';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Tekrar Dene ($count kaldı)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Sil';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '${count}g önce';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '${count}sa önce';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '${count}dk önce';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Az önce';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Yükleniyor %$percent';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'Duraklatıldı %$percent';
-  }
-
-  @override
-  String get shareMenuTitle => 'Videoyu Paylaş';
-
-  @override
-  String get shareMenuReportAiContent => 'Yapay Zeka İçeriği Bildir';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Şüpheli yapay zeka üretimi içeriği hızlı bildir';
-
-  @override
-  String get shareMenuReportingAiContent =>
-      'Yapay zeka içeriği bildiriliyor...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'İçerik bildirilemedi: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'Yapay zeka içeriği bildirilemedi: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Video Durumu';
-
-  @override
-  String get shareMenuViewAllLists => 'Tüm listeleri görüntüle →';
-
-  @override
-  String get shareMenuShareWith => 'Şununla Paylaş';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'Diğer uygulamalar üzerinden paylaş';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'Diğer uygulamalar ile paylaş veya bağlantıyı kopyala';
-
-  @override
-  String get shareMenuSaveToGallery => 'Galeriye Kaydet';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle =>
-      'Orijinal videoyu kamera rulosuna kaydet';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'Filigranlı Kaydet';
-
-  @override
-  String get shareMenuSaveVideo => 'Videoyu Kaydet';
-
-  @override
-  String get shareMenuDownloadWithWatermark => 'Divine filigranı ile indir';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'Videoyu kamera rulosuna kaydet';
-
-  @override
-  String get shareMenuLists => 'Listeler';
-
-  @override
-  String get shareMenuAddToList => 'Listeye Ekle';
-
-  @override
-  String get shareMenuAddToListSubtitle => 'Derlenmiş listelerine ekle';
-
-  @override
-  String get shareMenuCreateNewList => 'Yeni Liste Oluştur';
-
-  @override
-  String get shareMenuCreateNewListSubtitle => 'Yeni bir derleme başlat';
-
-  @override
-  String get shareMenuRemovedFromList => 'Listeden kaldırıldı';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => 'Listeden kaldırılamadı';
-
-  @override
   String get shareMenuBookmarks => 'Yer İmleri';
-
-  @override
-  String get shareMenuFollowSets => 'Takip Setleri';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Takip Seti Oluştur';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Bu üretici ile yeni koleksiyon başlat';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Takip Setine Ekle';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3892,10 +3563,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Listeye ekle';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Bu içerik üreticisini listelerinden birine ekle';
 
   @override
   String get peopleListsSheetTitle => 'Listeye ekle';
@@ -4040,39 +3707,15 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Yer imlerine eklendi!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => 'Yer imi eklenemedi';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return '\"$name\" listesi oluşturuldu ve video eklendi';
-  }
-
-  @override
-  String get shareMenuManageContent => 'İçeriği Yönet';
-
-  @override
   String get shareMenuEditVideo => 'Videoyu Düzenle';
-
-  @override
-  String get shareMenuEditVideoSubtitle =>
-      'Başlık, açıklama ve etiketleri güncelle';
 
   @override
   String get shareMenuDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count video';
   }
-
-  @override
-  String get shareMenuClose => 'Kapat';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4083,14 +3726,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Sil';
-
-  @override
-  String get shareMenuDeletingContent => 'İçerik siliniyor...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'İçerik silinemedi: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4129,60 +3764,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu video silinemedi. Tekrar dene.';
 
   @override
-  String get shareMenuFollowSetName => 'Takip Seti Adı';
-
-  @override
-  String get shareMenuFollowSetNameHint =>
-      'örn. İçerik Üreticileri, Müzisyenler vb.';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Açıklama (opsiyonel)';
-
-  @override
-  String get shareMenuCreate => 'Oluştur';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return '\"$name\" takip seti oluşturuldu ve üretici eklendi';
-  }
-
-  @override
-  String get shareMenuDone => 'Bitti';
-
-  @override
-  String get shareMenuEditTitle => 'Başlık';
-
-  @override
-  String get shareMenuEditTitleHint => 'Video başlığını gir';
-
-  @override
-  String get shareMenuEditDescription => 'Açıklama';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Video açıklamasını gir';
-
-  @override
-  String get shareMenuEditHashtags => 'Etiketler';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'virgülle, ayırılmış, etiketler';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Not: Yalnızca meta veriler düzenlenebilir. Video içeriği değiştirilemez.';
-
-  @override
-  String get shareMenuDeleting => 'Siliniyor...';
-
-  @override
   String get shareMenuUpdate => 'Güncelle';
 
   @override
   String get shareMenuChangeCover => 'Kapağı Değiştir';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Küçük resim arka planda yükleniyor';
 
   @override
   String get shareMenuVideoUpdated => 'Video başarıyla güncellendi';
@@ -4204,57 +3789,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video silinemedi: $error';
-  }
-
-  @override
   String get shareMenuDeleteVideoQuestion => 'Video Silinsin mi?';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video silindi';
-
-  @override
-  String get shareMenuContentLabels => 'İçerik etiketleri';
-
-  @override
-  String get shareMenuAddContentLabels => 'İçerik etiketleri ekle';
-
-  @override
-  String get shareMenuClearAll => 'Tümünü temizle';
-
-  @override
-  String get shareMenuCollaborators => 'İşbirlikçiler';
-
-  @override
-  String get shareMenuAddCollaborator => 'İşbirlikçi ekle';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return '$name kişisini işbirlikçi olarak eklemek için karşılıklı takip etmeniz gerekir.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Yükleniyor...';
-
-  @override
-  String get shareMenuInspiredBy => 'İlham alındı';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'İlham kaynağı ekle';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Bu üreticiye referans verilemez.';
-
-  @override
-  String get shareMenuUnknown => 'Bilinmeyen';
-
-  @override
-  String get shareMenuUseThisSound => 'Bu sesi kullan';
-
-  @override
-  String get shareMenuOriginalSound => 'Orijinal ses';
 
   @override
   String get authSessionExpired =>
@@ -4266,15 +3804,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authSignInFailed => 'Giriş başarısız. Lütfen tekrar dene.';
-
-  @override
-  String get localeAppLanguage => 'Uygulama Dili';
-
-  @override
-  String get localeDeviceDefault => 'Cihaz varsayılanı';
-
-  @override
-  String get localeSelectLanguage => 'Dil Seç';
 
   @override
   String get webAuthNotSupportedSecureMode =>
@@ -4335,31 +3864,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundsSearchHint => 'Ses ara...';
 
   @override
-  String get soundsPreviewUnavailable => 'Ses önizlenemiyor - ses mevcut değil';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'Önizleme oynatılamadı: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Öne Çıkan Sesler';
-
-  @override
-  String get soundsTrendingSounds => 'Trend Sesler';
-
-  @override
-  String get soundsAllSounds => 'Tüm Sesler';
-
-  @override
   String get soundsSearchResults => 'Arama Sonuçları';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Hiç ses yok';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'İçerik üreticiler ses paylaştığında burada görünecek';
 
   @override
   String get soundsNoSoundsFound => 'Hiç ses bulunamadı';
@@ -4382,12 +3887,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'Bir videoda Sesi Kullan\'a dokunarak burada kaydedin.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Özel';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Topluluk';
 
   @override
   String get soundsRemoveSavedSound => 'Sesi kaldır';
@@ -4435,22 +3934,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Eşitlenen kitaplığınız bu cihazda açılamıyor.';
 
   @override
-  String get soundsFailedToLoad => 'Sesler yüklenemedi';
-
-  @override
-  String get soundsRetry => 'Tekrar Dene';
-
-  @override
-  String get soundsScreenLabel => 'Sesler ekranı';
-
-  @override
   String get profileTitle => 'Profil';
-
-  @override
-  String get profileRefresh => 'Yenile';
-
-  @override
-  String get profileRefreshLabel => 'Profili yenile';
 
   @override
   String get profileMoreOptions => 'Daha fazla seçenek';
@@ -4468,11 +3952,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return '$name takipten çıkarıldı';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Hata: $error';
   }
 
   @override
@@ -4509,21 +3988,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yenileme başarısız — mevcut olanlar gösteriliyor';
 
   @override
-  String get notificationsCheckingNew => 'yeni bildirimler kontrol ediliyor';
-
-  @override
-  String get notificationsNoneYet => 'Henüz bildirim yok';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return '$type bildirimi yok';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'İnsanlar içeriğinle etkileşime geçtiğinde burada göreceksin';
-
-  @override
   String get notificationsUnreadPrefix => 'Okunmamış bildirim';
 
   @override
@@ -4554,11 +4018,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Video küçük resmi';
 
   @override
-  String notificationsLoadingType(String type) {
-    return '$type bildirimleri yükleniyor...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'Bir arkadaşınla paylaşacak 1 davetin var!';
 
@@ -4568,13 +4027,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Video bulunamadı';
-
-  @override
   String get notificationsVideoUnavailable => 'Video kullanılamıyor';
-
-  @override
-  String get notificationsFromNotification => 'Bildirimden';
 
   @override
   String get feedFailedToLoadVideos => 'Videolar yüklenemedi';
@@ -4631,62 +4084,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get feedExploreVideos => 'Videoları Keşfet';
 
   @override
-  String get feedExternalVideoSlow => 'Harici video yavaş yükleniyor';
-
-  @override
-  String get feedSkip => 'Atla';
-
-  @override
   String get feedLoadingMore => 'Daha fazla video yükleniyor…';
 
   @override
   String get feedRefreshed => 'Akış yenilendi';
 
   @override
-  String get uploadWaitingToUpload => 'Yüklemek için bekleniyor';
-
-  @override
   String get uploadUploadingVideo => 'Video yükleniyor';
-
-  @override
-  String get uploadProcessingVideo => 'Video işleniyor';
-
-  @override
-  String get uploadProcessingComplete => 'İşleme tamamlandı';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Başarıyla yayınlandı';
-
-  @override
-  String get uploadFailed => 'Yükleme başarısız';
-
-  @override
-  String get uploadRetrying => 'Yükleme yeniden deneniyor';
-
-  @override
-  String get uploadPaused => 'Yükleme duraklatıldı';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '%$percent tamamlandı';
-  }
-
-  @override
-  String get uploadQueuedMessage => 'Videon yükleme kuyruğunda';
-
-  @override
-  String get uploadUploadingMessage => 'Sunucuya yükleniyor...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Video işleniyor - bu birkaç dakika sürebilir';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Video başarıyla işlendi ve yayınlamaya hazır';
-
-  @override
-  String get uploadPublishedMessage => 'Video profiline yayınlandı';
 
   @override
   String get postPublishConfirmationTitle => 'Profiline yayınlandı';
@@ -4702,33 +4106,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Az önce yayınladığın videonun küçük resmi';
 
   @override
-  String get uploadFailedMessage => 'Yükleme başarısız - lütfen tekrar dene';
-
-  @override
-  String get uploadRetryingMessage => 'Yükleme yeniden deneniyor...';
-
-  @override
-  String get uploadPausedMessage => 'Yükleme kullanıcı tarafından duraklatıldı';
-
-  @override
-  String get uploadRetryButton => 'YENİDEN DENE';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'Yükleme yeniden denenemedi: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Kullanıcı ara';
-
-  @override
   String get userSearchNoResults => 'Kullanıcı bulunamadı';
-
-  @override
-  String get userSearchFailed => 'Arama başarısız';
-
-  @override
-  String get userPickerSearchByName => 'Ada göre ara';
 
   @override
   String get userPickerFilterByNameHint => 'Ada göre filtrele...';
@@ -4819,41 +4197,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ageVerificationYes => 'Evet';
 
   @override
-  String get shareLinkCopied => 'Bağlantı panoya kopyalandı';
-
-  @override
-  String get shareFailedToCopy => 'Bağlantı kopyalanamadı';
-
-  @override
-  String get shareVideoSubject => 'Divine\'deki bu videoya bir göz at';
-
-  @override
-  String get shareFailedToShare => 'Paylaşılamadı';
-
-  @override
-  String get shareVideoTitle => 'Videoyu Paylaş';
-
-  @override
-  String get shareToApps => 'Uygulamalarla Paylaş';
-
-  @override
-  String get shareToAppsSubtitle => 'Mesajlaşma, sosyal uygulamalarla paylaş';
-
-  @override
-  String get shareCopyWebLink => 'Web Bağlantısını Kopyala';
-
-  @override
-  String get shareCopyWebLinkSubtitle =>
-      'Paylaşılabilir web bağlantısını kopyala';
-
-  @override
-  String get shareCopyNostrLink => 'Nostr Bağlantısını Kopyala';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'Nostr istemcileri için nevent bağlantısını kopyala';
-
-  @override
   String get navHome => 'Ana Sayfa';
 
   @override
@@ -4866,12 +4209,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Ara';
-
-  @override
-  String get navSearchTooltip => 'Ara';
-
-  @override
   String get navMyProfile => 'Profilim';
 
   @override
@@ -4879,9 +4216,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Kamerayı aç';
-
-  @override
-  String get navUnknown => 'Bilinmeyen';
 
   @override
   String get navExploreClassics => 'Klasikler';
@@ -5030,17 +4364,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get reportTitle => 'İçeriği Bildir';
-
-  @override
   String get reportWhyReporting => 'Bu içeriği neden bildiriyorsun?';
 
   @override
   String get reportPolicyNotice =>
       'Divine, içerik bildirimlerine 24 saat içinde içeriği kaldırarak ve söz konusu içeriği sağlayan kullanıcıyı çıkararak işlem yapar.';
-
-  @override
-  String get reportAdditionalDetails => 'Ek ayrıntılar (opsiyonel)';
 
   @override
   String get reportBlockUser => 'Bu kullanıcıyı engelle';
@@ -5163,9 +4491,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'Moderasyon ekibine mesaj gönder';
-
-  @override
-  String get reportLearnMore => 'Daha Fazla Bilgi';
 
   @override
   String get reportLearnMoreAt => 'Daha fazla bilgi:';
@@ -6217,9 +5542,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmReelReplyViewChat => 'Sohbeti gör';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Sohbeti aç';
-
-  @override
   String get dmReelReplySentAnnouncement => 'Yanıt gönderildi';
 
   @override
@@ -6297,12 +5619,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get inboxConversationTileLongPressHint => 'Sohbet işlemlerini göster';
-
-  @override
-  String get reportDialogCancel => 'İptal';
-
-  @override
-  String get reportDialogReport => 'Bildir';
 
   @override
   String exploreVideoId(String id) {
@@ -6429,9 +5745,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commonSomethingWentWrong => 'Bir hata oluştu';
 
   @override
-  String get commonNext => 'İleri';
-
-  @override
   String get commonDelete => 'Sil';
 
   @override
@@ -6531,9 +5844,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryTabClips => 'Klipler';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Kamera kaydına kaydet';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'Seçili klipleri sil';
 
   @override
@@ -6584,20 +5894,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => 'Önce dikey';
-
-  @override
-  String get libraryDeleteClipsTitle => 'Klipleri sil';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# seçili klibi',
-      one: '# seçili klibi',
-    );
-    return '$_temp0 silmek istiyor musun?';
-  }
 
   @override
   String get libraryDeleteClipsWarning =>
@@ -6728,20 +6024,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDeleteClipMessage => 'Bu klibi silmek istiyor musun?';
 
   @override
-  String get libraryClipSelectionTitle => 'Klipler';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return '$seconds sn kaldı';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds sn';
   }
-
-  @override
-  String get libraryAddClips => 'Ekle';
 
   @override
   String get libraryRecordVideo => 'Video kaydet';
@@ -7443,26 +6728,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu, hesabın ve içeriğin için silme istekleri gönderir, mümkün olduğunda Divine hesabını siler ve bu cihazda oturumunu kapatır. Bazı röleler, istemciler ve arama dizinleri kopyaları saklayabilir. Oturum açmış diğer cihazlar, oradaki anahtarları kaldırana kadar aktif kalır.';
 
   @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Metin katmanı ekleniyor...';
-
-  @override
-  String get exportProgressStageComplete => 'Dışa aktarma tamamlandı!';
-
-  @override
-  String get exportProgressStageConcatenating => 'Klipler birleştiriliyor...';
-
-  @override
-  String get exportProgressStageError => 'Dışa aktarma başarısız';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Küçük resim oluşturuluyor...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Ses ekleniyor...';
-
-  @override
   String get findPeopleAnonymousUser => 'Anonim';
 
   @override
@@ -7670,15 +6935,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Ses Bulunamadı';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Video açıklaması';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count döngü';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'Video döngü sayısı';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7687,11 +6946,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String originalSoundByCreator(String creatorName) {
     return 'Orijinal ses - $creatorName';
-  }
-
-  @override
-  String globalUploadPendingCount(int count) {
-    return 'Bekleyen Yüklemeler ($count)';
   }
 
   @override
@@ -7707,17 +6961,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileBadgeCheckmarkBody =>
       'Divine bu onay işaretini ekip hesaplarına ve elle onaylanmış az sayıda profile veriyor. NIP-05\'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count listede',
-      one: '1 listede',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get unfollowConfirmButton => 'Takipten çık';
@@ -7816,11 +7059,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hata raporu gönderilemedi. Lütfen daha sonra tekrar dene.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Hata raporu gönderilemedi: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'İsteği Gönder';
 
   @override
@@ -7852,11 +7090,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Özellik isteği gönderilemedi. Lütfen daha sonra tekrar dene.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Özellik isteği gönderilemedi: $error';
-  }
 
   @override
   String get notificationFollowBack => 'Geri takip et';
@@ -7907,16 +7140,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get followSortOldest => 'Önce en eskiler';
-
-  @override
-  String get reportMessageTitle => 'Mesajı Bildir';
-
-  @override
-  String get reportMessageWhyReporting => 'Bu mesajı neden bildiriyorsun?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Lütfen bu mesajı bildirmek için bir neden seç';
 
   @override
   String get newMessageTitle => 'Yeni mesaj';
@@ -8192,9 +7415,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın';
 
   @override
-  String get featureRequestCancel => 'İptal';
-
-  @override
   String keyImportError(String error) {
     return 'Hata: $error';
   }
@@ -8405,9 +7625,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get notificationSystemUpdate => 'Yeni bir güncellemen var';
-
-  @override
-  String get notificationSomeoneLikedYourVideo => 'Birisi videonu beğendi';
 
   @override
   String get commentReplyToPrefix => 'Yan:';
@@ -9085,40 +8302,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => 'Videoyu oynat veya duraklat';
 
   @override
-  String get videoEditorCropSemanticLabel => 'Kırp';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Klip işlenirken bölünemez. Lütfen bekleyin.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Bölme konumu geçersiz. Her iki klip de en az ${minDurationMs}ms uzunluğunda olmalıdır.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'Kütüphaneden klip ekle';
-
-  @override
   String get videoEditorSaveSelectedClip => 'Seçili klibi kaydet';
 
   @override
-  String get videoEditorSplitClip => 'Klibi böl';
-
-  @override
   String get videoEditorSaveClip => 'Klibi kaydet';
-
-  @override
-  String get videoEditorDeleteClip => 'Klibi sil';
 
   @override
   String get videoEditorClipSavedSuccess => 'Klip kütüphaneye kaydedildi';
 
   @override
   String get videoEditorClipSaveFailed => 'Klip kaydedilemedi';
-
-  @override
-  String get videoEditorClipDeleted => 'Klip silindi';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Renk seçici';
@@ -9149,12 +8347,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => 'Çıkartmalar yüklenemedi';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'Ses seviyesini ayarla';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Kaydedilmiş ses';
 
   @override
   String get videoEditorVoiceOverLabel => 'Dış ses';
@@ -9216,12 +8408,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'Duraklat';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'Sesi kapat';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'Sesi aç';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Sesi ayarla';
@@ -9336,9 +8522,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu cihaz canlı önizlemeyi gösteremiyor. Ayarların dışa aktarımda yine de geçerli.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Orijinal ses';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Klip $index';
   }
@@ -9369,14 +8552,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return 'Görüntü başına $count kare';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Görüntü başına kareyi artır';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Görüntü başına kareyi azalt';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9481,9 +8656,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'Çevir';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Oran';
 
   @override
   String get videoEditorTransformResetLabel => 'Sıfırla';
@@ -9643,13 +8815,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Seslerim';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle => 'Öne çıkan sesler yakında';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Hazır olur olmaz öne çıkan sesleri buraya bırakacağız.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ok aracı';
 
   @override
@@ -9717,10 +8882,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Yeniden sıralamak için uzun basın';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Sola taşı';
@@ -9894,9 +9055,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Etiketler';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Sil';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return '$tag etiketini sil';
   }
@@ -9913,12 +9071,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'İçeriğinize uyanların hepsini seçin';
 
   @override
-  String get videoMetadataContentWarningDoneButton => 'Bitti';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'Bu sesi yayınla';
-
-  @override
   String get videoMetadataAudioReuseSubtitle =>
       'Başkalarının bu videonun sesini kaydedip yeniden kullanmasına izin ver.';
 
@@ -9933,29 +9085,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => 'Ortak çalışan ekle';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'Ortak çalışanlar nasıl çalışır?';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max Ortak çalışan';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Ortak çalışanı kaldır';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Ortak çalışanlar bu gönderide ortak içerik üretici olarak etiketlenir. Yalnızca karşılıklı takip ettiğiniz kişileri ekleyebilirsiniz; yayınlandığında gönderi meta verilerinde görünürler.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'Karşılıklı takipçiler';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return '$name\'i ortak çalışan olarak eklemek için karşılıklı takipleşmeniz gerekiyor.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'İlham kaynağı';
@@ -9965,23 +9095,8 @@ class AppLocalizationsTr extends AppLocalizations {
       'İlham kaynağını ayarla';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'İlham kredileri nasıl çalışır?';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Yok';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Atıf vermek için kullanın. İlham kredisi ortak çalışanlardan farklıdır: etkiyi kabul eder, ancak birini ortak içerik üretici olarak etiketlemez.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Bu içerik üreticisi referans alınamaz.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      'İlham kaynağını kaldır';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Gönderi ayrıntıları';
@@ -10401,10 +9516,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Aile rehberi';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Henüz 16 değil misin? Sorun değil. İşte yapabileceklerin.';
-
-  @override
   String get minorAccountReviewWelcomeTitle =>
       'Henüz 16 değil misin? Sorun değil.';
 
@@ -10448,9 +9559,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13-15 yaş';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Aileler için faydalı';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10588,9 +9696,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'İnternetin büyük bir kısmı, insanları kapıdan geçmek için ne söylemeleri gerekiyorsa onu söylediklerinde ödüllendirmek üzere kurulmuş. Bunun iyi olduğunu düşünmüyoruz. Evet, geri dönüp olduğundan büyük olduğunu söyleyebilirsin ama bu dürüst olmazdı ve istediğini elde etmek için sana yalan söylemeyi öğretmeyeceğiz.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle => 'Cevap neden hâlâ hayır';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -11063,9 +10168,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Basılı tuttuğunuzda kayıt başlar, bıraktığınızda durur';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'Önizleme oynatılamadı';
 
   @override
   String uploadPublishedCountMessage(int count) {

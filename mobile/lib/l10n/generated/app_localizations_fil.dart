@@ -122,12 +122,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsNotifications => 'Mga Notification';
 
   @override
-  String get settingsContentPreferences => 'Mga Content Preference';
-
-  @override
-  String get settingsModerationControls => 'Mga Moderation Control';
-
-  @override
   String get settingsBlueskyPublishing => 'Bluesky Publishing';
 
   @override
@@ -451,15 +445,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get profileEditProfile => 'I-edit ang profile';
-
-  @override
-  String get profileCreatorAnalytics => 'Analytics ng creator';
-
-  @override
-  String get profileShareProfile => 'I-share ang profile';
-
-  @override
   String get profileCopyPublicKey => 'Kopyahin ang public key (npub)';
 
   @override
@@ -470,12 +455,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => 'Nakopya na sa clipboard ang embed code';
-
-  @override
-  String get profileRefreshTooltip => 'I-refresh';
-
-  @override
-  String get profileRefreshSemanticLabel => 'I-refresh ang profile';
 
   @override
   String get profileMoreTooltip => 'Higit pa';
@@ -669,20 +648,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Na-block ang User';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Hindi mo na makikita ang content ng user na ito sa feed mo.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Maaari mo silang i-unblock kahit kailan mula sa profile nila o sa Settings > Safety.';
-
-  @override
-  String get profileCloseButton => 'Isara';
-
-  @override
   String get profileNoCollabsTitle => 'Wala pang collab';
 
   @override
@@ -798,24 +763,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Idagdag ang iyong pangalan, bio, at larawan para makapagsimula';
 
   @override
-  String get profileSetUpButton => 'I-set up';
-
-  @override
-  String get profileVerifyingEmail => 'Bineberipika ang email...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Tingnan ang $email para sa verification link';
-  }
-
-  @override
-  String get profileWaitingForVerification =>
-      'Naghihintay ng email verification';
-
-  @override
-  String get profileVerificationFailed => 'Nabigo ang Verification';
-
-  @override
   String get profilePleaseTryAgain => 'Subukan ulit';
 
   @override
@@ -827,9 +774,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Subukan ulit';
-
-  @override
-  String get profileRegisterButton => 'Mag-register';
 
   @override
   String get profileSessionExpired => 'Nag-expire na ang session';
@@ -871,9 +815,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileUserFallback => 'user';
-
-  @override
-  String get profileDismissTooltip => 'Isara';
 
   @override
   String get profileLinkCopied => 'Nakopya na ang profile link';
@@ -935,9 +876,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi makonekta sa network. Tingnan ang koneksyon mo at subukan ulit.';
 
   @override
-  String get profileSetupRetryLabel => 'Subukan ulit';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Pangalang ipapakita';
 
   @override
@@ -959,9 +897,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupUsernameHelper => 'Iyong unique na identity sa Divine';
 
   @override
-  String get profileSetupProfileColorLabel => 'Kulay ng Profile (Optional)';
-
-  @override
   String get profileSetupSaveButton => 'I-save';
 
   @override
@@ -969,10 +904,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileSetupImageUrlTitle => 'Magdagdag ng image URL';
-
-  @override
-  String get profileSetupPictureUploaded =>
-      'Matagumpay na na-upload ang profile picture!';
 
   @override
   String get profileSetupImageSelectionFailed =>
@@ -1008,10 +939,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Nabigo ang upload. Pansamantalang hindi available ang servers namin. Subukan ulit mamaya.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Hindi pa available sa web ang pag-upload ng profile picture. Gamitin ang iOS o Android app, o i-paste ang image URL.';
 
   @override
   String get profileSetupBannerClearButton => 'I-clear ang banner';
@@ -1139,12 +1066,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupSendRequest => 'Ipadala ang request';
 
   @override
-  String get profileSetupPickColorTitle => 'Pumili ng kulay';
-
-  @override
-  String get profileSetupSelectButton => 'Piliin';
-
-  @override
   String get profileSetupUseOwnNip05 =>
       'Gamitin ang sarili mong NIP-05 address';
 
@@ -1245,9 +1166,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get nostrInfoGotIt => 'Sige!';
 
   @override
-  String get profileTabRefreshTooltip => 'I-refresh';
-
-  @override
   String get videoGridRefreshLabel => 'Naghahanap ng iba pang video';
 
   @override
@@ -1269,11 +1187,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Binubura ang content...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Nabigong burahin ang content: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Itinatampok';
@@ -1384,9 +1297,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Naglo-load ang video...';
-
-  @override
   String get videoPlayerPlayVideo => 'I-play ang video';
 
   @override
@@ -1394,12 +1304,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'I-unmute ang video';
-
-  @override
-  String get videoPlayerEditVideo => 'I-edit ang video';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'I-edit ang video';
 
   @override
   String get videoPlayerTapHint =>
@@ -1624,20 +1528,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoErrorNotFound => 'Hindi nakita ang video';
 
   @override
-  String get videoErrorNetwork => 'Error sa network';
-
-  @override
-  String get videoErrorTimeout => 'Nag-timeout ang loading';
-
-  @override
-  String get videoErrorFormat =>
-      'Error sa format ng video\n(Subukan ulit o gumamit ng ibang browser)';
-
-  @override
-  String get videoErrorUnsupportedFormat =>
-      'Hindi sinusuportahang video format';
-
-  @override
   String get videoErrorPlayback => 'Error sa playback ng video';
 
   @override
@@ -1649,9 +1539,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoErrorUnavailableBody =>
       'Hindi available ang video na ito ngayon.';
-
-  @override
-  String get videoErrorVerifyAge => 'I-verify ang Edad';
 
   @override
   String get videoErrorRetry => 'Subukan ulit';
@@ -1716,9 +1603,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Isara ang video player';
-
-  @override
-  String get videoFollowButtonFollowing => 'Sinusundan';
 
   @override
   String get videoFollowButtonFollow => 'Sundan';
@@ -1906,12 +1790,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoActionMoreOptions => 'Iba pang options';
 
   @override
-  String get videoActionHideSubtitles => 'Itago ang subtitles';
-
-  @override
-  String get videoActionShowSubtitles => 'Ipakita ang subtitles';
-
-  @override
   String get videoEngagementLikersTitle => 'Nag-like';
 
   @override
@@ -1948,11 +1826,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoOverlayCommentPostFailedSnackbar =>
       'Hindi nai-post ang komento';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count loops';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2705,38 +2578,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kapag nag-post ang taong binabantayan mo';
 
   @override
-  String get notificationSettingsSystem => 'System';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Mga update ng app at mensahe ng system';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push notifications';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Push notifications';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Tumanggap ng notification kahit sarado ang app';
-
-  @override
-  String get notificationSettingsSound => 'Tunog';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Magpatugtog ng tunog para sa mga notification';
-
-  @override
-  String get notificationSettingsVibration => 'Pag-vibrate';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Mag-vibrate para sa mga notification';
-
-  @override
   String get notificationSettingsActions => 'Mga Aksyon';
 
   @override
@@ -2765,12 +2606,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Ang mga notification ay pinapagana ng Nostr protocol. Ang real-time na update ay nakadepende sa iyong koneksyon sa mga Nostr relay. May ilang notification na maaaring ma-delay.';
-
-  @override
-  String get safetySettingsTitle => 'Kaligtasan at Privacy';
-
-  @override
-  String get safetySettingsLabel => 'MGA SETTING';
 
   @override
   String get safetySettingsWhatYouSee => 'ANG NAKIKITA MO';
@@ -3542,33 +3377,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kumpleto na ang registration. Pakitsek ang iyong email.';
 
   @override
-  String get authVerificationFailedTitle => 'Nabigo ang Verification';
-
-  @override
-  String get authClose => 'Isara';
-
-  @override
-  String get authAccountSecured => 'Na-secure na ang Account!';
-
-  @override
-  String get authAccountLinkedToEmail =>
-      'Naka-link na ngayon ang iyong account sa iyong email.';
-
-  @override
-  String get authVerifyYourEmail => 'I-verify ang Iyong Email';
-
-  @override
-  String get authClickLinkContinue =>
-      'I-click ang link sa iyong email para kumpletuhin ang registration. Pwede mo pa ring gamitin ang app habang naghihintay.';
-
-  @override
-  String get authWaitingForVerificationEllipsis =>
-      'Naghihintay ng verification...';
-
-  @override
-  String get authContinueToApp => 'Magpatuloy sa App';
-
-  @override
   String get authFailedToSendResetEmail => 'Hindi naipadala ang reset email.';
 
   @override
@@ -3691,9 +3499,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'I-share gamit ang';
-
-  @override
-  String get shareSheetReport => 'I-report';
 
   @override
   String get shareSheetEventJson => 'Event JSON';
@@ -3830,149 +3635,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Sina-save ang naka-watermark na video sa iyong camera roll...';
 
   @override
-  String get uploadProgressVideoUpload => 'Pag-upload ng video';
-
-  @override
-  String get uploadProgressPause => 'I-pause';
-
-  @override
-  String get uploadProgressResume => 'Ituloy';
-
-  @override
-  String get uploadProgressGoBack => 'Bumalik';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Subukang Ulit ($count natitira)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Burahin';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '${count}d ang nakalipas';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '${count}h ang nakalipas';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '${count}m ang nakalipas';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Kanina lang';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Nag-a-upload $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'Naka-pause $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'I-share ang Video';
-
-  @override
-  String get shareMenuReportAiContent => 'I-report ang AI Content';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Mabilisang i-report ang pinaghihinalaang AI-generated content';
-
-  @override
-  String get shareMenuReportingAiContent => 'Nire-report ang AI content...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'Hindi nai-report ang content: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'Hindi nai-report ang AI content: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Status ng Video';
-
-  @override
-  String get shareMenuViewAllLists => 'Tingnan lahat ng list →';
-
-  @override
-  String get shareMenuShareWith => 'I-share Sa';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'I-share gamit ang ibang app';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'I-share gamit ang ibang app o kopyahin ang link';
-
-  @override
-  String get shareMenuSaveToGallery => 'I-save sa Gallery';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle =>
-      'I-save ang original na video sa camera roll';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'I-save na may Watermark';
-
-  @override
-  String get shareMenuSaveVideo => 'I-save ang Video';
-
-  @override
-  String get shareMenuDownloadWithWatermark =>
-      'I-download na may Divine watermark';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'I-save ang video sa camera roll';
-
-  @override
-  String get shareMenuLists => 'Mga List';
-
-  @override
-  String get shareMenuAddToList => 'Idagdag sa List';
-
-  @override
-  String get shareMenuAddToListSubtitle => 'Idagdag sa iyong mga curated list';
-
-  @override
-  String get shareMenuCreateNewList => 'Gumawa ng Bagong List';
-
-  @override
-  String get shareMenuCreateNewListSubtitle =>
-      'Magsimula ng bagong curated collection';
-
-  @override
-  String get shareMenuRemovedFromList => 'Inalis sa list';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => 'Hindi naalis sa list';
-
-  @override
   String get shareMenuBookmarks => 'Mga Bookmark';
-
-  @override
-  String get shareMenuFollowSets => 'Mga Listahan ng Tao';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Gumawa ng Follow Set';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Magsimula ng bagong koleksyon kasama ang creator na ito';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Idagdag sa Follow Set';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3981,10 +3644,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Idagdag sa listahan';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Ilagay ang creator na ito sa isa sa mga listahan mo';
 
   @override
   String get peopleListsSheetTitle => 'Idagdag sa listahan';
@@ -4133,39 +3792,15 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Naidagdag sa bookmarks!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => 'Hindi naidagdag ang bookmark';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return 'Nagawa ang listahang \"$name\" at naidagdag ang video';
-  }
-
-  @override
-  String get shareMenuManageContent => 'I-manage ang Content';
-
-  @override
   String get shareMenuEditVideo => 'I-edit ang Video';
-
-  @override
-  String get shareMenuEditVideoSubtitle =>
-      'I-update ang title, description, at hashtags';
 
   @override
   String get shareMenuDeleteVideo => 'Burahin ang Video';
 
   @override
-  String get shareMenuVideoInTheseLists => 'Nasa mga listahang ito ang video:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count mga video';
   }
-
-  @override
-  String get shareMenuClose => 'Isara';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4176,14 +3811,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Burahin';
-
-  @override
-  String get shareMenuDeletingContent => 'Binubura ang content...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Hindi nabura ang content: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4222,60 +3849,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nabura ang video na ito. Subukan ulit.';
 
   @override
-  String get shareMenuFollowSetName => 'Pangalan ng Follow Set';
-
-  @override
-  String get shareMenuFollowSetNameHint =>
-      'hal., Content Creators, Musicians, atbp.';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Description (opsyonal)';
-
-  @override
-  String get shareMenuCreate => 'Gumawa';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return 'Nagawa ang follow set na \"$name\" at naidagdag ang creator';
-  }
-
-  @override
-  String get shareMenuDone => 'Tapos na';
-
-  @override
-  String get shareMenuEditTitle => 'Pamagat';
-
-  @override
-  String get shareMenuEditTitleHint => 'Ilagay ang title ng video';
-
-  @override
-  String get shareMenuEditDescription => 'Deskripsyon';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Ilagay ang description ng video';
-
-  @override
-  String get shareMenuEditHashtags => 'Hashtags';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'hashtags na pinaghihiwalay ng comma';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Tandaan: Metadata lang ang puwedeng i-edit. Hindi mababago ang content ng video.';
-
-  @override
-  String get shareMenuDeleting => 'Binubura...';
-
-  @override
   String get shareMenuUpdate => 'I-update';
 
   @override
   String get shareMenuChangeCover => 'Palitan ang Cover';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Ina-upload ang thumbnail sa background';
 
   @override
   String get shareMenuVideoUpdated => 'Matagumpay na na-update ang video';
@@ -4297,57 +3874,10 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Hindi nabura ang video: $error';
-  }
-
-  @override
   String get shareMenuDeleteVideoQuestion => 'Burahin ang Video?';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Nabura ang video';
-
-  @override
-  String get shareMenuContentLabels => 'Mga content label';
-
-  @override
-  String get shareMenuAddContentLabels => 'Magdagdag ng content labels';
-
-  @override
-  String get shareMenuClearAll => 'Burahin lahat';
-
-  @override
-  String get shareMenuCollaborators => 'Mga collaborator';
-
-  @override
-  String get shareMenuAddCollaborator => 'Mag-imbita ng collaborator';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'Kailangan ninyong mag-follow ng isa\'t isa ni $name para ma-invite mo siya bilang collaborator.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Naglo-load...';
-
-  @override
-  String get shareMenuInspiredBy => 'Inspirado ng';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'Magdagdag ng inspiration credit';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Hindi puwedeng i-reference ang creator na ito.';
-
-  @override
-  String get shareMenuUnknown => 'Hindi alam';
-
-  @override
-  String get shareMenuUseThisSound => 'Gamitin ang sound na ito';
-
-  @override
-  String get shareMenuOriginalSound => 'Original na sound';
 
   @override
   String get authSessionExpired =>
@@ -4359,15 +3889,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authSignInFailed => 'Hindi nag-sign in. Subukan ulit.';
-
-  @override
-  String get localeAppLanguage => 'Wika ng App';
-
-  @override
-  String get localeDeviceDefault => 'Default ng device';
-
-  @override
-  String get localeSelectLanguage => 'Pumili ng Wika';
 
   @override
   String get webAuthNotSupportedSecureMode =>
@@ -4428,32 +3949,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundsSearchHint => 'Maghanap ng sounds...';
 
   @override
-  String get soundsPreviewUnavailable =>
-      'Hindi ma-preview ang sound - walang available na audio';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'Hindi na-play ang preview: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Mga Featured Sound';
-
-  @override
-  String get soundsTrendingSounds => 'Mga Trending Sound';
-
-  @override
-  String get soundsAllSounds => 'Lahat ng Sound';
-
-  @override
   String get soundsSearchResults => 'Mga Resulta ng Paghahanap';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Walang available na sound';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'Lalabas dito ang mga sound kapag may creators na nag-share ng audio';
 
   @override
   String get soundsNoSoundsFound => 'Walang nahanap na sound';
@@ -4476,12 +3972,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'I-tap ang Use Sound sa isang video para i-save ito dito.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Pribado';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Komunidad';
 
   @override
   String get soundsRemoveSavedSound => 'Alisin ang sound';
@@ -4531,22 +4021,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi mabuksan ang iyong naka-sync na library sa device na ito.';
 
   @override
-  String get soundsFailedToLoad => 'Hindi na-load ang sounds';
-
-  @override
-  String get soundsRetry => 'Subukan ulit';
-
-  @override
-  String get soundsScreenLabel => 'Screen ng mga sound';
-
-  @override
   String get profileTitle => 'Profile';
-
-  @override
-  String get profileRefresh => 'I-refresh';
-
-  @override
-  String get profileRefreshLabel => 'I-refresh ang profile';
 
   @override
   String get profileMoreOptions => 'Iba pang opsyon';
@@ -4564,11 +4039,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return 'Na-unfollow si $name';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Error: $error';
   }
 
   @override
@@ -4605,22 +4075,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ma-refresh — ipinapakita ang nasa iyo';
 
   @override
-  String get notificationsCheckingNew =>
-      'tinitingnan kung may bagong notifications';
-
-  @override
-  String get notificationsNoneYet => 'Wala pang notifications';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'Walang $type na notifications';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'Kapag may nag-interact sa content mo, makikita mo dito';
-
-  @override
   String get notificationsUnreadPrefix => 'Hindi pa nababasang notification';
 
   @override
@@ -4652,11 +4106,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Thumbnail ng video';
 
   @override
-  String notificationsLoadingType(String type) {
-    return 'Nilo-load ang $type na notifications...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'May 1 ka pang invite na puwedeng i-share sa kaibigan!';
 
@@ -4666,13 +4115,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Hindi nahanap ang video';
-
-  @override
   String get notificationsVideoUnavailable => 'Hindi available ang video';
-
-  @override
-  String get notificationsFromNotification => 'Mula sa Notification';
 
   @override
   String get feedFailedToLoadVideos => 'Hindi na-load ang mga video';
@@ -4727,62 +4170,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get feedExploreVideos => 'Mag-explore ng Video';
 
   @override
-  String get feedExternalVideoSlow => 'Mabagal nag-lo-load ang external video';
-
-  @override
-  String get feedSkip => 'Laktawan';
-
-  @override
   String get feedLoadingMore => 'Naglo-load ng iba pang video…';
 
   @override
   String get feedRefreshed => 'Na-refresh ang feed';
 
   @override
-  String get uploadWaitingToUpload => 'Naghihintay i-upload';
-
-  @override
   String get uploadUploadingVideo => 'Nag-u-upload ng video';
-
-  @override
-  String get uploadProcessingVideo => 'Pino-process ang video';
-
-  @override
-  String get uploadProcessingComplete => 'Tapos na ang processing';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Matagumpay na na-publish';
-
-  @override
-  String get uploadFailed => 'Hindi nag-upload';
-
-  @override
-  String get uploadRetrying => 'Sinusubukan ulit i-upload';
-
-  @override
-  String get uploadPaused => 'Naka-pause ang upload';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% tapos na';
-  }
-
-  @override
-  String get uploadQueuedMessage => 'Naka-queue ang video mo para i-upload';
-
-  @override
-  String get uploadUploadingMessage => 'Nag-u-upload sa server...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Pino-process ang video - maaaring tumagal ng ilang minuto';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Matagumpay na na-process ang video at handa nang i-publish';
-
-  @override
-  String get uploadPublishedMessage => 'Na-publish na ang video sa profile mo';
 
   @override
   String get postPublishConfirmationTitle => 'Na-publish na sa profile mo';
@@ -4798,33 +4192,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Thumbnail ng video na kaka-publish mo lang';
 
   @override
-  String get uploadFailedMessage => 'Hindi nag-upload - subukan ulit';
-
-  @override
-  String get uploadRetryingMessage => 'Sinusubukan ulit i-upload...';
-
-  @override
-  String get uploadPausedMessage => 'Naka-pause ang upload ng user';
-
-  @override
-  String get uploadRetryButton => 'SUBUKAN ULIT';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'Hindi nasubukan ulit i-upload: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Maghanap ng users';
-
-  @override
   String get userSearchNoResults => 'Walang nahanap na user';
-
-  @override
-  String get userSearchFailed => 'Hindi nahanap';
-
-  @override
-  String get userPickerSearchByName => 'Hanapin ayon sa pangalan';
 
   @override
   String get userPickerFilterByNameHint => 'I-filter ayon sa pangalan...';
@@ -4915,40 +4283,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get ageVerificationYes => 'Oo';
 
   @override
-  String get shareLinkCopied => 'Nakopya ang link sa clipboard';
-
-  @override
-  String get shareFailedToCopy => 'Hindi nakopya ang link';
-
-  @override
-  String get shareVideoSubject => 'Tingnan mo ang video na ito sa Divine';
-
-  @override
-  String get shareFailedToShare => 'Hindi na-share';
-
-  @override
-  String get shareVideoTitle => 'I-share ang Video';
-
-  @override
-  String get shareToApps => 'I-share sa Apps';
-
-  @override
-  String get shareToAppsSubtitle => 'I-share via messaging, social apps';
-
-  @override
-  String get shareCopyWebLink => 'Kopyahin ang Web Link';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'Kopyahin ang shareable na web link';
-
-  @override
-  String get shareCopyNostrLink => 'Kopyahin ang Nostr Link';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'Kopyahin ang nevent link para sa Nostr clients';
-
-  @override
   String get navHome => 'Home';
 
   @override
@@ -4961,12 +4295,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get navProfile => 'Profile';
 
   @override
-  String get navSearch => 'Hanapin';
-
-  @override
-  String get navSearchTooltip => 'Hanapin';
-
-  @override
   String get navMyProfile => 'Profile Ko';
 
   @override
@@ -4974,9 +4302,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Buksan ang camera';
-
-  @override
-  String get navUnknown => 'Hindi alam';
 
   @override
   String get navExploreClassics => 'Classics';
@@ -5128,17 +4453,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get reportTitle => 'I-report ang Content';
-
-  @override
   String get reportWhyReporting => 'Bakit mo rine-report ang content na ito?';
 
   @override
   String get reportPolicyNotice =>
       'Aaksyunan ng Divine ang mga content report sa loob ng 24 oras sa pamamagitan ng pag-alis ng content at pag-eject sa user na nagbigay ng masamang content.';
-
-  @override
-  String get reportAdditionalDetails => 'Karagdagang detalye (opsyonal)';
 
   @override
   String get reportBlockUser => 'I-block ang user na ito';
@@ -5262,9 +4581,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'I-message ang moderation team';
-
-  @override
-  String get reportLearnMore => 'Alamin Pa';
 
   @override
   String get reportLearnMoreAt => 'Alamin pa sa';
@@ -6328,9 +5644,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmReelReplyViewChat => 'Tingnan ang chat';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Buksan ang chat';
-
-  @override
   String get dmReelReplySentAnnouncement => 'Naipadala ang tugon';
 
   @override
@@ -6409,12 +5722,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get inboxConversationTileLongPressHint =>
       'Ipakita ang mga aksyon sa usapan';
-
-  @override
-  String get reportDialogCancel => 'Kanselahin';
-
-  @override
-  String get reportDialogReport => 'I-report';
 
   @override
   String exploreVideoId(String id) {
@@ -6542,9 +5849,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get commonSomethingWentWrong => 'May nangyaring problema';
 
   @override
-  String get commonNext => 'Susunod';
-
-  @override
   String get commonDelete => 'Burahin';
 
   @override
@@ -6645,9 +5949,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get libraryTabClips => 'Mga Clip';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'I-save sa camera roll';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip =>
       'Burahin ang mga napiling clip';
 
@@ -6701,20 +6002,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => 'Unahin ang patayo';
-
-  @override
-  String get libraryDeleteClipsTitle => 'Burahin ang mga Clip';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# napiling clip',
-      one: '# napiling clip',
-    );
-    return 'Sigurado ka bang gusto mong burahin ang $_temp0?';
-  }
 
   @override
   String get libraryDeleteClipsWarning =>
@@ -6848,20 +6135,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Sigurado ka bang gusto mong burahin ang clip na ito?';
 
   @override
-  String get libraryClipSelectionTitle => 'Mga Clip';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return '${seconds}s ang natitira';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '${seconds}s';
   }
-
-  @override
-  String get libraryAddClips => 'Idagdag';
 
   @override
   String get libraryRecordVideo => 'Mag-record ng Video';
@@ -7573,26 +6849,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nagpapadala ito ng mga deletion request para sa account at content mo, binubura ang Divine account mo kapag posible, at nila-log out ka sa device na ito. Ang ilang relay, client, at search index ay maaaring may kopya pa rin. Ang iba pang naka-log in na device ay mananatiling aktibo hanggang alisin mo ang mga key doon.';
 
   @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Nagdaragdag ng text overlay...';
-
-  @override
-  String get exportProgressStageComplete => 'Tapos na ang export!';
-
-  @override
-  String get exportProgressStageConcatenating => 'Pinagsasama ang mga clip...';
-
-  @override
-  String get exportProgressStageError => 'Nabigo ang export';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Gumagawa ng thumbnail...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Nagdaragdag ng tunog...';
-
-  @override
   String get findPeopleAnonymousUser => 'Anonymous';
 
   @override
@@ -7802,15 +7058,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Hindi Nakita ang Tunog';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Deskripsyon ng video';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count loops';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'Bilang ng loop ng video';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7819,11 +7069,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String originalSoundByCreator(String creatorName) {
     return 'Orihinal na sound - $creatorName';
-  }
-
-  @override
-  String globalUploadPendingCount(int count) {
-    return 'Mga Nakabinbing Upload ($count)';
   }
 
   @override
@@ -7839,17 +7084,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get profileBadgeCheckmarkBody =>
       'Ibinibigay ng Divine ang tsek na ito sa mga account ng team at sa iilang profile na manu-manong inaprubahan. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Nasa $count list',
-      one: 'Nasa $count list',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get unfollowConfirmButton => 'I-unfollow';
@@ -7949,11 +7183,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi naipadala ang bug report. Subukan ulit mamaya.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Hindi naipadala ang bug report: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'Ipadala ang Request';
 
   @override
@@ -7988,11 +7217,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Hindi naipadala ang feature request. Subukan ulit mamaya.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Hindi naipadala ang feature request: $error';
-  }
 
   @override
   String get notificationFollowBack => 'I-follow back';
@@ -8043,17 +7267,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get followSortOldest => 'Pinakaluma muna';
-
-  @override
-  String get reportMessageTitle => 'I-report ang Message';
-
-  @override
-  String get reportMessageWhyReporting =>
-      'Bakit mo nire-report ang message na ito?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Pumili ng dahilan para sa pag-report ng message na ito';
 
   @override
   String get newMessageTitle => 'Bagong message';
@@ -8335,9 +7548,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Dapat 16 taong gulang ka pataas para gumawa ng content';
 
   @override
-  String get featureRequestCancel => 'Kanselahin';
-
-  @override
   String keyImportError(String error) {
     return 'Error: $error';
   }
@@ -8548,9 +7758,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get notificationSystemUpdate => 'May bago kang update';
-
-  @override
-  String get notificationSomeoneLikedYourVideo => 'May nag-like sa video mo';
 
   @override
   String get commentReplyToPrefix => 'Re:';
@@ -9237,41 +8444,21 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => 'I-play o i-pause ang video';
 
   @override
-  String get videoEditorCropSemanticLabel => 'I-crop';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Hindi pwedeng i-split ang clip habang pinoproseso ito. Maghintay lang.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Invalid ang split position. Dapat hindi bababa sa ${minDurationMs}ms ang haba ng dalawang clip.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary =>
-      'Magdagdag ng clip mula sa Library';
-
-  @override
   String get videoEditorSaveSelectedClip => 'I-save ang napiling clip';
 
   @override
-  String get videoEditorSplitClip => 'I-split ang clip';
-
-  @override
   String get videoEditorSaveClip => 'I-save ang clip';
-
-  @override
-  String get videoEditorDeleteClip => 'Burahin ang clip';
 
   @override
   String get videoEditorClipSavedSuccess => 'Na-save sa library ang clip';
 
   @override
   String get videoEditorClipSaveFailed => 'Hindi na-save ang clip';
-
-  @override
-  String get videoEditorClipDeleted => 'Nabura ang clip';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Pumili ng kulay';
@@ -9302,12 +8489,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => 'Hindi na-load ang mga sticker';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'I-adjust ang volume';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Na-record na audio';
 
   @override
   String get videoEditorVoiceOverLabel => 'Voice over';
@@ -9373,12 +8554,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'I-pause';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'I-mute ang audio';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'I-unmute ang audio';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Ayusin ang volume';
@@ -9494,9 +8669,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi maipapakita ng device na ito ang live preview. Gumagana pa rin ang mga setting mo kapag nag-export.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Orihinal na audio';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Clip $index';
   }
@@ -9529,14 +8701,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count na frame kada larawan';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Dagdagan ang mga frame kada larawan';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Bawasan ang mga frame kada larawan';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9643,9 +8807,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'I-flip';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Ratio';
 
   @override
   String get videoEditorTransformResetLabel => 'I-reset';
@@ -9808,13 +8969,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Mga Sound Ko';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle => 'Featured sounds malapit na';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Maglalagay kami ng featured sounds dito kapag handa na sila.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Tool na arrow';
 
   @override
@@ -9882,10 +9036,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Pindutin nang matagal para mag-reorder';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'I-tap para i-edit. Pindutin nang matagal at i-drag para mag-reorder.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Ilipat sa kaliwa';
@@ -10060,9 +9210,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Mga Tag';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Burahin';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'Burahin ang Tag $tag';
   }
@@ -10077,12 +9224,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
       'Piliin lahat ng tumutugma sa content mo';
-
-  @override
-  String get videoMetadataContentWarningDoneButton => 'Tapos na';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'I-publish ang sound na ito';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
@@ -10100,29 +9241,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mag-imbita ng collaborator';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'Paano gumagana ang mga collaborator';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max Collaborator';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Alisin ang collaborator';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Ang mga collaborator ay iniimbitahan bilang co-creator sa post na ito. Pwede mo lang i-imbita ang mga taong magkasundo kayong nag-fo-follow, at lalabas sila bilang collaborator pagkatapos nilang kumpirmahin.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'Mga mutual follower';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'Kailangan kayong magkasundong nag-fo-follow ni $name para i-imbita siya bilang collaborator.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'Inspirado mula sa';
@@ -10132,23 +9251,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Itakda ang inspirado mula sa';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'Paano gumagana ang inspiration credits';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Wala';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Gamitin ito para magbigay ng credit. Iba ang inspired-by credit sa mga collaborator: kinikilala nito ang impluwensya, pero hindi tinatag ang isang tao bilang co-creator.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Hindi pwedeng i-reference ang creator na ito.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      'Alisin ang inspirado mula sa';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Mga detalye ng post';
@@ -10571,10 +9675,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Gabay para sa pamilya';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Hindi ka pa 16? Ayos lang. Ito ang pwede mong gawin.';
-
-  @override
   String get minorAccountReviewWelcomeTitle => 'Hindi ka pa 16? Ayos lang.';
 
   @override
@@ -10621,10 +9721,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => 'Edad 13-15';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle =>
-      'Kapaki-pakinabang para sa mga pamilya';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10764,10 +9860,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'Maraming bahagi ng internet ang naka-set up para gantimpalaan ang mga taong nagsasabi ng kahit ano para makapasok. Sa tingin namin, hindi iyon maganda. Oo, puwede kang bumalik at sabihing mas matanda ka kaysa sa totoong edad mo, pero hindi iyon tapat, at hindi ka namin tuturuang magsinungaling para makuha ang gusto mo.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Bakit hindi pa rin ang sagot';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -11251,9 +10343,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Magsisimulang mag-record kapag pinindot nang matagal at titigil kapag inalis';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'Hindi na-play ang preview';
 
   @override
   String uploadPublishedCountMessage(int count) {

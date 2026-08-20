@@ -121,12 +121,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsNotifications => '通知';
 
   @override
-  String get settingsContentPreferences => '内容偏好';
-
-  @override
-  String get settingsModerationControls => '屏蔽与静音';
-
-  @override
   String get settingsBlueskyPublishing => 'Bluesky 发布';
 
   @override
@@ -428,15 +422,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get profileEditProfile => '编辑资料';
-
-  @override
-  String get profileCreatorAnalytics => '创作者数据';
-
-  @override
-  String get profileShareProfile => '分享主页';
-
-  @override
   String get profileCopyPublicKey => '复制公钥（npub）';
 
   @override
@@ -447,12 +432,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => '嵌入代码已复制到剪贴板';
-
-  @override
-  String get profileRefreshTooltip => '刷新';
-
-  @override
-  String get profileRefreshSemanticLabel => '刷新个人资料';
 
   @override
   String get profileMoreTooltip => '更多';
@@ -635,18 +614,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => '已屏蔽该用户';
-
-  @override
-  String get profileUserBlockedContent => '你的信息流中不会再出现该用户的内容。';
-
-  @override
-  String get profileUserBlockedUnblockHint => '你可以随时在其主页或“设置 > 安全”中取消屏蔽。';
-
-  @override
-  String get profileCloseButton => '关闭';
-
-  @override
   String get profileNoCollabsTitle => '还没有合作';
 
   @override
@@ -745,23 +712,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileCompleteSubtitle => '添加名字、简介和头像，马上开始';
 
   @override
-  String get profileSetUpButton => '去设置';
-
-  @override
-  String get profileVerifyingEmail => '正在验证邮箱...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return '到 $email 查收验证链接';
-  }
-
-  @override
-  String get profileWaitingForVerification => '等待邮箱验证';
-
-  @override
-  String get profileVerificationFailed => '验证失败';
-
-  @override
   String get profilePleaseTryAgain => '请重试';
 
   @override
@@ -772,9 +722,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileRetryButton => '重试';
-
-  @override
-  String get profileRegisterButton => '注册';
 
   @override
   String get profileSessionExpired => '登录已过期';
@@ -814,9 +761,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileUserFallback => '用户';
-
-  @override
-  String get profileDismissTooltip => '忽略';
 
   @override
   String get profileLinkCopied => '主页链接已复制';
@@ -871,9 +815,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupNoRelaysConnected => '无法连接网络。请检查连接后重试。';
 
   @override
-  String get profileSetupRetryLabel => '重试';
-
-  @override
   String get profileSetupDisplayNameLabel => '昵称';
 
   @override
@@ -895,9 +836,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupUsernameHelper => '你在 Divine 上的唯一标识';
 
   @override
-  String get profileSetupProfileColorLabel => '资料颜色（可选）';
-
-  @override
   String get profileSetupSaveButton => '保存';
 
   @override
@@ -905,9 +843,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileSetupImageUrlTitle => '添加图片链接';
-
-  @override
-  String get profileSetupPictureUploaded => '头像上传成功！';
 
   @override
   String get profileSetupImageSelectionFailed => '选择图片失败，请在下方粘贴图片链接。';
@@ -937,10 +872,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileSetupUploadServerError => '上传失败。我们的服务器暂时开小差了，请稍后再试。';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      '网页版暂不支持上传头像。请使用 iOS 或 Android 应用，或直接粘贴图片链接。';
 
   @override
   String get profileSetupBannerClearButton => '清除头图';
@@ -1057,12 +988,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupSendRequest => '发送请求';
 
   @override
-  String get profileSetupPickColorTitle => '挑个颜色';
-
-  @override
-  String get profileSetupSelectButton => '选择';
-
-  @override
   String get profileSetupUseOwnNip05 => '使用你自己的 NIP-05 地址';
 
   @override
@@ -1157,9 +1082,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nostrInfoGotIt => '知道了！';
 
   @override
-  String get profileTabRefreshTooltip => '刷新';
-
-  @override
   String get videoGridRefreshLabel => '正在寻找更多视频';
 
   @override
@@ -1180,11 +1102,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => '正在删除内容...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return '删除内容失败：$error';
-  }
 
   @override
   String get exploreTabFeatured => '精选';
@@ -1292,9 +1209,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => '视频加载中...';
-
-  @override
   String get videoPlayerPlayVideo => '播放视频';
 
   @override
@@ -1302,12 +1216,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => '取消静音';
-
-  @override
-  String get videoPlayerEditVideo => '编辑视频';
-
-  @override
-  String get videoPlayerEditVideoTooltip => '编辑视频';
 
   @override
   String get videoPlayerTapHint => '点按播放或暂停，双击点赞。';
@@ -1508,18 +1416,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoErrorNotFound => '找不到视频';
 
   @override
-  String get videoErrorNetwork => '网络错误';
-
-  @override
-  String get videoErrorTimeout => '加载超时';
-
-  @override
-  String get videoErrorFormat => '视频格式错误\n（请重试或换个浏览器）';
-
-  @override
-  String get videoErrorUnsupportedFormat => '不支持的视频格式';
-
-  @override
   String get videoErrorPlayback => '视频播放出错';
 
   @override
@@ -1530,9 +1426,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoErrorUnavailableBody => '此视频目前不可用。';
-
-  @override
-  String get videoErrorVerifyAge => '验证年龄';
 
   @override
   String get videoErrorRetry => '重试';
@@ -1591,9 +1484,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => '关闭视频播放器';
-
-  @override
-  String get videoFollowButtonFollowing => '已关注';
 
   @override
   String get videoFollowButtonFollow => '关注';
@@ -1780,12 +1670,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoActionMoreOptions => '更多选项';
 
   @override
-  String get videoActionHideSubtitles => '隐藏字幕';
-
-  @override
-  String get videoActionShowSubtitles => '显示字幕';
-
-  @override
   String get videoEngagementLikersTitle => '点赞的人';
 
   @override
@@ -1820,11 +1704,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoOverlayCommentPostFailedSnackbar => '评论发布失败';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count 次循环';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2543,33 +2422,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationSettingsNewPostsSubtitle => '当你关注的人发布内容时';
 
   @override
-  String get notificationSettingsSystem => '系统';
-
-  @override
-  String get notificationSettingsSystemSubtitle => '应用更新和系统消息';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => '推送通知';
-
-  @override
-  String get notificationSettingsPushNotifications => '推送通知';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle => '应用关闭时也能收到通知';
-
-  @override
-  String get notificationSettingsSound => '声音';
-
-  @override
-  String get notificationSettingsSoundSubtitle => '通知时播放声音';
-
-  @override
-  String get notificationSettingsVibration => '振动';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => '通知时振动';
-
-  @override
   String get notificationSettingsActions => '操作';
 
   @override
@@ -2593,12 +2445,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       '通知由 Nostr 协议驱动。实时更新取决于你与 Nostr 中继的连接，部分通知可能会有延迟。';
-
-  @override
-  String get safetySettingsTitle => '安全与隐私';
-
-  @override
-  String get safetySettingsLabel => '设置';
 
   @override
   String get safetySettingsWhatYouSee => '你看到的内容';
@@ -3314,30 +3160,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authRegistrationComplete => '注册完成。请查收你的邮箱。';
 
   @override
-  String get authVerificationFailedTitle => '验证失败';
-
-  @override
-  String get authClose => '关闭';
-
-  @override
-  String get authAccountSecured => '账号已保护！';
-
-  @override
-  String get authAccountLinkedToEmail => '你的账号现已绑定邮箱。';
-
-  @override
-  String get authVerifyYourEmail => '验证你的邮箱';
-
-  @override
-  String get authClickLinkContinue => '点击邮箱中的链接完成注册。在此期间你可以继续使用应用。';
-
-  @override
-  String get authWaitingForVerificationEllipsis => '等待验证中...';
-
-  @override
-  String get authContinueToApp => '进入应用';
-
-  @override
   String get authFailedToSendResetEmail => '重置邮件发送失败。';
 
   @override
@@ -3444,9 +3266,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => '分享方式';
-
-  @override
-  String get shareSheetReport => '举报';
 
   @override
   String get shareSheetEventJson => '事件 JSON';
@@ -3571,143 +3390,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get watermarkDownloadStageSavingDesc => '正在把带水印的视频保存到你的相册...';
 
   @override
-  String get uploadProgressVideoUpload => '视频上传';
-
-  @override
-  String get uploadProgressPause => '暂停';
-
-  @override
-  String get uploadProgressResume => '继续';
-
-  @override
-  String get uploadProgressGoBack => '返回';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return '重试（还剩 $count 次）';
-  }
-
-  @override
-  String get uploadProgressDelete => '删除';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '$count 天前';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '$count 小时前';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '$count 分钟前';
-  }
-
-  @override
-  String get uploadProgressJustNow => '刚刚';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return '上传中 $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return '已暂停 $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => '分享视频';
-
-  @override
-  String get shareMenuReportAiContent => '举报 AI 内容';
-
-  @override
-  String get shareMenuReportAiContentSubtitle => '快速举报疑似 AI 生成的内容';
-
-  @override
-  String get shareMenuReportingAiContent => '正在举报 AI 内容...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return '举报内容失败：$error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return '举报 AI 内容失败：$error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => '视频状态';
-
-  @override
-  String get shareMenuViewAllLists => '查看所有列表 →';
-
-  @override
-  String get shareMenuShareWith => '分享给';
-
-  @override
-  String get shareMenuShareViaOtherApps => '通过其他应用分享';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle => '通过其他应用分享或复制链接';
-
-  @override
-  String get shareMenuSaveToGallery => '保存到相册';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle => '将原始视频保存到相册';
-
-  @override
-  String get shareMenuSaveWithWatermark => '保存（带水印）';
-
-  @override
-  String get shareMenuSaveVideo => '保存视频';
-
-  @override
-  String get shareMenuDownloadWithWatermark => '下载带 Divine 水印的视频';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => '将视频保存到相册';
-
-  @override
-  String get shareMenuLists => '列表';
-
-  @override
-  String get shareMenuAddToList => '加入列表';
-
-  @override
-  String get shareMenuAddToListSubtitle => '加入你策划的列表';
-
-  @override
-  String get shareMenuCreateNewList => '创建新列表';
-
-  @override
-  String get shareMenuCreateNewListSubtitle => '开始一个新的策划合集';
-
-  @override
-  String get shareMenuRemovedFromList => '已从列表移除';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => '从列表移除失败';
-
-  @override
   String get shareMenuBookmarks => '收藏';
-
-  @override
-  String get shareMenuFollowSets => '人物列表';
-
-  @override
-  String get shareMenuCreateFollowSet => '创建关注集合';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle => '以这位创作者开始一个新合集';
-
-  @override
-  String get shareMenuAddToFollowSet => '加入关注集合';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3716,9 +3399,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => '加入列表';
-
-  @override
-  String get peopleListsAddToListSubtitle => '把这位创作者放进你的一个列表';
 
   @override
   String get peopleListsSheetTitle => '加入列表';
@@ -3858,38 +3538,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => '已加入收藏！';
-
-  @override
-  String get shareMenuFailedToAddBookmark => '加入收藏失败';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return '已创建列表“$name”并添加视频';
-  }
-
-  @override
-  String get shareMenuManageContent => '管理内容';
-
-  @override
   String get shareMenuEditVideo => '编辑视频';
-
-  @override
-  String get shareMenuEditVideoSubtitle => '更新标题、简介和话题标签';
 
   @override
   String get shareMenuDeleteVideo => '删除视频';
 
   @override
-  String get shareMenuVideoInTheseLists => '视频已在这些列表中：';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count 个视频';
   }
-
-  @override
-  String get shareMenuClose => '关闭';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -3900,14 +3557,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareMenuDelete => '删除';
-
-  @override
-  String get shareMenuDeletingContent => '正在删除内容...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return '删除内容失败：$error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized => '删除功能还没准备好，请稍后再试。';
@@ -3939,57 +3588,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteFailedGeneric => '无法删除此视频，请重试。';
 
   @override
-  String get shareMenuFollowSetName => '关注集合名称';
-
-  @override
-  String get shareMenuFollowSetNameHint => '例如：内容创作者、音乐人等';
-
-  @override
-  String get shareMenuDescriptionOptional => '描述（可选）';
-
-  @override
-  String get shareMenuCreate => '创建';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return '已创建关注集合“$name”并添加创作者';
-  }
-
-  @override
-  String get shareMenuDone => '完成';
-
-  @override
-  String get shareMenuEditTitle => '标题';
-
-  @override
-  String get shareMenuEditTitleHint => '输入视频标题';
-
-  @override
-  String get shareMenuEditDescription => '简介';
-
-  @override
-  String get shareMenuEditDescriptionHint => '输入视频简介';
-
-  @override
-  String get shareMenuEditHashtags => '话题标签';
-
-  @override
-  String get shareMenuEditHashtagsHint => '用逗号分隔，如：搞笑，猫咪，日常';
-
-  @override
-  String get shareMenuEditMetadataNote => '注意：只能编辑元数据，视频内容本身无法更改。';
-
-  @override
-  String get shareMenuDeleting => '删除中...';
-
-  @override
   String get shareMenuUpdate => '更新';
 
   @override
   String get shareMenuChangeCover => '更换封面';
-
-  @override
-  String get shareMenuCoverUploadingBackground => '缩略图正在后台上传';
 
   @override
   String get shareMenuVideoUpdated => '视频更新成功';
@@ -4011,56 +3613,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '删除视频失败：$error';
-  }
-
-  @override
   String get shareMenuDeleteVideoQuestion => '删除视频？';
 
   @override
   String get shareMenuVideoDeletionRequested => '视频已删除';
-
-  @override
-  String get shareMenuContentLabels => '内容标签';
-
-  @override
-  String get shareMenuAddContentLabels => '添加内容标签';
-
-  @override
-  String get shareMenuClearAll => '全部清除';
-
-  @override
-  String get shareMenuCollaborators => '协作者';
-
-  @override
-  String get shareMenuAddCollaborator => '邀请协作者';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return '你需要和 $name 互相关注，才能邀请 TA 成为协作者。';
-  }
-
-  @override
-  String get shareMenuLoading => '加载中...';
-
-  @override
-  String get shareMenuInspiredBy => '灵感来自';
-
-  @override
-  String get shareMenuAddInspirationCredit => '添加灵感来源署名';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced => '无法引用该创作者。';
-
-  @override
-  String get shareMenuUnknown => '未知';
-
-  @override
-  String get shareMenuUseThisSound => '使用这个声音';
-
-  @override
-  String get shareMenuOriginalSound => '原声';
 
   @override
   String get authSessionExpired => '你的登录已过期，请重新登录。';
@@ -4071,15 +3627,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authSignInFailed => '登录失败，请重试。';
-
-  @override
-  String get localeAppLanguage => '应用语言';
-
-  @override
-  String get localeDeviceDefault => '系统默认';
-
-  @override
-  String get localeSelectLanguage => '选择语言';
 
   @override
   String get webAuthNotSupportedSecureMode => '安全模式下不支持网页认证。请使用移动应用进行安全的密钥管理。';
@@ -4138,30 +3685,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundsSearchHint => '搜索声音...';
 
   @override
-  String get soundsPreviewUnavailable => '无法预览声音——没有可用音频';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return '预览播放失败：$error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => '精选声音';
-
-  @override
-  String get soundsTrendingSounds => '热门声音';
-
-  @override
-  String get soundsAllSounds => '全部声音';
-
-  @override
   String get soundsSearchResults => '搜索结果';
-
-  @override
-  String get soundsNoSoundsAvailable => '暂无声音';
-
-  @override
-  String get soundsNoSoundsDescription => '创作者分享音频后，声音会显示在这里';
 
   @override
   String get soundsNoSoundsFound => '没有找到声音';
@@ -4183,12 +3707,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get soundsSavedEmptyDescription => '在视频上点“使用这个声音”，就会保存在这里。';
-
-  @override
-  String get soundsAvailabilityPrivate => '私密';
-
-  @override
-  String get soundsAvailabilityCommunity => '社区';
 
   @override
   String get soundsRemoveSavedSound => '移除声音';
@@ -4233,22 +3751,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundSyncStatusLocked => '无法在此设备上解锁你的同步音库。';
 
   @override
-  String get soundsFailedToLoad => '声音加载失败';
-
-  @override
-  String get soundsRetry => '重试';
-
-  @override
-  String get soundsScreenLabel => '声音页面';
-
-  @override
   String get profileTitle => '主页';
-
-  @override
-  String get profileRefresh => '刷新';
-
-  @override
-  String get profileRefreshLabel => '刷新主页';
 
   @override
   String get profileMoreOptions => '更多选项';
@@ -4266,11 +3769,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return '已取消关注 $name';
-  }
-
-  @override
-  String profileError(String error) {
-    return '错误：$error';
   }
 
   @override
@@ -4304,20 +3802,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsRefreshError => '刷新失败——先看你已有的';
 
   @override
-  String get notificationsCheckingNew => '正在检查新通知';
-
-  @override
-  String get notificationsNoneYet => '还没有通知';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return '没有$type通知';
-  }
-
-  @override
-  String get notificationsEmptyDescription => '当有人与你的内容互动时，会显示在这里';
-
-  @override
   String get notificationsUnreadPrefix => '未读通知';
 
   @override
@@ -4348,11 +3832,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsVideoThumbnail => '视频缩略图';
 
   @override
-  String notificationsLoadingType(String type) {
-    return '正在加载$type通知...';
-  }
-
-  @override
   String get notificationsInviteSingular => '你有 1 个邀请名额，可以分享给朋友！';
 
   @override
@@ -4361,13 +3840,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => '找不到视频';
-
-  @override
   String get notificationsVideoUnavailable => '视频不可用';
-
-  @override
-  String get notificationsFromNotification => '来自通知';
 
   @override
   String get feedFailedToLoadVideos => '视频加载失败';
@@ -4419,60 +3892,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get feedExploreVideos => '去探索视频';
 
   @override
-  String get feedExternalVideoSlow => '外部视频加载较慢';
-
-  @override
-  String get feedSkip => '跳过';
-
-  @override
   String get feedLoadingMore => '正在加载更多视频…';
 
   @override
   String get feedRefreshed => '信息流已刷新';
 
   @override
-  String get uploadWaitingToUpload => '等待上传';
-
-  @override
   String get uploadUploadingVideo => '正在上传视频';
-
-  @override
-  String get uploadProcessingVideo => '正在处理视频';
-
-  @override
-  String get uploadProcessingComplete => '处理完成';
-
-  @override
-  String get uploadPublishedSuccessfully => '发布成功';
-
-  @override
-  String get uploadFailed => '上传失败';
-
-  @override
-  String get uploadRetrying => '正在重试上传';
-
-  @override
-  String get uploadPaused => '上传已暂停';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '已完成 $percent%';
-  }
-
-  @override
-  String get uploadQueuedMessage => '你的视频已排队等待上传';
-
-  @override
-  String get uploadUploadingMessage => '正在上传到服务器...';
-
-  @override
-  String get uploadProcessingMessage => '正在处理视频——可能需要几分钟';
-
-  @override
-  String get uploadReadyToPublishMessage => '视频处理成功，可以发布了';
-
-  @override
-  String get uploadPublishedMessage => '视频已发布到你的主页';
 
   @override
   String get postPublishConfirmationTitle => '已发布到你的主页';
@@ -4487,33 +3913,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get postPublishConfirmationThumbnailLabel => '你刚发布的视频缩略图';
 
   @override
-  String get uploadFailedMessage => '上传失败——请重试';
-
-  @override
-  String get uploadRetryingMessage => '正在重试上传...';
-
-  @override
-  String get uploadPausedMessage => '上传已被用户暂停';
-
-  @override
-  String get uploadRetryButton => '重试';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return '重试上传失败：$error';
-  }
-
-  @override
-  String get userSearchPrompt => '搜索用户';
-
-  @override
   String get userSearchNoResults => '没有找到用户';
-
-  @override
-  String get userSearchFailed => '搜索失败';
-
-  @override
-  String get userPickerSearchByName => '按名字搜索';
 
   @override
   String get userPickerFilterByNameHint => '按名字筛选...';
@@ -4598,39 +3998,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ageVerificationYes => '是';
 
   @override
-  String get shareLinkCopied => '链接已复制到剪贴板';
-
-  @override
-  String get shareFailedToCopy => '复制链接失败';
-
-  @override
-  String get shareVideoSubject => '快来看看 Divine 上的这个视频';
-
-  @override
-  String get shareFailedToShare => '分享失败';
-
-  @override
-  String get shareVideoTitle => '分享视频';
-
-  @override
-  String get shareToApps => '分享到其他应用';
-
-  @override
-  String get shareToAppsSubtitle => '通过消息、社交应用分享';
-
-  @override
-  String get shareCopyWebLink => '复制网页链接';
-
-  @override
-  String get shareCopyWebLinkSubtitle => '复制可分享的网页链接';
-
-  @override
-  String get shareCopyNostrLink => '复制 Nostr 链接';
-
-  @override
-  String get shareCopyNostrLinkSubtitle => '复制供 Nostr 客户端使用的 nevent 链接';
-
-  @override
   String get navHome => '首页';
 
   @override
@@ -4643,12 +4010,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navProfile => '我的';
 
   @override
-  String get navSearch => '搜索';
-
-  @override
-  String get navSearchTooltip => '搜索';
-
-  @override
   String get navMyProfile => '我的主页';
 
   @override
@@ -4656,9 +4017,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navOpenCamera => '打开相机';
-
-  @override
-  String get navUnknown => '未知';
 
   @override
   String get navExploreClassics => '经典';
@@ -4802,17 +4160,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get reportTitle => '举报内容';
-
-  @override
   String get reportWhyReporting => '你为什么要举报该内容？';
 
   @override
   String get reportPolicyNotice =>
       'Divine 会在 24 小时内处理内容举报：移除违规内容，并将发布违规内容的用户清出平台。';
-
-  @override
-  String get reportAdditionalDetails => '补充说明（可选）';
 
   @override
   String get reportBlockUser => '屏蔽该用户';
@@ -4921,9 +4273,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportContactModeration => '给管理团队发消息';
-
-  @override
-  String get reportLearnMore => '了解更多';
 
   @override
   String get reportLearnMoreAt => '了解更多：';
@@ -5946,9 +5295,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmReelReplyViewChat => '查看聊天';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => '打开聊天';
-
-  @override
   String get dmReelReplySentAnnouncement => '回复已发送';
 
   @override
@@ -6025,12 +5371,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get inboxConversationTileLongPressHint => '显示会话操作';
-
-  @override
-  String get reportDialogCancel => '取消';
-
-  @override
-  String get reportDialogReport => '举报';
 
   @override
   String exploreVideoId(String id) {
@@ -6153,9 +5493,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get commonSomethingWentWrong => '出了点问题';
 
   @override
-  String get commonNext => '下一步';
-
-  @override
   String get commonDelete => '删除';
 
   @override
@@ -6252,9 +5589,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryTabClips => '片段';
 
   @override
-  String get librarySaveToCameraRollTooltip => '保存到相册';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => '删除选中片段';
 
   @override
@@ -6305,20 +5639,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => '竖屏优先';
-
-  @override
-  String get libraryDeleteClipsTitle => '删除片段';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# 个选中的片段',
-      one: '# 个选中的片段',
-    );
-    return '确定要删除$_temp0吗？';
-  }
 
   @override
   String get libraryDeleteClipsWarning => '此操作无法撤销。视频文件将从你的设备上永久删除。';
@@ -6446,20 +5766,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryDeleteClipMessage => '确定要删除这个片段吗？';
 
   @override
-  String get libraryClipSelectionTitle => '片段';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return '还剩 $seconds 秒';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds 秒';
   }
-
-  @override
-  String get libraryAddClips => '添加';
 
   @override
   String get libraryRecordVideo => '录制视频';
@@ -7118,24 +6427,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '这会为你的账号和内容发送删除请求，尽可能删除你的 Divine 账号，并在此设备上退出登录。部分中继、客户端和搜索索引可能保留副本。其他已登录设备会保持登录，直到你在那些设备上移除密钥。';
 
   @override
-  String get exportProgressStageApplyingTextOverlay => '正在添加文字叠加...';
-
-  @override
-  String get exportProgressStageComplete => '导出完成！';
-
-  @override
-  String get exportProgressStageConcatenating => '正在合并片段...';
-
-  @override
-  String get exportProgressStageError => '导出失败';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail => '正在生成缩略图...';
-
-  @override
-  String get exportProgressStageMixingAudio => '正在添加声音...';
-
-  @override
   String get findPeopleAnonymousUser => '匿名用户';
 
   @override
@@ -7323,15 +6614,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundDetailNotFoundTitle => '找不到声音';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => '视频简介';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 循环 $count 次';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => '视频循环次数';
 
   @override
   String get originalSoundUnavailableBody => '该视频的音频不可单独使用。';
@@ -7339,11 +6624,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String originalSoundByCreator(String creatorName) {
     return '原声 - $creatorName';
-  }
-
-  @override
-  String globalUploadPendingCount(int count) {
-    return '待上传（$count）';
   }
 
   @override
@@ -7359,17 +6639,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get profileBadgeCheckmarkBody =>
       'Divine 把这个对勾给团队账号，以及少数经过人工审核的个人资料。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '已在 $count 个列表中',
-      one: '已在 1 个列表中',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get unfollowConfirmButton => '取消关注';
@@ -7462,11 +6731,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bugReportSendFailed => 'Bug 报告发送失败，请稍后再试。';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Bug 报告发送失败：$error';
-  }
-
-  @override
   String get featureRequestSendRequest => '发送请求';
 
   @override
@@ -7495,11 +6759,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get featureRequestSendFailed => '功能建议发送失败，请稍后再试。';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return '功能建议发送失败：$error';
-  }
 
   @override
   String get notificationFollowBack => '回关';
@@ -7549,15 +6808,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get followSortOldest => '最早优先';
-
-  @override
-  String get reportMessageTitle => '举报消息';
-
-  @override
-  String get reportMessageWhyReporting => '你为什么要举报这条消息？';
-
-  @override
-  String get reportMessageSelectReason => '请选择举报这条消息的原因';
 
   @override
   String get newMessageTitle => '新消息';
@@ -7819,9 +7069,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cameraAgeRestriction => '你必须年满 16 岁才能创作内容';
 
   @override
-  String get featureRequestCancel => '取消';
-
-  @override
   String keyImportError(String error) {
     return '错误：$error';
   }
@@ -8032,9 +7279,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notificationSystemUpdate => '你有一个新的更新';
-
-  @override
-  String get notificationSomeoneLikedYourVideo => '有人点赞了你的视频';
 
   @override
   String get commentReplyToPrefix => '回复:';
@@ -8684,39 +7928,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => '播放或暂停视频';
 
   @override
-  String get videoEditorCropSemanticLabel => '裁剪';
-
-  @override
-  String get videoEditorCannotSplitProcessing => '片段处理中，暂时无法分割。请稍等。';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return '分割位置无效。两段都必须至少 ${minDurationMs}ms 长。';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => '从作品库添加片段';
-
-  @override
   String get videoEditorSaveSelectedClip => '保存选中片段';
 
   @override
-  String get videoEditorSplitClip => '分割片段';
-
-  @override
   String get videoEditorSaveClip => '保存片段';
-
-  @override
-  String get videoEditorDeleteClip => '删除片段';
 
   @override
   String get videoEditorClipSavedSuccess => '片段已保存到作品库';
 
   @override
   String get videoEditorClipSaveFailed => '片段保存失败';
-
-  @override
-  String get videoEditorClipDeleted => '片段已删除';
 
   @override
   String get videoEditorColorPickerSemanticLabel => '取色器';
@@ -8747,12 +7973,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => '贴纸加载失败';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => '调节音量';
-
-  @override
-  String get videoEditorRecordedAudioLabel => '录制的音频';
 
   @override
   String get videoEditorVoiceOverLabel => '配音';
@@ -8812,12 +8032,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => '暂停';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => '音频静音';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => '取消静音';
 
   @override
   String get videoEditorVolumeSemanticLabel => '调节音量';
@@ -8922,9 +8136,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '这台设备无法显示实时预览。导出时你的设置仍然生效。';
 
   @override
-  String get videoEditorOriginalAudioLabel => '原始音频';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return '片段 $index';
   }
@@ -8956,14 +8167,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '每图 $count 帧';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      '增加每图帧数';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      '减少每图帧数';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9053,9 +8256,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => '翻转';
-
-  @override
-  String get videoEditorTransformRatioLabel => '比例';
 
   @override
   String get videoEditorTransformResetLabel => '重置';
@@ -9207,12 +8407,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => '我的声音';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle => '精选声音即将上线';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle => '准备好之后，我们会把精选声音放在这里。';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => '箭头工具';
 
   @override
@@ -9276,9 +8470,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => '长按重新排序';
-
-  @override
-  String get videoEditorClipGalleryInstruction => '点按编辑，长按拖动重新排序。';
 
   @override
   String get videoEditorTimelineClipMoveLeft => '左移';
@@ -9437,9 +8628,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataTagsLabel => '标签';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => '删除';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return '删除标签 $tag';
   }
@@ -9454,12 +8642,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataContentWarningSelectAllThatApply => '选择所有适用项';
 
   @override
-  String get videoMetadataContentWarningDoneButton => '完成';
-
-  @override
-  String get videoMetadataAudioReuseTitle => '发布这个声音';
-
-  @override
   String get videoMetadataAudioReuseSubtitle => '让其他人保存并二次使用这个视频的音频。';
 
   @override
@@ -9472,27 +8654,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => '邀请协作者';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip => '协作者如何运作';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max 位协作者';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel => '移除协作者';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      '协作者会作为该帖子的共同创作者被邀请。你只能邀请互相关注的人，对方确认后才会显示为协作者。';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => '互相关注的人';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return '你需要和 $name 互相关注，才能邀请 TA 成为协作者。';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => '添加灵感来源';
@@ -9501,20 +8663,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoMetadataSetInspiredBySemanticLabel => '设置灵感来源';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip => '灵感署名如何运作';
-
-  @override
-  String get videoMetadataInspiredByNone => '无';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      '用它来表达致谢。灵感署名和协作者不同：它是对影响的致意，不会把对方标记为共同创作者。';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar => '无法引用该创作者。';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel => '移除灵感来源';
 
   @override
   String get videoMetadataPostDetailsTitle => '帖子详情';
@@ -9913,9 +9062,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => '家庭指南';
 
   @override
-  String get minorAccountReviewWelcomeCta => '还没满 16 岁？没关系。这里是你可以做的选择。';
-
-  @override
   String get minorAccountReviewWelcomeTitle => '还没满 16 岁？没关系。';
 
   @override
@@ -9957,9 +9103,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13-15 岁';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => '对家庭有帮助';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10083,9 +9226,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       '互联网上的很多东西，都在奖励那些说什么能混过门槛就说什么的人。我们不认为这是好事。没错，你可以回去谎称自己的年龄，但那不诚实，我们也不会教你靠撒谎来得到想要的东西。';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle => '为什么答案仍然是不行';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -10508,9 +9648,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get generalSettingsHoldToRecordSubtitle => '按住开始录制，松开停止';
-
-  @override
-  String get soundsPreviewFailedGeneric => '预览播放失败';
 
   @override
   String uploadPublishedCountMessage(int count) {

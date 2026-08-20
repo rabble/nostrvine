@@ -155,12 +155,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get settingsNotifications => 'Известия';
 
   @override
-  String get settingsContentPreferences => 'Предпочитания за съдържание';
-
-  @override
-  String get settingsModerationControls => 'Контроли за модерация';
-
-  @override
   String get settingsBlueskyPublishing => 'Публикуване в Bluesky';
 
   @override
@@ -484,15 +478,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get profileEditProfile => 'Редактирай профила';
-
-  @override
-  String get profileCreatorAnalytics => 'Анализ на създателя';
-
-  @override
-  String get profileShareProfile => 'Сподели профила';
-
-  @override
   String get profileCopyPublicKey => 'Копирай публичния ключ (npub)';
 
   @override
@@ -504,12 +489,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileEmbedCodeCopied =>
       'Кодът за вграждане е копиран в клипборда';
-
-  @override
-  String get profileRefreshTooltip => 'Опресни';
-
-  @override
-  String get profileRefreshSemanticLabel => 'Опресняване на профила';
 
   @override
   String get profileMoreTooltip => 'Още';
@@ -701,20 +680,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Потребителят е блокиран';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Няма да виждаш съдържание от този потребител във фийдовете си.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Можеш да отблокираш този профил по всяко време от профила му или от Настройки > Безопасност.';
-
-  @override
-  String get profileCloseButton => 'Затвори';
-
-  @override
   String get profileNoCollabsTitle => 'Още няма колаборации';
 
   @override
@@ -829,23 +794,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Добави име, био и снимка, за да започнеш';
 
   @override
-  String get profileSetUpButton => 'Настрой';
-
-  @override
-  String get profileVerifyingEmail => 'Проверяваме имейла...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Провери $email за линк за потвърждение';
-  }
-
-  @override
-  String get profileWaitingForVerification => 'Изчакване на имейл потвърждение';
-
-  @override
-  String get profileVerificationFailed => 'Потвърждението не мина';
-
-  @override
   String get profilePleaseTryAgain => 'Опитай пак';
 
   @override
@@ -857,9 +805,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Опитай пак';
-
-  @override
-  String get profileRegisterButton => 'Регистрирай се';
 
   @override
   String get profileSessionExpired => 'Сесията изтече';
@@ -900,9 +845,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileUserFallback => 'Потребител';
-
-  @override
-  String get profileDismissTooltip => 'Отхвърляне';
 
   @override
   String get profileLinkCopied => 'Връзката към профила е копирана';
@@ -962,9 +904,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да се свържем с мрежата. Провери връзката си и опитай пак.';
 
   @override
-  String get profileSetupRetryLabel => 'Опитай пак';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Име за показване';
 
   @override
@@ -987,9 +926,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Твоята уникална самоличност в Divine';
 
   @override
-  String get profileSetupProfileColorLabel => 'Цвят на профила (по избор)';
-
-  @override
   String get profileSetupSaveButton => 'Запази';
 
   @override
@@ -997,10 +933,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileSetupImageUrlTitle => 'Добави URL адрес на изображението';
-
-  @override
-  String get profileSetupPictureUploaded =>
-      'Профилната снимка е качена успешно!';
 
   @override
   String get profileSetupImageSelectionFailed =>
@@ -1036,10 +968,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Качването на изображението се провали. Сървърите ни временно не са достъпни. Опитай пак след малко.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
 
   @override
   String get profileSetupBannerClearButton => 'Изчисти банера';
@@ -1167,12 +1095,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupSendRequest => 'Изпрати заявка';
 
   @override
-  String get profileSetupPickColorTitle => 'Избери цвят';
-
-  @override
-  String get profileSetupSelectButton => 'Избери';
-
-  @override
   String get profileSetupUseOwnNip05 => 'Използвай свой NIP-05 адрес';
 
   @override
@@ -1272,9 +1194,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get nostrInfoGotIt => 'Ясно!';
 
   @override
-  String get profileTabRefreshTooltip => 'Опресняване';
-
-  @override
   String get videoGridRefreshLabel => 'Търсим още видеа';
 
   @override
@@ -1296,11 +1215,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Трием съдържанието...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Неуспешно изтриване на съдържание: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Избрани';
@@ -1411,9 +1325,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Видеото се зарежда...';
-
-  @override
   String get videoPlayerPlayVideo => 'Възпроизвеждане на видео';
 
   @override
@@ -1421,12 +1332,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'Включване на звука на видеото';
-
-  @override
-  String get videoPlayerEditVideo => 'Редактиране на видео';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'Редактиране на видео';
 
   @override
   String get videoPlayerTapHint =>
@@ -1650,19 +1555,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoErrorNotFound => 'Видеото не е намерено';
 
   @override
-  String get videoErrorNetwork => 'Мрежова грешка';
-
-  @override
-  String get videoErrorTimeout => 'Зареждането изтече';
-
-  @override
-  String get videoErrorFormat =>
-      'Грешка във видео формата\n(Опитай пак или използвай друг браузър)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'Неподдържан видео формат';
-
-  @override
   String get videoErrorPlayback => 'Грешка при възпроизвеждане';
 
   @override
@@ -1673,9 +1565,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoErrorUnavailableBody => 'Това видео не е налично в момента.';
-
-  @override
-  String get videoErrorVerifyAge => 'Потвърди възрастта';
 
   @override
   String get videoErrorRetry => 'Опитай пак';
@@ -1742,9 +1631,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Затворете видеоплейъра';
-
-  @override
-  String get videoFollowButtonFollowing => 'Следване';
 
   @override
   String get videoFollowButtonFollow => 'Следвай';
@@ -1933,12 +1819,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionMoreOptions => 'Още опции';
 
   @override
-  String get videoActionHideSubtitles => 'Скрий субтитрите';
-
-  @override
-  String get videoActionShowSubtitles => 'Покажи субтитрите';
-
-  @override
   String get videoEngagementLikersTitle => 'Харесано от';
 
   @override
@@ -1976,11 +1856,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoOverlayCommentPostFailedSnackbar =>
       'Коментарът не можа да се публикува';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count лупа';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2736,35 +2611,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Когато някой, когото следиш, публикува';
 
   @override
-  String get notificationSettingsSystem => 'Система';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Обновления на приложението и системни съобщения';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Push известия';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Push известия';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Получавай известия, когато приложението е затворено';
-
-  @override
-  String get notificationSettingsSound => 'Звук';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'Пускай звук при известия';
-
-  @override
-  String get notificationSettingsVibration => 'Вибрация';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Вибрирай при известия';
-
-  @override
   String get notificationSettingsActions => 'Действия';
 
   @override
@@ -2793,12 +2639,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Известията се захранват от Nostr. Обновяването в реално време зависи от връзката ти с Nostr релета. Някои известия може да закъсняват.';
-
-  @override
-  String get safetySettingsTitle => 'Безопасност и поверителност';
-
-  @override
-  String get safetySettingsLabel => 'НАСТРОЙКИ';
 
   @override
   String get safetySettingsWhatYouSee => 'КАКВО ВИЖДАШ';
@@ -3565,32 +3405,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Регистрацията е готова. Провери имейла си.';
 
   @override
-  String get authVerificationFailedTitle => 'Потвърждението не мина';
-
-  @override
-  String get authClose => 'Затвори';
-
-  @override
-  String get authAccountSecured => 'Акаунтът е защитен!';
-
-  @override
-  String get authAccountLinkedToEmail =>
-      'Акаунтът ти вече е свързан с имейла ти.';
-
-  @override
-  String get authVerifyYourEmail => 'Потвърди имейла си';
-
-  @override
-  String get authClickLinkContinue =>
-      'Отвори линка в имейла си, за да завършиш регистрацията. Междувременно можеш да продължиш да използваш приложението.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'Чакаме потвърждение...';
-
-  @override
-  String get authContinueToApp => 'Продължи към приложението';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Не успяхме да изпратим имейл за нулиране.';
 
@@ -3714,9 +3528,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'Сподели чрез';
-
-  @override
-  String get shareSheetReport => 'Докладвай';
 
   @override
   String get shareSheetEventJson => 'Събитие JSON';
@@ -3852,148 +3663,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото с воден знак се запазва в галерията...';
 
   @override
-  String get uploadProgressVideoUpload => 'Качване на видео';
-
-  @override
-  String get uploadProgressPause => 'Пауза';
-
-  @override
-  String get uploadProgressResume => 'Продължи';
-
-  @override
-  String get uploadProgressGoBack => 'Назад';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Опитай пак ($count остават)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Изтрий';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return 'Преди $count дни';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return 'Преди $countч';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return 'Преди $count мин';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Току-що';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Качва се $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'На пауза $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'Сподели видео';
-
-  @override
-  String get shareMenuReportAiContent => 'Докладвай AI боклук';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Сигнал за съмнително AI-генерирано съдържание';
-
-  @override
-  String get shareMenuReportingAiContent => 'Докладваме AI съдържанието...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'Не успяхме да докладваме съдържанието: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'Не успяхме да докладваме AI съдържанието: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Състояние на видеото';
-
-  @override
-  String get shareMenuViewAllLists => 'Виж всички списъци →';
-
-  @override
-  String get shareMenuShareWith => 'Сподели с';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'Сподели чрез други приложения';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'Сподели чрез други приложения или копирай връзката';
-
-  @override
-  String get shareMenuSaveToGallery => 'Запази в галерията';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle =>
-      'Запази оригиналното видео в галерията';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'Запази с воден знак';
-
-  @override
-  String get shareMenuSaveVideo => 'Запази видео';
-
-  @override
-  String get shareMenuDownloadWithWatermark => 'Изтегли с воден знак Divine';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'Запази видеото в галерията';
-
-  @override
-  String get shareMenuLists => 'Списъци';
-
-  @override
-  String get shareMenuAddToList => 'Добави към списъка';
-
-  @override
-  String get shareMenuAddToListSubtitle => 'Добави към подбраните си списъци';
-
-  @override
-  String get shareMenuCreateNewList => 'Създаване на нов списък';
-
-  @override
-  String get shareMenuCreateNewListSubtitle => 'Започни нова подбрана колекция';
-
-  @override
-  String get shareMenuRemovedFromList => 'Премахнато от списъка';
-
-  @override
-  String get shareMenuFailedToRemoveFromList =>
-      'Неуспешно премахване от списъка';
-
-  @override
   String get shareMenuBookmarks => 'Отметки';
-
-  @override
-  String get shareMenuFollowSets => 'Списъци с хора';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Създай списък за следване';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Започни нова колекция с този творец';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Добави към набора за следване';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -4002,10 +3672,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Добави към списъка';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Постави този творец в един от списъците си';
 
   @override
   String get peopleListsSheetTitle => 'Добави към списък';
@@ -4150,39 +3816,15 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Добавено към отметките!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => 'Неуспешно добавяне на отметка';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return 'Създаден е списък „$name“ и е добавено видео';
-  }
-
-  @override
-  String get shareMenuManageContent => 'Управление на съдържанието';
-
-  @override
   String get shareMenuEditVideo => 'Редактиране на видео';
-
-  @override
-  String get shareMenuEditVideoSubtitle =>
-      'Актуализирай заглавие, описание и хаштагове';
 
   @override
   String get shareMenuDeleteVideo => 'Изтрий видеото';
 
   @override
-  String get shareMenuVideoInTheseLists => 'Видеото е в тези списъци:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count видеа';
   }
-
-  @override
-  String get shareMenuClose => 'Затвори';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4193,14 +3835,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Изтрий';
-
-  @override
-  String get shareMenuDeletingContent => 'Изтриване на съдържание...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Неуспешно изтриване на съдържание: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4239,60 +3873,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да изтрием това видео. Опитай пак.';
 
   @override
-  String get shareMenuFollowSetName => 'Име на списъка за следване';
-
-  @override
-  String get shareMenuFollowSetNameHint =>
-      'Например създатели на съдържание, музиканти и др.';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Описание (по избор)';
-
-  @override
-  String get shareMenuCreate => 'Създай';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return 'Създаден е списъкът за следване „$name“ и творецът е добавен';
-  }
-
-  @override
-  String get shareMenuDone => 'Готово';
-
-  @override
-  String get shareMenuEditTitle => 'Заглавие';
-
-  @override
-  String get shareMenuEditTitleHint => 'Въведи заглавие на видеото';
-
-  @override
-  String get shareMenuEditDescription => 'Описание';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Въведи описание на видеото';
-
-  @override
-  String get shareMenuEditHashtags => 'Хаштагове';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'Запетая, разделени, хаштагове';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Забележка: Могат да се редактират само метаданни. Видеосъдържанието не може да се променя.';
-
-  @override
-  String get shareMenuDeleting => 'Изтриване...';
-
-  @override
   String get shareMenuUpdate => 'Актуализация';
 
   @override
   String get shareMenuChangeCover => 'Смяна на корицата';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Миниатюрата се качва на заден план';
 
   @override
   String get shareMenuVideoUpdated => 'Видеото е обновено';
@@ -4314,57 +3898,10 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Не успяхме да изтрием видеото: $error';
-  }
-
-  @override
   String get shareMenuDeleteVideoQuestion => 'Да изтрием видеото?';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Видеото е изтрито';
-
-  @override
-  String get shareMenuContentLabels => 'Етикети за съдържание';
-
-  @override
-  String get shareMenuAddContentLabels => 'Добави етикети за съдържание';
-
-  @override
-  String get shareMenuClearAll => 'Изчисти всички';
-
-  @override
-  String get shareMenuCollaborators => 'Сътрудници';
-
-  @override
-  String get shareMenuAddCollaborator => 'Покани сътрудник';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'Трябва с $name да се следвате взаимно, за да поканиш този човек като сътрудник.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Зареждане...';
-
-  @override
-  String get shareMenuInspiredBy => 'Вдъхновен от';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'Добави кредит за вдъхновение';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Този създател не може да бъде цитиран.';
-
-  @override
-  String get shareMenuUnknown => 'Неизвестен';
-
-  @override
-  String get shareMenuUseThisSound => 'Използвай този звук';
-
-  @override
-  String get shareMenuOriginalSound => 'Оригинален звук';
 
   @override
   String get authSessionExpired => 'Сесията ти изтече. Влез отново.';
@@ -4375,15 +3912,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authSignInFailed => 'Входът не мина. Опитай пак.';
-
-  @override
-  String get localeAppLanguage => 'Език на приложението';
-
-  @override
-  String get localeDeviceDefault => 'Езикът на устройството';
-
-  @override
-  String get localeSelectLanguage => 'Избери език';
 
   @override
   String get webAuthNotSupportedSecureMode =>
@@ -4444,32 +3972,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get soundsSearchHint => 'Звуци за търсене...';
 
   @override
-  String get soundsPreviewUnavailable =>
-      'Не може да се визуализира звук - няма наличен звук';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'Неуспешно пускане на визуализация: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Представени звуци';
-
-  @override
-  String get soundsTrendingSounds => 'Набиращи популярност звуци';
-
-  @override
-  String get soundsAllSounds => 'Всички звуци';
-
-  @override
   String get soundsSearchResults => 'Резултати от търсенето';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Няма налични звуци';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'Звуците ще се появят тук, когато творците споделят аудио';
 
   @override
   String get soundsNoSoundsFound => 'Няма намерени звуци';
@@ -4492,12 +3995,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'Натисни Използвай звук във видео, за да го запазиш тук.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Личен';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Общност';
 
   @override
   String get soundsRemoveSavedSound => 'Премахни звука';
@@ -4546,22 +4043,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Синхронизираната ви библиотека не може да се отключи на това устройство.';
 
   @override
-  String get soundsFailedToLoad => 'Не успяхме да заредим звуците';
-
-  @override
-  String get soundsRetry => 'Опитай пак';
-
-  @override
-  String get soundsScreenLabel => 'Екран със звуци';
-
-  @override
   String get profileTitle => 'Профил';
-
-  @override
-  String get profileRefresh => 'Опресняване';
-
-  @override
-  String get profileRefreshLabel => 'Опресняване на профила';
 
   @override
   String get profileMoreOptions => 'Още опции';
@@ -4579,11 +4061,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return 'Вече не следваш $name';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Грешка: $error';
   }
 
   @override
@@ -4620,21 +4097,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Неуспешно обновяване — показва се наличното';
 
   @override
-  String get notificationsCheckingNew => 'Проверяваме за нови известия';
-
-  @override
-  String get notificationsNoneYet => 'Още няма известия';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'Няма известия от тип $type';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'Когато хората взаимодействат със съдържанието ти, ще го видиш тук';
-
-  @override
   String get notificationsUnreadPrefix => 'Непрочетено известие';
 
   @override
@@ -4665,11 +4127,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Миниатюра на видео';
 
   @override
-  String notificationsLoadingType(String type) {
-    return 'Зареждат се $type известия...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'Имаш 1 покана за споделяне с приятел!';
 
@@ -4679,13 +4136,7 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Видеото не е намерено';
-
-  @override
   String get notificationsVideoUnavailable => 'Видеото е недостъпно';
-
-  @override
-  String get notificationsFromNotification => 'От Известие';
 
   @override
   String get feedFailedToLoadVideos => 'Не успяхме да заредим видеата';
@@ -4740,62 +4191,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedExploreVideos => 'Разгледай видеа';
 
   @override
-  String get feedExternalVideoSlow => 'Външното видео се зарежда бавно';
-
-  @override
-  String get feedSkip => 'Пропускане';
-
-  @override
   String get feedLoadingMore => 'Зареждане на още видеа…';
 
   @override
   String get feedRefreshed => 'Емисията е опреснена';
 
   @override
-  String get uploadWaitingToUpload => 'Чака качване';
-
-  @override
   String get uploadUploadingVideo => 'Качва се видео';
-
-  @override
-  String get uploadProcessingVideo => 'Обработва се видео';
-
-  @override
-  String get uploadProcessingComplete => 'Обработката е готова';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Публикувано. Видеото е навън.';
-
-  @override
-  String get uploadFailed => 'Качването не мина';
-
-  @override
-  String get uploadRetrying => 'Опитваме качването пак';
-
-  @override
-  String get uploadPaused => 'Качването е на пауза';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% готово';
-  }
-
-  @override
-  String get uploadQueuedMessage => 'Видеото ти чака за качване';
-
-  @override
-  String get uploadUploadingMessage => 'Качваме към сървъра...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Обработваме видеото - може да отнеме няколко минути';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Видеото е обработено и готово за публикуване';
-
-  @override
-  String get uploadPublishedMessage => 'Видеото е публикувано в профила ти';
 
   @override
   String get postPublishConfirmationTitle => 'Публикувано в профила ти';
@@ -4811,33 +4213,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Миниатюра на видеото, което току-що публикува';
 
   @override
-  String get uploadFailedMessage => 'Качването не мина - опитай пак';
-
-  @override
-  String get uploadRetryingMessage => 'Опитваме качването пак...';
-
-  @override
-  String get uploadPausedMessage => 'Качването е спряно от теб';
-
-  @override
-  String get uploadRetryButton => 'ОПИТАЙ ПАК';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'Неуспешен повторен опит за качване: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Търсене на потребители';
-
-  @override
   String get userSearchNoResults => 'Няма намерени потребители';
-
-  @override
-  String get userSearchFailed => 'Търсенето не мина';
-
-  @override
-  String get userPickerSearchByName => 'Търсене по име';
 
   @override
   String get userPickerFilterByNameHint => 'Филтриране по име...';
@@ -4926,41 +4302,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get ageVerificationYes => 'Да';
 
   @override
-  String get shareLinkCopied => 'Връзката е копирана в клипборда';
-
-  @override
-  String get shareFailedToCopy => 'Неуспешно копиране на връзката';
-
-  @override
-  String get shareVideoSubject => 'Виж това видео в Divine';
-
-  @override
-  String get shareFailedToShare => 'Неуспешно споделяне';
-
-  @override
-  String get shareVideoTitle => 'Сподели видео';
-
-  @override
-  String get shareToApps => 'Споделяне в Приложения';
-
-  @override
-  String get shareToAppsSubtitle =>
-      'Споделяй чрез съобщения и социални приложения';
-
-  @override
-  String get shareCopyWebLink => 'Копирай уеб връзка';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'Копирай уеб връзката за споделяне';
-
-  @override
-  String get shareCopyNostrLink => 'Копирай Nostr връзката';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'Копирай nevent връзката за Nostr клиенти';
-
-  @override
   String get navHome => 'Начало';
 
   @override
@@ -4973,12 +4314,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get navProfile => 'Профил';
 
   @override
-  String get navSearch => 'Търсене';
-
-  @override
-  String get navSearchTooltip => 'Търсене';
-
-  @override
   String get navMyProfile => 'Моят профил';
 
   @override
@@ -4986,9 +4321,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Отвори камерата';
-
-  @override
-  String get navUnknown => 'Неизвестно';
 
   @override
   String get navExploreClassics => 'Класика';
@@ -5139,17 +4471,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get reportTitle => 'Докладвай съдържание';
-
-  @override
   String get reportWhyReporting => 'Защо подаваш сигнал за това съдържание?';
 
   @override
   String get reportPolicyNotice =>
       'Divine ще преглежда сигналите за съдържание до 24 часа и при нужда ще премахва съдържание или ще блокира акаунта, който го е публикувал.';
-
-  @override
-  String get reportAdditionalDetails => 'Допълнителни подробности (по избор)';
 
   @override
   String get reportBlockUser => 'Блокирай този потребител';
@@ -5274,9 +4600,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get reportContactModeration => 'Пиши на екипа по модерация';
-
-  @override
-  String get reportLearnMore => 'Научи повече';
 
   @override
   String get reportLearnMoreAt => 'Научи повече на';
@@ -6337,9 +5660,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmReelReplyViewChat => 'Виж чата';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Отвори чата';
-
-  @override
   String get dmReelReplySentAnnouncement => 'Отговорът е изпратен';
 
   @override
@@ -6418,12 +5738,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get inboxConversationTileLongPressHint =>
       'Покажи действията за разговора';
-
-  @override
-  String get reportDialogCancel => 'Отказ';
-
-  @override
-  String get reportDialogReport => 'Докладвай';
 
   @override
   String exploreVideoId(String id) {
@@ -6549,9 +5863,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get commonSomethingWentWrong => 'Нещо се обърка';
 
   @override
-  String get commonNext => 'Следваща';
-
-  @override
   String get commonDelete => 'Изтрий';
 
   @override
@@ -6652,10 +5963,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryTabClips => 'Клипове';
 
   @override
-  String get librarySaveToCameraRollTooltip =>
-      'Запазване в ролката на камерата';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'Изтрийте избраните клипове';
 
   @override
@@ -6707,20 +6014,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => 'Първо вертикални';
-
-  @override
-  String get libraryDeleteClipsTitle => 'Изтриване на клипове';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# избрани клипа',
-      one: '# избран клип',
-    );
-    return 'Сигурен ли си, че искаш да изтриеш $_temp0?';
-  }
 
   @override
   String get libraryDeleteClipsWarning =>
@@ -6861,20 +6154,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Сигурен ли си, че искаш да изтриеш този клип?';
 
   @override
-  String get libraryClipSelectionTitle => 'Клипове';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return 'Остават ${seconds}s';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds сек';
   }
-
-  @override
-  String get libraryAddClips => 'Добави';
 
   @override
   String get libraryRecordVideo => 'Запишете видео';
@@ -7588,26 +6870,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Това изпраща заявки за изтриване на акаунта и съдържанието ти, изтрива акаунта ти в Divine, когато е възможно, и те отписва на това устройство. Някои релета, клиенти и индекси за търсене може да запазят копия. Другите устройства с вход остават активни, докато не премахнеш ключовете там.';
 
   @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Добавяне на текстов слой...';
-
-  @override
-  String get exportProgressStageComplete => 'Експортът е готов!';
-
-  @override
-  String get exportProgressStageConcatenating => 'Комбиниране на клипове...';
-
-  @override
-  String get exportProgressStageError => 'Експортът се провали';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Генериране на миниатюра...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Добавяне на звук...';
-
-  @override
   String get findPeopleAnonymousUser => 'Анонимен';
 
   @override
@@ -7815,15 +7077,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Звукът не е намерен';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Описание на видеото';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count лупа';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'Брой лупове на видеото';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7832,11 +7088,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String originalSoundByCreator(String creatorName) {
     return 'Оригинален звук - $creatorName';
-  }
-
-  @override
-  String globalUploadPendingCount(int count) {
-    return 'Качвания в очакване ($count)';
   }
 
   @override
@@ -7852,17 +7103,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileBadgeCheckmarkBody =>
       'Divine дава тази отметка на профилите на екипа и на малка група ръчно одобрени профили. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'В $count списъка',
-      one: 'В 1 списък',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get unfollowConfirmButton => 'Спри да следваш';
@@ -7962,11 +7202,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Изпращането на доклада не успя. Опитай пак по-късно.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Докладът за бъг не успя да се изпрати: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'Изпрати заявка';
 
   @override
@@ -7999,11 +7234,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Изпращането на заявката не успя. Опитай пак по-късно.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Заявката за функция не успя да се изпрати: $error';
-  }
 
   @override
   String get notificationFollowBack => 'Последвай обратно';
@@ -8056,16 +7286,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get followSortOldest => 'Първо най-старите';
-
-  @override
-  String get reportMessageTitle => 'Докладвай съобщението';
-
-  @override
-  String get reportMessageWhyReporting => 'Защо докладваш това съобщение?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Избери причина за докладване на това съобщение';
 
   @override
   String get newMessageTitle => 'Ново съобщение';
@@ -8342,9 +7562,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Трябва да си на 16 или повече, за да създаваш съдържание';
 
   @override
-  String get featureRequestCancel => 'Отказ';
-
-  @override
   String keyImportError(String error) {
     return 'Грешка: $error';
   }
@@ -8555,9 +7772,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationSystemUpdate => 'Имаш ново известие';
-
-  @override
-  String get notificationSomeoneLikedYourVideo => 'Някой хареса видеото ти';
 
   @override
   String get commentReplyToPrefix => 'Отг.:';
@@ -9241,40 +8455,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => 'Пускане или пауза на видео';
 
   @override
-  String get videoEditorCropSemanticLabel => 'Изрязване';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Не можеш да разделиш клипа, докато се обработва. Изчакай малко.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Разделената позиция е невалидна. И двата клипа трябва да са дълги поне ${minDurationMs}ms.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'Добави клип от библиотеката';
-
-  @override
   String get videoEditorSaveSelectedClip => 'Запази избрания клип';
 
   @override
-  String get videoEditorSplitClip => 'Разделен клип';
-
-  @override
   String get videoEditorSaveClip => 'Запазване на клипа';
-
-  @override
-  String get videoEditorDeleteClip => 'Изтрий клип';
 
   @override
   String get videoEditorClipSavedSuccess => 'Клипът е запазен в библиотеката';
 
   @override
   String get videoEditorClipSaveFailed => 'Не успяхме да запазим клипа';
-
-  @override
-  String get videoEditorClipDeleted => 'Клипът е изтрит';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Избор на цвят';
@@ -9305,12 +8500,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => 'Не успяхме да заредим стикерите';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'Регулирайте силата на звука';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Записано аудио';
 
   @override
   String get videoEditorVoiceOverLabel => 'Глас зад кадър';
@@ -9374,12 +8563,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'Пауза';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'Заглушаване на звука';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'Включване на звука';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Регулиране на силата на звука';
@@ -9494,9 +8677,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Това устройство не може да показва прегледа на живо. Настройките ти важат при експорт.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Оригинален звук';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Клип $index';
   }
@@ -9529,14 +8709,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count кадъра на изображение';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Увеличаване на кадрите на изображение';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Намаляване на кадрите на изображение';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9642,9 +8814,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'Обръщане';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Съотношение';
 
   @override
   String get videoEditorTransformResetLabel => 'Нулиране';
@@ -9809,14 +8978,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Моите звуци';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Препоръчаните звуци идват скоро';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Ще пуснем препоръчани звуци тук, щом са готови.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Инструмент със стрелка';
 
   @override
@@ -9888,10 +9049,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Натисни дълго, за да пренаредиш';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'Докосни за редактиране. Задръжте и плъзнете, за да пренаредите.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Преместете се наляво';
@@ -10066,9 +9223,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Етикети';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Изтрий';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'Изтриване на маркер $tag';
   }
@@ -10085,12 +9239,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Избери всичко, което важи за съдържанието ти';
 
   @override
-  String get videoMetadataContentWarningDoneButton => 'Готово';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'Публикувай този звук';
-
-  @override
   String get videoMetadataAudioReuseSubtitle =>
       'Позволи на другите да запазват и използват повторно звука на това видео.';
 
@@ -10105,29 +9253,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => 'Поканете сътрудник';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'Как работят сътрудниците';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max сътрудници';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Премахни сътрудник';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Сътрудниците са поканени като съавтори на тази публикация. Можеш да поканиш само хора, с които взаимно се следвате, и те се показват като сътрудници, след като потвърдят.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'Взаимни последователи';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'Трябва с $name да се следвате взаимно, за да поканиш този човек като сътрудник.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'Вдъхновено от';
@@ -10137,23 +9263,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Комплект, вдъхновен от';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'Как работят кредитите за вдъхновение';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Няма';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Използвай това за признание. „Вдъхновено от“ е различно от сътрудници: показва влияние, но не отбелязва човека като съавтор.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Този творец не може да бъде посочен.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      'Премахни вдъхновен от';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Детайли за публикацията';
@@ -10577,10 +9688,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Наръчник за семейства';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Още нямаш 16? Нищо страшно. Ето какво можеш да направиш.';
-
-  @override
   String get minorAccountReviewWelcomeTitle => 'Още нямаш 16? Нищо страшно.';
 
   @override
@@ -10624,9 +9731,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13–15 години';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Полезно за семейства';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10765,10 +9869,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'Голяма част от интернет е устроен така, че да награждава хората за това, че казват каквото ги преведе през вратата. Не мислим, че това е супер. Да, можеш да се върнеш и да кажеш, че си по-голям, отколкото си, но това не би било честно, а ние няма да те учим да лъжеш, за да получиш каквото искаш.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Защо отговорът все пак е не';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -11249,9 +10349,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Записът започва при задържане и спира при отпускане';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'Неуспешно пускане на визуализация';
 
   @override
   String uploadPublishedCountMessage(int count) {

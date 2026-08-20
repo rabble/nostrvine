@@ -70,8 +70,6 @@
     "settingsCreatorAnalytics": "Kreatörsstatistik",
     "settingsSupportCenter": "Supportcenter",
     "settingsNotifications": "Aviseringar",
-    "settingsContentPreferences": "Innehållsinställningar",
-    "settingsModerationControls": "Modereringskontroller",
     "settingsBlueskyPublishing": "Bluesky-publicering",
     "settingsBlueskyPublishingSubtitle": "Hantera korspostning till Bluesky",
     "settingsNostrSettings": "Nostr-inställningar",
@@ -209,15 +207,10 @@
             }
         }
     },
-    "profileEditProfile": "Redigera profil",
-    "profileCreatorAnalytics": "Kreatörsstatistik",
-    "profileShareProfile": "Dela profil",
     "profileCopyPublicKey": "Kopiera publik nyckel (npub)",
     "profileGetEmbedCode": "Hämta inbäddningskod",
     "profilePublicKeyCopied": "Publik nyckel kopierad till urklipp",
     "profileEmbedCodeCopied": "Inbäddningskod kopierad till urklipp",
-    "profileRefreshTooltip": "Uppdatera",
-    "profileRefreshSemanticLabel": "Uppdatera profil",
     "profileMoreTooltip": "Mer",
     "profileMoreSemanticLabel": "Fler alternativ",
     "profileFollowingLabel": "Följer",
@@ -302,10 +295,6 @@
     },
     "profileReportDisplayName": "Rapportera {displayName}",
     "profileAddToListDisplayName": "Lägg till {displayName} i en lista",
-    "profileUserBlockedTitle": "Användare blockerad",
-    "profileUserBlockedContent": "Du kommer inte se innehåll från den här användaren i dina flöden.",
-    "profileUserBlockedUnblockHint": "Du kan avblockera när som helst från deras profil eller under Inställningar > Säkerhet.",
-    "profileCloseButton": "Stäng",
     "profileNoCollabsTitle": "Inga samarbeten än",
     "profileCollabsOwnEmpty": "Videor du samarbetar kring visas här",
     "profileCollabsOtherEmpty": "Videor de samarbetar kring visas här",
@@ -342,27 +331,13 @@
     "profileShowLess": "Visa mindre",
     "profileCompleteYourProfile": "Komplettera din profil",
     "profileCompleteSubtitle": "Lägg till namn, bio och bild för att komma igång",
-    "profileSetUpButton": "Sätt upp",
-    "profileVerifyingEmail": "Verifierar e-post...",
-    "profileCheckEmailVerification": "Kolla {email} efter verifieringslänk",
-    "@profileCheckEmailVerification": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "profileWaitingForVerification": "Väntar på e-postverifiering",
-    "profileVerificationFailed": "Verifiering misslyckades",
     "profilePleaseTryAgain": "Försök igen",
     "profileSecureYourAccount": "Säkra ditt konto",
     "profileSecureSubtitle": "Lägg till e-post och lösenord för att återställa ditt konto på vilken enhet som helst",
     "profileRetryButton": "Försök igen",
-    "profileRegisterButton": "Registrera",
     "profileSessionExpired": "Sessionen har löpt ut",
     "profileSignInToRestore": "Logga in igen för att återfå full åtkomst",
     "profileSignInButton": "Logga in",
-    "profileDismissTooltip": "Avfärda",
     "profileLinkCopied": "Profillänk kopierad",
     "profileSetupEditProfileTitle": "Redigera profil",
     "profileSetupBackLabel": "Tillbaka",
@@ -380,18 +355,15 @@
     "profileSetupClaimFailed": "Kunde inte claima användarnamnet. Försök igen.",
     "profileSetupPublishFailed": "Kunde inte publicera profilen. Försök igen.",
     "profileSetupNoRelaysConnected": "Kunde inte nå nätverket. Kontrollera din anslutning och försök igen.",
-    "profileSetupRetryLabel": "Försök igen",
     "profileSetupDisplayNameLabel": "Visningsnamn",
     "profileSetupDisplayNameRequired": "Ange ett visningsnamn",
     "profileSetupBioLabel": "Bio (valfritt)",
     "profileSetupPublicKeyLabel": "Publik nyckel (npub)",
     "profileSetupUsernameLabel": "Användarnamn (valfritt)",
     "profileSetupUsernameHelper": "Din unika identitet på Divine",
-    "profileSetupProfileColorLabel": "Profilfärg (valfritt)",
     "profileSetupSaveButton": "Spara",
     "profileSetupSavingButton": "Sparar...",
     "profileSetupImageUrlTitle": "Lägg till bild-URL",
-    "profileSetupPictureUploaded": "Profilbilden laddades upp!",
     "profileSetupImageSelectionFailed": "Bildval misslyckades. Klistra in en bild-URL nedan istället.",
     "profileSetupCameraAccessFailed": "Kameraåtkomst misslyckades: {error}",
     "@profileSetupCameraAccessFailed": {
@@ -407,7 +379,6 @@
     "profileSetupUploadAuthError": "Autentiseringsfel: Logga ut och in igen.",
     "profileSetupUploadFileTooLarge": "Filen är för stor: Välj en mindre bild (max 10 MB).",
     "profileSetupUploadServerError": "Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.",
-    "profileSetupUploadUnsupportedOnWeb": "Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.",
     "profileSetupBannerClearButton": "Rensa banner",
     "profileSetupBannerChangeColor": "Bannerfärg",
     "profileSetupBannerColorPickerTitle": "Ändra bannerfärg",
@@ -452,8 +423,6 @@
     "profileSetupSupportRequestSent": "Supportförfrågan skickad! Vi hör av oss snart.",
     "profileSetupCouldntOpenEmail": "Kunde inte öppna e-post. Skicka till: names@divine.video",
     "profileSetupSendRequest": "Skicka förfrågan",
-    "profileSetupPickColorTitle": "Välj en färg",
-    "profileSetupSelectButton": "Välj",
     "profileSetupUseOwnNip05": "Använd din egen NIP-05-adress",
     "profileSetupNip05AddressLabel": "NIP-05-adress",
     "profileSetupProfilePicturePreview": "Förhandsvisning av profilbild",
@@ -471,7 +440,6 @@
     "nostrInfoUsernameDescription": " Ett människoläsbart namn (som @namn.divine.video) som länkar till din npub. Det gör din Nostr-identitet lättare att känna igen och verifiera, ungefär som en e-postadress.",
     "nostrInfoLearnMoreAt": "Läs mer på ",
     "nostrInfoGotIt": "Uppfattat!",
-    "profileTabRefreshTooltip": "Uppdatera",
     "videoGridRefreshLabel": "Söker efter fler videor",
     "videoGridOptionsTitle": "Videoalternativ",
     "videoGridEditVideo": "Redigera video",
@@ -479,14 +447,6 @@
     "videoGridDeleteVideo": "Ta bort video",
     "videoGridDeleteVideoSubtitle": "Ta bort den här videon från Divine. Den kan fortfarande visas i andra Nostr-klienter.",
     "videoGridDeletingContent": "Tar bort innehåll...",
-    "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabFeatured": "Utvalda",
   "exploreTabClassics": "Klassiker",
     "exploreTabNew": "Nytt",
@@ -540,12 +500,9 @@
             }
         }
     },
-    "videoPlayerLoadingVideo": "Läser in video...",
     "videoPlayerPlayVideo": "Spela upp video",
     "videoPlayerMute": "Stäng av ljudet på videon",
     "videoPlayerUnmute": "Slå på ljudet för videon",
-    "videoPlayerEditVideo": "Redigera video",
-    "videoPlayerEditVideoTooltip": "Redigera video",
     "contentWarningLabel": "Innehållsvarning",
     "contentWarningNudity": "Nakenhet",
     "contentWarningSexualContent": "Sexuellt innehåll",
@@ -596,15 +553,10 @@
     "communitySuggestActionLabel": "Klassificera",
     "@communitySuggestActionLabel": {"description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."},
     "videoErrorNotFound": "Videon hittades inte",
-    "videoErrorNetwork": "Nätverksfel",
-    "videoErrorTimeout": "Timeout vid inläsning",
-    "videoErrorFormat": "Fel i videoformat\n(Försök igen eller använd en annan webbläsare)",
-    "videoErrorUnsupportedFormat": "Videoformat stöds inte",
     "videoErrorPlayback": "Fel vid videouppspelning",
     "videoErrorAgeRestricted": "Åldersbegränsat innehåll",
     "videoErrorUnavailable": "Videon är otillgänglig",
     "videoErrorUnavailableBody": "Den här videon är inte tillgänglig just nu.",
-    "videoErrorVerifyAge": "Verifiera ålder",
     "videoErrorRetry": "Försök igen",
     "videoErrorContentRestricted": "Innehåll begränsat",
     "videoErrorContentRestrictedBody": "Den här videon togs bort för att den bröt mot våra innehållsregler.",
@@ -613,7 +565,6 @@
     "videoErrorVerifyAgeButton": "Verifiera ålder",
     "videoErrorVerifyAgeFailed": "Det gick inte att verifiera din ålder. Försök igen.",
     "videoErrorVerifyAgeSignerUnreachable": "Timeout vid verifiering. Kontrollera din anslutning eller försök igen om en stund.",
-    "videoFollowButtonFollowing": "Följer",
     "videoFollowButtonFollow": "Följ",
     "audioAttributionOriginalSound": "Originalljud",
     "audioAttributionUnavailableSound": "Ljud otillgängligt",
@@ -696,21 +647,11 @@
     "videoActionRepost": "Återpublicera video",
     "videoActionViewComments": "Visa kommentarer",
     "videoActionMoreOptions": "Fler alternativ",
-    "videoActionHideSubtitles": "Dölj undertexter",
-    "videoActionShowSubtitles": "Visa undertexter",
     "videoEngagementLikersTitle": "Gillat av",
     "videoEngagementRepostersTitle": "Repostat av",
     "videoEngagementLikersEmpty": "Inga gillningar än",
     "videoEngagementRepostersEmpty": "Inga reposts än",
     "videoEngagementLoadFailed": "Det gick inte att läsa in listan",
-    "videoDescriptionLoops": "{count} loopar",
-    "@videoDescriptionLoops": {
-        "placeholders": {
-            "count": {
-                "type": "String"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Inte Divine",
     "metadataBadgeHumanMade": "Gjord av människa",
     "metadataSoundsLabel": "Ljud",
@@ -1047,11 +988,6 @@
     "notificationSettingsResetToDefaults": "Inställningar återställda till standard",
     "notificationSettingsAbout": "Om aviseringar",
     "notificationSettingsAboutDescription": "Aviseringar drivs av Nostr-protokollet. Realtidsuppdateringar beror på din anslutning till Nostr-reler. Vissa aviseringar kan vara fördröjda.",
-    "safetySettingsTitle": "Säkerhet och integritet",
-    "@safetySettingsTitle": {
-        "description": "Safety settings screen app bar title"
-    },
-    "safetySettingsLabel": "INSTÄLLNINGAR",
     "safetySettingsShowDivineHostedOnly": "Visa endast Divine-hostade videor",
     "safetySettingsShowDivineHostedOnlySubtitle": "Dölj videor som serveras från andra mediavärdar",
     "safetySettingsModeration": "MODERERING",
@@ -1379,14 +1315,6 @@
     "authUnableToAccessKeys": "Kunde inte komma åt dina nycklar. Försök igen.",
     "authRegistrationFailed": "Registrering misslyckades",
     "authRegistrationComplete": "Registrering klar. Kolla din e-post.",
-    "authVerificationFailedTitle": "Verifiering misslyckades",
-    "authClose": "Stäng",
-    "authAccountSecured": "Konto säkrat!",
-    "authAccountLinkedToEmail": "Ditt konto är nu kopplat till din e-post.",
-    "authVerifyYourEmail": "Verifiera din e-post",
-    "authClickLinkContinue": "Klicka på länken i din e-post för att slutföra registreringen. Du kan fortsätta använda appen under tiden.",
-    "authWaitingForVerificationEllipsis": "Väntar på verifiering...",
-    "authContinueToApp": "Fortsätt till appen",
     "authFailedToSendResetEmail": "Kunde inte skicka återställningsmejl.",
     "authSending": "Skickar...",
     "authSignInButton": "Logga in",
@@ -1416,7 +1344,6 @@
     "shareSheetAddToList": "Lägg till i lista",
     "shareSheetCopy": "Kopiera",
     "shareSheetShareVia": "Dela via",
-    "shareSheetReport": "Rapportera",
     "shareSheetEventJson": "Händelse-JSON",
     "shareSheetEventId": "Händelse-ID",
     "shareSheetMoreActions": "Fler åtgärder",
@@ -1458,103 +1385,7 @@
     "watermarkDownloadStageDownloadingDesc": "Hämtar videon från nätverket...",
     "watermarkDownloadStageWatermarkingDesc": "Lägger till Divine-vattenmärket...",
     "watermarkDownloadStageSavingDesc": "Sparar den vattenmärkta videon i din kamerarulle...",
-    "uploadProgressVideoUpload": "Videouppladdning",
-    "uploadProgressPause": "Pausa",
-    "uploadProgressResume": "Återuppta",
-    "uploadProgressGoBack": "Gå tillbaka",
-    "uploadProgressRetryWithCount": "Försök igen ({count} kvar)",
-    "@uploadProgressRetryWithCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressDelete": "Ta bort",
-    "uploadProgressDaysAgo": "{count} d sedan",
-    "@uploadProgressDaysAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressHoursAgo": "{count} h sedan",
-    "@uploadProgressHoursAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressMinutesAgo": "{count} min sedan",
-    "@uploadProgressMinutesAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressJustNow": "Just nu",
-    "uploadProgressUploadingPercent": "Laddar upp {percent} %",
-    "@uploadProgressUploadingPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressPausedPercent": "Pausad {percent} %",
-    "@uploadProgressPausedPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "shareMenuTitle": "Dela video",
-    "shareMenuReportAiContent": "Rapportera AI-innehåll",
-    "shareMenuReportAiContentSubtitle": "Snabbrapportera misstänkt AI-genererat innehåll",
-    "shareMenuReportingAiContent": "Rapporterar AI-innehåll...",
-    "shareMenuFailedToReportContent": "Kunde inte rapportera innehåll: {error}",
-    "@shareMenuFailedToReportContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFailedToReportAiContent": "Kunde inte rapportera AI-innehåll: {error}",
-    "@shareMenuFailedToReportAiContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuVideoStatus": "Videostatus",
-    "shareMenuViewAllLists": "Visa alla listor →",
-    "shareMenuShareWith": "Dela med",
-    "shareMenuShareViaOtherApps": "Dela via andra appar",
-    "shareMenuShareViaOtherAppsSubtitle": "Dela via andra appar eller kopiera länk",
-    "shareMenuSaveToGallery": "Spara i galleriet",
-    "shareMenuSaveOriginalSubtitle": "Spara originalvideon i kamerarullen",
-    "shareMenuSaveWithWatermark": "Spara med vattenmärke",
-    "shareMenuSaveVideo": "Spara video",
-    "shareMenuDownloadWithWatermark": "Ladda ner med Divine-vattenmärke",
-    "shareMenuSaveVideoSubtitle": "Spara videon i kamerarullen",
-    "shareMenuLists": "Listor",
-    "shareMenuAddToList": "Lägg till i lista",
-    "shareMenuAddToListSubtitle": "Lägg till i dina kuraterade listor",
-    "shareMenuCreateNewList": "Skapa ny lista",
-    "shareMenuCreateNewListSubtitle": "Starta en ny kuraterad samling",
-    "shareMenuRemovedFromList": "Borttagen från listan",
-    "shareMenuFailedToRemoveFromList": "Kunde inte ta bort från listan",
     "shareMenuBookmarks": "Bokmärken",
-    "shareMenuFollowSets": "Följsamlingar",
-    "shareMenuCreateFollowSet": "Skapa följsamling",
-    "shareMenuCreateFollowSetSubtitle": "Starta en ny samling med den här kreatören",
-    "shareMenuAddToFollowSet": "Lägg till i följsamling",
     "shareMenuFollowSetsAvailable": "{count} följsamlingar tillgängliga",
     "@shareMenuFollowSetsAvailable": {
         "placeholders": {
@@ -1563,21 +1394,8 @@
             }
         }
     },
-    "shareMenuAddedToBookmarks": "Tillagd i bokmärken!",
-    "shareMenuFailedToAddBookmark": "Kunde inte lägga till bokmärket",
-    "shareMenuCreatedListAndAddedVideo": "Skapade listan \"{name}\" och la till videon",
-    "@shareMenuCreatedListAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuManageContent": "Hantera innehåll",
     "shareMenuEditVideo": "Redigera video",
-    "shareMenuEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "shareMenuDeleteVideo": "Ta bort video",
-    "shareMenuVideoInTheseLists": "Videon finns i de här listorna:",
     "shareMenuVideoCount": "{count} videor",
     "@shareMenuVideoCount": {
         "placeholders": {
@@ -1586,43 +1404,11 @@
             }
         }
     },
-    "shareMenuClose": "Stäng",
     "shareMenuDeleteConfirmation": "Det här tar bort videon permanent från Divine. Den kan fortfarande visas i Nostr-klienter från tredje part som använder andra reler.",
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
-    "shareMenuDeletingContent": "Tar bort innehåll...",
-    "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFollowSetName": "Namn på följsamling",
-    "shareMenuFollowSetNameHint": "t.ex. Kreatörer, Musiker osv.",
-    "shareMenuDescriptionOptional": "Beskrivning (valfritt)",
-    "shareMenuCreate": "Skapa",
-    "shareMenuCreatedFollowSetAndAddedCreator": "Skapade följsamlingen \"{name}\" och la till kreatören",
-    "@shareMenuCreatedFollowSetAndAddedCreator": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuDone": "Klar",
-    "shareMenuEditTitle": "Titel",
-    "shareMenuEditTitleHint": "Ange videotitel",
-    "shareMenuEditDescription": "Beskrivning",
-    "shareMenuEditDescriptionHint": "Ange videobeskrivning",
-    "shareMenuEditHashtags": "Hashtags",
-    "shareMenuEditHashtagsHint": "kommaseparerade, hashtags",
-    "shareMenuEditMetadataNote": "Obs: Endast metadata kan redigeras. Själva videoinnehållet kan inte ändras.",
-    "shareMenuDeleting": "Tar bort...",
     "shareMenuUpdate": "Uppdatera",
     "shareMenuChangeCover": "Byt omslag",
-    "shareMenuCoverUploadingBackground": "Miniatyren laddas upp i bakgrunden",
     "shareMenuVideoUpdated": "Videon uppdaterades",
     "shareMenuVideoUpdatedWithInviteFailures": "Videon uppdaterades, men {count, plural, =1{1 inbjudan till medarbetare skickades inte.} other{{count} inbjudningar till medarbetare skickades inte.}}",
     "shareMenuFailedToUpdateVideo": "Kunde inte uppdatera videon: {error}",
@@ -1635,39 +1421,8 @@
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
     "shareMenuVideoDeletionRequested": "Video borttagen",
-    "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuContentLabels": "Innehållsetiketter",
-    "shareMenuAddContentLabels": "Lägg till innehållsetiketter",
-    "shareMenuClearAll": "Rensa alla",
-    "shareMenuCollaborators": "Samarbetspartner",
-    "shareMenuAddCollaborator": "Lägg till samarbetspartner",
-    "shareMenuMutualFollowRequired": "Du och {name} måste följa varandra för att du ska kunna lägga till dem som samarbetspartner.",
-    "@shareMenuMutualFollowRequired": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuLoading": "Laddar...",
-    "shareMenuInspiredBy": "Inspirerad av",
-    "shareMenuAddInspirationCredit": "Lägg till inspirationskredit",
-    "shareMenuCreatorCannotBeReferenced": "Den här kreatören kan inte refereras.",
-    "shareMenuUnknown": "Okänd",
-    "shareMenuUseThisSound": "Använd det här ljudet",
-    "shareMenuOriginalSound": "Originalljud",
     "authSessionExpired": "Din session har löpt ut. Logga in igen.",
     "authSignInFailed": "Kunde inte logga in. Försök igen.",
-    "localeAppLanguage": "Appspråk",
-    "localeDeviceDefault": "Enhetens standard",
-    "localeSelectLanguage": "Välj språk",
     "webAuthNotSupportedSecureMode": "Webbautentisering stöds inte i säkert läge. Använd mobilappen för säker nyckelhantering.",
     "webAuthIntegrationFailed": "Autentiseringsintegrering misslyckades: {error}",
     "@webAuthIntegrationFailed": {
@@ -1699,34 +1454,14 @@
     "webAuthNostrHelp": "Installera ett webbläsartillägg som Alby eller nos2x för enklaste upplevelsen, eller använd nsec bunker för säker fjärrsignering.",
     "soundsTitle": "Ljud",
     "soundsSearchHint": "Sök ljud...",
-    "soundsPreviewUnavailable": "Kan inte förhandsvisa ljud – inget ljud tillgängligt",
-    "soundsPreviewFailed": "Kunde inte spela förhandsvisning: {error}",
-    "@soundsPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "soundsPreviewFailedGeneric": "Kunde inte spela förhandsvisning",
-    "soundsFeaturedSounds": "Utvalda ljud",
-    "soundsTrendingSounds": "Trendiga ljud",
-    "soundsAllSounds": "Alla ljud",
     "soundSyncStatusSyncing": "Synkar dina ljud…",
     "soundSyncStatusSynced": "Ljuden är uppdaterade",
     "soundSyncStatusFailed": "Kunde inte synka dina ljud. Vi försöker igen.",
     "soundSyncStatusLocked": "Det går inte att låsa upp ditt synkade bibliotek på den här enheten.",
     "soundsSearchResults": "Sökresultat",
-    "soundsNoSoundsAvailable": "Inga ljud tillgängliga",
-    "soundsNoSoundsDescription": "Ljud visas här när kreatörer delar ljud",
     "soundsNoSoundsFound": "Inga ljud hittades",
     "soundsNoSoundsFoundDescription": "Testa en annan sökterm",
-    "soundsFailedToLoad": "Kunde inte läsa in ljud",
-    "soundsRetry": "Försök igen",
-    "soundsScreenLabel": "Ljudskärm",
     "profileTitle": "Profil",
-    "profileRefresh": "Uppdatera",
-    "profileRefreshLabel": "Uppdatera profil",
     "profileMoreOptions": "Fler alternativ",
     "profileBlockedUser": "Blockerade {name}",
     "@profileBlockedUser": {
@@ -1752,14 +1487,6 @@
             }
         }
     },
-    "profileError": "Fel: {error}",
-    "@profileError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsTabAll": "Alla",
     "notificationsTabLikes": "Gillamarkeringar",
     "notificationsTabComments": "Kommentarer",
@@ -1768,25 +1495,6 @@
     "notificationsFailedToLoad": "Kunde inte läsa in aviseringar",
     "notificationsRetry": "Försök igen",
     "notificationsRefreshError": "Kunde inte uppdatera — visar tillgängliga",
-    "notificationsCheckingNew": "kollar efter nya aviseringar",
-    "notificationsNoneYet": "Inga aviseringar än",
-    "notificationsNoneForType": "Inga {type}-aviseringar",
-    "@notificationsNoneForType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
-    "notificationsEmptyDescription": "När folk interagerar med ditt innehåll ser du det här",
-    "notificationsLoadingType": "Läser in {type}-aviseringar...",
-    "@notificationsLoadingType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsInviteSingular": "Du har 1 inbjudan att dela med en vän!",
     "notificationsInvitePlural": "Du har {count} inbjudningar att dela med vänner!",
     "@notificationsInvitePlural": {
@@ -1796,9 +1504,7 @@
             }
         }
     },
-    "notificationsVideoNotFound": "Videon hittades inte",
     "notificationsVideoUnavailable": "Videon är otillgänglig",
-    "notificationsFromNotification": "Från avisering",
     "feedFailedToLoadVideos": "Kunde inte läsa in videor",
     "feedRetry": "Försök igen",
     "feedNoFollowedUsers": "Inga följda användare.\nFölj någon för att se deras videor här.",
@@ -1828,50 +1534,13 @@
     "feedLatestEmpty": "Inga nya videor än.\nTitta in igen snart.",
     "feedClassicEmpty": "Inga klassiker än.\nTitta in igen snart.",
     "feedExploreVideos": "Upptäck videor",
-    "feedExternalVideoSlow": "Extern video laddar långsamt",
-    "feedSkip": "Hoppa över",
-    "uploadWaitingToUpload": "Väntar på att laddas upp",
     "uploadUploadingVideo": "Laddar upp video",
-    "uploadProcessingVideo": "Bearbetar video",
-    "uploadProcessingComplete": "Bearbetning klar",
-    "uploadPublishedSuccessfully": "Publicerad",
-    "uploadFailed": "Uppladdning misslyckades",
-    "uploadRetrying": "Försöker ladda upp igen",
-    "uploadPaused": "Uppladdning pausad",
-    "uploadPercentComplete": "{percent} % klart",
-    "@uploadPercentComplete": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadQueuedMessage": "Din video är i kö för uppladdning",
-    "uploadUploadingMessage": "Laddar upp till servern...",
-    "uploadProcessingMessage": "Bearbetar video – det här kan ta några minuter",
-    "uploadReadyToPublishMessage": "Videon bearbetades och är redo att publiceras",
-    "uploadPublishedMessage": "Videon publicerad till din profil",
     "postPublishConfirmationTitle": "Publicerad till din profil",
     "postPublishConfirmationView": "Visa",
     "postPublishConfirmationShare": "Dela",
     "postPublishConfirmationThumbnailLabel": "Miniatyr av videon du precis publicerade",
   "uploadPublishedCountMessage": "{count, plural, =1{Videon publicerad till din profil} other{{count} videor publicerade till din profil}}",
-    "uploadFailedMessage": "Uppladdning misslyckades – försök igen",
-    "uploadRetryingMessage": "Försöker ladda upp igen...",
-    "uploadPausedMessage": "Uppladdning pausad av användaren",
-    "uploadRetryButton": "FÖRSÖK IGEN",
-    "uploadRetryFailed": "Kunde inte försöka ladda upp igen: {error}",
-    "@uploadRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "userSearchPrompt": "Sök efter användare",
     "userSearchNoResults": "Inga användare hittades",
-    "userSearchFailed": "Sökning misslyckades",
-    "userPickerSearchByName": "Sök efter namn",
     "userPickerFilterByNameHint": "Filtrera efter namn...",
     "userPickerSearchByNameHint": "Sök efter namn...",
     "userPickerClearSearchSemantics": "Rensa sökning",
@@ -1910,17 +1579,6 @@
     "ageVerificationCreationQuestion": "Är du 16 år eller äldre?",
     "ageVerificationNo": "Nej",
     "ageVerificationYes": "Ja",
-    "shareLinkCopied": "Länk kopierad till urklipp",
-    "shareFailedToCopy": "Kunde inte kopiera länken",
-    "shareVideoSubject": "Kolla in den här videon på Divine",
-    "shareFailedToShare": "Kunde inte dela",
-    "shareVideoTitle": "Dela video",
-    "shareToApps": "Dela till appar",
-    "shareToAppsSubtitle": "Dela via meddelanden, sociala appar",
-    "shareCopyWebLink": "Kopiera webblänk",
-    "shareCopyWebLinkSubtitle": "Kopiera delbar webblänk",
-    "shareCopyNostrLink": "Kopiera Nostr-länk",
-    "shareCopyNostrLinkSubtitle": "Kopiera nevent-länk för Nostr-klienter",
     "navHome": "Hem",
     "navExplore": "Upptäck",
     "navInbox": "Inkorg",
@@ -1928,7 +1586,6 @@
     "navMyProfile": "Min profil",
     "navNotifications": "Aviseringar",
     "navOpenCamera": "Öppna kamera",
-    "navUnknown": "Okänd",
     "navExploreClassics": "Klassiker",
     "navExploreNewVideos": "Nya videor",
     "navExploreTrending": "Trendar",
@@ -1989,10 +1646,8 @@
             }
         }
     },
-    "reportTitle": "Rapportera innehåll",
     "reportWhyReporting": "Varför rapporterar du det här innehållet?",
     "reportPolicyNotice": "Divine agerar på innehållsrapporter inom 24 timmar genom att ta bort innehållet och stänga av användaren som tillhandahöll det felaktiga innehållet.",
-    "reportAdditionalDetails": "Ytterligare detaljer (valfritt)",
     "reportBlockUser": "Blockera den här användaren",
     "reportCancel": "Avbryt",
     "reportSubmit": "Rapportera",
@@ -2019,7 +1674,6 @@
     "reportReceivedTitle": "Rapport mottagen",
     "reportReceivedThankYou": "Tack för att du hjälper till att hålla Divine säkert.",
     "reportReceivedReviewNotice": "Vårt team granskar din rapport och vidtar lämpliga åtgärder. Du kan få uppdateringar via direktmeddelande.",
-    "reportLearnMore": "Läs mer",
     "reportSafetyUrl": "divine.video/safety",
     "reportClose": "Stäng",
     "listAddToList": "Lägg till i lista",
@@ -2340,7 +1994,6 @@
     "commonCancel": "Avbryt",
     "commonDelete": "Radera",
     "commonRetry": "Försök igen",
-    "commonNext": "Nästa",
     "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2376,7 +2029,6 @@
             }
         }
     },
-    "featureRequestCancel": "Avbryt",
     "followersFailedToLoadList": "Kunde inte ladda följarlistan",
     "followingFailedToLoadList": "Kunde inte ladda följer-listan",
     "inboxActionBlock": "Blockera {displayName}",
@@ -2492,8 +2144,6 @@
             }
         }
     },
-    "libraryAddClips": "Lägg till",
-    "libraryClipSelectionTitle": "Klipp",
     "libraryClipsDeletedCount": "{count, plural, =1{1 klipp borttaget} other{{count} klipp borttagna}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2531,15 +2181,6 @@
     "libraryCreateVideo": "Skapa video ({count})",
     "libraryDeleteClipMessage": "Vill du ta bort det här klippet?",
     "libraryDeleteClipTitle": "Ta bort klipp",
-    "libraryDeleteClipsMessage": "Vill du ta bort {count, plural, one{# valt klipp} other{# valda klipp}}?",
-    "@libraryDeleteClipsMessage": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "libraryDeleteClipsTitle": "Ta bort klipp",
     "libraryDeleteClipsWarning": "Det går inte att ångra. Videofilerna tas bort permanent från enheten.",
     "libraryDeleteConfirm": "Radera",
     "libraryDeleteDraftMessage": "Vill du ta bort \"{title}\"?",
@@ -2609,15 +2250,6 @@
     "videoClipSemanticHintDisabled": "Inaktiverat",
     "videoClipSemanticHintSelect": "Tryck för att välja, håll för förhandsgranskning",
     "videoClipSemanticHintDeselect": "Tryck för att avmarkera, håll för förhandsgranskning",
-    "librarySaveToCameraRollTooltip": "Spara i kamerarullen",
-    "librarySecondsRemaining": "{seconds}s kvar",
-    "@librarySecondsRemaining": {
-        "placeholders": {
-            "seconds": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Klipp",
     "libraryTabDrafts": "Utkast",
@@ -2639,8 +2271,6 @@
     "dmConversationLoadError": "Det gick inte att läsa in meddelandena",
     "dmMessageInputHint": "Säg något…",
     "dmMessageSendLabel": "Skicka meddelande",
-    "reportDialogCancel": "Avbryt",
-    "reportDialogReport": "Rapportera",
     "routerInvalidCreator": "Ogiltig skapare",
     "routerInvalidHashtagRoute": "Ogiltig hashtagrutt",
     "searchDiscoverSomethingInteresting": "Upptäck något intressant",
@@ -3051,8 +2681,6 @@
     "videoEditorReleaseToDeleteLayer": "Släpp för att ta bort lager",
     "videoEditorDoneLabel": "Klar",
     "videoEditorPlayPauseSemanticLabel": "Spela upp eller pausa video",
-    "videoEditorCropSemanticLabel": "Beskär",
-    "videoEditorCannotSplitProcessing": "Kan inte dela klipp medan det bearbetas. Vänta.",
     "videoEditorSplitPositionInvalid": "Ogiltig delningsposition. Båda klippen måste vara minst {minDurationMs} ms långa.",
     "@videoEditorSplitPositionInvalid": {
         "placeholders": {
@@ -3061,14 +2689,10 @@
             }
         }
     },
-    "videoEditorAddClipFromLibrary": "Lägg till klipp från bibliotek",
     "videoEditorSaveSelectedClip": "Spara valt klipp",
-    "videoEditorSplitClip": "Dela klipp",
     "videoEditorSaveClip": "Spara klipp",
-    "videoEditorDeleteClip": "Ta bort klipp",
     "videoEditorClipSavedSuccess": "Klipp sparat i bibliotek",
     "videoEditorClipSaveFailed": "Det gick inte att spara klipp",
-    "videoEditorClipDeleted": "Klipp borttaget",
     "videoEditorColorPickerSemanticLabel": "Färgväljare",
     "videoEditorUndoSemanticLabel": "Ångra",
     "videoEditorRedoSemanticLabel": "Gör om",
@@ -3079,8 +2703,6 @@
     "videoEditorNoStickersFound": "Inga stickers hittades",
     "videoEditorNoStickersAvailable": "Inga stickers tillgängliga",
     "videoEditorFailedLoadStickers": "Det gick inte att ladda stickers",
-    "videoEditorAdjustVolumeTitle": "Justera volym",
-    "videoEditorRecordedAudioLabel": "Inspelat ljud",
     "videoEditorVoiceOverLabel": "Voice-over",
     "videoEditorVoiceOverTakeName": "Inspelning {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Spela in en voice-over",
@@ -3097,8 +2719,6 @@
     "videoEditorVoiceOverTooLong": "Inspelningen är längre än din video",
     "videoEditorPlaySemanticLabel": "Spela",
     "videoEditorPauseSemanticLabel": "Pausa",
-    "videoEditorMuteAudioSemanticLabel": "Stäng av ljud",
-    "videoEditorUnmuteAudioSemanticLabel": "Sätt på ljud",
     "videoEditorDeleteLabel": "Ta bort",
     "videoEditorDeleteSelectedItemSemanticLabel": "Ta bort valt objekt",
     "videoEditorEditLabel": "Redigera",
@@ -3256,7 +2876,6 @@
     "videoMetadataTitleLabel": "Titel",
     "videoMetadataDescriptionLabel": "Beskrivning",
     "videoMetadataTagsLabel": "Taggar",
-    "videoMetadataDeleteTagSemanticLabel": "Ta bort",
     "videoMetadataDeleteTagHint": "Ta bort tagg {tag}",
     "@videoMetadataDeleteTagHint": {
         "placeholders": {
@@ -3268,39 +2887,12 @@
     "videoMetadataContentWarningLabel": "Innehållsvarning",
     "videoMetadataSelectContentWarningsSemanticLabel": "Välj innehållsvarningar",
     "videoMetadataContentWarningSelectAllThatApply": "Välj allt som gäller för ditt innehåll",
-    "videoMetadataContentWarningDoneButton": "Klar",
     "videoMetadataCollaboratorsLabel": "Samarbetspartners",
     "videoMetadataAddCollaboratorSemanticLabel": "Lägg till samarbetspartner",
-    "videoMetadataCollaboratorsHelpTooltip": "Så fungerar samarbetspartners",
-    "videoMetadataCollaboratorsCount": "{count}/{max} samarbetspartners",
-    "@videoMetadataCollaboratorsCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "videoMetadataRemoveCollaboratorSemanticLabel": "Ta bort samarbetspartner",
-    "videoMetadataCollaboratorsHelpMessage": "Samarbetspartners taggas som medskapare i det här inlägget. Du kan bara lägga till personer som ni följer varandra ömsesidigt, och de visas i inläggets metadata när det publiceras.",
     "videoMetadataMutualFollowersSearchText": "Ömsesidiga följare",
-    "videoMetadataMustMutuallyFollowSnackbar": "Ni måste följa varandra ömsesidigt för att lägga till {name} som samarbetspartner.",
-    "@videoMetadataMustMutuallyFollowSnackbar": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "videoMetadataInspiredByLabel": "Inspirerad av",
     "videoMetadataSetInspiredBySemanticLabel": "Ange inspirerad av",
-    "videoMetadataInspiredByHelpTooltip": "Så fungerar inspirationskrediter",
-    "videoMetadataInspiredByNone": "Ingen",
-    "videoMetadataInspiredByHelpMessage": "Använd detta för att ge erkännande. Inspirerad av skiljer sig från samarbetspartners: det erkänner påverkan, men taggar inte någon som medskapare.",
     "videoMetadataCreatorCannotBeReferencedSnackbar": "Den här skaparen kan inte refereras.",
-    "videoMetadataRemoveInspiredBySemanticLabel": "Ta bort inspirerad av",
     "videoMetadataPostDetailsTitle": "Inläggsdetaljer",
     "videoMetadataSavedToLibrarySnackbar": "Sparad i bibliotek",
     "videoMetadataFailedToSaveSnackbar": "Det gick inte att spara",
@@ -3363,9 +2955,6 @@
     "shareMenuDeleteFailedRelayNoResponse": "Kunde inte nå relät. Kontrollera anslutningen och försök igen.",
     "shareMenuDeletePartiallyConfirmed": "Raderad. Alla reläer bekräftade inte, så den kan fortfarande dyka upp i andra appar.",
     "videoEditorAudioSegmentInstruction": "Välj ljudsegmentet för din video",
-    "videoEditorClipGalleryInstruction": "Tryck för att redigera. Håll ned och dra för att ändra ordning.",
-    "navSearch": "Sök",
-    "navSearchTooltip": "Sök",
     "fullscreenFeedRemovedMessage": "Video borttagen",
     "fullscreenFeedEmptyMessage": "Det finns inget mer att spela upp här",
     "invitesGenerateCardTitle": "{count, plural, =1{1 inbjudan redo att skapas} other{{count} inbjudningar redo att skapas}}",
@@ -3409,9 +2998,7 @@
         }
     },
     "notificationSystemUpdate": "Du har en ny uppdatering",
-    "notificationSomeoneLikedYourVideo": "Någon gillade din video",
     "peopleListsAddToList": "Lägg till i lista",
-    "peopleListsAddToListSubtitle": "Lägg till den här skaparen i en av dina listor",
     "peopleListsSheetTitle": "Lägg till i lista",
     "peopleListsEmptyTitle": "Inga listor än",
     "peopleListsEmptySubtitle": "Skapa en lista för att börja gruppera personer.",
@@ -3810,14 +3397,6 @@
     "bugReportDiagnosticsNotice": "Enhetsinfo och loggar inkluderas automatiskt.",
     "bugReportSuccessMessage": "Tack! Vi har fått din rapport och använder den för att göra Divine bättre.",
     "bugReportSendFailed": "Kunde inte skicka buggrapporten. Försök igen senare.",
-    "bugReportFailedWithError": "Buggrapport kunde inte skickas: {error}",
-    "@bugReportFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "featureRequestSendRequest": "Skicka önskemål",
     "featureRequestSubjectHint": "Kort sammanfattning av din idé",
     "featureRequestDescriptionRequiredLabel": "Vad önskar du? *",
@@ -3828,14 +3407,6 @@
     "featureRequestWhenHint": "Beskriv situationerna där detta skulle hjälpa",
     "featureRequestSuccessMessage": "Tack! Vi har fått ditt önskemål och kommer att granska det.",
     "featureRequestSendFailed": "Kunde inte skicka funktionsönskemålet. Försök igen senare.",
-    "featureRequestFailedWithError": "Funktionsönskemål kunde inte skickas: {error}",
-    "@featureRequestFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "followingTitle": "Följer",
     "followingTitleForName": "{displayName}s följer",
     "@followingTitleForName": {
@@ -3862,9 +3433,6 @@
     "followSortTitle": "Sortera efter",
     "followSortNewest": "Nyaste först",
     "followSortOldest": "Äldsta först",
-    "reportMessageTitle": "Rapportera meddelande",
-    "reportMessageWhyReporting": "Varför rapporterar du det här meddelandet?",
-    "reportMessageSelectReason": "Välj en anledning för att rapportera meddelandet",
     "newMessageTitle": "Nytt meddelande",
     "newMessageFindPeople": "Hitta personer",
     "newMessageNoContacts": "Inga kontakter hittades.\nFölj personer för att se dem här.",
@@ -4034,8 +3602,6 @@
     "authInfoBrowserExtensionTitle": "Webbläsartillägg",
     "authInfoBrowserExtensionDescription": "Logga in med ett NIP-07-webbläsartillägg som Alby eller nos2x. Dina nycklar stannar i tillägget — Divine ser dem aldrig.",
     "soundsAlreadySavedToLibrary": "Finns redan i Ljud",
-    "soundsAvailabilityCommunity": "Community",
-    "soundsAvailabilityPrivate": "Privat",
     "soundsRemoveSavedSound": "Ta bort ljud",
     "savedSoundSaveAction": "Spara",
     "savedSoundPausePreviewAction": "Pausa förhandsvisningen",
@@ -4052,11 +3618,8 @@
     "soundsSavedToLibrary": "Sparat i Ljud",
     "videoEditorAudioCategoryFeatured": "Utvalda",
     "videoEditorAudioCategoryMySounds": "Mina ljud",
-    "videoEditorAudioFeaturedEmptySubtitle": "Vi släpper utvalda ljud här när de är klara.",
-    "videoEditorAudioFeaturedEmptyTitle": "Utvalda ljud kommer snart",
     "videoMetadataAudioReuseSubtitle": "Låt andra spara och återanvända videons ljud.",
     "publishAudioReuseDegradedWarning": "Din video är uppe, men ljudet publicerades inte. Redigera videon för att dela ljudet.",
-    "videoMetadataAudioReuseTitle": "Publicera detta ljud",
     "videoMetadataShareReplyToFeedTitle": "Dela också i mitt flöde",
     "videoMetadataShareReplyToFeedSubtitle": "Av betyder att den här videon bara stannar i kommentarstråden.",
     "commentsRecordVideoButtonLabel": "Spela in videokommentar",
@@ -4217,14 +3780,12 @@
     "videoEditorChromaKeyRemoveFailed": "Det gick inte att ta bort green screen. Ditt klipp är oförändrat.",
     "videoEditorChromaKeyApplying": "Använder green screen …",
     "videoEditorChromaKeyPreviewUnavailable": "Den här enheten kan inte visa förhandsvisningen live. Dina inställningar gäller ändå vid export.",
-    "videoEditorOriginalAudioLabel": "Originalljud",
     "videoEditorClipVolumeLabel": "Klipp {index}",
     "dmReactionAddCustomA11yLabel": "Lägg till egen emojireaktion",
     "dmReelReplyComposerHint": "Meddela {name}…",
     "dmReelReplyComposerHintSelf": "Svara dig själv…",
     "dmReelReplyComposerSemanticLabel": "Svara på den här reelen",
     "dmReelReplyViewChat": "Visa chatt",
-    "dmReelReplyViewChatA11yLabel": "Öppna chatt",
     "dmReelReplySentAnnouncement": "Svar skickat",
     "dmReelReactionSentAnnouncement": "Reagerade {emoji}",
     "dmReelReplyFailed": "Det gick inte att skicka",
@@ -4278,7 +3839,6 @@
     "reportReasonCsam": "Sexuella övergrepp mot barn",
     "reportReasonCsamSubtitle": "Innehåll som skildrar sexuella övergrepp mot minderåriga",
     "minorAccountReviewWelcomePageTitle": "Familjeguide",
-    "minorAccountReviewWelcomeCta": "Inte 16 än? Det är okej. Så här kan du göra.",
     "minorAccountReviewWelcomeTitle": "Inte 16 än? Det är okej.",
     "minorAccountReviewWelcomeBody": "Att du klickade dig vidare till den här sidan i stället för att bara välja svaret som släppte in dig – det betyder något. Det visar ärlighet, ryggrad och en genuin omtanke om människorna runt dig.\n\nReglerna för den som är under 16 skiljer sig åt beroende på var du bor. På Divine vill vi att familjer pratar igenom det tillsammans och bestämmer hur ett sunt användande av sociala medier ser ut.",
     "minorAccountReviewModerationTitle": "Vi behöver ett steg till",
@@ -4292,7 +3852,6 @@
     "minorAccountReviewChooseAgeBandTitle": "Välj vägen som passar",
     "minorAccountReviewUnder13Cta": "Under 13",
     "minorAccountReviewTeenCta": "13–15 år",
-    "minorAccountReviewFamilyResourcesTitle": "Bra för familjer",
     "minorAccountReviewFamilyResourcesBody": "Besök Divines familjeguide för praktiska tips, samtalsverktyg och material som hjälper tonåringar att använda sociala medier tryggare.",
     "minorAccountReviewFamilyResourcesCta": "Hämta familjeguider och tips",
     "minorAccountReviewFooter": "Om du är 16 eller äldre och hamnade här av misstag, kontakta Divines support så att en riktig människa kan titta på det.",
@@ -4481,15 +4040,6 @@
             }
         }
     },
-    "notificationSettingsSystem": "System",
-    "notificationSettingsSystemSubtitle": "Appuppdateringar och systemmeddelanden",
-    "notificationSettingsPushNotificationsSection": "Push-aviseringar",
-    "notificationSettingsPushNotifications": "Push-aviseringar",
-    "notificationSettingsPushNotificationsSubtitle": "Få aviseringar även när appen är stängd",
-    "notificationSettingsSound": "Ljud",
-    "notificationSettingsSoundSubtitle": "Spela upp ljud vid aviseringar",
-    "notificationSettingsVibration": "Vibration",
-    "notificationSettingsVibrationSubtitle": "Vibrera vid aviseringar",
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4510,7 +4060,6 @@
     "videoEditorTransformFrameFailed": "Det gick inte att transformera bildrutan. Försök igen.",
     "videoEditorTransformRotateLabel": "Rotera",
     "videoEditorTransformFlipLabel": "Vänd",
-    "videoEditorTransformRatioLabel": "Förhållande",
     "videoEditorTransformResetLabel": "Återställ",
     "videoEditorTransformApplySemanticLabel": "Tillämpa transformering",
     "videoEditorTransformCancelSemanticLabel": "Avbryt transformering",
@@ -4851,12 +4400,6 @@
     "deleteAccountSuccess": "Raderingsförfrågningar skickade. Du är utloggad på den här enheten.",
     "deleteAccountSuccessContentUnverified": "Radering av kontot har begärts. Raderingen av vissa befintliga inlägg kunde inte bekräftas individuellt.",
     "deleteAccountWarningBody": "Det här skickar raderingsförfrågningar för ditt konto och innehåll, tar bort ditt Divine-konto när det går och loggar ut dig på den här enheten. Vissa reläer, klienter och sökindex kan behålla kopior. Andra inloggade enheter förblir aktiva tills du tar bort nycklarna där.",
-    "exportProgressStageApplyingTextOverlay": "Lägger till textöverlägg...",
-    "exportProgressStageComplete": "Exporten är klar!",
-    "exportProgressStageConcatenating": "Kombinerar klipp...",
-    "exportProgressStageError": "Exporten misslyckades",
-    "exportProgressStageGeneratingThumbnail": "Skapar miniatyrbild...",
-    "exportProgressStageMixingAudio": "Lägger till ljud...",
     "findPeopleAnonymousUser": "Anonym",
     "findPeopleNoContacts": "Inga kontakter hittades.\nBörja följa personer för att se dem här.",
     "geoBlockedCityLabel": "Stad",
@@ -4892,21 +4435,15 @@
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Det här ljudet kunde inte hittas",
     "soundDetailNotFoundTitle": "Ljudet hittades inte",
-    "videoFeedDescriptionSemanticLabel": "Videons beskrivning",
     "videoFeedLoopCountLabel": "🔁 {count} loopar",
     "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
-    "videoFeedLoopCountSemanticLabel": "Videons antal loopar",
     "originalSoundUnavailableBody": "Ljudet från den här videon är inte tillgängligt separat.",
     "originalSoundByCreator": "Originalljud – {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
-    "globalUploadPendingCount": "Väntande uppladdningar ({count})",
-    "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Den här personen postade en originalvine som Divine hittade i arkivet. Det är inte en verifieringsbadge för kontot.",
     "profileBadgeCheckmarkTitle": "Profilbock",
     "profileBadgeCheckmarkBody": "Divine ger den här bocken till teamets konton och till ett litet antal manuellt godkända profiler. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.",
-    "shareVideoInListsCount": "{count, plural, =1{I 1 lista} other{I {count} listor}}",
-    "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Sluta följa",
     "videoClipSaveFailed": "Kunde inte spara klipp",
     "videoClipSaveTo": "Spara till {destination}",
@@ -4927,7 +4464,6 @@
     "@searchVideosSortRecent": {"description": "Label for the video search sort option that shows the newest results first."},
     "minorAccountReviewUnder13HonestyTitle": "Varför vi inte säger åt dig att bara klicka tillbaka",
     "minorAccountReviewUnder13HonestyBody": "Mycket av internet är byggt för att belöna folk som säger vad som helst för att ta sig igenom grinden. Vi tycker inte att det är bra. Visst, du skulle kunna gå tillbaka och säga att du är äldre än du är, men det vore inte ärligt, och vi tänker inte lära dig att ljuga för att få som du vill.",
-    "minorAccountReviewUnder13LegalTitle": "Varför svaret ändå är nej",
     "minorAccountReviewUnder13LegalBody": "Vi försöker hjälpa unga att använda Divine på sätt som är hälsosamma och positiva för dem och för människorna omkring dem. Vi måste också följa lagar som skiljer sig åt på olika platser. Så om du är under 13 är svaret att du inte kan ha ett eget konto i dag.",
     "minorAccountReviewParentConsentHonestyTitle": "Varför vi ber en förälder eller vårdnadshavare att vara delaktig",
     "minorAccountReviewParentConsentHonestyBody": "Divine måste följa åldersrelaterade lagar runt om i världen. Vi vet också att de flesta tekniska ålderskontroller är bristfälliga. I stället för att låtsas att reglerna inte finns eller att det är coolt att ljuga om sin ålder vill vi att tonåringar och familjer ska fatta genomtänkta beslut om hur Divine bäst används. Därför ber vi föräldrar att vara en del av kontoskapandet för 13–15-åringar.",
@@ -5067,8 +4603,6 @@
   "authSignInOptionsHintCta": "Se alla inloggningsalternativ",
     "videoEditorStopMotionFramesPerImageLabel": "Bildrutor per bild",
     "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} bildrutor per bild",
-    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Öka bildrutor per bild",
-    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Minska bildrutor per bild",
     "videoEditorStopMotionFrameSemanticLabel": "Stop motion-bild {position} av {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 bildruta} other{{count} bildrutor}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Bildrutor",
