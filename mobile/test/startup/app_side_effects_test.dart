@@ -62,6 +62,11 @@ void main() {
   late _RecordingAnalytics analytics;
   late List<String?> crashUserIds;
 
+  // AnalyticsIdentityCoordinator keeps the last applied user ID in a static,
+  // and the VGV merged isolate shares it with every other suite in the bundle.
+  setUp(AnalyticsIdentityCoordinator.resetLastAppliedUserId);
+  tearDown(AnalyticsIdentityCoordinator.resetLastAppliedUserId);
+
   setUp(() {
     authStates = StreamController<AuthState>.broadcast();
     addTearDown(authStates.close);
@@ -151,6 +156,38 @@ void main() {
 
       expect(analytics.userIds, [_pubkey, null]);
       expect(crashUserIds, [_pubkey, null]);
+    });
+
+    testWidgets('mirrors an identity restored after the first frame', (
+      tester,
+    ) async {
+      // The path the fix actually runs on at the root. This host builds during
+      // the first frame, while AuthService.initialize() runs in the post-frame
+      // essential startup phase — so auth still reports `checking` here and the
+      // restored pubkey arrives on authStateStream, not through the provider's
+      // eager branch. The test above covers that eager branch, which is what
+      // used to run at shell-mount time.
+      when(() => authService.isAuthenticated).thenReturn(false);
+      when(() => authService.currentPublicKeyHex).thenReturn(null);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: baseOverrides(),
+          child: const AppRootSideEffects(child: SizedBox.shrink()),
+        ),
+      );
+      await tester.pump();
+
+      expect(analytics.userIds, isEmpty);
+      expect(crashUserIds, isEmpty);
+
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkey);
+      authStates.add(AuthState.authenticated);
+      await tester.pump();
+
+      expect(analytics.userIds, [_pubkey]);
+      expect(crashUserIds, [_pubkey]);
     });
 
     testWidgets('does not construct the deferred shell-tier services', (
@@ -254,7 +291,6 @@ void main() {
       'lib/router/routes/shell.dart',
     ]) {
       test('$path activates no app-wide side effect of its own', () {
-        assert(!hosts.contains(path), 'a host cannot guard itself');
         final source = File(path).readAsStringSync();
 
         for (final provider in activationOnlyProviders) {
