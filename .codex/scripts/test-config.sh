@@ -2,6 +2,7 @@
 # Regression checks for repository Codex hooks and generated skills.
 
 set -e
+trap 'echo "test-config.sh failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 POST_EDIT_HOOK="$REPO_ROOT/.codex/hooks/post-edit-dart.sh"
@@ -9,8 +10,58 @@ BUILD_HOOK="$REPO_ROOT/.codex/hooks/pre-commit-build-runner.sh"
 CODEX_GIT_HOOK="$REPO_ROOT/.codex/hooks/check-git-hooks.sh"
 CLAUDE_GIT_HOOK="$REPO_ROOT/.claude/hooks/check-git-hooks.sh"
 WORKTREE_GUARD_HOOK="$REPO_ROOT/.claude/hooks/session-start-worktree-guard.sh"
+CLAUDE_PURGE_HOOK="$REPO_ROOT/.claude/hooks/session-end-purge-build-artifacts.sh"
+CLAUDE_ANALYZE_HOOK="$REPO_ROOT/.claude/hooks/post-edit-analyze.sh"
 
 "$REPO_ROOT/.codex/scripts/sync-agent-skills.sh" --check
+
+# Every registered Claude hook command must resolve to an executable file in
+# this repository — a registration pointing at a missing file must fail loudly
+# here, not silently at session end. Every hook timeout must be whole seconds
+# (a millisecond-scale value like 5000 exceeds the 600s ceiling this suite
+# pins). The SessionEnd matcher is asserted exactly because it deliberately
+# excludes non-terminal reasons such as `other`.
+while IFS= read -r hook_cmd; do
+  # Match the literal settings.json command prefix, not the current shell env.
+  # shellcheck disable=SC2016
+  case "$hook_cmd" in
+    '"$CLAUDE_PROJECT_DIR"'/*)
+      hook_path=${hook_cmd#'"$CLAUDE_PROJECT_DIR"'}
+      if [ ! -x "$REPO_ROOT$hook_path" ]; then
+        echo "Registered Claude hook is missing or not executable: $hook_cmd" >&2
+        exit 1
+      fi
+      ;;
+    *)
+      echo "Unrecognized Claude hook command shape: $hook_cmd" >&2
+      exit 1
+      ;;
+  esac
+done < <(jq -r '.hooks | .[] | .[] | .hooks[].command' "$REPO_ROOT/.claude/settings.json")
+
+missing_timeouts=$(jq -r '.hooks | .[] | .[] | .hooks[]
+  | select(.timeout == null)
+  | .command' "$REPO_ROOT/.claude/settings.json")
+if [ -n "$missing_timeouts" ]; then
+  echo "Every Claude hook must declare an explicit whole-second timeout; missing on: $missing_timeouts" >&2
+  exit 1
+fi
+
+bad_timeouts=$(jq -r '.hooks | .[] | .[] | .hooks[].timeout' "$REPO_ROOT/.claude/settings.json" \
+  | awk '$1 !~ /^[0-9]+$/ || $1 > 600 { print }')
+if [ -n "$bad_timeouts" ]; then
+  echo "Claude hook timeouts must be whole seconds and at most 600: got $bad_timeouts" >&2
+  exit 1
+fi
+
+jq -e '.hooks.SessionEnd[]
+  | select(.matcher == "logout|prompt_input_exit|bypass_permissions_disabled")
+  | .hooks[]
+  | select(.command | endswith("session-end-purge-build-artifacts.sh"))' \
+  "$REPO_ROOT/.claude/settings.json" >/dev/null || {
+  echo "SessionEnd purge hook registration is missing or its matcher changed." >&2
+  exit 1
+}
 
 # shellcheck disable=SC2016
 grep -Fq 'Read and apply ALL rules from `AGENTS.md`' \
@@ -41,6 +92,8 @@ mkdir -p "$TEST_REPO/mobile/lib" "$BIN_DIR"
 git -C "$TEST_REPO" init -q
 
 touch "$TEST_REPO/mobile/mise.toml"
+mkdir -p "$TEST_REPO/mobile/.dart_tool"
+touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
 cat > "$TEST_REPO/mobile/pubspec.yaml" <<'EOF'
 name: codex_hook_test
 environment:
@@ -117,6 +170,7 @@ case "$1" in
 esac
 EOF
 chmod +x "$BIN_DIR/mise" "$BIN_DIR/test-dart"
+ln -sf "$BIN_DIR/test-dart" "$BIN_DIR/dart"
 
 POST_PAYLOAD=$(jq -n --arg command $'*** Begin Patch\n*** Update File: mobile/lib/warning file.dart\n*** End Patch' \
   '{tool_input: {command: $command}}')
@@ -180,10 +234,53 @@ if [ -n "$NON_DART_OUTPUT" ]; then
   exit 1
 fi
 
+# The no-toolchain path must be exercised with mise and dart both hidden:
+# dev machines commonly install mise system-wide (e.g. /usr/bin/mise), and
+# then it resolves a real dart, analyzes the fixture, and emits no block —
+# failing this test before the purge-hook tests below ever run. Pin the PATH
+# to a scratch bin holding only the tools the hook needs when no SDK resolves.
+NO_TOOLCHAIN_BIN="$SCRATCH_DIR/no-toolchain-bin"
+mkdir -p "$NO_TOOLCHAIN_BIN"
+for tool in jq git sed grep cat dirname basename; do
+  ln -s "$(command -v "$tool")" "$NO_TOOLCHAIN_BIN/$tool"
+done
 MISSING_DART_OUTPUT=$(cd "$TEST_REPO" && \
-  env PATH="/usr/bin:/bin" "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
+  env PATH="$NO_TOOLCHAIN_BIN" "$POST_EDIT_HOOK" <<< "$POST_PAYLOAD")
 printf '%s\n' "$MISSING_DART_OUTPUT" | jq -e \
   '.decision == "block" and (.reason | contains("Unable to run the repository Dart SDK"))' >/dev/null
+
+rm -f "$TEST_REPO/mobile/.dart_tool/package_config.json"
+: > "$CALL_LOG"
+TWO_FILE_PURGED_PAYLOAD=$(jq -n --arg command $'*** Begin Patch\n*** Update File: mobile/lib/warning file.dart\n*** Update File: mobile/lib/clean.dart\n*** End Patch' \
+  '{tool_input: {command: $command}}')
+CODEX_PURGED_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    TEST_DART="$BIN_DIR/test-dart" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$POST_EDIT_HOOK" <<< "$TWO_FILE_PURGED_PAYLOAD")
+if ! printf '%s\n' "$CODEX_PURGED_OUTPUT" | jq -e \
+  '.systemMessage
+   | contains("Skipped Dart analysis")
+     and contains("flutter pub get")' >/dev/null; then
+  echo "Codex post-edit hook did not explain the missing package_config.json skip." >&2
+  echo "Output was: $CODEX_PURGED_OUTPUT" >&2
+  exit 1
+fi
+# Format needs no package resolution and must still run; only analyze skips.
+if grep -q '^analyze ' "$CALL_LOG"; then
+  echo "Codex post-edit hook invoked dart analyze without package_config.json." >&2
+  exit 1
+fi
+if ! grep -q '^format ' "$CALL_LOG"; then
+  echo "Codex post-edit hook skipped dart format, which needs no package_config.json." >&2
+  exit 1
+fi
+# A skip must not abort the patch loop: both files still get formatted.
+if [ "$(grep -c '^format ' "$CALL_LOG")" -ne 2 ]; then
+  echo "Codex post-edit hook aborted the file loop at the first purged-worktree file." >&2
+  exit 1
+fi
+touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
 
 CHAINED_COMMIT_PAYLOAD=$(jq -n --arg command '   git commit -m test && echo done' \
   '{tool_input: {command: $command}}')
@@ -334,6 +431,350 @@ if ! printf '%s\n' "$GUARD_OUTPUT" | jq -e '
   echo "Session worktree guard did not report only live Claude sessions in the same canonical worktree." >&2
   echo "Output was: $GUARD_OUTPUT" >&2
   exit 1
+fi
+
+CLAUDE_ANALYZE_PAYLOAD=$(jq -n --arg path "$TEST_REPO/mobile/lib/clean.dart" \
+  '{tool_input: {file_path: $path}}')
+: > "$CALL_LOG"
+rm -f "$TEST_REPO/mobile/.dart_tool/package_config.json"
+CLAUDE_ANALYZE_OUTPUT=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$CLAUDE_ANALYZE_HOOK" <<< "$CLAUDE_ANALYZE_PAYLOAD")
+if ! printf '%s\n' "$CLAUDE_ANALYZE_OUTPUT" | jq -e \
+  '.systemMessage
+   | contains("Skipped Dart analysis")
+     and contains("flutter pub get")' >/dev/null; then
+  echo "Claude post-edit analyze hook did not explain the missing package_config.json skip." >&2
+  echo "Output was: $CLAUDE_ANALYZE_OUTPUT" >&2
+  exit 1
+fi
+if grep -q '^analyze ' "$CALL_LOG"; then
+  echo "Claude post-edit analyze hook invoked dart without package_config.json." >&2
+  exit 1
+fi
+
+# Skipping is only half the contract. Without this, widening the guard so it
+# always skips -- silently disabling post-edit analysis everywhere -- passes.
+: > "$CALL_LOG"
+mkdir -p "$TEST_REPO/mobile/.dart_tool"
+touch "$TEST_REPO/mobile/.dart_tool/package_config.json"
+CLAUDE_ANALYZE_RESOLVED=$(cd "$TEST_REPO" && \
+  env PATH="$BIN_DIR:/usr/bin:/bin" \
+    DART_CALL_LOG="$CALL_LOG" \
+    "$CLAUDE_ANALYZE_HOOK" <<< "$CLAUDE_ANALYZE_PAYLOAD")
+if ! grep -q '^analyze ' "$CALL_LOG"; then
+  echo "Claude post-edit analyze hook skipped dart analyze despite package_config.json." >&2
+  exit 1
+fi
+if [ -n "$CLAUDE_ANALYZE_RESOLVED" ]; then
+  echo "Claude post-edit analyze hook reported diagnostics for a clean file." >&2
+  echo "Output was: $CLAUDE_ANALYZE_RESOLVED" >&2
+  exit 1
+fi
+
+NON_DIVINE_MAIN="$SCRATCH_DIR/non-divine-main"
+NON_DIVINE_LINK="$SCRATCH_DIR/non-divine-linked"
+mkdir -p "$NON_DIVINE_MAIN/mobile/build"
+git -C "$NON_DIVINE_MAIN" init -q
+touch "$NON_DIVINE_MAIN/mobile/build/output.o"
+git -C "$NON_DIVINE_MAIN" add mobile/build/output.o
+git -C "$NON_DIVINE_MAIN" \
+  -c user.email=test@example.com \
+  -c user.name=Test \
+  commit -q -m init
+git -C "$NON_DIVINE_MAIN" worktree add -q "$NON_DIVINE_LINK"
+NON_DIVINE_OUTPUT=$(cd "$NON_DIVINE_LINK" && \
+  env CLAUDE_PROJECT_DIR="$NON_DIVINE_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if [ -n "$NON_DIVINE_OUTPUT" ] || [ ! -d "$NON_DIVINE_LINK/mobile/build" ]; then
+  echo "Purge hook ran outside a divine-mobile checkout." >&2
+  exit 1
+fi
+
+MAIN_PURGE_REPO="$SCRATCH_DIR/main-purge"
+mkdir -p "$MAIN_PURGE_REPO/mobile/build" "$MAIN_PURGE_REPO/mobile/.dart_tool"
+git -C "$MAIN_PURGE_REPO" init -q
+cat > "$MAIN_PURGE_REPO/mobile/pubspec.yaml" <<'EOF'
+name: main_purge_test
+EOF
+touch "$MAIN_PURGE_REPO/mobile/build/output.o"
+MAIN_PURGE_OUTPUT=$(cd "$MAIN_PURGE_REPO" && \
+  env CLAUDE_PROJECT_DIR="$MAIN_PURGE_REPO" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if [ -n "$MAIN_PURGE_OUTPUT" ] || [ ! -d "$MAIN_PURGE_REPO/mobile/build" ]; then
+  echo "Purge hook did not skip the main checkout." >&2
+  exit 1
+fi
+
+WT_MAIN="$SCRATCH_DIR/purge-main"
+WT_LINK="$SCRATCH_DIR/purge-linked"
+mkdir -p "$WT_MAIN/mobile/packages/bar"
+git -C "$WT_MAIN" init -q
+cat > "$WT_MAIN/mobile/pubspec.yaml" <<'EOF'
+name: linked_purge_test
+EOF
+touch "$WT_MAIN/mobile/packages/bar/.keep"
+git -C "$WT_MAIN" add mobile/pubspec.yaml mobile/packages/bar/.keep
+git -C "$WT_MAIN" \
+  -c user.email=test@example.com \
+  -c user.name=Test \
+  commit -q -m init
+git -C "$WT_MAIN" worktree add -q "$WT_LINK"
+
+mkdir -p "$WT_LINK/mobile/build" \
+  "$WT_LINK/mobile/.dart_tool" \
+  "$WT_LINK/mobile/packages/bar/build"
+touch "$WT_LINK/mobile/build/output.o" \
+  "$WT_LINK/mobile/.dart_tool/package_config.json" \
+  "$WT_LINK/mobile/packages/bar/build/output.o"
+
+CLEAR_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"clear"}')
+RESUME_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"resume"}')
+if [ -n "$CLEAR_OUTPUT$RESUME_OUTPUT" ] || [ ! -d "$WT_LINK/mobile/build" ] || [ ! -d "$WT_LINK/mobile/.dart_tool" ]; then
+  echo "Purge hook did not skip clear/resume SessionEnd reasons." >&2
+  exit 1
+fi
+
+PURGE_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+printf '%s\n' "$PURGE_OUTPUT" | jq -e \
+  '.systemMessage == "Purged 3 build/.dart_tool dirs from purge-linked"' >/dev/null
+if [ -d "$WT_LINK/mobile/build" ] || [ -d "$WT_LINK/mobile/.dart_tool" ] || [ -d "$WT_LINK/mobile/packages/bar/build" ]; then
+  echo "Purge hook did not remove linked worktree build artifacts." >&2
+  exit 1
+fi
+if [ -n "$(git -C "$WT_LINK" status --short)" ]; then
+  echo "Purge hook left the linked worktree dirty." >&2
+  exit 1
+fi
+
+gitdir=$(git -C "$WT_LINK" rev-parse --absolute-git-dir)
+
+# Staging is only the visible half: the background rm must actually reclaim
+# the staged artifacts, or every session-end just moves the disk bill around.
+for _ in $(seq 1 100); do
+  [ ! -e "$gitdir/claude-purge" ] && break
+  sleep 0.1
+done
+if [ -e "$gitdir/claude-purge" ]; then
+  echo "Purge hook staged artifacts but never deleted them." >&2
+  exit 1
+fi
+
+mkdir -p "$gitdir/claude-purge/old"
+touch "$gitdir/claude-purge/old/artifact"
+NOOP_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+if [ -n "$NOOP_OUTPUT" ] || [ -d "$gitdir/claude-purge" ]; then
+  echo "Purge hook did not clean leftover staging on a no-op run." >&2
+  exit 1
+fi
+
+# A directory whose name contains a newline must not split find output into
+# fragments: without -print0 the hook reads `mobile/pkg\nage/build` as the two
+# paths `mobile/pkg` and `age/build`, and `mv`/`rm -rf` then reach the
+# non-artifact sibling. The precious file is the discrimination.
+NEWLINE_PKG="$WT_LINK/mobile/pkg
+age"
+mkdir -p "$NEWLINE_PKG/build" "$WT_LINK/mobile/pkg"
+touch "$NEWLINE_PKG/build/output.o" "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart"
+NEWLINE_OUTPUT=$(cd "$WT_LINK" && \
+  env CLAUDE_PROJECT_DIR="$WT_LINK" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}')
+printf '%s\n' "$NEWLINE_OUTPUT" | jq -e \
+  '.systemMessage == "Purged 1 build/.dart_tool dirs from purge-linked"' >/dev/null || {
+  echo "Purge hook did not report purging the newline-named build dir." >&2
+  echo "Output was: $NEWLINE_OUTPUT" >&2
+  exit 1
+}
+if [ ! -f "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" ]; then
+  echo "Purge hook deleted a non-artifact path through a newline-split find line." >&2
+  exit 1
+fi
+if [ -d "$NEWLINE_PKG/build" ]; then
+  echo "Purge hook left the newline-named build dir behind." >&2
+  exit 1
+fi
+for _ in $(seq 1 100); do
+  [ ! -e "$gitdir/claude-purge" ] && break
+  sleep 0.1
+done
+
+# Pin the BSD/macOS stat fallback without requiring a second filesystem. The
+# fake rejects GNU `stat -c` and reports different BSD `stat -f` device ids; a
+# regular file at the staging path makes any missed cross-device detection fail.
+BSD_STAT_BIN="$SCRATCH_DIR/bsd-stat-bin"
+mkdir -p "$BSD_STAT_BIN"
+cat > "$BSD_STAT_BIN/stat" <<'EOF'
+#!/bin/bash
+case "$1" in
+  -c)
+    exit 1
+    ;;
+  -f)
+    case "$3" in
+      "$BSD_STAT_WORKTREE_MOBILE") echo 101 ;;
+      "$BSD_STAT_GITDIR") echo 202 ;;
+      *) echo 101 ;;
+    esac
+    exit 0
+    ;;
+esac
+exit 1
+EOF
+chmod +x "$BSD_STAT_BIN/stat"
+
+# Carry the newline discrimination onto the in-place branch too. The staging
+# branch is pinned for it above, but the only other test that reaches the
+# in-place branch is the /dev/shm one below, which skips wherever /dev/shm is
+# absent or read-only -- every macOS run. Faking stat is what makes this pin
+# platform-independent.
+mkdir -p "$WT_LINK/mobile/build" \
+  "$WT_LINK/mobile/.dart_tool" \
+  "$NEWLINE_PKG/build" \
+  "$WT_LINK/mobile/pkg"
+touch "$WT_LINK/mobile/build/output.o" \
+  "$WT_LINK/mobile/.dart_tool/package_config.json" \
+  "$NEWLINE_PKG/build/output.o" \
+  "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" \
+  "$gitdir/claude-purge"
+BSD_STAT_OUTPUT=$(cd "$WT_LINK" && \
+  env PATH="$BSD_STAT_BIN:/usr/bin:/bin" \
+    BSD_STAT_WORKTREE_MOBILE="$WT_LINK/mobile" \
+    BSD_STAT_GITDIR="$gitdir" \
+    CLAUDE_PROJECT_DIR="$WT_LINK" \
+    "$CLAUDE_PURGE_HOOK" \
+    <<< '{"reason":"prompt_input_exit"}' || true)
+printf '%s\n' "$BSD_STAT_OUTPUT" | jq -e \
+  '.systemMessage == "Purged 3 build/.dart_tool dirs from purge-linked"' >/dev/null || {
+  echo "Purge hook did not use the BSD stat fallback for device detection." >&2
+  echo "Output was: $BSD_STAT_OUTPUT" >&2
+  exit 1
+}
+if [ ! -f "$gitdir/claude-purge" ]; then
+  echo "BSD-stat cross-device purge touched the gitdir staging path." >&2
+  exit 1
+fi
+for _ in $(seq 1 100); do
+  [ ! -d "$WT_LINK/mobile/build" ] && [ ! -d "$WT_LINK/mobile/.dart_tool" ] \
+    && [ ! -d "$NEWLINE_PKG/build" ] && break
+  sleep 0.1
+done
+if [ -d "$WT_LINK/mobile/build" ] || [ -d "$WT_LINK/mobile/.dart_tool" ]; then
+  echo "BSD-stat cross-device purge did not delete the artifact dirs." >&2
+  exit 1
+fi
+if [ ! -f "$WT_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" ]; then
+  echo "BSD-stat cross-device purge deleted a non-artifact path through a newline-split find line." >&2
+  exit 1
+fi
+if [ -d "$NEWLINE_PKG/build" ]; then
+  echo "BSD-stat cross-device purge left the newline-named build dir behind." >&2
+  exit 1
+fi
+rm -f "$gitdir/claude-purge"
+
+# A linked worktree on a different filesystem from the main checkout must
+# still purge: the hook detects the cross-device gitdir and deletes in place
+# instead of staging (mv would degrade to a synchronous copy that can blow
+# the hook timeout). /dev/shm supplies a second filesystem where one exists;
+# the probe guards the fixture itself, since `git worktree add` into a missing
+# or read-only /dev/shm (macOS, hardened containers) would abort the suite
+# before any skip logic could run.
+if [ -d /dev/shm ] && [ -w /dev/shm ]; then
+  XDEV_MAIN="$SCRATCH_DIR/xdev-main"
+  XDEV_LINK="/dev/shm/divine-purge-xdev-$$"
+  # Failing runs re-run the most; clean the tmpfs worktree from the EXIT trap
+  # so a red assertion does not leak it into RAM.
+  trap 'rm -rf "$SCRATCH_DIR" "$XDEV_LINK"' EXIT
+  mkdir -p "$XDEV_MAIN/mobile/packages/bar"
+  git -C "$XDEV_MAIN" init -q
+  cat > "$XDEV_MAIN/mobile/pubspec.yaml" <<'EOF'
+name: xdev_purge_test
+EOF
+  touch "$XDEV_MAIN/mobile/packages/bar/.keep"
+  git -C "$XDEV_MAIN" add mobile/pubspec.yaml mobile/packages/bar/.keep
+  git -C "$XDEV_MAIN" \
+    -c user.email=test@example.com \
+    -c user.name=Test \
+    commit -q -m init
+  git -C "$XDEV_MAIN" worktree add -q "$XDEV_LINK"
+  mkdir -p "$XDEV_LINK/mobile/build" "$XDEV_LINK/mobile/.dart_tool"
+  touch "$XDEV_LINK/mobile/build/output.o" \
+    "$XDEV_LINK/mobile/.dart_tool/package_config.json"
+  XDEV_WORKTREE_DEV=$(stat -c %d "$XDEV_LINK/mobile" 2>/dev/null || stat -f %d "$XDEV_LINK/mobile" 2>/dev/null || echo no-dev-1)
+  XDEV_GITDIR=$(git -C "$XDEV_LINK" rev-parse --absolute-git-dir)
+  XDEV_GITDIR_DEV=$(stat -c %d "$XDEV_GITDIR" 2>/dev/null || stat -f %d "$XDEV_GITDIR" 2>/dev/null || echo no-dev-2)
+  if [ "$XDEV_WORKTREE_DEV" != "$XDEV_GITDIR_DEV" ]; then
+    # A regular file at the staging path makes any staging attempt fail loudly
+    # (mkdir -p cannot succeed), so this test discriminates the in-place path
+    # from a cross-device mv even though both eventually delete the artifacts.
+    touch "$XDEV_GITDIR/claude-purge"
+    XDEV_NAME=$(basename "$XDEV_LINK")
+    XDEV_OUTPUT=$(cd "$XDEV_LINK" && \
+      env CLAUDE_PROJECT_DIR="$XDEV_LINK" \
+        "$CLAUDE_PURGE_HOOK" \
+        <<< '{"reason":"prompt_input_exit"}' || true)
+    printf '%s\n' "$XDEV_OUTPUT" | jq -e --arg name "$XDEV_NAME" \
+      '.systemMessage == ("Purged 2 build/.dart_tool dirs from " + $name)' >/dev/null || {
+      echo "Cross-device purge did not report removing both artifact dirs." >&2
+      exit 1
+    }
+    if [ ! -f "$XDEV_GITDIR/claude-purge" ]; then
+      echo "Cross-device purge touched the gitdir staging path instead of deleting in place." >&2
+      exit 1
+    fi
+    for _ in $(seq 1 100); do
+      [ ! -d "$XDEV_LINK/mobile/build" ] && [ ! -d "$XDEV_LINK/mobile/.dart_tool" ] && break
+      sleep 0.1
+    done
+    if [ -d "$XDEV_LINK/mobile/build" ] || [ -d "$XDEV_LINK/mobile/.dart_tool" ]; then
+      echo "Cross-device purge did not delete the artifact dirs." >&2
+      exit 1
+    fi
+    # The in-place branch has its own find loop, so the newline-splitting
+    # regression needs a pin here too, not only against the staging branch.
+    XDEV_NL_PKG="$XDEV_LINK/mobile/pkg
+age"
+    mkdir -p "$XDEV_NL_PKG/build" "$XDEV_LINK/mobile/pkg"
+    touch "$XDEV_NL_PKG/build/output.o" "$XDEV_LINK/mobile/pkg/PRECIOUS_SOURCE.dart"
+    XDEV_NL_OUTPUT=$(cd "$XDEV_LINK" && \
+      env CLAUDE_PROJECT_DIR="$XDEV_LINK" \
+        "$CLAUDE_PURGE_HOOK" \
+        <<< '{"reason":"prompt_input_exit"}' || true)
+    printf '%s\n' "$XDEV_NL_OUTPUT" | jq -e --arg name "$XDEV_NAME" \
+      '.systemMessage == ("Purged 1 build/.dart_tool dirs from " + $name)' >/dev/null || {
+      echo "Cross-device purge did not report purging the newline-named build dir." >&2
+      echo "Output was: $XDEV_NL_OUTPUT" >&2
+      exit 1
+    }
+    for _ in $(seq 1 100); do
+      [ ! -d "$XDEV_NL_PKG/build" ] && break
+      sleep 0.1
+    done
+    if [ ! -f "$XDEV_LINK/mobile/pkg/PRECIOUS_SOURCE.dart" ]; then
+      echo "Cross-device purge deleted a non-artifact path through a newline-split find line." >&2
+      exit 1
+    fi
+    if [ -d "$XDEV_NL_PKG/build" ]; then
+      echo "Cross-device purge left the newline-named build dir behind." >&2
+      exit 1
+    fi
+  else
+    echo "skip: /dev/shm shares a filesystem with the scratch dir; cross-device purge path not exercised."
+  fi
+else
+  echo "skip: no writable /dev/shm; cross-device purge path not exercised."
 fi
 
 echo "Codex configuration checks passed."

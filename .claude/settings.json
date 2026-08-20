@@ -15,13 +15,13 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-edit-nostr-id-guard.sh",
-            "timeout": 5000,
+            "timeout": 5,
             "statusMessage": "Checking for Nostr ID truncation..."
           },
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-edit-vinetheme-guard.sh",
-            "timeout": 5000,
+            "timeout": 5,
             "statusMessage": "Checking VineTheme compliance..."
           }
         ]
@@ -32,7 +32,7 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-git-hooks.sh",
-            "timeout": 3000,
+            "timeout": 3,
             "statusMessage": "Checking git hooks..."
           }
         ]
@@ -43,7 +43,7 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-build-runner.sh",
-            "timeout": 120000,
+            "timeout": 600,
             "statusMessage": "Running build_runner for staged files..."
           }
         ]
@@ -56,14 +56,27 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-format.sh",
-            "timeout": 30000,
+            "timeout": 30,
             "statusMessage": "Formatting code..."
           },
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-analyze.sh",
-            "timeout": 60000,
+            "timeout": 120,
             "statusMessage": "Analyzing code..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "logout|prompt_input_exit|bypass_permissions_disabled",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-end-purge-build-artifacts.sh",
+            "timeout": 30,
+            "statusMessage": "Purging build artifacts..."
           }
         ]
       }

@@ -6,10 +6,16 @@ set -e
 
 HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=lib/dart-runner.sh
+# shellcheck disable=SC1091
 source "$HOOK_DIR/lib/dart-runner.sh"
 
 emit_block() {
   jq -n --arg reason "$1" '{decision: "block", reason: $reason}'
+  exit 0
+}
+
+emit_system_message() {
+  jq -n --arg message "$1" '{systemMessage: $message}'
   exit 0
 }
 
@@ -22,10 +28,33 @@ FILES=$(printf '%s\n' "$PATCH" | sed -nE \
 [ -n "$FILES" ] || exit 0
 
 DART_READY=false
+MISSING_PACKAGE_CONFIG=""
 
 while IFS= read -r FILE_PATH; do
   [[ "$FILE_PATH" =~ \.dart$ ]] || continue
   [ -f "$FILE_PATH" ] || continue
+
+  FILE_DIR=$(dirname "$FILE_PATH")
+  CANONICAL_FILE_PATH="$FILE_PATH"
+  if CANONICAL_FILE_DIR=$(cd -P "$FILE_DIR" 2>/dev/null && pwd); then
+    CANONICAL_FILE_PATH="$CANONICAL_FILE_DIR/$(basename "$FILE_PATH")"
+  fi
+  REPO_ROOT=$(git -C "$FILE_DIR" rev-parse --show-toplevel 2>/dev/null || true)
+  if [ -n "$REPO_ROOT" ]; then
+    case "$CANONICAL_FILE_PATH" in
+      "$REPO_ROOT"/mobile/*) ;;
+      *) REPO_ROOT="" ;;
+    esac
+  fi
+  # A purged worktree has no package resolution state, so the analyzer only
+  # emits missing-package noise. Skip the analyze half for this file; dart
+  # format needs no resolution and still runs, and remaining files in the
+  # patch are still processed.
+  SKIP_ANALYZE=false
+  if [ -n "$REPO_ROOT" ] && [ ! -f "$REPO_ROOT/mobile/.dart_tool/package_config.json" ]; then
+    SKIP_ANALYZE=true
+    MISSING_PACKAGE_CONFIG="$REPO_ROOT/mobile/.dart_tool/package_config.json"
+  fi
 
   if [ "$DART_READY" = false ]; then
     if ! resolve_dart_runner; then
@@ -40,6 +69,8 @@ while IFS= read -r FILE_PATH; do
   if ! FORMAT_OUTPUT=$(run_repo_dart "$DART_MOBILE_DIR" format "$ABS_PATH" 2>&1); then
     emit_block "Dart formatting failed for $FILE_PATH:\n$FORMAT_OUTPUT"
   fi
+
+  [ "$SKIP_ANALYZE" = true ] && continue
 
   ANALYSIS_RC=0
   ANALYSIS_OUTPUT=$(run_repo_dart "$DART_MOBILE_DIR" analyze "$ABS_PATH" 2>&1) || ANALYSIS_RC=$?
@@ -57,5 +88,9 @@ while IFS= read -r FILE_PATH; do
 done <<EOF
 $FILES
 EOF
+
+if [ -n "$MISSING_PACKAGE_CONFIG" ]; then
+  emit_system_message "Skipped Dart analysis because $MISSING_PACKAGE_CONFIG is missing. Run \`cd mobile && flutter pub get\` before relying on post-edit analysis in this worktree."
+fi
 
 exit 0
