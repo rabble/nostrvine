@@ -2653,7 +2653,15 @@ class CameraController: NSObject {
     }
 
     /// Releases all camera resources.
-    func release() {
+    ///
+    /// `completion` fires on the main queue once the teardown has actually
+    /// run on `sessionQueue`. The recorder -> editor handoff needs that
+    /// signal: it switches the shared AVAudioSession to `.playback` right
+    /// after disposing the camera, and iOS rejects that `setCategory` with
+    /// `InsufficientPriority` (OSStatus 561017449) while an audio capture
+    /// session is still running. The editor then plays the clip back through
+    /// the recorder's `.playAndRecord` / `.videoRecording` configuration.
+    func release(completion: (() -> Void)? = nil) {
         // Restore screen brightness if screen flash was enabled
         disableScreenFlash()
         // Disable auto-flash if it was enabled
@@ -2664,9 +2672,9 @@ class CameraController: NSObject {
         initializationTimeoutTimer = nil
         initializationCompletion = nil
         
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            
+        // Strong capture on purpose: a `guard let self else { return }` here
+        // would drop `completion` and hang the caller awaiting the teardown.
+        sessionQueue.async {
             // Stop recording if in progress
             if self.isRecording {
                 self.isRecording = false
@@ -2706,6 +2714,10 @@ class CameraController: NSObject {
             self.latestSampleBuffer = nil
             self.pixelBufferRef = nil
             self.pixelBufferLock.unlock()
+
+            if let completion {
+                DispatchQueue.main.async(execute: completion)
+            }
         }
     }
 }
