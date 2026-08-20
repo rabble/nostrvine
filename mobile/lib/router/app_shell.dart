@@ -12,7 +12,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -319,32 +318,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       final notifier = ref.read(activeBranchIndexProvider.notifier);
       if (notifier.state != activeIndex) notifier.state = activeIndex;
     });
-
-    // Transitional scaffold: records relay connection events for analytics.
-    // TODO(#4338): remove when relay management moves to a dedicated cubit/service.
-    ref.watch(relayStatisticsBridgeProvider);
-
-    // Transitional scaffold: refreshes feeds when the relay set changes.
-    // TODO(#4338): remove when feed refresh is driven by a relay event stream in a cubit.
-    ref.watch(relaySetChangeBridgeProvider);
-
-    ref.watch(relayListDirtyPublishBridgeProvider);
-
-    // Initialize Zendesk identity sync to keep user identity in sync with auth
-    ref.watch(zendeskIdentitySyncProvider);
-
-    // Mirrors the authenticated pubkey into Firebase Analytics + Crashlytics.
-    ref.watch(analyticsIdentitySyncProvider);
-
-    // Transitional scaffold: syncs notification preferences on auth change.
-    // TODO(#4338): remove when NotificationPreferencesCubit owns this lifecycle.
-    ref.watch(notificationPreferencesDirtySyncBridgeProvider);
-    ref.watch(pushNotificationSyncProvider);
-
-    // Transitional scaffold: syncs block/mute list after login.
-    // TODO(#4338): remove when BlocklistCubit owns post-login sync.
-    ref.watch(blocklistSyncBridgeProvider);
-    ref.watch(blockedFollowReconcilerProvider);
 
     // The shell chrome (app bar) mirrors the *active tab's* route. While a
     // full-screen route is pushed above the whole shell (camera, editor,

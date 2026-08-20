@@ -131,6 +131,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/startup/app_side_effects.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
 import 'package:openvine/startup/database_corruption_gate.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
@@ -2176,9 +2177,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
 
   @override
   Widget build(BuildContext context) {
-    // Activate route normalization at app root
-    ref.watch(routeNormalizationProvider);
-
     // Set up deep link listener (must be in build method per Riverpod rules)
     ref.listen<AsyncValue<DeepLink>>(deepLinksProvider, (previous, next) {
       Log.info(
@@ -2853,35 +2851,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
       );
     }
 
-    // Eagerly create the outgoing-DM retry service so its foreground
-    // subscription is wired up at app shell setup. The service has no
-    // UI consumer (it operates on the durable outgoing_dms queue), so
-    // without an explicit read it would never be created. See #4124.
-    ref.watch(outgoingDmRetryServiceProvider);
-
-    // Eagerly create the DM-reaction retry service so its foreground
-    // subscription is wired up at app shell setup. Like the outgoing-DM
-    // retry service it has no UI consumer — it re-drives undelivered
-    // reactions off the dm_message_reactions durable record.
-    ref.watch(dmReactionRetryServiceProvider);
-
-    // Eagerly create the view-event retry service so foreground sweeps
-    // run for the durable pending_view_events queue without a UI consumer.
-    ref.watch(viewEventRetryServiceProvider);
-
-    // Eagerly create the product-event queue so foreground sweeps run for the
-    // durable pending_product_events queue without a UI consumer.
-    ref.watch(productEventQueueProvider);
-
-    // Eagerly create the profile-save retry service so its foreground +
-    // connectivity subscriptions are wired at app shell setup. It re-drives
-    // the durable pending_profile_saves slot with no UI consumer (#3161).
-    ref.watch(profileSaveRetryServiceProvider);
-
-    // Eagerly wire the connectivity → relay force-reconnect bridge so the
-    // relay pool self-heals app-wide the moment the network returns (#3161).
-    ref.watch(connectivityRelayReconnectProvider);
-
     final inviteApiClient = ref.watch(inviteApiClientProvider);
     final inviteAvailabilityRepository = ref.watch(
       inviteAvailabilityRepositoryProvider,
@@ -3089,7 +3058,12 @@ class _DivineAppState extends ConsumerState<DivineApp>
       );
     }
 
-    return wrapped; // ProviderScope now wraps DivineApp from outside
+    // Root-tier app-wide side effects are activated here, above
+    // MaterialApp.router, so they run whether or not the bottom-nav shell is
+    // mounted. See AppRootSideEffects for the membership rule.
+    return AppRootSideEffects(
+      child: wrapped, // ProviderScope now wraps DivineApp from outside
+    );
   }
 }
 
