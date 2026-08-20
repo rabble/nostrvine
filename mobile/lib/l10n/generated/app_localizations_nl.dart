@@ -10416,10 +10416,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit vraagt relays om de uitreiking aan jezelf te laten vallen en haalt de badge van je profiel. Weigeren de relays de verwijdering, dan verandert er niets.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Deze uitreiking ging in één keer naar meerdere mensen. Neem je hem bij één terug, dan krijgen de anderen een nieuwe uitreiking en moeten ze de badge opnieuw accepteren.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Terugnemen';
 
   @override

@@ -9903,10 +9903,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '자기 자신에게 준 수여 기록을 지워 달라고 릴레이에 요청하고, 배지를 프로필에서 내려요. 릴레이가 삭제를 거절하면 아무것도 바뀌지 않아요.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      '이 수여는 여러 사람에게 한 번에 나갔어요. 한 명에게서 회수하면 나머지는 새 수여를 받고 배지를 다시 받아야 해요.';
-
-  @override
   String get badgeDetailRevokeConfirm => '회수';
 
   @override

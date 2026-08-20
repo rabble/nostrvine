@@ -10290,10 +10290,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu, relaylerden kendine verdiğin ödülü kaldırmalarını ister ve rozeti profilinden alır. Relayler silmeyi reddederse hiçbir şey değişmez.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Bu ödül aynı anda birkaç kişiye gitti. Birinden geri alman, diğerlerinin yeni bir ödül alması ve rozeti yeniden kabul etmesi anlamına gelir.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Geri al';
 
   @override

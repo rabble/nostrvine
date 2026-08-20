@@ -71,23 +71,18 @@ class BadgeRecipientRow extends StatelessWidget {
               ),
             ),
             if (showRevokeAction)
-              // The button's own `Semantics` does not open a container, so
-              // without this boundary the acceptance pill below merges into
-              // its node and a screen reader reads the two as one control.
-              Semantics(
-                container: true,
-                child: isRevoking
-                    ? const _RevokeProgress()
-                    : DivineIconButton(
-                        icon: DivineIconName.userMinus,
-                        type: DivineIconButtonType.ghostSecondary,
-                        size: DivineIconButtonSize.small,
-                        showShadow: false,
-                        tooltip: context.l10n.badgeDetailRevokeAction,
-                        semanticLabel: context.l10n.badgeDetailRevokeAction,
-                        onPressed: onRevoke,
-                      ),
-              ),
+              if (isRevoking)
+                const _RevokeProgress()
+              else
+                DivineIconButton(
+                  icon: DivineIconName.userMinus,
+                  type: DivineIconButtonType.ghostSecondary,
+                  size: DivineIconButtonSize.small,
+                  showShadow: false,
+                  tooltip: context.l10n.badgeDetailRevokeAction,
+                  semanticLabel: context.l10n.badgeDetailRevokeAction,
+                  onPressed: onRevoke,
+                ),
           ],
         ),
         if (isAccepted case final accepted?)

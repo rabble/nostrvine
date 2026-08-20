@@ -10442,10 +10442,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Isso pede aos relays que removam a entrega que você fez a si mesmo e tira o selo do seu perfil. Se os relays recusarem a exclusão, nada muda.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Esta entrega saiu para várias pessoas de uma vez. Retirá-la de uma faz com que as outras recebam uma entrega nova e tenham de aceitar o selo de novo.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Retirar';
 
   @override

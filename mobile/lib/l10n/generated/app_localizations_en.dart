@@ -10475,10 +10475,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This asks relays to drop the award you gave yourself, and takes the badge off your profile. If the relays refuse the deletion, nothing changes.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'This award went out to several people at once. Taking it back from one means the others get a fresh award and have to accept the badge again.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Take it back';
 
   @override

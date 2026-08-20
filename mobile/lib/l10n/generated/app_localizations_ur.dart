@@ -10366,10 +10366,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ ریلے سے کہتا ہے کہ آپ نے خود کو دیا گیا ایوارڈ ہٹا دیں، اور بیج کو آپ کے پروفائل سے اتار دیتا ہے۔ اگر ریلے حذف کرنے سے انکار کر دیں تو کچھ نہیں بدلتا۔';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'یہ ایوارڈ ایک ساتھ کئی لوگوں کو گیا تھا۔ ایک سے واپس لینے کا مطلب ہے کہ باقی لوگوں کو نیا ایوارڈ ملے گا اور انہیں بیج دوبارہ قبول کرنا ہوگا۔';
-
-  @override
   String get badgeDetailRevokeConfirm => 'واپس لیں';
 
   @override

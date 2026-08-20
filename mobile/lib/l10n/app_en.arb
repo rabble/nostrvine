@@ -6424,10 +6424,6 @@
   "@badgeDetailRevokeSelfBody": {
     "description": "Body of the revoke sheet when the issuer is taking the badge back from themselves. Unlike the general case, their own pin is removed too, because the profile badge list is their own event."
   },
-  "badgeDetailRevokeSharedNote": "This award went out to several people at once. Taking it back from one means the others get a fresh award and have to accept the badge again.",
-  "@badgeDetailRevokeSharedNote": {
-    "description": "Extra warning in the revoke sheet, shown only when the award event names more than one recipient."
-  },
   "badgeDetailRevokeConfirm": "Take it back",
   "badgeDetailRevokeSuccess": "Badge taken back",
   "badgeDetailBlockClaimantsAction": "Block badge claimants",

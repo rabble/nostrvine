@@ -125,7 +125,6 @@ class BadgeRecipientViewData {
     required this.pubkey,
     required this.awardEventId,
     required this.isAccepted,
-    this.sharesAwardWithOthers = false,
     this.isViewer = false,
   });
 
@@ -134,12 +133,6 @@ class BadgeRecipientViewData {
   /// The award event that named this recipient.
   final String awardEventId;
 
-  /// Whether any award naming this recipient also names somebody else.
-  ///
-  /// True means [BadgeRepository.revokeAward] has to rewrite an award the
-  /// others are holding, so the confirmation can say so before it happens.
-  final bool sharesAwardWithOthers;
-
   /// Whether this recipient is the current user.
   ///
   /// Revoking yourself also takes your own pin down, which the confirmation
@@ -147,7 +140,8 @@ class BadgeRecipientViewData {
   /// Resolved here so the UI does not have to reach for the signed-in pubkey.
   final bool isViewer;
 
-  /// Whether the recipient's profile badge list references [awardEventId].
+  /// Whether the recipient's profile badge list references this badge's
+  /// coordinate.
   ///
   /// Null when acceptance was not resolved for this recipient, which happens
   /// past the recipient-check limit. Everyone awarded the badge is still
@@ -317,10 +311,17 @@ class IssuedBadgeRecipientViewData {
 ///
 /// Carries the relay-level [outcome] for logging and triage.
 class BadgePublishException implements Exception {
-  const BadgePublishException(this.message, {required this.outcome});
+  const BadgePublishException(
+    this.message, {
+    required this.outcome,
+    this.eventKind,
+  });
 
   final String message;
   final PublishOutcome outcome;
+
+  /// The kind of event whose publish failed, when known.
+  final int? eventKind;
 
   @override
   String toString() => 'BadgePublishException: $message';
@@ -718,15 +719,6 @@ class BadgeRepository {
       }
     }
 
-    // Everyone named by an award that names more than one person, taken
-    // across all their awards rather than just the newest: a revoke deletes
-    // every award naming them, so those are all the awards it has to rewrite.
-    final sharesAwardWithOthers = <String>{
-      for (final award in awards)
-        if (award.recipientPubkeys.toSet().length > 1)
-          ...award.recipientPubkeys,
-    };
-
     final checked = <String>{
       ...awardByRecipient.keys.take(recipientCheckLimit),
       if (viewerPubkey != null && awardByRecipient.containsKey(viewerPubkey))
@@ -742,7 +734,6 @@ class BadgeRepository {
           isAccepted: checked.contains(entry.key)
               ? _containsBadgeCoordinate(profileBadges[entry.key], entry.value)
               : null,
-          sharesAwardWithOthers: sharesAwardWithOthers.contains(entry.key),
           isViewer: entry.key == viewerPubkey,
         ),
     ];
@@ -930,12 +921,9 @@ class BadgeRepository {
   /// deletion strips the badge off nobody, where the reverse order would take
   /// it off the bystanders too.
   ///
-  /// The replacement carries a new event id while the remaining recipients'
-  /// profile badge lists still point at the old award, so they read as
-  /// not-yet-accepted until they accept again. The badge keeps rendering on
-  /// their profile in the meantime — [loadAcceptedBadgesForProfile] keeps a
-  /// pin whose award event is missing. Nobody is notified: a `kind:5` from
-  /// the issuer reaches no notification path.
+  /// Acceptance is coordinate-based, so replacing a shared award does not
+  /// require the remaining recipients to accept the badge again. Nobody is
+  /// notified: a `kind:5` from the issuer reaches no notification path.
   ///
   /// Publishes no award or deletion when nothing names [recipientPubkey],
   /// but still takes down the current user's own pin.
@@ -972,9 +960,21 @@ class BadgeRepository {
       final remaining = <String>{
         for (final award in revoked)
           for (final recipient in award.recipientPubkeys)
-            if (recipient != recipientPubkey) recipient,
+            if (recipient != recipientPubkey && isBadgePubkey(recipient))
+              recipient,
       }.toList(growable: false);
-      if (remaining.isNotEmpty) {
+      final hasReplacement = awards.any((award) {
+        final recipients = {
+          for (final recipient in award.recipientPubkeys)
+            if (isBadgePubkey(recipient)) recipient,
+        };
+        // A deletion retry can read the replacement published by its first
+        // attempt alongside the still-present original. Reuse that award
+        // instead of minting another identical event on every retry.
+        return recipients.length == remaining.length &&
+            recipients.containsAll(remaining);
+      });
+      if (remaining.isNotEmpty && !hasReplacement) {
         await awardBadge(coordinate: coordinate, recipientPubkeys: remaining);
       }
 
@@ -1520,6 +1520,7 @@ class BadgeRepository {
       throw BadgePublishException(
         'Could not publish $label event: ${outcome.summary}',
         outcome: outcome,
+        eventKind: kind,
       );
     }
     return event;

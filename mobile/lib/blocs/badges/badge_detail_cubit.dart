@@ -1,10 +1,11 @@
 // ABOUTME: Cubit for one badge's detail page: definition, awardees, awarding
-// ABOUTME: and revoking recipients, and accepting or removing the own award.
+// ABOUTME: and revoking recipients, and accepting or removing the viewer's award.
 
 import 'package:badge_repository/badge_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/blocs/close_guard.dart';
 
 part 'badge_detail_state.dart';
@@ -101,8 +102,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
 
   /// Takes this badge back from [recipientPubkey].
   ///
-  /// Reloads afterwards: the revoked row goes, and anyone whose award was
-  /// rewritten alongside it comes back reading as not-yet-accepted.
+  /// Reloads afterwards so the revoked row disappears.
   Future<void> revokeAward(String recipientPubkey) {
     return _runAction(
       BadgeDetailActionStatus.revoking,
@@ -116,6 +116,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
       // and it is the one a relay is most likely to refuse — same refusal,
       // same advice as a refused badge deletion.
       rejectionStatus: BadgeDetailActionStatus.deleteRejected,
+      rejectionEventKind: EventKind.eventDeletion,
     );
   }
 
@@ -169,7 +170,9 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
   /// [completedStatus] and [rejectionStatus] let one action carry its own
   /// outcome where the UI has something better to say than the shared
   /// [BadgeDetailActionStatus.completed] / [BadgeDetailActionStatus.failure]
-  /// — the latter only when a relay refused the publish outright.
+  /// — the latter only when a relay refused the publish outright. When an
+  /// action publishes several events, [rejectionEventKind] restricts that
+  /// message to the relevant stage.
   Future<void> _runAction(
     BadgeDetailActionStatus actionStatus,
     Future<void> Function() action, {
@@ -177,6 +180,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
     String? recipient,
     BadgeDetailActionStatus completedStatus = BadgeDetailActionStatus.completed,
     BadgeDetailActionStatus? rejectionStatus,
+    int? rejectionEventKind,
   }) async {
     emit(
       state.copyWith(actionStatus: actionStatus, actionRecipient: recipient),
@@ -200,7 +204,10 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState>
       emitIfOpen(
         state.copyWith(
           actionStatus:
-              rejectionStatus != null && error.outcome.rejectedBy.isNotEmpty
+              rejectionStatus != null &&
+                  error.outcome.rejectedBy.isNotEmpty &&
+                  (rejectionEventKind == null ||
+                      error.eventKind == rejectionEventKind)
               ? rejectionStatus
               : BadgeDetailActionStatus.failure,
         ),

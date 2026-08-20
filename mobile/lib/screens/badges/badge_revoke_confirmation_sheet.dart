@@ -7,10 +7,6 @@ import 'package:openvine/l10n/l10n.dart';
 
 /// Asks the badge issuer to confirm taking an award back from one recipient.
 ///
-/// [sharesAwardWithOthers] adds the line about the rest of a batched award
-/// having to accept again — the award event names several people and NIP-09
-/// deletes whole events, so revoking one rewrites the others' award too.
-///
 /// [isViewer] switches the body: taking a badge back from yourself also takes
 /// your own pin down, which the general copy cannot promise because anyone
 /// else's profile badge list is their event, not ours.
@@ -19,7 +15,6 @@ import 'package:openvine/l10n/l10n.dart';
 /// resolves to `null`.
 Future<bool?> showBadgeRevokeConfirmation(
   BuildContext context, {
-  required bool sharesAwardWithOthers,
   required bool isViewer,
 }) {
   final l10n = context.l10n;
@@ -42,13 +37,6 @@ Future<bool?> showBadgeRevokeConfirmation(
                 color: context.vineColors.onSurfaceVariant,
               ),
             ),
-            if (sharesAwardWithOthers)
-              Text(
-                l10n.badgeDetailRevokeSharedNote,
-                style: VineTheme.bodySmallFont(
-                  color: context.vineColors.onSurfaceVariant,
-                ),
-              ),
             Row(
               spacing: 12,
               children: [

@@ -10499,10 +10499,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Damit bitten wir die Relays, die Auszeichnung an dich selbst zu entfernen, und nehmen das Badge von deinem Profil. Lehnen die Relays die Löschung ab, ändert sich nichts.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Diese Auszeichnung ging an mehrere Leute auf einmal. Nimmst du sie einer Person weg, bekommen die anderen eine neue Auszeichnung und müssen das Badge erneut annehmen.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Zurücknehmen';
 
   @override

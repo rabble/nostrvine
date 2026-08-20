@@ -290,7 +290,7 @@ void main() {
     );
 
     blocTest<BadgeDetailCubit, BadgeDetailState>(
-      'revokeAward separates an outright relay refusal from other failures',
+      'revokeAward reports a refused deletion with deletion guidance',
       setUp: () {
         when(
           () => repository.revokeAward(
@@ -300,6 +300,7 @@ void main() {
         ).thenThrow(
           const BadgePublishException(
             'rejected',
+            eventKind: EventKind.eventDeletion,
             outcome: PublishOutcome(
               eventId: 'deadbeef',
               acceptedBy: [],
@@ -317,6 +318,40 @@ void main() {
           (state) => state.actionStatus,
           'actionStatus',
           BadgeDetailActionStatus.deleteRejected,
+        ),
+      ],
+      errors: () => [isA<BadgePublishException>()],
+    );
+
+    blocTest<BadgeDetailCubit, BadgeDetailState>(
+      'revokeAward reports a refused replacement as a generic failure',
+      setUp: () {
+        when(
+          () => repository.revokeAward(
+            coordinate: any(named: 'coordinate'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+          ),
+        ).thenThrow(
+          const BadgePublishException(
+            'rejected',
+            eventKind: EventKind.badgeAward,
+            outcome: PublishOutcome(
+              eventId: 'deadbeef',
+              acceptedBy: [],
+              rejectedBy: {'wss://relay.divine.video': 'award not authorized'},
+              noResponseFrom: [],
+            ),
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.revokeAward(_pubkey(2)),
+      skip: 1,
+      expect: () => [
+        isA<BadgeDetailState>().having(
+          (state) => state.actionStatus,
+          'actionStatus',
+          BadgeDetailActionStatus.failure,
         ),
       ],
       errors: () => [isA<BadgePublishException>()],

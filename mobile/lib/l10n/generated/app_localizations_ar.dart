@@ -10298,10 +10298,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يطلب هذا من المُرحِّلات إسقاط ما منحته لنفسك، ويزيل الشارة من ملفك. وإن رفضت المُرحِّلات الحذف، فلن يتغيّر شيء.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'خرج هذا المنح لعدة أشخاص دفعة واحدة. استرجاعه من واحد يعني أن الآخرين يحصلون على منح جديد وعليهم قبول الشارة من جديد.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'استرجاع';
 
   @override

@@ -10490,10 +10490,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo chiede ai relay di rimuovere l\'assegnazione che ti sei fatto e toglie il badge dal tuo profilo. Se i relay rifiutano la cancellazione, non cambia nulla.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Questa assegnazione è andata a più persone in una volta sola. Riprenderla a una significa che le altre ricevono una nuova assegnazione e devono accettare di nuovo il badge.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Riprendi';
 
   @override

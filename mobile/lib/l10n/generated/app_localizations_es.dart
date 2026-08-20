@@ -10473,10 +10473,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto les pide a los relés que saquen la entrega que te hiciste a vos mismo, y quita la insignia de tu perfil. Si los relés se niegan a borrarla, no cambia nada.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Esta entrega salió para varias personas a la vez. Quitársela a una hace que el resto reciba una entrega nueva y tenga que aceptar la insignia otra vez.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Quitar';
 
   @override

@@ -9875,10 +9875,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '自分に贈った授与の削除をリレーに依頼し、バッジをあなたのプロフィールから外します。リレーが削除を拒否した場合は、何も変わりません。';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'この授与は複数の人へ一度に贈られました。1人から取り消すと、ほかの人には新しい授与が届き、バッジをもう一度受け取る必要があります。';
-
-  @override
   String get badgeDetailRevokeConfirm => '取り消す';
 
   @override

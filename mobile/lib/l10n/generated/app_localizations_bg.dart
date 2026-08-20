@@ -10465,10 +10465,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Това моли релетата да премахнат раздаването, което направи на себе си, и сваля знака от профила ти. Ако релетата откажат изтриването, нищо не се променя.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Това раздаване излезе наведнъж за няколко души. Ако го вземеш обратно от един, останалите получават ново раздаване и трябва да приемат знака отново.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Вземи обратно';
 
   @override

@@ -2040,37 +2040,6 @@ void main() {
         expect(detail.viewerAward?.isAccepted, isTrue);
       });
 
-      test('flags recipients who share an award with somebody else', () async {
-        // Revoking rewrites the award the others hold, so the confirmation
-        // needs to know which recipients that is true for.
-        _stubQueries(nostrClient, {
-          'awardsFor:${coordinate.value}': [
-            _awardEvent(
-              id: _eventId(75),
-              issuerPubkey: _pubkey(2),
-              definitionCoordinate: coordinate.value,
-              recipients: [_pubkey(3), _pubkey(4)],
-            ),
-            _awardEvent(
-              id: _eventId(76),
-              issuerPubkey: _pubkey(2),
-              definitionCoordinate: coordinate.value,
-              recipients: [_pubkey(5)],
-            ),
-          ],
-        });
-
-        final detail = await repository.loadBadgeDetail(coordinate);
-
-        expect(
-          {
-            for (final recipient in detail.recipients)
-              recipient.pubkey: recipient.sharesAwardWithOthers,
-          },
-          {_pubkey(3): true, _pubkey(4): true, _pubkey(5): false},
-        );
-      });
-
       test('marks the viewer among the recipients', () async {
         // The confirmation copy differs for your own award, and the UI should
         // not have to look up the signed-in pubkey to find that out.
@@ -2094,36 +2063,6 @@ void main() {
           },
           {_pubkey(1): true, _pubkey(3): false},
         );
-      });
-
-      test('flags a recipient whose older award named others too', () async {
-        // The newest award names them alone, but a revoke deletes every award
-        // naming them — including the shared older one.
-        _stubQueries(nostrClient, {
-          'awardsFor:${coordinate.value}': [
-            _awardEvent(
-              id: _eventId(77),
-              issuerPubkey: _pubkey(2),
-              definitionCoordinate: coordinate.value,
-              recipients: [_pubkey(3), _pubkey(4)],
-            ),
-            _awardEvent(
-              id: _eventId(78),
-              issuerPubkey: _pubkey(2),
-              definitionCoordinate: coordinate.value,
-              recipients: [_pubkey(3)],
-              createdAt: 2000,
-            ),
-          ],
-        });
-
-        final detail = await repository.loadBadgeDetail(coordinate);
-
-        final recipient = detail.recipients.firstWhere(
-          (candidate) => candidate.pubkey == _pubkey(3),
-        );
-        expect(recipient.awardEventId, _eventId(78));
-        expect(recipient.sharesAwardWithOthers, isTrue);
       });
 
       test('marks a newer viewer re-award accepted by coordinate', () async {
@@ -2907,6 +2846,93 @@ void main() {
         expect(published.single.kind, EventKind.eventDeletion);
         expect(published.single.tags, [
           ['e', _eventId(62)],
+          ['k', '${EventKind.badgeAward}'],
+        ]);
+      });
+
+      test(
+        'ignores malformed bystanders and still deletes the award',
+        () async {
+          _stubQueries(nostrClient, {
+            'awardsFor:${coordinate.value}': [
+              _awardEvent(
+                id: _eventId(72),
+                issuerPubkey: _pubkey(1),
+                definitionCoordinate: coordinate.value,
+                recipients: [_pubkey(2), 'npub1notavalidptag'],
+              ),
+            ],
+          });
+
+          await repository.revokeAward(
+            coordinate: coordinate,
+            recipientPubkey: _pubkey(2),
+          );
+
+          final published = verify(
+            () => nostrClient.publishEventAwaitOk(captureAny()),
+          ).captured.cast<Event>();
+          expect(published, hasLength(1));
+          expect(published.single.kind, EventKind.eventDeletion);
+        },
+      );
+
+      test('keeps valid bystanders and drops malformed p tags', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(73),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2), 'npub1notavalidptag', _pubkey(3)],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(2),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published.first.tags, [
+          ['a', coordinate.value],
+          ['p', _pubkey(3)],
+        ]);
+      });
+
+      test('reuses an existing replacement when retrying deletion', () async {
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(74),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(2), _pubkey(3)],
+            ),
+            _awardEvent(
+              id: _eventId(75),
+              issuerPubkey: _pubkey(1),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(3)],
+            ),
+          ],
+        });
+
+        await repository.revokeAward(
+          coordinate: coordinate,
+          recipientPubkey: _pubkey(2),
+        );
+
+        final published = verify(
+          () => nostrClient.publishEventAwaitOk(captureAny()),
+        ).captured.cast<Event>();
+        expect(published, hasLength(1));
+        expect(published.single.kind, EventKind.eventDeletion);
+        expect(published.single.tags, [
+          ['e', _eventId(74)],
           ['k', '${EventKind.badgeAward}'],
         ]);
       });

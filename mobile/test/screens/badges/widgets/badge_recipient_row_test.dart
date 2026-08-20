@@ -86,8 +86,6 @@ void main() {
     testWidgets('keeps the acceptance pill out of the revoke button', (
       tester,
     ) async {
-      // DivineIconButton's own Semantics opens no container, so without a
-      // boundary the pill merges in and the two are read as one control.
       await pumpRow(
         tester,
         isAccepted: true,

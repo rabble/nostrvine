@@ -10392,10 +10392,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Ini meminta geganti membuang pemberian yang anda buat kepada diri sendiri, dan menanggalkan lencana daripada profil anda. Jika geganti menolak pemadaman, tiada apa yang berubah.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Pemberian ini keluar kepada beberapa orang serentak. Menariknya balik daripada seorang bermakna yang lain menerima pemberian baharu dan perlu menerima lencana itu sekali lagi.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Tarik balik';
 
   @override

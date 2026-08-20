@@ -306,6 +306,7 @@ void main() {
       when(() => repository.deleteBadge(any())).thenThrow(
         const BadgePublishException(
           'rejected',
+          eventKind: EventKind.eventDeletion,
           outcome: PublishOutcome(
             eventId: 'deadbeef',
             acceptedBy: [],
@@ -357,9 +358,6 @@ void main() {
       expect(find.text(l10n.badgeDetailRevokeBody), findsOneWidget);
       // Someone else's pin is their event, so the copy only promises to ask.
       expect(find.text(l10n.badgeDetailRevokeSelfBody), findsNothing);
-      // The award named one person, so the batch warning would be a lie.
-      expect(find.text(l10n.badgeDetailRevokeSharedNote), findsNothing);
-
       await tester.tap(find.text(l10n.commonCancel));
       await tester.pumpAndSettle();
       verifyNever(
@@ -404,25 +402,6 @@ void main() {
       expect(find.text(l10n.badgeDetailRevokeBody), findsNothing);
     });
 
-    testWidgets('warns that a batched award leaves the others re-accepting', (
-      tester,
-    ) async {
-      when(() => repository.loadBadgeDetail(any())).thenAnswer(
-        (_) async => _detail(
-          definition: _definition(),
-          isOwner: true,
-          recipients: [_recipient(sharesAwardWithOthers: true)],
-        ),
-      );
-
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      await tapRevoke(tester);
-
-      expect(find.text(l10n.badgeDetailRevokeSharedNote), findsOneWidget);
-    });
-
     testWidgets('tells the owner when a relay refuses the revoke', (
       tester,
     ) async {
@@ -441,6 +420,7 @@ void main() {
       ).thenThrow(
         const BadgePublishException(
           'rejected',
+          eventKind: EventKind.eventDeletion,
           outcome: PublishOutcome(
             eventId: 'deadbeef',
             acceptedBy: [],
@@ -538,15 +518,11 @@ BadgeDetailData _detail({
   );
 }
 
-BadgeRecipientViewData _recipient({
-  bool sharesAwardWithOthers = false,
-  bool isViewer = false,
-}) {
+BadgeRecipientViewData _recipient({bool isViewer = false}) {
   return BadgeRecipientViewData(
     pubkey: _pubkey(2),
     awardEventId: '2'.padLeft(64, '0'),
     isAccepted: true,
-    sharesAwardWithOthers: sharesAwardWithOthers,
     isViewer: isViewer,
   );
 }

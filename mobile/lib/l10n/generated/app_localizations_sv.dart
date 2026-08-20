@@ -10370,10 +10370,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det här ber reläerna släppa utdelningen du gjorde till dig själv och tar bort badgen från din profil. Nekar reläerna borttagningen händer ingenting.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Den här utdelningen gick ut till flera personer på en gång. Tar du tillbaka den från en får de andra en ny utdelning och måste acceptera badgen igen.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Ta tillbaka';
 
   @override

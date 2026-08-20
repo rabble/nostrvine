@@ -17752,12 +17752,6 @@ abstract class AppLocalizations {
   /// **'This asks relays to drop the award you gave yourself, and takes the badge off your profile. If the relays refuse the deletion, nothing changes.'**
   String get badgeDetailRevokeSelfBody;
 
-  /// Extra warning in the revoke sheet, shown only when the award event names more than one recipient.
-  ///
-  /// In en, this message translates to:
-  /// **'This award went out to several people at once. Taking it back from one means the others get a fresh award and have to accept the badge again.'**
-  String get badgeDetailRevokeSharedNote;
-
   /// No description provided for @badgeDetailRevokeConfirm.
   ///
   /// In en, this message translates to:

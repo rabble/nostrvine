@@ -10458,10 +10458,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hinihiling nito sa mga relay na tanggalin ang ibinigay mo sa sarili mo, at inaalis ang badge sa profile mo. Kung tumanggi ang mga relay sa pagtanggal, walang mababago.';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'Sabay-sabay na naibigay ito sa ilang tao. Kapag binawi mo sa isa, makakakuha ng bagong bigay ang iba at kailangan nilang tanggapin ulit ang badge.';
-
-  @override
   String get badgeDetailRevokeConfirm => 'Bawiin';
 
   @override

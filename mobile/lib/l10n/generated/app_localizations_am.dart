@@ -10126,10 +10126,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህ ሪሌዮች ለራስህ የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል፣ ባጁንም ከመገለጫህ ላይ ያነሳል። ሪሌዮቹ ስረዛውን ካልተቀበሉት ምንም አይለወጥም።';
 
   @override
-  String get badgeDetailRevokeSharedNote =>
-      'ይህ ሽልማት በአንድ ጊዜ ለብዙ ሰዎች ወጥቷል። ከአንዱ ስትመልሰው ሌሎቹ አዲስ ሽልማት ያገኛሉ፣ ባጁንም እንደገና መቀበል ይኖርባቸዋል።';
-
-  @override
   String get badgeDetailRevokeConfirm => 'መልስ';
 
   @override
