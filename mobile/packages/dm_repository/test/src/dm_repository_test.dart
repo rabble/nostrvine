@@ -12682,6 +12682,7 @@ void main() {
         );
 
         await controller.close();
+        await repository.stopListening();
       });
       test(
         'a NIP-04 event ignored by database dedup is recorded so redelivery '
