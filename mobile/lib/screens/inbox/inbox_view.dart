@@ -522,29 +522,6 @@ class _PinnedSupportRow extends StatelessWidget {
   }
 }
 
-/// Vertical padding [UnreadFilterChips] puts above and below its chip row.
-const double _kFilterChipsVerticalPadding = 8;
-
-/// Inner vertical padding of a [DivineButtonSize.tiny] chip. Fixed per size.
-const double _kTinyChipVerticalPadding = 6;
-
-/// Line box of a tiny chip's `titleSmallFont` label (14/20) — the only part of
-/// the chip's height that grows with the text scaler.
-const double _kTinyChipLineHeight = 20;
-
-/// Height [UnreadFilterChips] needs at the current text scale.
-///
-/// A pinned sliver declares its extent before its child is laid out, so this
-/// reproduces the child's height rather than measuring it. Under-declaring
-/// silently clips the label — a Row overflowing on its cross axis does not
-/// throw. Duplicating the arithmetic is safe only because a widget test pins
-/// it against the chips' real intrinsic height at two scales, so a moved
-/// `divine_ui` token fails there instead of on a phone.
-double _filterChipsExtent(BuildContext context) =>
-    _kFilterChipsVerticalPadding * 2 +
-    _kTinyChipVerticalPadding * 2 +
-    MediaQuery.textScalerOf(context).scale(_kTinyChipLineHeight);
-
 /// The whole Messages pane as a single scroll view.
 ///
 /// Every piece of chrome — following bar, search field, filter chips — used to
@@ -798,12 +775,10 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           ),
         ),
       ),
-      SliverPersistentHeader(
-        pinned: true,
-        delegate: _FilterChipsHeaderDelegate(
+      PinnedHeaderSliver(
+        child: _FilterChipsHeader(
           selected: filter,
           hasBlocked: hasBlocked,
-          extent: _filterChipsExtent(context),
           onChanged: (value) => context.read<ConversationListBloc>().add(
             ConversationListFilterChanged(value),
           ),
@@ -1176,52 +1151,43 @@ class _FilteredEmptyContent extends StatelessWidget {
   }
 }
 
-/// Pinned header carrying [UnreadFilterChips].
+/// Pinned header carrying [InboxFilterChips].
 ///
 /// Pinned rather than scrolled away so the user can always drop back to All
 /// after narrowing to Unread without hunting for the chip. Opaque, because the
 /// conversation list scrolls underneath it.
-class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _FilterChipsHeaderDelegate({
+///
+/// Rendered through [PinnedHeaderSliver] rather than a
+/// [SliverPersistentHeaderDelegate] on purpose, the same way
+/// `sound_detail_screen.dart` does: a delegate has to declare its extent
+/// before its child is laid out, and a header that ends up shorter than that
+/// extent makes `layoutExtent` exceed `paintExtent`. The sliver then fails
+/// layout, every sliver after it keeps a null geometry, and paint reports it
+/// as "Null check operator used on a null value" against the enclosing
+/// [CustomScrollView] — a blank Messages pane. The chips' height comes from
+/// font metrics that snap to whole pixels, while any declared extent is
+/// arithmetic over `textScaler.scale(...)`, so the two diverged at eleven of
+/// iOS's twelve Dynamic Type sizes: six blanked the pane and five clipped the
+/// chips, leaving only the default correct (#7854). [PinnedHeaderSliver]
+/// measures the child, so there is nothing to keep in sync.
+class _FilterChipsHeader extends StatelessWidget {
+  const _FilterChipsHeader({
     required this.selected,
     required this.hasBlocked,
     required this.onChanged,
-    required this.extent,
   });
 
   final InboxFilter selected;
   final bool hasBlocked;
   final ValueChanged<InboxFilter> onChanged;
 
-  /// Height the chips need at the caller's text scale. Passed in rather than
-  /// read here: [SliverPersistentHeaderDelegate]'s extent getters take no
-  /// [BuildContext], so the MediaQuery lookup has to happen in the widget
-  /// that builds the delegate. Same shape as the `topInset` pattern in
-  /// `.claude/rules/ui_theming.md`.
-  final double extent;
-
   @override
-  double get minExtent => extent;
-
-  @override
-  double get maxExtent => extent;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
-    return ColoredBox(
-      color: context.vineColors.surfaceContainerHigh,
-      child: InboxFilterChips(
-        selected: selected,
-        hasBlocked: hasBlocked,
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_FilterChipsHeaderDelegate oldDelegate) =>
-      oldDelegate.selected != selected ||
-      oldDelegate.hasBlocked != hasBlocked ||
-      oldDelegate.onChanged != onChanged ||
-      oldDelegate.extent != extent;
+  Widget build(BuildContext context) => ColoredBox(
+    color: context.vineColors.surfaceContainerHigh,
+    child: InboxFilterChips(
+      selected: selected,
+      hasBlocked: hasBlocked,
+      onChanged: onChanged,
+    ),
+  );
 }

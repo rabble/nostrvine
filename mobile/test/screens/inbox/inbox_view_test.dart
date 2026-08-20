@@ -1517,15 +1517,13 @@ void main() {
         );
       });
 
-      // A pinned SliverPersistentHeader lays its child out with a TIGHT height
-      // equal to maxExtent, so `getSize(...).height` only ever reports the
-      // extent the delegate declared — asserting it equals a constant measures
-      // that constant against itself and cannot catch an under-declared header.
-      // What can: the chips' own intrinsic height, which is computed from the
-      // content and is independent of the constraint it was laid out under. If
-      // the header declares less than that, the label is silently clipped
-      // (cross-axis overflow in a Row does not throw), which is the failure
-      // these two tests exist to catch.
+      // `laidOut` is the height the chips actually got; `needed` is their
+      // intrinsic height, computed from the content and independent of the
+      // constraint they were laid out under. Comparing the two is what catches
+      // a clipped label, since a Row overflowing on its cross axis does not
+      // throw. Both matter: a header shorter than `needed` clips the chips,
+      // and a header taller than what its child lays out to used to blank the
+      // whole pane — see the Dynamic Type sweep below.
       Future<({double laidOut, double needed})> pumpChips(
         WidgetTester tester, {
         required TextScaler textScaler,
@@ -1544,13 +1542,114 @@ void main() {
         );
         await openMessages(tester);
 
+        // skipOffstage:false so this helper still reports sizes when the
+        // viewport is broken: the onstage element walk itself null-crashes on
+        // a sliver left unlaid-out, and swallowing that here would hide which
+        // assertion below actually failed.
         final box = tester.renderObject<RenderBox>(
-          find.byType(InboxFilterChips),
+          find.byType(InboxFilterChips, skipOffstage: false),
         );
         return (
           laidOut: box.size.height,
           needed: box.getMaxIntrinsicHeight(box.size.width),
         );
+      }
+
+      // Every Dynamic Type size iOS can hand us, as the ratio of that
+      // category's body point size to the 17pt default — the mapping the
+      // engine uses to turn `preferredContentSizeCategory` into
+      // `textScaleFactor`.
+      //
+      // `TextScaler.linear` is a stand-in: on device `MediaQuery.textScalerOf`
+      // is a `SystemTextScaler`, whose `scale()` defers to
+      // `PlatformDispatcher.scaleFontSize`. That falls back to
+      // `size * textScaleFactor` only while the platform sends no
+      // `configurationId` — otherwise it asks the engine for a per-size curve,
+      // which is the Android 14+ non-linear path. Measured on an iPhone at
+      // extraLarge, a 14pt/1.4x paragraph lays out at 22.0, matching the
+      // linear form, so the ladder is faithful where it has been checked.
+      //
+      // Neither form is what a declared extent has to match, though: the
+      // child's height comes from a laid-out line box that snaps to whole
+      // pixels, and no arithmetic over `scale()` reproduces that rounding.
+      // Measuring the child is immune to all of it; a declared extent is not,
+      // on either platform.
+      //
+      // The header used to declare its own extent as arithmetic over
+      // `textScaler.scale(20)` while its child settled on whatever the font
+      // metrics produced, and those snap to whole pixels. Eleven of these
+      // twelve diverged. Six declared MORE than the child laid out to —
+      // extraSmall, extraLarge (one notch above the default), XXXL, and
+      // AX3/AX4/AX5 — leaving paintExtent below layoutExtent, which fails
+      // SliverGeometry's contract inside the viewport's performLayout, aborts
+      // the child layout sequence, and leaves the conversation list with a
+      // null geometry: a blank pane. The other five declared LESS than the
+      // chips need — small, medium, XXL, AX1, AX2 — silently clipping them.
+      // Only the default was correct (#7854). The scale this file covered
+      // before, 2.0, lands on a whole pixel and never diverged, which is why
+      // it did not catch either half.
+      const iosDynamicTypeScales = <String, double>{
+        'extraSmall': 14 / 17,
+        'small': 15 / 17,
+        'medium': 16 / 17,
+        'large (default)': 1,
+        'extraLarge': 19 / 17,
+        'extraExtraLarge': 21 / 17,
+        'extraExtraExtraLarge': 23 / 17,
+        'AX1': 28 / 17,
+        'AX2': 33 / 17,
+        'AX3': 40 / 17,
+        'AX4': 47 / 17,
+        'AX5': 53 / 17,
+      };
+
+      for (final MapEntry(key: category, value: scale)
+          in iosDynamicTypeScales.entries) {
+        testWidgets('renders the conversation list at iOS $category', (
+          tester,
+        ) async {
+          final size = await pumpChips(
+            tester,
+            textScaler: TextScaler.linear(scale),
+          );
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'the header must not break the SliverGeometry contract',
+          );
+          expect(
+            size.laidOut,
+            greaterThanOrEqualTo(size.needed),
+            reason: 'the header must not clip the chips',
+          );
+          // The canary: this finder walks the onstage element tree, which is
+          // exactly what null-crashes when a sliver was left unlaid-out. It
+          // failing IS the blank pane.
+          expect(find.byType(ConversationTile), findsWidgets);
+
+          // Pinning only engages once there is something to pin against, and
+          // that is a different geometry path — scrollOffset above zero,
+          // layoutExtent shrinking toward zero — than the initial layout.
+          // `PinnedHeaderSliver` derives paintExtent as
+          // `min(childExtent, remainingPaintExtent - overlap)`. That second
+          // term has no lower clamp, so it is safe here only because nothing
+          // pinned sits above this header and `overlap` stays at zero. Adding
+          // one would put paintExtent back under layoutExtent and blank the
+          // pane again, so pin it.
+          await tester.drag(
+            find.byType(CustomScrollView),
+            const Offset(0, -400),
+          );
+          await tester.pump();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'the header must survive scrolling to its pinned edge',
+          );
+          expect(find.byType(ConversationTile), findsWidgets);
+        });
       }
 
       testWidgets('the pinned header fits the chips at the default text scale', (
