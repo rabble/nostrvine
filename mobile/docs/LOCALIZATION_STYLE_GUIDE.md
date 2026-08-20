@@ -540,7 +540,7 @@ at all — every one of its 34 current hits is a real one:
 
 ```bash
 # Gendered both-forms: invité(e), invitat(ă), convidado(a), bloccato/a
-grep -nE '\([eaăo]\)|[a-zá-ú]/[ao]\b' lib/l10n/app_*.arb
+grep -nE '\((e|a|o|ă)\)|[a-z]/[ao][^a-z]' lib/l10n/app_*.arb
 ```
 
 It finds nothing in the locales that reword instead, which is the point —
@@ -562,6 +562,14 @@ this guide, so treat a clean pronoun grep as *no information*, not as a pass:
   tuteo marker scores voseo strings as tuteo. 72 keys carry both. Use only
   markers the other register cannot produce: accented `tú`, `tienes`/`puedes`,
   or the accent-final imperatives `Revisá`/`Probá`.
+- **`\b` does not travel, and this guide's own gender command proved it.**
+  Written as `[a-z]/[ao]\b`, that command returns its 34 real hits under GNU
+  and BSD `grep` and something else entirely under `git grep`, which reads
+  `\b` in an ERE as a literal `b`. It then reports `https://divine.video/video/abc123`
+  in five locales with no gendered copy in them at all, and misses every
+  `bloccato/a` — because a closing quote is not a `b`. The published pattern
+  anchors on an explicit non-letter instead, and returns the same 34 under
+  both engines and under `LC_ALL=C`.
 - **A masculine default is invisible to a register grep.** Nothing above
   notices that `¡Bienvenido a Divine!` greets every reader as a man; the
   string has no pronoun in it and no register problem. Gender is a separate
