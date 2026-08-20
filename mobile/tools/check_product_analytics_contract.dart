@@ -1,5 +1,7 @@
-// ABOUTME: Verifies the vendored product analytics contract and upstream provenance.
-// ABOUTME: Fails CI when the artifact, manifest, schema, source paths, or commits drift.
+// ABOUTME: Verifies the vendored product analytics artifact is self-consistent with
+// ABOUTME: the lock and manifest (hashes, schema, source paths, pinned upstream commits).
+// ABOUTME: Fails CI when any of them drift. Purely local: it checks the recorded
+// ABOUTME: provenance, never contacts the upstream repo.
 
 import 'dart:convert';
 import 'dart:io';

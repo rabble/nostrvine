@@ -561,8 +561,8 @@ ProductEventQueue productEventQueue(Ref ref) {
     // publishes that account's own queued events under its own signature.
     currentOwnerPubkey: () => ref.read(authServiceProvider).currentPublicKeyHex,
     // AnalyticsService enables delivery only after it has loaded consent and
-    // confirmed this is an explicitly enabled build.
-    sendingEnabled: false,
+    // confirmed this is an explicitly enabled build (the queue defaults to
+    // sending disabled).
   );
 
   ref.listen<bool>(appForegroundProvider, (_, next) {

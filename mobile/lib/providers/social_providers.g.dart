@@ -354,7 +354,7 @@ final class ProductEventQueueProvider
   }
 }
 
-String _$productEventQueueHash() => r'a257ac97036478f13c9407e24c3bc431ebc3bc4f';
+String _$productEventQueueHash() => r'8c22586a5a80dc049f1ff4726288fd754bfcaaf8';
 
 @ProviderFor(analyticsService)
 final analyticsServiceProvider = AnalyticsServiceProvider._();
