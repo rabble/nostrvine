@@ -363,14 +363,58 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         # shorebird_install rm -rf's ~/.shorebird on any pin change, so every
         # Shorebird Android build has to precache. Without it the Gradle build
         # dies on a missing flutter.jar (#7987).
+        # Scoped to the definition, not the whole file: a whole-file search
+        # passes on any occurrence anywhere, which is how the missing patch-key
+        # wiring survived until #7936.
+        definition = self._definition_block(
+            "precache_shorebird_android_artifacts"
+        )
+
+        # The revision is parsed from the CLI rather than hardcoded, so it
+        # cannot drift from EXPECTED_SHOREBIRD_REVISION.
+        self.assertIn("FLUTTER_REVISION=$(shorebird --version", definition)
+        self.assertNotRegex(
+            definition,
+            r"FLUTTER_REVISION=[\"']?[0-9a-f]{40}",
+            "the Flutter revision must be derived, never a second hardcoded pin",
+        )
+
+        # The parsed revision has to reach a real executable path, and that
+        # executable is what must run precache. Asserting the invocation is the
+        # point: replacing this line with a no-op is the mutation that has to
+        # turn this test red.
+        self.assertIn(
+            'SHOREBIRD_FLUTTER="$HOME/.shorebird/bin/cache/flutter/'
+            '$FLUTTER_REVISION/bin/flutter"',
+            definition,
+        )
+        self.assertIn('"$SHOREBIRD_FLUTTER" precache --android', definition)
+
+        # A missing revision or binary must fail loudly, or Gradle reports the
+        # original confusing "flutter.jar not found" instead.
+        self.assertIn('if [ -z "$FLUTTER_REVISION" ]; then', definition)
+        self.assertIn('if [ ! -x "$SHOREBIRD_FLUTTER" ]; then', definition)
+        self.assertEqual(2, definition.count("exit 1"))
+
+        # Ordering both ways: the CLI has to exist before its Flutter can be
+        # precached, and the precache has to happen before the build that needs
+        # the artifacts.
         for workflow_name, build_step in (
             ("android-build", "- *build_aab"),
             ("android-patch", "- *patch_android"),
         ):
             workflow = self._workflow_block(workflow_name)
-            self.assertIn("- *precache_shorebird_android_artifacts", workflow)
+            install_at = workflow.index("- *shorebird_install")
+            precache_at = workflow.index(
+                "- *precache_shorebird_android_artifacts"
+            )
             self.assertLess(
-                workflow.index("- *precache_shorebird_android_artifacts"),
+                install_at,
+                precache_at,
+                f"{workflow_name} must install Shorebird before precaching it",
+            )
+            self.assertLess(
+                precache_at,
                 workflow.index(build_step),
                 f"{workflow_name} must precache before {build_step}",
             )
@@ -380,13 +424,6 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertNotIn(
             "- *precache_shorebird_android_artifacts",
             self._workflow_block("e2e-smoke-android"),
-        )
-
-        # The revision has to come from the CLI, not a second hardcoded pin
-        # that could drift from EXPECTED_SHOREBIRD_REVISION.
-        self.assertIn(
-            "FLUTTER_REVISION=$(shorebird --version",
-            self.contents,
         )
 
     def test_shorebird_install_runs_before_ios_dependency_resolution(self) -> None:
@@ -430,6 +467,15 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         )
         self.assertIn("`shorebird_code_push` is a runtime dependency", self.shorebird_doc_contents)
         self.assertIn("Crashlytics", self.shorebird_doc_contents)
+
+    def _definition_block(self, anchor_name: str) -> str:
+        start = self.contents.index(f"    - &{anchor_name}\n")
+        next_definition = re.search(
+            r"^    - &", self.contents[start + 1 :], re.MULTILINE
+        )
+        if next_definition is None:
+            return self.contents[start:]
+        return self.contents[start : start + 1 + next_definition.start()]
 
     def _workflow_block(self, workflow_name: str) -> str:
         start = self.contents.index(f"  {workflow_name}:")
