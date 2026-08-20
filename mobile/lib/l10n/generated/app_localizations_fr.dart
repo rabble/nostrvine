@@ -6106,7 +6106,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Vérifie ta connexion et réessaie.';
 
   @override
-  String get inboxFilterAll => 'Tous';
+  String get inboxFilterAll => 'Tout';
 
   @override
   String get inboxFilterUnread => 'Non lus';
