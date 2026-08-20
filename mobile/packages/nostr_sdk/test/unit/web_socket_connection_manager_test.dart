@@ -743,7 +743,9 @@ void main() {
       // A connect that is already in flight when dispose runs would otherwise
       // finish onto a manager nobody holds a reference to any more, arming a
       // heartbeat `Timer.periodic` on a socket nothing can ever close (#7367).
-      test('a reconnect that resumes after dispose opens no socket', () async {
+      // The reconnect here is only how the connect gets parked; what refuses
+      // on resume is _doConnect's own guard, not reconnect's entry guard.
+      test('a connect in flight when dispose runs opens no socket', () async {
         await manager.connect();
         final closeGate = mockFactory.lastChannel!.blockClose();
 
