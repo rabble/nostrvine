@@ -410,9 +410,10 @@ values shared across unrelated scripts. Already guarded — see
 is done; do not re-check it by eye.
 
 **Tier 2 — style-guide conformance. Any reviewer can check this.**
-Register matches the table above. No locked term was translated. A term
-introduced into a locale matches how that locale already renders it. No emoji
-or exclamation marks the source did not have. Every check in this tier has a
+Register matches the table above. No gendered both-forms pile-up
+(`invité(e)`, `bloccato/a`). No locked term was translated. A term introduced
+into a locale matches how that locale already renders it. No emoji or
+exclamation marks the source did not have. Every check in this tier has a
 command in the next section, and **none of them require reading the language.**
 This tier is where a non-speaking reviewer adds real value, and it is exactly
 where the drift in this repo has come from.
@@ -629,7 +630,8 @@ precisely what a reviewer who does not read the language otherwise lacks.
 | **Register matches this guide's table** | **review only** |
 | **Locked terms survive in every key** | **review only** — a general guard is proposed in #7248 |
 | **One rendering per term per locale** | **review only** |
-| **Naturalness** | **native-speaker review only** |
+| **No gendered both-forms pile-up** | **review only** — exact command in [Checks](#checks-you-can-run-without-speaking-the-language) |
+| **Naturalness** | **review only** — a native speaker where one exists, and user reports where none does |
 
 A green CI proves the top half. It says nothing about the bottom half, which
 is the half this guide is about.
