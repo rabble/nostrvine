@@ -1678,10 +1678,7 @@ class RelayPool {
         _authHandshakeStartedAt[relay.url] = DateTime.now();
         // A new challenge supersedes whatever the last one concluded.
         _authGateClosed.remove(relay.url);
-        final challengePreview = challenge.length > 16
-            ? challenge.substring(0, 16)
-            : challenge;
-        log('🔐 Challenge: $challengePreview...');
+        log('🔐 Challenge: $challenge');
         var tags = [
           ["relay", relay.url],
           ["challenge", challenge],
@@ -1695,7 +1692,7 @@ class RelayPool {
         Event? event = Event(pk, EventKind.authentication, tags, "");
         event = await localNostr.nostrSigner.signEvent(event);
         if (event != null) {
-          log('🔐 Sending AUTH response for challenge: $challengePreview...');
+          log('🔐 Sending AUTH response for challenge: $challenge');
 
           // Track this AUTH event to match with OK response
           _pendingAuthEvents[event.id] = relay.url;

@@ -202,9 +202,12 @@ class AndroidNostrSigner implements NostrSigner {
         _package = package;
 
         var signature = result.data.getExtra("signature");
+        // Despite the extra's name, get_public_key returns the npub here (see
+        // the isPubkey branch below), so this is public data — logged whole so
+        // the identity Amber handed back is greppable against relay traffic.
         developer.log(
           '[AndroidNostrSigner] getPublicKey: '
-          'signature=${signature != null ? "${signature.runtimeType}:${(signature is String && signature.length > 10) ? "${signature.substring(0, 10)}..." : signature}" : "null"}, '
+          'signature=${signature == null ? "null" : "${signature.runtimeType}:$signature"}, '
           'result_extra=${result.data.getExtra("result")}',
         );
         if (signature != null && signature is String) {
