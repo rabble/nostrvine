@@ -4013,9 +4013,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileTitle => 'Profiel';
 
   @override
-  String get profileRefresh => 'Vernieuwen';
-
-  @override
   String get profileMoreOptions => 'Meer opties';
 
   @override

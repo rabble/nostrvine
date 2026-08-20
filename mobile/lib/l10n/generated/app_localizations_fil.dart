@@ -4024,9 +4024,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileTitle => 'Profile';
 
   @override
-  String get profileRefresh => 'I-refresh';
-
-  @override
   String get profileMoreOptions => 'Iba pang opsyon';
 
   @override

@@ -1462,7 +1462,6 @@
     "soundsNoSoundsFound": "Inga ljud hittades",
     "soundsNoSoundsFoundDescription": "Testa en annan sökterm",
     "profileTitle": "Profil",
-    "profileRefresh": "Uppdatera",
     "profileMoreOptions": "Fler alternativ",
     "profileBlockedUser": "Blockerade {name}",
     "@profileBlockedUser": {

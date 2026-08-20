@@ -3930,9 +3930,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
-  String get profileRefresh => 'Segarkan';
-
-  @override
   String get profileMoreOptions => 'Opsi lainnya';
 
   @override

@@ -3994,9 +3994,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
-  String get profileRefresh => 'Uppdatera';
-
-  @override
   String get profileMoreOptions => 'Fler alternativ';
 
   @override

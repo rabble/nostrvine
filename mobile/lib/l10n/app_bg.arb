@@ -1644,7 +1644,6 @@
     "soundsNoSoundsFound": "Няма намерени звуци",
     "soundsNoSoundsFoundDescription": "Пробвай с друго търсене",
     "profileTitle": "Профил",
-    "profileRefresh": "Опресняване",
     "profileMoreOptions": "Още опции",
     "profileBlockedUser": "Блокиран {name}",
     "@profileBlockedUser": {

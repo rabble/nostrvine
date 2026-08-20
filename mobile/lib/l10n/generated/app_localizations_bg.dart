@@ -4046,9 +4046,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileTitle => 'Профил';
 
   @override
-  String get profileRefresh => 'Опресняване';
-
-  @override
   String get profileMoreOptions => 'Още опции';
 
   @override

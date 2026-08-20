@@ -8,18 +8,73 @@ import '../../scripts/lib/orphaned_arb_key_detector.dart';
 
 /// Pins the detector semantics behind `check_orphaned_arb_key_floor.sh`.
 ///
-/// The dangerous direction here is UNDER-reporting. A false orphan is caught in
-/// seconds — delete the key, gen-l10n drops the getter, and the call site stops
-/// compiling. A missed orphan is invisible: the key silently rides into 21
-/// locales and stays there. That asymmetry is why the detector reads an
-/// analyzer AST instead of grepping, and most of the cases below are "this
-/// looks like a reference but is not".
+/// Two failure directions, both cheap to reintroduce:
+///
+/// UNDER-reporting is invisible — a missed orphan rides into 21 locales and
+/// stays. That is why comments, string bodies and same-named locals do not
+/// count.
+///
+/// OVER-reporting is loud but expensive to debug, and this detector has two
+/// live landmines for it. Both were measured against the real tree: dropping
+/// the `AppLocalizations`-extension case reports 51 live keys as dead, and
+/// dropping [MethodInvocation] reports 316. Each has a test below; if one goes
+/// red, restore the visitor rather than the expectation.
 void main() {
   group('collectCodeIdentifiers', () {
     test('collects a plain member access', () {
       expect(
         collectCodeIdentifiers('void f(c) => c.l10n.exampleOrphanKey;'),
-        containsAll(['l10n', 'exampleOrphanKey']),
+        contains('exampleOrphanKey'),
+      );
+    });
+
+    test('collects a call on a target, because placeholders make a method', () {
+      // A key with placeholders generates `String fooCount(int n)`, so it is a
+      // MethodInvocation and never reaches visitPropertyAccess. Dropping this
+      // visitor reports all 316 parameterized keys in the app as orphaned.
+      expect(
+        collectCodeIdentifiers('String f(l10n) => l10n.exampleCountKey(3);'),
+        contains('exampleCountKey'),
+      );
+    });
+
+    test('ignores a bare identifier that is just a local of the same name', () {
+      // The real `profileRefresh` case: a local Completer in profile_grid.dart
+      // shares the ARB key's name. Counting every identifier — the obvious
+      // implementation — makes the whole detector a lower bound, because any
+      // key colliding with an ordinary Dart name can never be flagged.
+      expect(
+        collectCodeIdentifiers(
+          'void f() { final exampleOrphanKey = Object(); print(exampleOrphanKey); }',
+        ),
+        isNot(contains('exampleOrphanKey')),
+      );
+    });
+
+    test('collects an implicit-this reference inside an AppLocalizations '
+        'extension', () {
+      // lib/l10n/publish_error_kind_l10n.dart and its two siblings dispatch an
+      // enum to a message with implicit `this` (`return publishErrorTimeout;`).
+      // 51 live keys reach the UI only this way; without this case a
+      // member-access-only collector calls every one of them dead.
+      expect(
+        collectCodeIdentifiers('''
+extension PublishErrorKindL10n on AppLocalizations {
+  String message(Object kind) => exampleOrphanKey;
+}
+'''),
+        contains('exampleOrphanKey'),
+      );
+    });
+
+    test('does not extend implicit-this to an extension on another type', () {
+      expect(
+        collectCodeIdentifiers('''
+extension SomethingElse on BuildContext {
+  String get thing => exampleOrphanKey;
+}
+'''),
+        isNot(contains('exampleOrphanKey')),
       );
     });
 

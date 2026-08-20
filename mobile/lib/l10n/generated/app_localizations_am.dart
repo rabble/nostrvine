@@ -3915,9 +3915,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileTitle => 'መገለጫ';
 
   @override
-  String get profileRefresh => 'አድስ';
-
-  @override
   String get profileMoreOptions => 'ተጨማሪ አማራጮች';
 
   @override

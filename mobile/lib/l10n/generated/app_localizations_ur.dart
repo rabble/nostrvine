@@ -4004,9 +4004,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileTitle => 'پروفائل';
 
   @override
-  String get profileRefresh => 'ریفریش';
-
-  @override
   String get profileMoreOptions => 'مزید اختیارات';
 
   @override

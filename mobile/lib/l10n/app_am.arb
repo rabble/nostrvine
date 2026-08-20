@@ -1832,7 +1832,6 @@
     "soundsNoSoundsFound": "ምንም ድምፆች አልተገኙም።",
     "soundsNoSoundsFoundDescription": "የተለየ የፍለጋ ቃል ይሞክሩ",
     "profileTitle": "መገለጫ",
-    "profileRefresh": "አድስ",
     "profileMoreOptions": "ተጨማሪ አማራጮች",
     "profileBlockedUser": "ታግዷል {name}",
     "@profileBlockedUser": {

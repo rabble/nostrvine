@@ -1462,7 +1462,6 @@
     "soundsNoSoundsFound": "Geen geluiden gevonden",
     "soundsNoSoundsFoundDescription": "Probeer een andere zoekterm",
     "profileTitle": "Profiel",
-    "profileRefresh": "Vernieuwen",
     "profileMoreOptions": "Meer opties",
     "profileBlockedUser": "{name} geblokkeerd",
     "@profileBlockedUser": {

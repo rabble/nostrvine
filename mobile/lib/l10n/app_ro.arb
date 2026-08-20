@@ -1462,7 +1462,6 @@
     "soundsNoSoundsFound": "Niciun sunet găsit",
     "soundsNoSoundsFoundDescription": "Încearcă alt termen de căutare",
     "profileTitle": "Profil",
-    "profileRefresh": "Reîncarcă",
     "profileMoreOptions": "Mai multe opțiuni",
     "profileBlockedUser": "L-ai blocat pe {name}",
     "@profileBlockedUser": {

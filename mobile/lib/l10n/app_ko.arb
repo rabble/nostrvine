@@ -920,7 +920,6 @@
     "soundsNoSoundsFound": "사운드를 찾을 수 없어요",
     "soundsNoSoundsFoundDescription": "다른 검색어로 시도해 보세요",
     "profileTitle": "프로필",
-    "profileRefresh": "새로고침",
     "profileMoreOptions": "더 보기",
     "profileBlockedUser": "{name}님을 차단했어요",
     "@profileBlockedUser": {

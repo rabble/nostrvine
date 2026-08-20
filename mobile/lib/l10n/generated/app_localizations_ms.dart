@@ -3995,9 +3995,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
-  String get profileRefresh => 'Muat semula';
-
-  @override
   String get profileMoreOptions => 'Lagi pilihan';
 
   @override

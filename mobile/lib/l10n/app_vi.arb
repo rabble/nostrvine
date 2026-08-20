@@ -2125,7 +2125,6 @@
   "soundsSaveFailed": "Không lưu được âm thanh đó. Thử lại nhé.",
   "soundsRemoveFailed": "Không gỡ được âm thanh đó. Thử lại nhé.",
   "profileTitle": "Hồ sơ",
-  "profileRefresh": "Làm mới",
   "profileMoreOptions": "Tùy chọn khác",
   "profileBlockedUser": "Đã chặn {name}",
   "@profileBlockedUser": {

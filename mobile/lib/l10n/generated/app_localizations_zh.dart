@@ -3754,9 +3754,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileTitle => '主页';
 
   @override
-  String get profileRefresh => '刷新';
-
-  @override
   String get profileMoreOptions => '更多选项';
 
   @override

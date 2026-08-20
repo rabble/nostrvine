@@ -1462,7 +1462,6 @@
     "soundsNoSoundsFound": "Nessun suono trovato",
     "soundsNoSoundsFoundDescription": "Prova un termine di ricerca diverso",
     "profileTitle": "Profilo",
-    "profileRefresh": "Aggiorna",
     "profileMoreOptions": "Altre opzioni",
     "profileBlockedUser": "{name} bloccato",
     "@profileBlockedUser": {

@@ -6851,12 +6851,6 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get profileTitle;
 
-  /// No description provided for @profileRefresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get profileRefresh;
-
   /// No description provided for @profileMoreOptions.
   ///
   /// In en, this message translates to:

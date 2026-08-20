@@ -3773,9 +3773,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileTitle => '프로필';
 
   @override
-  String get profileRefresh => '새로고침';
-
-  @override
   String get profileMoreOptions => '더 보기';
 
   @override

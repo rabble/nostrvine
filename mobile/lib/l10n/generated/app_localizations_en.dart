@@ -4081,9 +4081,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTitle => 'Profile';
 
   @override
-  String get profileRefresh => 'Refresh';
-
-  @override
   String get profileMoreOptions => 'More options';
 
   @override

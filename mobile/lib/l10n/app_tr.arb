@@ -1459,7 +1459,6 @@
     "soundsNoSoundsFound": "Hiç ses bulunamadı",
     "soundsNoSoundsFoundDescription": "Farklı bir arama terimi dene",
     "profileTitle": "Profil",
-    "profileRefresh": "Yenile",
     "profileMoreOptions": "Daha fazla seçenek",
     "profileBlockedUser": "{name} engellendi",
     "@profileBlockedUser": {

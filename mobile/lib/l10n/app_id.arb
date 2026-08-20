@@ -1459,7 +1459,6 @@
     "soundsNoSoundsFound": "Tidak ada suara ditemukan",
     "soundsNoSoundsFoundDescription": "Coba istilah pencarian lain",
     "profileTitle": "Profil",
-    "profileRefresh": "Segarkan",
     "profileMoreOptions": "Opsi lainnya",
     "profileBlockedUser": "Memblokir {name}",
     "@profileBlockedUser": {

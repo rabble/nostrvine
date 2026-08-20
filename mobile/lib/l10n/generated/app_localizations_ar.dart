@@ -3962,9 +3962,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileTitle => 'الملف الشخصي';
 
   @override
-  String get profileRefresh => 'تحديث';
-
-  @override
   String get profileMoreOptions => 'خيارات أخرى';
 
   @override

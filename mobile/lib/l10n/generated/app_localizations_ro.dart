@@ -4123,9 +4123,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
-  String get profileRefresh => 'Reîncarcă';
-
-  @override
   String get profileMoreOptions => 'Mai multe opțiuni';
 
   @override

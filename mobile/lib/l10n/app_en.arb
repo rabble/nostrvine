@@ -2440,7 +2440,6 @@
     "description": "Shown when this device cannot obtain the encryption key that protects the synced sound library (e.g. the signer refused to decrypt it, or the account has no key yet). Sync stays disabled until this resolves; it is not a network error."
   },
   "profileTitle": "Profile",
-  "profileRefresh": "Refresh",
   "profileMoreOptions": "More options",
   "profileBlockedUser": "Blocked {name}",
   "@profileBlockedUser": {

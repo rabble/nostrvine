@@ -2125,7 +2125,6 @@
   "soundsSaveFailed": "无法保存该声音。请重试。",
   "soundsRemoveFailed": "无法移除该声音。请重试。",
   "profileTitle": "主页",
-  "profileRefresh": "刷新",
   "profileMoreOptions": "更多选项",
   "profileBlockedUser": "已屏蔽 {name}",
   "@profileBlockedUser": {

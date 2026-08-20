@@ -4026,9 +4026,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileTitle => 'Perfil';
 
   @override
-  String get profileRefresh => 'Atualizar';
-
-  @override
   String get profileMoreOptions => 'Mais opções';
 
   @override

@@ -3757,9 +3757,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileTitle => 'プロフィール';
 
   @override
-  String get profileRefresh => '更新';
-
-  @override
   String get profileMoreOptions => 'その他のオプション';
 
   @override

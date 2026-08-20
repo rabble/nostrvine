@@ -4050,9 +4050,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
-  String get profileRefresh => 'Aktualisieren';
-
-  @override
   String get profileMoreOptions => 'Weitere Optionen';
 
   @override

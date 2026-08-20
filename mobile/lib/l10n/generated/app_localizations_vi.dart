@@ -3970,9 +3970,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileTitle => 'Hồ sơ';
 
   @override
-  String get profileRefresh => 'Làm mới';
-
-  @override
   String get profileMoreOptions => 'Tùy chọn khác';
 
   @override

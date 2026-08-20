@@ -1452,7 +1452,6 @@
     "soundsNoSoundsFound": "サウンドが見つからない",
     "soundsNoSoundsFoundDescription": "別のキーワードで検索してみて",
     "profileTitle": "プロフィール",
-    "profileRefresh": "更新",
     "profileMoreOptions": "その他のオプション",
     "profileBlockedUser": "{name}をブロックしたよ",
     "@profileBlockedUser": {

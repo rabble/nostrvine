@@ -2125,7 +2125,6 @@
   "soundsSaveFailed": "Bunyi itu tidak dapat disimpan. Cuba lagi.",
   "soundsRemoveFailed": "Bunyi itu tidak dapat dibuang. Cuba lagi.",
   "profileTitle": "Profil",
-  "profileRefresh": "Muat semula",
   "profileMoreOptions": "Lagi pilihan",
   "profileBlockedUser": "{name} disekat",
   "@profileBlockedUser": {

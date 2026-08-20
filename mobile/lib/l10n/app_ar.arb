@@ -1452,7 +1452,6 @@
     "soundsNoSoundsFound": "لم يُعثر على أصوات",
     "soundsNoSoundsFoundDescription": "جرِّب كلمة بحث مختلفة",
     "profileTitle": "الملف الشخصي",
-    "profileRefresh": "تحديث",
     "profileMoreOptions": "خيارات أخرى",
     "profileBlockedUser": "تم حظر {name}",
     "@profileBlockedUser": {

@@ -3937,9 +3937,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
-  String get profileRefresh => 'Yenile';
-
-  @override
   String get profileMoreOptions => 'Daha fazla seçenek';
 
   @override

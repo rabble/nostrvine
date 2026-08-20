@@ -19,17 +19,32 @@ final String _dartToolSegment = _joined(['', '.dart_tool', '']);
 
 String _joined(List<String> parts) => parts.join(Platform.pathSeparator);
 
-/// Collects every identifier that [source] mentions *as code*.
+/// Collects the names in [source] that could be an `AppLocalizations` member.
 ///
-/// Comments and string-literal bodies are excluded, so a `// TODO wire up
-/// feedSkip` or a `Log.info('feedSkip')` does not keep a dead key alive.
-/// Interpolated expressions ARE code and are collected, so `'${l10n.feedSkip}'`
-/// counts.
+/// Two shapes count, and only two:
 ///
-/// A dartdoc square-bracket reference — `/// Renders [feedSkip].` — needs an
-/// explicit skip: the parser resolves it to a real [SimpleIdentifier] inside a
-/// [CommentReference], so without this the detector would quietly accept a
-/// doc mention as a render.
+/// 1. **A member access or a call on a target** — `l10n.fooKey`,
+///    `context.l10n.fooKey`, `AppLocalizations.of(c)!.fooKey`,
+///    `'${l10n.fooKey}'`, and `l10n.fooCount(n)`. A key with placeholders
+///    generates a method rather than a getter, so the invocation form is not
+///    optional. An interpolated expression is code, so it counts.
+/// 2. **A bare identifier inside `extension ... on AppLocalizations`** —
+///    `lib/l10n/publish_error_kind_l10n.dart` and its two siblings dispatch an
+///    enum to a message with implicit `this` (`return publishErrorTimeout;`).
+///    51 live keys reach the UI only that way, so a member-access-only
+///    collector would report every one of them as dead.
+///
+/// A bare identifier ANYWHERE ELSE does not count, which is the whole point: a
+/// local named `profileRefresh` in a widget must not keep the ARB key of that
+/// name alive. Collecting every identifier instead — the obvious
+/// implementation — makes the detector a lower bound rather than a decision,
+/// because any key sharing a name with an ordinary Dart identifier can then
+/// never be flagged.
+///
+/// Comments and string-literal bodies are excluded. A dartdoc square-bracket
+/// reference — `/// Renders [fooKey].` — needs an explicit skip: the parser
+/// resolves it to a real [SimpleIdentifier] inside a [CommentReference], so
+/// without this the detector would quietly accept a doc mention as a render.
 ///
 /// Returns an empty set when [source] does not parse; a file the analyzer
 /// cannot read is a pre-existing problem for `flutter analyze`, and treating it
@@ -46,13 +61,51 @@ Set<String> collectCodeIdentifiers(String source) {
   return visitor.identifiers;
 }
 
+/// The type whose members are ARB keys.
+const _localizationsClass = 'AppLocalizations';
+
 class _IdentifierCollector extends RecursiveAstVisitor<void> {
   final identifiers = <String>{};
 
+  /// Depth of `extension ... on AppLocalizations` bodies we are inside, where
+  /// an unqualified identifier is an implicit-`this` member access.
+  int _inLocalizationsExtension = 0;
+
+  @override
+  void visitExtensionDeclaration(ExtensionDeclaration node) {
+    final extended = node.onClause?.extendedType.toSource();
+    final isLocalizations = extended == _localizationsClass;
+    if (isLocalizations) _inLocalizationsExtension++;
+    super.visitExtensionDeclaration(node);
+    if (isLocalizations) _inLocalizationsExtension--;
+  }
+
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
-    identifiers.add(node.name);
+    if (_inLocalizationsExtension > 0) identifiers.add(node.name);
     super.visitSimpleIdentifier(node);
+  }
+
+  @override
+  void visitPropertyAccess(PropertyAccess node) {
+    identifiers.add(node.propertyName.name);
+    super.visitPropertyAccess(node);
+  }
+
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) {
+    identifiers.add(node.identifier.name);
+    super.visitPrefixedIdentifier(node);
+  }
+
+  /// A key with placeholders generates a METHOD, not a getter, so
+  /// `l10n.listVideoCount(n)` is a [MethodInvocation] and never reaches
+  /// [visitPropertyAccess]. Omitting this reports every parameterized key in
+  /// the app as orphaned (316 of them).
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    if (node.target != null) identifiers.add(node.methodName.name);
+    super.visitMethodInvocation(node);
   }
 
   /// Prunes the subtree: a `[name]` inside dartdoc is documentation, not a

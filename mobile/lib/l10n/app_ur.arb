@@ -2125,7 +2125,6 @@
   "soundsSaveFailed": "وہ ساؤنڈ محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
   "soundsRemoveFailed": "وہ ساؤنڈ ہٹایا نہیں جا سکا۔ دوبارہ کوشش کریں۔",
   "profileTitle": "پروفائل",
-  "profileRefresh": "ریفریش",
   "profileMoreOptions": "مزید اختیارات",
   "profileBlockedUser": "{name} بلاک ہو گیا",
   "@profileBlockedUser": {
