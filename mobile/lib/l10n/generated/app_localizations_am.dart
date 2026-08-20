@@ -7207,7 +7207,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get messageRequestBlockConfirmBody =>
-      'They\'ll be removed from your requests and won\'t be able to message you. You can still read their past messages under Blocked.';
+      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
 
   @override
   String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';
