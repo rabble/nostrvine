@@ -95,9 +95,9 @@ void main() {
       overrides: [
         ...getStandardTestOverrides(
           mockAuthService: mockAuthService,
-        ),
-        analyticsServiceProvider.overrideWithValue(
-          analyticsService ?? AnalyticsService(disableNostrPublishing: true),
+          analyticsService:
+              analyticsService ??
+              AnalyticsService(disableNostrPublishing: true),
         ),
         oauthClientProvider.overrideWithValue(mockOAuth),
         pendingVerificationServiceProvider.overrideWithValue(
@@ -371,9 +371,9 @@ void main() {
                   overrides: [
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
-                    ),
-                    analyticsServiceProvider.overrideWithValue(
-                      AnalyticsService(disableNostrPublishing: true),
+                      analyticsService: AnalyticsService(
+                        disableNostrPublishing: true,
+                      ),
                     ),
                     oauthClientProvider.overrideWithValue(mockOAuth),
                     pendingVerificationServiceProvider.overrideWithValue(
@@ -468,9 +468,9 @@ void main() {
                   overrides: [
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
-                    ),
-                    analyticsServiceProvider.overrideWithValue(
-                      AnalyticsService(disableNostrPublishing: true),
+                      analyticsService: AnalyticsService(
+                        disableNostrPublishing: true,
+                      ),
                     ),
                     oauthClientProvider.overrideWithValue(mockOAuth),
                     pendingVerificationServiceProvider.overrideWithValue(

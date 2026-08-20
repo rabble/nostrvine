@@ -21,6 +21,7 @@ import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
@@ -62,6 +63,15 @@ class MockVideoEventService extends Mock implements VideoEventService {
 
   @override
   bool isVideoEventKnownDeleted(VideoEvent video) => false;
+}
+
+/// Prevents unrelated widget tests from starting timers or sending analytics.
+class TestAnalyticsService extends AnalyticsService {
+  TestAnalyticsService()
+    : super(disableNostrPublishing: true, productAnalyticsEnabled: false);
+
+  @override
+  Future<void> initialize() async {}
 }
 
 /// Creates a properly stubbed MockSharedPreferences for testing
@@ -121,8 +131,15 @@ MockAuthService createMockAuthService() {
   when(
     () => mockAuth.authStateStream,
   ).thenAnswer((_) => const Stream<AuthState>.empty());
+  _stubSessionCleanupRegistration(mockAuth);
 
   return mockAuth;
+}
+
+void _stubSessionCleanupRegistration(AuthService mockAuth) {
+  when(
+    () => mockAuth.registerBeforeSessionTeardownCallback(any()),
+  ).thenReturn(() {});
 }
 
 /// Creates a properly stubbed MockSocialService for testing
@@ -346,6 +363,7 @@ MockVideoEventService createMockVideoEventService() {
 List<dynamic> getStandardTestOverrides({
   SharedPreferences? mockSharedPreferences,
   AuthService? mockAuthService,
+  AnalyticsService? analyticsService,
   SocialService? mockSocialService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
@@ -358,6 +376,9 @@ List<dynamic> getStandardTestOverrides({
 }) {
   final mockPrefs = mockSharedPreferences ?? createMockSharedPreferences();
   final mockAuth = mockAuthService ?? createMockAuthService();
+  if (mockAuthService != null) {
+    _stubSessionCleanupRegistration(mockAuth);
+  }
   final mockSocial = mockSocialService ?? createMockSocialService();
   final mockNostr = mockNostrService ?? createMockNostrService();
   final mockSub = mockSubscriptionManager ?? createMockSubscriptionManager();
@@ -373,6 +394,11 @@ List<dynamic> getStandardTestOverrides({
   return [
     // Mirror DeviceScope's required bootstrap override for test containers.
     appVersionProvider.overrideWithValue('test'),
+    // Analytics has its own focused tests. Other widget tests must not create
+    // its transport, timers, or session listeners as an incidental side effect.
+    analyticsServiceProvider.overrideWithValue(
+      analyticsService ?? TestAnalyticsService(),
+    ),
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 
@@ -443,6 +469,7 @@ Widget testProviderScope({
   List<dynamic>? additionalOverrides,
   SharedPreferences? mockSharedPreferences,
   AuthService? mockAuthService,
+  AnalyticsService? analyticsService,
   SocialService? mockSocialService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
@@ -459,6 +486,7 @@ Widget testProviderScope({
       ...getStandardTestOverrides(
         mockSharedPreferences: mockSharedPreferences,
         mockAuthService: mockAuthService,
+        analyticsService: analyticsService,
         mockSocialService: mockSocialService,
         mockNostrService: mockNostrService,
         mockSubscriptionManager: mockSubscriptionManager,
@@ -506,6 +534,7 @@ Widget testMaterialApp({
   List<dynamic>? additionalOverrides,
   SharedPreferences? mockSharedPreferences,
   AuthService? mockAuthService,
+  AnalyticsService? analyticsService,
   SocialService? mockSocialService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
@@ -522,6 +551,7 @@ Widget testMaterialApp({
     additionalOverrides: additionalOverrides,
     mockSharedPreferences: mockSharedPreferences,
     mockAuthService: mockAuthService,
+    analyticsService: analyticsService,
     mockSocialService: mockSocialService,
     mockNostrService: mockNostrService,
     mockSubscriptionManager: mockSubscriptionManager,

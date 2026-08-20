@@ -300,8 +300,10 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: createMockAuthService()),
-          analyticsServiceProvider.overrideWithValue(_NoopAnalyticsService()),
+          ...getStandardTestOverrides(
+            mockAuthService: createMockAuthService(),
+            analyticsService: _NoopAnalyticsService(),
+          ),
           seenVideosServiceProvider.overrideWithValue(_NoopSeenVideosService()),
           connectionStatusServiceProvider.overrideWithValue(
             _MockConnectionStatusService(),
