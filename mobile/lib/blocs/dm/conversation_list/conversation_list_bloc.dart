@@ -71,7 +71,13 @@ class ConversationListBloc
   /// Swappable: `profileRepositoryProvider` is nullable-gated on Nostr
   /// readiness and hands over the real instance after cold start. Re-pointed
   /// by [ConversationListProfileRepositoryChanged] rather than by recreating
-  /// the bloc. Mirrors `NotificationBadgeCubit.setRepository`.
+  /// the bloc.
+  ///
+  /// Exception to state_management.md ("No Mutable Instance Variables in BLoC"):
+  /// recreating the bloc on repository swap would reset visible conversations,
+  /// search query, and scroll position. This mirrors `NotificationBadgeCubit.
+  /// setRepository` precedent. The field is only modified via
+  /// [ConversationListProfileRepositoryChanged] event handlers.
   ProfileRepository? _profileRepository;
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
 
@@ -775,8 +781,16 @@ class ConversationListBloc
     if (state.searchQuery.isEmpty) return;
     // Any names cached while no repository was available are deterministic
     // fallbacks, not real profiles. Drop them so the active query re-resolves.
+    //
+    // Re-resolve through the private event, never by re-adding
+    // `ConversationListSearchQueryChanged`: that is the user-input stream, and
+    // its `debounceRestartable` keeps only the newest event in a series. A
+    // keystroke still inside the 300ms debounce would be superseded by this
+    // handler's older `state.searchQuery`, snapping the results back to the
+    // previous query while the text field still shows what the user typed.
+    // Same reasoning as the data-path re-resolution in `_onStarted`.
     emit(state.copyWith(profileNames: const {}));
-    add(ConversationListSearchQueryChanged(state.searchQuery));
+    add(const _ConversationListProfileResolutionRequested());
   }
 
   /// Re-trigger the watched streams so blocked users are filtered out.

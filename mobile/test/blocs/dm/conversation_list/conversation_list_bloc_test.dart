@@ -2792,6 +2792,68 @@ void main() {
         );
       },
     );
+
+    // Mirror of the test above, for the other path that re-resolves an active
+    // query: _onProfileRepositoryChanged. Both must re-resolve without
+    // enqueueing `state.searchQuery` into the debounced user-input stream,
+    // where it would supersede a keystroke that has not fired yet.
+    test(
+      'repository swap does not supersede a newer pending keystroke',
+      () async {
+        final acceptedController = StreamController<List<DmConversation>>();
+        _stubStreams(mockDmRepository);
+        when(
+          () => mockDmRepository.watchAcceptedConversations(
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => acceptedController.stream);
+        when(
+          () => mockProfileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async => const <String, UserProfile>{});
+
+        // Cold start: the nullable-gated provider has not handed over yet.
+        final bloc = ConversationListBloc(
+          dmRepository: mockDmRepository,
+          followRepository: mockFollowRepository,
+          recomputeDebounce: Duration.zero,
+        )..add(const ConversationListStarted());
+        addTearDown(() async {
+          await bloc.close();
+          await acceptedController.close();
+        });
+
+        acceptedController.add([
+          _createConversation(id: 'pizza', lastMessageContent: 'pizza friday?'),
+        ]);
+        await bloc.stream.firstWhere(
+          (s) => s.status == ConversationListStatus.loaded,
+        );
+
+        // User commits 'alice'...
+        bloc.add(const ConversationListSearchQueryChanged('alice'));
+        await bloc.stream.firstWhere((s) => s.searchQuery == 'alice');
+
+        // ...then types one more character; still inside the 300ms debounce.
+        bloc.add(const ConversationListSearchQueryChanged('alice w'));
+
+        // Nostr becomes ready and the provider hands over the repository.
+        bloc.add(
+          ConversationListProfileRepositoryChanged(mockProfileRepository),
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+
+        expect(
+          bloc.state.searchQuery,
+          equals('alice w'),
+          reason:
+              'the repository swap must not enqueue the previous query into '
+              'the debounced user-input stream and rewind what the user typed',
+        );
+      },
+    );
   });
 
   // Subscription lifecycle (#2931)
