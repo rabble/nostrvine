@@ -544,20 +544,29 @@ final class KnownAccountsProvider
 
 String _$knownAccountsHash() => r'8e9753265420cf092af04aa07686c98cdaa8eb1e';
 
-/// Provider that sets Zendesk user identity when auth state changes
-/// Watch this provider at app startup to keep Zendesk identity in sync with auth
+/// Provider that sets Zendesk user identity when auth state changes.
+///
+/// Activated by `AppRootSideEffects`, above `MaterialApp.router`, so the
+/// identity is mirrored for the whole process rather than from the moment the
+/// bottom-nav shell mounts.
 
 @ProviderFor(zendeskIdentitySync)
 final zendeskIdentitySyncProvider = ZendeskIdentitySyncProvider._();
 
-/// Provider that sets Zendesk user identity when auth state changes
-/// Watch this provider at app startup to keep Zendesk identity in sync with auth
+/// Provider that sets Zendesk user identity when auth state changes.
+///
+/// Activated by `AppRootSideEffects`, above `MaterialApp.router`, so the
+/// identity is mirrored for the whole process rather than from the moment the
+/// bottom-nav shell mounts.
 
 final class ZendeskIdentitySyncProvider
     extends $FunctionalProvider<void, void, void>
     with $Provider<void> {
-  /// Provider that sets Zendesk user identity when auth state changes
-  /// Watch this provider at app startup to keep Zendesk identity in sync with auth
+  /// Provider that sets Zendesk user identity when auth state changes.
+  ///
+  /// Activated by `AppRootSideEffects`, above `MaterialApp.router`, so the
+  /// identity is mirrored for the whole process rather than from the moment the
+  /// bottom-nav shell mounts.
   ZendeskIdentitySyncProvider._()
     : super(
         from: null,
@@ -599,8 +608,12 @@ String _$zendeskIdentitySyncHash() =>
 ///
 /// Deliberately independent of [zendeskIdentitySync]: campaign attribution
 /// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
-/// coupled to the lifetime of the support-desk integration. Watch this
-/// provider at app startup to keep the analytics identity in sync with auth.
+/// coupled to the lifetime of the support-desk integration.
+///
+/// Activated by `AppRootSideEffects`. It used to be activated from
+/// `AppShell.build()`, which left every crash report and analytics event
+/// before the first bottom-nav tab — splash, auth restore, sign-up, e-mail
+/// verification, onboarding — without a `user_id`.
 
 @ProviderFor(analyticsIdentitySync)
 final analyticsIdentitySyncProvider = AnalyticsIdentitySyncProvider._();
@@ -610,8 +623,12 @@ final analyticsIdentitySyncProvider = AnalyticsIdentitySyncProvider._();
 ///
 /// Deliberately independent of [zendeskIdentitySync]: campaign attribution
 /// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
-/// coupled to the lifetime of the support-desk integration. Watch this
-/// provider at app startup to keep the analytics identity in sync with auth.
+/// coupled to the lifetime of the support-desk integration.
+///
+/// Activated by `AppRootSideEffects`. It used to be activated from
+/// `AppShell.build()`, which left every crash report and analytics event
+/// before the first bottom-nav tab — splash, auth restore, sign-up, e-mail
+/// verification, onboarding — without a `user_id`.
 
 final class AnalyticsIdentitySyncProvider
     extends $FunctionalProvider<void, void, void>
@@ -621,8 +638,12 @@ final class AnalyticsIdentitySyncProvider
   ///
   /// Deliberately independent of [zendeskIdentitySync]: campaign attribution
   /// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
-  /// coupled to the lifetime of the support-desk integration. Watch this
-  /// provider at app startup to keep the analytics identity in sync with auth.
+  /// coupled to the lifetime of the support-desk integration.
+  ///
+  /// Activated by `AppRootSideEffects`. It used to be activated from
+  /// `AppShell.build()`, which left every crash report and analytics event
+  /// before the first bottom-nav tab — splash, auth restore, sign-up, e-mail
+  /// verification, onboarding — without a `user_id`.
   AnalyticsIdentitySyncProvider._()
     : super(
         from: null,

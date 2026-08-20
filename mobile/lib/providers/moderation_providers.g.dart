@@ -556,7 +556,7 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [nostrSessionProvider] and
+/// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
 /// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -570,7 +570,7 @@ final blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [nostrSessionProvider] and
+/// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
 /// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -584,7 +584,7 @@ final class BlocklistSyncBridgeProvider
     with $Provider<void> {
   /// Bridge that starts blocklist sync when the Nostr session becomes ready.
   ///
-  /// Watch this at app shell level. It listens to [nostrSessionProvider] and
+  /// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
   /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
   /// the first time the signer-backed Nostr client is initialized. This covers:
   /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -652,7 +652,7 @@ String _$blocklistSyncBridgeHash() =>
 /// missing — the #6109 class of loss, on the write side where no merge
 /// guard can catch it.
 ///
-/// Watch this at app shell level.
+/// Activated by `AppShellSideEffects`.
 
 @ProviderFor(blockedFollowReconciler)
 final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
@@ -681,7 +681,7 @@ final blockedFollowReconcilerProvider = BlockedFollowReconcilerProvider._();
 /// missing — the #6109 class of loss, on the write side where no merge
 /// guard can catch it.
 ///
-/// Watch this at app shell level.
+/// Activated by `AppShellSideEffects`.
 
 final class BlockedFollowReconcilerProvider
     extends $FunctionalProvider<void, void, void>
@@ -710,7 +710,7 @@ final class BlockedFollowReconcilerProvider
   /// missing — the #6109 class of loss, on the write side where no merge
   /// guard can catch it.
   ///
-  /// Watch this at app shell level.
+  /// Activated by `AppShellSideEffects`.
   BlockedFollowReconcilerProvider._()
     : super(
         from: null,

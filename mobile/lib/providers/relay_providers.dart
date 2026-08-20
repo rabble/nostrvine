@@ -555,7 +555,8 @@ Stream<Map<String, RelayStatistics>> relayStatisticsStream(Ref ref) async* {
 /// periodically syncs per-relay SDK counters (events received, queries sent,
 /// errors) so each relay displays its own real statistics.
 ///
-/// Must be watched at app level to activate the bridge.
+/// Activated by `AppShellSideEffects` — the 3s counter timer is recurring
+/// work a signed-out user should not pay for.
 @Riverpod(keepAlive: true)
 void relayStatisticsBridge(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
@@ -704,8 +705,9 @@ bool _setsEqual<T>(Set<T> a, Set<T> b) {
 /// network returning, so a pool that collapsed to zero connections during an
 /// offline window self-heals app-wide — not only on an app-foreground
 /// transition (#3161). Debounced so a burst of connectivity events collapses
-/// into one reconnect. keepAlive with no UI consumer: read eagerly at app
-/// shell startup so the subscription is wired.
+/// into one reconnect. keepAlive with no UI consumer: activated by
+/// `AppRootSideEffects` so the pool also self-heals on routes outside the
+/// bottom-nav shell.
 final connectivityRelayReconnectProvider = Provider<void>((ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   Timer? debounce;

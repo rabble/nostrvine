@@ -247,7 +247,7 @@ class BlocklistVersion extends _$BlocklistVersion {
 
 /// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [nostrSessionProvider] and
+/// Activated by `AppShellSideEffects`. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
 /// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
@@ -325,7 +325,7 @@ void blocklistSyncBridge(Ref ref) {
 /// missing — the #6109 class of loss, on the write side where no merge
 /// guard can catch it.
 ///
-/// Watch this at app shell level.
+/// Activated by `AppShellSideEffects`.
 @Riverpod(keepAlive: true)
 void blockedFollowReconciler(Ref ref) {
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
