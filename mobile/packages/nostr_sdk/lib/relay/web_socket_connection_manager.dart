@@ -171,7 +171,7 @@ class WebSocketConnectionManager {
   /// Connect to the WebSocket server
   Future<bool> connect() async {
     if (_disposed) {
-      log('Connect refused: $url manager is disposed');
+      log('Connect refused: $url - manager is disposed');
       return false;
     }
 
@@ -191,7 +191,7 @@ class WebSocketConnectionManager {
 
   Future<bool> _doConnect() async {
     if (_disposed) {
-      log('Connect refused: $url manager is disposed');
+      log('Connect refused: $url - manager is disposed');
       return false;
     }
 
@@ -545,7 +545,7 @@ class WebSocketConnectionManager {
   /// Force immediate reconnection, resetting backoff
   Future<bool> reconnect() async {
     if (_disposed) {
-      log('Reconnect refused: $url manager is disposed');
+      log('Reconnect refused: $url - manager is disposed');
       return false;
     }
 
