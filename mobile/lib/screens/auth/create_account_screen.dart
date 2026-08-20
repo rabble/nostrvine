@@ -42,7 +42,23 @@ class CreateAccountScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
-  bool _recordedRegistrationStart = false;
+  @override
+  void initState() {
+    super.initState();
+    // Recorded once from initState: firing an analytics call (which enqueues
+    // a row and kicks a network flush) from build() would rerun on every
+    // rebuild, including build passes Flutter discards.
+    final inviteAccessGrant = context.read<InviteGateBloc>().state.accessGrant;
+    unawaited(
+      ref
+          .read(analyticsServiceProvider)
+          .recordRegistrationStarted(
+            entryPoint: inviteAccessGrant == null
+                ? ProductAnalyticsV2RegistrationEntryPoint.landing
+                : ProductAnalyticsV2RegistrationEntryPoint.invite,
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,18 +70,6 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
     );
     final inviteApiClient = context.read<InviteApiClient>();
     final inviteAccessGrant = context.read<InviteGateBloc>().state.accessGrant;
-    if (!_recordedRegistrationStart) {
-      _recordedRegistrationStart = true;
-      unawaited(
-        ref
-            .read(analyticsServiceProvider)
-            .recordRegistrationStarted(
-              entryPoint: inviteAccessGrant == null
-                  ? ProductAnalyticsV2RegistrationEntryPoint.landing
-                  : ProductAnalyticsV2RegistrationEntryPoint.invite,
-            ),
-      );
-    }
 
     return BlocProvider(
       create: (_) => DivineAuthCubit(

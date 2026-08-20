@@ -39,6 +39,7 @@ void main() {
         ),
         now: () => DateTime.utc(2026, 8, 20),
         currentOwnerPubkey: () => owner,
+        sendingEnabled: true,
       );
       when(
         () => dao.prune(
@@ -105,6 +106,26 @@ void main() {
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
       );
+      verifyNever(() => client.publishAnonymousBatch(any()));
+      verifyNever(
+        () => client.publishBatch(
+          any(),
+          subjectPubkey: any(named: 'subjectPubkey'),
+        ),
+      );
+    });
+
+    test('defaults to sending disabled when the argument is omitted', () async {
+      final defaultQueue = ProductEventQueue(
+        dao: dao,
+        ingestClient: client,
+        now: () => DateTime.utc(2026, 8, 20),
+      );
+
+      await defaultQueue.recoverPublishingAndFlush();
+      await defaultQueue.flush();
+
+      verifyNever(() => dao.resetPublishingToPending());
       verifyNever(() => client.publishAnonymousBatch(any()));
       verifyNever(
         () => client.publishBatch(

@@ -133,7 +133,7 @@ class AnalyticsIngestClient {
           return const AnalyticsIngestAccepted();
         }
         return AnalyticsIngestTransientFailure(
-          'not_accepted: ${response.body}',
+          'not_accepted: ${_boundedReason(response.body)}',
         );
       } catch (error) {
         return AnalyticsIngestTransientFailure('invalid_response: $error');
@@ -148,10 +148,15 @@ class AnalyticsIngestClient {
       );
       return AnalyticsIngestRejected(
         statusCode: status,
-        reason: response.body,
+        reason: _boundedReason(response.body),
       );
     }
 
     return AnalyticsIngestTransientFailure('http_$status');
   }
+
+  /// Rejection and failure reasons are persisted per queued row, so the raw
+  /// server body must be bounded rather than stored in full.
+  static String _boundedReason(String body) =>
+      body.length <= 500 ? body : body.substring(0, 500);
 }

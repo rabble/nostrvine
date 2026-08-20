@@ -44,7 +44,9 @@ class ProductEventQueue {
     ProductEventRetryConfig retryConfig = const ProductEventRetryConfig(),
     DateTime Function() now = DateTime.now,
     String? Function()? currentOwnerPubkey,
-    bool sendingEnabled = true,
+    // Fail closed: a transmit gate must default to off so a construction
+    // site that forgets the argument cannot send.
+    bool sendingEnabled = false,
   }) : _dao = dao,
        _ingestClient = ingestClient,
        _retryConfig = retryConfig,
