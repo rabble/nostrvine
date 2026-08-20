@@ -139,6 +139,7 @@ void main() {
 
       // Set up default mock behavior
       when(() => mockNostr.publicKey).thenReturn(testPublicKey);
+      when(() => mockNostr.beginClose()).thenReturn(null);
       when(() => mockNostr.close()).thenReturn(null);
       when(() => mockRelayManager.dispose()).thenAnswer((_) async {});
       // Default to having connected relays (tests can override if needed)
@@ -3775,6 +3776,22 @@ void main() {
         await client.dispose();
 
         verify(() => mockNostr.unsubscribe(any())).called(1);
+        verify(() => mockNostr.close()).called(1);
+      });
+
+      test('marks the relay pool as closing before its first await', () async {
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        final disposing = client.dispose();
+
+        // Asserted before awaiting, so it pins the ordering rather than just
+        // the call: every await below this point in dispose() is a window in
+        // which an armed relay repair could open a socket that the teardown
+        // at the end has already walked past (#7367).
+        verify(() => mockNostr.beginClose()).called(1);
+        verifyNever(() => mockNostr.close());
+
+        await disposing;
         verify(() => mockNostr.close()).called(1);
       });
     });

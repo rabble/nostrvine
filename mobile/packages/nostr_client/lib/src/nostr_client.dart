@@ -1800,6 +1800,11 @@ class NostrClient {
   /// must check [isDisposed] (or their own ownership signal) before using
   /// the client.
   Future<void> dispose() async {
+    // Before the first await: every await below is a window in which an armed
+    // relay repair can fire and open a socket that the teardown at the end has
+    // already walked past, leaving a live WebSocket and heartbeat timer nothing
+    // can reach (#7367).
+    _nostr.beginClose();
     await closeAllSubscriptions();
     await _relayManager.dispose();
     await _queryPool.close();

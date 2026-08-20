@@ -128,6 +128,10 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
   /// instead of succeeding. Simulates DNS/TLS handshake failures.
   Object? readyError;
 
+  /// When set, the channel's `ready` stays pending until this completes.
+  /// A real handshake is a network round trip that other work can run inside.
+  Completer<void>? readyGate;
+
   @override
   WebSocketChannel create(Uri uri) {
     if (shouldFail) {
@@ -136,7 +140,7 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
     final channel = MockWebSocketChannel(
       readyFuture: readyError != null
           ? Future.error(readyError!)
-          : Future.value(),
+          : (readyGate?.future ?? Future.value()),
     );
     createdChannels.add(channel);
     return channel;
@@ -150,7 +154,58 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
     shouldFail = false;
     failureMessage = null;
     readyError = null;
+    readyGate = null;
   }
+}
+
+/// Runs [body] in a zone that counts the periodic timers currently armed.
+///
+/// The heartbeat is a `Timer.periodic` with no accessor, and it does nothing
+/// observable while the connection is down, so counting the timers the zone
+/// hands out is the only way to see one survive a failed reconnect.
+Future<void> countingPeriodicTimers(
+  Future<void> Function(int Function() armed) body,
+) {
+  var armed = 0;
+  return runZoned(
+    () => body(() => armed),
+    zoneSpecification: ZoneSpecification(
+      createPeriodicTimer: (self, parent, zone, period, callback) {
+        armed++;
+        late final _CountingTimer wrapper;
+        final inner = parent.createPeriodicTimer(
+          zone,
+          period,
+          (_) => callback(wrapper),
+        );
+        wrapper = _CountingTimer(inner, () => armed--);
+        return wrapper;
+      },
+    ),
+  );
+}
+
+class _CountingTimer implements Timer {
+  _CountingTimer(this._inner, this._onCancel);
+
+  final Timer _inner;
+  final void Function() _onCancel;
+  bool _cancelled = false;
+
+  @override
+  void cancel() {
+    if (!_cancelled) {
+      _cancelled = true;
+      _onCancel();
+    }
+    _inner.cancel();
+  }
+
+  @override
+  bool get isActive => _inner.isActive;
+
+  @override
+  int get tick => _inner.tick;
 }
 
 void main() {
@@ -597,6 +652,33 @@ void main() {
         expect(manager.isConnected, isTrue);
       });
 
+      test('a failed reconnect does not leave the heartbeat armed', () async {
+        await countingPeriodicTimers((armed) async {
+          final factory = MockWebSocketChannelFactory();
+          final reconnecting = WebSocketConnectionManager(
+            url: 'wss://test.relay.com',
+            channelFactory: factory,
+            logger: logMessages.add,
+          );
+
+          expect(await reconnecting.connect(), isTrue);
+          expect(armed(), equals(1), reason: 'the connect arms the heartbeat');
+
+          // A relay that has gone quiet gets force-reconnected, and on a bad
+          // network that reconnect is the one most likely to fail.
+          factory.shouldFail = true;
+          expect(await reconnecting.reconnect(), isFalse);
+
+          expect(
+            armed(),
+            isZero,
+            reason: 'the old heartbeat has no connection left to beat on',
+          );
+
+          await reconnecting.dispose();
+        });
+      });
+
       test('does not reconnect after explicit disconnect', () async {
         await manager.connect();
         await manager.disconnect();
@@ -656,6 +738,100 @@ void main() {
         await Future.delayed(Duration.zero);
 
         expect(stateStreamClosed, isTrue);
+      });
+
+      // A connect that is already in flight when dispose runs would otherwise
+      // finish onto a manager nobody holds a reference to any more, arming a
+      // heartbeat `Timer.periodic` on a socket nothing can ever close (#7367).
+      // The reconnect here is only how the connect gets parked; what refuses
+      // on resume is _doConnect's own guard, not reconnect's entry guard.
+      test('a connect in flight when dispose runs opens no socket', () async {
+        await manager.connect();
+        final closeGate = mockFactory.lastChannel!.blockClose();
+
+        // Parks inside reconnect's own close of the old channel.
+        final reconnecting = manager.reconnect();
+        await Future<void>.delayed(Duration.zero);
+
+        // The owner tears the manager down while the reconnect is parked.
+        await manager.dispose();
+        closeGate.complete();
+
+        expect(await reconnecting, isFalse);
+        expect(
+          mockFactory.createdChannels,
+          hasLength(1),
+          reason: 'a disposed manager must not open another socket',
+        );
+        expect(manager.state, equals(ConnectionState.disconnected));
+      });
+
+      test(
+        'a handshake superseded by a newer connect is not adopted',
+        () async {
+          final gate = Completer<void>();
+          mockFactory.readyGate = gate;
+
+          final superseded = manager.connect();
+          await Future<void>.delayed(Duration.zero);
+          final supersededChannel = mockFactory.lastChannel!;
+
+          // A newer connect lands while the first handshake is still parked,
+          // and takes ownership of the manager.
+          mockFactory.readyGate = null;
+          expect(await manager.reconnect(), isTrue);
+          expect(mockFactory.createdChannels, hasLength(2));
+          final owner = mockFactory.lastChannel!;
+
+          gate.complete();
+
+          expect(
+            await superseded,
+            isFalse,
+            reason: 'the newer connect owns the manager now',
+          );
+
+          // Adopting the stale channel would repoint the message subscription
+          // at a socket nobody is writing to.
+          final received = <dynamic>[];
+          manager.messageStream.listen(received.add);
+          owner.simulateMessage('still listening to the live socket');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(received, equals(['still listening to the live socket']));
+          expect(supersededChannel.isClosed, isTrue);
+        },
+      );
+
+      test('a handshake that completes after dispose closes its own '
+          'socket', () async {
+        final factory = MockWebSocketChannelFactory();
+        final gate = Completer<void>();
+        factory.readyGate = gate;
+        final racing = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+        );
+
+        final connecting = racing.connect();
+        await Future<void>.delayed(Duration.zero);
+        final orphan = factory.lastChannel!;
+
+        await racing.dispose();
+        gate.complete();
+
+        expect(
+          await connecting,
+          isFalse,
+          reason: 'the handshake has no owner left to hand the socket to',
+        );
+        expect(orphan.isClosed, isTrue);
+        expect(
+          racing.state,
+          isNot(equals(ConnectionState.connected)),
+          reason: 'reaching connected is what arms the heartbeat timer',
+        );
       });
     });
   });
