@@ -32,7 +32,7 @@ import androidx.camera.video.AudioSpec
  * The 3.5mm jack is left out for the opposite reason. `TYPE_WIRED_HEADSET`
  * is overwhelmingly earbuds, CAMCORDER does not select it today, and adding
  * it would change recording for people who plugged in only to listen.
- * Bluetooth is out for the same reason — see below.
+ * Bluetooth is left out for the same reason.
  */
 private val EXTERNAL_MIC_TYPES = setOf(
     AudioDeviceInfo.TYPE_USB_DEVICE,
@@ -51,15 +51,20 @@ private val EXTERNAL_MIC_TYPES = setOf(
  * ahead of the built-in mic, which is what someone who just plugged in a
  * microphone expects.
  *
- * Returns [AudioSpec.SOURCE_AUTO] when nothing is attached, leaving the
- * camera-tuned default untouched for everyone else.
+ * Returns [AudioSpec.SOURCE_AUTO] unless USB is attached without a wired
+ * headset. MIC ranks a wired headset ahead of USB, so switching with both
+ * attached would capture from the headset rather than the USB device that
+ * triggered the switch.
  */
-internal fun audioSourceForInputDeviceTypes(types: IntArray): Int =
-    if (types.any { it in EXTERNAL_MIC_TYPES }) {
+internal fun audioSourceForInputDeviceTypes(types: IntArray): Int {
+    val hasWiredHeadset = AudioDeviceInfo.TYPE_WIRED_HEADSET in types
+    val hasUsbInput = types.any { it in EXTERNAL_MIC_TYPES }
+    return if (hasUsbInput && !hasWiredHeadset) {
         MediaRecorder.AudioSource.MIC
     } else {
         AudioSpec.SOURCE_AUTO
     }
+}
 
 /**
  * Short readable name for an `AudioDeviceInfo` input [type], used by the

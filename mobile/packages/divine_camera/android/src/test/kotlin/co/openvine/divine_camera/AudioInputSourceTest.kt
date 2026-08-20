@@ -99,6 +99,23 @@ internal class AudioInputSourceTest {
     }
 
     @Test
+    fun wiredHeadsetAlongsideUsb_keepsCameraXDefault() {
+        // MIC ranks a wired headset ahead of USB. Switching merely because USB
+        // is also attached would therefore record from the earbud microphone,
+        // not from the USB device that triggered the switch.
+        assertEquals(
+            AudioSpec.SOURCE_AUTO,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                    AudioDeviceInfo.TYPE_USB_DEVICE
+                )
+            )
+        )
+    }
+
+    @Test
     fun usbAccessory_keepsCameraXDefault() {
         // AOSP's MIC and CAMCORDER policies do not select USB accessory inputs,
         // so switching source for this type would only leave the camera-tuned
