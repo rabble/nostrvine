@@ -2603,7 +2603,7 @@
     "libraryRecordVideo": "Registra un video",
     "videoClipSemanticLabel": "Clip video, {duration} secondi",
     "videoClipArchivedSemanticLabel": "Archiviato. {label}",
-  "videoClipStopMotionSemanticLabel": "Clip in stop-motion, {frames}",
+    "videoClipStopMotionSemanticLabel": "Clip in stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Selezionato, numero {position}",
     "videoClipSemanticValueSelected": "Selezionato",
     "videoClipSemanticValueNotSelected": "Non selezionato",

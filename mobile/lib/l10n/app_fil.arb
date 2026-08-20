@@ -1737,7 +1737,7 @@
     "libraryRecordVideo": "Mag-record ng Video",
     "videoClipSemanticLabel": "Video clip, {duration} segundo",
     "videoClipArchivedSemanticLabel": "Naka-archive. {label}",
-  "videoClipStopMotionSemanticLabel": "Stop-motion clip, {frames}",
+    "videoClipStopMotionSemanticLabel": "Stop-motion clip, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Napili, numero {position}",
     "videoClipSemanticValueSelected": "Napili",
     "videoClipSemanticValueNotSelected": "Hindi napili",

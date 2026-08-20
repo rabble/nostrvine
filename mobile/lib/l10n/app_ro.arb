@@ -2603,7 +2603,7 @@
     "libraryRecordVideo": "Înregistrează un video",
     "videoClipSemanticLabel": "Clip video, {duration} secunde",
     "videoClipArchivedSemanticLabel": "Arhivat. {label}",
-  "videoClipStopMotionSemanticLabel": "Clip stop-motion, {frames}",
+    "videoClipStopMotionSemanticLabel": "Clip stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Selectat, numărul {position}",
     "videoClipSemanticValueSelected": "Selectat",
     "videoClipSemanticValueNotSelected": "Neselectat",

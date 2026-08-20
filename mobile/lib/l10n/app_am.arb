@@ -3066,7 +3066,7 @@
     "libraryRecordVideo": "ቪዲዮ ይቅረጹ",
     "videoClipSemanticLabel": "የቪዲዮ ክሊፕ፣ {duration} ሰከንድ",
     "videoClipArchivedSemanticLabel": "መዝገብ ውስጥ ተቀምጧል። {label}",
-  "videoClipStopMotionSemanticLabel": "የእንቅስቃሴ-አልባ ቅንጥብ፣ {frames}",
+    "videoClipStopMotionSemanticLabel": "የእንቅስቃሴ-አልባ ቅንጥብ፣ {frames}",
     "videoClipSemanticValueSelectedAtPosition": "ተመርጧል፣ ቁጥር {position}",
     "videoClipSemanticValueSelected": "ተመርጧል",
     "videoClipSemanticValueNotSelected": "አልተመረጠም",

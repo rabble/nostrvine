@@ -163,7 +163,7 @@ abstract final class ClipCategoryActions {
           final filedCount = selected
               .where((clip) => clip.categoryId != null)
               .length;
-          final choice = await showArchiveCategoryPrompt(
+          final categoryChoice = await showArchiveCategoryPrompt(
             context: context,
             clipCount: filedCount,
             categoryName: filedCategoryIds.length == 1
@@ -173,8 +173,8 @@ abstract final class ClipCategoryActions {
           // Dismissing the question cancels the archive rather than picking
           // for the user — either answer moves clips out of a view they are
           // looking at.
-          if (choice == null) return;
-          clearCategory = choice == ClipArchiveCategoryChoice.remove;
+          if (categoryChoice == null) return;
+          clearCategory = categoryChoice == ClipArchiveCategoryChoice.remove;
         }
         bloc.add(
           ClipsLibraryClipsArchiveChanged(

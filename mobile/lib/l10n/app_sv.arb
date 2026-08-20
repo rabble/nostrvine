@@ -2603,7 +2603,7 @@
     "libraryRecordVideo": "Spela in video",
     "videoClipSemanticLabel": "Videoklipp, {duration} sekunder",
     "videoClipArchivedSemanticLabel": "Arkiverad. {label}",
-  "videoClipStopMotionSemanticLabel": "Stop motion-klipp, {frames}",
+    "videoClipStopMotionSemanticLabel": "Stop motion-klipp, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Valt, nummer {position}",
     "videoClipSemanticValueSelected": "Valt",
     "videoClipSemanticValueNotSelected": "Inte valt",

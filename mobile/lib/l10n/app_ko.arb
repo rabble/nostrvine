@@ -1948,7 +1948,7 @@
     "libraryRecordVideo": "동영상 녹화",
     "videoClipSemanticLabel": "동영상 클립, {duration}초",
     "videoClipArchivedSemanticLabel": "보관됨. {label}",
-  "videoClipStopMotionSemanticLabel": "스톱모션 클립, {frames}",
+    "videoClipStopMotionSemanticLabel": "스톱모션 클립, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "선택됨, {position}번",
     "videoClipSemanticValueSelected": "선택됨",
     "videoClipSemanticValueNotSelected": "선택 안 됨",

@@ -2825,7 +2825,7 @@
     "libraryRecordVideo": "Запишете видео",
     "videoClipSemanticLabel": "Видео клип, {duration} секунди",
     "videoClipArchivedSemanticLabel": "Архивирано. {label}",
-  "videoClipStopMotionSemanticLabel": "Стоп-моушън клип, {frames}",
+    "videoClipStopMotionSemanticLabel": "Стоп-моушън клип, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Избран, номер {position}",
     "videoClipSemanticValueSelected": "Избран",
     "videoClipSemanticValueNotSelected": "Не е избран",

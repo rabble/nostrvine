@@ -2595,7 +2595,7 @@
     "libraryRecordVideo": "تسجيل فيديو",
     "videoClipSemanticLabel": "مقطع فيديو، {duration} ثانية",
     "videoClipArchivedSemanticLabel": "مؤرشف. {label}",
-  "videoClipStopMotionSemanticLabel": "مقطع حركة إيقافية، {frames}",
+    "videoClipStopMotionSemanticLabel": "مقطع حركة إيقافية، {frames}",
     "videoClipSemanticValueSelectedAtPosition": "محدد، رقم {position}",
     "videoClipSemanticValueSelected": "محدد",
     "videoClipSemanticValueNotSelected": "غير محدد",

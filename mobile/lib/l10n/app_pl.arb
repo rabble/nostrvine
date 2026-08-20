@@ -2603,7 +2603,7 @@
     "libraryRecordVideo": "Nagraj wideo",
     "videoClipSemanticLabel": "Klip wideo, {duration} sekund",
     "videoClipArchivedSemanticLabel": "Zarchiwizowano. {label}",
-  "videoClipStopMotionSemanticLabel": "Klip poklatkowy, {frames}",
+    "videoClipStopMotionSemanticLabel": "Klip poklatkowy, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Zaznaczono, numer {position}",
     "videoClipSemanticValueSelected": "Zaznaczono",
     "videoClipSemanticValueNotSelected": "Niezaznaczono",

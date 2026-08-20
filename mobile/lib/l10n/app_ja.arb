@@ -2595,7 +2595,7 @@
     "libraryRecordVideo": "動画を録画",
     "videoClipSemanticLabel": "動画クリップ、{duration}秒",
     "videoClipArchivedSemanticLabel": "アーカイブ済み。{label}",
-  "videoClipStopMotionSemanticLabel": "ストップモーションクリップ、{frames}",
+    "videoClipStopMotionSemanticLabel": "ストップモーションクリップ、{frames}",
     "videoClipSemanticValueSelectedAtPosition": "選択済み、{position} 番目",
     "videoClipSemanticValueSelected": "選択済み",
     "videoClipSemanticValueNotSelected": "未選択",

@@ -2602,7 +2602,7 @@
     "libraryRecordVideo": "Rekam video",
     "videoClipSemanticLabel": "Klip video, {duration} detik",
     "videoClipArchivedSemanticLabel": "Diarsipkan. {label}",
-  "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
+    "videoClipStopMotionSemanticLabel": "Klip stop-motion, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Dipilih, nomor {position}",
     "videoClipSemanticValueSelected": "Dipilih",
     "videoClipSemanticValueNotSelected": "Tidak dipilih",

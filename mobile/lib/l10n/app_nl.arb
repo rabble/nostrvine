@@ -2603,7 +2603,7 @@
     "libraryRecordVideo": "Video opnemen",
     "videoClipSemanticLabel": "Videoclip, {duration} seconden",
     "videoClipArchivedSemanticLabel": "Gearchiveerd. {label}",
-  "videoClipStopMotionSemanticLabel": "Stop-motionclip, {frames}",
+    "videoClipStopMotionSemanticLabel": "Stop-motionclip, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Geselecteerd, nummer {position}",
     "videoClipSemanticValueSelected": "Geselecteerd",
     "videoClipSemanticValueNotSelected": "Niet geselecteerd",

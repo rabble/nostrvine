@@ -2602,7 +2602,7 @@
     "libraryRecordVideo": "Video kaydet",
     "videoClipSemanticLabel": "Video klibi, {duration} saniye",
     "videoClipArchivedSemanticLabel": "Arşivlendi. {label}",
-  "videoClipStopMotionSemanticLabel": "Stop motion klibi, {frames}",
+    "videoClipStopMotionSemanticLabel": "Stop motion klibi, {frames}",
     "videoClipSemanticValueSelectedAtPosition": "Seçildi, numara {position}",
     "videoClipSemanticValueSelected": "Seçildi",
     "videoClipSemanticValueNotSelected": "Seçilmedi",
