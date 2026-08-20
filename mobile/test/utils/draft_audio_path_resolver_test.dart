@@ -14,6 +14,9 @@ Map<String, dynamic> _audioJson(String url, {String id = 'local_import_1'}) => {
   'url': url,
 };
 
+String _singleAudioUrl(Map<String, dynamic> json) =>
+    (((json['meta']! as Map)['audio']! as List).single as Map)['url'] as String;
+
 void main() {
   group('toPortableAudioPath', () {
     test('strips the container prefix from an imported audio path', () {
@@ -150,6 +153,22 @@ void main() {
       };
       expect(identical(toPortableAudioPaths(json), json), isTrue);
       expect(identical(resolveAudioPaths(json, _newDocs), json), isTrue);
+    });
+
+    test('leaves a remote sound whose url contains an audio root', () {
+      // The id gate is the only thing protecting this: the url carries a
+      // voice_over_recordings segment, so without the local-import check it
+      // would be truncated on save and rebased under the documents directory
+      // on load, turning a remote url into a dangling local path.
+      const remoteUrl = 'https://cdn.example/voice_over_recordings/take.m4a';
+      final json = <String, dynamic>{
+        'meta': {
+          'audio': [_audioJson(remoteUrl, id: 'nostr-event-id')],
+        },
+      };
+
+      expect(_singleAudioUrl(toPortableAudioPaths(json)), remoteUrl);
+      expect(_singleAudioUrl(resolveAudioPaths(json, _newDocs)), remoteUrl);
     });
 
     test('returns the same instance when nothing needs rewriting', () {
