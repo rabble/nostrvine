@@ -2672,9 +2672,8 @@ class CameraController: NSObject {
         initializationTimeoutTimer = nil
         initializationCompletion = nil
         
-        // Strong capture on purpose: the plugin drops its reference as soon
-        // as this returns, so a weak capture could deallocate the controller
-        // before the queued teardown ever runs.
+        // Strong capture on purpose: a `guard let self else { return }` here
+        // would drop `completion` and hang the caller awaiting the teardown.
         sessionQueue.async {
             // Stop recording if in progress
             if self.isRecording {

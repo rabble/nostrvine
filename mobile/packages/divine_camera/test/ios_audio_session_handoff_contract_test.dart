@@ -14,14 +14,39 @@ String _readNativeSource(String fileName) {
   return file.readAsStringSync();
 }
 
+/// Returns the Swift declaration starting at [signature] up to its closing
+/// brace, so an assertion cannot match an identical line elsewhere in the file.
+String _declarationAt(String source, String signature) {
+  final start = source.indexOf(signature);
+  if (start < 0) {
+    throw StateError('No declaration starting with "$signature".');
+  }
+
+  var depth = 0;
+  for (var i = source.indexOf('{', start); i < source.length; i++) {
+    if (source[i] == '{') depth++;
+    if (source[i] == '}') {
+      depth--;
+      if (depth == 0) return source.substring(start, i + 1);
+    }
+  }
+  throw StateError('Unbalanced braces after "$signature".');
+}
+
 void main() {
   group('iOS camera dispose audio-session handoff', () {
-    late final String pluginSource;
-    late final String controllerSource;
+    late final String disposeCamera;
+    late final String release;
 
     setUpAll(() {
-      pluginSource = _readNativeSource('DivineCameraPlugin.swift');
-      controllerSource = _readNativeSource('CameraController.swift');
+      disposeCamera = _declarationAt(
+        _readNativeSource('DivineCameraPlugin.swift'),
+        'private func disposeCamera(',
+      );
+      release = _declarationAt(
+        _readNativeSource('CameraController.swift'),
+        'func release(',
+      );
     });
 
     test('disposeCamera resolves through the teardown completion', () {
@@ -29,40 +54,34 @@ void main() {
       // sessions makes the caller's setCategory(.playback) fail with
       // InsufficientPriority (OSStatus 561017449), which leaves the editor
       // playing back through the recorder's .playAndRecord session.
-      expect(pluginSource, contains('controller.release {'));
+      expect(disposeCamera, contains('controller.release {'));
+      expect(disposeCamera, isNot(contains('cameraController?.release()')));
+    });
+
+    test('disposeCamera still answers when there is no camera', () {
+      // The completion is the only remaining path to `result`, so the
+      // no-controller case needs its own early return or Dart waits forever.
       expect(
-        pluginSource,
-        isNot(
-          contains(
-            'cameraController?.release()\n'
-            '        cameraController = nil\n'
-            '        result(nil)',
-          ),
-        ),
+        disposeCamera,
+        contains('guard let controller = cameraController'),
       );
     });
 
-    test('release exposes a completion and fires it after teardown', () {
+    test('release takes a completion and fires it after the teardown', () {
       expect(
-        controllerSource,
-        contains('func release(completion: (() -> Void)? = nil) {'),
+        release,
+        startsWith('func release(completion: (() -> Void)? = nil) {'),
       );
       expect(
-        controllerSource,
+        release,
         contains('DispatchQueue.main.async(execute: completion)'),
       );
     });
 
-    test('release retains the controller for its queued teardown', () {
-      // The plugin drops its reference as soon as release() returns, so a
-      // weak capture here could deallocate the controller before the
-      // teardown — and therefore the completion — ever ran.
-      expect(
-        controllerSource,
-        contains(
-          'sessionQueue.async {\n            // Stop recording if in progress',
-        ),
-      );
+    test('release retains the controller so the completion always fires', () {
+      // A `guard let self else { return }` inside the queued teardown would
+      // drop the completion and hang the Dart caller awaiting disposeCamera.
+      expect(release, isNot(contains('[weak self]')));
     });
   });
 }
