@@ -1,3 +1,6 @@
+// ABOUTME: Unit tests for MusicModePreferenceService — the Music mode flag.
+// ABOUTME: Pins the default-off behaviour and the persisted key (#7796).
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/music_mode_preference_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
