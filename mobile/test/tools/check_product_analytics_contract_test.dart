@@ -40,7 +40,8 @@ void main() {
         ..writeAsStringSync(
           '// Source contract commit: $contractCommit\n'
           '// DO NOT EDIT.\n'
-          'const int productAnalyticsV2SchemaVersion = 2;\n',
+          'const int productAnalyticsV2SchemaVersion = 2;\n'
+          "const String productAnalyticsV2EventIdAlgorithm = 'sha256-rfc8785-v1';\n",
         );
       lockFile = File(p.join(sandbox.path, 'analytics-contract.lock'));
       manifestFile = File(
@@ -55,6 +56,7 @@ void main() {
           },
         },
         'contract_commit': contractCommit,
+        'event_id_algorithm': 'sha256-rfc8785-v1',
         'schema_version': 2,
       };
       lock = {
@@ -124,6 +126,49 @@ void main() {
             (error) => error.message,
             'message',
             contains('schema version'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects an unexpected event ID algorithm', () {
+      manifest['event_id_algorithm'] = 'random-uuid';
+      writeManifestAndLock();
+
+      expect(
+        () => checker.checkProductAnalyticsContract(sandbox),
+        throwsA(
+          isA<checker.ContractCheckException>().having(
+            (error) => error.message,
+            'message',
+            contains('event ID algorithm'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects an artifact with a different event ID algorithm', () {
+      artifact.writeAsStringSync(
+        artifact.readAsStringSync().replaceFirst(
+          'sha256-rfc8785-v1',
+          'random-uuid',
+        ),
+      );
+      final artifactSha = sha256.convert(artifact.readAsBytesSync()).toString();
+      final artifacts = manifest['artifacts']! as Map<String, Object?>;
+      final dartArtifact =
+          artifacts['product_analytics.dart']! as Map<String, Object?>;
+      dartArtifact['sha256'] = artifactSha;
+      lock['artifact_sha256'] = artifactSha;
+      writeManifestAndLock();
+
+      expect(
+        () => checker.checkProductAnalyticsContract(sandbox),
+        throwsA(
+          isA<checker.ContractCheckException>().having(
+            (error) => error.message,
+            'message',
+            contains('event ID algorithm'),
           ),
         ),
       );

@@ -83,6 +83,11 @@ void checkProductAnalyticsContract(Directory repositoryRoot) {
       'analytics contract schema version does not match the manifest',
     );
   }
+  if (manifest['event_id_algorithm'] != 'sha256-rfc8785-v1') {
+    throw const ContractCheckException(
+      'analytics contract manifest event ID algorithm must be sha256-rfc8785-v1',
+    );
+  }
 
   final artifacts = manifest['artifacts'];
   if (artifacts is! Map<String, dynamic>) {
@@ -129,6 +134,14 @@ void checkProductAnalyticsContract(Directory repositoryRoot) {
       embeddedSchema?.group(2) != '$schemaVersion') {
     throw const ContractCheckException(
       'analytics contract schema version does not match the generated artifact',
+    );
+  }
+  final embeddedEventIdAlgorithm = RegExp(
+    "productAnalyticsV2EventIdAlgorithm = '([^']+)';",
+  ).firstMatch(contents)?.group(1);
+  if (embeddedEventIdAlgorithm != 'sha256-rfc8785-v1') {
+    throw const ContractCheckException(
+      'analytics contract event ID algorithm does not match the generated artifact',
     );
   }
   if (!contents.contains('DO NOT EDIT')) {
