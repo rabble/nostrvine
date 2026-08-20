@@ -33,6 +33,14 @@
 //   • one hop through a local: `final p = id.substring(...)` then
 //     `Log.debug('... $p')`. Five sites.
 //
+// One shape counts even though nothing is shortened: a WHOLE identifier
+// followed by a literal ellipsis, `'event ${event.id}... '`. It reads as a cut
+// id to anyone scanning a log — misreading exactly this produced #3372's
+// `mobile/lib` evidence — and that issue's acceptance criterion names it
+// ("prevents new event.id... / event.pubkey... patterns in logs"). Progress
+// prose is unaffected, because `method` in `'Calling $method...'` is not an
+// identifier name.
+//
 // Sinks recognised: `Log.<level>`, `developer.log` (qualified or bare — the
 // SDK imports dart:developer unprefixed), `debugPrint`, `print`, and
 // package:logging levels on a receiver named log/_log/logger/_logger.
@@ -334,13 +342,17 @@ List<TruncationSite> findTruncationSites(
     }
     // A site needs a shortening call AND a log sink in the same file. This
     // prefilter drops ~2300 of the ~2350 files under lib/ and packages/*/lib.
-    // A calling file need not contain `substring(` itself: the shortening can
-    // live in the helper it calls, which is the whole point of the corpus-wide
-    // pass above. Admit both.
-    final shortens =
-        _shorteningMembers.any((m) => source.contains('$m(')) ||
-        (shorteners?.any((n) => source.contains('$n(')) ?? false);
-    if (!shortens) continue;
+    // Every rule this detector has must contribute a token here, or the file
+    // is skipped before the AST sees it and the rule is silently dead. That
+    // has now happened three times — the `logger.warning` sink, a cross-file
+    // shortener whose caller contains no `substring(` of its own, and the
+    // ellipsis-suffix rule — so the triggers are derived, never typed out.
+    final triggers = <String>[
+      for (final m in _shorteningMembers) '$m(',
+      for (final n in shorteners ?? const <String>{}) '$n(',
+      ..._ellipsisMarkers,
+    ];
+    if (!triggers.any(source.contains)) continue;
     if (!_sinkTokens.any(source.contains)) continue;
 
     final ParseStringResult parsed;
@@ -386,6 +398,12 @@ List<TruncationSite> findSitesInUnit(
   unit.accept(visitor);
   return visitor.sites;
 }
+
+/// Ellipsis spellings that read as "this value was cut".
+const _ellipsisMarkers = ['...', '\u2026'];
+
+/// True when [text] opens with one of [_ellipsisMarkers].
+bool _startsWithEllipsis(String text) => _ellipsisMarkers.any(text.startsWith);
 
 /// True when [name] reads as a Nostr identifier.
 ///
@@ -649,6 +667,31 @@ class _ShorteningFinder extends RecursiveAstVisitor<void> {
       }
     }
     super.visitMethodInvocation(node);
+  }
+
+  @override
+  void visitStringInterpolation(StringInterpolation node) {
+    // `'event ${event.id}... '` — the value is WHOLE and the dots are three
+    // literal characters. Nothing is shortened, but the line reads as a cut
+    // identifier to anyone scanning a log, and misreading exactly this is what
+    // produced #3372's `mobile/lib` evidence. That issue's own acceptance
+    // criterion names this shape: "prevents new event.id... / event.pubkey...
+    // patterns in logs".
+    final elements = node.elements;
+    for (var i = 0; i < elements.length - 1; i++) {
+      final expr = elements[i];
+      final next = elements[i + 1];
+      if (expr is! InterpolationExpression || next is! InterpolationString) {
+        continue;
+      }
+      if (!_startsWithEllipsis(next.value)) continue;
+      final root = _rootIdentifierName(expr.expression);
+      if (root == null || !isIdentifierName(root)) continue;
+      hits.add(
+        _Hit(offset: expr.offset, identifier: root, how: 'ellipsis-suffix'),
+      );
+    }
+    super.visitStringInterpolation(node);
   }
 
   @override

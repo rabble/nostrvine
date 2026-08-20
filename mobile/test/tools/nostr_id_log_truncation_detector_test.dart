@@ -162,6 +162,59 @@ void report(Event event) {
       });
     });
 
+    group('counts an ellipsis after a WHOLE identifier', () {
+      // Nothing is shortened here — `${event.id}` is the full 64-hex value and
+      // the dots are three literal characters. It still counts: it reads as a
+      // cut id, misreading exactly this produced #3372's `mobile/lib`
+      // evidence, and that issue's acceptance criterion names the shape.
+      test('flags an interpolated id followed by literal dots', () {
+        final sites = scan(r'''
+void report(Event event) {
+  Log.info('Skipping repost event ${event.id}... (reposts disabled)');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.identifier, 'id');
+        expect(sites.single.how, 'ellipsis-suffix');
+      });
+
+      test('flags a bare interpolation followed by dots', () {
+        final sites = scan(r'''
+void report(String npub) {
+  Log.info('loading identity keys for npub=$npub...');
+}
+''');
+
+        expect(sites.single.identifier, 'npub');
+      });
+
+      test('leaves progress prose alone', () {
+        // `method` and `subscriptionType` are not identifier names, so the
+        // dots mean what they say. Both shapes are live in this repo.
+        expect(
+          scan(r'''
+void report(String method, String subscriptionType) {
+  Log.info('[Keycast RPC] Calling $method...');
+  Log.info('Loading more historical events for $subscriptionType...');
+}
+'''),
+          isEmpty,
+        );
+      });
+
+      test('leaves a full identifier with no dots alone', () {
+        expect(
+          scan(r'''
+void report(Event event) {
+  Log.info('Skipping repost event ${event.id} (reposts disabled)');
+}
+'''),
+          isEmpty,
+        );
+      });
+    });
+
     group('does not count', () {
       test('a full identifier in a log call', () {
         expect(
