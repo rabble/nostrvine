@@ -10520,6 +10520,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cela demande aux relais de retirer l\'attribution faite à cette personne. Les relais peuvent refuser, et si elle a déjà épinglé le badge, il reste sur son profil jusqu\'à ce qu\'elle l\'enlève. Dans tous les cas, elle n\'en est pas informée.';
 
   @override
+  String get badgeDetailRevokeSelfBody =>
+      'Cela demande aux relais de retirer l\'attribution que tu t\'es faite, et enlève le badge de ton profil. Si les relais refusent la suppression, rien ne change.';
+
+  @override
   String get badgeDetailRevokeSharedNote =>
       'Cette attribution est partie pour plusieurs personnes d\'un coup. La reprendre à l\'une signifie que les autres reçoivent une nouvelle attribution et doivent accepter le badge à nouveau.';
 

@@ -126,6 +126,7 @@ class BadgeRecipientViewData {
     required this.awardEventId,
     required this.isAccepted,
     this.sharesAwardWithOthers = false,
+    this.isViewer = false,
   });
 
   final String pubkey;
@@ -138,6 +139,13 @@ class BadgeRecipientViewData {
   /// True means [BadgeRepository.revokeAward] has to rewrite an award the
   /// others are holding, so the confirmation can say so before it happens.
   final bool sharesAwardWithOthers;
+
+  /// Whether this recipient is the current user.
+  ///
+  /// Revoking yourself also takes your own pin down, which the confirmation
+  /// promises only in that case — for anyone else the pin is their event.
+  /// Resolved here so the UI does not have to reach for the signed-in pubkey.
+  final bool isViewer;
 
   /// Whether the recipient's profile badge list references [awardEventId].
   ///
@@ -735,6 +743,7 @@ class BadgeRepository {
               ? _containsBadgeCoordinate(profileBadges[entry.key], entry.value)
               : null,
           sharesAwardWithOthers: sharesAwardWithOthers.contains(entry.key),
+          isViewer: entry.key == viewerPubkey,
         ),
     ];
 

@@ -10331,6 +10331,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Thao tác này yêu cầu các relay bỏ lần trao mà bạn đã dành cho người này. Relay có thể từ chối, và nếu họ đã ghim huy hiệu thì nó vẫn nằm trên hồ sơ cho đến khi họ tự gỡ. Dù thế nào, họ cũng không được báo.';
 
   @override
+  String get badgeDetailRevokeSelfBody =>
+      'Thao tác này yêu cầu các relay bỏ lần trao mà bạn đã dành cho chính mình, và gỡ huy hiệu khỏi hồ sơ của bạn. Nếu relay từ chối xoá, sẽ không có gì thay đổi.';
+
+  @override
   String get badgeDetailRevokeSharedNote =>
       'Lần trao này đã đi tới nhiều người cùng lúc. Thu hồi của một người nghĩa là những người còn lại nhận một lần trao mới và phải chấp nhận huy hiệu lần nữa.';
 

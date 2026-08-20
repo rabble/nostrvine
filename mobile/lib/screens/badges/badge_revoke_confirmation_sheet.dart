@@ -11,11 +11,16 @@ import 'package:openvine/l10n/l10n.dart';
 /// having to accept again — the award event names several people and NIP-09
 /// deletes whole events, so revoking one rewrites the others' award too.
 ///
+/// [isViewer] switches the body: taking a badge back from yourself also takes
+/// your own pin down, which the general copy cannot promise because anyone
+/// else's profile badge list is their event, not ours.
+///
 /// Resolves to `true` only when the user confirms; dismissing the sheet
 /// resolves to `null`.
 Future<bool?> showBadgeRevokeConfirmation(
   BuildContext context, {
   required bool sharesAwardWithOthers,
+  required bool isViewer,
 }) {
   final l10n = context.l10n;
   return VineBottomSheet.show<bool>(
@@ -30,7 +35,9 @@ Future<bool?> showBadgeRevokeConfirmation(
           spacing: 16,
           children: [
             Text(
-              l10n.badgeDetailRevokeBody,
+              isViewer
+                  ? l10n.badgeDetailRevokeSelfBody
+                  : l10n.badgeDetailRevokeBody,
               style: VineTheme.bodySmallFont(
                 color: context.vineColors.onSurfaceVariant,
               ),

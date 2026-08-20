@@ -10584,6 +10584,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Asta cere releelor să renunțe la acordarea făcută acestei persoane. Releele pot refuza, iar dacă a fixat deja insigna, ea rămâne pe profil până o scoate singură. Oricum ar fi, nu primește nicio notificare.';
 
   @override
+  String get badgeDetailRevokeSelfBody =>
+      'Asta cere releelor să renunțe la acordarea pe care ți-ai făcut-o și scoate insigna de pe profilul tău. Dacă releele refuză ștergerea, nu se schimbă nimic.';
+
+  @override
   String get badgeDetailRevokeSharedNote =>
       'Această acordare a plecat deodată către mai multe persoane. Dacă o retragi de la una, ceilalți primesc o acordare nouă și trebuie să accepte insigna din nou.';
 

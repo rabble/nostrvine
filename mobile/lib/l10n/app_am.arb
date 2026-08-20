@@ -4130,6 +4130,7 @@
     "badgeDetailRevokeAction": "ባጁን መልስ",
     "badgeDetailRevokeTitle": "ይህን ባጅ ትመልሰዋለህ?",
     "badgeDetailRevokeBody": "ይህ ሪሌዮች ለዚህ ሰው የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል። ሪሌዮች ሊከለክሉ ይችላሉ፣ ባጁን በመገለጫቸው ላይ ሰክተውት ከሆነም እስኪያስወግዱት ድረስ እዚያው ይቆያል። ለማንኛውም አይነገራቸውም።",
+    "badgeDetailRevokeSelfBody": "ይህ ሪሌዮች ለራስህ የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል፣ ባጁንም ከመገለጫህ ላይ ያነሳል። ሪሌዮቹ ስረዛውን ካልተቀበሉት ምንም አይለወጥም።",
     "badgeDetailRevokeSharedNote": "ይህ ሽልማት በአንድ ጊዜ ለብዙ ሰዎች ወጥቷል። ከአንዱ ስትመልሰው ሌሎቹ አዲስ ሽልማት ያገኛሉ፣ ባጁንም እንደገና መቀበል ይኖርባቸዋል።",
     "badgeDetailRevokeConfirm": "መልስ",
     "badgeDetailRevokeSuccess": "ባጁ ተመልሷል",

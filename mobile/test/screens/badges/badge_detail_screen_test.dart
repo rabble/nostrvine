@@ -355,6 +355,8 @@ void main() {
 
       expect(find.text(l10n.badgeDetailRevokeTitle), findsOneWidget);
       expect(find.text(l10n.badgeDetailRevokeBody), findsOneWidget);
+      // Someone else's pin is their event, so the copy only promises to ask.
+      expect(find.text(l10n.badgeDetailRevokeSelfBody), findsNothing);
       // The award named one person, so the batch warning would be a lie.
       expect(find.text(l10n.badgeDetailRevokeSharedNote), findsNothing);
 
@@ -378,6 +380,28 @@ void main() {
         ),
       ).called(1);
       expect(find.text(l10n.badgeDetailRevokeSuccess), findsOneWidget);
+    });
+
+    testWidgets('promises to unpin only when you revoke yourself', (
+      tester,
+    ) async {
+      // The general copy says the badge stays until the recipient takes it
+      // down. For your own pin that undersells it — the revoke removes it.
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(
+          definition: _definition(),
+          isOwner: true,
+          recipients: [_recipient(isViewer: true)],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tapRevoke(tester);
+
+      expect(find.text(l10n.badgeDetailRevokeSelfBody), findsOneWidget);
+      expect(find.text(l10n.badgeDetailRevokeBody), findsNothing);
     });
 
     testWidgets('warns that a batched award leaves the others re-accepting', (
@@ -514,12 +538,16 @@ BadgeDetailData _detail({
   );
 }
 
-BadgeRecipientViewData _recipient({bool sharesAwardWithOthers = false}) {
+BadgeRecipientViewData _recipient({
+  bool sharesAwardWithOthers = false,
+  bool isViewer = false,
+}) {
   return BadgeRecipientViewData(
     pubkey: _pubkey(2),
     awardEventId: '2'.padLeft(64, '0'),
     isAccepted: true,
     sharesAwardWithOthers: sharesAwardWithOthers,
+    isViewer: isViewer,
   );
 }
 

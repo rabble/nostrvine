@@ -292,6 +292,7 @@ class _BadgeDetailBody extends StatelessWidget {
     final confirmed = await showBadgeRevokeConfirmation(
       context,
       sharesAwardWithOthers: recipient.sharesAwardWithOthers,
+      isViewer: recipient.isViewer,
     );
     if (!(confirmed ?? false) || cubit.isClosed) return;
     await cubit.revokeAward(recipient.pubkey);

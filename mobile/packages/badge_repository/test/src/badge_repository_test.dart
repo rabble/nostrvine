@@ -2071,6 +2071,31 @@ void main() {
         );
       });
 
+      test('marks the viewer among the recipients', () async {
+        // The confirmation copy differs for your own award, and the UI should
+        // not have to look up the signed-in pubkey to find that out.
+        _stubQueries(nostrClient, {
+          'awardsFor:${coordinate.value}': [
+            _awardEvent(
+              id: _eventId(79),
+              issuerPubkey: _pubkey(2),
+              definitionCoordinate: coordinate.value,
+              recipients: [_pubkey(1), _pubkey(3)],
+            ),
+          ],
+        });
+
+        final detail = await repository.loadBadgeDetail(coordinate);
+
+        expect(
+          {
+            for (final recipient in detail.recipients)
+              recipient.pubkey: recipient.isViewer,
+          },
+          {_pubkey(1): true, _pubkey(3): false},
+        );
+      });
+
       test('flags a recipient whose older award named others too', () async {
         // The newest award names them alone, but a revoke deletes every award
         // naming them — including the shared older one.

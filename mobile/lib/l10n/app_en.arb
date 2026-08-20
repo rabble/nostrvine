@@ -6420,6 +6420,10 @@
   },
   "badgeDetailRevokeTitle": "Take this badge back?",
   "badgeDetailRevokeBody": "This asks relays to drop the award you gave this person. Relays can refuse, and if they already pinned the badge it stays on their profile until they take it down. Either way, they are not told.",
+  "badgeDetailRevokeSelfBody": "This asks relays to drop the award you gave yourself, and takes the badge off your profile. If the relays refuse the deletion, nothing changes.",
+  "@badgeDetailRevokeSelfBody": {
+    "description": "Body of the revoke sheet when the issuer is taking the badge back from themselves. Unlike the general case, their own pin is removed too, because the profile badge list is their own event."
+  },
   "badgeDetailRevokeSharedNote": "This award went out to several people at once. Taking it back from one means the others get a fresh award and have to accept the badge again.",
   "@badgeDetailRevokeSharedNote": {
     "description": "Extra warning in the revoke sheet, shown only when the award event names more than one recipient."

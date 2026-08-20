@@ -17746,6 +17746,12 @@ abstract class AppLocalizations {
   /// **'This asks relays to drop the award you gave this person. Relays can refuse, and if they already pinned the badge it stays on their profile until they take it down. Either way, they are not told.'**
   String get badgeDetailRevokeBody;
 
+  /// Body of the revoke sheet when the issuer is taking the badge back from themselves. Unlike the general case, their own pin is removed too, because the profile badge list is their own event.
+  ///
+  /// In en, this message translates to:
+  /// **'This asks relays to drop the award you gave yourself, and takes the badge off your profile. If the relays refuse the deletion, nothing changes.'**
+  String get badgeDetailRevokeSelfBody;
+
   /// Extra warning in the revoke sheet, shown only when the award event names more than one recipient.
   ///
   /// In en, this message translates to:

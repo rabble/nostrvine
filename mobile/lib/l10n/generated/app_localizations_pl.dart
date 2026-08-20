@@ -10567,6 +10567,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'To prosi przekaźniki o usunięcie przyznania, którego dokonałeś tej osobie. Przekaźniki mogą odmówić, a jeśli odznaka jest już przypięta, zostaje na profilu, dopóki sama jej nie usunie. Tak czy inaczej, nikt jej o tym nie powiadomi.';
 
   @override
+  String get badgeDetailRevokeSelfBody =>
+      'To prosi przekaźniki o usunięcie przyznania, którego dokonałeś sobie, i zdejmuje odznakę z twojego profilu. Jeśli przekaźniki odmówią usunięcia, nic się nie zmieni.';
+
+  @override
   String get badgeDetailRevokeSharedNote =>
       'To przyznanie poszło naraz do kilku osób. Odebranie go jednej sprawia, że pozostali dostają nowe przyznanie i muszą przyjąć odznakę jeszcze raz.';
 

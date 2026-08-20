@@ -9805,6 +9805,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '这会请求中继删除你颁发给这个人的记录。中继可以拒绝，如果对方已经把徽章固定在资料页，它会一直留在那里，直到本人移除。无论哪种情况，对方都不会收到通知。';
 
   @override
+  String get badgeDetailRevokeSelfBody =>
+      '这会请求中继删除你颁发给自己的记录，并把徽章从你的资料页移除。如果中继拒绝删除，则不会有任何改变。';
+
+  @override
   String get badgeDetailRevokeSharedNote =>
       '这次颁发是一次性发给多个人的。从其中一人手上收回，其他人会收到一份新的颁发记录，需要重新接受这枚徽章。';
 
