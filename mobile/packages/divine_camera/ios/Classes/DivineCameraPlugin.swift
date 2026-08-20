@@ -64,8 +64,11 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
                 // mode-switch cost and the warmed behaviour drifts from the
                 // real one. This runs at plugin registration, long before
                 // Dart can report the user's unprocessed-audio preference
-                // (#7796), so it can only warm the default — the few users
-                // who opt in pay that switch once, on their first recording.
+                // (#7796), so it can only warm the default. Music mode then
+                // switches the session once, from the deferred audio
+                // pre-build a second after the first preview frame — not
+                // from the record tap, which is what that pre-build exists
+                // to keep clear.
                 try audioSession.setCategory(
                     .playAndRecord,
                     mode: .videoRecording,
