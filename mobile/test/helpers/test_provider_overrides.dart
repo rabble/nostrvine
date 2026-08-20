@@ -137,6 +137,8 @@ MockAuthService createMockAuthService() {
 }
 
 void _stubSessionCleanupRegistration(AuthService mockAuth) {
+  if (mockAuth is! Mock) return;
+
   when(
     () => mockAuth.registerBeforeSessionTeardownCallback(any()),
   ).thenReturn(() {});

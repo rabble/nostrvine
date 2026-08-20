@@ -3,10 +3,14 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 
 import 'test_provider_overrides.dart';
+
+class _FakeAuthService extends Fake implements AuthService {}
 
 void main() {
   test('standard overrides give auth mocks a session-cleanup callback', () {
@@ -17,6 +21,13 @@ void main() {
     final unregister = auth.registerBeforeSessionTeardownCallback(() async {});
     expect(unregister, isA<void Function()>());
     expect(unregister, returnsNormally);
+  });
+
+  test('standard overrides leave hand-written auth fakes alone', () {
+    expect(
+      () => getStandardTestOverrides(mockAuthService: _FakeAuthService()),
+      returnsNormally,
+    );
   });
 
   test('standard overrides keep analytics inert in unrelated tests', () {
