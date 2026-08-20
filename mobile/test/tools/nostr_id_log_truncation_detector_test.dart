@@ -28,10 +28,10 @@ void main() {
 
     List<TruncationSite> scan(String source, {String name = 'subject.dart'}) {
       File('${tmp.path}/lib/$name').writeAsStringSync(source);
-      return findTruncationSites(
+      // Same entry point the CLI uses, so the harness cannot drift from it.
+      return findSitesUnder([
         Directory('${tmp.path}/lib'),
-        pathPrefix: tmp.path,
-      );
+      ], pathPrefix: tmp.path);
     }
 
     setUp(() {
@@ -105,6 +105,27 @@ void report(String npub) {
         expect(sites.single.how, '_maskKey');
         expect(sites.single.sink, '_log.info');
         expect(sites.single.line, 7);
+      });
+
+      test('a shortener defined in another file', () {
+        // `NostrKeyUtils.maskKey` and `StringUtils.formatIdForLogging` were
+        // both public helpers whose docs recommended them for logging, so the
+        // shortening and the log call routinely sit in different files.
+        File('${tmp.path}/lib/helpers.dart').writeAsStringSync('''
+class StringUtils {
+  static String formatIdForLogging(String id) => id.substring(0, 8);
+}
+''');
+        final sites = scan(r'''
+void report(String eventId) {
+  Log.info('found ${StringUtils.formatIdForLogging(eventId)}');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.path, 'lib/subject.dart');
+        expect(sites.single.identifier, 'eventId');
+        expect(sites.single.how, 'formatIdForLogging');
       });
 
       test('take over a character view of an identifier', () {
@@ -214,16 +235,12 @@ String shortId(String eventId) => eventId.substring(0, 8);
       });
 
       test('generated files', () {
-        scan(r'''
+        expect(
+          scan(r'''
 void report(String eventId) {
   Log.info('${eventId.substring(0, 8)}');
 }
-''', name: 'subject.g.dart');
-        expect(
-          findTruncationSites(
-            Directory('${tmp.path}/lib'),
-            pathPrefix: tmp.path,
-          ),
+''', name: 'subject.g.dart'),
           isEmpty,
         );
       });
@@ -274,17 +291,16 @@ void report(String pubkey) {
       // .txt is intentionally empty), so this is the invariant the ratchet
       // enforces in CI, asserted here where the failure names the file.
       final mobileDir = Directory.current.path;
-      final sites = <TruncationSite>[];
-      for (final root in const [
-        'lib',
-        'packages',
-        'test',
-        'integration_test',
-      ]) {
-        final dir = Directory('$mobileDir/$root');
-        if (!dir.existsSync()) continue;
-        sites.addAll(findTruncationSites(dir, pathPrefix: mobileDir));
-      }
+      final roots = [
+        for (final root in const [
+          'lib',
+          'packages',
+          'test',
+          'integration_test',
+        ])
+          Directory('$mobileDir/$root'),
+      ].where((d) => d.existsSync()).toList();
+      final sites = findSitesUnder(roots, pathPrefix: mobileDir);
 
       expect(
         sites.map((s) => '${s.path}:${s.line} ${s.identifier} -> ${s.sink}'),

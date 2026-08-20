@@ -200,14 +200,7 @@ void main(List<String> args) {
   }
   if (pathPrefix.isEmpty) pathPrefix = dirs.first.path;
 
-  final sites = <TruncationSite>[];
-  for (final dir in dirs) {
-    sites.addAll(findTruncationSites(dir, pathPrefix: pathPrefix));
-  }
-  sites.sort((a, b) {
-    final byPath = a.path.compareTo(b.path);
-    return byPath != 0 ? byPath : a.line.compareTo(b.line);
-  });
+  final sites = findSitesUnder(dirs, pathPrefix: pathPrefix);
 
   if (detail) {
     for (final s in sites) {
@@ -227,30 +220,99 @@ void main(List<String> args) {
   }
 }
 
+/// Scans [dirs] end to end and returns the sites in path-then-line order.
+///
+/// The whole pipeline lives here — collect shorteners corpus-wide, then judge
+/// each file against them — so `main` and the self-test exercise exactly the
+/// same thing. Splitting them is how a prefilter once diverged from the sink
+/// set it was supposed to mirror.
+List<TruncationSite> findSitesUnder(
+  List<Directory> dirs, {
+  required String pathPrefix,
+}) {
+  // Shorteners are collected across every scanned root before any file is
+  // judged, so a helper defined in one file and called inside a log in another
+  // still counts. `StringUtils.formatIdForLogging` was exactly that shape.
+  final shorteners = collectShorteners(dirs);
+  final sites = <TruncationSite>[];
+  for (final dir in dirs) {
+    sites.addAll(
+      findTruncationSites(dir, pathPrefix: pathPrefix, shorteners: shorteners),
+    );
+  }
+  sites.sort((a, b) {
+    final byPath = a.path.compareTo(b.path);
+    return byPath != 0 ? byPath : a.line.compareTo(b.line);
+  });
+  return sites;
+}
+
+/// Hand-written Dart files under [dir], sorted, generated code excluded.
+List<File> _dartFilesUnder(Directory dir) =>
+    dir
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .where((f) => !f.path.contains('/l10n/generated/'))
+        .where((f) => !f.path.contains('/.dart_tool/'))
+        .where((f) => !f.path.contains('/build/'))
+        .where(
+          (f) => !const [
+            '.g.dart',
+            '.freezed.dart',
+            '.gr.dart',
+            '.config.dart',
+            '.mocks.dart',
+          ].any(f.path.endsWith),
+        )
+        .toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
+
+/// Every function name in [dirs] whose body shortens one of its own parameters.
+///
+/// Collected corpus-wide, because the shortening and the log call do not have
+/// to share a file: `NostrKeyUtils.maskKey` and `StringUtils.formatIdForLogging`
+/// were both public helpers whose docs recommended them for logging. Matching
+/// is by method name only — the unresolved AST has no types — so an unrelated
+/// function that happens to share a name with a shortener is reported. That
+/// trade is deliberate: the corpus currently yields no such collision, and a
+/// name shared with a shortener is worth a look anyway.
+Set<String> collectShorteners(List<Directory> dirs) {
+  final names = <String>{};
+  for (final dir in dirs) {
+    for (final file in _dartFilesUnder(dir)) {
+      final String source;
+      try {
+        source = file.readAsStringSync();
+      } on Object {
+        continue; // findTruncationSites reports this file again, with a reason.
+      }
+      if (!_shorteningMembers.any((m) => source.contains('$m('))) continue;
+      try {
+        final parsed = parseString(
+          content: source,
+          path: file.path,
+          featureSet: FeatureSet.latestLanguageVersion(),
+          throwIfDiagnostics: false,
+        );
+        names.addAll(
+          (_ShortenerCollector()..visitCompilationUnit(parsed.unit)).names,
+        );
+      } on Object {
+        continue;
+      }
+    }
+  }
+  return names;
+}
+
 /// Scans every non-generated Dart file under [dir], in path-then-line order.
 List<TruncationSite> findTruncationSites(
   Directory dir, {
   required String pathPrefix,
+  Set<String>? shorteners,
 }) {
-  final files =
-      dir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))
-          .where((f) => !f.path.contains('/l10n/generated/'))
-          .where((f) => !f.path.contains('/.dart_tool/'))
-          .where((f) => !f.path.contains('/build/'))
-          .where(
-            (f) => !const [
-              '.g.dart',
-              '.freezed.dart',
-              '.gr.dart',
-              '.config.dart',
-              '.mocks.dart',
-            ].any(f.path.endsWith),
-          )
-          .toList()
-        ..sort((a, b) => a.path.compareTo(b.path));
+  final files = _dartFilesUnder(dir);
 
   final sites = <TruncationSite>[];
   for (final file in files) {
@@ -267,7 +329,12 @@ List<TruncationSite> findTruncationSites(
     }
     // A site needs a shortening call AND a log sink in the same file. This
     // prefilter drops ~2300 of the ~2350 files under lib/ and packages/*/lib.
-    final shortens = _shorteningMembers.any((m) => source.contains('$m('));
+    // A calling file need not contain `substring(` itself: the shortening can
+    // live in the helper it calls, which is the whole point of the corpus-wide
+    // pass above. Admit both.
+    final shortens =
+        _shorteningMembers.any((m) => source.contains('$m(')) ||
+        (shorteners?.any((n) => source.contains('$n(')) ?? false);
     if (!shortens) continue;
     if (!_sinkTokens.any(source.contains)) continue;
 
@@ -287,7 +354,12 @@ List<TruncationSite> findTruncationSites(
         ? file.path.substring(pathPrefix.length + 1)
         : file.path;
     sites.addAll(
-      findSitesInUnit(parsed.unit, parsed.lineInfo, path: relative),
+      findSitesInUnit(
+        parsed.unit,
+        parsed.lineInfo,
+        path: relative,
+        extraShorteners: shorteners,
+      ),
     );
   }
   return sites;
@@ -298,12 +370,13 @@ List<TruncationSite> findSitesInUnit(
   CompilationUnit unit,
   LineInfo lineInfo, {
   required String path,
+  Set<String>? extraShorteners,
 }) {
-  final shorteners = _ShortenerCollector()..visitCompilationUnit(unit);
+  final local = _ShortenerCollector()..visitCompilationUnit(unit);
   final visitor = _SiteCollector(
     path: path,
     lineInfo: lineInfo,
-    shorteners: shorteners.names,
+    shorteners: {...local.names, ...?extraShorteners},
   );
   unit.accept(visitor);
   return visitor.sites;
