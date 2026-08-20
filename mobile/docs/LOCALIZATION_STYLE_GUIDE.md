@@ -99,6 +99,9 @@ both correct here, and so is Urdu آپ, because each is what an ordinary app in
 that language uses. Copying English's T-form instinct into Urdu or Japanese
 produces copy that reads as rude, not as friendly.
 
+How to *refer* to people, as opposed to addressing them, is
+[Gender](#gender-never-the-masculine-default) below.
+
 | Locale | Address the reader as | Current tree | Notes |
 |---|---|---|---|
 | `am` Amharic | Polite እርስዎ / -ዎ; avoid gendered singular | **split** | Familiar and polite forms both appear, and they flip per verb: `ሰርዝ` 55 / `ይሰርዙ` 4 for delete, but `ተመልከት` 4 / `ይመልከቱ` 40 for watch. Adjacent keys disagree — `authCreateNewAccount` is polite, `authCreateNewAccountShort` familiar. Every familiar form is **masculine**; the feminine is used zero times, so those strings address every reader as male. That is the reason to prefer the polite form or a verbal noun, not tidiness. |
@@ -148,6 +151,49 @@ clean result.
 touching.** Do not reconcile the rest of the file in the same PR — a 400-key
 register sweep buried in a feature PR is not reviewable. Reconciling a locale
 is its own change, with its own issue and its own native-speaker review.
+
+---
+
+## Gender: never the masculine default
+
+Where a language forces a gender onto a word that refers to a person, English
+hides the problem and every gendered locale inherits it. "Use the standard
+form" is not an answer here, because the standard form is masculine. Prefer
+the construction with no gender in it; where the language makes you choose,
+prefer the non-gendered innovation over the masculine default, and accept
+that some readers will dislike it — the same trade the `es` row makes.
+
+In order of preference:
+
+1. **Reword so gender never comes up.** Usually possible, and usually better
+   copy. `authWelcomeToDivine` is the worked example: Spanish
+   `¡Bienvenido a Divine!`, Portuguese `Bem-vindo ao Divine!` and Italian
+   `Benvenuto su Divine!` greet every reader as a man, while French
+   `Bienvenue sur Divine !` and Polish `Witaj w Divine!` say the same thing
+   with no gender at all. German has the same fix available for its 27
+   `Nutzer` keys — address the person (`wenn du jemanden blockierst`) rather
+   than naming the noun.
+2. **When the language makes you choose, take the non-gendered form** —
+   Spanish and Portuguese `-e` — over the masculine, and over the
+   parenthesis-and-slash pile-up. **34 keys across six locales currently
+   pile up**: `fr` `invité(e)`, `ro` `invitat(ă)`, `pt` `convidado(a)`, `it`
+   `bloccato/a`, `es` `eliminado/a`, and 10 Polish notification lines like
+   `{actorName} polubił(a) Twoje wideo`.
+3. **When the person's gender is genuinely unknown, do not guess and do not
+   offer both.** The Polish notification strings are the hard case: the actor
+   is any user in the world. The fix is a construction that does not inflect
+   for them at all, not a slash.
+4. **Never address the reader as male by default.** `app_am.arb` does exactly
+   that today — every familiar verb form in the file is masculine and the
+   feminine is used zero times, which is why the `am` row prefers the polite,
+   ungendered forms. Arabic does it in `authSignInOptionsHintPrefix`
+   (`لست متأكدًا`).
+5. **Agreement travels past the noun.** A neutral noun does not rescue a
+   sentence whose adjective or participle still agrees. Read the whole string.
+
+`fil`, `id`, `ms`, `ja`, `ko`, `tr`, `vi` and `zh` have no grammatical gender
+to fight. The rest need this section, hardest in `ar`, `am`, `es`, `pt`, `fr`,
+`it`, `ro` and `pl`.
 
 ---
 
@@ -417,6 +463,17 @@ the target is voseo — `ja` `(だよ|してね|するよ|ないよ)`, `ko` `(�
 deliberately unanchored: real values carry punctuation, and this command is a
 candidate finder rather than a claim that every occurrence is sentence-final.
 
+The gender pile-up has an exact detector, and it needs no language knowledge
+at all — every one of its 34 current hits is a real one:
+
+```bash
+# Gendered both-forms: invité(e), invitat(ă), convidado(a), bloccato/a
+grep -nE '\([eaăo]\)|[a-zá-ú]/[ao]\b' lib/l10n/app_*.arb
+```
+
+It finds nothing in the locales that reword instead, which is the point —
+see [Gender](#gender-never-the-masculine-default).
+
 ### Where a pronoun grep lies
 
 The snippet above is a starting point, and in five of our locales it is not
@@ -433,6 +490,10 @@ this guide, so treat a clean pronoun grep as *no information*, not as a pass:
   tuteo marker scores voseo strings as tuteo. 72 keys carry both. Use only
   markers the other register cannot produce: accented `tú`, `tienes`/`puedes`,
   or the accent-final imperatives `Revisá`/`Probá`.
+- **A masculine default is invisible to a register grep.** Nothing above
+  notices that `¡Bienvenido a Divine!` greets every reader as a man; the
+  string has no pronoun in it and no register problem. Gender is a separate
+  pass, with its own command above.
 - **Case-insensitive matching invents findings.** Italian `Suo`/`Sua` is
   courtesy; lowercase `suo`/`sua` is ordinary third person. Matching without
   case reports 15 offenders in a file that has none.
