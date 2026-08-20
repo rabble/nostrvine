@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:likes_repository/likes_repository.dart' show isEmojiOnlyText;
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
@@ -435,41 +436,15 @@ class _CommentHeader extends ConsumerWidget {
   }
 }
 
-/// Returns true if [text] contains only emoji characters (up to 3 grapheme
-/// clusters) with no text, mentions, or other content.
+/// Returns true if [text] is emoji-only, capped at 3 grapheme clusters —
+/// the jumbo-rendering limit for emoji-only comments.
 ///
-/// Handles compound emojis correctly: Dart's `.characters` segments ZWJ
-/// sequences (e.g. 👨‍👩‍👧‍👦), skin-tone variants (👋🏿), flags (🇺🇸),
-/// and keycap sequences (1️⃣) as single grapheme clusters. The regex then
-/// validates that each grapheme consists only of emoji-related code points.
+/// The classification itself is the shared [isEmojiOnlyText], so this
+/// path and the reaction-content validation accept the same emoji set;
+/// only the length limit is use-case-specific.
 bool _isEmojiOnly(String text) {
   final trimmed = text.trim();
-  if (trimmed.isEmpty) return false;
-  final graphemes = trimmed.characters;
-  if (graphemes.length > 3) return false;
-  // Check each grapheme is emoji (no ASCII text, no nostr: mentions).
-  // Includes Emoji_Component for keycap (\u20e3) and tag sequences,
-  // and Regional_Indicator for flag emojis.
-  final emojiRegex = RegExp(
-    // Emoji component chars (ZWJ, VS-16, keycap, skin tones, digits/#/*)
-    r'^[\u200d\ufe0f\u20e30-9#*\u{1F3FB}-\u{1F3FF}'
-    // BMP emoji symbols and dingbats
-    r'\u00a9\u00ae\u203c\u2049'
-    r'\u2194-\u2199\u21a9-\u21aa\u231a-\u231b\u2328\u23cf'
-    r'\u23e9-\u23f3\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0'
-    r'\u25fb-\u25fe\u2600-\u27bf\u2934-\u2935\u2b05-\u2b07'
-    r'\u2b1b-\u2b1c\u2b50\u2b55\u3030\u303d\u3297\u3299'
-    // Supplementary plane emoji (plane 1: mahjong through symbols extended-a)
-    r'\u{1F000}-\u{1FFFF}'
-    r']+$',
-    unicode: true,
-  );
-  // Exclude bare ASCII digits/symbols that have \p{Emoji} but aren't
-  // visually emoji (e.g. "0"-"9", "#", "*").
-  final asciiTextRegex = RegExp(r'^[0-9#*]$');
-  return graphemes.every(
-    (g) => emojiRegex.hasMatch(g) && !asciiTextRegex.hasMatch(g),
-  );
+  return trimmed.characters.length <= 3 && isEmojiOnlyText(trimmed);
 }
 
 /// Content section of a comment showing text with parsed @mentions.
