@@ -342,9 +342,28 @@ comment on `exploreFeaturedPaidPartnership` in
 `mobile/test/l10n/arb_consistency_test.dart`, held out of machine translation
 because "paid" is load-bearing and a softened rendering discloses nothing.
 
-**Do not add emphasis the source did not have.** Exclamation marks, ALL CAPS
-and emoji are decisions made in `app_en.arb`. Match them; do not introduce
-them. The English source currently uses emoji in two keys:
+**Match the source's energy, not its punctuation.** Exclamation marks and
+ALL CAPS are one language's way of spelling emphasis, and copying the marks
+across is not the same as carrying the feeling across. Spanish opens with `¡`,
+Japanese has `！`, French puts a space before `!`.
+
+The corpus says the failure this rule normally guards against is not the one
+we have. Across all 21 locales, exactly **one** key adds an exclamation mark
+English did not have — Japanese `了解！` for "Got it" — and none drop one.
+Spanish uses `¡` in exactly the 36 keys where English chose `!` and in no
+others, while handling `¿` by itself in 69 of its 70 questions. So the file
+knows its own punctuation and never once makes an emphasis decision with it.
+That is not restraint, it is punctuation traced from English; `了解！` is the
+single place someone made the call locally, and it is the right call.
+
+Raise the energy where that language would raise it, and keep it level where
+the brand dial says level: legal, safety, consent, deletion, age and money
+copy is neither rebel nor playful in any locale.
+
+**Emoji are the one exception, and not for tone reasons.** The same glyph
+carries different meaning by region, so an emoji added into a locale is a
+different kind of risk from an exclamation mark. Add one only if you know how
+it reads there. English currently uses emoji in two keys —
 `videoFeedLoopCountLabel` and `deleteAccountFinalConfirmationTitle`.
 
 ---
@@ -413,8 +432,9 @@ is done; do not re-check it by eye.
 **Tier 2 — style-guide conformance. Any reviewer can check this.**
 Register matches the table above. No gendered both-forms pile-up
 (`invité(e)`, `bloccato/a`). No locked term was translated. A term introduced
-into a locale matches how that locale already renders it. No emoji or
-exclamation marks the source did not have. Every check in this tier has a
+into a locale matches how that locale already renders it. An emoji the source
+does not have is worth asking about — it is not automatically wrong, but it
+is the one mark whose meaning moves between regions. Every check in this tier has a
 command in the next section, and **none of them require reading the language.**
 This tier is where a non-speaking reviewer adds real value, and it is exactly
 where the drift in this repo has come from.
