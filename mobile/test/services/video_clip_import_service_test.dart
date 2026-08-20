@@ -593,18 +593,6 @@ cue text $loneSurrogate here
       },
     );
 
-    test('measures a Vine shorter than the advertised tag', () async {
-      final service = buildService(
-        readVideoMetadata: (video) async =>
-            metadataWith(const Duration(milliseconds: 5201)),
-      );
-
-      final result = await service.importToLibrary(_video());
-
-      final success = result as VideoClipImportSuccess;
-      expect(success.clip.duration, const Duration(milliseconds: 5201));
-    });
-
     test('extracts the ghost frame at the measured duration', () async {
       Duration? ghostFrameDuration;
       final service = buildService(

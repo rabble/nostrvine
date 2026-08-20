@@ -314,10 +314,12 @@ class VideoClipImportService {
     return const Duration(seconds: 6);
   }
 
-  /// Probes the copied file once for the metadata the import needs.
+  /// Probes the copied file once for the duration and resolution the import
+  /// needs.
   ///
-  /// Returns `null` when the probe fails, leaving callers on the values
-  /// advertised in the Nostr event.
+  /// Returns `null` when the probe fails, leaving both to the event's own
+  /// `duration` and `dim` tags — and to their defaults when it carries
+  /// neither.
   Future<VideoMetadata?> _probeMetadata(File copiedVideo) async {
     try {
       return await _readVideoMetadata(EditorVideo.file(copiedVideo.path));
