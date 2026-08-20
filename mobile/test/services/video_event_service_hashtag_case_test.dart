@@ -1,46 +1,16 @@
 // ABOUTME: Regression tests for case-insensitive hashtag filtering in VideoEventService
 // ABOUTME: Pins realtime/pagination parity so load-more stops dropping capitalised hashtags
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-class _MinimalNostrClient implements NostrClient {
-  @override
-  bool get isInitialized => true;
+class _MockNostrClient extends Mock implements NostrClient {}
 
-  @override
-  bool get isDisposed => false;
-
-  @override
-  List<String> get connectedRelays => ['wss://localhost:8080'];
-
-  @override
-  int get connectedRelayCount => 1;
-
-  @override
-  int get configuredRelayCount => 1;
-
-  @override
-  List<String> get configuredRelays => ['wss://localhost:8080'];
-
-  @override
-  String get publicKey => '';
-
-  @override
-  bool get hasKeys => false;
-
-  @override
-  Future<void> dispose() async {}
-
-  @override
-  Future<void> initialize({List<String>? customRelays}) async {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 Event _videoEvent({required String id, required String hashtag}) {
   final event = Event(
@@ -61,23 +31,23 @@ Event _videoEvent({required String id, required String hashtag}) {
 
 void main() {
   group(VideoEventService, () {
-    late _MinimalNostrClient nostrClient;
-    late SubscriptionManager subscriptionManager;
+    late _MockNostrClient nostrClient;
+    late _MockSubscriptionManager subscriptionManager;
     late VideoEventService service;
 
     setUp(() {
-      nostrClient = _MinimalNostrClient();
-      subscriptionManager = SubscriptionManager(nostrClient);
+      nostrClient = _MockNostrClient();
+      subscriptionManager = _MockSubscriptionManager();
+      when(() => nostrClient.isInitialized).thenReturn(true);
+      when(() => nostrClient.isDisposed).thenReturn(false);
+      when(() => nostrClient.connectedRelayCount).thenReturn(1);
       service = VideoEventService(
         nostrClient,
         subscriptionManager: subscriptionManager,
       );
     });
 
-    tearDown(() async {
-      service.dispose();
-      await subscriptionManager.dispose();
-    });
+    tearDown(() => service.dispose());
 
     group('hashtag filter casing', () {
       // `subscribeToVideoFeed` lowercases the tag for the relay REQ (NIP-24)
@@ -98,7 +68,10 @@ void main() {
             SubscriptionType.hashtag,
           );
 
-          expect(service.getVideos(SubscriptionType.hashtag), hasLength(1));
+          expect(
+            service.getVideos(SubscriptionType.hashtag).map((v) => v.id),
+            ['b' * 64],
+          );
         },
       );
 
@@ -117,7 +90,10 @@ void main() {
           SubscriptionType.hashtag,
         );
 
-        expect(service.getVideos(SubscriptionType.hashtag), hasLength(2));
+        expect(
+          service.getVideos(SubscriptionType.hashtag).map((v) => v.id),
+          containsAll(['c' * 64, 'd' * 64]),
+        );
       });
 
       test('a genuinely unrelated hashtag is still rejected on both paths', () {
