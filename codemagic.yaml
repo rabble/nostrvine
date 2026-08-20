@@ -1156,10 +1156,11 @@ workflows:
       - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
+      - *check_ios_extension_signing_contract
+      - *write_shorebird_public_key
       - *write_shorebird_dart_defines
       - *fetch_and_verify_shorebird_provenance
       - *prepare_patch_source
-      - *check_ios_extension_signing_contract
       - *write_shorebird_private_key
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
@@ -1241,6 +1242,7 @@ workflows:
       - *shorebird_install
       - *check_signing_endpoint
       - *check_supporters_config
+      - *write_shorebird_public_key
       - *write_shorebird_dart_defines
       - *fetch_and_verify_shorebird_provenance
       - *prepare_patch_source
