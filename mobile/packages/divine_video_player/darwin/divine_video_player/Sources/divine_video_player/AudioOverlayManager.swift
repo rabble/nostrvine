@@ -92,7 +92,6 @@ final class AudioOverlayManager {
     /// the video position falls within that track's active range.
     func update(videoPositionSec: Double, isPlaying: Bool, speed: Double) {
         logger.debug("update: position \(videoPositionSec)")
-        logger.debug("update called")
         for entry in overlays {
             let inRange = videoPositionSec >= entry.videoStartSec &&
                 (entry.videoEndSec == nil || videoPositionSec < entry.videoEndSec!)
