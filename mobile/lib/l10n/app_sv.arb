@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "Använd din egen NIP-05-adress",
     "profileSetupNip05AddressLabel": "NIP-05-adress",
     "profileSetupProfilePicturePreview": "Förhandsvisning av profilbild",
-    "nostrInfoIntroBuiltOn": "DiVine är byggt på Nostr,",
+    "nostrInfoIntroBuiltOn": "Divine är byggt på Nostr,",
     "nostrInfoIntroDescription": " ett censurresistent öppet protokoll som låter folk kommunicera online utan att förlita sig på ett enda företag eller en enda plattform. ",
     "nostrInfoIntroIdentity": "När du skapar ett Divine-konto får du en ny Nostr-identitet.",
     "nostrInfoOwnership": "Nostr låter dig äga ditt innehåll, din identitet och ditt sociala nätverk, vilket du kan använda i många appar. Resultatet är fler valmöjligheter, mindre inlåsning och ett sundare, mer motståndskraftigt socialt internet.",
@@ -2052,7 +2052,7 @@
     "listNewPeopleList": "Ny personlista",
     "listCollaboratorsNone": "Inga",
     "listAddCollaboratorTitle": "Lägg till medarbetare",
-    "listCollaboratorSearchHint": "Sök i diVine...",
+    "listCollaboratorSearchHint": "Sök i Divine...",
     "listNameLabel": "Listnamn",
     "listDescriptionLabel": "Beskrivning (valfritt)",
     "listPublicList": "Publik lista",
@@ -2429,8 +2429,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "Du har bjudits in att samarbeta på {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Du har bjudits in att samarbeta på en video: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Du har bjudits in att samarbeta på {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Du har bjudits in att samarbeta på en video: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Inbjudan skickad",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "Skapa",
     "blueskyTemporarilyUnavailable": "Publicering på Bluesky är tillfälligt otillgänglig. Försök igen.",
     "invitesNoneAvailable": "Inga inbjudningar tillgängliga just nu",
-    "invitesShareWithPeople": "Dela diVine med folk du känner",
+    "invitesShareWithPeople": "Dela Divine med folk du känner",
     "invitesUsedInvites": "Använda inbjudningar",
-    "invitesShareMessage": "Häng med mig på diVine! Använd inbjudningskoden {code} för att komma igång:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Häng med mig på Divine! Använd inbjudningskoden {code} för att komma igång:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "Kopiera inbjudan",
     "invitesCopied": "Inbjudan kopierad!",
     "invitesShareInvite": "Dela inbjudan",
-    "invitesShareSubject": "Häng med mig på diVine",
+    "invitesShareSubject": "Häng med mig på Divine",
     "invitesClaimed": "Inlöst",
     "invitesCouldNotLoad": "Kunde inte ladda inbjudningar",
     "invitesRetry": "Försök igen",

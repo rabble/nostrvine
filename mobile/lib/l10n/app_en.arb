@@ -665,7 +665,7 @@
   "profileSetupNip05ConfirmContinue": "Continue",
   "profileSetupNip05ConfirmCancel": "Cancel",
   "profileSetupProfilePicturePreview": "Profile picture preview",
-  "nostrInfoIntroBuiltOn": "DiVine is built on Nostr,",
+  "nostrInfoIntroBuiltOn": "Divine is built on Nostr,",
   "nostrInfoIntroDescription": " a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ",
   "nostrInfoIntroIdentity": "When you sign up for Divine, you get a new Nostr identity.",
   "nostrInfoOwnership": "Nostr lets you own your content, identity and social graph, which you can use across many apps. The result is more choice, less lock-in, and a healthier, more resilient social internet.",
@@ -3197,7 +3197,7 @@
   "listNewPeopleList": "New people list",
   "listCollaboratorsNone": "None",
   "listAddCollaboratorTitle": "Add a collaborator",
-  "listCollaboratorSearchHint": "Search diVine...",
+  "listCollaboratorSearchHint": "Search Divine...",
   "listNameLabel": "List Name",
   "listDescriptionLabel": "Description (optional)",
   "listPublicList": "Public List",
@@ -3738,11 +3738,11 @@
   },
   "inboxConversationCollabInvitePreview": "Collaborator invite",
   "@inboxConversationCollabInvitePreview": {
-    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open Divine to review and accept') is misleading inside Divine."
   },
-  "collaboratorInviteDmBody": "You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.",
+  "collaboratorInviteDmBody": "You were invited to collaborate on {title}: {url}\n\nOpen Divine to review and accept.",
   "@collaboratorInviteDmBody": {
-    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
       "title": {
         "type": "String",
@@ -3754,9 +3754,9 @@
       }
     }
   },
-  "collaboratorInviteDmBodyUntitled": "You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.",
+  "collaboratorInviteDmBodyUntitled": "You were invited to collaborate on a video: {url}\n\nOpen Divine to review and accept.",
   "@collaboratorInviteDmBodyUntitled": {
-    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open Divine to review and accept.' sentence MUST stay verbatim — Divine uses it as a marker to suppress legacy plaintext invites in conversation views.",
     "placeholders": {
       "url": {
         "type": "String",
@@ -4895,9 +4895,9 @@
     "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
   },
   "invitesNoneAvailable": "No invites available right now",
-  "invitesShareWithPeople": "Share diVine with people you know",
+  "invitesShareWithPeople": "Share Divine with people you know",
   "invitesUsedInvites": "Used invites",
-  "invitesShareMessage": "Join me on diVine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}",
+  "invitesShareMessage": "Join me on Divine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}",
   "@invitesShareMessage": {
     "placeholders": {
       "code": {
@@ -4908,7 +4908,7 @@
   "invitesCopyInvite": "Copy invite",
   "invitesCopied": "Invite copied!",
   "invitesShareInvite": "Share invite",
-  "invitesShareSubject": "Join me on diVine",
+  "invitesShareSubject": "Join me on Divine",
   "invitesClaimed": "Claimed",
   "invitesCouldNotLoad": "Could not load invites",
   "invitesRetry": "Retry",

@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "Pakai alamat NIP-05 milikmu sendiri",
     "profileSetupNip05AddressLabel": "Alamat NIP-05",
     "profileSetupProfilePicturePreview": "Pratinjau foto profil",
-    "nostrInfoIntroBuiltOn": "DiVine dibangun di atas Nostr,",
+    "nostrInfoIntroBuiltOn": "Divine dibangun di atas Nostr,",
     "nostrInfoIntroDescription": " protokol terbuka yang tahan sensor, yang memungkinkan orang berkomunikasi online tanpa bergantung pada satu perusahaan atau platform. ",
     "nostrInfoIntroIdentity": "Saat kamu mendaftar di Divine, kamu mendapat identitas Nostr baru.",
     "nostrInfoOwnership": "Nostr memungkinkan kamu memiliki konten, identitas, dan grafik sosialmu, yang bisa kamu pakai di banyak aplikasi. Hasilnya adalah lebih banyak pilihan, lebih sedikit kunci platform, dan internet sosial yang lebih sehat dan tangguh.",
@@ -2051,7 +2051,7 @@
     "listNewPeopleList": "Daftar orang baru",
     "listCollaboratorsNone": "Tidak ada",
     "listAddCollaboratorTitle": "Tambah kolaborator",
-    "listCollaboratorSearchHint": "Cari di diVine...",
+    "listCollaboratorSearchHint": "Cari di Divine...",
     "listNameLabel": "Nama Daftar",
     "listDescriptionLabel": "Deskripsi (opsional)",
     "listPublicList": "Daftar Publik",
@@ -2428,8 +2428,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "Kamu diundang untuk berkolaborasi di {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Kamu diundang untuk berkolaborasi pada sebuah video: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Kamu diundang untuk berkolaborasi di {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Kamu diundang untuk berkolaborasi pada sebuah video: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Undangan terkirim",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "Siapkan",
     "blueskyTemporarilyUnavailable": "Memposting ke Bluesky sementara tidak tersedia. Coba lagi.",
     "invitesNoneAvailable": "Tidak ada undangan tersedia saat ini",
-    "invitesShareWithPeople": "Bagikan diVine ke orang yang kamu kenal",
+    "invitesShareWithPeople": "Bagikan Divine ke orang yang kamu kenal",
     "invitesUsedInvites": "Undangan terpakai",
-    "invitesShareMessage": "Gabung dengan saya di diVine! Pakai kode undangan {code} untuk mulai:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Gabung dengan saya di Divine! Pakai kode undangan {code} untuk mulai:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "Salin undangan",
     "invitesCopied": "Undangan tersalin!",
     "invitesShareInvite": "Bagikan undangan",
-    "invitesShareSubject": "Gabung dengan saya di diVine",
+    "invitesShareSubject": "Gabung dengan saya di Divine",
     "invitesClaimed": "Sudah diklaim",
     "invitesCouldNotLoad": "Gagal memuat undangan",
     "invitesRetry": "Coba Lagi",

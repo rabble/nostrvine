@@ -1231,7 +1231,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Podgląd zdjęcia profilowego';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine jest zbudowane na Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine jest zbudowane na Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5426,7 +5426,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Dodaj współpracownika';
 
   @override
-  String get listCollaboratorSearchHint => 'Szukaj w diVine...';
+  String get listCollaboratorSearchHint => 'Szukaj w Divine...';
 
   @override
   String get listNameLabel => 'Nazwa listy';
@@ -6321,12 +6321,12 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Zaproszono Cię do współpracy nad $title: $url\n\nOpen diVine to review and accept.';
+    return 'Zaproszono Cię do współpracy nad $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Zaproszono Cię do współpracy nad filmem: $url\n\nOpen diVine to review and accept.';
+    return 'Zaproszono Cię do współpracy nad filmem: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8341,14 +8341,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get invitesShareWithPeople =>
-      'Udostępniaj diVine ludziom, których znasz';
+      'Udostępniaj Divine ludziom, których znasz';
 
   @override
   String get invitesUsedInvites => 'Wykorzystane zaproszenia';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Dołącz do mnie na diVine! Użyj kodu zaproszenia $code, żeby zacząć:\nhttps://divine.video/invite/$code';
+    return 'Dołącz do mnie na Divine! Użyj kodu zaproszenia $code, żeby zacząć:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8361,7 +8361,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get invitesShareInvite => 'Udostępnij zaproszenie';
 
   @override
-  String get invitesShareSubject => 'Dołącz do mnie na diVine';
+  String get invitesShareSubject => 'Dołącz do mnie na Divine';
 
   @override
   String get invitesClaimed => 'Wykorzystane';

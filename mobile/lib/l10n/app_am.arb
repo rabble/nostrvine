@@ -2451,7 +2451,7 @@
     "listNewPeopleList": "አዲስ ሰዎች ዝርዝር",
     "listCollaboratorsNone": "ምንም",
     "listAddCollaboratorTitle": "ተባባሪ ጨምር",
-    "listCollaboratorSearchHint": "diVine ፈልግ...",
+    "listCollaboratorSearchHint": "Divine ፈልግ...",
     "listNameLabel": "የዝርዝር ስም",
     "listDescriptionLabel": "መግለጫ (አማራጭ)",
     "listPublicList": "የህዝብ ዝርዝር",
@@ -2843,10 +2843,10 @@
     },
     "inboxConversationCollabInvitePreview": "የተባባሪ ግብዣ",
     "@inboxConversationCollabInvitePreview": {
-        "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+        "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open Divine to review and accept') is misleading inside Divine."
     },
-    "collaboratorInviteDmBody": "በ{title} ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "በ{title} ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen Divine to review and accept.",
     "dmSendNoRecipientMessage": "ይህ ውይይት ከማን ጋር እንደሆነ ማወቅ አልቻልንም። ከመልእክት ሳጥንህ እንደገና ክፈተው።",
     "dmSendBlockedMessage": "መልእክት መላክ የምትችለው ለኦፊሴላዊ የDivine መለያዎች ብቻ ነው",
     "dmSendBlockedRetiredMessage": "ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።",
@@ -3255,9 +3255,9 @@
         "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
     },
     "invitesNoneAvailable": "አሁን ምንም ግብዣዎች የሉም",
-    "invitesShareWithPeople": "diVineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ",
+    "invitesShareWithPeople": "Divineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ",
     "invitesUsedInvites": "ያገለገሉ ግብዣዎች",
-    "invitesShareMessage": "diVine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ {code} ተጠቀም፦\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Divine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ {code} ተጠቀም፦\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3268,7 +3268,7 @@
     "invitesCopyInvite": "ግብዣ ቅዳ",
     "invitesCopied": "ግብዣው ተቀድቷል!",
     "invitesShareInvite": "ግብዣ አጋራ",
-    "invitesShareSubject": "diVine ላይ አብረኝ ግባ",
+    "invitesShareSubject": "Divine ላይ አብረኝ ግባ",
     "invitesClaimed": "ተጠቅመዋል",
     "invitesCouldNotLoad": "ግብዣዎችን መጫን አልተቻለም",
     "invitesRetry": "እንደገና ሞክር",

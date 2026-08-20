@@ -5334,7 +5334,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Добави сътрудник';
 
   @override
-  String get listCollaboratorSearchHint => 'Търсене diVine...';
+  String get listCollaboratorSearchHint => 'Търсене Divine...';
 
   @override
   String get listNameLabel => 'Име на списък';
@@ -6221,12 +6221,12 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Поканени сте да си сътрудничите по $title: $url\n\nOpen diVine to review and accept.';
+    return 'Поканени сте да си сътрудничите по $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Поканени сте да си сътрудничите по видеоклип: $url\n\nOpen diVine to review and accept.';
+    return 'Поканени сте да си сътрудничите по видеоклип: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8230,14 +8230,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get invitesNoneAvailable => 'В момента няма налични покани';
 
   @override
-  String get invitesShareWithPeople => 'Сподели diVine с хора, които познаваш';
+  String get invitesShareWithPeople => 'Сподели Divine с хора, които познаваш';
 
   @override
   String get invitesUsedInvites => 'Използвани покани';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Присъедини се към мен в diVine! Използвай код за покана $code, за да започнеш:\nhttps://divine.video/invite/$code';
+    return 'Присъедини се към мен в Divine! Използвай код за покана $code, за да започнеш:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8250,7 +8250,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get invitesShareInvite => 'Сподели поканата';
 
   @override
-  String get invitesShareSubject => 'Присъедини се към мен в diVine';
+  String get invitesShareSubject => 'Присъедини се към мен в Divine';
 
   @override
   String get invitesClaimed => 'Използвана';

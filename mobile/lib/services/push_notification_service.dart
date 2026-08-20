@@ -294,7 +294,7 @@ class PushNotificationService {
 
   /// Handles a foreground FCM message by displaying a local notification.
   ///
-  /// Extracts `title` and `body` from [data]. Falls back to `'diVine'` as
+  /// Extracts `title` and `body` from [data]. Falls back to `'Divine'` as
   /// the title when absent. Skips display when `body` is missing.
   Future<void> handleForegroundMessage(Map<String, dynamic> data) async {
     final body = data['body'] as String?;
@@ -307,7 +307,7 @@ class PushNotificationService {
       return;
     }
 
-    final title = (data['title'] as String?) ?? 'diVine';
+    final title = (data['title'] as String?) ?? 'Divine';
 
     // Carry the normalized tap payload so a tap on this foreground-displayed
     // notification routes through the shared contract exactly like a

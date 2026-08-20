@@ -295,7 +295,7 @@
     "profileSetupUseOwnNip05": "내 NIP-05 주소 쓰기",
     "profileSetupNip05AddressLabel": "NIP-05 주소",
     "profileSetupProfilePicturePreview": "프로필 사진 미리보기",
-    "nostrInfoIntroBuiltOn": "DiVine은 Nostr를 기반으로 만들어졌어요,",
+    "nostrInfoIntroBuiltOn": "Divine은 Nostr를 기반으로 만들어졌어요,",
     "nostrInfoIntroDescription": " 하나의 회사나 플랫폼에 의존하지 않고 온라인으로 소통할 수 있게 해주는 검열 저항 개방형 프로토콜이에요. ",
     "nostrInfoIntroIdentity": "Divine에 가입하면 새 Nostr 아이덴티티를 받게 돼요.",
     "nostrInfoOwnership": "Nostr를 쓰면 내 콘텐츠, 아이덴티티, 소셜 그래프를 소유하고 여러 앱에서 쓸 수 있어요. 더 많은 선택, 적은 종속, 더 건강하고 탄력적인 소셜 인터넷을 만들 수 있죠.",
@@ -1397,7 +1397,7 @@
     "listNewPeopleList": "새 사람 목록",
     "listCollaboratorsNone": "없음",
     "listAddCollaboratorTitle": "협업자 추가",
-    "listCollaboratorSearchHint": "diVine 검색...",
+    "listCollaboratorSearchHint": "Divine 검색...",
     "listNameLabel": "목록 이름",
     "listDescriptionLabel": "설명 (선택)",
     "listPublicList": "공개 목록",
@@ -1774,8 +1774,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "{title} 콜라보에 초대받았어요: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "동영상 콜라보에 초대받았어요: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "{title} 콜라보에 초대받았어요: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "동영상 콜라보에 초대받았어요: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "초대를 보냈어요",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3272,9 +3272,9 @@
   "blueskySetUpHandle": "설정하기",
     "blueskyTemporarilyUnavailable": "Bluesky 게시를 일시적으로 사용할 수 없어요. 다시 시도해 주세요.",
     "invitesNoneAvailable": "지금은 사용할 수 있는 초대장이 없어요",
-    "invitesShareWithPeople": "diVine을 아는 사람들과 나눠봐요",
+    "invitesShareWithPeople": "Divine을 아는 사람들과 나눠봐요",
     "invitesUsedInvites": "사용된 초대장",
-    "invitesShareMessage": "diVine에 함께해요! 초대 코드 {code}로 시작해보세요:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Divine에 함께해요! 초대 코드 {code}로 시작해보세요:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3285,7 +3285,7 @@
     "invitesCopyInvite": "초대장 복사",
     "invitesCopied": "초대장을 복사했어요!",
     "invitesShareInvite": "초대장 공유",
-    "invitesShareSubject": "diVine에 함께해요",
+    "invitesShareSubject": "Divine에 함께해요",
     "invitesClaimed": "사용됨",
     "invitesCouldNotLoad": "초대장을 불러오지 못했어요",
     "invitesRetry": "다시 시도",

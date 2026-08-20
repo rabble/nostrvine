@@ -1214,7 +1214,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Profile picture preview';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine is built on Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine is built on Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5380,7 +5380,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Add a collaborator';
 
   @override
-  String get listCollaboratorSearchHint => 'Search diVine...';
+  String get listCollaboratorSearchHint => 'Search Divine...';
 
   @override
   String get listNameLabel => 'List Name';
@@ -6266,12 +6266,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'You were invited to collaborate on $title: $url\n\nOpen diVine to review and accept.';
+    return 'You were invited to collaborate on $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
+    return 'You were invited to collaborate on a video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8267,14 +8267,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invitesNoneAvailable => 'No invites available right now';
 
   @override
-  String get invitesShareWithPeople => 'Share diVine with people you know';
+  String get invitesShareWithPeople => 'Share Divine with people you know';
 
   @override
   String get invitesUsedInvites => 'Used invites';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Join me on diVine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
+    return 'Join me on Divine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8287,7 +8287,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invitesShareInvite => 'Share invite';
 
   @override
-  String get invitesShareSubject => 'Join me on diVine';
+  String get invitesShareSubject => 'Join me on Divine';
 
   @override
   String get invitesClaimed => 'Claimed';

@@ -6138,12 +6138,12 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Bạn được mời cộng tác vào $title: $url\n\nOpen diVine to review and accept.';
+    return 'Bạn được mời cộng tác vào $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Bạn được mời cộng tác vào một video: $url\n\nOpen diVine to review and accept.';
+    return 'Bạn được mời cộng tác vào một video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override

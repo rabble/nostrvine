@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "Folosește propria ta adresă NIP-05",
     "profileSetupNip05AddressLabel": "Adresă NIP-05",
     "profileSetupProfilePicturePreview": "Previzualizare poză de profil",
-    "nostrInfoIntroBuiltOn": "DiVine e construit pe Nostr,",
+    "nostrInfoIntroBuiltOn": "Divine e construit pe Nostr,",
     "nostrInfoIntroDescription": " un protocol deschis și rezistent la cenzură care permite oamenilor să comunice online fără să depindă de o singură companie sau platformă. ",
     "nostrInfoIntroIdentity": "Când te înscrii pe Divine, primești o identitate Nostr nouă.",
     "nostrInfoOwnership": "Nostr țiţi lasă în posesie conținutul, identitatea și graful social, pe care le poți folosi în multe aplicații. Rezultă mai multă alegere, mai puțină dependență și un internet social mai sănătos și mai rezilient.",
@@ -2052,7 +2052,7 @@
     "listNewPeopleList": "Listă nouă de persoane",
     "listCollaboratorsNone": "Niciunul",
     "listAddCollaboratorTitle": "Adaugă un colaborator",
-    "listCollaboratorSearchHint": "Caută în diVine...",
+    "listCollaboratorSearchHint": "Caută în Divine...",
     "listNameLabel": "Numele listei",
     "listDescriptionLabel": "Descriere (opțional)",
     "listPublicList": "Listă publică",
@@ -2429,8 +2429,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "Ai fost invitat(ă) să colaborezi la {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Ai fost invitat(ă) să colaborezi la un videoclip: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Ai fost invitat(ă) să colaborezi la {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Ai fost invitat(ă) să colaborezi la un videoclip: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Invitație trimisă",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "Configurează",
     "blueskyTemporarilyUnavailable": "Publicarea pe Bluesky e temporar indisponibilă. Încearcă din nou.",
     "invitesNoneAvailable": "Nicio invitație disponibilă acum",
-    "invitesShareWithPeople": "Partajează diVine cu oameni pe care îi cunoști",
+    "invitesShareWithPeople": "Partajează Divine cu oameni pe care îi cunoști",
     "invitesUsedInvites": "Invitații folosite",
-    "invitesShareMessage": "Vino cu mine pe diVine! Folosește codul de invitație {code} ca să începi:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Vino cu mine pe Divine! Folosește codul de invitație {code} ca să începi:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "Copiază invitația",
     "invitesCopied": "Invitație copiată!",
     "invitesShareInvite": "Partajează invitația",
-    "invitesShareSubject": "Vino cu mine pe diVine",
+    "invitesShareSubject": "Vino cu mine pe Divine",
     "invitesClaimed": "Revendicată",
     "invitesCouldNotLoad": "N-am putut încărca invitațiile",
     "invitesRetry": "Reîncearcă",

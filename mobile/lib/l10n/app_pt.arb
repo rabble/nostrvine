@@ -455,7 +455,7 @@
     "profileSetupUseOwnNip05": "Usar seu próprio endereço NIP-05",
     "profileSetupNip05AddressLabel": "Endereço NIP-05",
     "profileSetupProfilePicturePreview": "Pré-visualização da foto de perfil",
-    "nostrInfoIntroBuiltOn": "O DiVine é construído sobre o Nostr,",
+    "nostrInfoIntroBuiltOn": "O Divine é construído sobre o Nostr,",
     "nostrInfoIntroDescription": " um protocolo aberto e resistente à censura que permite que as pessoas se comuniquem online sem depender de uma única empresa ou plataforma. ",
     "nostrInfoIntroIdentity": "Quando você se cadastra no Divine, ganha uma nova identidade Nostr.",
     "nostrInfoOwnership": "O Nostr permite que você seja dono do seu conteúdo, identidade e grafo social, que podem ser usados em vários apps. O resultado é mais escolha, menos aprisionamento e uma internet social mais saudável e resiliente.",
@@ -2052,7 +2052,7 @@
     "listNewPeopleList": "Nova lista de pessoas",
     "listCollaboratorsNone": "Nenhum",
     "listAddCollaboratorTitle": "Adicionar colaborador",
-    "listCollaboratorSearchHint": "Pesquisar no diVine...",
+    "listCollaboratorSearchHint": "Pesquisar no Divine...",
     "listNameLabel": "Nome da lista",
     "listDescriptionLabel": "Descrição (opcional)",
     "listPublicList": "Lista pública",
@@ -2429,8 +2429,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
-    "collaboratorInviteDmBody": "Você foi convidado(a) para colaborar em {title}: {url}\n\nOpen diVine to review and accept.",
-    "collaboratorInviteDmBodyUntitled": "Você foi convidado(a) para colaborar em um vídeo: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBody": "Você foi convidado(a) para colaborar em {title}: {url}\n\nOpen Divine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Você foi convidado(a) para colaborar em um vídeo: {url}\n\nOpen Divine to review and accept.",
     "inboxCollabInviteSentStatus": "Convite enviado",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3919,9 +3919,9 @@
   "blueskySetUpHandle": "Configurar",
     "blueskyTemporarilyUnavailable": "Publicar no Bluesky está temporariamente indisponível. Tente de novo.",
     "invitesNoneAvailable": "Sem convites disponíveis no momento",
-    "invitesShareWithPeople": "Compartilhe o diVine com quem você conhece",
+    "invitesShareWithPeople": "Compartilhe o Divine com quem você conhece",
     "invitesUsedInvites": "Convites usados",
-    "invitesShareMessage": "Vem pro diVine comigo! Use o código {code} pra começar:\nhttps://divine.video/invite/{code}",
+    "invitesShareMessage": "Vem pro Divine comigo! Use o código {code} pra começar:\nhttps://divine.video/invite/{code}",
     "@invitesShareMessage": {
         "placeholders": {
             "code": {
@@ -3932,7 +3932,7 @@
     "invitesCopyInvite": "Copiar convite",
     "invitesCopied": "Convite copiado!",
     "invitesShareInvite": "Compartilhar convite",
-    "invitesShareSubject": "Vem pro diVine comigo",
+    "invitesShareSubject": "Vem pro Divine comigo",
     "invitesClaimed": "Resgatado",
     "invitesCouldNotLoad": "Não foi possível carregar os convites",
     "invitesRetry": "Tentar novamente",

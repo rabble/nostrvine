@@ -1216,7 +1216,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Vista previa de la foto de perfil';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine está construida sobre Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine está construida sobre Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5332,7 +5332,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Añadir colaborador';
 
   @override
-  String get listCollaboratorSearchHint => 'Buscar en diVine...';
+  String get listCollaboratorSearchHint => 'Buscar en Divine...';
 
   @override
   String get listNameLabel => 'Nombre de la lista';
@@ -6219,12 +6219,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Te invitaron a colaborar en $title: $url\n\nOpen diVine to review and accept.';
+    return 'Te invitaron a colaborar en $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Te invitaron a colaborar en un video: $url\n\nOpen diVine to review and accept.';
+    return 'Te invitaron a colaborar en un video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8233,14 +8233,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get invitesShareWithPeople =>
-      'Compartí diVine con la gente que conocés';
+      'Compartí Divine con la gente que conocés';
 
   @override
   String get invitesUsedInvites => 'Invitaciones usadas';
 
   @override
   String invitesShareMessage(String code) {
-    return '¡Sumate a diVine! Usá el código de invitación $code para arrancar:\nhttps://divine.video/invite/$code';
+    return '¡Sumate a Divine! Usá el código de invitación $code para arrancar:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8253,7 +8253,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invitesShareInvite => 'Compartir invitación';
 
   @override
-  String get invitesShareSubject => 'Sumate a diVine';
+  String get invitesShareSubject => 'Sumate a Divine';
 
   @override
   String get invitesClaimed => 'Reclamada';

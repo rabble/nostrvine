@@ -244,10 +244,11 @@ _PreviewPayload _previewPayload(BuildContext context, String rawContent) {
   final content = StringUtils.sanitizeUtf16(rawContent);
 
   // The structured collaborator-invite card carries a deterministic
-  // plaintext fallback ("...Open diVine to review and accept.") so old
-  // clients can still see something. Inside diVine that copy is misleading
-  // — show a localized label instead (#3662, follows up on #3559 Phase 2).
-  if (content.endsWith(CollaboratorInviteService.invitePlaintextSuffix)) {
+  // plaintext fallback ("...Open Divine to review and accept.", and its
+  // pre-#7915 "diVine" spelling) so old clients can still see something.
+  // Inside Divine that copy is misleading — show a localized label
+  // instead (#3662, follows up on #3559 Phase 2).
+  if (CollaboratorInviteService.hasInvitePlaintextSuffix(content)) {
     return _PreviewPayload(
       text: context.l10n.inboxConversationCollabInvitePreview,
       isDivineVideoShare: false,

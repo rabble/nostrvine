@@ -212,7 +212,7 @@ Future<void> handleFirebaseMessagingBackgroundMessage(
   if (!shouldRenderLocalPushNotification(message)) return;
 
   final data = message.data;
-  final title = data['title'] as String? ?? 'diVine';
+  final title = data['title'] as String? ?? 'Divine';
   final body = data['body'] as String? ?? '';
 
   await renderLocalPush(
@@ -244,7 +244,7 @@ Future<void> _renderBackgroundLocalPush({
   const androidDetails = AndroidNotificationDetails(
     'openvine_push',
     'Push Notifications',
-    channelDescription: 'Notifications from diVine',
+    channelDescription: 'Notifications from Divine',
     importance: Importance.high,
     priority: Priority.high,
   );

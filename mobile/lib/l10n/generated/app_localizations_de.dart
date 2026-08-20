@@ -1217,7 +1217,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Profilbild-Vorschau';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine basiert auf Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine basiert auf Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5349,7 +5349,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Mitarbeiter hinzufügen';
 
   @override
-  String get listCollaboratorSearchHint => 'diVine durchsuchen...';
+  String get listCollaboratorSearchHint => 'Divine durchsuchen...';
 
   @override
   String get listNameLabel => 'Listenname';
@@ -6245,12 +6245,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Du wurdest eingeladen, an $title mitzuarbeiten: $url\n\nÖffne diVine, um sie zu prüfen und anzunehmen.';
+    return 'Du wurdest eingeladen, an $title mitzuarbeiten: $url\n\nÖffne Divine, um sie zu prüfen und anzunehmen.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Du wurdest eingeladen, an einem Video mitzuarbeiten: $url\n\nÖffne diVine, um sie zu prüfen und anzunehmen.';
+    return 'Du wurdest eingeladen, an einem Video mitzuarbeiten: $url\n\nÖffne Divine, um sie zu prüfen und anzunehmen.';
   }
 
   @override
@@ -8257,14 +8257,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get invitesNoneAvailable => 'Gerade keine Einladungen verfügbar';
 
   @override
-  String get invitesShareWithPeople => 'Teil diVine mit Leuten, die du kennst';
+  String get invitesShareWithPeople => 'Teil Divine mit Leuten, die du kennst';
 
   @override
   String get invitesUsedInvites => 'Eingelöste Einladungen';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Komm zu mir auf diVine! Nutz den Einladungscode $code, um loszulegen:\nhttps://divine.video/invite/$code';
+    return 'Komm zu mir auf Divine! Nutz den Einladungscode $code, um loszulegen:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8277,7 +8277,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get invitesShareInvite => 'Einladung teilen';
 
   @override
-  String get invitesShareSubject => 'Komm zu mir auf diVine';
+  String get invitesShareSubject => 'Komm zu mir auf Divine';
 
   @override
   String get invitesClaimed => 'Eingelöst';

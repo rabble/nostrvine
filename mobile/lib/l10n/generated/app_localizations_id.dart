@@ -1144,7 +1144,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupProfilePicturePreview => 'Pratinjau foto profil';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine dibangun di atas Nostr,';
+  String get nostrInfoIntroBuiltOn => 'Divine dibangun di atas Nostr,';
 
   @override
   String get nostrInfoIntroDescription =>
@@ -5217,7 +5217,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get listAddCollaboratorTitle => 'Tambah kolaborator';
 
   @override
-  String get listCollaboratorSearchHint => 'Cari di diVine...';
+  String get listCollaboratorSearchHint => 'Cari di Divine...';
 
   @override
   String get listNameLabel => 'Nama Daftar';
@@ -6098,12 +6098,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return 'Kamu diundang untuk berkolaborasi di $title: $url\n\nOpen diVine to review and accept.';
+    return 'Kamu diundang untuk berkolaborasi di $title: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return 'Kamu diundang untuk berkolaborasi pada sebuah video: $url\n\nOpen diVine to review and accept.';
+    return 'Kamu diundang untuk berkolaborasi pada sebuah video: $url\n\nOpen Divine to review and accept.';
   }
 
   @override
@@ -8081,14 +8081,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get invitesShareWithPeople =>
-      'Bagikan diVine ke orang yang kamu kenal';
+      'Bagikan Divine ke orang yang kamu kenal';
 
   @override
   String get invitesUsedInvites => 'Undangan terpakai';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Gabung dengan saya di diVine! Pakai kode undangan $code untuk mulai:\nhttps://divine.video/invite/$code';
+    return 'Gabung dengan saya di Divine! Pakai kode undangan $code untuk mulai:\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -8101,7 +8101,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get invitesShareInvite => 'Bagikan undangan';
 
   @override
-  String get invitesShareSubject => 'Gabung dengan saya di diVine';
+  String get invitesShareSubject => 'Gabung dengan saya di Divine';
 
   @override
   String get invitesClaimed => 'Sudah diklaim';
