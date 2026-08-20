@@ -29,22 +29,17 @@ void main() {
       },
       build: buildCubit,
       act: (cubit) => cubit.load(),
-      expect: () => [
-        const MusicModeState(status: MusicModeStatus.ready, isEnabled: true),
-      ],
+      expect: () => [const MusicModeState(isEnabled: true)],
     );
 
     blocTest<MusicModeCubit, MusicModeState>(
       'setEnabled delegates to service and emits re-read snapshot',
-      seed: () => const MusicModeState(status: MusicModeStatus.ready),
       setUp: () {
         when(() => service.isMusicModeEnabled).thenReturn(true);
       },
       build: buildCubit,
       act: (cubit) => cubit.setEnabled(true),
-      expect: () => [
-        const MusicModeState(status: MusicModeStatus.ready, isEnabled: true),
-      ],
+      expect: () => [const MusicModeState(isEnabled: true)],
       verify: (_) {
         verify(() => service.setMusicModeEnabled(true)).called(1);
       },

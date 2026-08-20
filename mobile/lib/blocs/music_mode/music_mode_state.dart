@@ -2,29 +2,16 @@
 
 import 'package:equatable/equatable.dart';
 
-/// Load lifecycle of the Music mode tile.
-enum MusicModeStatus { loading, ready }
-
 /// State for `MusicModeCubit`.
 class MusicModeState extends Equatable {
-  const MusicModeState({
-    this.status = MusicModeStatus.loading,
-    this.isEnabled = false,
-  });
+  const MusicModeState({this.isEnabled = false});
 
-  final MusicModeStatus status;
   final bool isEnabled;
 
-  MusicModeState copyWith({
-    MusicModeStatus? status,
-    bool? isEnabled,
-  }) {
-    return MusicModeState(
-      status: status ?? this.status,
-      isEnabled: isEnabled ?? this.isEnabled,
-    );
+  MusicModeState copyWith({bool? isEnabled}) {
+    return MusicModeState(isEnabled: isEnabled ?? this.isEnabled);
   }
 
   @override
-  List<Object?> get props => [status, isEnabled];
+  List<Object?> get props => [isEnabled];
 }

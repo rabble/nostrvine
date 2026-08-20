@@ -15,12 +15,7 @@ class MusicModeCubit extends Cubit<MusicModeState>
   final MusicModePreferenceService _service;
 
   void load() {
-    emit(
-      state.copyWith(
-        status: MusicModeStatus.ready,
-        isEnabled: _service.isMusicModeEnabled,
-      ),
-    );
+    emit(state.copyWith(isEnabled: _service.isMusicModeEnabled));
   }
 
   Future<void> setEnabled(bool value) async {
