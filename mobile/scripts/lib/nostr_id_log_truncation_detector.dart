@@ -21,15 +21,17 @@
 //   Text(NostrKeyUtils.truncateNpub(pubkey))           not counted — UI sink
 //   Log.info('event ${event.id}')                      not counted — full value
 //
-// Shortening shapes recognised:
-//   • `<id>.substring(...)`  / `<id>.take(n)` / `<id>.characters.take(n)`
-//   • a call to a SHORTENER declared in the same file — a function or method
-//     whose body substrings/takes one of its own parameters. That is how
-//     `_maskKey(_npub)` is caught: the truncation is one frame away from the
-//     log call, so a purely local check would miss it.
-//   • the same, one hop through a local variable: `final p = id.substring(...)`
-//     then `Log.debug('... $p')`. Three of the four sites this guard was built
-//     for used exactly that shape, so it is not an optional refinement.
+// Shortening shapes recognised — of the 19 sites #3372 closed, only ONE was the
+// first shape, so the other two are the point rather than refinements:
+//   • `<id>.substring(...)` / `<id>.characters.take(n)`. One site.
+//   • a call to a SHORTENER — any function whose body substrings/takes one of
+//     its own parameters — collected across the WHOLE scanned corpus, not just
+//     the calling file. Thirteen sites (`_maskKey(npub)`). Corpus-wide because
+//     `NostrKeyUtils.maskKey` and `StringUtils.formatIdForLogging` were both
+//     public helpers documented for logging: the shortening and the log call
+//     naturally live in different files.
+//   • one hop through a local: `final p = id.substring(...)` then
+//     `Log.debug('... $p')`. Five sites.
 //
 // Sinks recognised: `Log.<level>`, `developer.log` (qualified or bare — the
 // SDK imports dart:developer unprefixed), `debugPrint`, `print`, and
@@ -45,11 +47,14 @@
 //
 // Limits, stated plainly
 // ----------------------
-// The AST is UNRESOLVED (parseString, like its sibling detectors), so "is this
-// a Nostr identifier" is decided by NAME, from [_identifierLexicon] below. That
-// lexicon IS the contract: a value not named like an identifier is not seen,
-// and shortening reached through two hops of helper indirection is not seen.
-// Both are deliberate — the guard exists to stop the shapes that actually
+// The AST is UNRESOLVED (parseString, like its sibling detectors), so both
+// "is this a Nostr identifier" and "is this a shortener" are decided by NAME —
+// the first from [_identifierLexicon] below, the second by matching a call's
+// method name against the collected set. So a value not named like an
+// identifier is not seen, an unrelated function sharing a name with a
+// shortener IS reported (measured: no such collision across 2351 files), and
+// shortening reached through two hops of helper indirection is not seen. All
+// three are deliberate — the guard exists to stop the shapes that actually
 // recur, not to prove a theorem.
 //
 // Exit codes: 0 clean run, 2 bad usage / unreadable scan dir.
