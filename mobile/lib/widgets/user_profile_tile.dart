@@ -221,7 +221,8 @@ class _FollowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final indexSuffix = index != null ? ' $index' : '';
+    final l10n = context.l10n;
+    final position = index;
 
     // Both states map onto a design-system button: `secondary` already is the
     // surface-container fill with a muted border and a green icon, and
@@ -231,7 +232,9 @@ class _FollowButton extends StatelessWidget {
         icon: .userMinus,
         type: .secondary,
         semanticIdentifier: 'unfollow_user',
-        semanticLabel: 'Unfollow user$indexSuffix',
+        semanticLabel: position == null
+            ? l10n.unfollowUserSemanticLabel
+            : l10n.unfollowUserIndexedSemanticLabel('$position'),
         onPressed: () => _confirmUnfollow(context),
       );
     }
@@ -240,7 +243,9 @@ class _FollowButton extends StatelessWidget {
       icon: .userPlus,
       size: .small,
       semanticIdentifier: 'follow_user',
-      semanticLabel: 'Follow user$indexSuffix',
+      semanticLabel: position == null
+          ? l10n.followUserSemanticLabel
+          : l10n.followUserIndexedSemanticLabel('$position'),
       onPressed: onToggleFollow,
     );
   }

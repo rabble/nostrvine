@@ -75,7 +75,9 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.bySemanticsLabel('Go back'));
+    // Identifier, not label: the back label is now
+    // MaterialLocalizations.backButtonTooltip and moves per locale.
+    await tester.tap(find.bySemanticsIdentifier('back_button'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

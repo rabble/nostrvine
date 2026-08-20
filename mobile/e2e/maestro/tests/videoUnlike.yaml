@@ -39,7 +39,7 @@ tags:
 # The liked-grid tap opens PooledFullscreenVideoFeedScreen, which has no
 # "Close video player" control -- that label belongs to VideoDetailScreen,
 # a different route. This screen dismisses through the app bar's back
-# button, whose default label is "Go back".
+# button, addressed by identifier rather than its localized label.
 - tapOn:
     id: "back_button"
 - tapOn:

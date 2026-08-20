@@ -12288,4 +12288,31 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Ẩn mật khẩu';
+
+  @override
+  String get followUserSemanticLabel => 'Theo dõi người dùng';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Bỏ theo dõi người dùng';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Đang tải bình luận';
+
+  @override
+  String get analyticsWindowAll => 'Tất cả';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Theo dõi người dùng $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Bỏ theo dõi người dùng $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / tháng';
+  }
 }

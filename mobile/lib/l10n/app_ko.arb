@@ -4596,5 +4596,12 @@
     "dbFailureResetDoneBody": "Divine을 닫았다가 다시 여세요. 다음 실행에서 새 로컬 데이터베이스가 만들어집니다.",
   "authSignInOptionsInfo": "로그인 옵션 정보",
   "authShowPassword": "비밀번호 표시",
-  "authHidePassword": "비밀번호 숨기기"
+  "authHidePassword": "비밀번호 숨기기",
+    "followUserSemanticLabel": "사용자 팔로우",
+    "unfollowUserSemanticLabel": "사용자 팔로우 취소",
+    "commentsLoadingSemanticLabel": "댓글 불러오는 중",
+    "analyticsWindowAll": "전체",
+    "followUserIndexedSemanticLabel": "사용자 팔로우 {index}",
+    "unfollowUserIndexedSemanticLabel": "사용자 팔로우 취소 {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / 월"
 }

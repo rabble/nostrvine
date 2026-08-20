@@ -12335,4 +12335,31 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Dölj lösenord';
+
+  @override
+  String get followUserSemanticLabel => 'Följ användare';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Sluta följa användare';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Läser in kommentarer';
+
+  @override
+  String get analyticsWindowAll => 'Alla';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Följ användare $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Sluta följa användare $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / månad';
+  }
 }

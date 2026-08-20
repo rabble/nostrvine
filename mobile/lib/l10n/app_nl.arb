@@ -5250,5 +5250,12 @@
     "dbFailureResetDoneBody": "Sluit Divine en open het opnieuw — bij de volgende start wordt een nieuwe lokale database aangemaakt.",
   "authSignInOptionsInfo": "Over aanmeldopties",
   "authShowPassword": "Wachtwoord tonen",
-  "authHidePassword": "Wachtwoord verbergen"
+  "authHidePassword": "Wachtwoord verbergen",
+    "followUserSemanticLabel": "Gebruiker volgen",
+    "unfollowUserSemanticLabel": "Gebruiker ontvolgen",
+    "commentsLoadingSemanticLabel": "Reacties laden",
+    "analyticsWindowAll": "Alles",
+    "followUserIndexedSemanticLabel": "Gebruiker volgen {index}",
+    "unfollowUserIndexedSemanticLabel": "Gebruiker ontvolgen {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / maand"
 }

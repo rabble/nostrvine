@@ -12015,4 +12015,31 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get authHidePassword => 'የይለፍ ቃል ደብቅ';
+
+  @override
+  String get followUserSemanticLabel => 'ተጠቃሚን ተከታተል';
+
+  @override
+  String get unfollowUserSemanticLabel => 'ተጠቃሚን መከታተል አቁም';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'አስተያየቶች በመጫን ላይ';
+
+  @override
+  String get analyticsWindowAll => 'ሁሉም';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'ተጠቃሚን ተከታተል $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'ተጠቃሚን መከታተል አቁም $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / በወር';
+  }
 }

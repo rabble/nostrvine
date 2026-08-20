@@ -197,6 +197,7 @@ class _WelcomeView extends StatelessWidget {
               ? DiVineAppBar(
                   title: '',
                   leadingIcon: SvgIconSource(DivineIconName.x.assetPath),
+                  leadingActionSemanticLabel: context.l10n.commonClose,
                   onLeadingPressed: () {
                     final bloc = context.read<WelcomeBloc>();
                     // If a specific account was pre-selected (account-switcher

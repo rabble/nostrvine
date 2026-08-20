@@ -12455,4 +12455,31 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Itago ang password';
+
+  @override
+  String get followUserSemanticLabel => 'Sundan ang user';
+
+  @override
+  String get unfollowUserSemanticLabel => 'I-unfollow ang user';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Nilo-load ang mga komento';
+
+  @override
+  String get analyticsWindowAll => 'Lahat';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Sundan ang user $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'I-unfollow ang user $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / buwan';
+  }
 }

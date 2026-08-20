@@ -12456,4 +12456,31 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Скриване на паролата';
+
+  @override
+  String get followUserSemanticLabel => 'Последвай потребителя';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Спри да следваш потребителя';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Зареждане на коментарите';
+
+  @override
+  String get analyticsWindowAll => 'Всички';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Последвай потребителя $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Спри да следваш потребителя $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / месец';
+  }
 }

@@ -19,10 +19,10 @@ class DiVineAppBarLeading extends StatelessWidget {
     required this.onLeadingPressed,
     required this.style,
     this.backButtonSemanticLabel,
-    this.backButtonTooltip = 'Back',
+    this.backButtonTooltip,
     this.backButtonHeroTag,
-    this.menuButtonSemanticLabel = 'Open menu',
-    this.menuButtonTooltip = 'Menu',
+    this.menuButtonSemanticLabel,
+    this.menuButtonTooltip,
     this.leadingActionSemanticLabel = 'Leading action',
     this.expandHitArea = false,
     super.key,
@@ -48,27 +48,31 @@ class DiVineAppBarLeading extends StatelessWidget {
 
   /// Custom semantic label for the back button.
   ///
-  /// When provided, overrides the default 'Go back' label and suppresses the
-  /// tooltip to avoid iOS merging both into the accessibility text.
+  /// When provided, overrides the default label and suppresses the tooltip to
+  /// avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
   /// Tooltip for the back button.
   ///
-  /// Shown when [backButtonSemanticLabel] is null. Defaults to `'Back'`.
-  final String backButtonTooltip;
+  /// Shown when [backButtonSemanticLabel] is null. Defaults to
+  /// [MaterialLocalizations.backButtonTooltip], which Flutter translates for
+  /// every supported locale.
+  final String? backButtonTooltip;
 
   /// Optional hero tag to wrap the back button in a [Hero] widget.
   final Object? backButtonHeroTag;
 
   /// Semantic label for the menu button.
   ///
-  /// Defaults to `'Open menu'`. Pass a localized string to override.
-  final String menuButtonSemanticLabel;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonSemanticLabel;
 
   /// Tooltip for the menu button.
   ///
-  /// Defaults to `'Menu'`. Pass a localized string to override.
-  final String menuButtonTooltip;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonTooltip;
 
   /// Semantic label for a custom leading icon.
   ///
@@ -103,12 +107,23 @@ class DiVineAppBarLeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (showBackButton) {
+      // divine_ui stays free of the app's AppLocalizations, but Flutter's own
+      // MaterialLocalizations is already translated for every supported locale
+      // and is registered by any app that ships GlobalMaterialLocalizations.
+      // Defaulting here fixes all 92 call sites at once; before this the
+      // hardcoded 'Go back' shipped untranslated to 21 locales because only 6
+      // callers passed backButtonSemanticLabel.
+      final defaultBackLabel = MaterialLocalizations.of(
+        context,
+      ).backButtonTooltip;
       final button = _LeadingIconButton(
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-        semanticLabel: backButtonSemanticLabel ?? 'Go back',
+        semanticLabel: backButtonSemanticLabel ?? defaultBackLabel,
         semanticIdentifier: backButtonSemanticId,
-        tooltip: backButtonSemanticLabel == null ? backButtonTooltip : null,
+        tooltip: backButtonSemanticLabel == null
+            ? (backButtonTooltip ?? defaultBackLabel)
+            : null,
         style: style,
         expandHitArea: expandHitArea,
       );
@@ -119,12 +134,19 @@ class DiVineAppBarLeading extends StatelessWidget {
     }
 
     if (showMenuButton) {
+      // Same reasoning as the back button above. openAppDrawerTooltip is what
+      // Flutter's own DrawerButton announces for this exact leading-hamburger
+      // slot, so it is the translated equivalent of the 'Open menu' / 'Menu'
+      // constants it replaces.
+      final defaultMenuLabel = MaterialLocalizations.of(
+        context,
+      ).openAppDrawerTooltip;
       return _LeadingIconButton(
         icon: const SvgIconSource(menuIconAsset),
         onPressed: onMenuPressed,
-        semanticLabel: menuButtonSemanticLabel,
+        semanticLabel: menuButtonSemanticLabel ?? defaultMenuLabel,
         semanticIdentifier: menuButtonSemanticId,
-        tooltip: menuButtonTooltip,
+        tooltip: menuButtonTooltip ?? defaultMenuLabel,
         style: style,
         expandHitArea: expandHitArea,
       );

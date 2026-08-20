@@ -5250,5 +5250,12 @@
     "dbFailureResetDoneBody": "Tutup Divine lalu buka lagi — peluncuran berikutnya membangun basis data lokal yang baru.",
   "authSignInOptionsInfo": "Tentang opsi masuk",
   "authShowPassword": "Tampilkan sandi",
-  "authHidePassword": "Sembunyikan sandi"
+  "authHidePassword": "Sembunyikan sandi",
+    "followUserSemanticLabel": "Ikuti pengguna",
+    "unfollowUserSemanticLabel": "Berhenti mengikuti pengguna",
+    "commentsLoadingSemanticLabel": "Memuat komentar",
+    "analyticsWindowAll": "Semua",
+    "followUserIndexedSemanticLabel": "Ikuti pengguna {index}",
+    "unfollowUserIndexedSemanticLabel": "Berhenti mengikuti pengguna {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / bulan"
 }

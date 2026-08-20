@@ -7080,5 +7080,12 @@
   "dbFailureResetDoneBody": "Đóng Divine rồi mở lại — lần khởi chạy tiếp theo sẽ tạo cơ sở dữ liệu cục bộ mới.",
   "authSignInOptionsInfo": "Giới thiệu về tùy chọn đăng nhập",
   "authShowPassword": "Hiện mật khẩu",
-  "authHidePassword": "Ẩn mật khẩu"
+  "authHidePassword": "Ẩn mật khẩu",
+  "followUserSemanticLabel": "Theo dõi người dùng",
+  "unfollowUserSemanticLabel": "Bỏ theo dõi người dùng",
+  "commentsLoadingSemanticLabel": "Đang tải bình luận",
+  "analyticsWindowAll": "Tất cả",
+  "followUserIndexedSemanticLabel": "Theo dõi người dùng {index}",
+  "unfollowUserIndexedSemanticLabel": "Bỏ theo dõi người dùng {index}",
+  "supporterTierMonthlyLabel": "{title} — {price} / tháng"
 }

@@ -59,12 +59,12 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = false,
     this.onBackPressed,
     this.backButtonSemanticLabel,
-    this.backButtonTooltip = 'Back',
+    this.backButtonTooltip,
     this.backButtonHeroTag,
     this.showMenuButton = false,
     this.onMenuPressed,
-    this.menuButtonSemanticLabel = 'Open menu',
-    this.menuButtonTooltip = 'Menu',
+    this.menuButtonSemanticLabel,
+    this.menuButtonTooltip,
     this.leadingIcon,
     this.onLeadingPressed,
     this.leadingActionSemanticLabel = 'Leading action',
@@ -158,14 +158,16 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Custom semantic label for the back button.
   ///
-  /// When provided, overrides the default 'Go back' label and suppresses the
-  /// tooltip to avoid iOS merging both into the accessibility text.
+  /// When provided, overrides the default label and suppresses the tooltip to
+  /// avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
   /// Tooltip for the back button.
   ///
-  /// Shown when [backButtonSemanticLabel] is null. Defaults to `'Back'`.
-  final String backButtonTooltip;
+  /// Shown when [backButtonSemanticLabel] is null. Defaults to
+  /// [MaterialLocalizations.backButtonTooltip], which Flutter translates for
+  /// every supported locale.
+  final String? backButtonTooltip;
 
   /// Optional hero tag to wrap the back button in a [Hero] animation.
   ///
@@ -183,13 +185,15 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Semantic label for the menu button.
   ///
-  /// Defaults to `'Open menu'`. Pass a localized string to override.
-  final String menuButtonSemanticLabel;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonSemanticLabel;
 
   /// Tooltip for the menu button.
   ///
-  /// Defaults to `'Menu'`. Pass a localized string to override.
-  final String menuButtonTooltip;
+  /// Defaults to [MaterialLocalizations.openAppDrawerTooltip], which Flutter
+  /// translates for every supported locale.
+  final String? menuButtonTooltip;
 
   /// Custom leading icon.
   ///

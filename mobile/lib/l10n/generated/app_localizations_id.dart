@@ -12249,4 +12249,31 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Sembunyikan sandi';
+
+  @override
+  String get followUserSemanticLabel => 'Ikuti pengguna';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Berhenti mengikuti pengguna';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Memuat komentar';
+
+  @override
+  String get analyticsWindowAll => 'Semua';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Ikuti pengguna $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Berhenti mengikuti pengguna $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / bulan';
+  }
 }

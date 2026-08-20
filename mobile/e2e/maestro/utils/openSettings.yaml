@@ -2,10 +2,9 @@ appId: co.openvine.app
 ---
 #Utility: given the user is signed in, open Settings.
 #
-# The old route -- double-tap Home, tap "Open menu", tap "Settings" -- is
-# gone. There is no hamburger menu in the app; "Open menu" exists only as a
-# divine_ui default that no screen passes. Settings is now reached from the
-# gear on the user's own profile header, which is its only entry point.
+# The old route -- double-tap Home, open the hamburger menu, tap "Settings" --
+# is gone. There is no hamburger menu in the app. Settings is now reached from
+# the gear on the user's own profile header, which is its only entry point.
 
 - tapOn:
     id: "profile_tab"

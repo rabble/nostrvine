@@ -12589,4 +12589,31 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Ascundeți parola';
+
+  @override
+  String get followUserSemanticLabel => 'Urmărește utilizatorul';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Nu mai urmări utilizatorul';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Se încarcă comentariile';
+
+  @override
+  String get analyticsWindowAll => 'Tot';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Urmărește utilizatorul $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Nu mai urmări utilizatorul $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / lună';
+  }
 }

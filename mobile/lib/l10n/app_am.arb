@@ -5375,5 +5375,12 @@
     "dbFailureResetDoneBody": "Divineን ዝጋ እና እንደገና ክፈተው — ቀጣዩ ጅምር አዲስ የአካባቢ ዳታቤዝ ይገነባል።",
   "authSignInOptionsInfo": "ስለ መግቢያ አማራጮች",
   "authShowPassword": "የይለፍ ቃል አሳይ",
-  "authHidePassword": "የይለፍ ቃል ደብቅ"
+  "authHidePassword": "የይለፍ ቃል ደብቅ",
+    "followUserSemanticLabel": "ተጠቃሚን ተከታተል",
+    "unfollowUserSemanticLabel": "ተጠቃሚን መከታተል አቁም",
+    "commentsLoadingSemanticLabel": "አስተያየቶች በመጫን ላይ",
+    "analyticsWindowAll": "ሁሉም",
+    "followUserIndexedSemanticLabel": "ተጠቃሚን ተከታተል {index}",
+    "unfollowUserIndexedSemanticLabel": "ተጠቃሚን መከታተል አቁም {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / በወር"
 }

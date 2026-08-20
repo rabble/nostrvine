@@ -5250,5 +5250,12 @@
     "dbFailureResetDoneBody": "Divine’ı kapatıp yeniden açın — sonraki başlatmada yeni bir yerel veritabanı oluşturulur.",
   "authSignInOptionsInfo": "Oturum açma seçenekleri hakkında",
   "authShowPassword": "Şifreyi göster",
-  "authHidePassword": "Şifreyi gizle"
+  "authHidePassword": "Şifreyi gizle",
+    "followUserSemanticLabel": "Kullanıcıyı takip et",
+    "unfollowUserSemanticLabel": "Kullanıcıyı takipten çık",
+    "commentsLoadingSemanticLabel": "Yorumlar yükleniyor",
+    "analyticsWindowAll": "Tümü",
+    "followUserIndexedSemanticLabel": "Kullanıcıyı takip et {index}",
+    "unfollowUserIndexedSemanticLabel": "Kullanıcıyı takipten çık {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / ay"
 }

@@ -5250,5 +5250,12 @@
     "dbFailureResetDoneBody": "Stäng Divine och öppna det igen — nästa start skapar en ny lokal databas.",
   "authSignInOptionsInfo": "Om inloggningsalternativ",
   "authShowPassword": "Visa lösenord",
-  "authHidePassword": "Dölj lösenord"
+  "authHidePassword": "Dölj lösenord",
+    "followUserSemanticLabel": "Följ användare",
+    "unfollowUserSemanticLabel": "Sluta följa användare",
+    "commentsLoadingSemanticLabel": "Läser in kommentarer",
+    "analyticsWindowAll": "Alla",
+    "followUserIndexedSemanticLabel": "Följ användare {index}",
+    "unfollowUserIndexedSemanticLabel": "Sluta följa användare {index}",
+    "supporterTierMonthlyLabel": "{title} — {price} / månad"
 }

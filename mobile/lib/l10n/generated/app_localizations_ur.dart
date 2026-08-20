@@ -12324,4 +12324,31 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get authHidePassword => 'پاس ورڈ چھپائیں';
+
+  @override
+  String get followUserSemanticLabel => 'صارف کو فالو کریں';
+
+  @override
+  String get unfollowUserSemanticLabel => 'صارف کو ان فالو کریں';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'تبصرے لوڈ ہو رہے ہیں';
+
+  @override
+  String get analyticsWindowAll => 'سب';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'صارف کو فالو کریں $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'صارف کو ان فالو کریں $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / ماہ';
+  }
 }

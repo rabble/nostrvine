@@ -12521,4 +12521,31 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Masquer le mot de passe';
+
+  @override
+  String get followUserSemanticLabel => 'Suivre l\'utilisateur';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Ne plus suivre l\'utilisateur';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Chargement des commentaires';
+
+  @override
+  String get analyticsWindowAll => 'Tout';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Suivre l\'utilisateur $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Ne plus suivre l\'utilisateur $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / mois';
+  }
 }

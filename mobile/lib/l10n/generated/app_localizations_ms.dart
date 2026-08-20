@@ -12351,4 +12351,31 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get authHidePassword => 'Sembunyikan kata laluan';
+
+  @override
+  String get followUserSemanticLabel => 'Ikut pengguna';
+
+  @override
+  String get unfollowUserSemanticLabel => 'Nyahikut pengguna';
+
+  @override
+  String get commentsLoadingSemanticLabel => 'Memuatkan komen';
+
+  @override
+  String get analyticsWindowAll => 'Semua';
+
+  @override
+  String followUserIndexedSemanticLabel(String index) {
+    return 'Ikut pengguna $index';
+  }
+
+  @override
+  String unfollowUserIndexedSemanticLabel(String index) {
+    return 'Nyahikut pengguna $index';
+  }
+
+  @override
+  String supporterTierMonthlyLabel(String title, String price) {
+    return '$title — $price / bulan';
+  }
 }
