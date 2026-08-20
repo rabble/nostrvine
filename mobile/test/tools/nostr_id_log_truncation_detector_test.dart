@@ -189,6 +189,19 @@ void report(String npub) {
         expect(sites.single.identifier, 'npub');
       });
 
+      test('flags the single-character ellipsis too', () {
+        // Both spellings feed the prefilter as well as the rule, so a file
+        // that only uses the one-character form still gets parsed.
+        final sites = scan(r'''
+void report(Event event) {
+  Log.info('e ${event.id}…');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.how, 'ellipsis-suffix');
+      });
+
       test('leaves progress prose alone', () {
         // `method` and `subscriptionType` are not identifier names, so the
         // dots mean what they say. Both shapes are live in this repo.
