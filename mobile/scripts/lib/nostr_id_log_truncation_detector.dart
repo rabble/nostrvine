@@ -1,5 +1,5 @@
 // ABOUTME: Detector behind check_nostr_id_log_truncation.sh — finds Nostr
-// ABOUTME: identifiers that are shortened on their way into a log/debug sink.
+// ABOUTME: public IDs shortened or secret values disclosed in log/debug sinks.
 //
 // Usage (from mobile/):
 //   dart run scripts/lib/nostr_id_log_truncation_detector.dart <scan-dir>... [options]
@@ -11,15 +11,15 @@
 //
 // What counts
 // -----------
-// A site is a Nostr identifier that is SHORTENED and then reaches a logging
-// sink. Both halves are required, which is the whole point: shortening an
-// identifier for the UI is allowed (AGENTS.md lets layout handle overflow),
-// and logging an identifier is required (AGENTS.md: "Never truncate Nostr IDs
-// in code, logs, tests, analytics, or debug output. Use full values").
+// A site is either a public Nostr identifier that is shortened before reaching
+// a logging sink, or a secret value that reaches one at all. Public identifiers
+// retain diagnostic value only when whole. Secrets are credentials and must be
+// omitted rather than logged whole or shortened. UI-only shortening is allowed.
 //
 //   Log.info('event ${event.id.substring(0, 8)}...')   COUNTED
 //   Text(NostrKeyUtils.truncateNpub(pubkey))           not counted — UI sink
-//   Log.info('event ${event.id}')                      not counted — full value
+//   Log.info('event ${event.id}')                      not counted — public/full
+//   Log.info('secret $nsec')                           COUNTED — secret disclosed
 //
 // Shortening shapes recognised — of the 19 sites #3372 closed, only ONE was the
 // first shape, so the other two are the point rather than refinements:
@@ -53,6 +53,13 @@
 // a text rule is either blind or all false positives. The signal is the PATH
 // from a truncation to a log call, and a path is a tree property.
 //
+// Secret rule
+// -----------
+// Names such as nsec, ncryptsec, privateKey and signingKey are checked
+// separately from public identifiers. Direct interpolation and shortening are
+// rejected; non-value status expressions such as `account.nsec != null` stay
+// allowed because they disclose no key material.
+//
 // Limits, stated plainly
 // ----------------------
 // The AST is UNRESOLVED (parseString, like its sibling detectors), so both
@@ -75,7 +82,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/source/line_info.dart';
 
-/// Names that mean "this value is a Nostr identifier".
+/// Names that mean "this value is a public Nostr identifier".
 ///
 /// Matched against the whole identifier lowercased AND against its last
 /// camelCase segment, so `eventId`, `giftWrapId` and `targetEventId` all reach
@@ -95,9 +102,7 @@ const _identifierLexicon = {
   'pubkeyhex',
   'hexpubkey',
   'publickey',
-  'privatekey',
   'npub',
-  'nsec',
   'note',
   'nevent',
   'naddr',
@@ -110,6 +115,15 @@ const _identifierLexicon = {
   'challenge',
   'sha256hash',
   'blobhash',
+};
+
+/// Credential names that must never reach a diagnostic sink.
+const _secretLexicon = {
+  'nsec',
+  'ncryptsec',
+  'privatekey',
+  'secretkey',
+  'signingkey',
 };
 
 /// String members that shorten their receiver.
@@ -158,7 +172,7 @@ final _sinkTokens = <String>{
   for (final f in _bareLogFunctions) '$f(',
 };
 
-/// One shortened Nostr identifier reaching a log sink.
+/// One forbidden Nostr value reaching a log sink.
 class TruncationSite {
   TruncationSite({
     required this.path,
@@ -171,10 +185,10 @@ class TruncationSite {
   final String path;
   final int line;
 
-  /// The identifier being shortened, as written.
+  /// The public identifier being shortened or secret being disclosed.
   final String identifier;
 
-  /// `substring` / `take`, or the shortener function's name.
+  /// The shortening operation, helper name, or `secret-in-log`.
   final String how;
 
   /// The log call it reaches.
@@ -340,7 +354,7 @@ List<TruncationSite> findTruncationSites(
       );
       continue;
     }
-    // A site needs a shortening call AND a log sink in the same file. This
+    // A site needs a shortening/secret trigger and a log sink in the same file.
     // prefilter drops ~2300 of the ~2350 files under lib/ and packages/*/lib.
     // Every rule this detector has must contribute a token here, or the file
     // is skipped before the AST sees it and the rule is silently dead. That
@@ -352,7 +366,9 @@ List<TruncationSite> findTruncationSites(
       for (final n in shorteners ?? const <String>{}) '$n(',
       ..._ellipsisMarkers,
     ];
-    if (!triggers.any(source.contains)) continue;
+    final lowerSource = source.toLowerCase();
+    final hasSecretToken = _secretLexicon.any(lowerSource.contains);
+    if (!triggers.any(source.contains) && !hasSecretToken) continue;
     if (!_sinkTokens.any(source.contains)) continue;
 
     final ParseStringResult parsed;
@@ -424,6 +440,13 @@ bool isIdentifierName(String name) {
   }
   if (cut <= 0) return false;
   return _identifierLexicon.contains(bare.substring(cut).toLowerCase());
+}
+
+bool isSecretName(String name) {
+  final bare = name.startsWith('_') ? name.substring(1) : name;
+  if (bare.isEmpty) return false;
+  final lower = bare.toLowerCase();
+  return _secretLexicon.any(lower.endsWith);
 }
 
 /// The identifier name an expression ultimately reads, or null.
@@ -564,7 +587,7 @@ class _SiteCollector extends RecursiveAstVisitor<void> {
   }
 
   void _scanLogCall(MethodInvocation call, String sink) {
-    final locals = _shortenedLocalsAround(call);
+    final locals = _shortenedLocalsVisibleAt(call);
     final finder = _ShorteningFinder(shorteners: shorteners, locals: locals);
     call.argumentList.accept(finder);
     for (final hit in finder.hits) {
@@ -584,13 +607,16 @@ class _SiteCollector extends RecursiveAstVisitor<void> {
   /// Locals declared in [node]'s enclosing function body whose initializer
   /// shortens a Nostr identifier — the `final preview = id.substring(0, 8)`
   /// hop that sits between the truncation and the log call.
-  Map<String, _Hit> _shortenedLocalsAround(AstNode node) {
+  Map<String, _Hit> _shortenedLocalsVisibleAt(AstNode node) {
     AstNode? scope = node;
     while (scope != null && scope is! FunctionBody) {
       scope = scope.parent;
     }
     if (scope == null) return const {};
-    final collector = _ShortenedLocalCollector(shorteners);
+    final collector = _ShortenedLocalCollector(
+      shorteners,
+      useSite: node,
+    );
     scope.accept(collector);
     return collector.locals;
   }
@@ -611,13 +637,30 @@ class _Hit {
 
 /// Records locals whose initializer shortens a Nostr identifier.
 class _ShortenedLocalCollector extends RecursiveAstVisitor<void> {
-  _ShortenedLocalCollector(this._shorteners);
+  _ShortenedLocalCollector(this._shorteners, {required this.useSite});
 
   final Set<String> _shorteners;
+  final AstNode useSite;
   final locals = <String, _Hit>{};
+
+  bool _isVisible(VariableDeclaration node) {
+    if (node.offset >= useSite.offset) return false;
+    AstNode? declarationScope = node.parent;
+    while (declarationScope != null && declarationScope is! Block) {
+      declarationScope = declarationScope.parent;
+    }
+    if (declarationScope == null) return true;
+    AstNode? ancestor = useSite;
+    while (ancestor != null) {
+      if (identical(ancestor, declarationScope)) return true;
+      ancestor = ancestor.parent;
+    }
+    return false;
+  }
 
   @override
   void visitVariableDeclaration(VariableDeclaration node) {
+    if (!_isVisible(node)) return;
     final initializer = node.initializer;
     if (initializer != null) {
       // Probe the whole initializer: the shortening is often inside a
@@ -634,13 +677,18 @@ class _ShortenedLocalCollector extends RecursiveAstVisitor<void> {
           identifier: first.identifier,
           how: first.how,
         );
+      } else {
+        // A nearer declaration shadows an outer shortened local of this name.
+        locals.remove(node.name.lexeme);
       }
+    } else {
+      locals.remove(node.name.lexeme);
     }
     super.visitVariableDeclaration(node);
   }
 }
 
-/// Finds shortened Nostr identifiers inside an arbitrary subtree.
+/// Finds forbidden public-ID shortening and secret disclosure in a subtree.
 class _ShorteningFinder extends RecursiveAstVisitor<void> {
   _ShorteningFinder({required this.shorteners, required this.locals});
 
@@ -653,7 +701,15 @@ class _ShorteningFinder extends RecursiveAstVisitor<void> {
     final member = node.methodName.name;
     final shortened = shortenedRootName(node);
     if (shortened != null) {
-      if (isIdentifierName(shortened)) {
+      if (isSecretName(shortened)) {
+        hits.add(
+          _Hit(
+            offset: node.offset,
+            identifier: shortened,
+            how: 'secret-in-log',
+          ),
+        );
+      } else if (isIdentifierName(shortened)) {
         hits.add(_Hit(offset: node.offset, identifier: shortened, how: member));
       }
     } else if (shorteners.contains(member)) {
@@ -696,13 +752,55 @@ class _ShorteningFinder extends RecursiveAstVisitor<void> {
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
+    if (isSecretName(node.name) && _isDirectLoggedValueReference(node)) {
+      hits.add(
+        _Hit(
+          offset: node.offset,
+          identifier: node.name,
+          how: 'secret-in-log',
+        ),
+      );
+    }
     // A reference to a local that was assigned a shortened identifier.
     final local = locals[node.name];
-    if (local != null) {
+    if (local != null && _isDirectLoggedValueReference(node)) {
       hits.add(
         _Hit(offset: node.offset, identifier: local.identifier, how: local.how),
       );
     }
     super.visitSimpleIdentifier(node);
+  }
+}
+
+bool _isDirectLoggedValueReference(SimpleIdentifier node) {
+  AstNode current = node;
+  while (true) {
+    final parent = current.parent;
+    switch (parent) {
+      case InterpolationExpression(:final expression)
+          when identical(expression, current):
+        return true;
+      case ArgumentList(:final arguments) when arguments.contains(current):
+        return true;
+      case final ParenthesizedExpression parent
+          when identical(parent.expression, current):
+        current = parent;
+      case final PostfixExpression parent
+          when identical(parent.operand, current):
+        current = parent;
+      case final BinaryExpression parent
+          when parent.operator.lexeme == '+' &&
+              (identical(parent.leftOperand, current) ||
+                  identical(parent.rightOperand, current)):
+        current = parent;
+      case final PrefixedIdentifier parent
+          when identical(parent.identifier, current):
+        current = parent;
+      case final PropertyAccess parent
+          when identical(parent.propertyName, current):
+        current = parent;
+      default:
+        return false;
+    }
   }
 }

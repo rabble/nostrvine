@@ -87,6 +87,49 @@ void report(String pubkey) {
         expect(sites.map((s) => s.line), [3, 4]);
       });
 
+      test('does not treat a collection property as the logged value', () {
+        final member = ['sub', 'string'].join();
+        expect(
+          scan('''
+void report(List<Event> events) {
+  final ids = events.map((event) => event.id.$member(0, 8)).toList();
+  Log.info('published \${ids.length} events');
+}
+'''),
+          isEmpty,
+        );
+      });
+
+      test('ignores matching locals declared in sibling closures', () {
+        final member = ['sub', 'string'].join();
+        expect(
+          scan('''
+void report(String pubkey, String tag) {
+  void prepare() {
+    final tag = pubkey.$member(0, 8);
+    cache.store(tag);
+  }
+
+  Log.info('tag: \$tag');
+}
+'''),
+          isEmpty,
+        );
+      });
+
+      test('ignores matching locals declared after the log call', () {
+        final member = ['sub', 'string'].join();
+        expect(
+          scan('''
+void report(String pubkey, String preview) {
+  Log.info('author: \$preview');
+  final preview = pubkey.$member(0, 8);
+}
+'''),
+          isEmpty,
+        );
+      });
+
       test('a same-file helper that shortens its own parameter', () {
         // `_maskKey(npub)` — eleven of the nineteen #3372 sites.
         final sites = scan(r'''
@@ -240,6 +283,18 @@ void report(String eventId) {
         );
       });
 
+      test('secret names are not treated as public identifiers', () {
+        final member = ['sub', 'string'].join();
+        expect(
+          scan('''
+void report(String nsec) {
+  cache.store(nsec.$member(0, 10));
+}
+'''),
+          isEmpty,
+        );
+      });
+
       test('shortening whose sink is the UI rather than a log', () {
         // NostrKeyUtils.truncateNpub and its call sites live here. AGENTS.md
         // allows display shortening; only the log path is frozen.
@@ -312,6 +367,75 @@ void report(String eventId) {
       });
     });
 
+    group('rejects secrets reaching logs', () {
+      test('a whole nsec', () {
+        final sites = scan(r'''
+void report(String nsec) {
+  Log.error('nsec=$nsec');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.identifier, 'nsec');
+        expect(sites.single.how, 'secret-in-log');
+      });
+
+      test('a compound private-key name', () {
+        final sites = scan(r'''
+void report(String rawPrivateKey) {
+  Log.error('key=$rawPrivateKey');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.identifier, 'rawPrivateKey');
+        expect(sites.single.how, 'secret-in-log');
+      });
+
+      test('a secret concatenated into a message', () {
+        final sites = scan('''
+void report(String nsec) {
+  Log.error('secret=' + nsec);
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.identifier, 'nsec');
+        expect(sites.single.how, 'secret-in-log');
+      });
+
+      test('a shortened private key', () {
+        final member = ['sub', 'string'].join();
+        final sites = scan('''
+void report(String privateKey) {
+  Log.error('key=\${privateKey.$member(0, 10)}');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.identifier, 'privateKey');
+        expect(sites.single.how, 'secret-in-log');
+      });
+
+      test('secret words in prose are allowed', () {
+        expect(
+          scan("void report() { Log.info('nsec was omitted'); }"),
+          isEmpty,
+        );
+      });
+
+      test('a boolean secret-presence check is allowed', () {
+        expect(
+          scan(r'''
+void report(Account account) {
+  Log.info('has secret: ${account.nsec != null}');
+}
+'''),
+          isEmpty,
+        );
+      });
+    });
+
     group('recognises the sink', () {
       for (final (call, sink) in const [
         (r"Log.verbose('x: $p')", 'Log.verbose'),
@@ -351,27 +475,5 @@ void report(String pubkey) {
         );
       });
     });
-
-    test('the shipped tree has no sites', () async {
-      // The guard is frozen at zero (scripts/baseline/nostr_id_log_truncation
-      // .txt is intentionally empty), so this is the invariant the ratchet
-      // enforces in CI, asserted here where the failure names the file.
-      final mobileDir = Directory.current.path;
-      final roots = [
-        for (final root in const [
-          'lib',
-          'packages',
-          'test',
-          'integration_test',
-        ])
-          Directory('$mobileDir/$root'),
-      ].where((d) => d.existsSync()).toList();
-      final sites = findSitesUnder(roots, pathPrefix: mobileDir);
-
-      expect(
-        sites.map((s) => '${s.path}:${s.line} ${s.identifier} -> ${s.sink}'),
-        isEmpty,
-      );
-    }, timeout: const Timeout(Duration(minutes: 3)));
   });
 }
