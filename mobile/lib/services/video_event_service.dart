@@ -2970,29 +2970,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           // For newer versions, _handleReplaceableVideoEvent already removed the old event
 
           // Check hashtag filter if active
-          if (_activeHashtagFilters[subscriptionType] != null &&
-              _activeHashtagFilters[subscriptionType]!.isNotEmpty) {
-            // Check if video has any of the required hashtags (case-insensitive)
-            final requiredHashtagsLower =
-                _activeHashtagFilters[subscriptionType]!
-                    .map((tag) => tag.toLowerCase())
-                    .toList();
-            final videoHashtagsLower = videoEvent.hashtags
-                .map((tag) => tag.toLowerCase())
-                .toList();
-
-            final hasRequiredHashtag = requiredHashtagsLower.any(
-              videoHashtagsLower.contains,
+          if (!_passesHashtagFilter(videoEvent, subscriptionType)) {
+            Log.warning(
+              '⏩ Skipping video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
+              name: 'VideoEventService',
+              category: LogCategory.video,
             );
-
-            if (!hasRequiredHashtag) {
-              Log.warning(
-                '⏩ Skipping video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-              return;
-            }
+            return;
           }
 
           // Check group filter if active
@@ -3207,19 +3191,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           // For newer versions, _handleReplaceableVideoEvent already removed the old event
 
           // Check hashtag filter if active
-          if (_activeHashtagFilters[subscriptionType] != null &&
-              _activeHashtagFilters[subscriptionType]!.isNotEmpty) {
-            final hasRequiredHashtag = _activeHashtagFilters[subscriptionType]!
-                .any(videoEvent.hashtags.contains);
-
-            if (!hasRequiredHashtag) {
-              Log.warning(
-                '⏩ Skipping historical video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-              return;
-            }
+          if (!_passesHashtagFilter(videoEvent, subscriptionType)) {
+            Log.warning(
+              '⏩ Skipping historical video without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+            return;
           }
 
           // Check group filter if active
@@ -3282,7 +3260,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (video == null) return;
 
     // Check hashtag filter
-    if (!_passesHashtagFilter(video, subscriptionType)) return;
+    if (!_passesHashtagFilter(video, subscriptionType)) {
+      Log.debug(
+        '⏩ Skipping repost without required hashtags: ${_activeHashtagFilters[subscriptionType]}',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
+    }
 
     _addVideoToSubscription(
       video,
@@ -3291,7 +3276,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
-  /// Check if video passes the active hashtag filter for subscription type
+  /// Whether [video] carries one of the hashtags [subscriptionType] filters on.
+  ///
+  /// The comparison is case-insensitive on both sides. `subscribeToVideoFeed`
+  /// lowercases the tag before putting it in the relay REQ (NIP-24) but stores
+  /// the caller's original casing in [_activeHashtagFilters], so a
+  /// case-sensitive compare here rejects every event the relay returns for a
+  /// capitalised hashtag.
   bool _passesHashtagFilter(
     VideoEvent video,
     SubscriptionType subscriptionType,
@@ -3299,15 +3290,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     final filter = _activeHashtagFilters[subscriptionType];
     if (filter == null || filter.isEmpty) return true;
 
-    final passes = filter.any(video.hashtags.contains);
-    if (!passes) {
-      Log.debug(
-        '⏩ Skipping repost without required hashtags: $filter',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-    }
-    return passes;
+    final videoHashtags = video.hashtags
+        .map((tag) => tag.toLowerCase())
+        .toSet();
+    return filter.any((tag) => videoHashtags.contains(tag.toLowerCase()));
   }
 
   /// Handle subscription error
@@ -6301,6 +6287,23 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   @visibleForTesting
   void handleEventForTesting(Event event, SubscriptionType type) {
     _handleNewVideoEvent(event, type);
+  }
+
+  /// Handle a nostr event through the pagination path for testing
+  /// (exposes _handleHistoricalVideoEvent, the `loadMoreEvents` handler).
+  @visibleForTesting
+  void handleHistoricalEventForTesting(Event event, SubscriptionType type) {
+    _handleHistoricalVideoEvent(event, type);
+  }
+
+  /// Seed the active hashtag filter for [type] the way `subscribeToVideoFeed`
+  /// does, so tests can exercise filtering without opening a subscription.
+  @visibleForTesting
+  void setActiveHashtagFilterForTesting(
+    SubscriptionType type,
+    List<String> hashtags,
+  ) {
+    _activeHashtagFilters[type] = hashtags;
   }
 
   /// Flush the pending like-count batch without waiting for the debounce timer.
