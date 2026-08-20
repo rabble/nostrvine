@@ -226,6 +226,62 @@ void main() {
       }
     });
 
+    // #7875: both messages are shown only after the NIP-62 vanish and the
+    // kind-5 sweep have been published and confirmed by a relay, so both must
+    // open by acknowledging that. `deleteAccountServerDeletionFailed` used to
+    // open with "Could not delete your account from the server. Please check
+    // your connection and try again." — it told users nothing had happened
+    // after their posts were already gone.
+    //
+    // The two messages differ only in their remedy (sign in again vs. retry
+    // later), so the shared opening is the mechanical, language-agnostic proof
+    // that the acknowledgement survived a copy edit in any locale.
+    test('post-publish delete failures both acknowledge the sent requests', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      const keys = [
+        'deleteAccountServerDeletionFailed',
+        'deleteAccountServerDeletionRequiresReauth',
+      ];
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        for (final key in keys) {
+          expect(
+            arb[key],
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define $key',
+          );
+        }
+
+        final failed = arb[keys.first]! as String;
+        final requiresReauth = arb[keys.last]! as String;
+        final shared = _sharedPrefixLength(failed, requiresReauth);
+        final shorter = failed.length < requiresReauth.length
+            ? failed.length
+            : requiresReauth.length;
+
+        // Every shipped locale sits at 69% or above; half is the floor a
+        // reworded remedy can never breach but a dropped acknowledgement will.
+        expect(
+          shared / shorter,
+          greaterThanOrEqualTo(0.5),
+          reason:
+              '${file.path} ${keys.first} and ${keys.last} must share the '
+              'opening that tells the user their posts were already sent for '
+              'deletion; they now share only $shared of $shorter characters',
+        );
+      }
+    });
+
     test('default-relay removal copy is localized for every locale', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
@@ -486,4 +542,14 @@ Set<String> _declaredPlaceholders(Map<String, Object?> arb, String key) {
 
 RegExp _placeholderPattern(String name) {
   return RegExp(r'\{\s*' + RegExp.escape(name) + r'\s*\}');
+}
+
+/// Number of leading characters [a] and [b] have in common.
+int _sharedPrefixLength(String a, String b) {
+  final limit = a.length < b.length ? a.length : b.length;
+  var shared = 0;
+  while (shared < limit && a.codeUnitAt(shared) == b.codeUnitAt(shared)) {
+    shared++;
+  }
+  return shared;
 }

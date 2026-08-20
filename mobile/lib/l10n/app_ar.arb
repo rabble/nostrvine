@@ -4842,7 +4842,7 @@
     "deleteAccountRemoveKeysBody": "هذا يزيل تسجيل الدخول المحلي لهذا الحساب من هذا الجهاز. لن يحذف حسابك في Divine أو هويتك في Nostr.\n\nستبقى مسوداتك ومقاطعك محفوظة على هذا الجهاز لهذا الحساب. إذا كان هذا آخر حساب محلي لديك، فستعود إلى شاشة تسجيل الدخول.",
     "deleteAccountRemoveKeysConfirm": "إزالة من الجهاز",
     "deleteAccountRemoveKeysTitle": "إزالة هذا الحساب من هذا الجهاز؟",
-    "deleteAccountServerDeletionFailed": "تعذّر حذف حسابك من الخادم. يرجى التحقق من اتصالك والمحاولة مرّة أخرى.",
+    "deleteAccountServerDeletionFailed": "تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. حاول مرّة أخرى بعد قليل.",
     "deleteAccountServerDeletionRequiresReauth": "تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. سجّل الدخول مرّة أخرى لإكمال العملية.",
     "deleteAccountSuccess": "تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.",
     "deleteAccountSuccessContentUnverified": "تم طلب حذف الحساب. تعذّر تأكيد حذف بعض المنشورات الحالية بشكل فردي.",

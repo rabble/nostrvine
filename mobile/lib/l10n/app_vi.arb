@@ -4224,7 +4224,7 @@
   "@deleteAccountReauthRequired": {
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
-  "deleteAccountServerDeletionFailed": "Không xóa được tài khoản của bạn trên máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.",
+  "deleteAccountServerDeletionFailed": "Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Thử lại sau một lát nhé.",
   "deleteAccountServerDeletionRequiresReauth": "Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Đăng nhập lại để hoàn tất.",
   "@deleteAccountServerDeletionRequiresReauth": {
     "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."

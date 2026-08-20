@@ -7478,7 +7478,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Kunde inte ta bort ditt konto från servern. Kontrollera din anslutning och försök igen.';
+      'Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Försök igen om en stund.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

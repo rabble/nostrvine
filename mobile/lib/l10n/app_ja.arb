@@ -4842,7 +4842,7 @@
     "deleteAccountRemoveKeysBody": "このアカウントのローカルログインをこのデバイスから削除するよ。Divine アカウントや Nostr アイデンティティは削除されないよ。\n\nこのアカウントの下書きとクリップは、このデバイスに保存されたまま残るよ。これが最後のローカルアカウントなら、ログイン画面に戻るよ。",
     "deleteAccountRemoveKeysConfirm": "デバイスから削除",
     "deleteAccountRemoveKeysTitle": "このアカウントをこのデバイスから削除する?",
-    "deleteAccountServerDeletionFailed": "サーバーからアカウントを削除できなかったよ。接続を確認してもう一回試してね。",
+    "deleteAccountServerDeletionFailed": "投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。少ししてからもう一回試してね。",
     "deleteAccountServerDeletionRequiresReauth": "投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。もう一度サインインして完了してね。",
     "deleteAccountSuccess": "削除リクエストを送信したよ。このデバイスからサインアウトしたよ。",
     "deleteAccountSuccessContentUnverified": "アカウントの削除をリクエストしたよ。既存の投稿の一部は、個別に削除を確認できなかったよ。",

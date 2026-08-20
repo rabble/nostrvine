@@ -705,8 +705,11 @@ Future<void> executeAccountDeletion({
         dismissProgressSheet();
         if (context.mounted) {
           // The vanish and the kind-5 sweep have already been published and
-          // confirmed by a relay at this point, so neither message may claim
-          // that nothing was deleted.
+          // confirmed by a relay at this point, so no message here may claim
+          // that nothing was deleted. `requiresReauthentication` answers only
+          // "can a fresh sign-in clear this" — it is a credential fact, not a
+          // progress fact, so it picks between two post-publish messages
+          // rather than deciding whether anything was published.
           final text = (burnCommitted && burnReleasedText != null)
               ? burnReleasedText
               : keycast.requiresReauthentication

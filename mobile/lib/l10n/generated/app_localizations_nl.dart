@@ -7515,7 +7515,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Je account kon niet van de server worden verwijderd. Controleer je verbinding en probeer het opnieuw.';
+      'Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Probeer het straks opnieuw.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

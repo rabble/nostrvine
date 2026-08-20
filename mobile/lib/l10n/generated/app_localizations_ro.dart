@@ -7659,7 +7659,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Nu am putut șterge contul tău de pe server. Verifică-ți conexiunea și încearcă din nou.';
+      'Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Încearcă din nou în scurt timp.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

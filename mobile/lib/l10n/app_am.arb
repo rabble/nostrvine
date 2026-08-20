@@ -4967,7 +4967,7 @@
     "deleteAccountRemoveKeysBody": "ይህ የዚህን መለያ የአካባቢ መግቢያ ከዚህ መሣሪያ ያስወግዳል። የDivine መለያዎን ወይም የNostr ማንነትዎን አይሰርዝም።\n\nየዚህ መለያ ረቂቆችዎ እና ክሊፖችዎ በዚህ መሣሪያ ላይ ተቀምጠው ይቆያሉ። ይህ የመጨረሻው የአካባቢ መለያዎ ከሆነ፣ ወደ መግቢያ ማያ ገጹ ይመለሳሉ።",
     "deleteAccountRemoveKeysConfirm": "ከመሣሪያ አስወግድ",
     "deleteAccountRemoveKeysTitle": "ይህን መለያ ከዚህ መሣሪያ ማስወገድ?",
-    "deleteAccountServerDeletionFailed": "መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
+    "deleteAccountServerDeletionFailed": "የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ትንሽ ቆይተው እንደገና ይሞክሩ።",
     "deleteAccountServerDeletionRequiresReauth": "የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ እንደገና ይግቡ።",
     "deleteAccountSuccess": "የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።",
     "deleteAccountSuccessContentUnverified": "የመለያ ስረዛ ተጠይቋል። የአንዳንድ ነባር ልጥፎች ስረዛ በተናጠል ማረጋገጥ አልተቻለም።",

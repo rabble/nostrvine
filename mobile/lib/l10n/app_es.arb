@@ -4842,7 +4842,7 @@
     "deleteAccountRemoveKeysBody": "Esto quita el inicio de sesión local de esta cuenta de este dispositivo. No va a eliminar tu cuenta de Divine ni tu identidad de Nostr.\n\nTus borradores y clips quedan guardados en este dispositivo para esta cuenta. Si esta es tu última cuenta local, vas a volver a la pantalla de inicio de sesión.",
     "deleteAccountRemoveKeysConfirm": "Quitar del dispositivo",
     "deleteAccountRemoveKeysTitle": "¿Quitar esta cuenta de este dispositivo?",
-    "deleteAccountServerDeletionFailed": "No se pudo eliminar tu cuenta del servidor. Revisá tu conexión e intentá de nuevo.",
+    "deleteAccountServerDeletionFailed": "Se enviaron las solicitudes de eliminación de tus publicaciones, pero no pudimos terminar de eliminar tu cuenta. Probá de nuevo en un rato.",
     "deleteAccountServerDeletionRequiresReauth": "Se enviaron las solicitudes de eliminación de tus publicaciones, pero no pudimos terminar de eliminar tu cuenta. Iniciá sesión de nuevo para terminar.",
     "deleteAccountSuccess": "Solicitudes de eliminación enviadas. Se cerró tu sesión en este dispositivo.",
     "deleteAccountSuccessContentUnverified": "Eliminación de cuenta solicitada. No se pudo confirmar de forma individual la eliminación de algunas publicaciones existentes.",

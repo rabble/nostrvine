@@ -4842,7 +4842,7 @@
     "deleteAccountRemoveKeysBody": "Isso remove o login local desta conta deste dispositivo. Não vai excluir sua conta Divine nem sua identidade Nostr.\n\nSeus rascunhos e clipes continuam salvos neste dispositivo para esta conta. Se esta for sua última conta local, você voltará para a tela de login.",
     "deleteAccountRemoveKeysConfirm": "Remover do dispositivo",
     "deleteAccountRemoveKeysTitle": "Remover esta conta deste dispositivo?",
-    "deleteAccountServerDeletionFailed": "Não foi possível excluir sua conta do servidor. Verifique sua conexão e tente novamente.",
+    "deleteAccountServerDeletionFailed": "As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Tente de novo daqui a pouco.",
     "deleteAccountServerDeletionRequiresReauth": "As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Entre novamente para concluir.",
     "deleteAccountSuccess": "Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.",
     "deleteAccountSuccessContentUnverified": "Exclusão da conta solicitada. Não foi possível confirmar individualmente a exclusão de algumas publicações existentes.",

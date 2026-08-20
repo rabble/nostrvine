@@ -12902,10 +12902,10 @@ abstract class AppLocalizations {
   /// **'Sign in again to delete your account. Nothing has been deleted yet.'**
   String get deleteAccountReauthRequired;
 
-  /// No description provided for @deleteAccountServerDeletionFailed.
+  /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion failed for a reason a fresh sign-in cannot clear (5xx, 404, or an unreachable server). Must not claim that nothing was deleted, because the vanish request has already reached relays, and must not tell the user to sign in again, which does not clear a server failure.
   ///
   /// In en, this message translates to:
-  /// **'Could not delete your account from the server. Please check your connection and try again.'**
+  /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Try again in a bit.'**
   String get deleteAccountServerDeletionFailed;
 
   /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays.

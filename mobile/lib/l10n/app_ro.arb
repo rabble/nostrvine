@@ -4842,7 +4842,7 @@
     "deleteAccountRemoveKeysBody": "Asta elimină autentificarea locală pentru acest cont de pe acest dispozitiv. Nu îți va șterge contul Divine sau identitatea Nostr.\n\nCiornele și clipurile tale rămân salvate pe acest dispozitiv pentru acest cont. Dacă acesta este ultimul tău cont local, vei reveni la ecranul de autentificare.",
     "deleteAccountRemoveKeysConfirm": "Elimină de pe dispozitiv",
     "deleteAccountRemoveKeysTitle": "Elimini acest cont de pe acest dispozitiv?",
-    "deleteAccountServerDeletionFailed": "Nu am putut șterge contul tău de pe server. Verifică-ți conexiunea și încearcă din nou.",
+    "deleteAccountServerDeletionFailed": "Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Încearcă din nou în scurt timp.",
     "deleteAccountServerDeletionRequiresReauth": "Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Conectează-te din nou pentru a finaliza.",
     "deleteAccountSuccess": "Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.",
     "deleteAccountSuccessContentUnverified": "Ștergerea contului a fost solicitată. Ștergerea unor postări existente nu a putut fi confirmată individual.",

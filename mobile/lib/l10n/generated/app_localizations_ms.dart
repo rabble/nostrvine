@@ -7502,7 +7502,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Tidak dapat memadam akaun anda daripada pelayan. Sila semak sambungan anda dan cuba lagi.';
+      'Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi sebentar lagi.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

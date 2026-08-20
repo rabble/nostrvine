@@ -7484,7 +7484,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'سرور سے آپ کا اکاؤنٹ حذف نہیں ہو سکا۔ براہ کرم اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔';
+      'آپ کی پوسٹس کے لیے حذف کی درخواستیں بھیج دی گئیں، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

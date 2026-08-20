@@ -7460,7 +7460,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Không xóa được tài khoản của bạn trên máy chủ. Vui lòng kiểm tra kết nối rồi thử lại.';
+      'Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Thử lại sau một lát nhé.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

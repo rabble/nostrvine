@@ -7562,7 +7562,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Impossibile eliminare il tuo account dal server. Controlla la connessione e riprova.';
+      'Le richieste di eliminazione dei tuoi post sono state inviate, ma non siamo riusciti a completare l\'eliminazione del tuo account. Riprova tra poco.';
 
   @override
   String get deleteAccountServerDeletionRequiresReauth =>

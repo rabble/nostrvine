@@ -4842,7 +4842,7 @@
     "deleteAccountRemoveKeysBody": "Detta tar bort den lokala inloggningen för det här kontot från den här enheten. Det tar inte bort ditt Divine-konto eller din Nostr-identitet.\n\nDina utkast och klipp finns kvar sparade på den här enheten för det här kontot. Om det här är ditt sista lokala konto återgår du till inloggningsskärmen.",
     "deleteAccountRemoveKeysConfirm": "Ta bort från enheten",
     "deleteAccountRemoveKeysTitle": "Ta bort det här kontot från den här enheten?",
-    "deleteAccountServerDeletionFailed": "Kunde inte ta bort ditt konto från servern. Kontrollera din anslutning och försök igen.",
+    "deleteAccountServerDeletionFailed": "Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Försök igen om en stund.",
     "deleteAccountServerDeletionRequiresReauth": "Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Logga in igen för att slutföra.",
     "deleteAccountSuccess": "Raderingsförfrågningar skickade. Du är utloggad på den här enheten.",
     "deleteAccountSuccessContentUnverified": "Radering av kontot har begärts. Raderingen av vissa befintliga inlägg kunde inte bekräftas individuellt.",
