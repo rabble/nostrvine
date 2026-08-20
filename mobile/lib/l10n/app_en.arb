@@ -5264,14 +5264,14 @@
   },
   "commentReactWithEmojiSemanticLabel": "React with {emoji}",
   "@commentReactWithEmojiSemanticLabel": {
-    "description": "Screen-reader label for an emoji button in the comment reaction quick-row, and for a reaction chip the user has not joined yet.",
+    "description": "Screen-reader label for an emoji button in the comment reaction quick-row. Reaction chips use the chip-specific commentReactionChip* keys instead.",
     "placeholders": {
       "emoji": {
         "type": "String"
       }
     }
   },
-  "commentReactionChipSemanticLabel": "{count} reacted with {emoji}. React with {emoji}",
+  "commentReactionChipSemanticLabel": "{count, plural, =1{1 person reacted with {emoji}} other{{count} people reacted with {emoji}}}. React with {emoji}",
   "@commentReactionChipSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip the user has not joined. Activating it adds the user's reaction.",
     "placeholders": {
@@ -5283,7 +5283,7 @@
       }
     }
   },
-  "commentReactionChipOwnSemanticLabel": "{count} reacted with {emoji}, including you. Remove your reaction",
+  "commentReactionChipOwnSemanticLabel": "{count, plural, =1{You reacted with {emoji}} other{{count} people reacted with {emoji}, including you}}. Remove your reaction",
   "@commentReactionChipOwnSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.",
     "placeholders": {

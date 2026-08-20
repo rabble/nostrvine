@@ -7918,12 +7918,18 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String commentReactionChipSemanticLabel(int count, String emoji) {
-    return '$count memberi reaksi $emoji. Beri reaksi $emoji';
+    return '$count orang memberi reaksi $emoji. Beri reaksi $emoji';
   }
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count memberi reaksi $emoji, termasuk anda. Buang reaksi anda';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count orang memberi reaksi $emoji, termasuk anda',
+      one: 'Anda memberi reaksi $emoji',
+    );
+    return '$_temp0. Buang reaksi anda';
   }
 
   @override

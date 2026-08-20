@@ -3848,7 +3848,7 @@
     "commentsErrorReactionFailed": "Yoruma tepki verilemedi",
     "commentReactWithEmojiSemanticLabel": "{emoji} ile tepki ver",
     "commentReactionChipSemanticLabel": "{count} kişi {emoji} ile tepki verdi. {emoji} ile tepki ver",
-    "commentReactionChipOwnSemanticLabel": "{count} kişi {emoji} ile tepki verdi, sen de dahil. Tepkini kaldır",
+    "commentReactionChipOwnSemanticLabel": "{count, plural, =1{{emoji} ile tepki verdin} other{{count} kişi {emoji} ile tepki verdi, sen de dahil}}. Tepkini kaldır",
     "commentsErrorReportFailed": "Yorum bildirilemedi",
     "commentsErrorBlockFailed": "Kullanıcı engellenemedi",
     "commentsErrorDeleteFailed": "Yorum silinemedi",

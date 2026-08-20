@@ -4558,7 +4558,7 @@
       }
     }
   },
-  "commentReactionChipOwnSemanticLabel": "{count} người đã thả {emoji}, bao gồm bạn. Gỡ cảm xúc của bạn",
+  "commentReactionChipOwnSemanticLabel": "{count, plural, =1{Bạn đã thả {emoji}} other{{count} người đã thả {emoji}, bao gồm bạn}}. Gỡ cảm xúc của bạn",
   "@commentReactionChipOwnSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.",
     "placeholders": {

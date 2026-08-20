@@ -7967,12 +7967,24 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String commentReactionChipSemanticLabel(int count, String emoji) {
-    return '$count ang nag-react ng $emoji. Mag-react gamit ang $emoji';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tao ang nag-react ng $emoji',
+      one: '1 tao ang nag-react ng $emoji',
+    );
+    return '$_temp0. Mag-react gamit ang $emoji';
   }
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count ang nag-react ng $emoji, kasama ka. Alisin ang iyong reaksyon';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tao ang nag-react ng $emoji, kasama ka',
+      one: 'Nag-react ka ng $emoji',
+    );
+    return '$_temp0. Alisin ang iyong reaksyon';
   }
 
   @override

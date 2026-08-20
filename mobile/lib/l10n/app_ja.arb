@@ -3848,7 +3848,7 @@
     "commentsErrorReactionFailed": "コメントへのリアクションに失敗しました",
     "commentReactWithEmojiSemanticLabel": "{emoji}でリアクション",
     "commentReactionChipSemanticLabel": "{count}人が{emoji}でリアクションしました。{emoji}でリアクション",
-    "commentReactionChipOwnSemanticLabel": "{count}人が{emoji}でリアクションしました（あなたを含む）。リアクションを取り消す",
+    "commentReactionChipOwnSemanticLabel": "{count, plural, =1{あなたが{emoji}でリアクションしました} other{{count}人が{emoji}でリアクションしました（あなたを含む）}}。リアクションを取り消す",
     "commentsErrorReportFailed": "コメントを報告できませんでした",
     "commentsErrorBlockFailed": "ユーザーをブロックできませんでした",
     "commentsErrorDeleteFailed": "コメントを削除できませんでした",

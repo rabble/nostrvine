@@ -4546,7 +4546,7 @@
       }
     }
   },
-  "commentReactionChipSemanticLabel": "{count} نے {emoji} کے ساتھ ردعمل دیا۔ {emoji} کے ساتھ ردعمل دیں",
+  "commentReactionChipSemanticLabel": "{count, plural, one{1 شخص نے {emoji} کے ساتھ ردعمل دیا} other{{count} لوگوں نے {emoji} کے ساتھ ردعمل دیا}}۔ {emoji} کے ساتھ ردعمل دیں",
   "@commentReactionChipSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip the user has not joined. Activating it adds the user's reaction.",
     "placeholders": {
@@ -4558,7 +4558,7 @@
       }
     }
   },
-  "commentReactionChipOwnSemanticLabel": "{count} نے {emoji} کے ساتھ ردعمل دیا، بشمول آپ۔ اپنا ردعمل ہٹائیں",
+  "commentReactionChipOwnSemanticLabel": "{count, plural, =1{آپ نے {emoji} کے ساتھ ردعمل دیا} other{{count} لوگوں نے {emoji} کے ساتھ ردعمل دیا، بشمول آپ}}۔ اپنا ردعمل ہٹائیں",
   "@commentReactionChipOwnSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.",
     "placeholders": {

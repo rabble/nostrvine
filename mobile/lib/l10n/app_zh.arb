@@ -4558,7 +4558,7 @@
       }
     }
   },
-  "commentReactionChipOwnSemanticLabel": "{count} 人用 {emoji} 回应，包括你。移除你的回应",
+  "commentReactionChipOwnSemanticLabel": "{count, plural, =1{你用 {emoji} 回应了} other{{count} 人用 {emoji} 回应，包括你}}。移除你的回应",
   "@commentReactionChipOwnSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.",
     "placeholders": {

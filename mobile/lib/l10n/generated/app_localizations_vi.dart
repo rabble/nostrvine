@@ -7881,7 +7881,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count người đã thả $emoji, bao gồm bạn. Gỡ cảm xúc của bạn';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count người đã thả $emoji, bao gồm bạn',
+      one: 'Bạn đã thả $emoji',
+    );
+    return '$_temp0. Gỡ cảm xúc của bạn';
   }
 
   @override

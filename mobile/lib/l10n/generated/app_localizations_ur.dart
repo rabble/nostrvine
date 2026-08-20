@@ -7907,12 +7907,24 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String commentReactionChipSemanticLabel(int count, String emoji) {
-    return '$count نے $emoji کے ساتھ ردعمل دیا۔ $emoji کے ساتھ ردعمل دیں';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count لوگوں نے $emoji کے ساتھ ردعمل دیا',
+      one: '1 شخص نے $emoji کے ساتھ ردعمل دیا',
+    );
+    return '$_temp0۔ $emoji کے ساتھ ردعمل دیں';
   }
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count نے $emoji کے ساتھ ردعمل دیا، بشمول آپ۔ اپنا ردعمل ہٹائیں';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count لوگوں نے $emoji کے ساتھ ردعمل دیا، بشمول آپ',
+      one: 'آپ نے $emoji کے ساتھ ردعمل دیا',
+    );
+    return '$_temp0۔ اپنا ردعمل ہٹائیں';
   }
 
   @override

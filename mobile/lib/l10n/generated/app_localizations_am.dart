@@ -7731,12 +7731,24 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String commentReactionChipSemanticLabel(int count, String emoji) {
-    return '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል። በ$emoji ምላሽ ይስጡ';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል',
+      one: '1 ሰው በ$emoji ምላሽ ሰጥቷል',
+    );
+    return '$_temp0። በ$emoji ምላሽ ይስጡ';
   }
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል፣ እርስዎን ጨምሮ። ምላሽዎን ያስወግዱ';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ሰዎች በ$emoji ምላሽ ሰጥተዋል፣ እርስዎን ጨምሮ',
+      one: 'እርስዎ በ$emoji ምላሽ ሰጥተዋል',
+    );
+    return '$_temp0። ምላሽዎን ያስወግዱ';
   }
 
   @override

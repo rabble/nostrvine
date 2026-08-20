@@ -8079,12 +8079,28 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String commentReactionChipSemanticLabel(int count, String emoji) {
-    return '$count zareagowało $emoji. Zareaguj $emoji';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count osób zareagowało $emoji',
+      many: '$count osób zareagowało $emoji',
+      few: '$count osoby zareagowały $emoji',
+      one: '1 osoba zareagowała $emoji',
+    );
+    return '$_temp0. Zareaguj $emoji';
   }
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count zareagowało $emoji, w tym Ty. Usuń swoją reakcję';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count osób zareagowało $emoji, w tym Ty',
+      many: '$count osób zareagowało $emoji, w tym Ty',
+      few: '$count osoby zareagowały $emoji, w tym Ty',
+      one: 'Twoja reakcja: $emoji',
+    );
+    return '$_temp0. Usuń swoją reakcję';
   }
 
   @override

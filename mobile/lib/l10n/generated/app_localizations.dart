@@ -13446,7 +13446,7 @@ abstract class AppLocalizations {
   /// **'Failed to react to comment'**
   String get commentsErrorReactionFailed;
 
-  /// Screen-reader label for an emoji button in the comment reaction quick-row, and for a reaction chip the user has not joined yet.
+  /// Screen-reader label for an emoji button in the comment reaction quick-row. Reaction chips use the chip-specific commentReactionChip* keys instead.
   ///
   /// In en, this message translates to:
   /// **'React with {emoji}'**
@@ -13455,13 +13455,13 @@ abstract class AppLocalizations {
   /// Screen-reader label for a comment reaction chip the user has not joined. Activating it adds the user's reaction.
   ///
   /// In en, this message translates to:
-  /// **'{count} reacted with {emoji}. React with {emoji}'**
+  /// **'{count, plural, =1{1 person reacted with {emoji}} other{{count} people reacted with {emoji}}}. React with {emoji}'**
   String commentReactionChipSemanticLabel(int count, String emoji);
 
   /// Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.
   ///
   /// In en, this message translates to:
-  /// **'{count} reacted with {emoji}, including you. Remove your reaction'**
+  /// **'{count, plural, =1{You reacted with {emoji}} other{{count} people reacted with {emoji}, including you}}. Remove your reaction'**
   String commentReactionChipOwnSemanticLabel(int count, String emoji);
 
   /// Snackbar shown when submitting an NIP-56 comment report fails.

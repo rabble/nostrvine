@@ -7836,7 +7836,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count kişi $emoji ile tepki verdi, sen de dahil. Tepkini kaldır';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kişi $emoji ile tepki verdi, sen de dahil',
+      one: '$emoji ile tepki verdin',
+    );
+    return '$_temp0. Tepkini kaldır';
   }
 
   @override

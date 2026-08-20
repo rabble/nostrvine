@@ -7472,7 +7472,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count 人用 $emoji 回应，包括你。移除你的回应';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 人用 $emoji 回应，包括你',
+      one: '你用 $emoji 回应了',
+    );
+    return '$_temp0。移除你的回应';
   }
 
   @override

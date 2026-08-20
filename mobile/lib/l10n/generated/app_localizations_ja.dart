@@ -7529,7 +7529,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count人が$emojiでリアクションしました（あなたを含む）。リアクションを取り消す';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人が$emojiでリアクションしました（あなたを含む）',
+      one: 'あなたが$emojiでリアクションしました',
+    );
+    return '$_temp0。リアクションを取り消す';
   }
 
   @override

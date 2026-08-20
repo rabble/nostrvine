@@ -7977,12 +7977,24 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String commentReactionChipSemanticLabel(int count, String emoji) {
-    return '$count реагираха с $emoji. Реагирай с $emoji';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count души реагираха с $emoji',
+      one: '1 човек реагира с $emoji',
+    );
+    return '$_temp0. Реагирай с $emoji';
   }
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count реагираха с $emoji, включително ти. Премахни реакцията си';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count души реагираха с $emoji, включително ти',
+      one: 'Ти реагира с $emoji',
+    );
+    return '$_temp0. Премахни реакцията си';
   }
 
   @override

@@ -4546,7 +4546,7 @@
       }
     }
   },
-  "commentReactionChipSemanticLabel": "{count} memberi reaksi {emoji}. Beri reaksi {emoji}",
+  "commentReactionChipSemanticLabel": "{count} orang memberi reaksi {emoji}. Beri reaksi {emoji}",
   "@commentReactionChipSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip the user has not joined. Activating it adds the user's reaction.",
     "placeholders": {
@@ -4558,7 +4558,7 @@
       }
     }
   },
-  "commentReactionChipOwnSemanticLabel": "{count} memberi reaksi {emoji}, termasuk anda. Buang reaksi anda",
+  "commentReactionChipOwnSemanticLabel": "{count, plural, =1{Anda memberi reaksi {emoji}} other{{count} orang memberi reaksi {emoji}, termasuk anda}}. Buang reaksi anda",
   "@commentReactionChipOwnSemanticLabel": {
     "description": "Screen-reader label for a comment reaction chip that includes the user's own reaction. Activating it removes the user's reaction.",
     "placeholders": {

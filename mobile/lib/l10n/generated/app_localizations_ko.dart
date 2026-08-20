@@ -7544,7 +7544,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String commentReactionChipOwnSemanticLabel(int count, String emoji) {
-    return '$count명이 $emoji(으)로 반응했습니다(나 포함). 내 반응 삭제';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count명이 $emoji(으)로 반응했습니다(나 포함)',
+      one: '내가 $emoji(으)로 반응했습니다',
+    );
+    return '$_temp0. 내 반응 삭제';
   }
 
   @override
