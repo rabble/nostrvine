@@ -15,7 +15,7 @@ import 'package:openvine/router/providers/route_normalization_provider.dart';
 ///
 /// Mounted once, at the app root, above `MaterialApp.router`. Membership rule:
 /// a provider belongs here when activating it costs no more than the
-/// already-initialized `authServiceProvider`, **or** when its whole point is to
+/// already-constructed `authServiceProvider`, **or** when its whole point is to
 /// keep working while the bottom-nav shell is not mounted.
 ///
 /// The identity mirrors are the reason this host exists. They were previously
@@ -38,8 +38,16 @@ class AppRootSideEffects extends ConsumerWidget {
     ref.watch(routeNormalizationProvider);
 
     // Mirrors the authenticated pubkey into Zendesk, and into Firebase
-    // Analytics + Crashlytics. Both only need `authServiceProvider`, which
-    // startup has already built, so activating them here is free.
+    // Analytics + Crashlytics. Cheap to activate: `authServiceProvider` is
+    // already constructed, and the extra `profileRepositoryProvider` /
+    // `nostrSessionProvider` reads the Zendesk mirror makes are notifier reads
+    // that build nothing.
+    //
+    // Activation here happens during the first frame, before
+    // `AuthService.initialize()` — that runs in the post-frame `essential`
+    // startup phase — so auth still reports `checking` and a restored identity
+    // arrives on `authStateStream` rather than through either provider's eager
+    // branch.
     ref.watch(zendeskIdentitySyncProvider);
     ref.watch(analyticsIdentitySyncProvider);
 
