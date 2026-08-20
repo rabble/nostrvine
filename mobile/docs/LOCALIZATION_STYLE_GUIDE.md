@@ -71,14 +71,20 @@ The locale contract, from the code:
   (`mobile/lib/l10n/resolve_app_ui_locale.dart`).
 
 **The consequence that drives every decision below: there is no second file to
-send anyone to.** One `es` serves Madrid, Mexico City and Buenos Aires. One
-`pt` serves São Paulo and Lisbon. A regional choice is not a flavour, it is a
-decision that the other regions read as foreign. Write for the whole language
-community, not for the first native speaker who happened to be available.
+send anyone to.** One `es` serves Montevideo, Mexico City and Madrid. One `pt`
+serves São Paulo and Lisbon. So each pluricentric language gets **one base
+variety, picked on purpose** — Rioplatense for `es`, Brazilian for `pt` — and
+the rest of that language's readers get it.
 
-Adding a region-qualified locale (`pt-BR` alongside `pt`) is a product
-decision, not a translation decision. Raise it as an issue; do not smuggle a
-regionalism into the shared file instead.
+Picking one is not the same as writing for nobody. Committee-neutral Spanish
+is itself a dialect: the one no user actually speaks, and the one that makes
+an app sound like a bank. We would rather sound like the people who build
+Divine and the places most of our users are. Readers outside the base variety
+will notice, and that cost is taken knowingly rather than sanded off.
+
+What a translator must not do is *mix*. A second variety inside the shared
+file is drift, not range. Adding a region-qualified locale (`zh-Hant`
+alongside `zh`) is a product decision — raise it as an issue.
 
 ---
 
@@ -99,7 +105,7 @@ produces copy that reads as rude, not as friendly.
 | `ar` Arabic | MSA; impersonal phrasing, masculine-singular imperative where a verb is unavoidable | consistent | No feminine or plural address anywhere in the file today. Prefer the verbal noun (الإرسال) to a command (أرسل) in new copy. No dialect. |
 | `bg` Bulgarian | `ти` + familiar imperatives | **split** | The pronoun `Вие` is absent, but courtesy in Bulgarian is the 2nd-person **plural verb**, and it appears — including inside single strings: `Докосни ... за да започнете` and `Докосни за редактиране. Задръжте и плъзнете`. Checking the pronoun alone reports this file as clean. |
 | `de` German | `du` | consistent | A handful of `Sie`/`Ihr` hits are pronoun ambiguity, not courtesy address. |
-| `es` Spanish | `vos` (Rioplatense voseo) | **split** | The register the file has used since #2930 (233 keys), and the dialect Divine's own Spanish-speaking team writes — decided in #7908. The 75 tuteo keys are the drift. No *vosotros*. See [Variety and dialect](#variety-and-dialect). |
+| `es` Spanish | `vos` (Rioplatense voseo) | **split** | The register the file has used since #2930 (233 keys), and the dialect our own Spanish-speaking team writes, Uruguayan — decided in #7908. The 75 tuteo keys are the drift. No *vosotros*. See [Variety and dialect](#variety-and-dialect). |
 | `fil` Filipino | Informal — no `po`/`kayo` | consistent | Taglish is the register: ~750 keys carry an English tech noun. Do not "purify" those into coined Filipino. |
 | `fr` French | `tu` | **36 keys use `vous`** | Almost all are genuine vouvoiement drift, not plural. Only `userPickerEmptyFollowListBody` ("vous pouvez collaborer" = you-and-them) is a true plural; the two `minorAccountReview*EmailBody` keys are email templates the user sends to support, where formal is correct. The rest cluster in the video editor, recorder and database-failure copy. |
 | `id` Indonesian | `kamu` | mostly consistent | ~13 keys use formal `Anda`, and `feedForYouEmpty` manages both in one sentence: `Feed Untuk Anda kamu kosong.` |
@@ -109,7 +115,7 @@ produces copy that reads as rude, not as friendly.
 | `ms` Malay | `anda` | consistent | Deliberately different from Indonesian: `anda` is Malay's unmarked form. |
 | `nl` Dutch | `je` | consistent | Never `u`. |
 | `pl` Polish | `ty` + 2nd-person singular imperatives | consistent | Never `Pan`/`Pani`. |
-| `pt` Portuguese | `você` | **split** | At least 16 keys carry European forms — `tu`-imperatives (`Verifica a tua ligação`), `utilizador`, and the chroma-key and people-lists screens. `userPickerConfirmSemanticLabel` says `utilizadores` beside `userPickerUnavailable`'s `usuários`, on one screen. See [Variety and dialect](#variety-and-dialect). |
+| `pt` Portuguese | `você` | **split** | Brazilian always — that is where our Portuguese-reading users are, and there is no `pt-PT` to send anyone to. At least 16 keys carry European forms — `tu`-imperatives (`Verifica a tua ligação`), `utilizador`, and the chroma-key and people-lists screens; `userPickerConfirmSemanticLabel` says `utilizadores` beside `userPickerUnavailable`'s `usuários`, on one screen. Those are drift to fix, not a precedent. See [Variety and dialect](#variety-and-dialect). |
 | `ro` Romanian | `tu` | mostly consistent | `dumneavoastră` is absent, but Romanian politeness also lives in the verb: at least 7 keys use polite 2nd-person plural (`încercați`, `vă rugăm`), again clustered in the video editor. |
 | `sv` Swedish | `du` | consistent | Sweden is du-reformed; `ni` reads as archaic. |
 | `tr` Turkish | `sen` | **split** | Register lives in the suffix, not the pronoun. At least 26 keys use formal 2nd-person plural forms, clustered in the video editor, sound-sync, database-failure and auth copy. Direct collision for the same action: `publishErrorServerUnreachable` = `...tekrar dene`, `videoEditorSplitFailed` = `...tekrar deneyin`. |
@@ -151,8 +157,9 @@ is its own change, with its own issue and its own native-speaker review.
 
 One `es` file serves every Spanish-speaking market we ship to, and it is
 written in the dialect Divine's own Spanish-speaking team members speak:
-Rioplatense *voseo*. @rabble decided that in #7908 — it is a product decision,
-so it changes there, not in a translation PR.
+Rioplatense *voseo*, as it is written in Uruguay. @rabble decided that in
+#7908 — it is a product decision, so it changes there, not in a translation
+PR.
 
 The decision keeps the file's baseline rather than replacing it.
 `git log -S'Probá' -- mobile/lib/l10n/app_es.arb` traces voseo to #2930, the
@@ -166,19 +173,21 @@ keys are the drift — the opposite of what a quick read suggests.
   both dialects, so it needs no change.
 - **The regional cost is accepted, not overlooked.** Voseo reads as marked
   outside the Río de la Plata, and there is no second `es` file for the
-  markets that read it that way. We take that cost to ship copy the team can
-  vouch for, in the voice they actually write in, rather than a neutral
-  register nobody here speaks.
+  readers who see it that way. We take that cost to ship copy the team can
+  vouch for, in the voice they actually write in, rather than a register
+  assembled to offend no one and belong to no one.
 - **No *vosotros*** — it is Spain-only, and the corpus already contains none.
 - **Reconciling the 75 tuteo keys is its own PR (#7908)**, not something to
   fold into a feature. They cluster in error copy and the video editor, and 41
   of them are the same sentence, `Inténtalo de nuevo`. `categoryDiy` carries
   both dialects in one string — `Hazlo vos mismo`, a tuteo imperative with a
   voseo pronoun.
-- **Vocabulary: whichever word is understood everywhere.** The dialect call is
-  about how we address the reader, not a licence to regionalize every noun.
-  Prefer the pan-regional term over a marked one in either direction: not
-  `ordenador` (Spain) and not `computadora` where `dispositivo` works.
+- **Vocabulary: the word the team would use.** Where varieties split, take
+  the Rioplatense one — `celular`, not `móvil`; `computadora`, not
+  `ordenador` — instead of hunting for a compromise noun nobody says out
+  loud. The only limit is comprehension: a word other Spanish speakers would
+  not *recognise* is worth avoiding, one they simply do not use themselves is
+  not.
 - **Spelling: `video`, not `vídeo`.** Both are correct Spanish; `video` is the
   Latin-American form and the majority in the current file, though 24 keys
   still carry `vídeo`. This is the single most repeated noun in the app, so it
@@ -186,21 +195,23 @@ keys are the drift — the opposite of what a quick read suggests.
 - Keep `enlace`/`link`, `correo`/`email` consistent *within the file* — see
   [Terminology](#terminology).
 
-### Portuguese — `você`, Brazilian base
+### Portuguese — Brazilian, deliberately
 
-One `pt` file serves Brazil and Portugal, and today it is Brazilian:
-`usuário`, `arquivo`, `tela`, `celular`, with no European counterpart
-(`utilizador`, `ficheiro`, `ecrã`, `telemóvel`) anywhere in the file. Keep
-that base rather than mixing a second variety into it.
+One `pt` file serves Brazil and Portugal, and it is Brazilian: `usuário`,
+`arquivo`, `tela`, `celular`, with no European counterpart (`utilizador`,
+`ficheiro`, `ecrã`, `telemóvel`) anywhere in the file. That is a decision, not
+an accident of who translated first — Brazil is where our Portuguese-reading
+users are, and Portugal reads Brazilian Portuguese perfectly well.
 
 - **Address: `você`.** At least 16 keys currently use European `tu` forms or
-  vocabulary —
-  `Verifica a tua ligação`, `o teu comentário`, `Adiciona tags` — and are the
-  exception, not a precedent.
-- Where a word splits hardest between the two varieties, prefer a phrasing
-  that avoids the split before defaulting to the Brazilian form.
-- No slang either way. The colloquial contractions already in the invite copy
-  (`pro`, `pra`) mark the ceiling.
+  vocabulary — `Verifica a tua ligação`, `o teu comentário`, `Adiciona tags`.
+  They are drift to fix ([#7911](https://github.com/divinevideo/divine-mobile/issues/7911)),
+  not a precedent.
+- **Where the varieties split, take the Brazilian form.** Do not reach for a
+  third phrasing that dodges the split; dodging is how copy stops sounding
+  like anyone.
+- Colloquial contractions are welcome — the invite copy already says `pro`
+  and `pra`.
 
 ### Chinese — Simplified, mainland vocabulary
 
