@@ -336,18 +336,6 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get settingsNotifications;
 
-  /// No description provided for @settingsContentPreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Content Preferences'**
-  String get settingsContentPreferences;
-
-  /// No description provided for @settingsModerationControls.
-  ///
-  /// In en, this message translates to:
-  /// **'Moderation Controls'**
-  String get settingsModerationControls;
-
   /// No description provided for @settingsBlueskyPublishing.
   ///
   /// In en, this message translates to:
@@ -846,24 +834,6 @@ abstract class AppLocalizations {
   /// **'Failed to share profile: {error}'**
   String profileShareFailed(Object error);
 
-  /// No description provided for @profileEditProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit profile'**
-  String get profileEditProfile;
-
-  /// No description provided for @profileCreatorAnalytics.
-  ///
-  /// In en, this message translates to:
-  /// **'Creator analytics'**
-  String get profileCreatorAnalytics;
-
-  /// No description provided for @profileShareProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'Share profile'**
-  String get profileShareProfile;
-
   /// No description provided for @profileCopyPublicKey.
   ///
   /// In en, this message translates to:
@@ -887,18 +857,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Embed code copied to clipboard'**
   String get profileEmbedCodeCopied;
-
-  /// No description provided for @profileRefreshTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get profileRefreshTooltip;
-
-  /// No description provided for @profileRefreshSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh profile'**
-  String get profileRefreshSemanticLabel;
 
   /// No description provided for @profileMoreTooltip.
   ///
@@ -1170,30 +1128,6 @@ abstract class AppLocalizations {
   /// **'Add {displayName} to a list'**
   String profileAddToListDisplayName(String displayName);
 
-  /// No description provided for @profileUserBlockedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'User Blocked'**
-  String get profileUserBlockedTitle;
-
-  /// No description provided for @profileUserBlockedContent.
-  ///
-  /// In en, this message translates to:
-  /// **'You won\'t see content from this user in your feeds.'**
-  String get profileUserBlockedContent;
-
-  /// No description provided for @profileUserBlockedUnblockHint.
-  ///
-  /// In en, this message translates to:
-  /// **'You can unblock them anytime from their profile or in Settings > Safety.'**
-  String get profileUserBlockedUnblockHint;
-
-  /// No description provided for @profileCloseButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get profileCloseButton;
-
   /// No description provided for @profileNoCollabsTitle.
   ///
   /// In en, this message translates to:
@@ -1386,36 +1320,6 @@ abstract class AppLocalizations {
   /// **'Add your name, bio, and picture to get started'**
   String get profileCompleteSubtitle;
 
-  /// No description provided for @profileSetUpButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Set Up'**
-  String get profileSetUpButton;
-
-  /// No description provided for @profileVerifyingEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Verifying Email...'**
-  String get profileVerifyingEmail;
-
-  /// No description provided for @profileCheckEmailVerification.
-  ///
-  /// In en, this message translates to:
-  /// **'Check {email} for verification link'**
-  String profileCheckEmailVerification(String email);
-
-  /// No description provided for @profileWaitingForVerification.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for email verification'**
-  String get profileWaitingForVerification;
-
-  /// No description provided for @profileVerificationFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Verification Failed'**
-  String get profileVerificationFailed;
-
   /// No description provided for @profilePleaseTryAgain.
   ///
   /// In en, this message translates to:
@@ -1439,12 +1343,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get profileRetryButton;
-
-  /// No description provided for @profileRegisterButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Register'**
-  String get profileRegisterButton;
 
   /// No description provided for @profileSessionExpired.
   ///
@@ -1523,12 +1421,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'user'**
   String get profileUserFallback;
-
-  /// No description provided for @profileDismissTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss'**
-  String get profileDismissTooltip;
 
   /// No description provided for @profileLinkCopied.
   ///
@@ -1632,12 +1524,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t reach the network. Check your connection and try again.'**
   String get profileSetupNoRelaysConnected;
 
-  /// No description provided for @profileSetupRetryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get profileSetupRetryLabel;
-
   /// No description provided for @profileSetupDisplayNameLabel.
   ///
   /// In en, this message translates to:
@@ -1680,12 +1566,6 @@ abstract class AppLocalizations {
   /// **'Your unique identity on Divine'**
   String get profileSetupUsernameHelper;
 
-  /// No description provided for @profileSetupProfileColorLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile Color (Optional)'**
-  String get profileSetupProfileColorLabel;
-
   /// No description provided for @profileSetupSaveButton.
   ///
   /// In en, this message translates to:
@@ -1703,12 +1583,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add image URL'**
   String get profileSetupImageUrlTitle;
-
-  /// No description provided for @profileSetupPictureUploaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile picture uploaded successfully!'**
-  String get profileSetupPictureUploaded;
 
   /// No description provided for @profileSetupImageSelectionFailed.
   ///
@@ -1763,12 +1637,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload failed. Our servers are temporarily unavailable. Please try again in a moment.'**
   String get profileSetupUploadServerError;
-
-  /// No description provided for @profileSetupUploadUnsupportedOnWeb.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.'**
-  String get profileSetupUploadUnsupportedOnWeb;
 
   /// Label on the button that removes the currently selected profile banner image.
   ///
@@ -1992,18 +1860,6 @@ abstract class AppLocalizations {
   /// **'Send request'**
   String get profileSetupSendRequest;
 
-  /// No description provided for @profileSetupPickColorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick a color'**
-  String get profileSetupPickColorTitle;
-
-  /// No description provided for @profileSetupSelectButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Select'**
-  String get profileSetupSelectButton;
-
   /// No description provided for @profileSetupUseOwnNip05.
   ///
   /// In en, this message translates to:
@@ -2178,12 +2034,6 @@ abstract class AppLocalizations {
   /// **'Got it!'**
   String get nostrInfoGotIt;
 
-  /// No description provided for @profileTabRefreshTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get profileTabRefreshTooltip;
-
   /// No description provided for @videoGridRefreshLabel.
   ///
   /// In en, this message translates to:
@@ -2225,12 +2075,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleting content...'**
   String get videoGridDeletingContent;
-
-  /// No description provided for @videoGridDeleteFailure.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content: {error}'**
-  String videoGridDeleteFailure(Object error);
 
   /// Name of the Explore tab that shows a server-curated collection. The collection's own name is not this string — it rides beside it in a pill.
   ///
@@ -2394,12 +2238,6 @@ abstract class AppLocalizations {
   /// **'Load {count} new {count, plural, =1{video} other{videos}}'**
   String exploreLoadNewVideosLabel(int count);
 
-  /// No description provided for @videoPlayerLoadingVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading video...'**
-  String get videoPlayerLoadingVideo;
-
   /// No description provided for @videoPlayerPlayVideo.
   ///
   /// In en, this message translates to:
@@ -2417,18 +2255,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unmute video'**
   String get videoPlayerUnmute;
-
-  /// No description provided for @videoPlayerEditVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit video'**
-  String get videoPlayerEditVideo;
-
-  /// No description provided for @videoPlayerEditVideoTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit video'**
-  String get videoPlayerEditVideoTooltip;
 
   /// No description provided for @videoPlayerTapHint.
   ///
@@ -2826,30 +2652,6 @@ abstract class AppLocalizations {
   /// **'Video not found'**
   String get videoErrorNotFound;
 
-  /// No description provided for @videoErrorNetwork.
-  ///
-  /// In en, this message translates to:
-  /// **'Network error'**
-  String get videoErrorNetwork;
-
-  /// No description provided for @videoErrorTimeout.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading timeout'**
-  String get videoErrorTimeout;
-
-  /// No description provided for @videoErrorFormat.
-  ///
-  /// In en, this message translates to:
-  /// **'Video format error\n(Try again or use different browser)'**
-  String get videoErrorFormat;
-
-  /// No description provided for @videoErrorUnsupportedFormat.
-  ///
-  /// In en, this message translates to:
-  /// **'Unsupported video format'**
-  String get videoErrorUnsupportedFormat;
-
   /// No description provided for @videoErrorPlayback.
   ///
   /// In en, this message translates to:
@@ -2873,12 +2675,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This video isn\'t available right now.'**
   String get videoErrorUnavailableBody;
-
-  /// No description provided for @videoErrorVerifyAge.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify Age'**
-  String get videoErrorVerifyAge;
 
   /// No description provided for @videoErrorRetry.
   ///
@@ -2993,12 +2789,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close video player'**
   String get videoDetailCloseSemanticLabel;
-
-  /// No description provided for @videoFollowButtonFollowing.
-  ///
-  /// In en, this message translates to:
-  /// **'Following'**
-  String get videoFollowButtonFollowing;
 
   /// No description provided for @videoFollowButtonFollow.
   ///
@@ -3297,18 +3087,6 @@ abstract class AppLocalizations {
   /// **'More options'**
   String get videoActionMoreOptions;
 
-  /// No description provided for @videoActionHideSubtitles.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide subtitles'**
-  String get videoActionHideSubtitles;
-
-  /// No description provided for @videoActionShowSubtitles.
-  ///
-  /// In en, this message translates to:
-  /// **'Show subtitles'**
-  String get videoActionShowSubtitles;
-
   /// Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it.
   ///
   /// In en, this message translates to:
@@ -3380,12 +3158,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t post comment'**
   String get videoOverlayCommentPostFailedSnackbar;
-
-  /// No description provided for @videoDescriptionLoops.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} loops'**
-  String videoDescriptionLoops(String count);
 
   /// No description provided for @videoFeedLoopCountLine.
   ///
@@ -4619,60 +4391,6 @@ abstract class AppLocalizations {
   /// **'When someone you\'re watching posts'**
   String get notificationSettingsNewPostsSubtitle;
 
-  /// No description provided for @notificationSettingsSystem.
-  ///
-  /// In en, this message translates to:
-  /// **'System'**
-  String get notificationSettingsSystem;
-
-  /// No description provided for @notificationSettingsSystemSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'App updates and system messages'**
-  String get notificationSettingsSystemSubtitle;
-
-  /// No description provided for @notificationSettingsPushNotificationsSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Push Notifications'**
-  String get notificationSettingsPushNotificationsSection;
-
-  /// No description provided for @notificationSettingsPushNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Push Notifications'**
-  String get notificationSettingsPushNotifications;
-
-  /// No description provided for @notificationSettingsPushNotificationsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive notifications when app is closed'**
-  String get notificationSettingsPushNotificationsSubtitle;
-
-  /// No description provided for @notificationSettingsSound.
-  ///
-  /// In en, this message translates to:
-  /// **'Sound'**
-  String get notificationSettingsSound;
-
-  /// No description provided for @notificationSettingsSoundSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Play sound for notifications'**
-  String get notificationSettingsSoundSubtitle;
-
-  /// No description provided for @notificationSettingsVibration.
-  ///
-  /// In en, this message translates to:
-  /// **'Vibration'**
-  String get notificationSettingsVibration;
-
-  /// No description provided for @notificationSettingsVibrationSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Vibrate for notifications'**
-  String get notificationSettingsVibrationSubtitle;
-
   /// No description provided for @notificationSettingsActions.
   ///
   /// In en, this message translates to:
@@ -4720,18 +4438,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notifications are powered by the Nostr protocol. Real-time updates depend on your connection to Nostr relays. Some notifications may have delays.'**
   String get notificationSettingsAboutDescription;
-
-  /// Safety settings screen app bar title
-  ///
-  /// In en, this message translates to:
-  /// **'Safety & Privacy'**
-  String get safetySettingsTitle;
-
-  /// No description provided for @safetySettingsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'SETTINGS'**
-  String get safetySettingsLabel;
 
   /// No description provided for @safetySettingsWhatYouSee.
   ///
@@ -6053,54 +5759,6 @@ abstract class AppLocalizations {
   /// **'Registration complete. Please check your email.'**
   String get authRegistrationComplete;
 
-  /// No description provided for @authVerificationFailedTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Verification Failed'**
-  String get authVerificationFailedTitle;
-
-  /// No description provided for @authClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get authClose;
-
-  /// No description provided for @authAccountSecured.
-  ///
-  /// In en, this message translates to:
-  /// **'Account Secured!'**
-  String get authAccountSecured;
-
-  /// No description provided for @authAccountLinkedToEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Your account is now linked to your email.'**
-  String get authAccountLinkedToEmail;
-
-  /// No description provided for @authVerifyYourEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify Your Email'**
-  String get authVerifyYourEmail;
-
-  /// No description provided for @authClickLinkContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Click the link in your email to complete registration. You can continue using the app in the meantime.'**
-  String get authClickLinkContinue;
-
-  /// No description provided for @authWaitingForVerificationEllipsis.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for verification...'**
-  String get authWaitingForVerificationEllipsis;
-
-  /// No description provided for @authContinueToApp.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue to App'**
-  String get authContinueToApp;
-
   /// No description provided for @authFailedToSendResetEmail.
   ///
   /// In en, this message translates to:
@@ -6310,12 +5968,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share via'**
   String get shareSheetShareVia;
-
-  /// No description provided for @shareSheetReport.
-  ///
-  /// In en, this message translates to:
-  /// **'Report'**
-  String get shareSheetReport;
 
   /// No description provided for @shareSheetEventJson.
   ///
@@ -6557,251 +6209,11 @@ abstract class AppLocalizations {
   /// **'Saving the watermarked video to your camera roll...'**
   String get watermarkDownloadStageSavingDesc;
 
-  /// No description provided for @uploadProgressVideoUpload.
-  ///
-  /// In en, this message translates to:
-  /// **'Video Upload'**
-  String get uploadProgressVideoUpload;
-
-  /// No description provided for @uploadProgressPause.
-  ///
-  /// In en, this message translates to:
-  /// **'Pause'**
-  String get uploadProgressPause;
-
-  /// No description provided for @uploadProgressResume.
-  ///
-  /// In en, this message translates to:
-  /// **'Resume'**
-  String get uploadProgressResume;
-
-  /// No description provided for @uploadProgressGoBack.
-  ///
-  /// In en, this message translates to:
-  /// **'Go Back'**
-  String get uploadProgressGoBack;
-
-  /// No description provided for @uploadProgressRetryWithCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry ({count} left)'**
-  String uploadProgressRetryWithCount(int count);
-
-  /// No description provided for @uploadProgressDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get uploadProgressDelete;
-
-  /// No description provided for @uploadProgressDaysAgo.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}d ago'**
-  String uploadProgressDaysAgo(int count);
-
-  /// No description provided for @uploadProgressHoursAgo.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}h ago'**
-  String uploadProgressHoursAgo(int count);
-
-  /// No description provided for @uploadProgressMinutesAgo.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}m ago'**
-  String uploadProgressMinutesAgo(int count);
-
-  /// No description provided for @uploadProgressJustNow.
-  ///
-  /// In en, this message translates to:
-  /// **'Just now'**
-  String get uploadProgressJustNow;
-
-  /// No description provided for @uploadProgressUploadingPercent.
-  ///
-  /// In en, this message translates to:
-  /// **'Uploading {percent}%'**
-  String uploadProgressUploadingPercent(int percent);
-
-  /// No description provided for @uploadProgressPausedPercent.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused {percent}%'**
-  String uploadProgressPausedPercent(int percent);
-
-  /// No description provided for @shareMenuTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Share Video'**
-  String get shareMenuTitle;
-
-  /// No description provided for @shareMenuReportAiContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Report AI Content'**
-  String get shareMenuReportAiContent;
-
-  /// No description provided for @shareMenuReportAiContentSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Quick report suspected AI-generated content'**
-  String get shareMenuReportAiContentSubtitle;
-
-  /// No description provided for @shareMenuReportingAiContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Reporting AI content...'**
-  String get shareMenuReportingAiContent;
-
-  /// No description provided for @shareMenuFailedToReportContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to report content: {error}'**
-  String shareMenuFailedToReportContent(String error);
-
-  /// No description provided for @shareMenuFailedToReportAiContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to report AI content: {error}'**
-  String shareMenuFailedToReportAiContent(String error);
-
-  /// No description provided for @shareMenuVideoStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Video Status'**
-  String get shareMenuVideoStatus;
-
-  /// No description provided for @shareMenuViewAllLists.
-  ///
-  /// In en, this message translates to:
-  /// **'View all lists →'**
-  String get shareMenuViewAllLists;
-
-  /// No description provided for @shareMenuShareWith.
-  ///
-  /// In en, this message translates to:
-  /// **'Share With'**
-  String get shareMenuShareWith;
-
-  /// No description provided for @shareMenuShareViaOtherApps.
-  ///
-  /// In en, this message translates to:
-  /// **'Share via other apps'**
-  String get shareMenuShareViaOtherApps;
-
-  /// No description provided for @shareMenuShareViaOtherAppsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Share via other apps or copy link'**
-  String get shareMenuShareViaOtherAppsSubtitle;
-
-  /// No description provided for @shareMenuSaveToGallery.
-  ///
-  /// In en, this message translates to:
-  /// **'Save to Gallery'**
-  String get shareMenuSaveToGallery;
-
-  /// No description provided for @shareMenuSaveOriginalSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Save original video to camera roll'**
-  String get shareMenuSaveOriginalSubtitle;
-
-  /// No description provided for @shareMenuSaveWithWatermark.
-  ///
-  /// In en, this message translates to:
-  /// **'Save with Watermark'**
-  String get shareMenuSaveWithWatermark;
-
-  /// No description provided for @shareMenuSaveVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Save Video'**
-  String get shareMenuSaveVideo;
-
-  /// No description provided for @shareMenuDownloadWithWatermark.
-  ///
-  /// In en, this message translates to:
-  /// **'Download with Divine watermark'**
-  String get shareMenuDownloadWithWatermark;
-
-  /// No description provided for @shareMenuSaveVideoSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Save video to camera roll'**
-  String get shareMenuSaveVideoSubtitle;
-
-  /// No description provided for @shareMenuLists.
-  ///
-  /// In en, this message translates to:
-  /// **'Lists'**
-  String get shareMenuLists;
-
-  /// No description provided for @shareMenuAddToList.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to List'**
-  String get shareMenuAddToList;
-
-  /// No description provided for @shareMenuAddToListSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to your curated lists'**
-  String get shareMenuAddToListSubtitle;
-
-  /// No description provided for @shareMenuCreateNewList.
-  ///
-  /// In en, this message translates to:
-  /// **'Create New List'**
-  String get shareMenuCreateNewList;
-
-  /// No description provided for @shareMenuCreateNewListSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Start a new curated collection'**
-  String get shareMenuCreateNewListSubtitle;
-
-  /// No description provided for @shareMenuRemovedFromList.
-  ///
-  /// In en, this message translates to:
-  /// **'Removed from list'**
-  String get shareMenuRemovedFromList;
-
-  /// No description provided for @shareMenuFailedToRemoveFromList.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to remove from list'**
-  String get shareMenuFailedToRemoveFromList;
-
   /// No description provided for @shareMenuBookmarks.
   ///
   /// In en, this message translates to:
   /// **'Bookmarks'**
   String get shareMenuBookmarks;
-
-  /// No description provided for @shareMenuFollowSets.
-  ///
-  /// In en, this message translates to:
-  /// **'People Lists'**
-  String get shareMenuFollowSets;
-
-  /// No description provided for @shareMenuCreateFollowSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Follow Set'**
-  String get shareMenuCreateFollowSet;
-
-  /// No description provided for @shareMenuCreateFollowSetSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Start new collection with this creator'**
-  String get shareMenuCreateFollowSetSubtitle;
-
-  /// No description provided for @shareMenuAddToFollowSet.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to Follow Set'**
-  String get shareMenuAddToFollowSet;
 
   /// No description provided for @shareMenuFollowSetsAvailable.
   ///
@@ -6814,12 +6226,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add to list'**
   String get peopleListsAddToList;
-
-  /// No description provided for @peopleListsAddToListSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Put this creator in one of your lists'**
-  String get peopleListsAddToListSubtitle;
 
   /// No description provided for @peopleListsSheetTitle.
   ///
@@ -7055,41 +6461,11 @@ abstract class AppLocalizations {
   /// **'View profile for {name}'**
   String peopleListsViewProfileHint(String name);
 
-  /// No description provided for @shareMenuAddedToBookmarks.
-  ///
-  /// In en, this message translates to:
-  /// **'Added to bookmarks!'**
-  String get shareMenuAddedToBookmarks;
-
-  /// No description provided for @shareMenuFailedToAddBookmark.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to add bookmark'**
-  String get shareMenuFailedToAddBookmark;
-
-  /// No description provided for @shareMenuCreatedListAndAddedVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Created list \"{name}\" and added video'**
-  String shareMenuCreatedListAndAddedVideo(String name);
-
-  /// No description provided for @shareMenuManageContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage Content'**
-  String get shareMenuManageContent;
-
   /// No description provided for @shareMenuEditVideo.
   ///
   /// In en, this message translates to:
   /// **'Edit Video'**
   String get shareMenuEditVideo;
-
-  /// No description provided for @shareMenuEditVideoSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Update title, description, and hashtags'**
-  String get shareMenuEditVideoSubtitle;
 
   /// No description provided for @shareMenuDeleteVideo.
   ///
@@ -7097,23 +6473,11 @@ abstract class AppLocalizations {
   /// **'Delete Video'**
   String get shareMenuDeleteVideo;
 
-  /// No description provided for @shareMenuVideoInTheseLists.
-  ///
-  /// In en, this message translates to:
-  /// **'Video is in these lists:'**
-  String get shareMenuVideoInTheseLists;
-
   /// No description provided for @shareMenuVideoCount.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{{count} video} other{{count} videos}}'**
   String shareMenuVideoCount(int count);
-
-  /// No description provided for @shareMenuClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get shareMenuClose;
 
   /// No description provided for @shareMenuDeleteConfirmation.
   ///
@@ -7132,18 +6496,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get shareMenuDelete;
-
-  /// No description provided for @shareMenuDeletingContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Deleting content...'**
-  String get shareMenuDeletingContent;
-
-  /// No description provided for @shareMenuFailedToDeleteContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content: {error}'**
-  String shareMenuFailedToDeleteContent(String error);
 
   /// No description provided for @shareMenuDeleteFailedNotInitialized.
   ///
@@ -7199,90 +6551,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t delete this video. Try again.'**
   String get shareMenuDeleteFailedGeneric;
 
-  /// No description provided for @shareMenuFollowSetName.
-  ///
-  /// In en, this message translates to:
-  /// **'Follow Set Name'**
-  String get shareMenuFollowSetName;
-
-  /// No description provided for @shareMenuFollowSetNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g., Content Creators, Musicians, etc.'**
-  String get shareMenuFollowSetNameHint;
-
-  /// No description provided for @shareMenuDescriptionOptional.
-  ///
-  /// In en, this message translates to:
-  /// **'Description (optional)'**
-  String get shareMenuDescriptionOptional;
-
-  /// No description provided for @shareMenuCreate.
-  ///
-  /// In en, this message translates to:
-  /// **'Create'**
-  String get shareMenuCreate;
-
-  /// No description provided for @shareMenuCreatedFollowSetAndAddedCreator.
-  ///
-  /// In en, this message translates to:
-  /// **'Created follow set \"{name}\" and added creator'**
-  String shareMenuCreatedFollowSetAndAddedCreator(String name);
-
-  /// No description provided for @shareMenuDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get shareMenuDone;
-
-  /// No description provided for @shareMenuEditTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get shareMenuEditTitle;
-
-  /// No description provided for @shareMenuEditTitleHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter video title'**
-  String get shareMenuEditTitleHint;
-
-  /// No description provided for @shareMenuEditDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get shareMenuEditDescription;
-
-  /// No description provided for @shareMenuEditDescriptionHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter video description'**
-  String get shareMenuEditDescriptionHint;
-
-  /// No description provided for @shareMenuEditHashtags.
-  ///
-  /// In en, this message translates to:
-  /// **'Hashtags'**
-  String get shareMenuEditHashtags;
-
-  /// No description provided for @shareMenuEditHashtagsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'comma, separated, hashtags'**
-  String get shareMenuEditHashtagsHint;
-
-  /// No description provided for @shareMenuEditMetadataNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Note: Only metadata can be edited. Video content cannot be changed.'**
-  String get shareMenuEditMetadataNote;
-
-  /// No description provided for @shareMenuDeleting.
-  ///
-  /// In en, this message translates to:
-  /// **'Deleting...'**
-  String get shareMenuDeleting;
-
   /// No description provided for @shareMenuUpdate.
   ///
   /// In en, this message translates to:
@@ -7294,12 +6562,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change Cover'**
   String get shareMenuChangeCover;
-
-  /// Toast/snackbar message shown while the new cover thumbnail is being uploaded after saving video metadata.
-  ///
-  /// In en, this message translates to:
-  /// **'Thumbnail is being uploaded in the background'**
-  String get shareMenuCoverUploadingBackground;
 
   /// No description provided for @shareMenuVideoUpdated.
   ///
@@ -7319,12 +6581,6 @@ abstract class AppLocalizations {
   /// **'Failed to update video: {error}'**
   String shareMenuFailedToUpdateVideo(String error);
 
-  /// No description provided for @shareMenuFailedToDeleteVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete video: {error}'**
-  String shareMenuFailedToDeleteVideo(String error);
-
   /// No description provided for @shareMenuDeleteVideoQuestion.
   ///
   /// In en, this message translates to:
@@ -7336,84 +6592,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video deleted'**
   String get shareMenuVideoDeletionRequested;
-
-  /// No description provided for @shareMenuContentLabels.
-  ///
-  /// In en, this message translates to:
-  /// **'Content labels'**
-  String get shareMenuContentLabels;
-
-  /// No description provided for @shareMenuAddContentLabels.
-  ///
-  /// In en, this message translates to:
-  /// **'Add content labels'**
-  String get shareMenuAddContentLabels;
-
-  /// No description provided for @shareMenuClearAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear all'**
-  String get shareMenuClearAll;
-
-  /// No description provided for @shareMenuCollaborators.
-  ///
-  /// In en, this message translates to:
-  /// **'Collaborators'**
-  String get shareMenuCollaborators;
-
-  /// No description provided for @shareMenuAddCollaborator.
-  ///
-  /// In en, this message translates to:
-  /// **'Invite collaborator'**
-  String get shareMenuAddCollaborator;
-
-  /// No description provided for @shareMenuMutualFollowRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'You need to mutually follow {name} to invite them as a collaborator.'**
-  String shareMenuMutualFollowRequired(String name);
-
-  /// No description provided for @shareMenuLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading...'**
-  String get shareMenuLoading;
-
-  /// No description provided for @shareMenuInspiredBy.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspired by'**
-  String get shareMenuInspiredBy;
-
-  /// No description provided for @shareMenuAddInspirationCredit.
-  ///
-  /// In en, this message translates to:
-  /// **'Add inspiration credit'**
-  String get shareMenuAddInspirationCredit;
-
-  /// No description provided for @shareMenuCreatorCannotBeReferenced.
-  ///
-  /// In en, this message translates to:
-  /// **'This creator cannot be referenced.'**
-  String get shareMenuCreatorCannotBeReferenced;
-
-  /// No description provided for @shareMenuUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown'**
-  String get shareMenuUnknown;
-
-  /// No description provided for @shareMenuUseThisSound.
-  ///
-  /// In en, this message translates to:
-  /// **'Use this sound'**
-  String get shareMenuUseThisSound;
-
-  /// No description provided for @shareMenuOriginalSound.
-  ///
-  /// In en, this message translates to:
-  /// **'Original sound'**
-  String get shareMenuOriginalSound;
 
   /// No description provided for @authSessionExpired.
   ///
@@ -7432,24 +6610,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to sign in. Please try again.'**
   String get authSignInFailed;
-
-  /// No description provided for @localeAppLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'App Language'**
-  String get localeAppLanguage;
-
-  /// No description provided for @localeDeviceDefault.
-  ///
-  /// In en, this message translates to:
-  /// **'Device default'**
-  String get localeDeviceDefault;
-
-  /// No description provided for @localeSelectLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Language'**
-  String get localeSelectLanguage;
 
   /// No description provided for @webAuthNotSupportedSecureMode.
   ///
@@ -7553,53 +6713,11 @@ abstract class AppLocalizations {
   /// **'Search sounds...'**
   String get soundsSearchHint;
 
-  /// No description provided for @soundsPreviewUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Unable to preview sound - no audio available'**
-  String get soundsPreviewUnavailable;
-
-  /// No description provided for @soundsPreviewFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to play preview: {error}'**
-  String soundsPreviewFailed(String error);
-
-  /// No description provided for @soundsFeaturedSounds.
-  ///
-  /// In en, this message translates to:
-  /// **'Featured Sounds'**
-  String get soundsFeaturedSounds;
-
-  /// No description provided for @soundsTrendingSounds.
-  ///
-  /// In en, this message translates to:
-  /// **'Trending Sounds'**
-  String get soundsTrendingSounds;
-
-  /// No description provided for @soundsAllSounds.
-  ///
-  /// In en, this message translates to:
-  /// **'All Sounds'**
-  String get soundsAllSounds;
-
   /// No description provided for @soundsSearchResults.
   ///
   /// In en, this message translates to:
   /// **'Search Results'**
   String get soundsSearchResults;
-
-  /// No description provided for @soundsNoSoundsAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No sounds available'**
-  String get soundsNoSoundsAvailable;
-
-  /// No description provided for @soundsNoSoundsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Sounds will appear here when creators share audio'**
-  String get soundsNoSoundsDescription;
 
   /// No description provided for @soundsNoSoundsFound.
   ///
@@ -7642,18 +6760,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap Use Sound on a video to save it here.'**
   String get soundsSavedEmptyDescription;
-
-  /// No description provided for @soundsAvailabilityPrivate.
-  ///
-  /// In en, this message translates to:
-  /// **'Private'**
-  String get soundsAvailabilityPrivate;
-
-  /// No description provided for @soundsAvailabilityCommunity.
-  ///
-  /// In en, this message translates to:
-  /// **'Community'**
-  String get soundsAvailabilityCommunity;
 
   /// No description provided for @soundsRemoveSavedSound.
   ///
@@ -7739,24 +6845,6 @@ abstract class AppLocalizations {
   /// **'Can\'t unlock your synced library on this device.'**
   String get soundSyncStatusLocked;
 
-  /// No description provided for @soundsFailedToLoad.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load sounds'**
-  String get soundsFailedToLoad;
-
-  /// No description provided for @soundsRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get soundsRetry;
-
-  /// No description provided for @soundsScreenLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Sounds screen'**
-  String get soundsScreenLabel;
-
   /// No description provided for @profileTitle.
   ///
   /// In en, this message translates to:
@@ -7768,12 +6856,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get profileRefresh;
-
-  /// No description provided for @profileRefreshLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh profile'**
-  String get profileRefreshLabel;
 
   /// No description provided for @profileMoreOptions.
   ///
@@ -7798,12 +6880,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unfollowed {name}'**
   String profileUnfollowedUser(String name);
-
-  /// No description provided for @profileError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String profileError(String error);
 
   /// Full-screen message shown when an author's profile feed fails to load. This state is only reached when the API could not be reached at all — an author with genuinely no videos gets the empty state instead — so the copy names the connection rather than implying the profile is empty. Wording deliberately matches authSignInErrorNetwork.
   ///
@@ -7865,30 +6941,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t refresh — showing what you have'**
   String get notificationsRefreshError;
 
-  /// No description provided for @notificationsCheckingNew.
-  ///
-  /// In en, this message translates to:
-  /// **'checking for new notifications'**
-  String get notificationsCheckingNew;
-
-  /// No description provided for @notificationsNoneYet.
-  ///
-  /// In en, this message translates to:
-  /// **'No notifications yet'**
-  String get notificationsNoneYet;
-
-  /// No description provided for @notificationsNoneForType.
-  ///
-  /// In en, this message translates to:
-  /// **'No {type} notifications'**
-  String notificationsNoneForType(String type);
-
-  /// No description provided for @notificationsEmptyDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'When people interact with your content, you\'ll see it here'**
-  String get notificationsEmptyDescription;
-
   /// Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself.
   ///
   /// In en, this message translates to:
@@ -7925,12 +6977,6 @@ abstract class AppLocalizations {
   /// **'Video thumbnail'**
   String get notificationsVideoThumbnail;
 
-  /// No description provided for @notificationsLoadingType.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading {type} notifications...'**
-  String notificationsLoadingType(String type);
-
   /// No description provided for @notificationsInviteSingular.
   ///
   /// In en, this message translates to:
@@ -7943,23 +6989,11 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{You have {count} invite to share with friends!} other{You have {count} invites to share with friends!}}'**
   String notificationsInvitePlural(int count);
 
-  /// No description provided for @notificationsVideoNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Video not found'**
-  String get notificationsVideoNotFound;
-
   /// No description provided for @notificationsVideoUnavailable.
   ///
   /// In en, this message translates to:
   /// **'Video unavailable'**
   String get notificationsVideoUnavailable;
-
-  /// No description provided for @notificationsFromNotification.
-  ///
-  /// In en, this message translates to:
-  /// **'From Notification'**
-  String get notificationsFromNotification;
 
   /// No description provided for @feedFailedToLoadVideos.
   ///
@@ -8051,18 +7085,6 @@ abstract class AppLocalizations {
   /// **'Explore Videos'**
   String get feedExploreVideos;
 
-  /// No description provided for @feedExternalVideoSlow.
-  ///
-  /// In en, this message translates to:
-  /// **'External video loading slowly'**
-  String get feedExternalVideoSlow;
-
-  /// No description provided for @feedSkip.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get feedSkip;
-
   /// Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched.
   ///
   /// In en, this message translates to:
@@ -8075,89 +7097,11 @@ abstract class AppLocalizations {
   /// **'Feed refreshed'**
   String get feedRefreshed;
 
-  /// No description provided for @uploadWaitingToUpload.
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting to upload'**
-  String get uploadWaitingToUpload;
-
   /// No description provided for @uploadUploadingVideo.
   ///
   /// In en, this message translates to:
   /// **'Uploading video'**
   String get uploadUploadingVideo;
-
-  /// No description provided for @uploadProcessingVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing video'**
-  String get uploadProcessingVideo;
-
-  /// No description provided for @uploadProcessingComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing complete'**
-  String get uploadProcessingComplete;
-
-  /// No description provided for @uploadPublishedSuccessfully.
-  ///
-  /// In en, this message translates to:
-  /// **'Published successfully'**
-  String get uploadPublishedSuccessfully;
-
-  /// No description provided for @uploadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload failed'**
-  String get uploadFailed;
-
-  /// No description provided for @uploadRetrying.
-  ///
-  /// In en, this message translates to:
-  /// **'Retrying upload'**
-  String get uploadRetrying;
-
-  /// No description provided for @uploadPaused.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload paused'**
-  String get uploadPaused;
-
-  /// No description provided for @uploadPercentComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'{percent}% complete'**
-  String uploadPercentComplete(int percent);
-
-  /// No description provided for @uploadQueuedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Your video is queued for upload'**
-  String get uploadQueuedMessage;
-
-  /// No description provided for @uploadUploadingMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Uploading to server...'**
-  String get uploadUploadingMessage;
-
-  /// No description provided for @uploadProcessingMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing video - this may take a few minutes'**
-  String get uploadProcessingMessage;
-
-  /// No description provided for @uploadReadyToPublishMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Video processed successfully and ready to publish'**
-  String get uploadReadyToPublishMessage;
-
-  /// No description provided for @uploadPublishedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Video published to your profile'**
-  String get uploadPublishedMessage;
 
   /// Heading of the sheet shown right after a video finishes publishing, offering to view or share it.
   ///
@@ -8183,59 +7127,11 @@ abstract class AppLocalizations {
   /// **'Thumbnail of the video you just published'**
   String get postPublishConfirmationThumbnailLabel;
 
-  /// No description provided for @uploadFailedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload failed - please try again'**
-  String get uploadFailedMessage;
-
-  /// No description provided for @uploadRetryingMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Retrying upload...'**
-  String get uploadRetryingMessage;
-
-  /// No description provided for @uploadPausedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload paused by user'**
-  String get uploadPausedMessage;
-
-  /// No description provided for @uploadRetryButton.
-  ///
-  /// In en, this message translates to:
-  /// **'RETRY'**
-  String get uploadRetryButton;
-
-  /// No description provided for @uploadRetryFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to retry upload: {error}'**
-  String uploadRetryFailed(String error);
-
-  /// No description provided for @userSearchPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Search for users'**
-  String get userSearchPrompt;
-
   /// No description provided for @userSearchNoResults.
   ///
   /// In en, this message translates to:
   /// **'No users found'**
   String get userSearchNoResults;
-
-  /// No description provided for @userSearchFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Search failed'**
-  String get userSearchFailed;
-
-  /// No description provided for @userPickerSearchByName.
-  ///
-  /// In en, this message translates to:
-  /// **'Search by name'**
-  String get userPickerSearchByName;
 
   /// No description provided for @userPickerFilterByNameHint.
   ///
@@ -8387,72 +7283,6 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get ageVerificationYes;
 
-  /// No description provided for @shareLinkCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Link copied to clipboard'**
-  String get shareLinkCopied;
-
-  /// No description provided for @shareFailedToCopy.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to copy link'**
-  String get shareFailedToCopy;
-
-  /// No description provided for @shareVideoSubject.
-  ///
-  /// In en, this message translates to:
-  /// **'Check out this video on Divine'**
-  String get shareVideoSubject;
-
-  /// No description provided for @shareFailedToShare.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to share'**
-  String get shareFailedToShare;
-
-  /// No description provided for @shareVideoTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Share Video'**
-  String get shareVideoTitle;
-
-  /// No description provided for @shareToApps.
-  ///
-  /// In en, this message translates to:
-  /// **'Share to Apps'**
-  String get shareToApps;
-
-  /// No description provided for @shareToAppsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Share via messaging, social apps'**
-  String get shareToAppsSubtitle;
-
-  /// No description provided for @shareCopyWebLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy Web Link'**
-  String get shareCopyWebLink;
-
-  /// No description provided for @shareCopyWebLinkSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy shareable web link'**
-  String get shareCopyWebLinkSubtitle;
-
-  /// No description provided for @shareCopyNostrLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy Nostr Link'**
-  String get shareCopyNostrLink;
-
-  /// No description provided for @shareCopyNostrLinkSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy nevent link for Nostr clients'**
-  String get shareCopyNostrLinkSubtitle;
-
   /// No description provided for @navHome.
   ///
   /// In en, this message translates to:
@@ -8477,18 +7307,6 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get navProfile;
 
-  /// No description provided for @navSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get navSearch;
-
-  /// No description provided for @navSearchTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get navSearchTooltip;
-
   /// No description provided for @navMyProfile.
   ///
   /// In en, this message translates to:
@@ -8506,12 +7324,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open camera'**
   String get navOpenCamera;
-
-  /// No description provided for @navUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown'**
-  String get navUnknown;
 
   /// No description provided for @navExploreClassics.
   ///
@@ -8783,12 +7595,6 @@ abstract class AppLocalizations {
   /// **'Error opening {pageName}: {error}'**
   String supportErrorOpeningPage(String pageName, Object error);
 
-  /// No description provided for @reportTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Report Content'**
-  String get reportTitle;
-
   /// No description provided for @reportWhyReporting.
   ///
   /// In en, this message translates to:
@@ -8800,12 +7606,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.'**
   String get reportPolicyNotice;
-
-  /// No description provided for @reportAdditionalDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Additional details (optional)'**
-  String get reportAdditionalDetails;
 
   /// No description provided for @reportBlockUser.
   ///
@@ -9016,12 +7816,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Message the moderation team'**
   String get reportContactModeration;
-
-  /// No description provided for @reportLearnMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Learn More'**
-  String get reportLearnMore;
 
   /// No description provided for @reportLearnMoreAt.
   ///
@@ -10913,12 +9707,6 @@ abstract class AppLocalizations {
   /// **'View chat'**
   String get dmReelReplyViewChat;
 
-  /// Screen-reader label for the 'View chat' action shown after sending a reply or reaction from the reel player.
-  ///
-  /// In en, this message translates to:
-  /// **'Open chat'**
-  String get dmReelReplyViewChatA11yLabel;
-
   /// Screen-reader announcement after a reel reply sends successfully.
   ///
   /// In en, this message translates to:
@@ -11050,18 +9838,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show conversation actions'**
   String get inboxConversationTileLongPressHint;
-
-  /// No description provided for @reportDialogCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get reportDialogCancel;
-
-  /// No description provided for @reportDialogReport.
-  ///
-  /// In en, this message translates to:
-  /// **'Report'**
-  String get reportDialogReport;
 
   /// No description provided for @exploreVideoId.
   ///
@@ -11279,12 +10055,6 @@ abstract class AppLocalizations {
   /// **'Something went wrong'**
   String get commonSomethingWentWrong;
 
-  /// No description provided for @commonNext.
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get commonNext;
-
   /// No description provided for @commonDelete.
   ///
   /// In en, this message translates to:
@@ -11471,12 +10241,6 @@ abstract class AppLocalizations {
   /// **'Clips'**
   String get libraryTabClips;
 
-  /// No description provided for @librarySaveToCameraRollTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Save to camera roll'**
-  String get librarySaveToCameraRollTooltip;
-
   /// No description provided for @libraryDeleteSelectedClipsTooltip.
   ///
   /// In en, this message translates to:
@@ -11566,18 +10330,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vertical First'**
   String get librarySortVerticalFirst;
-
-  /// No description provided for @libraryDeleteClipsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Clips'**
-  String get libraryDeleteClipsTitle;
-
-  /// No description provided for @libraryDeleteClipsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?'**
-  String libraryDeleteClipsMessage(int count);
 
   /// No description provided for @libraryDeleteClipsWarning.
   ///
@@ -11759,29 +10511,11 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete this clip?'**
   String get libraryDeleteClipMessage;
 
-  /// No description provided for @libraryClipSelectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Clips'**
-  String get libraryClipSelectionTitle;
-
-  /// No description provided for @librarySecondsRemaining.
-  ///
-  /// In en, this message translates to:
-  /// **'{seconds}s remaining'**
-  String librarySecondsRemaining(String seconds);
-
   /// Compact clip duration shown in the library trash row. {seconds} is already formatted with two decimal places, e.g. '5.73'.
   ///
   /// In en, this message translates to:
   /// **'{seconds}s'**
   String libraryClipDuration(String seconds);
-
-  /// No description provided for @libraryAddClips.
-  ///
-  /// In en, this message translates to:
-  /// **'Add'**
-  String get libraryAddClips;
 
   /// No description provided for @libraryRecordVideo.
   ///
@@ -12932,42 +11666,6 @@ abstract class AppLocalizations {
   /// **'This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.'**
   String get deleteAccountWarningBody;
 
-  /// No description provided for @exportProgressStageApplyingTextOverlay.
-  ///
-  /// In en, this message translates to:
-  /// **'Adding text overlay...'**
-  String get exportProgressStageApplyingTextOverlay;
-
-  /// No description provided for @exportProgressStageComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Export complete!'**
-  String get exportProgressStageComplete;
-
-  /// No description provided for @exportProgressStageConcatenating.
-  ///
-  /// In en, this message translates to:
-  /// **'Combining clips...'**
-  String get exportProgressStageConcatenating;
-
-  /// No description provided for @exportProgressStageError.
-  ///
-  /// In en, this message translates to:
-  /// **'Export failed'**
-  String get exportProgressStageError;
-
-  /// No description provided for @exportProgressStageGeneratingThumbnail.
-  ///
-  /// In en, this message translates to:
-  /// **'Generating thumbnail...'**
-  String get exportProgressStageGeneratingThumbnail;
-
-  /// No description provided for @exportProgressStageMixingAudio.
-  ///
-  /// In en, this message translates to:
-  /// **'Adding sound...'**
-  String get exportProgressStageMixingAudio;
-
   /// No description provided for @findPeopleAnonymousUser.
   ///
   /// In en, this message translates to:
@@ -13289,23 +11987,11 @@ abstract class AppLocalizations {
   /// **'Sound Not Found'**
   String get soundDetailNotFoundTitle;
 
-  /// No description provided for @videoFeedDescriptionSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Video description'**
-  String get videoFeedDescriptionSemanticLabel;
-
   /// No description provided for @videoFeedLoopCountLabel.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{🔁 {count} loop} other{🔁 {count} loops}}'**
   String videoFeedLoopCountLabel(int count);
-
-  /// No description provided for @videoFeedLoopCountSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Video loop count'**
-  String get videoFeedLoopCountSemanticLabel;
 
   /// No description provided for @originalSoundUnavailableBody.
   ///
@@ -13318,12 +12004,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Original sound - {creatorName}'**
   String originalSoundByCreator(String creatorName);
-
-  /// No description provided for @globalUploadPendingCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Pending Uploads ({count})'**
-  String globalUploadPendingCount(int count);
 
   /// No description provided for @ogVinerBadgeLabel.
   ///
@@ -13348,12 +12028,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.'**
   String get profileBadgeCheckmarkBody;
-
-  /// No description provided for @shareVideoInListsCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{In 1 list} other{In {count} lists}}'**
-  String shareVideoInListsCount(int count);
 
   /// No description provided for @unfollowConfirmButton.
   ///
@@ -13514,12 +12188,6 @@ abstract class AppLocalizations {
   /// **'Failed to send bug report. Please try again later.'**
   String get bugReportSendFailed;
 
-  /// No description provided for @bugReportFailedWithError.
-  ///
-  /// In en, this message translates to:
-  /// **'Bug report failed to send: {error}'**
-  String bugReportFailedWithError(String error);
-
   /// No description provided for @featureRequestSendRequest.
   ///
   /// In en, this message translates to:
@@ -13579,12 +12247,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to send feature request. Please try again later.'**
   String get featureRequestSendFailed;
-
-  /// No description provided for @featureRequestFailedWithError.
-  ///
-  /// In en, this message translates to:
-  /// **'Feature request failed to send: {error}'**
-  String featureRequestFailedWithError(String error);
 
   /// No description provided for @notificationFollowBack.
   ///
@@ -13675,24 +12337,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Oldest first'**
   String get followSortOldest;
-
-  /// No description provided for @reportMessageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Report Message'**
-  String get reportMessageTitle;
-
-  /// No description provided for @reportMessageWhyReporting.
-  ///
-  /// In en, this message translates to:
-  /// **'Why are you reporting this message?'**
-  String get reportMessageWhyReporting;
-
-  /// No description provided for @reportMessageSelectReason.
-  ///
-  /// In en, this message translates to:
-  /// **'Please select a reason for reporting this message'**
-  String get reportMessageSelectReason;
 
   /// No description provided for @newMessageTitle.
   ///
@@ -14174,12 +12818,6 @@ abstract class AppLocalizations {
   /// **'You must be 16 or older to create content'**
   String get cameraAgeRestriction;
 
-  /// No description provided for @featureRequestCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get featureRequestCancel;
-
   /// No description provided for @keyImportError.
   ///
   /// In en, this message translates to:
@@ -14489,12 +13127,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You have a new update'**
   String get notificationSystemUpdate;
-
-  /// Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice.
-  ///
-  /// In en, this message translates to:
-  /// **'Someone liked your video'**
-  String get notificationSomeoneLikedYourVideo;
 
   /// Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying.
   ///
@@ -15690,29 +14322,11 @@ abstract class AppLocalizations {
   /// **'Play or pause video'**
   String get videoEditorPlayPauseSemanticLabel;
 
-  /// No description provided for @videoEditorCropSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Crop'**
-  String get videoEditorCropSemanticLabel;
-
-  /// No description provided for @videoEditorCannotSplitProcessing.
-  ///
-  /// In en, this message translates to:
-  /// **'Cannot split clip while it is being processed. Please wait.'**
-  String get videoEditorCannotSplitProcessing;
-
   /// No description provided for @videoEditorSplitPositionInvalid.
   ///
   /// In en, this message translates to:
   /// **'Split position invalid. Both clips must be at least {minDurationMs}ms long.'**
   String videoEditorSplitPositionInvalid(int minDurationMs);
-
-  /// No description provided for @videoEditorAddClipFromLibrary.
-  ///
-  /// In en, this message translates to:
-  /// **'Add clip from Library'**
-  String get videoEditorAddClipFromLibrary;
 
   /// No description provided for @videoEditorSaveSelectedClip.
   ///
@@ -15720,23 +14334,11 @@ abstract class AppLocalizations {
   /// **'Save selected clip'**
   String get videoEditorSaveSelectedClip;
 
-  /// No description provided for @videoEditorSplitClip.
-  ///
-  /// In en, this message translates to:
-  /// **'Split clip'**
-  String get videoEditorSplitClip;
-
   /// No description provided for @videoEditorSaveClip.
   ///
   /// In en, this message translates to:
   /// **'Save clip'**
   String get videoEditorSaveClip;
-
-  /// No description provided for @videoEditorDeleteClip.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete clip'**
-  String get videoEditorDeleteClip;
 
   /// No description provided for @videoEditorClipSavedSuccess.
   ///
@@ -15749,12 +14351,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to save clip'**
   String get videoEditorClipSaveFailed;
-
-  /// No description provided for @videoEditorClipDeleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Clip deleted'**
-  String get videoEditorClipDeleted;
 
   /// No description provided for @videoEditorColorPickerSemanticLabel.
   ///
@@ -15815,18 +14411,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load stickers'**
   String get videoEditorFailedLoadStickers;
-
-  /// No description provided for @videoEditorAdjustVolumeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Adjust volume'**
-  String get videoEditorAdjustVolumeTitle;
-
-  /// No description provided for @videoEditorRecordedAudioLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Recorded audio'**
-  String get videoEditorRecordedAudioLabel;
 
   /// No description provided for @videoEditorVoiceOverLabel.
   ///
@@ -15923,18 +14507,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pause'**
   String get videoEditorPauseSemanticLabel;
-
-  /// No description provided for @videoEditorMuteAudioSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Mute audio'**
-  String get videoEditorMuteAudioSemanticLabel;
-
-  /// No description provided for @videoEditorUnmuteAudioSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Unmute audio'**
-  String get videoEditorUnmuteAudioSemanticLabel;
 
   /// No description provided for @videoEditorVolumeSemanticLabel.
   ///
@@ -16134,12 +14706,6 @@ abstract class AppLocalizations {
   /// **'This device can\'t show the live preview. Your settings still apply when you export.'**
   String get videoEditorChromaKeyPreviewUnavailable;
 
-  /// No description provided for @videoEditorOriginalAudioLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Original audio'**
-  String get videoEditorOriginalAudioLabel;
-
   /// No description provided for @videoEditorClipVolumeLabel.
   ///
   /// In en, this message translates to:
@@ -16181,18 +14747,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{{count} frame per image} other{{count} frames per image}}'**
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count);
-
-  /// Accessibility label for the button that lengthens each stop-motion still's hold.
-  ///
-  /// In en, this message translates to:
-  /// **'Increase frames per image'**
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel;
-
-  /// Accessibility label for the button that shortens each stop-motion still's hold.
-  ///
-  /// In en, this message translates to:
-  /// **'Decrease frames per image'**
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel;
 
   /// Accessibility label for a single still tile in the stop-motion timeline strip.
   ///
@@ -16367,12 +14921,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Flip'**
   String get videoEditorTransformFlipLabel;
-
-  /// Label for the aspect-ratio action button in the clip transform editor.
-  ///
-  /// In en, this message translates to:
-  /// **'Ratio'**
-  String get videoEditorTransformRatioLabel;
 
   /// Label for the reset action button in the clip transform editor.
   ///
@@ -16668,18 +15216,6 @@ abstract class AppLocalizations {
   /// **'My Sounds'**
   String get videoEditorAudioCategoryMySounds;
 
-  /// No description provided for @videoEditorAudioFeaturedEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Featured sounds coming soon'**
-  String get videoEditorAudioFeaturedEmptyTitle;
-
-  /// No description provided for @videoEditorAudioFeaturedEmptySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'We’ll drop featured sounds here once they’re ready.'**
-  String get videoEditorAudioFeaturedEmptySubtitle;
-
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -16797,12 +15333,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Long press to reorder'**
   String get videoEditorTimelineClipReorderHint;
-
-  /// No description provided for @videoEditorClipGalleryInstruction.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to edit. Hold and drag to reorder.'**
-  String get videoEditorClipGalleryInstruction;
 
   /// No description provided for @videoEditorTimelineClipMoveLeft.
   ///
@@ -17056,12 +15586,6 @@ abstract class AppLocalizations {
   /// **'Tags'**
   String get videoMetadataTagsLabel;
 
-  /// No description provided for @videoMetadataDeleteTagSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get videoMetadataDeleteTagSemanticLabel;
-
   /// No description provided for @videoMetadataDeleteTagHint.
   ///
   /// In en, this message translates to:
@@ -17085,18 +15609,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select all that apply'**
   String get videoMetadataContentWarningSelectAllThatApply;
-
-  /// No description provided for @videoMetadataContentWarningDoneButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get videoMetadataContentWarningDoneButton;
-
-  /// No description provided for @videoMetadataAudioReuseTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Publish this sound'**
-  String get videoMetadataAudioReuseTitle;
 
   /// No description provided for @videoMetadataAudioReuseSubtitle.
   ///
@@ -17122,41 +15634,11 @@ abstract class AppLocalizations {
   /// **'Invite collaborator'**
   String get videoMetadataAddCollaboratorSemanticLabel;
 
-  /// No description provided for @videoMetadataCollaboratorsHelpTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'How collaborators work'**
-  String get videoMetadataCollaboratorsHelpTooltip;
-
-  /// No description provided for @videoMetadataCollaboratorsCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}/{max} Collaborators'**
-  String videoMetadataCollaboratorsCount(int count, int max);
-
-  /// No description provided for @videoMetadataRemoveCollaboratorSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove collaborator'**
-  String get videoMetadataRemoveCollaboratorSemanticLabel;
-
-  /// No description provided for @videoMetadataCollaboratorsHelpMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.'**
-  String get videoMetadataCollaboratorsHelpMessage;
-
   /// No description provided for @videoMetadataMutualFollowersSearchText.
   ///
   /// In en, this message translates to:
   /// **'Mutual followers'**
   String get videoMetadataMutualFollowersSearchText;
-
-  /// No description provided for @videoMetadataMustMutuallyFollowSnackbar.
-  ///
-  /// In en, this message translates to:
-  /// **'You need to mutually follow {name} to invite them as a collaborator.'**
-  String videoMetadataMustMutuallyFollowSnackbar(String name);
 
   /// No description provided for @videoMetadataInspiredByLabel.
   ///
@@ -17170,35 +15652,11 @@ abstract class AppLocalizations {
   /// **'Set inspired by'**
   String get videoMetadataSetInspiredBySemanticLabel;
 
-  /// No description provided for @videoMetadataInspiredByHelpTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'How inspiration credits work'**
-  String get videoMetadataInspiredByHelpTooltip;
-
-  /// No description provided for @videoMetadataInspiredByNone.
-  ///
-  /// In en, this message translates to:
-  /// **'None'**
-  String get videoMetadataInspiredByNone;
-
-  /// No description provided for @videoMetadataInspiredByHelpMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Use this to give attribution. Inspired-by credit is different from collaborators: it acknowledges influence, but does not tag someone as a co-creator.'**
-  String get videoMetadataInspiredByHelpMessage;
-
   /// No description provided for @videoMetadataCreatorCannotBeReferencedSnackbar.
   ///
   /// In en, this message translates to:
   /// **'This creator cannot be referenced.'**
   String get videoMetadataCreatorCannotBeReferencedSnackbar;
-
-  /// No description provided for @videoMetadataRemoveInspiredBySemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove inspired by'**
-  String get videoMetadataRemoveInspiredBySemanticLabel;
 
   /// No description provided for @videoMetadataPostDetailsTitle.
   ///
@@ -17872,12 +16330,6 @@ abstract class AppLocalizations {
   /// **'Family guide'**
   String get minorAccountReviewWelcomePageTitle;
 
-  /// No description provided for @minorAccountReviewWelcomeCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Not 16 yet? That\'s OK. Here\'s what you can do.'**
-  String get minorAccountReviewWelcomeCta;
-
   /// No description provided for @minorAccountReviewWelcomeTitle.
   ///
   /// In en, this message translates to:
@@ -17955,12 +16407,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Age 13-15'**
   String get minorAccountReviewTeenCta;
-
-  /// No description provided for @minorAccountReviewFamilyResourcesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Helpful for families'**
-  String get minorAccountReviewFamilyResourcesTitle;
 
   /// No description provided for @minorAccountReviewFamilyResourcesBody.
   ///
@@ -18183,12 +16629,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.'**
   String get minorAccountReviewUnder13HonestyBody;
-
-  /// No description provided for @minorAccountReviewUnder13LegalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Why the answer is still no'**
-  String get minorAccountReviewUnder13LegalTitle;
 
   /// No description provided for @minorAccountReviewUnder13LegalBody.
   ///
@@ -18957,12 +17397,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start recording when you press and hold, then stop when you release'**
   String get generalSettingsHoldToRecordSubtitle;
-
-  /// No description provided for @soundsPreviewFailedGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to play preview'**
-  String get soundsPreviewFailedGeneric;
 
   /// Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.
   ///

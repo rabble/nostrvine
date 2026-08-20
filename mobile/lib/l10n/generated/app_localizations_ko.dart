@@ -121,12 +121,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsNotifications => '알림';
 
   @override
-  String get settingsContentPreferences => '콘텐츠 환경설정';
-
-  @override
-  String get settingsModerationControls => '조절 설정';
-
-  @override
   String get settingsBlueskyPublishing => 'Bluesky 게시';
 
   @override
@@ -403,15 +397,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get profileEditProfile => '프로필 편집';
-
-  @override
-  String get profileCreatorAnalytics => '크리에이터 분석';
-
-  @override
-  String get profileShareProfile => '프로필 공유';
-
-  @override
   String get profileCopyPublicKey => '공개 키 복사 (npub)';
 
   @override
@@ -422,12 +407,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => '임베드 코드를 클립보드에 복사했어요';
-
-  @override
-  String get profileRefreshTooltip => '새로고침';
-
-  @override
-  String get profileRefreshSemanticLabel => '프로필 새로고침';
 
   @override
   String get profileMoreTooltip => '더보기';
@@ -614,19 +593,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => '사용자를 차단했어요';
-
-  @override
-  String get profileUserBlockedContent => '이 사용자의 콘텐츠는 피드에서 보이지 않아요.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      '언제든 프로필이나 설정 > 안전에서 차단을 해제할 수 있어요.';
-
-  @override
-  String get profileCloseButton => '닫기';
-
-  @override
   String get profileNoCollabsTitle => '아직 콜라보 없음';
 
   @override
@@ -725,23 +691,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileCompleteSubtitle => '이름, 소개, 사진을 추가해서 시작해보세요';
 
   @override
-  String get profileSetUpButton => '설정';
-
-  @override
-  String get profileVerifyingEmail => '이메일 인증 중...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return '인증 링크가 $email로 갔어요';
-  }
-
-  @override
-  String get profileWaitingForVerification => '이메일 인증 대기 중';
-
-  @override
-  String get profileVerificationFailed => '인증 실패';
-
-  @override
   String get profilePleaseTryAgain => '다시 시도해보세요';
 
   @override
@@ -752,9 +701,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileRetryButton => '다시 시도';
-
-  @override
-  String get profileRegisterButton => '가입하기';
 
   @override
   String get profileSessionExpired => '세션이 만료됐어요';
@@ -794,9 +740,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileUserFallback => '사용자';
-
-  @override
-  String get profileDismissTooltip => '닫기';
 
   @override
   String get profileLinkCopied => '프로필 링크를 복사했어요';
@@ -853,9 +796,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '네트워크에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도해보세요.';
 
   @override
-  String get profileSetupRetryLabel => '다시 시도';
-
-  @override
   String get profileSetupDisplayNameLabel => '표시 이름';
 
   @override
@@ -877,9 +817,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupUsernameHelper => 'Divine에서의 고유한 당신의 이름';
 
   @override
-  String get profileSetupProfileColorLabel => '프로필 색상 (선택)';
-
-  @override
   String get profileSetupSaveButton => '저장';
 
   @override
@@ -887,9 +824,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileSetupImageUrlTitle => '이미지 URL 추가';
-
-  @override
-  String get profileSetupPictureUploaded => '프로필 사진을 올렸어요!';
 
   @override
   String get profileSetupImageSelectionFailed =>
@@ -924,10 +858,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       '이미지를 올리지 못했어요. 서버가 일시적으로 사용할 수 없어요. 잠시 후 다시 시도해주세요.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      '프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.';
 
   @override
   String get profileSetupBannerClearButton => '배너 지우기';
@@ -1046,12 +976,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupSendRequest => '요청 보내기';
 
   @override
-  String get profileSetupPickColorTitle => '색상을 고르세요';
-
-  @override
-  String get profileSetupSelectButton => '선택';
-
-  @override
   String get profileSetupUseOwnNip05 => '내 NIP-05 주소 쓰기';
 
   @override
@@ -1148,9 +1072,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nostrInfoGotIt => '알겠어요!';
 
   @override
-  String get profileTabRefreshTooltip => '새로고침';
-
-  @override
   String get videoGridRefreshLabel => '더 많은 영상을 찾는 중';
 
   @override
@@ -1171,11 +1092,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => '콘텐츠 삭제 중...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return '콘텐츠를 삭제하지 못했어요: $error';
-  }
 
   @override
   String get exploreTabFeatured => '추천';
@@ -1283,9 +1199,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => '영상 불러오는 중...';
-
-  @override
   String get videoPlayerPlayVideo => '영상 재생';
 
   @override
@@ -1293,12 +1206,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => '영상 음소거 해제';
-
-  @override
-  String get videoPlayerEditVideo => '영상 편집';
-
-  @override
-  String get videoPlayerEditVideoTooltip => '영상 편집';
 
   @override
   String get videoPlayerTapHint => '탭하여 재생하거나 일시정지하세요. 이중 탭으로 좋아요.';
@@ -1500,18 +1407,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoErrorNotFound => '영상을 찾을 수 없어요';
 
   @override
-  String get videoErrorNetwork => '네트워크 오류';
-
-  @override
-  String get videoErrorTimeout => '로딩 시간 초과';
-
-  @override
-  String get videoErrorFormat => '영상 형식 오류\n(다시 시도하거나 다른 브라우저를 써보세요)';
-
-  @override
-  String get videoErrorUnsupportedFormat => '지원하지 않는 영상 형식';
-
-  @override
   String get videoErrorPlayback => '영상 재생 오류';
 
   @override
@@ -1522,9 +1417,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoErrorUnavailableBody => '이 영상은 지금 사용할 수 없어요.';
-
-  @override
-  String get videoErrorVerifyAge => '나이 인증';
 
   @override
   String get videoErrorRetry => '다시 시도';
@@ -1585,9 +1477,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => '동영상 플레이어 닫기';
-
-  @override
-  String get videoFollowButtonFollowing => '팔로잉';
 
   @override
   String get videoFollowButtonFollow => '팔로우';
@@ -1772,12 +1661,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionMoreOptions => '더 많은 옵션';
 
   @override
-  String get videoActionHideSubtitles => '자막 숨기기';
-
-  @override
-  String get videoActionShowSubtitles => '자막 표시';
-
-  @override
   String get videoEngagementLikersTitle => '좋아요한 사용자';
 
   @override
@@ -1812,11 +1695,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoOverlayCommentPostFailedSnackbar => '댓글을 남기지 못했어요';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '루프 $count회';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2535,34 +2413,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsNewPostsSubtitle => '지켜보는 사람이 게시할 때';
 
   @override
-  String get notificationSettingsSystem => '시스템';
-
-  @override
-  String get notificationSettingsSystemSubtitle => '앱 업데이트 및 시스템 메시지';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => '푸시 알림';
-
-  @override
-  String get notificationSettingsPushNotifications => '푸시 알림';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      '앱이 닫혀 있을 때도 알림 받기';
-
-  @override
-  String get notificationSettingsSound => '소리';
-
-  @override
-  String get notificationSettingsSoundSubtitle => '알림 소리 재생';
-
-  @override
-  String get notificationSettingsVibration => '진동';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => '알림 시 진동';
-
-  @override
   String get notificationSettingsActions => '작업';
 
   @override
@@ -2586,12 +2436,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       '알림은 Nostr 프로토콜로 구동돼요. 실시간 업데이트는 Nostr 릴레이에의 연결에 따라 달라져요. 일부 알림은 지연될 수 있어요.';
-
-  @override
-  String get safetySettingsTitle => '안전 및 개인정보';
-
-  @override
-  String get safetySettingsLabel => '설정';
 
   @override
   String get safetySettingsWhatYouSee => '보이는 것';
@@ -3319,31 +3163,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authRegistrationComplete => '가입이 완료됐어요. 이메일을 확인해주세요.';
 
   @override
-  String get authVerificationFailedTitle => '인증 실패';
-
-  @override
-  String get authClose => '닫기';
-
-  @override
-  String get authAccountSecured => '계정이 보호됐어요!';
-
-  @override
-  String get authAccountLinkedToEmail => '계정이 이메일에 연결됐어요.';
-
-  @override
-  String get authVerifyYourEmail => '이메일을 인증해주세요';
-
-  @override
-  String get authClickLinkContinue =>
-      '가입을 마치려면 이메일의 링크를 클릭해주세요. 그 동안 앱을 계속 쓸 수 있어요.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => '인증 대기 중...';
-
-  @override
-  String get authContinueToApp => '앱으로 계속';
-
-  @override
   String get authFailedToSendResetEmail => '재설정 이메일을 보내지 못했어요.';
 
   @override
@@ -3459,9 +3278,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => '다른 곳으로 공유';
-
-  @override
-  String get shareSheetReport => '신고';
 
   @override
   String get shareSheetEventJson => '이벤트 JSON';
@@ -3589,144 +3405,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '워터마크가 적용된 영상을 카메라 롤에 저장하는 중...';
 
   @override
-  String get uploadProgressVideoUpload => '영상 업로드';
-
-  @override
-  String get uploadProgressPause => '일시 정지';
-
-  @override
-  String get uploadProgressResume => '재개';
-
-  @override
-  String get uploadProgressGoBack => '뒤로';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return '다시 시도 ($count회 남음)';
-  }
-
-  @override
-  String get uploadProgressDelete => '삭제';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '$count일 전';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '$count시간 전';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '$count분 전';
-  }
-
-  @override
-  String get uploadProgressJustNow => '방금';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return '업로드 중 $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return '일시 정지 $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => '영상 공유';
-
-  @override
-  String get shareMenuReportAiContent => 'AI 콘텐츠 신고';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'AI로 생성된 것으로 의심되는 콘텐츠를 빠르게 신고해요';
-
-  @override
-  String get shareMenuReportingAiContent => 'AI 콘텐츠 신고 중...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return '콘텐츠 신고에 실패했어요: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'AI 콘텐츠 신고에 실패했어요: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => '영상 상태';
-
-  @override
-  String get shareMenuViewAllLists => '모든 리스트 보기 →';
-
-  @override
-  String get shareMenuShareWith => '공유 대상';
-
-  @override
-  String get shareMenuShareViaOtherApps => '다른 앱으로 공유';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle => '다른 앱으로 공유하거나 링크 복사';
-
-  @override
-  String get shareMenuSaveToGallery => '갤러리에 저장';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle => '원본 영상을 카메라 롤에 저장';
-
-  @override
-  String get shareMenuSaveWithWatermark => '워터마크와 함께 저장';
-
-  @override
-  String get shareMenuSaveVideo => '영상 저장';
-
-  @override
-  String get shareMenuDownloadWithWatermark => 'Divine 워터마크로 다운로드';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => '영상을 카메라 롤에 저장';
-
-  @override
-  String get shareMenuLists => '리스트';
-
-  @override
-  String get shareMenuAddToList => '리스트에 추가';
-
-  @override
-  String get shareMenuAddToListSubtitle => '내가 정리한 리스트에 추가';
-
-  @override
-  String get shareMenuCreateNewList => '새 리스트 만들기';
-
-  @override
-  String get shareMenuCreateNewListSubtitle => '새 정리 컴렉션 시작';
-
-  @override
-  String get shareMenuRemovedFromList => '리스트에서 제거했어요';
-
-  @override
-  String get shareMenuFailedToRemoveFromList => '리스트에서 제거하지 못했어요';
-
-  @override
   String get shareMenuBookmarks => '북마크';
-
-  @override
-  String get shareMenuFollowSets => '팔로우 세트';
-
-  @override
-  String get shareMenuCreateFollowSet => '팔로우 세트 만들기';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle => '이 크리에이터로 새 컴렉션 시작';
-
-  @override
-  String get shareMenuAddToFollowSet => '팔로우 세트에 추가';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3735,9 +3414,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => '목록에 추가';
-
-  @override
-  String get peopleListsAddToListSubtitle => '이 크리에이터를 목록 중 하나에 추가하세요';
 
   @override
   String get peopleListsSheetTitle => '목록에 추가';
@@ -3876,38 +3552,15 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => '북마크에 추가했어요!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => '북마크 추가에 실패했어요';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return '\"$name\" 리스트를 만들고 영상을 추가했어요';
-  }
-
-  @override
-  String get shareMenuManageContent => '콘텐츠 관리';
-
-  @override
   String get shareMenuEditVideo => '영상 편집';
-
-  @override
-  String get shareMenuEditVideoSubtitle => '제목, 설명, 해시태그 수정';
 
   @override
   String get shareMenuDeleteVideo => '영상 삭제';
 
   @override
-  String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '영상 $count개';
   }
-
-  @override
-  String get shareMenuClose => '닫기';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -3918,14 +3571,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuDelete => '삭제';
-
-  @override
-  String get shareMenuDeletingContent => '콘텐츠 삭제 중...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return '콘텐츠 삭제에 실패했어요: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3960,58 +3605,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteFailedGeneric => '이 영상을 삭제하지 못했어요. 다시 시도해요.';
 
   @override
-  String get shareMenuFollowSetName => '팔로우 세트 이름';
-
-  @override
-  String get shareMenuFollowSetNameHint => '예: 크리에이터, 뮤지션 등';
-
-  @override
-  String get shareMenuDescriptionOptional => '설명 (선택)';
-
-  @override
-  String get shareMenuCreate => '만들기';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return '\"$name\" 팔로우 세트를 만들고 크리에이터를 추가했어요';
-  }
-
-  @override
-  String get shareMenuDone => '완료';
-
-  @override
-  String get shareMenuEditTitle => '제목';
-
-  @override
-  String get shareMenuEditTitleHint => '영상 제목 입력';
-
-  @override
-  String get shareMenuEditDescription => '설명';
-
-  @override
-  String get shareMenuEditDescriptionHint => '영상 설명 입력';
-
-  @override
-  String get shareMenuEditHashtags => '해시태그';
-
-  @override
-  String get shareMenuEditHashtagsHint => '쉼표로, 구분된, 해시태그';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      '참고: 메타데이터만 수정할 수 있어요. 영상 콘텐츠는 변경할 수 없어요.';
-
-  @override
-  String get shareMenuDeleting => '삭제 중...';
-
-  @override
   String get shareMenuUpdate => '업데이트';
 
   @override
   String get shareMenuChangeCover => '커버 변경';
-
-  @override
-  String get shareMenuCoverUploadingBackground => '썸네일을 백그라운드에서 업로드 중이에요';
 
   @override
   String get shareMenuVideoUpdated => '영상을 업데이트했어요';
@@ -4033,56 +3630,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '영상 삭제에 실패했어요: $error';
-  }
-
-  @override
   String get shareMenuDeleteVideoQuestion => '영상을 삭제할까요?';
 
   @override
   String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
-
-  @override
-  String get shareMenuContentLabels => '콘텐츠 라벨';
-
-  @override
-  String get shareMenuAddContentLabels => '콘텐츠 라벨 추가';
-
-  @override
-  String get shareMenuClearAll => '모두 지우기';
-
-  @override
-  String get shareMenuCollaborators => '콜라보레이터';
-
-  @override
-  String get shareMenuAddCollaborator => '콜라보레이터 추가';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return '$name님을 콜라보레이터로 추가하려면 서로 팔로우해야 해요.';
-  }
-
-  @override
-  String get shareMenuLoading => '불러오는 중...';
-
-  @override
-  String get shareMenuInspiredBy => '영감';
-
-  @override
-  String get shareMenuAddInspirationCredit => '영감 크레딧 추가';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced => '이 크리에이터는 참조할 수 없어요.';
-
-  @override
-  String get shareMenuUnknown => '알 수 없음';
-
-  @override
-  String get shareMenuUseThisSound => '이 사운드 쓰기';
-
-  @override
-  String get shareMenuOriginalSound => '오리지널 사운드';
 
   @override
   String get authSessionExpired => '세션이 만료됐어요. 다시 로그인해주세요.';
@@ -4093,15 +3644,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authSignInFailed => '로그인에 실패했어요. 다시 시도해주세요.';
-
-  @override
-  String get localeAppLanguage => '앱 언어';
-
-  @override
-  String get localeDeviceDefault => '기기 기본값';
-
-  @override
-  String get localeSelectLanguage => '언어 선택';
 
   @override
   String get webAuthNotSupportedSecureMode =>
@@ -4161,30 +3703,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsSearchHint => '사운드 검색...';
 
   @override
-  String get soundsPreviewUnavailable => '사운드를 미리 들을 수 없어요 - 오디오가 없어요';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return '미리 듣기를 재생하지 못했어요: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => '추천 사운드';
-
-  @override
-  String get soundsTrendingSounds => '인기 사운드';
-
-  @override
-  String get soundsAllSounds => '모든 사운드';
-
-  @override
   String get soundsSearchResults => '검색 결과';
-
-  @override
-  String get soundsNoSoundsAvailable => '사용할 수 있는 사운드가 없어요';
-
-  @override
-  String get soundsNoSoundsDescription => '크리에이터가 오디오를 공유하면 여기에 사운드가 표시돼요';
 
   @override
   String get soundsNoSoundsFound => '사운드를 찾을 수 없어요';
@@ -4206,12 +3725,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get soundsSavedEmptyDescription => '동영상에서 사운드 사용을 탭하여 여기에 저장하세요.';
-
-  @override
-  String get soundsAvailabilityPrivate => '비공개';
-
-  @override
-  String get soundsAvailabilityCommunity => '커뮤니티';
 
   @override
   String get soundsRemoveSavedSound => '사운드 제거';
@@ -4257,22 +3770,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundSyncStatusLocked => '이 기기에서는 동기화된 라이브러리를 열 수 없어요.';
 
   @override
-  String get soundsFailedToLoad => '사운드를 불러오지 못했어요';
-
-  @override
-  String get soundsRetry => '다시 시도';
-
-  @override
-  String get soundsScreenLabel => '사운드 화면';
-
-  @override
   String get profileTitle => '프로필';
 
   @override
   String get profileRefresh => '새로고침';
-
-  @override
-  String get profileRefreshLabel => '프로필 새로고침';
 
   @override
   String get profileMoreOptions => '더 보기';
@@ -4290,11 +3791,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return '$name님 팔로우를 해제했어요';
-  }
-
-  @override
-  String profileError(String error) {
-    return '오류: $error';
   }
 
   @override
@@ -4328,20 +3824,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsRefreshError => '새로고침 실패 — 보유 중인 알림을 표시합니다';
 
   @override
-  String get notificationsCheckingNew => '새 알림을 확인하는 중';
-
-  @override
-  String get notificationsNoneYet => '아직 알림이 없어요';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return '$type 알림이 없어요';
-  }
-
-  @override
-  String get notificationsEmptyDescription => '다른 사람들이 내 콘텐츠에 반응하면 여기에 표시돼요';
-
-  @override
   String get notificationsUnreadPrefix => '읽지 않은 알림';
 
   @override
@@ -4372,11 +3854,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsVideoThumbnail => '동영상 썸네일';
 
   @override
-  String notificationsLoadingType(String type) {
-    return '$type 알림을 불러오는 중...';
-  }
-
-  @override
   String get notificationsInviteSingular => '친구와 공유할 수 있는 초대장이 1개 있어요!';
 
   @override
@@ -4385,13 +3862,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => '영상을 찾을 수 없어요';
-
-  @override
   String get notificationsVideoUnavailable => '영상을 사용할 수 없어요';
-
-  @override
-  String get notificationsFromNotification => '알림에서';
 
   @override
   String get feedFailedToLoadVideos => '영상을 불러오지 못했어요';
@@ -4445,60 +3916,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedExploreVideos => '영상 둘러보기';
 
   @override
-  String get feedExternalVideoSlow => '외부 영상 로딩이 느려요';
-
-  @override
-  String get feedSkip => '건너뛰기';
-
-  @override
   String get feedLoadingMore => '영상을 더 불러오는 중…';
 
   @override
   String get feedRefreshed => '피드를 새로고침했어요';
 
   @override
-  String get uploadWaitingToUpload => '업로드 대기 중';
-
-  @override
   String get uploadUploadingVideo => '영상 업로드 중';
-
-  @override
-  String get uploadProcessingVideo => '영상 처리 중';
-
-  @override
-  String get uploadProcessingComplete => '처리 완료';
-
-  @override
-  String get uploadPublishedSuccessfully => '성공적으로 게시했어요';
-
-  @override
-  String get uploadFailed => '업로드 실패';
-
-  @override
-  String get uploadRetrying => '업로드 재시도 중';
-
-  @override
-  String get uploadPaused => '업로드 일시 중지';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% 완료';
-  }
-
-  @override
-  String get uploadQueuedMessage => '영상이 업로드 대기열에 있어요';
-
-  @override
-  String get uploadUploadingMessage => '서버에 업로드 중...';
-
-  @override
-  String get uploadProcessingMessage => '영상을 처리하는 중 - 몇 분이 걸릴 수 있어요';
-
-  @override
-  String get uploadReadyToPublishMessage => '영상을 성공적으로 처리했고 게시할 준비가 됐어요';
-
-  @override
-  String get uploadPublishedMessage => '프로필에 영상을 게시했어요';
 
   @override
   String get postPublishConfirmationTitle => '프로필에 게시했어요';
@@ -4513,33 +3937,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get postPublishConfirmationThumbnailLabel => '방금 게시한 영상의 썸네일';
 
   @override
-  String get uploadFailedMessage => '업로드에 실패했어요 - 다시 시도해 주세요';
-
-  @override
-  String get uploadRetryingMessage => '업로드를 다시 시도하는 중...';
-
-  @override
-  String get uploadPausedMessage => '사용자가 업로드를 일시 중지했어요';
-
-  @override
-  String get uploadRetryButton => '다시 시도';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return '업로드 재시도에 실패했어요: $error';
-  }
-
-  @override
-  String get userSearchPrompt => '사용자 검색';
-
-  @override
   String get userSearchNoResults => '사용자를 찾을 수 없어요';
-
-  @override
-  String get userSearchFailed => '검색에 실패했어요';
-
-  @override
-  String get userPickerSearchByName => '이름으로 검색';
 
   @override
   String get userPickerFilterByNameHint => '이름으로 필터링...';
@@ -4626,39 +4024,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ageVerificationYes => '네';
 
   @override
-  String get shareLinkCopied => '링크를 클립보드에 복사했어요';
-
-  @override
-  String get shareFailedToCopy => '링크 복사에 실패했어요';
-
-  @override
-  String get shareVideoSubject => 'Divine에서 이 영상을 확인해 보세요';
-
-  @override
-  String get shareFailedToShare => '공유에 실패했어요';
-
-  @override
-  String get shareVideoTitle => '영상 공유';
-
-  @override
-  String get shareToApps => '앱으로 공유';
-
-  @override
-  String get shareToAppsSubtitle => '메시지, 소셜 앱으로 공유해요';
-
-  @override
-  String get shareCopyWebLink => '웹 링크 복사';
-
-  @override
-  String get shareCopyWebLinkSubtitle => '공유 가능한 웹 링크를 복사해요';
-
-  @override
-  String get shareCopyNostrLink => 'Nostr 링크 복사';
-
-  @override
-  String get shareCopyNostrLinkSubtitle => 'Nostr 클라이언트용 nevent 링크를 복사해요';
-
-  @override
   String get navHome => '홈';
 
   @override
@@ -4671,12 +4036,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navProfile => '프로필';
 
   @override
-  String get navSearch => '검색';
-
-  @override
-  String get navSearchTooltip => '검색';
-
-  @override
   String get navMyProfile => '내 프로필';
 
   @override
@@ -4684,9 +4043,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get navOpenCamera => '카메라 열기';
-
-  @override
-  String get navUnknown => '알 수 없음';
 
   @override
   String get navExploreClassics => '클래식';
@@ -4830,17 +4186,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get reportTitle => '콘텐츠 신고';
-
-  @override
   String get reportWhyReporting => '이 콘텐츠를 왜 신고하시나요?';
 
   @override
   String get reportPolicyNotice =>
       'Divine은 24시간 이내에 신고된 콘텐츠를 조치하여 콘텐츠를 삭제하고 문제가 된 콘텐츠를 제공한 사용자를 퇴출해요.';
-
-  @override
-  String get reportAdditionalDetails => '추가 세부 정보 (선택)';
 
   @override
   String get reportBlockUser => '이 사용자 차단';
@@ -4950,9 +4300,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reportContactModeration => '조절 팀에 메시지 보내기';
-
-  @override
-  String get reportLearnMore => '더 알아보기';
 
   @override
   String get reportLearnMoreAt => '자세한 내용은';
@@ -5987,9 +5334,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmReelReplyViewChat => '채팅 보기';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => '채팅 열기';
-
-  @override
   String get dmReelReplySentAnnouncement => '답장을 보냈습니다';
 
   @override
@@ -6066,12 +5410,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get inboxConversationTileLongPressHint => '대화 작업 보기';
-
-  @override
-  String get reportDialogCancel => '취소';
-
-  @override
-  String get reportDialogReport => '신고';
 
   @override
   String exploreVideoId(String id) {
@@ -6196,9 +5534,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonSomethingWentWrong => '문제가 생겼어요';
 
   @override
-  String get commonNext => '다음';
-
-  @override
   String get commonDelete => '삭제';
 
   @override
@@ -6296,9 +5631,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryTabClips => '클립';
 
   @override
-  String get librarySaveToCameraRollTooltip => '카메라 롤에 저장';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => '선택한 클립 삭제';
 
   @override
@@ -6349,20 +5681,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => '세로형 먼저';
-
-  @override
-  String get libraryDeleteClipsTitle => '클립 삭제';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count개',
-      one: '1개',
-    );
-    return '선택한 클립 $_temp0를 삭제할까요?';
-  }
 
   @override
   String get libraryDeleteClipsWarning => '되돌릴 수 없어요. 동영상 파일이 기기에서 삭제됩니다.';
@@ -6490,20 +5808,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDeleteClipMessage => '이 클립을 삭제할까요?';
 
   @override
-  String get libraryClipSelectionTitle => '클립';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return '$seconds초 남음';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '$seconds초';
   }
-
-  @override
-  String get libraryAddClips => '추가';
 
   @override
   String get libraryRecordVideo => '동영상 녹화';
@@ -7161,24 +6468,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '이건 계정과 콘텐츠의 삭제 요청을 보내고, 가능하면 Divine 계정을 삭제하고, 이 기기에서 로그아웃해요. 일부 릴레이, 클라이언트, 검색 색인에는 사본이 남을 수 있어요. 로그인된 다른 기기는 거기서 키를 제거할 때까지 계속 활성 상태예요.';
 
   @override
-  String get exportProgressStageApplyingTextOverlay => '텍스트 오버레이 추가 중...';
-
-  @override
-  String get exportProgressStageComplete => '내보내기 완료!';
-
-  @override
-  String get exportProgressStageConcatenating => '클립 합치는 중...';
-
-  @override
-  String get exportProgressStageError => '내보내기 실패';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail => '썸네일 생성 중...';
-
-  @override
-  String get exportProgressStageMixingAudio => '소리 추가 중...';
-
-  @override
   String get findPeopleAnonymousUser => '익명';
 
   @override
@@ -7376,15 +6665,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundDetailNotFoundTitle => '사운드를 찾을 수 없어요';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => '영상 설명';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 루프 $count회';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => '영상 루프 수';
 
   @override
   String get originalSoundUnavailableBody => '이 영상의 오디오는 따로 이용할 수 없어요.';
@@ -7392,11 +6675,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String originalSoundByCreator(String creatorName) {
     return '오리지널 사운드 - $creatorName';
-  }
-
-  @override
-  String globalUploadPendingCount(int count) {
-    return '대기 중인 업로드 ($count)';
   }
 
   @override
@@ -7412,17 +6690,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get profileBadgeCheckmarkBody =>
       'Divine는 이 체크마크를 팀 계정과 직접 승인한 소수의 프로필에 부여해요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '목록 $count개에 있음',
-      one: '목록 1개에 있음',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get unfollowConfirmButton => '언팔로우';
@@ -7517,11 +6784,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get bugReportSendFailed => '버그 신고를 보내지 못했어요. 잠시 후 다시 시도해주세요.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return '버그 신고를 보내지 못했어요: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => '요청 보내기';
 
   @override
@@ -7550,11 +6812,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get featureRequestSendFailed => '기능 요청을 보내지 못했어요. 잠시 후 다시 시도해주세요.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return '기능 요청을 보내지 못했어요: $error';
-  }
 
   @override
   String get notificationFollowBack => '맞팔로우';
@@ -7604,15 +6861,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get followSortOldest => '오래된순';
-
-  @override
-  String get reportMessageTitle => '메시지 신고';
-
-  @override
-  String get reportMessageWhyReporting => '왜 이 메시지를 신고하시나요?';
-
-  @override
-  String get reportMessageSelectReason => '이 메시지를 신고하는 이유를 골라주세요';
 
   @override
   String get newMessageTitle => '새 메시지';
@@ -7877,9 +7125,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
 
   @override
-  String get featureRequestCancel => '취소';
-
-  @override
   String keyImportError(String error) {
     return '오류: $error';
   }
@@ -8088,9 +7333,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get notificationSystemUpdate => '새로운 업데이트가 있어요';
-
-  @override
-  String get notificationSomeoneLikedYourVideo => '누군가 회원님의 동영상을 좋아해요';
 
   @override
   String get commentReplyToPrefix => 'Re:';
@@ -8743,40 +7985,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => '동영상 재생 또는 일시 정지';
 
   @override
-  String get videoEditorCropSemanticLabel => '자르기';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      '처리 중에는 클립을 분할할 수 없습니다. 잠시 기다려 주세요.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return '분할 위치가 유효하지 않습니다. 각 클립은 최소 ${minDurationMs}ms 이상이어야 합니다.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => '보관함에서 클립 추가';
-
-  @override
   String get videoEditorSaveSelectedClip => '선택한 클립 저장';
 
   @override
-  String get videoEditorSplitClip => '클립 분할';
-
-  @override
   String get videoEditorSaveClip => '클립 저장';
-
-  @override
-  String get videoEditorDeleteClip => '클립 삭제';
 
   @override
   String get videoEditorClipSavedSuccess => '클립이 보관함에 저장되었습니다';
 
   @override
   String get videoEditorClipSaveFailed => '클립 저장 실패';
-
-  @override
-  String get videoEditorClipDeleted => '클립이 삭제되었습니다';
 
   @override
   String get videoEditorColorPickerSemanticLabel => '색상 선택기';
@@ -8807,12 +8030,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => '스티커 로드 실패';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => '볼륨 조정';
-
-  @override
-  String get videoEditorRecordedAudioLabel => '녹음된 오디오';
 
   @override
   String get videoEditorVoiceOverLabel => '내레이션';
@@ -8872,12 +8089,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => '일시 정지';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => '오디오 음소거';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => '오디오 음소거 해제';
 
   @override
   String get videoEditorVolumeSemanticLabel => '볼륨 조절';
@@ -8986,9 +8197,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 기기에서는 실시간 미리보기를 표시할 수 없습니다. 설정은 내보낼 때 그대로 적용됩니다.';
 
   @override
-  String get videoEditorOriginalAudioLabel => '원본 오디오';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return '클립 $index';
   }
@@ -9019,14 +8227,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '이미지당 $count프레임';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      '이미지당 프레임 늘리기';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      '이미지당 프레임 줄이기';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9122,9 +8322,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => '뒤집기';
-
-  @override
-  String get videoEditorTransformRatioLabel => '비율';
 
   @override
   String get videoEditorTransformResetLabel => '재설정';
@@ -9279,13 +8476,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => '내 사운드';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle => '추천 사운드 곧 출시';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      '준비되는 대로 여기에 추천 사운드를 게시하겠습니다.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';
 
   @override
@@ -9350,10 +8540,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => '길게 눌러 순서 변경';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      '탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => '왼쪽으로 이동';
@@ -9513,9 +8699,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataTagsLabel => '태그';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => '삭제';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return '태그 $tag 삭제';
   }
@@ -9529,12 +8712,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
       '콘텐츠에 해당하는 것을 모두 선택';
-
-  @override
-  String get videoMetadataContentWarningDoneButton => '완료';
-
-  @override
-  String get videoMetadataAudioReuseTitle => '이 사운드 게시';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
@@ -9551,27 +8728,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => '협업자 추가';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip => '협업자 작동 방식';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max명의 협업자';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel => '협업자 삭제';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      '협업자는 이 게시물의 공동 크리에이터로 태그됩니다. 서로 팔로우하는 사람만 추가할 수 있으며, 게시 시 게시물 메타데이터에 표시됩니다.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => '맞팔 팔로워';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return '$name을(를) 협업자로 추가하려면 서로 팔로우해야 합니다.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => '영감 출처';
@@ -9580,21 +8737,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataSetInspiredBySemanticLabel => '영감 출처 설정';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip => '영감 크레딧 작동 방식';
-
-  @override
-  String get videoMetadataInspiredByNone => '없음';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      '출처 표시를 위해 사용하세요. 영감 크레딧은 협업자와 다릅니다. 영향을 인정하지만 공동 크리에이터로 태그하지는 않습니다.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       '이 크리에이터는 참조할 수 없습니다.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel => '영감 출처 삭제';
 
   @override
   String get videoMetadataPostDetailsTitle => '게시물 세부 정보';
@@ -9995,10 +9139,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => '가족 가이드';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      '아직 16세가 아닌가요? 괜찮아요. 할 수 있는 일을 알려드릴게요.';
-
-  @override
   String get minorAccountReviewWelcomeTitle => '아직 16세가 아닌가요? 괜찮아요.';
 
   @override
@@ -10040,9 +9180,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => '13~15세';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => '가족에게 도움이 되는 정보';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10170,9 +9307,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       '인터넷의 많은 곳은 관문을 통과하려고 아무 말이나 하면 보상을 주도록 설계돼 있어요. 우리는 그게 좋다고 생각하지 않아요. 물론 뒤로 가서 실제보다 나이가 많다고 말할 수도 있지만, 그건 정직하지 않고, 우리는 당신이 원하는 걸 얻으려고 거짓말하도록 부추기지 않을 거예요.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle => '그래도 안 되는 이유';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -10605,9 +9739,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get generalSettingsHoldToRecordSubtitle => '길게 누르면 녹화가 시작되고, 놓으면 멈춰요';
-
-  @override
-  String get soundsPreviewFailedGeneric => '미리 듣기를 재생하지 못했어요';
 
   @override
   String uploadPublishedCountMessage(int count) {

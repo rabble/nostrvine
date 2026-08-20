@@ -49,8 +49,6 @@
   "settingsCreatorAnalytics": "Phân tích nhà sáng tạo",
   "settingsSupportCenter": "Trung tâm hỗ trợ",
   "settingsNotifications": "Thông báo",
-  "settingsContentPreferences": "Tùy chọn nội dung",
-  "settingsModerationControls": "Công cụ kiểm duyệt",
   "settingsBlueskyPublishing": "Đăng lên Bluesky",
   "settingsBlueskyPublishingSubtitle": "Quản lý việc đăng chéo lên Bluesky",
   "settingsNostrSettings": "Cài đặt Nostr",
@@ -214,15 +212,10 @@
       }
     }
   },
-  "profileEditProfile": "Chỉnh sửa hồ sơ",
-  "profileCreatorAnalytics": "Phân tích nhà sáng tạo",
-  "profileShareProfile": "Chia sẻ hồ sơ",
   "profileCopyPublicKey": "Sao chép khóa công khai (npub)",
   "profileGetEmbedCode": "Lấy mã nhúng",
   "profilePublicKeyCopied": "Đã sao chép khóa công khai vào khay nhớ tạm",
   "profileEmbedCodeCopied": "Đã sao chép mã nhúng vào khay nhớ tạm",
-  "profileRefreshTooltip": "Làm mới",
-  "profileRefreshSemanticLabel": "Làm mới hồ sơ",
   "profileMoreTooltip": "Thêm",
   "profileMoreSemanticLabel": "Tùy chọn khác",
   "profileAvatarLightboxBarrierLabel": "Đóng ảnh đại diện",
@@ -366,10 +359,6 @@
       }
     }
   },
-  "profileUserBlockedTitle": "Đã chặn người dùng",
-  "profileUserBlockedContent": "Bạn sẽ không thấy nội dung từ người dùng này trong bảng tin của mình.",
-  "profileUserBlockedUnblockHint": "Bạn có thể bỏ chặn họ bất cứ lúc nào từ hồ sơ của họ hoặc trong Cài đặt > An toàn.",
-  "profileCloseButton": "Đóng",
   "profileNoCollabsTitle": "Chưa có video cộng tác nào",
   "profileCollabsOwnEmpty": "Những video bạn cộng tác sẽ xuất hiện ở đây.",
   "profileCollabsOtherEmpty": "Những video họ cộng tác sẽ xuất hiện ở đây.",
@@ -409,23 +398,10 @@
   "profileShowLess": "Thu gọn",
   "profileCompleteYourProfile": "Hoàn thiện hồ sơ của bạn",
   "profileCompleteSubtitle": "Thêm tên, tiểu sử và ảnh để bắt đầu",
-  "profileSetUpButton": "Thiết lập",
-  "profileVerifyingEmail": "Đang xác minh email...",
-  "profileCheckEmailVerification": "Kiểm tra {email} để lấy liên kết xác minh",
-  "@profileCheckEmailVerification": {
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "profileWaitingForVerification": "Đang chờ xác minh email",
-  "profileVerificationFailed": "Xác minh thất bại",
   "profilePleaseTryAgain": "Vui lòng thử lại",
   "profileSecureYourAccount": "Bảo mật tài khoản của bạn",
   "profileSecureSubtitle": "Thêm email & mật khẩu để khôi phục tài khoản trên mọi thiết bị",
   "profileRetryButton": "Thử lại",
-  "profileRegisterButton": "Đăng ký",
   "profileSessionExpired": "Phiên đăng nhập đã hết hạn",
   "profileSignInToRestore": "Đăng nhập lại để khôi phục toàn bộ quyền truy cập",
   "profileSignInButton": "Đăng nhập",
@@ -448,7 +424,6 @@
   "@profileUserFallback": {
     "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
   },
-  "profileDismissTooltip": "Bỏ qua",
   "profileLinkCopied": "Đã sao chép liên kết hồ sơ",
   "profileSetupEditProfileTitle": "Chỉnh sửa hồ sơ",
   "profileSetupBackLabel": "Quay lại",
@@ -466,7 +441,6 @@
   "profileSetupClaimFailed": "Không thể đăng ký tên người dùng. Vui lòng thử lại.",
   "profileSetupPublishFailed": "Không thể đăng hồ sơ. Vui lòng thử lại.",
   "profileSetupNoRelaysConnected": "Không kết nối được với mạng. Kiểm tra kết nối của bạn rồi thử lại nhé.",
-  "profileSetupRetryLabel": "Thử lại",
   "profileSetupDisplayNameLabel": "Tên hiển thị",
   "profileSetupDisplayNameRequired": "Vui lòng nhập tên hiển thị",
   "profileSetupBioLabel": "Tiểu sử (Không bắt buộc)",
@@ -474,11 +448,9 @@
   "profileSetupPublicKeyLabel": "Khóa công khai (npub)",
   "profileSetupUsernameLabel": "Tên người dùng (Không bắt buộc)",
   "profileSetupUsernameHelper": "Danh tính duy nhất của bạn trên Divine",
-  "profileSetupProfileColorLabel": "Màu hồ sơ (Không bắt buộc)",
   "profileSetupSaveButton": "Lưu",
   "profileSetupSavingButton": "Đang lưu...",
   "profileSetupImageUrlTitle": "Thêm URL hình ảnh",
-  "profileSetupPictureUploaded": "Đã tải ảnh đại diện lên thành công!",
   "profileSetupImageSelectionFailed": "Không chọn được ảnh. Hãy dán URL hình ảnh vào bên dưới nhé.",
   "profileSetupImagesTypeGroup": "hình ảnh",
   "profileSetupCameraAccessFailed": "Không truy cập được camera: {error}",
@@ -495,7 +467,6 @@
   "profileSetupUploadAuthError": "Lỗi xác thực: Hãy thử đăng xuất rồi đăng nhập lại.",
   "profileSetupUploadFileTooLarge": "Tệp quá lớn: Hãy chọn ảnh nhỏ hơn (tối đa 10MB).",
   "profileSetupUploadServerError": "Tải lên thất bại. Máy chủ của bọn mình đang tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
-  "profileSetupUploadUnsupportedOnWeb": "Chưa thể tải ảnh đại diện lên trên web. Hãy dùng ứng dụng iOS hoặc Android, hoặc dán URL hình ảnh.",
   "profileSetupBannerClearButton": "Xóa ảnh bìa",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
@@ -546,8 +517,6 @@
   "profileSetupSupportRequestSent": "Đã gửi yêu cầu hỗ trợ! Bọn mình sẽ phản hồi sớm.",
   "profileSetupCouldntOpenEmail": "Không mở được email. Hãy gửi tới: names@divine.video",
   "profileSetupSendRequest": "Gửi yêu cầu",
-  "profileSetupPickColorTitle": "Chọn một màu",
-  "profileSetupSelectButton": "Chọn",
   "profileSetupUseOwnNip05": "Dùng địa chỉ NIP-05 của riêng bạn",
   "profileSetupNip05AddressLabel": "Địa chỉ NIP-05",
   "profileSetupExternalNip05InvalidFormat": "Định dạng NIP-05 không hợp lệ (VD: name@domain.com)",
@@ -577,7 +546,6 @@
   "nostrInfoUsernameDescription": " Một tên dễ đọc (như @name.divine.video) liên kết tới npub của bạn. Nó giúp danh tính Nostr của bạn dễ nhận ra và dễ xác minh hơn, giống như địa chỉ email vậy.",
   "nostrInfoLearnMoreAt": "Tìm hiểu thêm tại ",
   "nostrInfoGotIt": "Đã hiểu!",
-  "profileTabRefreshTooltip": "Làm mới",
   "videoGridRefreshLabel": "Đang tìm thêm video",
   "videoGridOptionsTitle": "Tùy chọn video",
   "videoGridEditVideo": "Chỉnh sửa video",
@@ -585,14 +553,6 @@
   "videoGridDeleteVideo": "Xóa video",
   "videoGridDeleteVideoSubtitle": "Gỡ video này khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr khác.",
   "videoGridDeletingContent": "Đang xóa nội dung...",
-  "videoGridDeleteFailure": "Không thể xóa nội dung: {error}",
-  "@videoGridDeleteFailure": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreTabFeatured": "Nổi bật",
   "exploreTabClassics": "Kinh điển",
   "exploreTabNew": "Mới",
@@ -646,12 +606,9 @@
       }
     }
   },
-  "videoPlayerLoadingVideo": "Đang tải video...",
   "videoPlayerPlayVideo": "Phát video",
   "videoPlayerMute": "Tắt tiếng video",
   "videoPlayerUnmute": "Bật tiếng video",
-  "videoPlayerEditVideo": "Chỉnh sửa video",
-  "videoPlayerEditVideoTooltip": "Chỉnh sửa video",
   "videoPlayerTapHint": "Chạm để phát hoặc tạm dừng. Chạm hai lần để thích.",
   "videoSettingsMenuOpen": "Mở cài đặt phát lại",
   "@videoSettingsMenuOpen": {
@@ -739,15 +696,10 @@
     "description": "Badge shown next to a label the current viewer has already suggested for this video."
   },
   "videoErrorNotFound": "Không tìm thấy video",
-  "videoErrorNetwork": "Lỗi mạng",
-  "videoErrorTimeout": "Hết thời gian tải",
-  "videoErrorFormat": "Lỗi định dạng video\n(Thử lại hoặc dùng trình duyệt khác)",
-  "videoErrorUnsupportedFormat": "Định dạng video không được hỗ trợ",
   "videoErrorPlayback": "Lỗi phát video",
   "videoErrorAgeRestricted": "Nội dung giới hạn độ tuổi",
   "videoErrorUnavailable": "Video không khả dụng",
   "videoErrorUnavailableBody": "Video này hiện không khả dụng.",
-  "videoErrorVerifyAge": "Xác minh tuổi",
   "videoErrorRetry": "Thử lại",
   "videoErrorContentRestricted": "Nội dung bị hạn chế",
   "videoErrorContentRestrictedBody": "Video này đã bị gỡ vì vi phạm quy tắc nội dung của bọn mình.",
@@ -788,7 +740,6 @@
     "description": "App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension."
   },
   "videoDetailCloseSemanticLabel": "Đóng trình phát video",
-  "videoFollowButtonFollowing": "Đang theo dõi",
   "videoFollowButtonFollow": "Theo dõi",
   "audioAttributionOriginalSound": "Âm thanh gốc",
   "audioAttributionUnavailableSound": "Âm thanh không khả dụng",
@@ -947,8 +898,6 @@
   "videoActionRepost": "Đăng lại video",
   "videoActionViewComments": "Xem bình luận",
   "videoActionMoreOptions": "Tùy chọn khác",
-  "videoActionHideSubtitles": "Ẩn phụ đề",
-  "videoActionShowSubtitles": "Hiện phụ đề",
   "videoEngagementLikersTitle": "Người đã thích",
   "@videoEngagementLikersTitle": {
     "description": "Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it."
@@ -996,14 +945,6 @@
   "videoOverlayCommentPostFailedSnackbar": "Không đăng được bình luận",
   "@videoOverlayCommentPostFailedSnackbar": {
     "description": "Snackbar shown when posting a comment from the inline comment field fails (e.g. relay unreachable)."
-  },
-  "videoDescriptionLoops": "{count} loop",
-  "@videoDescriptionLoops": {
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
   },
   "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
   "@videoFeedLoopCountLine": {
@@ -1474,15 +1415,6 @@
   "notificationSettingsRepostsSubtitle": "Khi có người đăng lại video của bạn",
   "notificationSettingsNewPosts": "Vine mới",
   "notificationSettingsNewPostsSubtitle": "Khi người bạn theo dõi đăng bài",
-  "notificationSettingsSystem": "Hệ thống",
-  "notificationSettingsSystemSubtitle": "Cập nhật ứng dụng và thông điệp hệ thống",
-  "notificationSettingsPushNotificationsSection": "Thông báo đẩy",
-  "notificationSettingsPushNotifications": "Thông báo đẩy",
-  "notificationSettingsPushNotificationsSubtitle": "Nhận thông báo khi ứng dụng đã đóng",
-  "notificationSettingsSound": "Âm thanh",
-  "notificationSettingsSoundSubtitle": "Phát âm thanh khi có thông báo",
-  "notificationSettingsVibration": "Rung",
-  "notificationSettingsVibrationSubtitle": "Rung khi có thông báo",
   "notificationSettingsActions": "Thao tác",
   "notificationSettingsMarkAllAsRead": "Đánh dấu tất cả là đã đọc",
   "notificationSettingsMarkAllAsReadSubtitle": "Đánh dấu tất cả thông báo là đã đọc",
@@ -1491,11 +1423,6 @@
   "notificationSettingsResetToDefaults": "Đã đặt lại cài đặt về mặc định",
   "notificationSettingsAbout": "Về thông báo",
   "notificationSettingsAboutDescription": "Thông báo chạy trên giao thức Nostr. Cập nhật thời gian thực phụ thuộc vào kết nối của bạn tới các relay Nostr. Một số thông báo có thể đến chậm.",
-  "safetySettingsTitle": "An toàn & Quyền riêng tư",
-  "@safetySettingsTitle": {
-    "description": "Safety settings screen app bar title"
-  },
-  "safetySettingsLabel": "CÀI ĐẶT",
   "safetySettingsWhatYouSee": "NHỮNG GÌ BẠN THẤY",
   "safetySettingsWhatYouPublish": "NHỮNG GÌ BẠN ĐĂNG",
   "safetySettingsShowDivineHostedOnly": "Chỉ hiện video do Divine lưu trữ",
@@ -1884,14 +1811,6 @@
   "authUnableToAccessKeys": "Không truy cập được khóa của bạn. Vui lòng thử lại.",
   "authRegistrationFailed": "Đăng ký thất bại",
   "authRegistrationComplete": "Đăng ký hoàn tất. Vui lòng kiểm tra email của bạn.",
-  "authVerificationFailedTitle": "Xác minh thất bại",
-  "authClose": "Đóng",
-  "authAccountSecured": "Tài khoản đã được bảo mật!",
-  "authAccountLinkedToEmail": "Tài khoản của bạn giờ đã liên kết với email.",
-  "authVerifyYourEmail": "Xác minh email của bạn",
-  "authClickLinkContinue": "Bấm vào liên kết trong email để hoàn tất đăng ký. Trong lúc chờ, bạn vẫn có thể tiếp tục dùng ứng dụng.",
-  "authWaitingForVerificationEllipsis": "Đang chờ xác minh...",
-  "authContinueToApp": "Tiếp tục vào ứng dụng",
   "authFailedToSendResetEmail": "Không gửi được email đặt lại.",
   "authSending": "Đang gửi...",
   "authSignInButton": "Đăng nhập",
@@ -1956,7 +1875,6 @@
   "shareSheetAddToList": "Thêm vào danh sách",
   "shareSheetCopy": "Sao chép",
   "shareSheetShareVia": "Chia sẻ qua",
-  "shareSheetReport": "Báo cáo",
   "shareSheetEventJson": "JSON sự kiện",
   "shareSheetEventId": "ID sự kiện",
   "shareSheetMoreActions": "Thao tác khác",
@@ -2004,103 +1922,7 @@
   "watermarkDownloadStageDownloadingDesc": "Đang lấy video từ mạng...",
   "watermarkDownloadStageWatermarkingDesc": "Đang áp watermark Divine...",
   "watermarkDownloadStageSavingDesc": "Đang lưu video đã gắn watermark vào thư viện ảnh của bạn...",
-  "uploadProgressVideoUpload": "Tải video lên",
-  "uploadProgressPause": "Tạm dừng",
-  "uploadProgressResume": "Tiếp tục",
-  "uploadProgressGoBack": "Quay lại",
-  "uploadProgressRetryWithCount": "Thử lại (còn {count} lần)",
-  "@uploadProgressRetryWithCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressDelete": "Xóa",
-  "uploadProgressDaysAgo": "{count} ngày trước",
-  "@uploadProgressDaysAgo": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressHoursAgo": "{count} giờ trước",
-  "@uploadProgressHoursAgo": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressMinutesAgo": "{count} phút trước",
-  "@uploadProgressMinutesAgo": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressJustNow": "Vừa xong",
-  "uploadProgressUploadingPercent": "Đang tải lên {percent}%",
-  "@uploadProgressUploadingPercent": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadProgressPausedPercent": "Đã tạm dừng {percent}%",
-  "@uploadProgressPausedPercent": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "shareMenuTitle": "Chia sẻ video",
-  "shareMenuReportAiContent": "Báo cáo nội dung AI",
-  "shareMenuReportAiContentSubtitle": "Báo cáo nhanh nội dung nghi do AI tạo ra",
-  "shareMenuReportingAiContent": "Đang báo cáo nội dung AI...",
-  "shareMenuFailedToReportContent": "Không báo cáo được nội dung: {error}",
-  "@shareMenuFailedToReportContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuFailedToReportAiContent": "Không báo cáo được nội dung AI: {error}",
-  "@shareMenuFailedToReportAiContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuVideoStatus": "Trạng thái video",
-  "shareMenuViewAllLists": "Xem tất cả danh sách →",
-  "shareMenuShareWith": "Chia sẻ với",
-  "shareMenuShareViaOtherApps": "Chia sẻ qua ứng dụng khác",
-  "shareMenuShareViaOtherAppsSubtitle": "Chia sẻ qua ứng dụng khác hoặc sao chép liên kết",
-  "shareMenuSaveToGallery": "Lưu vào thư viện ảnh",
-  "shareMenuSaveOriginalSubtitle": "Lưu video gốc vào thư viện ảnh",
-  "shareMenuSaveWithWatermark": "Lưu kèm watermark",
-  "shareMenuSaveVideo": "Lưu video",
-  "shareMenuDownloadWithWatermark": "Tải xuống kèm watermark Divine",
-  "shareMenuSaveVideoSubtitle": "Lưu video vào thư viện ảnh",
-  "shareMenuLists": "Danh sách",
-  "shareMenuAddToList": "Thêm vào danh sách",
-  "shareMenuAddToListSubtitle": "Thêm vào danh sách tuyển chọn của bạn",
-  "shareMenuCreateNewList": "Tạo danh sách mới",
-  "shareMenuCreateNewListSubtitle": "Bắt đầu một bộ sưu tập tuyển chọn mới",
-  "shareMenuRemovedFromList": "Đã xóa khỏi danh sách",
-  "shareMenuFailedToRemoveFromList": "Không xóa được khỏi danh sách",
   "shareMenuBookmarks": "Dấu trang",
-  "shareMenuFollowSets": "Danh sách người",
-  "shareMenuCreateFollowSet": "Tạo nhóm theo dõi",
-  "shareMenuCreateFollowSetSubtitle": "Bắt đầu bộ sưu tập mới với nhà sáng tạo này",
-  "shareMenuAddToFollowSet": "Thêm vào nhóm theo dõi",
   "shareMenuFollowSetsAvailable": "Có {count} nhóm theo dõi",
   "@shareMenuFollowSetsAvailable": {
     "placeholders": {
@@ -2110,7 +1932,6 @@
     }
   },
   "peopleListsAddToList": "Thêm vào danh sách",
-  "peopleListsAddToListSubtitle": "Đưa nhà sáng tạo này vào một danh sách của bạn",
   "peopleListsSheetTitle": "Thêm vào danh sách",
   "peopleListsEmptyTitle": "Chưa có danh sách nào",
   "peopleListsEmptySubtitle": "Tạo một danh sách để bắt đầu nhóm mọi người.",
@@ -2202,21 +2023,8 @@
       }
     }
   },
-  "shareMenuAddedToBookmarks": "Đã thêm vào dấu trang!",
-  "shareMenuFailedToAddBookmark": "Không thêm được dấu trang",
-  "shareMenuCreatedListAndAddedVideo": "Đã tạo danh sách \"{name}\" và thêm video",
-  "@shareMenuCreatedListAndAddedVideo": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuManageContent": "Quản lý nội dung",
   "shareMenuEditVideo": "Chỉnh sửa video",
-  "shareMenuEditVideoSubtitle": "Cập nhật tiêu đề, mô tả và hashtag",
   "shareMenuDeleteVideo": "Xóa video",
-  "shareMenuVideoInTheseLists": "Video nằm trong các danh sách này:",
   "shareMenuVideoCount": "{count} video",
   "@shareMenuVideoCount": {
     "placeholders": {
@@ -2225,19 +2033,9 @@
       }
     }
   },
-  "shareMenuClose": "Đóng",
   "shareMenuDeleteConfirmation": "Video này sẽ bị xóa vĩnh viễn khỏi Divine. Nó vẫn có thể xuất hiện trên các ứng dụng Nostr bên thứ ba dùng relay khác.",
   "shareMenuCancel": "Hủy",
   "shareMenuDelete": "Xóa",
-  "shareMenuDeletingContent": "Đang xóa nội dung...",
-  "shareMenuFailedToDeleteContent": "Không xóa được nội dung: {error}",
-  "@shareMenuFailedToDeleteContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuDeleteFailedNotInitialized": "Chức năng xóa chưa sẵn sàng. Thử lại sau ít phút.",
   "shareMenuDeleteFailedNotOwner": "Bạn chỉ có thể xóa video của chính mình.",
   "shareMenuDeleteFailedNotAuthenticated": "Hãy đăng nhập lại rồi thử xóa.",
@@ -2246,35 +2044,10 @@
   "shareMenuDeleteFailedRelayNoResponse": "Không kết nối được với relay. Kiểm tra kết nối của bạn rồi thử lại.",
   "shareMenuDeletePartiallyConfirmed": "Đã xoá. Không phải relay nào cũng xác nhận, nên nó có thể vẫn hiện ở app khác.",
   "shareMenuDeleteFailedGeneric": "Không xóa được video này. Thử lại nhé.",
-  "shareMenuFollowSetName": "Tên nhóm theo dõi",
-  "shareMenuFollowSetNameHint": "VD: Nhà sáng tạo nội dung, Nhạc sĩ...",
-  "shareMenuDescriptionOptional": "Mô tả (không bắt buộc)",
-  "shareMenuCreate": "Tạo",
-  "shareMenuCreatedFollowSetAndAddedCreator": "Đã tạo nhóm theo dõi \"{name}\" và thêm nhà sáng tạo",
-  "@shareMenuCreatedFollowSetAndAddedCreator": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuDone": "Xong",
-  "shareMenuEditTitle": "Tiêu đề",
-  "shareMenuEditTitleHint": "Nhập tiêu đề video",
-  "shareMenuEditDescription": "Mô tả",
-  "shareMenuEditDescriptionHint": "Nhập mô tả video",
-  "shareMenuEditHashtags": "Hashtag",
-  "shareMenuEditHashtagsHint": "hashtag, cách nhau, bằng phẩy",
-  "shareMenuEditMetadataNote": "Lưu ý: Chỉ chỉnh sửa được siêu dữ liệu. Không thể thay đổi nội dung video.",
-  "shareMenuDeleting": "Đang xóa...",
   "shareMenuUpdate": "Cập nhật",
   "shareMenuChangeCover": "Đổi ảnh bìa",
   "@shareMenuChangeCover": {
     "description": "Label for the button that opens the cover-image editor on the video metadata edit screen."
-  },
-  "shareMenuCoverUploadingBackground": "Ảnh thu nhỏ đang được tải lên ngầm",
-  "@shareMenuCoverUploadingBackground": {
-    "description": "Toast/snackbar message shown while the new cover thumbnail is being uploaded after saving video metadata."
   },
   "shareMenuVideoUpdated": "Đã cập nhật video thành công",
   "shareMenuVideoUpdatedWithInviteFailures": "Đã cập nhật video, nhưng {count, plural, =1{1 lời mời cộng tác không gửi được.} other{{count} lời mời cộng tác không gửi được.}}",
@@ -2294,41 +2067,10 @@
       }
     }
   },
-  "shareMenuFailedToDeleteVideo": "Không xóa được video: {error}",
-  "@shareMenuFailedToDeleteVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "shareMenuDeleteVideoQuestion": "Xóa video?",
   "shareMenuVideoDeletionRequested": "Đã xóa video",
-  "shareMenuContentLabels": "Nhãn nội dung",
-  "shareMenuAddContentLabels": "Thêm nhãn nội dung",
-  "shareMenuClearAll": "Xóa tất cả",
-  "shareMenuCollaborators": "Cộng tác viên",
-  "shareMenuAddCollaborator": "Mời cộng tác viên",
-  "shareMenuMutualFollowRequired": "Bạn và {name} cần theo dõi lẫn nhau để mời họ làm cộng tác viên.",
-  "@shareMenuMutualFollowRequired": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "shareMenuLoading": "Đang tải...",
-  "shareMenuInspiredBy": "Lấy cảm hứng từ",
-  "shareMenuAddInspirationCredit": "Thêm ghi nhận cảm hứng",
-  "shareMenuCreatorCannotBeReferenced": "Không thể tham chiếu nhà sáng tạo này.",
-  "shareMenuUnknown": "Không xác định",
-  "shareMenuUseThisSound": "Dùng âm thanh này",
-  "shareMenuOriginalSound": "Âm thanh gốc",
   "authSessionExpired": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
   "authSignInFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
-  "localeAppLanguage": "Ngôn ngữ ứng dụng",
-  "localeDeviceDefault": "Mặc định của thiết bị",
-  "localeSelectLanguage": "Chọn ngôn ngữ",
   "webAuthNotSupportedSecureMode": "Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.",
   "webAuthIntegrationFailed": "Tích hợp xác thực thất bại: {error}",
   "@webAuthIntegrationFailed": {
@@ -2360,25 +2102,11 @@
   "webAuthNostrHelp": "Cài tiện ích trình duyệt như Alby hoặc nos2x cho trải nghiệm dễ nhất, hoặc dùng nsec bunker để ký từ xa an toàn.",
   "soundsTitle": "Âm thanh",
   "soundsSearchHint": "Tìm âm thanh...",
-  "soundsPreviewUnavailable": "Không nghe thử được - không có audio",
-  "soundsPreviewFailed": "Không phát được bản nghe thử: {error}",
-  "@soundsPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "soundsFeaturedSounds": "Âm thanh nổi bật",
-  "soundsTrendingSounds": "Âm thanh thịnh hành",
-  "soundsAllSounds": "Tất cả âm thanh",
   "soundSyncStatusSyncing": "Đang đồng bộ âm thanh của bạn…",
   "soundSyncStatusSynced": "Âm thanh đã được cập nhật",
   "soundSyncStatusFailed": "Không đồng bộ được âm thanh của bạn. Chúng tôi sẽ thử lại.",
   "soundSyncStatusLocked": "Không thể mở khoá thư viện đã đồng bộ trên thiết bị này.",
   "soundsSearchResults": "Kết quả tìm kiếm",
-  "soundsNoSoundsAvailable": "Không có âm thanh nào",
-  "soundsNoSoundsDescription": "Âm thanh sẽ xuất hiện ở đây khi nhà sáng tạo chia sẻ audio",
   "soundsNoSoundsFound": "Không tìm thấy âm thanh nào",
   "soundsNoSoundsFoundDescription": "Thử từ khóa khác nhé",
   "soundsSavedToLibrary": "Đã lưu vào Âm thanh",
@@ -2386,8 +2114,6 @@
   "soundsSavedLibraryTitle": "Âm thanh của tôi",
   "soundsSavedEmptyTitle": "Chưa có âm thanh đã lưu",
   "soundsSavedEmptyDescription": "Chạm Dùng âm thanh trên một video để lưu nó vào đây.",
-  "soundsAvailabilityPrivate": "Riêng tư",
-  "soundsAvailabilityCommunity": "Cộng đồng",
   "soundsRemoveSavedSound": "Xóa âm thanh",
   "savedSoundSaveAction": "Lưu",
   "savedSoundPausePreviewAction": "Tạm dừng nghe thử",
@@ -2398,12 +2124,8 @@
   "soundsRemovedFromLibrary": "Đã xóa khỏi Âm thanh",
   "soundsSaveFailed": "Không lưu được âm thanh đó. Thử lại nhé.",
   "soundsRemoveFailed": "Không gỡ được âm thanh đó. Thử lại nhé.",
-  "soundsFailedToLoad": "Không tải được âm thanh",
-  "soundsRetry": "Thử lại",
-  "soundsScreenLabel": "Màn hình âm thanh",
   "profileTitle": "Hồ sơ",
   "profileRefresh": "Làm mới",
-  "profileRefreshLabel": "Làm mới hồ sơ",
   "profileMoreOptions": "Tùy chọn khác",
   "profileBlockedUser": "Đã chặn {name}",
   "@profileBlockedUser": {
@@ -2429,14 +2151,6 @@
       }
     }
   },
-  "profileError": "Lỗi: {error}",
-  "@profileError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "profileFeedError": "Không kết nối được với máy chủ. Kiểm tra kết nối của bạn rồi thử lại nhé.",
   "@profileFeedError": {
     "description": "Full-screen message shown when an author's profile feed fails to load."
@@ -2456,17 +2170,6 @@
   "@notificationsRefreshError": {
     "description": "Inline banner above the cached notifications list when the most recent refresh failed but cached items are still rendered. Retry button next to this label reuses the existing `notificationsRetry` key."
   },
-  "notificationsCheckingNew": "đang kiểm tra thông báo mới",
-  "notificationsNoneYet": "Chưa có thông báo nào",
-  "notificationsNoneForType": "Không có thông báo {type} nào",
-  "@notificationsNoneForType": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      }
-    }
-  },
-  "notificationsEmptyDescription": "Khi mọi người tương tác với nội dung của bạn, bạn sẽ thấy ở đây",
   "notificationsUnreadPrefix": "Thông báo chưa đọc",
   "@notificationsUnreadPrefix": {
     "description": "Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself."
@@ -2506,14 +2209,6 @@
   "@notificationsVideoThumbnail": {
     "description": "Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing."
   },
-  "notificationsLoadingType": "Đang tải thông báo {type}...",
-  "@notificationsLoadingType": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      }
-    }
-  },
   "notificationsInviteSingular": "Bạn có 1 lời mời để chia sẻ với bạn bè!",
   "notificationsInvitePlural": "Bạn có {count} lời mời để chia sẻ với bạn bè!",
   "@notificationsInvitePlural": {
@@ -2523,9 +2218,7 @@
       }
     }
   },
-  "notificationsVideoNotFound": "Không tìm thấy video",
   "notificationsVideoUnavailable": "Video không khả dụng",
-  "notificationsFromNotification": "Từ thông báo",
   "feedFailedToLoadVideos": "Không tải được video",
   "feedRetry": "Thử lại",
   "feedNoFollowedUsers": "Chưa theo dõi ai.\nTheo dõi ai đó để xem video của họ ở đây.",
@@ -2562,8 +2255,6 @@
   "feedLatestEmpty": "Chưa có video mới.\nQuay lại sau nhé.",
   "feedClassicEmpty": "Chưa có Vine kinh điển nào.\nQuay lại sau nhé.",
   "feedExploreVideos": "Khám phá video",
-  "feedExternalVideoSlow": "Video bên ngoài đang tải chậm",
-  "feedSkip": "Bỏ qua",
   "feedLoadingMore": "Đang tải thêm video…",
   "@feedLoadingMore": {
     "description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."
@@ -2572,47 +2263,12 @@
   "@feedRefreshed": {
     "description": "Screen-reader announcement after the home feed finished reloading because the user re-tapped the home tab."
   },
-  "uploadWaitingToUpload": "Đang chờ tải lên",
   "uploadUploadingVideo": "Đang tải video lên",
-  "uploadProcessingVideo": "Đang xử lý video",
-  "uploadProcessingComplete": "Xử lý hoàn tất",
-  "uploadPublishedSuccessfully": "Đã đăng thành công",
-  "uploadFailed": "Tải lên thất bại",
-  "uploadRetrying": "Đang thử tải lên lại",
-  "uploadPaused": "Đã tạm dừng tải lên",
-  "uploadPercentComplete": "Hoàn thành {percent}%",
-  "@uploadPercentComplete": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "uploadQueuedMessage": "Video của bạn đang trong hàng chờ tải lên",
-  "uploadUploadingMessage": "Đang tải lên máy chủ...",
-  "uploadProcessingMessage": "Đang xử lý video - có thể mất vài phút",
-  "uploadReadyToPublishMessage": "Video đã xử lý xong và sẵn sàng đăng",
-  "uploadPublishedMessage": "Video đã được đăng lên hồ sơ của bạn",
   "postPublishConfirmationTitle": "Đã được đăng lên hồ sơ của bạn",
   "postPublishConfirmationView": "Xem",
   "postPublishConfirmationShare": "Chia sẻ",
   "postPublishConfirmationThumbnailLabel": "Ảnh thu nhỏ của video bạn vừa đăng",
-  "uploadFailedMessage": "Tải lên thất bại - vui lòng thử lại",
-  "uploadRetryingMessage": "Đang thử tải lên lại...",
-  "uploadPausedMessage": "Người dùng đã tạm dừng tải lên",
-  "uploadRetryButton": "THỬ LẠI",
-  "uploadRetryFailed": "Không thử tải lên lại được: {error}",
-  "@uploadRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "userSearchPrompt": "Tìm người dùng",
   "userSearchNoResults": "Không tìm thấy người dùng nào",
-  "userSearchFailed": "Tìm kiếm thất bại",
-  "userPickerSearchByName": "Tìm theo tên",
   "userPickerFilterByNameHint": "Lọc theo tên...",
   "userPickerSearchByNameHint": "Tìm theo tên...",
   "userPickerClearSearchSemantics": "Xóa tìm kiếm",
@@ -2660,27 +2316,13 @@
   "ageVerificationCreationQuestion": "Bạn đã đủ 16 tuổi chưa?",
   "ageVerificationNo": "Chưa",
   "ageVerificationYes": "Rồi",
-  "shareLinkCopied": "Đã sao chép liên kết vào khay nhớ tạm",
-  "shareFailedToCopy": "Không sao chép được liên kết",
-  "shareVideoSubject": "Xem video này trên Divine nè",
-  "shareFailedToShare": "Không chia sẻ được",
-  "shareVideoTitle": "Chia sẻ video",
-  "shareToApps": "Chia sẻ tới ứng dụng",
-  "shareToAppsSubtitle": "Chia sẻ qua ứng dụng nhắn tin, mạng xã hội",
-  "shareCopyWebLink": "Sao chép liên kết web",
-  "shareCopyWebLinkSubtitle": "Sao chép liên kết web có thể chia sẻ",
-  "shareCopyNostrLink": "Sao chép liên kết Nostr",
-  "shareCopyNostrLinkSubtitle": "Sao chép liên kết nevent cho ứng dụng Nostr",
   "navHome": "Trang chủ",
   "navExplore": "Khám phá",
   "navInbox": "Hộp thư",
   "navProfile": "Hồ sơ",
-  "navSearch": "Tìm kiếm",
-  "navSearchTooltip": "Tìm kiếm",
   "navMyProfile": "Hồ sơ của tôi",
   "navNotifications": "Thông báo",
   "navOpenCamera": "Mở camera",
-  "navUnknown": "Không xác định",
   "navExploreClassics": "Kinh điển",
   "navExploreNewVideos": "Video mới",
   "navExploreTrending": "Thịnh hành",
@@ -2760,10 +2402,8 @@
       }
     }
   },
-  "reportTitle": "Báo cáo nội dung",
   "reportWhyReporting": "Tại sao bạn báo cáo nội dung này?",
   "reportPolicyNotice": "Divine sẽ xử lý báo cáo nội dung trong vòng 24 giờ bằng cách gỡ nội dung và loại người dùng đăng nội dung vi phạm.",
-  "reportAdditionalDetails": "Chi tiết bổ sung (không bắt buộc)",
   "reportBlockUser": "Chặn người dùng này",
   "reportCancel": "Hủy",
   "reportSubmit": "Báo cáo",
@@ -2812,7 +2452,6 @@
   "@reportContactModeration": {
     "description": "Button on the report confirmation screen that opens a direct-message conversation with the Divine moderation team so the user can follow up about their report."
   },
-  "reportLearnMore": "Tìm hiểu thêm",
   "reportLearnMoreAt": "Tìm hiểu thêm tại",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Đóng",
@@ -3476,10 +3115,6 @@
   "@dmReelReplyViewChat": {
     "description": "Tappable action in the 'Sent · View chat' confirmation that opens the DM conversation."
   },
-  "dmReelReplyViewChatA11yLabel": "Mở trò chuyện",
-  "@dmReelReplyViewChatA11yLabel": {
-    "description": "Screen-reader label for the 'View chat' action shown after sending a reply or reaction from the reel player."
-  },
   "dmReelReplySentAnnouncement": "Đã gửi câu trả lời",
   "@dmReelReplySentAnnouncement": {
     "description": "Screen-reader announcement after a reel reply sends successfully."
@@ -3600,8 +3235,6 @@
   "@inboxConversationTileLongPressHint": {
     "description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."
   },
-  "reportDialogCancel": "Hủy",
-  "reportDialogReport": "Báo cáo",
   "exploreVideoId": "ID: {id}",
   "@exploreVideoId": {
     "placeholders": {
@@ -3686,7 +3319,6 @@
   "@commonSomethingWentWrong": {
     "description": "Generic error message shown when an async load fails and no more specific message applies. Must not embed raw exception text."
   },
-  "commonNext": "Tiếp",
   "commonDelete": "Xóa",
   "commonCancel": "Hủy",
   "commonBack": "Quay lại",
@@ -3745,7 +3377,6 @@
   "libraryWebUnavailableDescription": "Bản nháp và clip được lưu trên thiết bị của bạn, nên hãy mở Divine trên điện thoại để quản lý chúng.",
   "libraryTabDrafts": "Bản nháp",
   "libraryTabClips": "Clip",
-  "librarySaveToCameraRollTooltip": "Lưu vào thư viện ảnh",
   "libraryDeleteSelectedClipsTooltip": "Xóa clip đã chọn",
   "libraryCloseSemanticLabel": "Đóng thư viện",
   "libraryStopSelectingClipsSemanticLabel": "Dừng chọn clip",
@@ -3761,15 +3392,6 @@
   "librarySortShortestClip": "Clip ngắn nhất",
   "librarySortSquareFirst": "Vuông trước",
   "librarySortVerticalFirst": "Dọc trước",
-  "libraryDeleteClipsTitle": "Xóa clip",
-  "libraryDeleteClipsMessage": "Bạn có chắc muốn xóa {count, plural, one{# clip đã chọn} other{# clip đã chọn}} không?",
-  "@libraryDeleteClipsMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "libraryDeleteClipsWarning": "Không thể hoàn tác thao tác này. Các tệp video sẽ bị xóa vĩnh viễn khỏi thiết bị của bạn.",
   "libraryPreparingVideo": "Đang chuẩn bị video...",
   "libraryCreateVideo": "Tạo video ({count})",
@@ -3863,17 +3485,7 @@
   },
   "libraryDeleteClipTitle": "Xóa clip",
   "libraryDeleteClipMessage": "Bạn có chắc muốn xóa clip này không?",
-  "libraryClipSelectionTitle": "Clip",
-  "librarySecondsRemaining": "còn {seconds}s",
-  "@librarySecondsRemaining": {
-    "placeholders": {
-      "seconds": {
-        "type": "String"
-      }
-    }
-  },
   "libraryClipDuration": "{seconds} giây",
-  "libraryAddClips": "Thêm",
   "libraryRecordVideo": "Quay video",
   "videoClipSemanticLabel": "Clip video, {duration} giây",
   "videoClipStopMotionSemanticLabel": "Đoạn stop-motion, {frames}",
@@ -4241,12 +3853,6 @@
   "@deleteAccountWarningBody": {
     "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
   },
-  "exportProgressStageApplyingTextOverlay": "Đang thêm chữ lên video...",
-  "exportProgressStageComplete": "Xuất xong!",
-  "exportProgressStageConcatenating": "Đang ghép các clip...",
-  "exportProgressStageError": "Xuất thất bại",
-  "exportProgressStageGeneratingThumbnail": "Đang tạo ảnh thu nhỏ...",
-  "exportProgressStageMixingAudio": "Đang thêm âm thanh...",
   "findPeopleAnonymousUser": "Ẩn danh",
   "findPeopleNoContacts": "Không tìm thấy liên hệ nào.\nBắt đầu theo dõi mọi người để thấy họ ở đây.",
   "geoBlockedCityLabel": "Thành phố",
@@ -4379,7 +3985,6 @@
   },
   "soundDetailNotFoundMessage": "Không tìm thấy âm thanh này",
   "soundDetailNotFoundTitle": "Không tìm thấy âm thanh",
-  "videoFeedDescriptionSemanticLabel": "Mô tả video",
   "videoFeedLoopCountLabel": "🔁 {count} loop",
   "@videoFeedLoopCountLabel": {
     "placeholders": {
@@ -4388,7 +3993,6 @@
       }
     }
   },
-  "videoFeedLoopCountSemanticLabel": "Số loop của video",
   "originalSoundUnavailableBody": "Âm thanh từ video này không có sẵn riêng.",
   "originalSoundByCreator": "Âm thanh gốc - {creatorName}",
   "@originalSoundByCreator": {
@@ -4398,26 +4002,10 @@
       }
     }
   },
-  "globalUploadPendingCount": "Đang chờ tải lên ({count})",
-  "@globalUploadPendingCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerBody": "Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.",
   "profileBadgeCheckmarkTitle": "Dấu tích hồ sơ",
   "profileBadgeCheckmarkBody": "Divine trao dấu tích này cho các tài khoản của đội ngũ và một số ít hồ sơ được duyệt thủ công. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.",
-  "shareVideoInListsCount": "{count, plural, =1{Trong 1 danh sách} other{Trong {count} danh sách}}",
-  "@shareVideoInListsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "unfollowConfirmButton": "Bỏ theo dõi",
   "videoClipSaveFailed": "Không lưu được clip",
   "videoClipSaveTo": "Lưu vào {destination}",
@@ -4469,14 +4057,6 @@
   "bugReportRemoveImage": "Xóa hình ảnh",
   "bugReportUploadFailed": "Bọn mình không tải được hình ảnh đã chọn. Thử lại hoặc gửi báo cáo không kèm nó.",
   "bugReportSendFailed": "Không gửi được báo cáo lỗi. Vui lòng thử lại sau.",
-  "bugReportFailedWithError": "Báo cáo lỗi không gửi được: {error}",
-  "@bugReportFailedWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "featureRequestSendRequest": "Gửi yêu cầu",
   "featureRequestSubjectHint": "Tóm tắt ngắn gọn ý tưởng của bạn",
   "featureRequestDescriptionRequiredLabel": "Bạn muốn gì? *",
@@ -4487,14 +4067,6 @@
   "featureRequestWhenHint": "Mô tả những tình huống mà nó sẽ giúp ích",
   "featureRequestSuccessMessage": "Cảm ơn bạn! Bọn mình đã nhận được yêu cầu tính năng và sẽ xem xét.",
   "featureRequestSendFailed": "Không gửi được yêu cầu tính năng. Vui lòng thử lại sau.",
-  "featureRequestFailedWithError": "Yêu cầu tính năng không gửi được: {error}",
-  "@featureRequestFailedWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "notificationFollowBack": "Theo dõi lại",
   "followingTitle": "Đang theo dõi",
   "followingTitleForName": "{displayName} đang theo dõi",
@@ -4524,9 +4096,6 @@
   "followSortTitle": "Sắp xếp theo",
   "followSortNewest": "Mới nhất trước",
   "followSortOldest": "Cũ nhất trước",
-  "reportMessageTitle": "Báo cáo tin nhắn",
-  "reportMessageWhyReporting": "Tại sao bạn báo cáo tin nhắn này?",
-  "reportMessageSelectReason": "Vui lòng chọn lý do báo cáo tin nhắn này",
   "newMessageTitle": "Tin nhắn mới",
   "newMessageFindPeople": "Tìm người",
   "newMessageNoContacts": "Không tìm thấy liên hệ nào.\nTheo dõi mọi người để thấy họ ở đây.",
@@ -4666,7 +4235,6 @@
   "searchListsSectionHeader": "Danh sách",
   "searchListsLoadingLabel": "Đang tải kết quả danh sách",
   "cameraAgeRestriction": "Bạn phải đủ 16 tuổi để tạo nội dung",
-  "featureRequestCancel": "Hủy",
   "keyImportError": "Lỗi: {error}",
   "@keyImportError": {
     "placeholders": {
@@ -4904,10 +4472,6 @@
   "notificationSystemUpdate": "Bạn có cập nhật mới",
   "@notificationSystemUpdate": {
     "description": "Default body text for a system notification row when no actor is associated with it (e.g. an app-level update or announcement)."
-  },
-  "notificationSomeoneLikedYourVideo": "Có người đã thích video của bạn",
-  "@notificationSomeoneLikedYourVideo": {
-    "description": "Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice."
   },
   "commentReplyToPrefix": "Trả lời:",
   "@commentReplyToPrefix": {
@@ -5283,8 +4847,6 @@
   "videoEditorReleaseToDeleteLayer": "Thả ra để xóa lớp",
   "videoEditorDoneLabel": "Xong",
   "videoEditorPlayPauseSemanticLabel": "Phát hoặc tạm dừng video",
-  "videoEditorCropSemanticLabel": "Cắt",
-  "videoEditorCannotSplitProcessing": "Không thể tách clip khi đang xử lý. Vui lòng chờ.",
   "videoEditorSplitPositionInvalid": "Vị trí tách không hợp lệ. Cả hai clip phải dài ít nhất {minDurationMs}ms.",
   "@videoEditorSplitPositionInvalid": {
     "placeholders": {
@@ -5293,14 +4855,10 @@
       }
     }
   },
-  "videoEditorAddClipFromLibrary": "Thêm clip từ Thư viện",
   "videoEditorSaveSelectedClip": "Lưu clip đã chọn",
-  "videoEditorSplitClip": "Tách clip",
   "videoEditorSaveClip": "Lưu clip",
-  "videoEditorDeleteClip": "Xóa clip",
   "videoEditorClipSavedSuccess": "Đã lưu clip vào thư viện",
   "videoEditorClipSaveFailed": "Không lưu được clip",
-  "videoEditorClipDeleted": "Đã xóa clip",
   "videoEditorColorPickerSemanticLabel": "Bộ chọn màu",
   "videoEditorUndoSemanticLabel": "Hoàn tác",
   "videoEditorRedoSemanticLabel": "Làm lại",
@@ -5311,8 +4869,6 @@
   "videoEditorNoStickersFound": "Không tìm thấy nhãn dán nào",
   "videoEditorNoStickersAvailable": "Không có nhãn dán nào",
   "videoEditorFailedLoadStickers": "Không tải được nhãn dán",
-  "videoEditorAdjustVolumeTitle": "Điều chỉnh âm lượng",
-  "videoEditorRecordedAudioLabel": "Âm thanh đã ghi",
   "videoEditorVoiceOverLabel": "Lồng tiếng",
   "videoEditorVoiceOverTakeName": "Bản ghi {number}",
   "@videoEditorVoiceOverTakeName": {
@@ -5348,8 +4904,6 @@
   },
   "videoEditorPlaySemanticLabel": "Phát",
   "videoEditorPauseSemanticLabel": "Tạm dừng",
-  "videoEditorMuteAudioSemanticLabel": "Tắt tiếng",
-  "videoEditorUnmuteAudioSemanticLabel": "Bật tiếng",
   "videoEditorVolumeSemanticLabel": "Điều chỉnh âm lượng",
   "videoEditorTimelineVolumePreview": "Âm lượng {percent}%",
   "@videoEditorTimelineVolumePreview": {
@@ -5390,7 +4944,6 @@
   "videoEditorChromaKeyRemoveFailed": "Không gỡ được phông xanh. Clip của bạn vẫn nguyên.",
   "videoEditorChromaKeyApplying": "Đang áp dụng phông xanh…",
   "videoEditorChromaKeyPreviewUnavailable": "Thiết bị này không hiển thị được bản xem trước trực tiếp. Cài đặt của bạn vẫn được áp dụng khi xuất.",
-  "videoEditorOriginalAudioLabel": "Âm thanh gốc",
   "videoEditorClipVolumeLabel": "Clip {index}",
   "@videoEditorClipVolumeLabel": {
     "placeholders": {
@@ -5426,14 +4979,6 @@
         "type": "int"
       }
     }
-  },
-  "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Tăng số khung hình mỗi ảnh",
-  "@videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": {
-    "description": "Accessibility label for the button that lengthens each stop-motion still's hold."
-  },
-  "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Giảm số khung hình mỗi ảnh",
-  "@videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": {
-    "description": "Accessibility label for the button that shortens each stop-motion still's hold."
   },
   "videoEditorStopMotionFrameSemanticLabel": "Khung hình stop-motion {position}/{total}",
   "@videoEditorStopMotionFrameSemanticLabel": {
@@ -5519,10 +5064,6 @@
   "videoEditorTransformFlipLabel": "Lật",
   "@videoEditorTransformFlipLabel": {
     "description": "Label for the flip action button in the clip transform editor."
-  },
-  "videoEditorTransformRatioLabel": "Tỷ lệ",
-  "@videoEditorTransformRatioLabel": {
-    "description": "Label for the aspect-ratio action button in the clip transform editor."
   },
   "videoEditorTransformResetLabel": "Đặt lại",
   "@videoEditorTransformResetLabel": {
@@ -5683,8 +5224,6 @@
   "videoEditorAudioCategoryCommunity": "Cộng đồng",
   "videoEditorAudioCategoryFeatured": "Nổi bật",
   "videoEditorAudioCategoryMySounds": "Âm thanh của tôi",
-  "videoEditorAudioFeaturedEmptyTitle": "Âm thanh nổi bật sắp ra mắt",
-  "videoEditorAudioFeaturedEmptySubtitle": "Bọn mình sẽ thả âm thanh nổi bật vào đây khi sẵn sàng.",
   "videoEditorDrawToolArrowSemanticLabel": "Công cụ mũi tên",
   "videoEditorDrawToolEraserSemanticLabel": "Công cụ tẩy",
   "videoEditorDrawToolMarkerSemanticLabel": "Công cụ bút dạ",
@@ -5724,7 +5263,6 @@
     }
   },
   "videoEditorTimelineClipReorderHint": "Nhấn giữ để sắp xếp lại",
-  "videoEditorClipGalleryInstruction": "Chạm để chỉnh sửa. Giữ và kéo để sắp xếp lại.",
   "videoEditorTimelineClipMoveLeft": "Dời sang trái",
   "videoEditorTimelineClipMoveRight": "Dời sang phải",
   "videoEditorTimelineClipSelectedSemanticLabel": "Clip {index}/{total}, đã chọn",
@@ -5879,7 +5417,6 @@
   "videoMetadataTitleLabel": "Tiêu đề",
   "videoMetadataDescriptionLabel": "Mô tả",
   "videoMetadataTagsLabel": "Thẻ",
-  "videoMetadataDeleteTagSemanticLabel": "Xóa",
   "videoMetadataDeleteTagHint": "Xóa thẻ {tag}",
   "@videoMetadataDeleteTagHint": {
     "placeholders": {
@@ -5891,42 +5428,14 @@
   "videoMetadataContentWarningLabel": "Thêm cảnh báo nội dung",
   "videoMetadataSelectContentWarningsSemanticLabel": "Chọn cảnh báo nội dung",
   "videoMetadataContentWarningSelectAllThatApply": "Chọn tất cả những gì áp dụng",
-  "videoMetadataContentWarningDoneButton": "Xong",
-  "videoMetadataAudioReuseTitle": "Xuất bản âm thanh này",
   "videoMetadataAudioReuseSubtitle": "Cho phép người khác lưu và dùng lại âm thanh của video này.",
   "publishAudioReuseDegradedWarning": "Video của bạn đã lên, nhưng âm thanh chưa đăng được. Chỉnh sửa video để chia sẻ âm thanh.",
   "videoMetadataCollaboratorsLabel": "Thêm cộng tác viên",
   "videoMetadataAddCollaboratorSemanticLabel": "Mời cộng tác viên",
-  "videoMetadataCollaboratorsHelpTooltip": "Cộng tác viên hoạt động thế nào",
-  "videoMetadataCollaboratorsCount": "{count}/{max} cộng tác viên",
-  "@videoMetadataCollaboratorsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "videoMetadataRemoveCollaboratorSemanticLabel": "Xóa cộng tác viên",
-  "videoMetadataCollaboratorsHelpMessage": "Cộng tác viên được mời làm đồng tác giả của bài đăng này. Bạn chỉ có thể mời người theo dõi lẫn nhau với bạn, và họ sẽ xuất hiện như cộng tác viên sau khi xác nhận.",
   "videoMetadataMutualFollowersSearchText": "Người theo dõi lẫn nhau",
-  "videoMetadataMustMutuallyFollowSnackbar": "Bạn và {name} cần theo dõi lẫn nhau để mời họ làm cộng tác viên.",
-  "@videoMetadataMustMutuallyFollowSnackbar": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "videoMetadataInspiredByLabel": "Thêm lấy cảm hứng từ",
   "videoMetadataSetInspiredBySemanticLabel": "Đặt lấy cảm hứng từ",
-  "videoMetadataInspiredByHelpTooltip": "Ghi nhận cảm hứng hoạt động thế nào",
-  "videoMetadataInspiredByNone": "Không có",
-  "videoMetadataInspiredByHelpMessage": "Dùng mục này để ghi nhận nguồn. Ghi nhận cảm hứng khác với cộng tác viên: nó thừa nhận ảnh hưởng, nhưng không gắn thẻ ai đó là đồng tác giả.",
   "videoMetadataCreatorCannotBeReferencedSnackbar": "Không thể tham chiếu nhà sáng tạo này.",
-  "videoMetadataRemoveInspiredBySemanticLabel": "Xóa lấy cảm hứng từ",
   "videoMetadataPostDetailsTitle": "Chi tiết bài đăng",
   "videoMetadataSavedToLibrarySnackbar": "Đã lưu vào thư viện",
   "videoMetadataFailedToSaveSnackbar": "Không lưu được",
@@ -6076,7 +5585,6 @@
   },
   "profileBadgeFallbackSemanticLabel": "Huy hiệu",
   "minorAccountReviewWelcomePageTitle": "Hướng dẫn gia đình",
-  "minorAccountReviewWelcomeCta": "Chưa đủ 16? Không sao. Đây là những gì bạn có thể làm.",
   "minorAccountReviewWelcomeTitle": "Chưa đủ 16? Không sao cả.",
   "minorAccountReviewWelcomeBody": "Nếu bạn bấm vào trang này thay vì chỉ chọn câu trả lời giúp mình vào được, điều đó rất đáng quý. Nó cho thấy sự trung thực, bản lĩnh và sự quan tâm thật sự tới những người xung quanh.\n\nQuy định cho người dưới 16 tuổi khác nhau tùy nơi bạn sống. Ở Divine, bọn mình muốn các gia đình cùng nhau trò chuyện và quyết định thế nào là dùng mạng xã hội lành mạnh.",
   "minorAccountReviewModerationTitle": "Bọn mình cần thêm một bước nữa",
@@ -6090,7 +5598,6 @@
   "minorAccountReviewChooseAgeBandTitle": "Chọn con đường phù hợp",
   "minorAccountReviewUnder13Cta": "Dưới 13",
   "minorAccountReviewTeenCta": "13-15 tuổi",
-  "minorAccountReviewFamilyResourcesTitle": "Hữu ích cho gia đình",
   "minorAccountReviewFamilyResourcesBody": "Ghé hướng dẫn gia đình Divine để có mẹo thực tế, công cụ trò chuyện và tài nguyên giúp thanh thiếu niên dùng mạng xã hội an toàn hơn.",
   "minorAccountReviewFamilyResourcesCta": "Xem hướng dẫn và mẹo cho gia đình",
   "minorAccountReviewFooter": "Nếu bạn đủ 16 tuổi và bị đưa tới đây do nhầm lẫn, hãy liên hệ hỗ trợ Divine để một người thật xem xét.",
@@ -6142,7 +5649,6 @@
   "minorAccountReviewUnder13ComeBackBody": "Tùy quy định nơi bạn sống, bạn có thể quay lại và đăng ký tài khoản riêng. Trong trường hợp đó, nếu bạn từ 13 đến 15 tuổi, bạn sẽ cần sự đồng ý của cha mẹ hoặc người giám hộ.",
   "minorAccountReviewUnder13HonestyTitle": "Tại sao bọn mình không bảo bạn cứ bấm quay lại",
   "minorAccountReviewUnder13HonestyBody": "Phần lớn internet được thiết kế để thưởng cho những người nói bất cứ gì giúp họ qua được cổng. Bọn mình không thấy điều đó hay. Vâng, bạn có thể quay lại và nói mình lớn tuổi hơn thật, nhưng điều đó không trung thực, và bọn mình sẽ không hướng dẫn bạn nói dối để có được thứ mình muốn.",
-  "minorAccountReviewUnder13LegalTitle": "Tại sao câu trả lời vẫn là không",
   "minorAccountReviewUnder13LegalBody": "Bọn mình đang cố giúp người trẻ dùng Divine theo cách lành mạnh và tích cực cho họ và những người xung quanh. Bọn mình cũng phải tuân theo luật vốn khác nhau tùy nơi. Vì vậy, nếu bạn dưới 13, câu trả lời là hôm nay bạn chưa thể có tài khoản riêng.",
   "minorAccountReviewTeenBody": "Nếu tài khoản này thuộc về người từ 13 đến 15, hãy dùng tin nhắn kiểm duyệt hoặc đường hỗ trợ để làm theo hướng dẫn về sự đồng ý của phụ huynh.",
   "minorAccountReviewParentConsentTitle": "Nếu tài khoản sẽ thuộc về người từ 13 đến 15",
@@ -6383,7 +5889,6 @@
   "minorAccountReviewUnder13WhyTitle": "Đây là lý do",
   "generalSettingsHoldToRecord": "Giữ để quay",
   "generalSettingsHoldToRecordSubtitle": "Bắt đầu quay khi bạn nhấn giữ, dừng khi bạn thả ra",
-  "soundsPreviewFailedGeneric": "Không phát được bản nghe thử",
   "uploadPublishedCountMessage": "{count, plural, =1{Đã đăng video lên hồ sơ của bạn} other{Đã đăng {count} video lên hồ sơ của bạn}}",
   "@uploadPublishedCountMessage": {
     "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",

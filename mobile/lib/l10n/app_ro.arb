@@ -70,8 +70,6 @@
     "settingsCreatorAnalytics": "Statistici pentru creatori",
     "settingsSupportCenter": "Centru de asistență",
     "settingsNotifications": "Notificări",
-    "settingsContentPreferences": "Preferințe de conținut",
-    "settingsModerationControls": "Controale de moderare",
     "settingsBlueskyPublishing": "Publicare pe Bluesky",
     "settingsBlueskyPublishingSubtitle": "Gestionează postarea încrucișată pe Bluesky",
     "settingsNostrSettings": "Setări Nostr",
@@ -209,15 +207,10 @@
             }
         }
     },
-    "profileEditProfile": "Editează profilul",
-    "profileCreatorAnalytics": "Statistici creator",
-    "profileShareProfile": "Partajează profilul",
     "profileCopyPublicKey": "Copiază cheia publică (npub)",
     "profileGetEmbedCode": "Obține codul de încorporare",
     "profilePublicKeyCopied": "Cheia publică a fost copiată",
     "profileEmbedCodeCopied": "Codul de încorporare a fost copiat",
-    "profileRefreshTooltip": "Reîncarcă",
-    "profileRefreshSemanticLabel": "Reîncarcă profilul",
     "profileMoreTooltip": "Mai multe",
     "profileMoreSemanticLabel": "Mai multe opțiuni",
     "profileFollowingLabel": "Urmărit",
@@ -302,10 +295,6 @@
     },
     "profileReportDisplayName": "Raportează-l pe {displayName}",
     "profileAddToListDisplayName": "Adaugă {displayName} la o listă",
-    "profileUserBlockedTitle": "Utilizator blocat",
-    "profileUserBlockedContent": "Nu vei mai vedea conținut de la acest utilizator în feedurile tale.",
-    "profileUserBlockedUnblockHint": "Îl poți debloca oricând din profilul lui sau din Setări > Siguranță.",
-    "profileCloseButton": "Închide",
     "profileNoCollabsTitle": "Încă nicio colaborare",
     "profileCollabsOwnEmpty": "Videoclipurile la care colaborezi vor apărea aici",
     "profileCollabsOtherEmpty": "Videoclipurile la care colaborează vor apărea aici",
@@ -342,27 +331,13 @@
     "profileShowLess": "Arată mai puțin",
     "profileCompleteYourProfile": "Completează-ți profilul",
     "profileCompleteSubtitle": "Adaugă numele, bio și poza ca să începi",
-    "profileSetUpButton": "Configurează",
-    "profileVerifyingEmail": "Se verifică emailul...",
-    "profileCheckEmailVerification": "Verifică {email} pentru linkul de confirmare",
-    "@profileCheckEmailVerification": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "profileWaitingForVerification": "Se așteaptă verificarea emailului",
-    "profileVerificationFailed": "Verificare eșuată",
     "profilePleaseTryAgain": "Încearcă din nou",
     "profileSecureYourAccount": "Securizează-ți contul",
     "profileSecureSubtitle": "Adaugă email și parolă ca să-ți recuperezi contul pe orice dispozitiv",
     "profileRetryButton": "Reîncearcă",
-    "profileRegisterButton": "Înscrie-te",
     "profileSessionExpired": "Sesiune expirată",
     "profileSignInToRestore": "Autentifică-te din nou ca să recapeți acces complet",
     "profileSignInButton": "Autentificare",
-    "profileDismissTooltip": "Respinge",
     "profileLinkCopied": "Linkul profilului a fost copiat",
     "profileSetupEditProfileTitle": "Editează profilul",
     "profileSetupBackLabel": "Înapoi",
@@ -380,18 +355,15 @@
     "profileSetupClaimFailed": "N-am putut revendica numele. Încearcă din nou.",
     "profileSetupPublishFailed": "N-am putut publica profilul. Încearcă din nou.",
     "profileSetupNoRelaysConnected": "Nu s-a putut accesa rețeaua. Verifică conexiunea și încearcă din nou.",
-    "profileSetupRetryLabel": "Încearcă din nou",
     "profileSetupDisplayNameLabel": "Nume afișat",
     "profileSetupDisplayNameRequired": "Introdu un nume afișat",
     "profileSetupBioLabel": "Bio (opțional)",
     "profileSetupPublicKeyLabel": "Cheie publică (npub)",
     "profileSetupUsernameLabel": "Nume de utilizator (opțional)",
     "profileSetupUsernameHelper": "Identitatea ta unică pe Divine",
-    "profileSetupProfileColorLabel": "Culoarea profilului (opțional)",
     "profileSetupSaveButton": "Salvează",
     "profileSetupSavingButton": "Se salvează...",
     "profileSetupImageUrlTitle": "Adaugă URL de imagine",
-    "profileSetupPictureUploaded": "Poză de profil încărcată cu succes!",
     "profileSetupImageSelectionFailed": "Selectarea imaginii a eșuat. Lipește mai jos un URL de imagine.",
     "profileSetupCameraAccessFailed": "Accesul la cameră a eșuat: {error}",
     "@profileSetupCameraAccessFailed": {
@@ -407,7 +379,6 @@
     "profileSetupUploadAuthError": "Eroare de autentificare: deconectează-te și autentifică-te din nou.",
     "profileSetupUploadFileTooLarge": "Fișier prea mare: alege o imagine mai mică (maxim 10MB).",
     "profileSetupUploadServerError": "Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.",
-    "profileSetupUploadUnsupportedOnWeb": "Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.",
     "profileSetupBannerClearButton": "Șterge bannerul",
     "profileSetupBannerChangeColor": "Culoarea bannerului",
     "profileSetupBannerColorPickerTitle": "Schimbă culoarea bannerului",
@@ -452,8 +423,6 @@
     "profileSetupSupportRequestSent": "Cerere de asistență trimisă! Revenim la tine curând.",
     "profileSetupCouldntOpenEmail": "N-am putut deschide emailul. Trimite la: names@divine.video",
     "profileSetupSendRequest": "Trimite cererea",
-    "profileSetupPickColorTitle": "Alege o culoare",
-    "profileSetupSelectButton": "Selectează",
     "profileSetupUseOwnNip05": "Folosește propria ta adresă NIP-05",
     "profileSetupNip05AddressLabel": "Adresă NIP-05",
     "profileSetupProfilePicturePreview": "Previzualizare poză de profil",
@@ -471,7 +440,6 @@
     "nostrInfoUsernameDescription": " Un nume ușor de citit (gen @nume.divine.video) care duce la npub-ul tău. Face identitatea ta Nostr mai ușor de recunoscut și verificat, ca o adresă de email.",
     "nostrInfoLearnMoreAt": "Află mai multe la ",
     "nostrInfoGotIt": "Am înțeles!",
-    "profileTabRefreshTooltip": "Reîncarcă",
     "videoGridRefreshLabel": "Se caută mai multe videoclipuri",
     "videoGridOptionsTitle": "Opțiuni video",
     "videoGridEditVideo": "Editează videoclipul",
@@ -479,14 +447,6 @@
     "videoGridDeleteVideo": "Șterge videoclipul",
     "videoGridDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Poate apărea în continuare în alți clienți Nostr.",
     "videoGridDeletingContent": "Se șterge conținutul...",
-    "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabFeatured": "Recomandate",
   "exploreTabClassics": "Clasice",
     "exploreTabNew": "Noi",
@@ -540,12 +500,9 @@
             }
         }
     },
-    "videoPlayerLoadingVideo": "Se încarcă videoclipul...",
     "videoPlayerPlayVideo": "Redă videoclipul",
     "videoPlayerMute": "Dezactivează sunetul videoclipului",
     "videoPlayerUnmute": "Activează sunetul videoclipului",
-    "videoPlayerEditVideo": "Editează videoclipul",
-    "videoPlayerEditVideoTooltip": "Editează videoclipul",
     "contentWarningLabel": "Atenționare de conținut",
     "contentWarningNudity": "Nuditate",
     "contentWarningSexualContent": "Conținut sexual",
@@ -596,15 +553,10 @@
     "communitySuggestActionLabel": "Clasifică",
     "@communitySuggestActionLabel": {"description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."},
     "videoErrorNotFound": "Videoclipul n-a fost găsit",
-    "videoErrorNetwork": "Eroare de rețea",
-    "videoErrorTimeout": "Timpul de încărcare a expirat",
-    "videoErrorFormat": "Eroare de format video\n(Încearcă din nou sau folosește alt browser)",
-    "videoErrorUnsupportedFormat": "Format video nesuportat",
     "videoErrorPlayback": "Eroare de redare video",
     "videoErrorAgeRestricted": "Conținut cu restricție de vârstă",
     "videoErrorUnavailable": "Videoclip indisponibil",
     "videoErrorUnavailableBody": "Acest videoclip nu este disponibil acum.",
-    "videoErrorVerifyAge": "Verifică vârsta",
     "videoErrorRetry": "Reîncearcă",
     "videoErrorContentRestricted": "Conținut restricționat",
     "videoErrorContentRestrictedBody": "Acest videoclip a fost eliminat pentru încălcarea regulilor noastre de conținut.",
@@ -613,7 +565,6 @@
     "videoErrorVerifyAgeButton": "Verifică vârsta",
     "videoErrorVerifyAgeFailed": "Nu am putut verifica vârsta. Încearcă din nou.",
     "videoErrorVerifyAgeSignerUnreachable": "Timpul de verificare a expirat. Verifică-ți conexiunea sau încearcă din nou în scurt timp.",
-    "videoFollowButtonFollowing": "Urmărit",
     "videoFollowButtonFollow": "Urmărește",
     "audioAttributionOriginalSound": "Sunet original",
     "audioAttributionUnavailableSound": "Sunet indisponibil",
@@ -696,21 +647,11 @@
     "videoActionRepost": "Redistribuie videoclipul",
     "videoActionViewComments": "Vezi comentariile",
     "videoActionMoreOptions": "Mai multe opțiuni",
-    "videoActionHideSubtitles": "Ascunde subtitrările",
-    "videoActionShowSubtitles": "Arată subtitrările",
     "videoEngagementLikersTitle": "Apreciat de",
     "videoEngagementRepostersTitle": "Repostat de",
     "videoEngagementLikersEmpty": "Niciun like încă",
     "videoEngagementRepostersEmpty": "Niciun repost încă",
     "videoEngagementLoadFailed": "Lista nu a putut fi încărcată",
-    "videoDescriptionLoops": "{count} bucle",
-    "@videoDescriptionLoops": {
-        "placeholders": {
-            "count": {
-                "type": "String"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Nu e Divine",
     "metadataBadgeHumanMade": "Făcut de om",
     "metadataSoundsLabel": "Sunete",
@@ -1047,11 +988,6 @@
     "notificationSettingsResetToDefaults": "Setările au fost resetate la valorile implicite",
     "notificationSettingsAbout": "Despre notificări",
     "notificationSettingsAboutDescription": "Notificările sunt alimentate de protocolul Nostr. Actualizările în timp real depind de conexiunea ta la relay-urile Nostr. Unele notificări pot avea întârzieri.",
-    "safetySettingsTitle": "Siguranță și confidențialitate",
-    "@safetySettingsTitle": {
-        "description": "Safety settings screen app bar title"
-    },
-    "safetySettingsLabel": "SETĂRI",
     "safetySettingsShowDivineHostedOnly": "Arată doar videoclipurile găzduite de Divine",
     "safetySettingsShowDivineHostedOnlySubtitle": "Ascunde videoclipurile servite de alte găzduiri media",
     "safetySettingsModeration": "MODERARE",
@@ -1379,14 +1315,6 @@
     "authUnableToAccessKeys": "Nu am putut accesa cheile tale. Încearcă din nou.",
     "authRegistrationFailed": "Înscrierea a eșuat",
     "authRegistrationComplete": "Înscriere finalizată. Verifică-ți emailul.",
-    "authVerificationFailedTitle": "Verificare eșuată",
-    "authClose": "Închide",
-    "authAccountSecured": "Cont securizat!",
-    "authAccountLinkedToEmail": "Contul tău e acum legat de emailul tău.",
-    "authVerifyYourEmail": "Verifică-ți emailul",
-    "authClickLinkContinue": "Apasă linkul din email ca să finalizezi înregistrarea. Poți continua să folosești aplicația între timp.",
-    "authWaitingForVerificationEllipsis": "Se așteaptă verificarea...",
-    "authContinueToApp": "Continuă în aplicație",
     "authFailedToSendResetEmail": "N-am putut trimite emailul de resetare.",
     "authSending": "Se trimite...",
     "authSignInButton": "Autentificare",
@@ -1416,7 +1344,6 @@
     "shareSheetAddToList": "Adaugă la listă",
     "shareSheetCopy": "Copiază",
     "shareSheetShareVia": "Partajează prin",
-    "shareSheetReport": "Raportează",
     "shareSheetEventJson": "JSON eveniment",
     "shareSheetEventId": "ID eveniment",
     "shareSheetMoreActions": "Mai multe acțiuni",
@@ -1458,103 +1385,7 @@
     "watermarkDownloadStageDownloadingDesc": "Se aduce videoclipul din rețea...",
     "watermarkDownloadStageWatermarkingDesc": "Se aplică filigranul Divine...",
     "watermarkDownloadStageSavingDesc": "Se salvează videoclipul cu filigran în galeria ta...",
-    "uploadProgressVideoUpload": "Încărcare videoclip",
-    "uploadProgressPause": "Pauză",
-    "uploadProgressResume": "Reia",
-    "uploadProgressGoBack": "Înapoi",
-    "uploadProgressRetryWithCount": "Reîncearcă ({count} rămase)",
-    "@uploadProgressRetryWithCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressDelete": "Șterge",
-    "uploadProgressDaysAgo": "acum {count}z",
-    "@uploadProgressDaysAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressHoursAgo": "acum {count}h",
-    "@uploadProgressHoursAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressMinutesAgo": "acum {count}m",
-    "@uploadProgressMinutesAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressJustNow": "Chiar acum",
-    "uploadProgressUploadingPercent": "Se încarcă {percent}%",
-    "@uploadProgressUploadingPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressPausedPercent": "Pauză la {percent}%",
-    "@uploadProgressPausedPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "shareMenuTitle": "Partajează videoclipul",
-    "shareMenuReportAiContent": "Raportează conținut AI",
-    "shareMenuReportAiContentSubtitle": "Raportează rapid conținut suspect de a fi generat de AI",
-    "shareMenuReportingAiContent": "Se raportează conținutul AI...",
-    "shareMenuFailedToReportContent": "N-am putut raporta conținutul: {error}",
-    "@shareMenuFailedToReportContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFailedToReportAiContent": "N-am putut raporta conținutul AI: {error}",
-    "@shareMenuFailedToReportAiContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuVideoStatus": "Stare videoclip",
-    "shareMenuViewAllLists": "Vezi toate listele →",
-    "shareMenuShareWith": "Partajează cu",
-    "shareMenuShareViaOtherApps": "Partajează prin alte aplicații",
-    "shareMenuShareViaOtherAppsSubtitle": "Partajează prin alte aplicații sau copiază linkul",
-    "shareMenuSaveToGallery": "Salvează în galerie",
-    "shareMenuSaveOriginalSubtitle": "Salvează videoclipul original în galerie",
-    "shareMenuSaveWithWatermark": "Salvează cu filigran",
-    "shareMenuSaveVideo": "Salvează videoclipul",
-    "shareMenuDownloadWithWatermark": "Descarcă cu filigran Divine",
-    "shareMenuSaveVideoSubtitle": "Salvează videoclipul în galerie",
-    "shareMenuLists": "Liste",
-    "shareMenuAddToList": "Adaugă la listă",
-    "shareMenuAddToListSubtitle": "Adaugă la listele tale curate",
-    "shareMenuCreateNewList": "Creează o listă nouă",
-    "shareMenuCreateNewListSubtitle": "Începe o nouă colecție curată",
-    "shareMenuRemovedFromList": "Eliminat din listă",
-    "shareMenuFailedToRemoveFromList": "N-am putut elimina din listă",
     "shareMenuBookmarks": "Semne de carte",
-    "shareMenuFollowSets": "Seturi de urmărire",
-    "shareMenuCreateFollowSet": "Creează un set de urmărire",
-    "shareMenuCreateFollowSetSubtitle": "Începe o colecție nouă cu acest creator",
-    "shareMenuAddToFollowSet": "Adaugă la setul de urmărire",
     "shareMenuFollowSetsAvailable": "{count, plural, one{1 set de urmărire disponibil} few{{count} seturi de urmărire disponibile} other{{count} de seturi de urmărire disponibile}}",
     "@shareMenuFollowSetsAvailable": {
         "placeholders": {
@@ -1563,21 +1394,8 @@
             }
         }
     },
-    "shareMenuAddedToBookmarks": "Adăugat la semnele de carte!",
-    "shareMenuFailedToAddBookmark": "N-am putut adăuga semnul de carte",
-    "shareMenuCreatedListAndAddedVideo": "Lista \"{name}\" creată și videoclipul adăugat",
-    "@shareMenuCreatedListAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuManageContent": "Gestionează conținutul",
     "shareMenuEditVideo": "Editează videoclipul",
-    "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "shareMenuDeleteVideo": "Șterge videoclipul",
-    "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
     "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@shareMenuVideoCount": {
         "placeholders": {
@@ -1586,43 +1404,11 @@
             }
         }
     },
-    "shareMenuClose": "Închide",
     "shareMenuDeleteConfirmation": "Asta va șterge definitiv acest videoclip din Divine. Poate apărea în continuare în clienți Nostr terți care folosesc alte relay-uri.",
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
-    "shareMenuDeletingContent": "Se șterge conținutul...",
-    "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFollowSetName": "Numele setului de urmărire",
-    "shareMenuFollowSetNameHint": "ex. Creatori de conținut, Muzicieni etc.",
-    "shareMenuDescriptionOptional": "Descriere (opțional)",
-    "shareMenuCreate": "Creează",
-    "shareMenuCreatedFollowSetAndAddedCreator": "Set de urmărire \"{name}\" creat și creatorul adăugat",
-    "@shareMenuCreatedFollowSetAndAddedCreator": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuDone": "Gata",
-    "shareMenuEditTitle": "Titlu",
-    "shareMenuEditTitleHint": "Introdu titlul videoclipului",
-    "shareMenuEditDescription": "Descriere",
-    "shareMenuEditDescriptionHint": "Introdu descrierea videoclipului",
-    "shareMenuEditHashtags": "Hashtaguri",
-    "shareMenuEditHashtagsHint": "hashtaguri, separate, prin virgulă",
-    "shareMenuEditMetadataNote": "Notă: Doar metadatele pot fi editate. Conținutul video nu poate fi schimbat.",
-    "shareMenuDeleting": "Se șterge...",
     "shareMenuUpdate": "Actualizează",
     "shareMenuChangeCover": "Schimbă coperta",
-    "shareMenuCoverUploadingBackground": "Miniatura se încarcă în fundal",
     "shareMenuVideoUpdated": "Videoclip actualizat cu succes",
     "shareMenuVideoUpdatedWithInviteFailures": "Videoclip actualizat, dar {count, plural, =1{1 invitație pentru colaborator nu a fost trimisă.} other{{count} invitații pentru colaboratori nu au fost trimise.}}",
     "shareMenuFailedToUpdateVideo": "N-am putut actualiza videoclipul: {error}",
@@ -1635,39 +1421,8 @@
     },
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuVideoDeletionRequested": "Videoclip șters",
-    "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuContentLabels": "Etichete de conținut",
-    "shareMenuAddContentLabels": "Adaugă etichete de conținut",
-    "shareMenuClearAll": "Șterge tot",
-    "shareMenuCollaborators": "Colaboratori",
-    "shareMenuAddCollaborator": "Adaugă colaborator",
-    "shareMenuMutualFollowRequired": "Trebuie să te urmărești reciproc cu {name} ca să-l adaugi drept colaborator.",
-    "@shareMenuMutualFollowRequired": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuLoading": "Se încarcă...",
-    "shareMenuInspiredBy": "Inspirat de",
-    "shareMenuAddInspirationCredit": "Adaugă credit pentru inspirație",
-    "shareMenuCreatorCannotBeReferenced": "Acest creator nu poate fi referit.",
-    "shareMenuUnknown": "Necunoscut",
-    "shareMenuUseThisSound": "Folosește acest sunet",
-    "shareMenuOriginalSound": "Sunet original",
     "authSessionExpired": "Sesiunea ta a expirat. Autentifică-te din nou.",
     "authSignInFailed": "N-am putut autentifica. Încearcă din nou.",
-    "localeAppLanguage": "Limba aplicației",
-    "localeDeviceDefault": "Implicit dispozitiv",
-    "localeSelectLanguage": "Alege limba",
     "webAuthNotSupportedSecureMode": "Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.",
     "webAuthIntegrationFailed": "Integrarea de autentificare a eșuat: {error}",
     "@webAuthIntegrationFailed": {
@@ -1699,34 +1454,15 @@
     "webAuthNostrHelp": "Instalează o extensie de browser ca Alby sau nos2x pentru cea mai ușoară experiență, sau folosește nsec bunker pentru semnare la distanță sigură.",
     "soundsTitle": "Sunete",
     "soundsSearchHint": "Caută sunete...",
-    "soundsPreviewUnavailable": "Nu pot previzualiza sunetul - niciun audio disponibil",
-    "soundsPreviewFailed": "N-am putut reda previzualizarea: {error}",
-    "@soundsPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "soundsPreviewFailedGeneric": "N-am putut reda previzualizarea",
-    "soundsFeaturedSounds": "Sunete recomandate",
-    "soundsTrendingSounds": "Sunete în trend",
-    "soundsAllSounds": "Toate sunetele",
     "soundSyncStatusSyncing": "Se sincronizează sunetele tale…",
     "soundSyncStatusSynced": "Sunetele sunt la zi",
     "soundSyncStatusFailed": "Nu am putut sincroniza sunetele tale. Vom încerca din nou.",
     "soundSyncStatusLocked": "Nu putem debloca biblioteca ta sincronizată pe acest dispozitiv.",
     "soundsSearchResults": "Rezultatele căutării",
-    "soundsNoSoundsAvailable": "Niciun sunet disponibil",
-    "soundsNoSoundsDescription": "Sunetele vor apărea aici când creatorii distribuie audio",
     "soundsNoSoundsFound": "Niciun sunet găsit",
     "soundsNoSoundsFoundDescription": "Încearcă alt termen de căutare",
-    "soundsFailedToLoad": "N-am putut încărca sunetele",
-    "soundsRetry": "Reîncearcă",
-    "soundsScreenLabel": "Ecranul sunetelor",
     "profileTitle": "Profil",
     "profileRefresh": "Reîncarcă",
-    "profileRefreshLabel": "Reîncarcă profilul",
     "profileMoreOptions": "Mai multe opțiuni",
     "profileBlockedUser": "L-ai blocat pe {name}",
     "@profileBlockedUser": {
@@ -1752,14 +1488,6 @@
             }
         }
     },
-    "profileError": "Eroare: {error}",
-    "@profileError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsTabAll": "Toate",
     "notificationsTabLikes": "Aprecieri",
     "notificationsTabComments": "Comentarii",
@@ -1768,25 +1496,6 @@
     "notificationsFailedToLoad": "N-am putut încărca notificările",
     "notificationsRetry": "Reîncearcă",
     "notificationsRefreshError": "Actualizare eșuată — se afișează ce există",
-    "notificationsCheckingNew": "se verifică notificări noi",
-    "notificationsNoneYet": "Încă nicio notificare",
-    "notificationsNoneForType": "Nicio notificare de tip {type}",
-    "@notificationsNoneForType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
-    "notificationsEmptyDescription": "Când oamenii interacționează cu conținutul tău, vei vedea asta aici",
-    "notificationsLoadingType": "Se încarcă notificările de tip {type}...",
-    "@notificationsLoadingType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsInviteSingular": "Ai 1 invitație de împărțit cu un prieten!",
     "notificationsInvitePlural": "Ai {count, plural, one{1 invitație} few{{count} invitații} other{{count} de invitații}} de împărțit cu prietenii!",
     "@notificationsInvitePlural": {
@@ -1796,9 +1505,7 @@
             }
         }
     },
-    "notificationsVideoNotFound": "Videoclipul n-a fost găsit",
     "notificationsVideoUnavailable": "Videoclip indisponibil",
-    "notificationsFromNotification": "Din notificare",
     "feedFailedToLoadVideos": "N-am putut încărca videoclipurile",
     "feedRetry": "Reîncearcă",
     "feedNoFollowedUsers": "Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.",
@@ -1828,50 +1535,13 @@
     "feedLatestEmpty": "Încă nu există videoclipuri noi.\nRevino curând.",
     "feedClassicEmpty": "Încă nu există clasice.\nRevino curând.",
     "feedExploreVideos": "Explorează videoclipuri",
-    "feedExternalVideoSlow": "Videoclipul extern se încarcă încet",
-    "feedSkip": "Sari peste",
-    "uploadWaitingToUpload": "Se așteaptă încărcarea",
     "uploadUploadingVideo": "Se încarcă videoclipul",
-    "uploadProcessingVideo": "Se procesează videoclipul",
-    "uploadProcessingComplete": "Procesare finalizată",
-    "uploadPublishedSuccessfully": "Publicat cu succes",
-    "uploadFailed": "Încărcare eșuată",
-    "uploadRetrying": "Se reîncearcă încărcarea",
-    "uploadPaused": "Încărcare în pauză",
-    "uploadPercentComplete": "{percent}% finalizat",
-    "@uploadPercentComplete": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadQueuedMessage": "Videoclipul tău e în așteptare pentru încărcare",
-    "uploadUploadingMessage": "Se încarcă pe server...",
-    "uploadProcessingMessage": "Se procesează videoclipul - poate dura câteva minute",
-    "uploadReadyToPublishMessage": "Videoclip procesat cu succes și gata de publicare",
-    "uploadPublishedMessage": "Videoclip publicat pe profilul tău",
     "postPublishConfirmationTitle": "Publicat pe profilul tău",
     "postPublishConfirmationView": "Vezi",
     "postPublishConfirmationShare": "Partajează",
     "postPublishConfirmationThumbnailLabel": "Miniatura videoclipului pe care tocmai l-ai publicat",
   "uploadPublishedCountMessage": "{count, plural, =1{Videoclip publicat pe profilul tău} few{{count} videoclipuri publicate pe profilul tău} other{{count} de videoclipuri publicate pe profilul tău}}",
-    "uploadFailedMessage": "Încărcarea a eșuat - încearcă din nou",
-    "uploadRetryingMessage": "Se reîncearcă încărcarea...",
-    "uploadPausedMessage": "Încărcare oprită de utilizator",
-    "uploadRetryButton": "REÎNCEARCĂ",
-    "uploadRetryFailed": "N-am putut reîncerca încărcarea: {error}",
-    "@uploadRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "userSearchPrompt": "Caută utilizatori",
     "userSearchNoResults": "Niciun utilizator găsit",
-    "userSearchFailed": "Căutarea a eșuat",
-    "userPickerSearchByName": "Caută după nume",
     "userPickerFilterByNameHint": "Filtrează după nume...",
     "userPickerSearchByNameHint": "Caută după nume...",
     "userPickerClearSearchSemantics": "Șterge căutarea",
@@ -1910,17 +1580,6 @@
     "ageVerificationCreationQuestion": "Ai 16 ani sau mai mult?",
     "ageVerificationNo": "Nu",
     "ageVerificationYes": "Da",
-    "shareLinkCopied": "Link copiat în clipboard",
-    "shareFailedToCopy": "N-am putut copia linkul",
-    "shareVideoSubject": "Vezi acest videoclip pe Divine",
-    "shareFailedToShare": "N-am putut partaja",
-    "shareVideoTitle": "Partajează videoclipul",
-    "shareToApps": "Partajează în aplicații",
-    "shareToAppsSubtitle": "Partajează prin aplicații de mesagerie sau sociale",
-    "shareCopyWebLink": "Copiază linkul web",
-    "shareCopyWebLinkSubtitle": "Copiază un link web de partajat",
-    "shareCopyNostrLink": "Copiază linkul Nostr",
-    "shareCopyNostrLinkSubtitle": "Copiază linkul nevent pentru clienții Nostr",
     "navHome": "Acasă",
     "navExplore": "Explorează",
     "navInbox": "Mesaje",
@@ -1928,7 +1587,6 @@
     "navMyProfile": "Profilul meu",
     "navNotifications": "Notificări",
     "navOpenCamera": "Deschide camera",
-    "navUnknown": "Necunoscut",
     "navExploreClassics": "Clasice",
     "navExploreNewVideos": "Videoclipuri noi",
     "navExploreTrending": "În trend",
@@ -1989,10 +1647,8 @@
             }
         }
     },
-    "reportTitle": "Raportează conținut",
     "reportWhyReporting": "De ce raportezi acest conținut?",
     "reportPolicyNotice": "Divine va acționa asupra rapoartelor de conținut în 24 de ore eliminând conținutul și excluțând utilizatorul care a furnizat conținutul ofensator.",
-    "reportAdditionalDetails": "Detalii suplimentare (opțional)",
     "reportBlockUser": "Blochează acest utilizator",
     "reportCancel": "Anulează",
     "reportSubmit": "Raportează",
@@ -2019,7 +1675,6 @@
     "reportReceivedTitle": "Raport primit",
     "reportReceivedThankYou": "Mersi că ne ajuți să păstrăm Divine în siguranță.",
     "reportReceivedReviewNotice": "Echipa noastră âți va revizui raportul și va lua măsuri corespunzătoare. S-ar putea să primești actualizări prin mesaj direct.",
-    "reportLearnMore": "Află mai multe",
     "reportSafetyUrl": "divine.video/safety",
     "reportClose": "Închide",
     "listAddToList": "Adaugă la listă",
@@ -2340,7 +1995,6 @@
     "commonCancel": "Anulează",
     "commonDelete": "Șterge",
     "commonRetry": "Reîncearcă",
-    "commonNext": "Următorul",
     "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2376,7 +2030,6 @@
             }
         }
     },
-    "featureRequestCancel": "Anulează",
     "followersFailedToLoadList": "Nu s-a putut încărca lista de urmăritori",
     "followingFailedToLoadList": "Nu s-a putut încărca lista de urmăriți",
     "inboxActionBlock": "Blochează {displayName}",
@@ -2492,8 +2145,6 @@
             }
         }
     },
-    "libraryAddClips": "Adaugă",
-    "libraryClipSelectionTitle": "Clipuri",
     "libraryClipsDeletedCount": "{count, plural, =1{1 clip șters} other{{count} clipuri șterse}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2531,15 +2182,6 @@
     "libraryCreateVideo": "Creează video ({count})",
     "libraryDeleteClipMessage": "Ștergi acest clip?",
     "libraryDeleteClipTitle": "Șterge clipul",
-    "libraryDeleteClipsMessage": "Ștergi {count, plural, one{# clip selectat} other{# clipuri selectate}}?",
-    "@libraryDeleteClipsMessage": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "libraryDeleteClipsTitle": "Șterge clipurile",
     "libraryDeleteClipsWarning": "Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.",
     "libraryDeleteConfirm": "Șterge",
     "libraryDeleteDraftMessage": "Ștergi „{title}”?",
@@ -2609,15 +2251,6 @@
     "videoClipSemanticHintDisabled": "Dezactivat",
     "videoClipSemanticHintSelect": "Atinge pentru a selecta, ține apăsat pentru previzualizare",
     "videoClipSemanticHintDeselect": "Atinge pentru a deselecta, ține apăsat pentru previzualizare",
-    "librarySaveToCameraRollTooltip": "Salvează în galerie",
-    "librarySecondsRemaining": "Au rămas {seconds}s",
-    "@librarySecondsRemaining": {
-        "placeholders": {
-            "seconds": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipDuration": "{seconds} s",
     "libraryTabClips": "Clipuri",
     "libraryTabDrafts": "Ciorne",
@@ -2639,8 +2272,6 @@
     "dmConversationLoadError": "Mesajele nu au putut fi încărcate",
     "dmMessageInputHint": "Spune ceva…",
     "dmMessageSendLabel": "Trimite mesajul",
-    "reportDialogCancel": "Anulează",
-    "reportDialogReport": "Raportează",
     "routerInvalidCreator": "Creator invalid",
     "routerInvalidHashtagRoute": "Rută hashtag invalidă",
     "searchDiscoverSomethingInteresting": "Descoperă ceva interesant",
@@ -3051,8 +2682,6 @@
     "videoEditorReleaseToDeleteLayer": "Eliberează pentru a șterge stratul",
     "videoEditorDoneLabel": "Gata",
     "videoEditorPlayPauseSemanticLabel": "Redă sau pune pe pauză videoclipul",
-    "videoEditorCropSemanticLabel": "Decupează",
-    "videoEditorCannotSplitProcessing": "Clipul nu poate fi împărțit în timp ce este procesat. Te rugăm să aștepți.",
     "videoEditorSplitPositionInvalid": "Poziție de împărțire invalidă. Ambele clipuri trebuie să aibă cel puțin {minDurationMs} ms.",
     "@videoEditorSplitPositionInvalid": {
         "placeholders": {
@@ -3061,14 +2690,10 @@
             }
         }
     },
-    "videoEditorAddClipFromLibrary": "Adaugă clip din bibliotecă",
     "videoEditorSaveSelectedClip": "Salvează clipul selectat",
-    "videoEditorSplitClip": "Împarte clipul",
     "videoEditorSaveClip": "Salvează clipul",
-    "videoEditorDeleteClip": "Șterge clipul",
     "videoEditorClipSavedSuccess": "Clip salvat în bibliotecă",
     "videoEditorClipSaveFailed": "Nu s-a putut salva clipul",
-    "videoEditorClipDeleted": "Clip șters",
     "videoEditorColorPickerSemanticLabel": "Selector de culoare",
     "videoEditorUndoSemanticLabel": "Anulează",
     "videoEditorRedoSemanticLabel": "Refă",
@@ -3079,8 +2704,6 @@
     "videoEditorNoStickersFound": "Nu au fost găsite stickere",
     "videoEditorNoStickersAvailable": "Nu sunt disponibile stickere",
     "videoEditorFailedLoadStickers": "Nu s-au putut încărca stickerele",
-    "videoEditorAdjustVolumeTitle": "Ajustează volumul",
-    "videoEditorRecordedAudioLabel": "Audio înregistrat",
     "videoEditorVoiceOverLabel": "Voce off",
     "videoEditorVoiceOverTakeName": "Înregistrarea {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Înregistrează o voce off",
@@ -3097,8 +2720,6 @@
     "videoEditorVoiceOverTooLong": "Înregistrarea este mai lungă decât videoclipul tău",
     "videoEditorPlaySemanticLabel": "Redă",
     "videoEditorPauseSemanticLabel": "Pauză",
-    "videoEditorMuteAudioSemanticLabel": "Dezactivează sunetul",
-    "videoEditorUnmuteAudioSemanticLabel": "Activează sunetul",
     "videoEditorDeleteLabel": "Șterge",
     "videoEditorDeleteSelectedItemSemanticLabel": "Șterge elementul selectat",
     "videoEditorEditLabel": "Editează",
@@ -3256,7 +2877,6 @@
     "videoMetadataTitleLabel": "Titlu",
     "videoMetadataDescriptionLabel": "Descriere",
     "videoMetadataTagsLabel": "Etichete",
-    "videoMetadataDeleteTagSemanticLabel": "Șterge",
     "videoMetadataDeleteTagHint": "Șterge eticheta {tag}",
     "@videoMetadataDeleteTagHint": {
         "placeholders": {
@@ -3268,39 +2888,12 @@
     "videoMetadataContentWarningLabel": "Avertisment de conținut",
     "videoMetadataSelectContentWarningsSemanticLabel": "Selectează avertismente de conținut",
     "videoMetadataContentWarningSelectAllThatApply": "Selectează tot ce se aplică conținutului tău",
-    "videoMetadataContentWarningDoneButton": "Gata",
     "videoMetadataCollaboratorsLabel": "Colaboratori",
     "videoMetadataAddCollaboratorSemanticLabel": "Adaugă colaborator",
-    "videoMetadataCollaboratorsHelpTooltip": "Cum funcționează colaboratorii",
-    "videoMetadataCollaboratorsCount": "{count}/{max} colaboratori",
-    "@videoMetadataCollaboratorsCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "videoMetadataRemoveCollaboratorSemanticLabel": "Elimină colaborator",
-    "videoMetadataCollaboratorsHelpMessage": "Colaboratorii sunt etichetați ca și co-creatori ai acestei postări. Poți adăuga doar persoane pe care le urmăriți reciproc, iar ele apar în metadatele postării când este publicată.",
     "videoMetadataMutualFollowersSearchText": "Urmăritori reciproci",
-    "videoMetadataMustMutuallyFollowSnackbar": "Trebuie să vă urmăriți reciproc cu {name} pentru a-l adăuga ca și colaborator.",
-    "@videoMetadataMustMutuallyFollowSnackbar": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "videoMetadataInspiredByLabel": "Inspirat de",
     "videoMetadataSetInspiredBySemanticLabel": "Setează inspirat de",
-    "videoMetadataInspiredByHelpTooltip": "Cum funcționează creditele de inspirație",
-    "videoMetadataInspiredByNone": "Niciunul",
-    "videoMetadataInspiredByHelpMessage": "Folosește asta pentru a oferi atribuire. Creditul inspirat de este diferit de colaboratori: recunoaște influența, dar nu etichetează pe cineva ca și co-creator.",
     "videoMetadataCreatorCannotBeReferencedSnackbar": "Nu se poate face referire la acest creator.",
-    "videoMetadataRemoveInspiredBySemanticLabel": "Elimină inspirat de",
     "videoMetadataPostDetailsTitle": "Detalii postare",
     "videoMetadataSavedToLibrarySnackbar": "Salvat în bibliotecă",
     "videoMetadataFailedToSaveSnackbar": "Salvare eșuată",
@@ -3363,9 +2956,6 @@
     "shareMenuDeleteFailedRelayNoResponse": "Nu am putut contacta releul. Verifică conexiunea și încearcă din nou.",
     "shareMenuDeletePartiallyConfirmed": "Șters. Nu toate releele au confirmat, așa că poate apărea în continuare în alte aplicații.",
     "videoEditorAudioSegmentInstruction": "Alege segmentul audio pentru videoclipul tău",
-    "videoEditorClipGalleryInstruction": "Atinge pentru editare. Ține apăsat și trage pentru reordonare.",
-    "navSearch": "Caută",
-    "navSearchTooltip": "Caută",
     "fullscreenFeedRemovedMessage": "Videoclip eliminat",
     "fullscreenFeedEmptyMessage": "Nu mai e nimic de redat aici",
     "invitesGenerateCardTitle": "{count, plural, =1{1 invitație gata de generat} few{{count} invitații gata de generat} other{{count} de invitații gata de generat}}",
@@ -3409,9 +2999,7 @@
         }
     },
     "notificationSystemUpdate": "Ai o actualizare nouă",
-    "notificationSomeoneLikedYourVideo": "Cineva a apreciat videoclipul tău",
     "peopleListsAddToList": "Adaugă la listă",
-    "peopleListsAddToListSubtitle": "Pune acest creator în una dintre listele tale",
     "peopleListsSheetTitle": "Adaugă la listă",
     "peopleListsEmptyTitle": "Nicio listă încă",
     "peopleListsEmptySubtitle": "Creează o listă pentru a începe să grupezi persoane.",
@@ -3810,14 +3398,6 @@
     "bugReportDiagnosticsNotice": "Informațiile despre dispozitiv și jurnalele vor fi incluse automat.",
     "bugReportSuccessMessage": "Mulțumim! Am primit raportul tău și îl vom folosi ca să facem Divine mai bun.",
     "bugReportSendFailed": "Trimiterea raportului de bug a eșuat. Încearcă din nou mai târziu.",
-    "bugReportFailedWithError": "Trimiterea raportului de bug a eșuat: {error}",
-    "@bugReportFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "featureRequestSendRequest": "Trimite cererea",
     "featureRequestSubjectHint": "Scurt rezumat al ideii tale",
     "featureRequestDescriptionRequiredLabel": "Ce ți-ar plăcea? *",
@@ -3828,14 +3408,6 @@
     "featureRequestWhenHint": "Descrie situațiile în care te-ar ajuta",
     "featureRequestSuccessMessage": "Mulțumim! Am primit cererea ta de funcție și o vom analiza.",
     "featureRequestSendFailed": "Trimiterea cererii de funcție a eșuat. Încearcă din nou mai târziu.",
-    "featureRequestFailedWithError": "Trimiterea cererii de funcție a eșuat: {error}",
-    "@featureRequestFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "followingTitle": "Urmăriți",
     "followingTitleForName": "Urmăriții lui {displayName}",
     "@followingTitleForName": {
@@ -3862,9 +3434,6 @@
     "followSortTitle": "Sortează după",
     "followSortNewest": "Cei mai noi primii",
     "followSortOldest": "Cei mai vechi primii",
-    "reportMessageTitle": "Raportează mesajul",
-    "reportMessageWhyReporting": "De ce raportezi acest mesaj?",
-    "reportMessageSelectReason": "Selectează un motiv pentru raportarea acestui mesaj",
     "newMessageTitle": "Mesaj nou",
     "newMessageFindPeople": "Găsește oameni",
     "newMessageNoContacts": "Niciun contact găsit.\nUrmărește oameni ca să-i vezi aici.",
@@ -4034,8 +3603,6 @@
     "authInfoBrowserExtensionTitle": "Extensie de Browser",
     "authInfoBrowserExtensionDescription": "Conectează-te cu o extensie de browser NIP-07 precum Alby sau nos2x. Cheile tale rămân în extensie — Divine nu le vede niciodată.",
     "soundsAlreadySavedToLibrary": "Deja în Sunete",
-    "soundsAvailabilityCommunity": "Comunitate",
-    "soundsAvailabilityPrivate": "Privat",
     "soundsRemoveSavedSound": "Elimină sunetul",
     "savedSoundSaveAction": "Salvează",
     "savedSoundPausePreviewAction": "Pune pauză la previzualizare",
@@ -4052,11 +3619,8 @@
     "soundsSavedToLibrary": "Salvat în Sunete",
     "videoEditorAudioCategoryFeatured": "Recomandate",
     "videoEditorAudioCategoryMySounds": "Sunetele mele",
-    "videoEditorAudioFeaturedEmptySubtitle": "Vom adăuga sunete recomandate aici imediat ce sunt gata.",
-    "videoEditorAudioFeaturedEmptyTitle": "Sunete recomandate în curând",
     "videoMetadataAudioReuseSubtitle": "Permite altora să salveze și să reutilizeze audio-ul acestui videoclip.",
     "publishAudioReuseDegradedWarning": "Videoclipul tău e publicat, dar sunetul nu. Editează videoclipul ca să îl împarți.",
-    "videoMetadataAudioReuseTitle": "Publică acest sunet",
     "videoMetadataShareReplyToFeedTitle": "Distribuie și în feedul meu",
     "videoMetadataShareReplyToFeedSubtitle": "Oprit păstrează acest videoclip doar în firul de comentarii.",
     "commentsRecordVideoButtonLabel": "Înregistrează comentariu video",
@@ -4217,14 +3781,12 @@
     "videoEditorChromaKeyRemoveFailed": "Ecranul verde nu a putut fi eliminat. Clipul tău rămâne neschimbat.",
     "videoEditorChromaKeyApplying": "Se aplică ecranul verde…",
     "videoEditorChromaKeyPreviewUnavailable": "Acest dispozitiv nu poate afișa previzualizarea live. Setările tale se aplică oricum la export.",
-    "videoEditorOriginalAudioLabel": "Audio original",
     "videoEditorClipVolumeLabel": "Clip {index}",
     "dmReactionAddCustomA11yLabel": "Adaugă o reacție emoji personalizată",
     "dmReelReplyComposerHint": "Mesaj pentru {name}…",
     "dmReelReplyComposerHintSelf": "Răspunde-ți ție…",
     "dmReelReplyComposerSemanticLabel": "Răspunde la acest reel",
     "dmReelReplyViewChat": "Vezi conversația",
-    "dmReelReplyViewChatA11yLabel": "Deschide conversația",
     "dmReelReplySentAnnouncement": "Răspuns trimis",
     "dmReelReactionSentAnnouncement": "Ai reacționat {emoji}",
     "dmReelReplyFailed": "Trimiterea a eșuat",
@@ -4278,7 +3840,6 @@
     "reportReasonCsam": "Abuz sexual asupra copiilor",
     "reportReasonCsamSubtitle": "Conținut care înfățișează abuzul sexual asupra minorilor",
     "minorAccountReviewWelcomePageTitle": "Ghid pentru familii",
-    "minorAccountReviewWelcomeCta": "Încă nu ai 16 ani? E în regulă. Uite ce poți face.",
     "minorAccountReviewWelcomeTitle": "Încă nu ai 16 ani? E în regulă.",
     "minorAccountReviewWelcomeBody": "Faptul că ai intrat pe această pagină în loc să alegi pur și simplu răspunsul care te lăsa să intri contează. Arată onestitate, caracter și grijă adevărată față de oamenii din jurul tău.\n\nRegulile pentru persoanele sub 16 ani diferă în funcție de locul unde trăiești. La Divine vrem ca familiile să discute împreună și să decidă cum arată o folosire sănătoasă a rețelelor sociale.",
     "minorAccountReviewModerationTitle": "Mai avem nevoie de un pas",
@@ -4292,7 +3853,6 @@
     "minorAccountReviewChooseAgeBandTitle": "Alege drumul potrivit",
     "minorAccountReviewUnder13Cta": "Sub 13 ani",
     "minorAccountReviewTeenCta": "13-15 ani",
-    "minorAccountReviewFamilyResourcesTitle": "Util pentru familii",
     "minorAccountReviewFamilyResourcesBody": "Vezi ghidul Divine pentru familii, cu sfaturi practice, instrumente de discuție și resurse care îi ajută pe adolescenți să folosească rețelele sociale mai în siguranță.",
     "minorAccountReviewFamilyResourcesCta": "Obține ghiduri și sfaturi pentru familii",
     "minorAccountReviewFooter": "Dacă ai 16 ani sau mai mult și ai ajuns aici din greșeală, contactează asistența Divine ca să verifice un om real.",
@@ -4481,15 +4041,6 @@
             }
         }
     },
-    "notificationSettingsSystem": "Sistem",
-    "notificationSettingsSystemSubtitle": "Actualizări ale aplicației și mesaje de sistem",
-    "notificationSettingsPushNotificationsSection": "Notificări push",
-    "notificationSettingsPushNotifications": "Notificări push",
-    "notificationSettingsPushNotificationsSubtitle": "Primește notificări și când aplicația e închisă",
-    "notificationSettingsSound": "Sunet",
-    "notificationSettingsSoundSubtitle": "Redă sunet la notificări",
-    "notificationSettingsVibration": "Vibrații",
-    "notificationSettingsVibrationSubtitle": "Vibrează la notificări",
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4510,7 +4061,6 @@
     "videoEditorTransformFrameFailed": "Cadrul nu a putut fi transformat. Încearcă din nou.",
     "videoEditorTransformRotateLabel": "Rotește",
     "videoEditorTransformFlipLabel": "Întoarce",
-    "videoEditorTransformRatioLabel": "Proporție",
     "videoEditorTransformResetLabel": "Resetează",
     "videoEditorTransformApplySemanticLabel": "Aplică transformarea",
     "videoEditorTransformCancelSemanticLabel": "Anulează transformarea",
@@ -4847,12 +4397,6 @@
     "deleteAccountSuccess": "Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.",
     "deleteAccountSuccessContentUnverified": "Ștergerea contului a fost solicitată. Ștergerea unor postări existente nu a putut fi confirmată individual.",
     "deleteAccountWarningBody": "Aceasta trimite cereri de ștergere pentru contul și conținutul tău, șterge contul tău Divine când e posibil și te deconectează pe acest dispozitiv. Unele relay-uri, clienți și indexuri de căutare pot păstra copii. Alte dispozitive conectate rămân active până când elimini cheile de pe ele.",
-    "exportProgressStageApplyingTextOverlay": "Se adaugă suprapunerea de text...",
-    "exportProgressStageComplete": "Export finalizat!",
-    "exportProgressStageConcatenating": "Se combină clipurile...",
-    "exportProgressStageError": "Exportul a eșuat",
-    "exportProgressStageGeneratingThumbnail": "Se generează miniatura...",
-    "exportProgressStageMixingAudio": "Se adaugă sunetul...",
     "findPeopleAnonymousUser": "Anonim",
     "findPeopleNoContacts": "Niciun contact găsit.\nÎncepe să urmărești oameni ca să-i vezi aici.",
     "geoBlockedCityLabel": "Oraș",
@@ -4888,21 +4432,15 @@
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Acest sunet nu a putut fi găsit",
     "soundDetailNotFoundTitle": "Sunet negăsit",
-    "videoFeedDescriptionSemanticLabel": "Descrierea videoclipului",
     "videoFeedLoopCountLabel": "🔁 {count} bucle",
     "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
-    "videoFeedLoopCountSemanticLabel": "Numărul de bucle ale videoclipului",
     "originalSoundUnavailableBody": "Sunetul din acest videoclip nu este disponibil separat.",
     "originalSoundByCreator": "Sunet original - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
-    "globalUploadPendingCount": "Încărcări în așteptare ({count})",
-    "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.",
     "profileBadgeCheckmarkTitle": "Bifa de profil",
     "profileBadgeCheckmarkBody": "Divine dă bifa asta conturilor echipei și unui număr mic de profiluri aprobate manual. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.",
-    "shareVideoInListsCount": "{count, plural, =1{În 1 listă} few{În {count} liste} other{În {count} de liste}}",
-    "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Nu mai urmări",
     "videoClipSaveFailed": "Nu am putut salva clipul",
     "videoClipSaveTo": "Salvează în {destination}",
@@ -4923,7 +4461,6 @@
     "@searchVideosSortRecent": {"description": "Label for the video search sort option that shows the newest results first."},
     "minorAccountReviewUnder13HonestyTitle": "De ce nu îți spunem doar să dai înapoi",
     "minorAccountReviewUnder13HonestyBody": "O mare parte din internet este construită ca să răsplătească oamenii pentru că spun orice îi trece de poartă. Noi nu credem că e grozav așa. Da, ai putea da înapoi și spune că ești mai mare decât ești, dar asta nu ar fi cinstit, iar noi n-o să te învățăm să minți ca să obții ce vrei.",
-    "minorAccountReviewUnder13LegalTitle": "De ce răspunsul rămâne nu",
     "minorAccountReviewUnder13LegalBody": "Încercăm să ajutăm tinerii să folosească Divine în moduri sănătoase și pozitive pentru ei și pentru cei din jurul lor. De asemenea, trebuie să respectăm legi care sunt diferite în locuri diferite. Așa că, dacă ai sub 13 ani, răspunsul este că nu poți avea propriul cont astăzi.",
     "minorAccountReviewParentConsentHonestyTitle": "De ce cerem implicarea unui părinte sau tutore",
     "minorAccountReviewParentConsentHonestyBody": "Divine trebuie să respecte legi legate de vârstă din întreaga lume. Știm și că majoritatea barierelor tehnice de vârstă sunt imperfecte. În loc să pretindem că regulile nu există sau că e cool să minți despre vârsta ta, vrem ca adolescenții și familiile să ia decizii bine gândite despre cum să folosească Divine cel mai bine. De aceea, pentru cei între 13 și 15 ani, le cerem părinților să facă parte din procesul de creare a contului.",
@@ -5063,8 +4600,6 @@
   "authSignInOptionsHintCta": "Vezi toate opțiunile de conectare",
     "videoEditorStopMotionFramesPerImageLabel": "Cadre pe imagine",
     "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} cadre pe imagine",
-    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Mărește cadrele pe imagine",
-    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Micșorează cadrele pe imagine",
     "videoEditorStopMotionFrameSemanticLabel": "Cadru stop-motion {position} din {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 cadru} other{{count} cadre}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Cadre",

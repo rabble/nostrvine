@@ -123,12 +123,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get settingsNotifications => 'Pemberitahuan';
 
   @override
-  String get settingsContentPreferences => 'Keutamaan Kandungan';
-
-  @override
-  String get settingsModerationControls => 'Kawalan Kesederhanaan';
-
-  @override
   String get settingsBlueskyPublishing => 'Penerbitan Bluesky';
 
   @override
@@ -448,15 +442,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get profileEditProfile => 'Sunting profil';
-
-  @override
-  String get profileCreatorAnalytics => 'Analitik pencipta';
-
-  @override
-  String get profileShareProfile => 'Kongsi profil';
-
-  @override
   String get profileCopyPublicKey => 'Salin kunci awam (npub)';
 
   @override
@@ -467,12 +452,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get profileEmbedCodeCopied => 'Kod terbenam disalin ke papan klip';
-
-  @override
-  String get profileRefreshTooltip => 'Muat semula';
-
-  @override
-  String get profileRefreshSemanticLabel => 'Muat semula profil';
 
   @override
   String get profileMoreTooltip => 'Lagi';
@@ -666,20 +645,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get profileUserBlockedTitle => 'Pengguna Disekat';
-
-  @override
-  String get profileUserBlockedContent =>
-      'Anda tidak akan melihat kandungan daripada pengguna ini dalam suapan anda.';
-
-  @override
-  String get profileUserBlockedUnblockHint =>
-      'Anda boleh menyahsekat mereka pada bila-bila masa daripada profil mereka atau dalam Tetapan > Keselamatan.';
-
-  @override
-  String get profileCloseButton => 'Tutup';
-
-  @override
   String get profileNoCollabsTitle => 'Belum ada kolab';
 
   @override
@@ -791,23 +756,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tambah nama, bio dan gambar anda untuk bermula';
 
   @override
-  String get profileSetUpButton => 'Sediakan';
-
-  @override
-  String get profileVerifyingEmail => 'Mengesahkan E-mel...';
-
-  @override
-  String profileCheckEmailVerification(String email) {
-    return 'Semak $email untuk pautan pengesahan';
-  }
-
-  @override
-  String get profileWaitingForVerification => 'Menunggu pengesahan e-mel';
-
-  @override
-  String get profileVerificationFailed => 'Pengesahan Gagal';
-
-  @override
   String get profilePleaseTryAgain => 'Sila cuba lagi';
 
   @override
@@ -819,9 +767,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get profileRetryButton => 'Cuba Semula';
-
-  @override
-  String get profileRegisterButton => 'Daftar';
 
   @override
   String get profileSessionExpired => 'Sesi Tamat Tempoh';
@@ -863,9 +808,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get profileUserFallback => 'pengguna';
-
-  @override
-  String get profileDismissTooltip => 'Ketepikan';
 
   @override
   String get profileLinkCopied => 'Pautan profil disalin';
@@ -925,9 +867,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat mencapai rangkaian. Semak sambungan anda dan cuba lagi.';
 
   @override
-  String get profileSetupRetryLabel => 'Cuba Semula';
-
-  @override
   String get profileSetupDisplayNameLabel => 'Nama Paparan';
 
   @override
@@ -949,9 +888,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupUsernameHelper => 'Identiti unik anda di Divine';
 
   @override
-  String get profileSetupProfileColorLabel => 'Warna Profil (Pilihan)';
-
-  @override
   String get profileSetupSaveButton => 'Simpan';
 
   @override
@@ -959,10 +895,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get profileSetupImageUrlTitle => 'Tambah URL imej';
-
-  @override
-  String get profileSetupPictureUploaded =>
-      'Gambar profil berjaya dimuat naik!';
 
   @override
   String get profileSetupImageSelectionFailed =>
@@ -998,10 +930,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get profileSetupUploadServerError =>
       'Muat naik gagal. Pelayan kami tidak tersedia buat sementara. Sila cuba lagi sebentar nanti.';
-
-  @override
-  String get profileSetupUploadUnsupportedOnWeb =>
-      'Muat naik gambar profil belum tersedia di web. Guna apl iOS atau Android, atau tampal URL imej.';
 
   @override
   String get profileSetupBannerClearButton => 'Kosongkan sepanduk';
@@ -1127,12 +1055,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupSendRequest => 'Hantar permintaan';
 
   @override
-  String get profileSetupPickColorTitle => 'Pilih warna';
-
-  @override
-  String get profileSetupSelectButton => 'Pilih';
-
-  @override
   String get profileSetupUseOwnNip05 => 'Guna alamat NIP-05 anda sendiri';
 
   @override
@@ -1231,9 +1153,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get nostrInfoGotIt => 'Faham!';
 
   @override
-  String get profileTabRefreshTooltip => 'Muat semula';
-
-  @override
   String get videoGridRefreshLabel => 'Mencari lebih banyak video';
 
   @override
@@ -1255,11 +1174,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoGridDeletingContent => 'Memadam kandungan...';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Gagal memadam kandungan: $error';
-  }
 
   @override
   String get exploreTabFeatured => 'Pilihan';
@@ -1371,9 +1285,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get videoPlayerLoadingVideo => 'Memuatkan video...';
-
-  @override
   String get videoPlayerPlayVideo => 'Mainkan video';
 
   @override
@@ -1381,12 +1292,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoPlayerUnmute => 'Nyahsenyap video';
-
-  @override
-  String get videoPlayerEditVideo => 'Sunting video';
-
-  @override
-  String get videoPlayerEditVideoTooltip => 'Sunting video';
 
   @override
   String get videoPlayerTapHint =>
@@ -1607,19 +1512,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoErrorNotFound => 'Video tidak ditemui';
 
   @override
-  String get videoErrorNetwork => 'Ralat rangkaian';
-
-  @override
-  String get videoErrorTimeout => 'Tamat masa pemuatan';
-
-  @override
-  String get videoErrorFormat =>
-      'Ralat format video\n(Cuba lagi atau guna pelayar lain)';
-
-  @override
-  String get videoErrorUnsupportedFormat => 'Format video tidak disokong';
-
-  @override
   String get videoErrorPlayback => 'Ralat main balik video';
 
   @override
@@ -1631,9 +1523,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoErrorUnavailableBody =>
       'Video ini tidak tersedia buat masa ini.';
-
-  @override
-  String get videoErrorVerifyAge => 'Sahkan Umur';
 
   @override
   String get videoErrorRetry => 'Cuba Semula';
@@ -1699,9 +1588,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoDetailCloseSemanticLabel => 'Tutup pemain video';
-
-  @override
-  String get videoFollowButtonFollowing => 'Mengikuti';
 
   @override
   String get videoFollowButtonFollow => 'Ikut';
@@ -1889,12 +1775,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoActionMoreOptions => 'Lagi pilihan';
 
   @override
-  String get videoActionHideSubtitles => 'Sembunyikan sarikata';
-
-  @override
-  String get videoActionShowSubtitles => 'Tunjuk sarikata';
-
-  @override
   String get videoEngagementLikersTitle => 'Disukai oleh';
 
   @override
@@ -1930,11 +1810,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoOverlayCommentPostFailedSnackbar =>
       'Tidak dapat menyiarkan komen';
-
-  @override
-  String videoDescriptionLoops(String count) {
-    return '$count loop';
-  }
 
   @override
   String videoFeedLoopCountLine(String compactCount, int count) {
@@ -2683,38 +2558,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Apabila seseorang yang anda ikuti menyiarkan';
 
   @override
-  String get notificationSettingsSystem => 'Sistem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Kemas kini apl dan mesej sistem';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Pemberitahuan Tolak';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Pemberitahuan Tolak';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Terima pemberitahuan apabila apl ditutup';
-
-  @override
-  String get notificationSettingsSound => 'Bunyi';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Mainkan bunyi untuk pemberitahuan';
-
-  @override
-  String get notificationSettingsVibration => 'Getaran';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Bergetar untuk pemberitahuan';
-
-  @override
   String get notificationSettingsActions => 'Tindakan';
 
   @override
@@ -2743,12 +2586,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get notificationSettingsAboutDescription =>
       'Pemberitahuan dikuasakan oleh protokol Nostr. Kemas kini masa nyata bergantung pada sambungan anda ke relay Nostr. Sesetengah pemberitahuan mungkin lewat.';
-
-  @override
-  String get safetySettingsTitle => 'Keselamatan & Privasi';
-
-  @override
-  String get safetySettingsLabel => 'TETAPAN';
 
   @override
   String get safetySettingsWhatYouSee => 'APA YANG ANDA LIHAT';
@@ -3516,32 +3353,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pendaftaran lengkap. Sila semak e-mel anda.';
 
   @override
-  String get authVerificationFailedTitle => 'Pengesahan Gagal';
-
-  @override
-  String get authClose => 'Tutup';
-
-  @override
-  String get authAccountSecured => 'Akaun Diselamatkan!';
-
-  @override
-  String get authAccountLinkedToEmail =>
-      'Akaun anda kini dipautkan kepada e-mel anda.';
-
-  @override
-  String get authVerifyYourEmail => 'Sahkan E-mel Anda';
-
-  @override
-  String get authClickLinkContinue =>
-      'Klik pautan dalam e-mel anda untuk melengkapkan pendaftaran. Anda boleh terus menggunakan apl sementara itu.';
-
-  @override
-  String get authWaitingForVerificationEllipsis => 'Menunggu pengesahan...';
-
-  @override
-  String get authContinueToApp => 'Teruskan ke Apl';
-
-  @override
   String get authFailedToSendResetEmail =>
       'Gagal menghantar e-mel tetapan semula.';
 
@@ -3665,9 +3476,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get shareSheetShareVia => 'Kongsi melalui';
-
-  @override
-  String get shareSheetReport => 'Laporkan';
 
   @override
   String get shareSheetEventJson => 'JSON Acara';
@@ -3802,149 +3610,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Menyimpan video tera air ke rol kamera anda...';
 
   @override
-  String get uploadProgressVideoUpload => 'Muat Naik Video';
-
-  @override
-  String get uploadProgressPause => 'Jeda';
-
-  @override
-  String get uploadProgressResume => 'Sambung';
-
-  @override
-  String get uploadProgressGoBack => 'Kembali';
-
-  @override
-  String uploadProgressRetryWithCount(int count) {
-    return 'Cuba Semula (baki $count)';
-  }
-
-  @override
-  String get uploadProgressDelete => 'Padam';
-
-  @override
-  String uploadProgressDaysAgo(int count) {
-    return '$count hari lalu';
-  }
-
-  @override
-  String uploadProgressHoursAgo(int count) {
-    return '$count jam lalu';
-  }
-
-  @override
-  String uploadProgressMinutesAgo(int count) {
-    return '$count min lalu';
-  }
-
-  @override
-  String get uploadProgressJustNow => 'Baru sahaja';
-
-  @override
-  String uploadProgressUploadingPercent(int percent) {
-    return 'Memuat naik $percent%';
-  }
-
-  @override
-  String uploadProgressPausedPercent(int percent) {
-    return 'Dijeda $percent%';
-  }
-
-  @override
-  String get shareMenuTitle => 'Kongsi Video';
-
-  @override
-  String get shareMenuReportAiContent => 'Laporkan Kandungan AI';
-
-  @override
-  String get shareMenuReportAiContentSubtitle =>
-      'Lapor pantas kandungan yang disyaki dijana AI';
-
-  @override
-  String get shareMenuReportingAiContent => 'Melaporkan kandungan AI...';
-
-  @override
-  String shareMenuFailedToReportContent(String error) {
-    return 'Gagal melaporkan kandungan: $error';
-  }
-
-  @override
-  String shareMenuFailedToReportAiContent(String error) {
-    return 'Gagal melaporkan kandungan AI: $error';
-  }
-
-  @override
-  String get shareMenuVideoStatus => 'Status Video';
-
-  @override
-  String get shareMenuViewAllLists => 'Lihat semua senarai →';
-
-  @override
-  String get shareMenuShareWith => 'Kongsi Dengan';
-
-  @override
-  String get shareMenuShareViaOtherApps => 'Kongsi melalui apl lain';
-
-  @override
-  String get shareMenuShareViaOtherAppsSubtitle =>
-      'Kongsi melalui apl lain atau salin pautan';
-
-  @override
-  String get shareMenuSaveToGallery => 'Simpan ke Galeri';
-
-  @override
-  String get shareMenuSaveOriginalSubtitle => 'Simpan video asal ke rol kamera';
-
-  @override
-  String get shareMenuSaveWithWatermark => 'Simpan dengan Tera Air';
-
-  @override
-  String get shareMenuSaveVideo => 'Simpan Video';
-
-  @override
-  String get shareMenuDownloadWithWatermark =>
-      'Muat turun dengan tera air Divine';
-
-  @override
-  String get shareMenuSaveVideoSubtitle => 'Simpan video ke rol kamera';
-
-  @override
-  String get shareMenuLists => 'Senarai';
-
-  @override
-  String get shareMenuAddToList => 'Tambah ke Senarai';
-
-  @override
-  String get shareMenuAddToListSubtitle => 'Tambah ke senarai terpilih anda';
-
-  @override
-  String get shareMenuCreateNewList => 'Cipta Senarai Baharu';
-
-  @override
-  String get shareMenuCreateNewListSubtitle =>
-      'Mulakan koleksi terpilih baharu';
-
-  @override
-  String get shareMenuRemovedFromList => 'Dialih keluar daripada senarai';
-
-  @override
-  String get shareMenuFailedToRemoveFromList =>
-      'Gagal mengalih keluar daripada senarai';
-
-  @override
   String get shareMenuBookmarks => 'Penanda Buku';
-
-  @override
-  String get shareMenuFollowSets => 'Senarai Orang';
-
-  @override
-  String get shareMenuCreateFollowSet => 'Cipta Set Ikutan';
-
-  @override
-  String get shareMenuCreateFollowSetSubtitle =>
-      'Mulakan koleksi baharu dengan pencipta ini';
-
-  @override
-  String get shareMenuAddToFollowSet => 'Tambah ke Set Ikutan';
 
   @override
   String shareMenuFollowSetsAvailable(int count) {
@@ -3953,10 +3619,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get peopleListsAddToList => 'Tambah ke senarai';
-
-  @override
-  String get peopleListsAddToListSubtitle =>
-      'Letakkan pencipta ini dalam salah satu senarai anda';
 
   @override
   String get peopleListsSheetTitle => 'Tambah ke senarai';
@@ -4103,39 +3765,15 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get shareMenuAddedToBookmarks => 'Ditambah ke penanda buku!';
-
-  @override
-  String get shareMenuFailedToAddBookmark => 'Gagal menambah penanda buku';
-
-  @override
-  String shareMenuCreatedListAndAddedVideo(String name) {
-    return 'Senarai \"$name\" dicipta dan video ditambah';
-  }
-
-  @override
-  String get shareMenuManageContent => 'Urus Kandungan';
-
-  @override
   String get shareMenuEditVideo => 'Sunting Video';
-
-  @override
-  String get shareMenuEditVideoSubtitle =>
-      'Kemas kini tajuk, keterangan dan hashtag';
 
   @override
   String get shareMenuDeleteVideo => 'Padam Video';
 
   @override
-  String get shareMenuVideoInTheseLists => 'Video berada dalam senarai ini:';
-
-  @override
   String shareMenuVideoCount(int count) {
     return '$count video';
   }
-
-  @override
-  String get shareMenuClose => 'Tutup';
 
   @override
   String get shareMenuDeleteConfirmation =>
@@ -4146,14 +3784,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get shareMenuDelete => 'Padam';
-
-  @override
-  String get shareMenuDeletingContent => 'Memadam kandungan...';
-
-  @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Gagal memadam kandungan: $error';
-  }
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -4192,60 +3822,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat memadam video ini. Cuba lagi.';
 
   @override
-  String get shareMenuFollowSetName => 'Nama Set Ikutan';
-
-  @override
-  String get shareMenuFollowSetNameHint =>
-      'cth. Pencipta Kandungan, Pemuzik, dsb.';
-
-  @override
-  String get shareMenuDescriptionOptional => 'Keterangan (pilihan)';
-
-  @override
-  String get shareMenuCreate => 'Cipta';
-
-  @override
-  String shareMenuCreatedFollowSetAndAddedCreator(String name) {
-    return 'Set ikutan \"$name\" dicipta dan pencipta ditambah';
-  }
-
-  @override
-  String get shareMenuDone => 'Siap';
-
-  @override
-  String get shareMenuEditTitle => 'Tajuk';
-
-  @override
-  String get shareMenuEditTitleHint => 'Masukkan tajuk video';
-
-  @override
-  String get shareMenuEditDescription => 'Keterangan';
-
-  @override
-  String get shareMenuEditDescriptionHint => 'Masukkan keterangan video';
-
-  @override
-  String get shareMenuEditHashtags => 'Hashtag';
-
-  @override
-  String get shareMenuEditHashtagsHint => 'hashtag, dipisahkan, koma';
-
-  @override
-  String get shareMenuEditMetadataNote =>
-      'Nota: Hanya metadata boleh disunting. Kandungan video tidak boleh diubah.';
-
-  @override
-  String get shareMenuDeleting => 'Memadam...';
-
-  @override
   String get shareMenuUpdate => 'Kemas Kini';
 
   @override
   String get shareMenuChangeCover => 'Tukar Muka Depan';
-
-  @override
-  String get shareMenuCoverUploadingBackground =>
-      'Lakaran kecil sedang dimuat naik di latar belakang';
 
   @override
   String get shareMenuVideoUpdated => 'Video berjaya dikemas kini';
@@ -4267,57 +3847,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Gagal memadam video: $error';
-  }
-
-  @override
   String get shareMenuDeleteVideoQuestion => 'Padam Video?';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video dipadam';
-
-  @override
-  String get shareMenuContentLabels => 'Label kandungan';
-
-  @override
-  String get shareMenuAddContentLabels => 'Tambah label kandungan';
-
-  @override
-  String get shareMenuClearAll => 'Kosongkan semua';
-
-  @override
-  String get shareMenuCollaborators => 'Kolaborator';
-
-  @override
-  String get shareMenuAddCollaborator => 'Jemput kolaborator';
-
-  @override
-  String shareMenuMutualFollowRequired(String name) {
-    return 'Anda perlu saling mengikuti $name untuk menjemput mereka sebagai kolaborator.';
-  }
-
-  @override
-  String get shareMenuLoading => 'Memuatkan...';
-
-  @override
-  String get shareMenuInspiredBy => 'Diilhamkan oleh';
-
-  @override
-  String get shareMenuAddInspirationCredit => 'Tambah kredit inspirasi';
-
-  @override
-  String get shareMenuCreatorCannotBeReferenced =>
-      'Pencipta ini tidak boleh dirujuk.';
-
-  @override
-  String get shareMenuUnknown => 'Tidak diketahui';
-
-  @override
-  String get shareMenuUseThisSound => 'Guna bunyi ini';
-
-  @override
-  String get shareMenuOriginalSound => 'Bunyi asal';
 
   @override
   String get authSessionExpired =>
@@ -4329,15 +3862,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get authSignInFailed => 'Gagal log masuk. Sila cuba lagi.';
-
-  @override
-  String get localeAppLanguage => 'Bahasa Aplikasi';
-
-  @override
-  String get localeDeviceDefault => 'Lalai peranti';
-
-  @override
-  String get localeSelectLanguage => 'Pilih Bahasa';
 
   @override
   String get webAuthNotSupportedSecureMode =>
@@ -4398,32 +3922,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get soundsSearchHint => 'Cari bunyi...';
 
   @override
-  String get soundsPreviewUnavailable =>
-      'Tidak dapat pratonton bunyi - tiada audio tersedia';
-
-  @override
-  String soundsPreviewFailed(String error) {
-    return 'Gagal memainkan pratonton: $error';
-  }
-
-  @override
-  String get soundsFeaturedSounds => 'Bunyi Pilihan';
-
-  @override
-  String get soundsTrendingSounds => 'Bunyi Trending';
-
-  @override
-  String get soundsAllSounds => 'Semua Bunyi';
-
-  @override
   String get soundsSearchResults => 'Hasil Carian';
-
-  @override
-  String get soundsNoSoundsAvailable => 'Tiada bunyi tersedia';
-
-  @override
-  String get soundsNoSoundsDescription =>
-      'Bunyi akan muncul di sini apabila pencipta berkongsi audio';
 
   @override
   String get soundsNoSoundsFound => 'Tiada bunyi ditemui';
@@ -4446,12 +3945,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get soundsSavedEmptyDescription =>
       'Ketik Guna Bunyi pada video untuk menyimpannya di sini.';
-
-  @override
-  String get soundsAvailabilityPrivate => 'Peribadi';
-
-  @override
-  String get soundsAvailabilityCommunity => 'Komuniti';
 
   @override
   String get soundsRemoveSavedSound => 'Alih keluar bunyi';
@@ -4499,22 +3992,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat membuka pustaka tersegerak anda pada peranti ini.';
 
   @override
-  String get soundsFailedToLoad => 'Gagal memuatkan bunyi';
-
-  @override
-  String get soundsRetry => 'Cuba Semula';
-
-  @override
-  String get soundsScreenLabel => 'Skrin Bunyi';
-
-  @override
   String get profileTitle => 'Profil';
 
   @override
   String get profileRefresh => 'Muat semula';
-
-  @override
-  String get profileRefreshLabel => 'Muat semula profil';
 
   @override
   String get profileMoreOptions => 'Lagi pilihan';
@@ -4532,11 +4013,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String profileUnfollowedUser(String name) {
     return '$name dinyahikut';
-  }
-
-  @override
-  String profileError(String error) {
-    return 'Ralat: $error';
   }
 
   @override
@@ -4573,21 +4049,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat menyegarkan — menunjukkan apa yang anda ada';
 
   @override
-  String get notificationsCheckingNew => 'menyemak pemberitahuan baharu';
-
-  @override
-  String get notificationsNoneYet => 'Belum ada pemberitahuan';
-
-  @override
-  String notificationsNoneForType(String type) {
-    return 'Tiada pemberitahuan $type';
-  }
-
-  @override
-  String get notificationsEmptyDescription =>
-      'Apabila orang berinteraksi dengan kandungan anda, anda akan melihatnya di sini';
-
-  @override
   String get notificationsUnreadPrefix => 'Pemberitahuan belum dibaca';
 
   @override
@@ -4618,11 +4079,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get notificationsVideoThumbnail => 'Lakaran kecil video';
 
   @override
-  String notificationsLoadingType(String type) {
-    return 'Memuatkan pemberitahuan $type...';
-  }
-
-  @override
   String get notificationsInviteSingular =>
       'Anda mempunyai 1 jemputan untuk dikongsi dengan rakan!';
 
@@ -4632,13 +4088,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get notificationsVideoNotFound => 'Video tidak ditemui';
-
-  @override
   String get notificationsVideoUnavailable => 'Video tidak tersedia';
-
-  @override
-  String get notificationsFromNotification => 'Daripada Pemberitahuan';
 
   @override
   String get feedFailedToLoadVideos => 'Gagal memuatkan video';
@@ -4695,63 +4145,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get feedExploreVideos => 'Terokai Video';
 
   @override
-  String get feedExternalVideoSlow => 'Video luaran memuat dengan perlahan';
-
-  @override
-  String get feedSkip => 'Langkau';
-
-  @override
   String get feedLoadingMore => 'Memuatkan lebih banyak video…';
 
   @override
   String get feedRefreshed => 'Suapan disegarkan';
 
   @override
-  String get uploadWaitingToUpload => 'Menunggu untuk muat naik';
-
-  @override
   String get uploadUploadingVideo => 'Memuat naik video';
-
-  @override
-  String get uploadProcessingVideo => 'Memproses video';
-
-  @override
-  String get uploadProcessingComplete => 'Pemprosesan selesai';
-
-  @override
-  String get uploadPublishedSuccessfully => 'Berjaya diterbitkan';
-
-  @override
-  String get uploadFailed => 'Muat naik gagal';
-
-  @override
-  String get uploadRetrying => 'Mencuba semula muat naik';
-
-  @override
-  String get uploadPaused => 'Muat naik dijeda';
-
-  @override
-  String uploadPercentComplete(int percent) {
-    return '$percent% selesai';
-  }
-
-  @override
-  String get uploadQueuedMessage =>
-      'Video anda berada dalam baris gilir untuk dimuat naik';
-
-  @override
-  String get uploadUploadingMessage => 'Memuat naik ke pelayan...';
-
-  @override
-  String get uploadProcessingMessage =>
-      'Memproses video - ini mungkin mengambil masa beberapa minit';
-
-  @override
-  String get uploadReadyToPublishMessage =>
-      'Video berjaya diproses dan sedia untuk diterbitkan';
-
-  @override
-  String get uploadPublishedMessage => 'Video diterbitkan ke profil anda';
 
   @override
   String get postPublishConfirmationTitle => 'Diterbitkan ke profil anda';
@@ -4767,33 +4167,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Lakaran kecil video yang baru anda terbitkan';
 
   @override
-  String get uploadFailedMessage => 'Muat naik gagal - sila cuba lagi';
-
-  @override
-  String get uploadRetryingMessage => 'Mencuba semula muat naik...';
-
-  @override
-  String get uploadPausedMessage => 'Muat naik dijeda oleh pengguna';
-
-  @override
-  String get uploadRetryButton => 'CUBA SEMULA';
-
-  @override
-  String uploadRetryFailed(String error) {
-    return 'Gagal mencuba semula muat naik: $error';
-  }
-
-  @override
-  String get userSearchPrompt => 'Cari pengguna';
-
-  @override
   String get userSearchNoResults => 'Tiada pengguna ditemui';
-
-  @override
-  String get userSearchFailed => 'Carian gagal';
-
-  @override
-  String get userPickerSearchByName => 'Cari mengikut nama';
 
   @override
   String get userPickerFilterByNameHint => 'Tapis mengikut nama...';
@@ -4884,40 +4258,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ageVerificationYes => 'Ya';
 
   @override
-  String get shareLinkCopied => 'Pautan disalin ke papan klip';
-
-  @override
-  String get shareFailedToCopy => 'Gagal menyalin pautan';
-
-  @override
-  String get shareVideoSubject => 'Lihat video ini di Divine';
-
-  @override
-  String get shareFailedToShare => 'Gagal berkongsi';
-
-  @override
-  String get shareVideoTitle => 'Kongsi Video';
-
-  @override
-  String get shareToApps => 'Kongsi ke Apl';
-
-  @override
-  String get shareToAppsSubtitle => 'Kongsi melalui apl pemesejan dan sosial';
-
-  @override
-  String get shareCopyWebLink => 'Salin Pautan Web';
-
-  @override
-  String get shareCopyWebLinkSubtitle => 'Salin pautan web yang boleh dikongsi';
-
-  @override
-  String get shareCopyNostrLink => 'Salin Pautan Nostr';
-
-  @override
-  String get shareCopyNostrLinkSubtitle =>
-      'Salin pautan nevent untuk klien Nostr';
-
-  @override
   String get navHome => 'Utama';
 
   @override
@@ -4930,12 +4270,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Cari';
-
-  @override
-  String get navSearchTooltip => 'Cari';
-
-  @override
   String get navMyProfile => 'Profil Saya';
 
   @override
@@ -4943,9 +4277,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get navOpenCamera => 'Buka kamera';
-
-  @override
-  String get navUnknown => 'Tidak diketahui';
 
   @override
   String get navExploreClassics => 'Klasik';
@@ -5096,17 +4427,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get reportTitle => 'Laporkan Kandungan';
-
-  @override
   String get reportWhyReporting => 'Mengapa anda melaporkan kandungan ini?';
 
   @override
   String get reportPolicyNotice =>
       'Divine akan mengambil tindakan terhadap laporan kandungan dalam masa 24 jam dengan mengalih keluar kandungan itu dan mengeluarkan pengguna yang menyediakan kandungan yang melanggar.';
-
-  @override
-  String get reportAdditionalDetails => 'Butiran tambahan (pilihan)';
 
   @override
   String get reportBlockUser => 'Sekat pengguna ini';
@@ -5232,9 +4557,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get reportContactModeration =>
       'Hantar mesej kepada pasukan kesederhanaan';
-
-  @override
-  String get reportLearnMore => 'Ketahui Lebih Lanjut';
 
   @override
   String get reportLearnMoreAt => 'Ketahui lebih lanjut di';
@@ -6297,9 +5619,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get dmReelReplyViewChat => 'Lihat sembang';
 
   @override
-  String get dmReelReplyViewChatA11yLabel => 'Buka sembang';
-
-  @override
   String get dmReelReplySentAnnouncement => 'Balasan dihantar';
 
   @override
@@ -6377,12 +5696,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get inboxConversationTileLongPressHint => 'Tunjuk tindakan perbualan';
-
-  @override
-  String get reportDialogCancel => 'Batal';
-
-  @override
-  String get reportDialogReport => 'Laporkan';
 
   @override
   String exploreVideoId(String id) {
@@ -6509,9 +5822,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get commonSomethingWentWrong => 'Sesuatu telah berlaku';
 
   @override
-  String get commonNext => 'Seterusnya';
-
-  @override
   String get commonDelete => 'Padam';
 
   @override
@@ -6613,9 +5923,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryTabClips => 'Klip';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Simpan ke rol kamera';
-
-  @override
   String get libraryDeleteSelectedClipsTooltip => 'Padam klip dipilih';
 
   @override
@@ -6666,20 +5973,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => 'Menegak Dahulu';
-
-  @override
-  String get libraryDeleteClipsTitle => 'Padam Klip';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# klip dipilih',
-      one: '# klip dipilih',
-    );
-    return 'Adakah anda pasti mahu memadam $_temp0?';
-  }
 
   @override
   String get libraryDeleteClipsWarning =>
@@ -6812,20 +6105,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'Adakah anda pasti mahu memadam klip ini?';
 
   @override
-  String get libraryClipSelectionTitle => 'Klip';
-
-  @override
-  String librarySecondsRemaining(String seconds) {
-    return 'baki ${seconds}s';
-  }
-
-  @override
   String libraryClipDuration(String seconds) {
     return '${seconds}s';
   }
-
-  @override
-  String get libraryAddClips => 'Tambah';
 
   @override
   String get libraryRecordVideo => 'Rakam Video';
@@ -7521,26 +6803,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Ini menghantar permintaan pemadaman untuk akaun dan kandungan anda, memadam akaun Divine anda apabila boleh, dan melog keluar anda pada peranti ini. Sesetengah relay, klien dan indeks carian mungkin menyimpan salinan. Peranti lain yang dilog masuk kekal aktif sehingga anda mengalih keluar kunci di situ.';
 
   @override
-  String get exportProgressStageApplyingTextOverlay =>
-      'Menambah hamparan teks...';
-
-  @override
-  String get exportProgressStageComplete => 'Eksport selesai!';
-
-  @override
-  String get exportProgressStageConcatenating => 'Menggabungkan klip...';
-
-  @override
-  String get exportProgressStageError => 'Eksport gagal';
-
-  @override
-  String get exportProgressStageGeneratingThumbnail =>
-      'Menjana lakaran kecil...';
-
-  @override
-  String get exportProgressStageMixingAudio => 'Menambah bunyi...';
-
-  @override
   String get findPeopleAnonymousUser => 'Tanpa nama';
 
   @override
@@ -7748,15 +7010,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get soundDetailNotFoundTitle => 'Bunyi Tidak Ditemui';
 
   @override
-  String get videoFeedDescriptionSemanticLabel => 'Keterangan video';
-
-  @override
   String videoFeedLoopCountLabel(int count) {
     return '🔁 $count loop';
   }
-
-  @override
-  String get videoFeedLoopCountSemanticLabel => 'Kiraan loop video';
 
   @override
   String get originalSoundUnavailableBody =>
@@ -7765,11 +7021,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String originalSoundByCreator(String creatorName) {
     return 'Bunyi asal - $creatorName';
-  }
-
-  @override
-  String globalUploadPendingCount(int count) {
-    return 'Muat Naik Belum Selesai ($count)';
   }
 
   @override
@@ -7785,17 +7036,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get profileBadgeCheckmarkBody =>
       'Divine memberikan tanda semak ini kepada akaun pasukan dan sebilangan kecil profil yang diluluskan secara manual. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.';
-
-  @override
-  String shareVideoInListsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Dalam $count senarai',
-      one: 'Dalam 1 senarai',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get unfollowConfirmButton => 'Nyahikut';
@@ -7894,11 +7134,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Gagal menghantar laporan pepijat. Sila cuba lagi nanti.';
 
   @override
-  String bugReportFailedWithError(String error) {
-    return 'Laporan pepijat gagal dihantar: $error';
-  }
-
-  @override
   String get featureRequestSendRequest => 'Hantar Permintaan';
 
   @override
@@ -7932,11 +7167,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get featureRequestSendFailed =>
       'Gagal menghantar permintaan ciri. Sila cuba lagi nanti.';
-
-  @override
-  String featureRequestFailedWithError(String error) {
-    return 'Permintaan ciri gagal dihantar: $error';
-  }
 
   @override
   String get notificationFollowBack => 'Ikut balik';
@@ -7987,16 +7217,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get followSortOldest => 'Terlama dahulu';
-
-  @override
-  String get reportMessageTitle => 'Laporkan Mesej';
-
-  @override
-  String get reportMessageWhyReporting => 'Mengapa anda melaporkan mesej ini?';
-
-  @override
-  String get reportMessageSelectReason =>
-      'Sila pilih sebab untuk melaporkan mesej ini';
 
   @override
   String get newMessageTitle => 'Mesej baharu';
@@ -8273,9 +7493,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Anda mestilah berumur 16 tahun ke atas untuk mencipta kandungan';
 
   @override
-  String get featureRequestCancel => 'Batal';
-
-  @override
   String keyImportError(String error) {
     return 'Ralat: $error';
   }
@@ -8486,10 +7703,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get notificationSystemUpdate => 'Anda mempunyai kemas kini baharu';
-
-  @override
-  String get notificationSomeoneLikedYourVideo =>
-      'Seseorang menyukai video anda';
 
   @override
   String get commentReplyToPrefix => 'Balas:';
@@ -9170,40 +8383,21 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorPlayPauseSemanticLabel => 'Main atau jeda video';
 
   @override
-  String get videoEditorCropSemanticLabel => 'Pangkas';
-
-  @override
-  String get videoEditorCannotSplitProcessing =>
-      'Tidak dapat memisahkan klip semasa ia sedang diproses. Sila tunggu.';
-
-  @override
   String videoEditorSplitPositionInvalid(int minDurationMs) {
     return 'Kedudukan pemisahan tidak sah. Kedua-dua klip mestilah sekurang-kurangnya ${minDurationMs}ms.';
   }
 
   @override
-  String get videoEditorAddClipFromLibrary => 'Tambah klip daripada Pustaka';
-
-  @override
   String get videoEditorSaveSelectedClip => 'Simpan klip dipilih';
 
   @override
-  String get videoEditorSplitClip => 'Pisahkan klip';
-
-  @override
   String get videoEditorSaveClip => 'Simpan klip';
-
-  @override
-  String get videoEditorDeleteClip => 'Padam klip';
 
   @override
   String get videoEditorClipSavedSuccess => 'Klip disimpan ke pustaka';
 
   @override
   String get videoEditorClipSaveFailed => 'Gagal menyimpan klip';
-
-  @override
-  String get videoEditorClipDeleted => 'Klip dipadam';
 
   @override
   String get videoEditorColorPickerSemanticLabel => 'Pemilih warna';
@@ -9234,12 +8428,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoEditorFailedLoadStickers => 'Gagal memuatkan pelekat';
-
-  @override
-  String get videoEditorAdjustVolumeTitle => 'Laras volum';
-
-  @override
-  String get videoEditorRecordedAudioLabel => 'Audio rakaman';
 
   @override
   String get videoEditorVoiceOverLabel => 'Suara latar';
@@ -9302,12 +8490,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoEditorPauseSemanticLabel => 'Jeda';
-
-  @override
-  String get videoEditorMuteAudioSemanticLabel => 'Senyapkan audio';
-
-  @override
-  String get videoEditorUnmuteAudioSemanticLabel => 'Nyahsenyap audio';
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Laras volum';
@@ -9423,9 +8605,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Peranti ini tidak dapat menunjukkan pratonton langsung. Tetapan anda tetap digunakan semasa eksport.';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Audio asal';
-
-  @override
   String videoEditorClipVolumeLabel(int index) {
     return 'Klip $index';
   }
@@ -9457,14 +8636,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String videoEditorStopMotionFramesPerImageValueSemanticLabel(int count) {
     return '$count bingkai setiap imej';
   }
-
-  @override
-  String get videoEditorStopMotionIncreaseFramesPerImageSemanticLabel =>
-      'Tambah bingkai setiap imej';
-
-  @override
-  String get videoEditorStopMotionDecreaseFramesPerImageSemanticLabel =>
-      'Kurangkan bingkai setiap imej';
 
   @override
   String videoEditorStopMotionFrameSemanticLabel(int position, int total) {
@@ -9570,9 +8741,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoEditorTransformFlipLabel => 'Terbalikkan';
-
-  @override
-  String get videoEditorTransformRatioLabel => 'Nisbah';
 
   @override
   String get videoEditorTransformResetLabel => 'Tetapkan semula';
@@ -9732,14 +8900,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'Bunyi Saya';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Bunyi pilihan akan datang tidak lama lagi';
-
-  @override
-  String get videoEditorAudioFeaturedEmptySubtitle =>
-      'Kami akan meletakkan bunyi pilihan di sini sebaik sahaja ia sedia.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Alat anak panah';
 
   @override
@@ -9807,10 +8967,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Tekan lama untuk menyusun semula';
-
-  @override
-  String get videoEditorClipGalleryInstruction =>
-      'Ketik untuk menyunting. Tahan dan seret untuk menyusun semula.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Alih ke kiri';
@@ -9984,9 +9140,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoMetadataTagsLabel => 'Tag';
 
   @override
-  String get videoMetadataDeleteTagSemanticLabel => 'Padam';
-
-  @override
   String videoMetadataDeleteTagHint(String tag) {
     return 'Padam Tag $tag';
   }
@@ -10003,12 +9156,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pilih semua yang berkaitan';
 
   @override
-  String get videoMetadataContentWarningDoneButton => 'Siap';
-
-  @override
-  String get videoMetadataAudioReuseTitle => 'Terbitkan bunyi ini';
-
-  @override
   String get videoMetadataAudioReuseSubtitle =>
       'Benarkan orang lain menyimpan dan menggunakan semula audio video ini.';
 
@@ -10023,29 +9170,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoMetadataAddCollaboratorSemanticLabel => 'Jemput kolaborator';
 
   @override
-  String get videoMetadataCollaboratorsHelpTooltip =>
-      'Cara kolaborator berfungsi';
-
-  @override
-  String videoMetadataCollaboratorsCount(int count, int max) {
-    return '$count/$max Kolaborator';
-  }
-
-  @override
-  String get videoMetadataRemoveCollaboratorSemanticLabel =>
-      'Alih keluar kolaborator';
-
-  @override
-  String get videoMetadataCollaboratorsHelpMessage =>
-      'Kolaborator dijemput sebagai pencipta bersama pada siaran ini. Anda hanya boleh menjemput orang yang anda saling mengikuti, dan mereka muncul sebagai kolaborator selepas mereka mengesahkan.';
-
-  @override
   String get videoMetadataMutualFollowersSearchText => 'Pengikut saling';
-
-  @override
-  String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'Anda perlu saling mengikuti $name untuk menjemput mereka sebagai kolaborator.';
-  }
 
   @override
   String get videoMetadataInspiredByLabel => 'Tambah diilhamkan oleh';
@@ -10055,23 +9180,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tetapkan diilhamkan oleh';
 
   @override
-  String get videoMetadataInspiredByHelpTooltip =>
-      'Cara kredit inspirasi berfungsi';
-
-  @override
-  String get videoMetadataInspiredByNone => 'Tiada';
-
-  @override
-  String get videoMetadataInspiredByHelpMessage =>
-      'Gunakan ini untuk memberi atribusi. Kredit diilhamkan-oleh berbeza daripada kolaborator: ia mengiktiraf pengaruh, tetapi tidak menandakan seseorang sebagai pencipta bersama.';
-
-  @override
   String get videoMetadataCreatorCannotBeReferencedSnackbar =>
       'Pencipta ini tidak boleh dirujuk.';
-
-  @override
-  String get videoMetadataRemoveInspiredBySemanticLabel =>
-      'Alih keluar diilhamkan oleh';
 
   @override
   String get videoMetadataPostDetailsTitle => 'Butiran siaran';
@@ -10492,10 +9602,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get minorAccountReviewWelcomePageTitle => 'Panduan keluarga';
 
   @override
-  String get minorAccountReviewWelcomeCta =>
-      'Belum 16? Tidak mengapa. Ini apa yang anda boleh lakukan.';
-
-  @override
   String get minorAccountReviewWelcomeTitle => 'Belum 16? Tidak mengapa.';
 
   @override
@@ -10540,9 +9646,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta => 'Umur 13-15';
-
-  @override
-  String get minorAccountReviewFamilyResourcesTitle => 'Berguna untuk keluarga';
 
   @override
   String get minorAccountReviewFamilyResourcesBody =>
@@ -10682,10 +9785,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13HonestyBody =>
       'Kebanyakan internet disusun untuk memberi ganjaran kepada orang yang mengatakan apa sahaja yang membolehkan mereka masuk. Kami tidak fikir itu bagus. Ya, anda boleh kembali dan mengatakan anda lebih tua daripada umur anda, tetapi itu bukan jujur, dan kami tidak akan melatih anda untuk berbohong untuk mendapatkan apa yang anda mahu.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Kenapa jawapannya tetap tidak';
 
   @override
   String get minorAccountReviewUnder13LegalBody =>
@@ -11157,9 +10256,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get generalSettingsHoldToRecordSubtitle =>
       'Mula merakam apabila anda tekan dan tahan, kemudian berhenti apabila anda lepaskan';
-
-  @override
-  String get soundsPreviewFailedGeneric => 'Gagal memainkan pratonton';
 
   @override
   String uploadPublishedCountMessage(int count) {

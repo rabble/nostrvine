@@ -70,8 +70,6 @@
     "settingsCreatorAnalytics": "Creator-Analytics",
     "settingsSupportCenter": "Support-Center",
     "settingsNotifications": "Benachrichtigungen",
-    "settingsContentPreferences": "Inhaltseinstellungen",
-    "settingsModerationControls": "Moderationseinstellungen",
     "settingsBlueskyPublishing": "Bluesky-Veröffentlichung",
     "settingsBlueskyPublishingSubtitle": "Crossposting zu Bluesky verwalten",
     "settingsNostrSettings": "Nostr-Einstellungen",
@@ -209,15 +207,10 @@
             }
         }
     },
-    "profileEditProfile": "Profil bearbeiten",
-    "profileCreatorAnalytics": "Creator-Analytics",
-    "profileShareProfile": "Profil teilen",
     "profileCopyPublicKey": "Public Key (npub) kopieren",
     "profileGetEmbedCode": "Embed-Code holen",
     "profilePublicKeyCopied": "Public Key in die Zwischenablage kopiert",
     "profileEmbedCodeCopied": "Embed-Code in die Zwischenablage kopiert",
-    "profileRefreshTooltip": "Aktualisieren",
-    "profileRefreshSemanticLabel": "Profil aktualisieren",
     "profileMoreTooltip": "Mehr",
     "profileMoreSemanticLabel": "Weitere Optionen",
     "profileFollowingLabel": "Gefolgt",
@@ -302,10 +295,6 @@
     },
     "profileReportDisplayName": "{displayName} melden",
     "profileAddToListDisplayName": "{displayName} zu einer Liste hinzufügen",
-    "profileUserBlockedTitle": "Nutzer blockiert",
-    "profileUserBlockedContent": "Du siehst keine Inhalte von diesem Nutzer mehr in deinen Feeds.",
-    "profileUserBlockedUnblockHint": "Du kannst ihn jederzeit über sein Profil oder unter Einstellungen > Sicherheit entsperren.",
-    "profileCloseButton": "Schließen",
     "profileNoCollabsTitle": "Noch keine Collabs",
     "profileCollabsOwnEmpty": "Videos, bei denen du mitmachst, erscheinen hier",
     "profileCollabsOtherEmpty": "Videos, bei denen er mitmacht, erscheinen hier",
@@ -342,27 +331,13 @@
     "profileShowLess": "Weniger anzeigen",
     "profileCompleteYourProfile": "Profil vervollständigen",
     "profileCompleteSubtitle": "Füge Name, Bio und Bild hinzu, um loszulegen",
-    "profileSetUpButton": "Einrichten",
-    "profileVerifyingEmail": "E-Mail wird verifiziert...",
-    "profileCheckEmailVerification": "Prüfe {email} auf den Verifizierungslink",
-    "@profileCheckEmailVerification": {
-        "placeholders": {
-            "email": {
-                "type": "String"
-            }
-        }
-    },
-    "profileWaitingForVerification": "Warten auf E-Mail-Verifizierung",
-    "profileVerificationFailed": "Verifizierung fehlgeschlagen",
     "profilePleaseTryAgain": "Bitte versuch es nochmal",
     "profileSecureYourAccount": "Konto absichern",
     "profileSecureSubtitle": "Füge E-Mail & Passwort hinzu, um dein Konto auf jedem Gerät wiederherzustellen",
     "profileRetryButton": "Erneut versuchen",
-    "profileRegisterButton": "Registrieren",
     "profileSessionExpired": "Sitzung abgelaufen",
     "profileSignInToRestore": "Melde dich erneut an, um wieder vollen Zugriff zu haben",
     "profileSignInButton": "Anmelden",
-    "profileDismissTooltip": "Schließen",
     "profileLinkCopied": "Profil-Link kopiert",
     "profileSetupEditProfileTitle": "Profil bearbeiten",
     "profileSetupBackLabel": "Zurück",
@@ -380,18 +355,15 @@
     "profileSetupClaimFailed": "Benutzername konnte nicht reserviert werden. Bitte versuch es nochmal.",
     "profileSetupPublishFailed": "Profil konnte nicht veröffentlicht werden. Bitte versuch es nochmal.",
     "profileSetupNoRelaysConnected": "Netzwerk nicht erreichbar. Überprüfe deine Verbindung und versuch es nochmal.",
-    "profileSetupRetryLabel": "Wiederholen",
     "profileSetupDisplayNameLabel": "Anzeigename",
     "profileSetupDisplayNameRequired": "Bitte gib einen Anzeigenamen ein",
     "profileSetupBioLabel": "Bio (optional)",
     "profileSetupPublicKeyLabel": "Öffentlicher Schlüssel (npub)",
     "profileSetupUsernameLabel": "Benutzername (optional)",
     "profileSetupUsernameHelper": "Deine einzigartige Identität auf Divine",
-    "profileSetupProfileColorLabel": "Profilfarbe (optional)",
     "profileSetupSaveButton": "Speichern",
     "profileSetupSavingButton": "Wird gespeichert...",
     "profileSetupImageUrlTitle": "Bild-URL hinzufügen",
-    "profileSetupPictureUploaded": "Profilbild erfolgreich hochgeladen!",
     "profileSetupImageSelectionFailed": "Bildauswahl fehlgeschlagen. Bitte füg stattdessen eine Bild-URL unten ein.",
     "profileSetupCameraAccessFailed": "Kamerazugriff fehlgeschlagen: {error}",
     "@profileSetupCameraAccessFailed": {
@@ -407,7 +379,6 @@
     "profileSetupUploadAuthError": "Authentifizierungsfehler: Bitte melde dich ab und wieder an.",
     "profileSetupUploadFileTooLarge": "Datei zu groß: Bitte wähl ein kleineres Bild (max. 10MB).",
     "profileSetupUploadServerError": "Bild konnte nicht hochgeladen werden. Unsere Server sind vorübergehend nicht verfügbar. Bitte versuche es gleich noch einmal.",
-    "profileSetupUploadUnsupportedOnWeb": "Das Hochladen eines Profilbilds ist im Web noch nicht verfügbar. Nutze die iOS- oder Android-App oder füge eine Bild-URL ein.",
     "profileSetupBannerClearButton": "Banner entfernen",
     "profileSetupBannerChangeColor": "Bannerfarbe",
     "profileSetupBannerColorPickerTitle": "Bannerfarbe ändern",
@@ -452,8 +423,6 @@
     "profileSetupSupportRequestSent": "Support-Anfrage gesendet! Wir melden uns bald bei dir.",
     "profileSetupCouldntOpenEmail": "E-Mail konnte nicht geöffnet werden. Sende an: names@divine.video",
     "profileSetupSendRequest": "Anfrage senden",
-    "profileSetupPickColorTitle": "Farbe wählen",
-    "profileSetupSelectButton": "Auswählen",
     "profileSetupUseOwnNip05": "Eigene NIP-05-Adresse verwenden",
     "profileSetupNip05AddressLabel": "NIP-05-Adresse",
     "profileSetupProfilePicturePreview": "Profilbild-Vorschau",
@@ -471,7 +440,6 @@
     "nostrInfoUsernameDescription": " Ein lesbarer Name (wie @name.divine.video), der auf deinen npub verweist. Er macht deine Nostr-Identität leichter erkennbar und verifizierbar, ähnlich wie eine E-Mail-Adresse.",
     "nostrInfoLearnMoreAt": "Mehr erfahren auf ",
     "nostrInfoGotIt": "Verstanden!",
-    "profileTabRefreshTooltip": "Aktualisieren",
     "videoGridRefreshLabel": "Suche nach weiteren Videos",
     "videoGridOptionsTitle": "Video-Optionen",
     "videoGridEditVideo": "Video bearbeiten",
@@ -479,14 +447,6 @@
     "videoGridDeleteVideo": "Video löschen",
     "videoGridDeleteVideoSubtitle": "Dieses Video aus Divine entfernen. Es kann weiterhin in anderen Nostr-Clients erscheinen.",
     "videoGridDeletingContent": "Inhalt wird gelöscht...",
-    "videoGridDeleteFailure": "Inhalt konnte nicht gelöscht werden: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabFeatured": "Empfohlen",
   "exploreTabClassics": "Klassiker",
     "exploreTabNew": "Neu",
@@ -540,12 +500,9 @@
             }
         }
     },
-    "videoPlayerLoadingVideo": "Video wird geladen...",
     "videoPlayerPlayVideo": "Video abspielen",
     "videoPlayerMute": "Video stummschalten",
     "videoPlayerUnmute": "Video-Ton einschalten",
-    "videoPlayerEditVideo": "Video bearbeiten",
-    "videoPlayerEditVideoTooltip": "Video bearbeiten",
     "contentWarningLabel": "Inhaltswarnung",
     "contentWarningNudity": "Nacktheit",
     "contentWarningSexualContent": "Sexuelle Inhalte",
@@ -596,15 +553,10 @@
     "communitySuggestActionLabel": "Einordnen",
     "@communitySuggestActionLabel": {"description": "Short caption under the video overlay action that opens the community content-warning suggestion sheet."},
     "videoErrorNotFound": "Video nicht gefunden",
-    "videoErrorNetwork": "Netzwerkfehler",
-    "videoErrorTimeout": "Zeitüberschreitung beim Laden",
-    "videoErrorFormat": "Videoformat-Fehler\n(Versuch es nochmal oder mit einem anderen Browser)",
-    "videoErrorUnsupportedFormat": "Nicht unterstütztes Videoformat",
     "videoErrorPlayback": "Video-Wiedergabefehler",
     "videoErrorAgeRestricted": "Altersbeschränkter Inhalt",
     "videoErrorUnavailable": "Video nicht verfügbar",
     "videoErrorUnavailableBody": "Dieses Video ist gerade nicht verfügbar.",
-    "videoErrorVerifyAge": "Alter verifizieren",
     "videoErrorRetry": "Erneut versuchen",
     "videoErrorContentRestricted": "Inhalt eingeschränkt",
     "videoErrorContentRestrictedBody": "Dieses Video wurde entfernt, weil es gegen unsere Inhaltsregeln verstößt.",
@@ -613,7 +565,6 @@
     "videoErrorVerifyAgeButton": "Alter verifizieren",
     "videoErrorVerifyAgeFailed": "Wir konnten dein Alter nicht bestätigen. Bitte versuch es nochmal.",
     "videoErrorVerifyAgeSignerUnreachable": "Zeitüberschreitung bei der Überprüfung. Prüf deine Verbindung oder versuch es gleich nochmal.",
-    "videoFollowButtonFollowing": "Gefolgt",
     "videoFollowButtonFollow": "Folgen",
     "audioAttributionOriginalSound": "Originalton",
     "audioAttributionUnavailableSound": "Ton nicht verfügbar",
@@ -696,21 +647,11 @@
     "videoActionRepost": "Video reposten",
     "videoActionViewComments": "Kommentare ansehen",
     "videoActionMoreOptions": "Weitere Optionen",
-    "videoActionHideSubtitles": "Untertitel ausblenden",
-    "videoActionShowSubtitles": "Untertitel anzeigen",
     "videoEngagementLikersTitle": "Geliket von",
     "videoEngagementRepostersTitle": "Repostet von",
     "videoEngagementLikersEmpty": "Noch keine Likes",
     "videoEngagementRepostersEmpty": "Noch keine Reposts",
     "videoEngagementLoadFailed": "Liste konnte nicht geladen werden",
-    "videoDescriptionLoops": "{count} Loops",
-    "@videoDescriptionLoops": {
-        "placeholders": {
-            "count": {
-                "type": "String"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Nicht Divine",
     "metadataBadgeHumanMade": "Von Menschenhand",
     "metadataSoundsLabel": "Sounds",
@@ -1047,11 +988,6 @@
     "notificationSettingsResetToDefaults": "Einstellungen auf Standard zurückgesetzt",
     "notificationSettingsAbout": "Über Benachrichtigungen",
     "notificationSettingsAboutDescription": "Benachrichtigungen werden über das Nostr-Protokoll bereitgestellt. Echtzeit-Updates hängen von deiner Verbindung zu den Nostr-Relays ab. Manche Benachrichtigungen können verzögert sein.",
-    "safetySettingsTitle": "Sicherheit & Datenschutz",
-    "@safetySettingsTitle": {
-        "description": "Safety settings screen app bar title"
-    },
-    "safetySettingsLabel": "EINSTELLUNGEN",
     "safetySettingsShowDivineHostedOnly": "Nur Divine-gehostete Videos anzeigen",
     "safetySettingsShowDivineHostedOnlySubtitle": "Videos von anderen Medien-Hosts ausblenden",
     "safetySettingsModeration": "MODERATION",
@@ -1379,14 +1315,6 @@
     "authUnableToAccessKeys": "Zugriff auf deine Schlüssel nicht möglich. Bitte versuch es nochmal.",
     "authRegistrationFailed": "Registrierung fehlgeschlagen",
     "authRegistrationComplete": "Registrierung abgeschlossen. Bitte prüf deine E-Mails.",
-    "authVerificationFailedTitle": "Verifizierung fehlgeschlagen",
-    "authClose": "Schließen",
-    "authAccountSecured": "Konto abgesichert!",
-    "authAccountLinkedToEmail": "Dein Konto ist jetzt mit deiner E-Mail verknüpft.",
-    "authVerifyYourEmail": "E-Mail verifizieren",
-    "authClickLinkContinue": "Klick auf den Link in deiner E-Mail, um die Registrierung abzuschließen. Du kannst die App in der Zwischenzeit weiter nutzen.",
-    "authWaitingForVerificationEllipsis": "Warte auf Verifizierung...",
-    "authContinueToApp": "Weiter zur App",
     "authFailedToSendResetEmail": "Reset-E-Mail konnte nicht gesendet werden.",
     "authSending": "Wird gesendet...",
     "authSignInButton": "Anmelden",
@@ -1416,7 +1344,6 @@
     "shareSheetAddToList": "Zur Liste hinzufügen",
     "shareSheetCopy": "Kopieren",
     "shareSheetShareVia": "Teilen via",
-    "shareSheetReport": "Melden",
     "shareSheetEventJson": "Event-JSON",
     "shareSheetEventId": "Event-ID",
     "shareSheetMoreActions": "Weitere Aktionen",
@@ -1458,103 +1385,7 @@
     "watermarkDownloadStageDownloadingDesc": "Video wird aus dem Netzwerk geladen...",
     "watermarkDownloadStageWatermarkingDesc": "Divine-Wasserzeichen wird angewendet...",
     "watermarkDownloadStageSavingDesc": "Video mit Wasserzeichen wird in deinen Aufnahmen gespeichert...",
-    "uploadProgressVideoUpload": "Video-Upload",
-    "uploadProgressPause": "Pausieren",
-    "uploadProgressResume": "Fortsetzen",
-    "uploadProgressGoBack": "Zurück",
-    "uploadProgressRetryWithCount": "Erneut versuchen (noch {count})",
-    "@uploadProgressRetryWithCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressDelete": "Löschen",
-    "uploadProgressDaysAgo": "vor {count}T",
-    "@uploadProgressDaysAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressHoursAgo": "vor {count}Std",
-    "@uploadProgressHoursAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressMinutesAgo": "vor {count}Min",
-    "@uploadProgressMinutesAgo": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressJustNow": "Gerade eben",
-    "uploadProgressUploadingPercent": "Lädt hoch {percent}%",
-    "@uploadProgressUploadingPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadProgressPausedPercent": "Pausiert bei {percent}%",
-    "@uploadProgressPausedPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "shareMenuTitle": "Video teilen",
-    "shareMenuReportAiContent": "KI-Inhalt melden",
-    "shareMenuReportAiContentSubtitle": "Schnell vermuteten KI-generierten Inhalt melden",
-    "shareMenuReportingAiContent": "KI-Inhalt wird gemeldet...",
-    "shareMenuFailedToReportContent": "Inhalt konnte nicht gemeldet werden: {error}",
-    "@shareMenuFailedToReportContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFailedToReportAiContent": "KI-Inhalt konnte nicht gemeldet werden: {error}",
-    "@shareMenuFailedToReportAiContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuVideoStatus": "Video-Status",
-    "shareMenuViewAllLists": "Alle Listen anzeigen →",
-    "shareMenuShareWith": "Teilen mit",
-    "shareMenuShareViaOtherApps": "Über andere Apps teilen",
-    "shareMenuShareViaOtherAppsSubtitle": "Über andere Apps teilen oder Link kopieren",
-    "shareMenuSaveToGallery": "In Galerie speichern",
-    "shareMenuSaveOriginalSubtitle": "Original-Video in Aufnahmen speichern",
-    "shareMenuSaveWithWatermark": "Mit Wasserzeichen speichern",
-    "shareMenuSaveVideo": "Video speichern",
-    "shareMenuDownloadWithWatermark": "Mit Divine-Wasserzeichen herunterladen",
-    "shareMenuSaveVideoSubtitle": "Video in Aufnahmen speichern",
-    "shareMenuLists": "Listen",
-    "shareMenuAddToList": "Zur Liste hinzufügen",
-    "shareMenuAddToListSubtitle": "Zu deinen kuratierten Listen hinzufügen",
-    "shareMenuCreateNewList": "Neue Liste erstellen",
-    "shareMenuCreateNewListSubtitle": "Eine neue kuratierte Sammlung starten",
-    "shareMenuRemovedFromList": "Aus Liste entfernt",
-    "shareMenuFailedToRemoveFromList": "Entfernen aus Liste fehlgeschlagen",
     "shareMenuBookmarks": "Lesezeichen",
-    "shareMenuFollowSets": "Follow-Sets",
-    "shareMenuCreateFollowSet": "Follow-Set erstellen",
-    "shareMenuCreateFollowSetSubtitle": "Neue Sammlung mit diesem Creator starten",
-    "shareMenuAddToFollowSet": "Zu Follow-Set hinzufügen",
     "shareMenuFollowSetsAvailable": "{count} Follow-Sets verfügbar",
     "@shareMenuFollowSetsAvailable": {
         "placeholders": {
@@ -1563,21 +1394,8 @@
             }
         }
     },
-    "shareMenuAddedToBookmarks": "Zu Lesezeichen hinzugefügt!",
-    "shareMenuFailedToAddBookmark": "Lesezeichen konnte nicht hinzugefügt werden",
-    "shareMenuCreatedListAndAddedVideo": "Liste \"{name}\" erstellt und Video hinzugefügt",
-    "@shareMenuCreatedListAndAddedVideo": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuManageContent": "Inhalt verwalten",
     "shareMenuEditVideo": "Video bearbeiten",
-    "shareMenuEditVideoSubtitle": "Titel, Beschreibung und Hashtags aktualisieren",
     "shareMenuDeleteVideo": "Video löschen",
-    "shareMenuVideoInTheseLists": "Video ist in diesen Listen:",
     "shareMenuVideoCount": "{count} Videos",
     "@shareMenuVideoCount": {
         "placeholders": {
@@ -1586,43 +1404,11 @@
             }
         }
     },
-    "shareMenuClose": "Schließen",
     "shareMenuDeleteConfirmation": "Dadurch wird dieses Video dauerhaft aus Divine gelöscht. Es kann weiterhin in Nostr-Clients von Drittanbietern erscheinen, die andere Relays verwenden.",
     "shareMenuCancel": "Abbrechen",
     "shareMenuDelete": "Löschen",
-    "shareMenuDeletingContent": "Inhalt wird gelöscht...",
-    "shareMenuFailedToDeleteContent": "Inhalt konnte nicht gelöscht werden: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuFollowSetName": "Follow-Set-Name",
-    "shareMenuFollowSetNameHint": "z.B. Content-Creator, Musiker usw.",
-    "shareMenuDescriptionOptional": "Beschreibung (optional)",
-    "shareMenuCreate": "Erstellen",
-    "shareMenuCreatedFollowSetAndAddedCreator": "Follow-Set \"{name}\" erstellt und Creator hinzugefügt",
-    "@shareMenuCreatedFollowSetAndAddedCreator": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuDone": "Fertig",
-    "shareMenuEditTitle": "Titel",
-    "shareMenuEditTitleHint": "Videotitel eingeben",
-    "shareMenuEditDescription": "Beschreibung",
-    "shareMenuEditDescriptionHint": "Videobeschreibung eingeben",
-    "shareMenuEditHashtags": "Hashtags",
-    "shareMenuEditHashtagsHint": "komma, getrennte, hashtags",
-    "shareMenuEditMetadataNote": "Hinweis: Nur Metadaten können bearbeitet werden. Video-Inhalte können nicht geändert werden.",
-    "shareMenuDeleting": "Wird gelöscht...",
     "shareMenuUpdate": "Aktualisieren",
     "shareMenuChangeCover": "Cover ändern",
-    "shareMenuCoverUploadingBackground": "Vorschaubild wird im Hintergrund hochgeladen",
     "shareMenuVideoUpdated": "Video erfolgreich aktualisiert",
     "shareMenuVideoUpdatedWithInviteFailures": "Video aktualisiert, aber {count, plural, =1{1 Mitwirkenden-Einladung wurde nicht gesendet.} other{{count} Mitwirkenden-Einladungen wurden nicht gesendet.}}",
     "shareMenuFailedToUpdateVideo": "Video konnte nicht aktualisiert werden: {error}",
@@ -1635,39 +1421,8 @@
     },
     "shareMenuDeleteVideoQuestion": "Video löschen?",
     "shareMenuVideoDeletionRequested": "Video gelöscht",
-    "shareMenuFailedToDeleteVideo": "Video konnte nicht gelöscht werden: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuContentLabels": "Inhalts-Labels",
-    "shareMenuAddContentLabels": "Inhalts-Labels hinzufügen",
-    "shareMenuClearAll": "Alles löschen",
-    "shareMenuCollaborators": "Mitwirkende",
-    "shareMenuAddCollaborator": "Mitwirkenden hinzufügen",
-    "shareMenuMutualFollowRequired": "Du musst {name} gegenseitig folgen, um sie/ihn als Mitwirkenden hinzuzufügen.",
-    "@shareMenuMutualFollowRequired": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
-    "shareMenuLoading": "Wird geladen...",
-    "shareMenuInspiredBy": "Inspiriert von",
-    "shareMenuAddInspirationCredit": "Inspirationsangabe hinzufügen",
-    "shareMenuCreatorCannotBeReferenced": "Dieser Creator kann nicht referenziert werden.",
-    "shareMenuUnknown": "Unbekannt",
-    "shareMenuUseThisSound": "Diesen Sound verwenden",
-    "shareMenuOriginalSound": "Originalton",
     "authSessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
     "authSignInFailed": "Anmeldung fehlgeschlagen. Bitte versuch es nochmal.",
-    "localeAppLanguage": "App-Sprache",
-    "localeDeviceDefault": "Gerätestandard",
-    "localeSelectLanguage": "Sprache wählen",
     "webAuthNotSupportedSecureMode": "Web-Authentifizierung wird im sicheren Modus nicht unterstützt. Bitte nutze die mobile App für sichere Schlüsselverwaltung.",
     "webAuthIntegrationFailed": "Authentifizierungs-Integration fehlgeschlagen: {error}",
     "@webAuthIntegrationFailed": {
@@ -1699,34 +1454,15 @@
     "webAuthNostrHelp": "Installiere eine Browser-Erweiterung wie Alby oder nos2x für das einfachste Erlebnis oder nutze nsec-Bunker für sicheres Remote-Signing.",
     "soundsTitle": "Sounds",
     "soundsSearchHint": "Sounds suchen...",
-    "soundsPreviewUnavailable": "Vorschau nicht möglich — kein Audio verfügbar",
-    "soundsPreviewFailed": "Vorschau-Wiedergabe fehlgeschlagen: {error}",
-    "@soundsPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "soundsPreviewFailedGeneric": "Vorschau-Wiedergabe fehlgeschlagen",
-    "soundsFeaturedSounds": "Empfohlene Sounds",
-    "soundsTrendingSounds": "Angesagte Sounds",
-    "soundsAllSounds": "Alle Sounds",
     "soundSyncStatusSyncing": "Deine Sounds werden synchronisiert…",
     "soundSyncStatusSynced": "Sounds sind aktuell",
     "soundSyncStatusFailed": "Deine Sounds konnten nicht synchronisiert werden. Wir versuchen es erneut.",
     "soundSyncStatusLocked": "Deine synchronisierte Bibliothek lässt sich auf diesem Gerät nicht entsperren.",
     "soundsSearchResults": "Suchergebnisse",
-    "soundsNoSoundsAvailable": "Keine Sounds verfügbar",
-    "soundsNoSoundsDescription": "Sounds erscheinen hier, wenn Creator Audio teilen",
     "soundsNoSoundsFound": "Keine Sounds gefunden",
     "soundsNoSoundsFoundDescription": "Versuch einen anderen Suchbegriff",
-    "soundsFailedToLoad": "Sounds konnten nicht geladen werden",
-    "soundsRetry": "Erneut versuchen",
-    "soundsScreenLabel": "Sounds-Screen",
     "profileTitle": "Profil",
     "profileRefresh": "Aktualisieren",
-    "profileRefreshLabel": "Profil aktualisieren",
     "profileMoreOptions": "Weitere Optionen",
     "profileBlockedUser": "{name} blockiert",
     "@profileBlockedUser": {
@@ -1752,14 +1488,6 @@
             }
         }
     },
-    "profileError": "Fehler: {error}",
-    "@profileError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsTabAll": "Alle",
     "notificationsTabLikes": "Likes",
     "notificationsTabComments": "Kommentare",
@@ -1768,25 +1496,6 @@
     "notificationsFailedToLoad": "Benachrichtigungen konnten nicht geladen werden",
     "notificationsRetry": "Erneut versuchen",
     "notificationsRefreshError": "Aktualisierung fehlgeschlagen – Vorhandenes wird angezeigt",
-    "notificationsCheckingNew": "Suche nach neuen Benachrichtigungen",
-    "notificationsNoneYet": "Noch keine Benachrichtigungen",
-    "notificationsNoneForType": "Keine {type}-Benachrichtigungen",
-    "@notificationsNoneForType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
-    "notificationsEmptyDescription": "Wenn Leute mit deinen Inhalten interagieren, siehst du es hier",
-    "notificationsLoadingType": "{type}-Benachrichtigungen werden geladen...",
-    "@notificationsLoadingType": {
-        "placeholders": {
-            "type": {
-                "type": "String"
-            }
-        }
-    },
     "notificationsInviteSingular": "Du hast 1 Einladung, die du mit einem Freund teilen kannst!",
     "notificationsInvitePlural": "Du hast {count} Einladungen, die du mit Freunden teilen kannst!",
     "@notificationsInvitePlural": {
@@ -1796,9 +1505,7 @@
             }
         }
     },
-    "notificationsVideoNotFound": "Video nicht gefunden",
     "notificationsVideoUnavailable": "Video nicht verfügbar",
-    "notificationsFromNotification": "Aus Benachrichtigung",
     "feedFailedToLoadVideos": "Videos konnten nicht geladen werden",
     "feedRetry": "Erneut versuchen",
     "feedNoFollowedUsers": "Keine abonnierten Nutzer.\nFolge jemandem, um hier seine Videos zu sehen.",
@@ -1828,50 +1535,13 @@
     "feedLatestEmpty": "Noch keine neuen Videos.\nSchau bald wieder vorbei.",
     "feedClassicEmpty": "Noch keine Klassiker.\nSchau bald wieder vorbei.",
     "feedExploreVideos": "Videos entdecken",
-    "feedExternalVideoSlow": "Externes Video lädt langsam",
-    "feedSkip": "Überspringen",
-    "uploadWaitingToUpload": "Warten auf Upload",
     "uploadUploadingVideo": "Video wird hochgeladen",
-    "uploadProcessingVideo": "Video wird verarbeitet",
-    "uploadProcessingComplete": "Verarbeitung abgeschlossen",
-    "uploadPublishedSuccessfully": "Erfolgreich veröffentlicht",
-    "uploadFailed": "Upload fehlgeschlagen",
-    "uploadRetrying": "Upload wird erneut versucht",
-    "uploadPaused": "Upload pausiert",
-    "uploadPercentComplete": "{percent}% abgeschlossen",
-    "@uploadPercentComplete": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "uploadQueuedMessage": "Dein Video steht in der Upload-Warteschlange",
-    "uploadUploadingMessage": "Wird zum Server hochgeladen...",
-    "uploadProcessingMessage": "Video wird verarbeitet — das kann ein paar Minuten dauern",
-    "uploadReadyToPublishMessage": "Video erfolgreich verarbeitet und bereit zur Veröffentlichung",
-    "uploadPublishedMessage": "Video in deinem Profil veröffentlicht",
     "postPublishConfirmationTitle": "In deinem Profil veröffentlicht",
     "postPublishConfirmationView": "Anzeigen",
     "postPublishConfirmationShare": "Teilen",
     "postPublishConfirmationThumbnailLabel": "Vorschaubild des Videos, das du gerade veröffentlicht hast",
   "uploadPublishedCountMessage": "{count, plural, =1{Video in deinem Profil veröffentlicht} other{{count} Videos in deinem Profil veröffentlicht}}",
-    "uploadFailedMessage": "Upload fehlgeschlagen — bitte versuch es nochmal",
-    "uploadRetryingMessage": "Upload wird erneut versucht...",
-    "uploadPausedMessage": "Upload vom Nutzer pausiert",
-    "uploadRetryButton": "ERNEUT VERSUCHEN",
-    "uploadRetryFailed": "Upload-Wiederholung fehlgeschlagen: {error}",
-    "@uploadRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "userSearchPrompt": "Nach Nutzern suchen",
     "userSearchNoResults": "Keine Nutzer gefunden",
-    "userSearchFailed": "Suche fehlgeschlagen",
-    "userPickerSearchByName": "Nach Namen suchen",
     "userPickerFilterByNameHint": "Nach Namen filtern...",
     "userPickerSearchByNameHint": "Nach Namen suchen...",
     "userPickerClearSearchSemantics": "Suche löschen",
@@ -1910,17 +1580,6 @@
     "ageVerificationCreationQuestion": "Bist du 16 Jahre oder älter?",
     "ageVerificationNo": "Nein",
     "ageVerificationYes": "Ja",
-    "shareLinkCopied": "Link in die Zwischenablage kopiert",
-    "shareFailedToCopy": "Link konnte nicht kopiert werden",
-    "shareVideoSubject": "Schau dir dieses Video auf Divine an",
-    "shareFailedToShare": "Teilen fehlgeschlagen",
-    "shareVideoTitle": "Video teilen",
-    "shareToApps": "An Apps teilen",
-    "shareToAppsSubtitle": "Über Messaging- und Social-Apps teilen",
-    "shareCopyWebLink": "Web-Link kopieren",
-    "shareCopyWebLinkSubtitle": "Teilbaren Web-Link kopieren",
-    "shareCopyNostrLink": "Nostr-Link kopieren",
-    "shareCopyNostrLinkSubtitle": "nevent-Link für Nostr-Clients kopieren",
     "navHome": "Start",
     "navExplore": "Entdecken",
     "navInbox": "Posteingang",
@@ -1928,7 +1587,6 @@
     "navMyProfile": "Mein Profil",
     "navNotifications": "Benachrichtigungen",
     "navOpenCamera": "Kamera öffnen",
-    "navUnknown": "Unbekannt",
     "navExploreClassics": "Klassiker",
     "navExploreNewVideos": "Neue Videos",
     "navExploreTrending": "Angesagt",
@@ -1989,10 +1647,8 @@
             }
         }
     },
-    "reportTitle": "Inhalt melden",
     "reportWhyReporting": "Warum meldest du diesen Inhalt?",
     "reportPolicyNotice": "Divine reagiert innerhalb von 24 Stunden auf Inhaltsmeldungen, indem der Inhalt entfernt und der Nutzer, der den problematischen Inhalt bereitgestellt hat, ausgeschlossen wird.",
-    "reportAdditionalDetails": "Weitere Details (optional)",
     "reportBlockUser": "Diesen Nutzer blockieren",
     "reportCancel": "Abbrechen",
     "reportSubmit": "Melden",
@@ -2019,7 +1675,6 @@
     "reportReceivedTitle": "Meldung erhalten",
     "reportReceivedThankYou": "Danke, dass du hilfst, Divine sicher zu halten.",
     "reportReceivedReviewNotice": "Unser Team prüft deine Meldung und ergreift entsprechende Maßnahmen. Du erhältst möglicherweise Updates per Direktnachricht.",
-    "reportLearnMore": "Mehr erfahren",
     "reportSafetyUrl": "divine.video/safety",
     "reportClose": "Schließen",
     "listAddToList": "Zur Liste hinzufügen",
@@ -2340,7 +1995,6 @@
     "commonCancel": "Abbrechen",
     "commonDelete": "Löschen",
     "commonRetry": "Erneut versuchen",
-    "commonNext": "Weiter",
     "discoverListsFailedToUpdateSubscription": "Abo konnte nicht aktualisiert werden: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2376,7 +2030,6 @@
             }
         }
     },
-    "featureRequestCancel": "Abbrechen",
     "followersFailedToLoadList": "Follower-Liste konnte nicht geladen werden",
     "followingFailedToLoadList": "Folge-ich-Liste konnte nicht geladen werden",
     "inboxActionBlock": "{displayName} blockieren",
@@ -2492,8 +2145,6 @@
             }
         }
     },
-    "libraryAddClips": "Hinzufügen",
-    "libraryClipSelectionTitle": "Clips",
     "libraryClipsDeletedCount": "{count, plural, =1{1 Clip gelöscht} other{{count} Clips gelöscht}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2531,15 +2182,6 @@
     "libraryCreateVideo": "Video erstellen ({count})",
     "libraryDeleteClipMessage": "Diesen Clip wirklich löschen?",
     "libraryDeleteClipTitle": "Clip löschen",
-    "libraryDeleteClipsMessage": "Möchtest du wirklich {count, plural, one{# ausgewählten Clip} other{# ausgewählte Clips}} löschen?",
-    "@libraryDeleteClipsMessage": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "libraryDeleteClipsTitle": "Clips löschen",
     "libraryDeleteClipsWarning": "Das kann nicht rückgängig gemacht werden. Die Videodateien werden dauerhaft von deinem Gerät entfernt.",
     "libraryDeleteConfirm": "Löschen",
     "librarySelect": "Auswählen",
@@ -2609,15 +2251,6 @@
     "videoClipSemanticHintDisabled": "Deaktiviert",
     "videoClipSemanticHintSelect": "Tippen zum Auswählen, lang drücken für Vorschau",
     "videoClipSemanticHintDeselect": "Tippen zum Abwählen, lang drücken für Vorschau",
-    "librarySaveToCameraRollTooltip": "In der Fotomediathek speichern",
-    "librarySecondsRemaining": "Noch {seconds}s",
-    "@librarySecondsRemaining": {
-        "placeholders": {
-            "seconds": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipDuration": "{seconds} Sek",
     "libraryTabClips": "Clips",
     "libraryTabDrafts": "Entwürfe",
@@ -2639,8 +2272,6 @@
     "dmConversationLoadError": "Nachrichten konnten nicht geladen werden",
     "dmMessageInputHint": "Sag was …",
     "dmMessageSendLabel": "Nachricht senden",
-    "reportDialogCancel": "Abbrechen",
-    "reportDialogReport": "Melden",
     "routerInvalidCreator": "Ungültiger Ersteller",
     "routerInvalidHashtagRoute": "Ungültige Hashtag-Route",
     "searchDiscoverSomethingInteresting": "Entdecke etwas Interessantes",
@@ -3051,8 +2682,6 @@
     "videoEditorReleaseToDeleteLayer": "Loslassen, um Ebene zu löschen",
     "videoEditorDoneLabel": "Fertig",
     "videoEditorPlayPauseSemanticLabel": "Video abspielen oder pausieren",
-    "videoEditorCropSemanticLabel": "Zuschneiden",
-    "videoEditorCannotSplitProcessing": "Clip kann während der Verarbeitung nicht geteilt werden. Bitte warte.",
     "videoEditorSplitPositionInvalid": "Ungültige Teilungsposition. Beide Clips müssen mindestens {minDurationMs} ms lang sein.",
     "@videoEditorSplitPositionInvalid": {
         "placeholders": {
@@ -3061,14 +2690,10 @@
             }
         }
     },
-    "videoEditorAddClipFromLibrary": "Clip aus Mediathek hinzufügen",
     "videoEditorSaveSelectedClip": "Ausgewählten Clip speichern",
-    "videoEditorSplitClip": "Clip teilen",
     "videoEditorSaveClip": "Clip speichern",
-    "videoEditorDeleteClip": "Clip löschen",
     "videoEditorClipSavedSuccess": "Clip in Mediathek gespeichert",
     "videoEditorClipSaveFailed": "Clip konnte nicht gespeichert werden",
-    "videoEditorClipDeleted": "Clip gelöscht",
     "videoEditorColorPickerSemanticLabel": "Farbwähler",
     "videoEditorUndoSemanticLabel": "Rückgängig",
     "videoEditorRedoSemanticLabel": "Wiederholen",
@@ -3079,8 +2704,6 @@
     "videoEditorNoStickersFound": "Keine Sticker gefunden",
     "videoEditorNoStickersAvailable": "Keine Sticker verfügbar",
     "videoEditorFailedLoadStickers": "Sticker konnten nicht geladen werden",
-    "videoEditorAdjustVolumeTitle": "Lautstärke anpassen",
-    "videoEditorRecordedAudioLabel": "Aufgenommener Ton",
     "videoEditorVoiceOverLabel": "Voiceover",
     "videoEditorVoiceOverTakeName": "Aufnahme {number}",
     "videoEditorOpenVoiceOverSemanticLabel": "Voiceover aufnehmen",
@@ -3097,8 +2720,6 @@
     "videoEditorVoiceOverTooLong": "Aufnahme ist länger als dein Video",
     "videoEditorPlaySemanticLabel": "Abspielen",
     "videoEditorPauseSemanticLabel": "Pausieren",
-    "videoEditorMuteAudioSemanticLabel": "Ton stummschalten",
-    "videoEditorUnmuteAudioSemanticLabel": "Ton wieder einschalten",
     "videoEditorDeleteLabel": "Löschen",
     "videoEditorDeleteSelectedItemSemanticLabel": "Ausgewähltes Element löschen",
     "videoEditorEditLabel": "Bearbeiten",
@@ -3256,7 +2877,6 @@
     "videoMetadataTitleLabel": "Titel",
     "videoMetadataDescriptionLabel": "Beschreibung",
     "videoMetadataTagsLabel": "Tags",
-    "videoMetadataDeleteTagSemanticLabel": "Löschen",
     "videoMetadataDeleteTagHint": "Tag {tag} löschen",
     "@videoMetadataDeleteTagHint": {
         "placeholders": {
@@ -3268,39 +2888,12 @@
     "videoMetadataContentWarningLabel": "Inhaltswarnung",
     "videoMetadataSelectContentWarningsSemanticLabel": "Inhaltswarnungen auswählen",
     "videoMetadataContentWarningSelectAllThatApply": "Wähle alles aus, was auf deinen Inhalt zutrifft",
-    "videoMetadataContentWarningDoneButton": "Fertig",
     "videoMetadataCollaboratorsLabel": "Mitwirkende",
     "videoMetadataAddCollaboratorSemanticLabel": "Mitwirkende hinzufügen",
-    "videoMetadataCollaboratorsHelpTooltip": "So funktionieren Mitwirkende",
-    "videoMetadataCollaboratorsCount": "{count}/{max} Mitwirkende",
-    "@videoMetadataCollaboratorsCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "videoMetadataRemoveCollaboratorSemanticLabel": "Mitwirkende entfernen",
-    "videoMetadataCollaboratorsHelpMessage": "Mitwirkende werden in diesem Beitrag als Co-Creator markiert. Du kannst nur Personen hinzufügen, denen ihr gegenseitig folgt. Sie erscheinen beim Veröffentlichen in den Metadaten des Beitrags.",
     "videoMetadataMutualFollowersSearchText": "Gemeinsame Follower",
-    "videoMetadataMustMutuallyFollowSnackbar": "Du musst {name} gegenseitig folgen, um die Person als Mitwirkende hinzuzufügen.",
-    "@videoMetadataMustMutuallyFollowSnackbar": {
-        "placeholders": {
-            "name": {
-                "type": "String"
-            }
-        }
-    },
     "videoMetadataInspiredByLabel": "Inspiriert von",
     "videoMetadataSetInspiredBySemanticLabel": "\"Inspiriert von\" festlegen",
-    "videoMetadataInspiredByHelpTooltip": "So funktionieren Inspirations-Credits",
-    "videoMetadataInspiredByNone": "Niemandem",
-    "videoMetadataInspiredByHelpMessage": "Nutze dies für eine Quellenangabe. \"Inspiriert von\" unterscheidet sich von Mitwirkenden: Es würdigt den Einfluss, markiert aber niemanden als Co-Creator.",
     "videoMetadataCreatorCannotBeReferencedSnackbar": "Dieser Creator kann nicht referenziert werden.",
-    "videoMetadataRemoveInspiredBySemanticLabel": "\"Inspiriert von\" entfernen",
     "videoMetadataPostDetailsTitle": "Beitragsdetails",
     "videoMetadataSavedToLibrarySnackbar": "In Mediathek gespeichert",
     "videoMetadataFailedToSaveSnackbar": "Speichern fehlgeschlagen",
@@ -3363,9 +2956,6 @@
     "shareMenuDeleteFailedRelayNoResponse": "Das Relay war nicht erreichbar. Prüfe deine Verbindung und versuch es erneut.",
     "shareMenuDeletePartiallyConfirmed": "Gelöscht. Nicht alle Relays haben bestätigt, es kann also noch in anderen Apps auftauchen.",
     "videoEditorAudioSegmentInstruction": "Wähle den Audiobereich für dein Video aus",
-    "videoEditorClipGalleryInstruction": "Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.",
-    "navSearch": "Suche",
-    "navSearchTooltip": "Suchen",
     "fullscreenFeedRemovedMessage": "Video entfernt",
     "fullscreenFeedEmptyMessage": "Hier gibt es nichts mehr abzuspielen",
     "invitesGenerateCardTitle": "{count, plural, =1{1 Einladung bereit zum Erstellen} other{{count} Einladungen bereit zum Erstellen}}",
@@ -3409,9 +2999,7 @@
         }
     },
     "notificationSystemUpdate": "Du hast eine neue Aktualisierung",
-    "notificationSomeoneLikedYourVideo": "Jemand hat dein Video geliked",
     "peopleListsAddToList": "Zur Liste hinzufügen",
-    "peopleListsAddToListSubtitle": "Füge diesen Creator einer deiner Listen hinzu",
     "peopleListsSheetTitle": "Zur Liste hinzufügen",
     "peopleListsEmptyTitle": "Noch keine Listen",
     "peopleListsEmptySubtitle": "Erstelle eine Liste, um Personen zu gruppieren.",
@@ -3810,14 +3398,6 @@
     "bugReportDiagnosticsNotice": "Geräteinfos und Logs werden automatisch beigelegt.",
     "bugReportSuccessMessage": "Danke! Wir haben deinen Bericht erhalten und nutzen ihn, um Divine besser zu machen.",
     "bugReportSendFailed": "Bug-Bericht konnte nicht gesendet werden. Versuch es später nochmal.",
-    "bugReportFailedWithError": "Bug-Bericht konnte nicht gesendet werden: {error}",
-    "@bugReportFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "featureRequestSendRequest": "Anfrage senden",
     "featureRequestSubjectHint": "Kurze Zusammenfassung deiner Idee",
     "featureRequestDescriptionRequiredLabel": "Was wünschst du dir? *",
@@ -3828,14 +3408,6 @@
     "featureRequestWhenHint": "Beschreib die Situationen, in denen das helfen würde",
     "featureRequestSuccessMessage": "Danke! Wir haben deinen Feature-Wunsch erhalten und schauen ihn uns an.",
     "featureRequestSendFailed": "Feature-Wunsch konnte nicht gesendet werden. Versuch es später nochmal.",
-    "featureRequestFailedWithError": "Feature-Wunsch konnte nicht gesendet werden: {error}",
-    "@featureRequestFailedWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "followingTitle": "Folge ich",
     "followingTitleForName": "{displayName} folgt",
     "@followingTitleForName": {
@@ -3862,9 +3434,6 @@
     "followSortTitle": "Sortieren nach",
     "followSortNewest": "Neueste zuerst",
     "followSortOldest": "Älteste zuerst",
-    "reportMessageTitle": "Nachricht melden",
-    "reportMessageWhyReporting": "Warum meldest du diese Nachricht?",
-    "reportMessageSelectReason": "Bitte wähl einen Grund für die Meldung dieser Nachricht",
     "newMessageTitle": "Neue Nachricht",
     "newMessageFindPeople": "Leute finden",
     "newMessageNoContacts": "Keine Kontakte gefunden.\nFolg Leuten, um sie hier zu sehen.",
@@ -4034,8 +3603,6 @@
     "authInfoBrowserExtensionTitle": "Browser-Erweiterung",
     "authInfoBrowserExtensionDescription": "Melde dich mit einer NIP-07-Browser-Erweiterung wie Alby oder nos2x an. Deine Schlüssel bleiben in der Erweiterung — Divine sieht sie nie.",
     "soundsAlreadySavedToLibrary": "Bereits in Sounds",
-    "soundsAvailabilityCommunity": "Community",
-    "soundsAvailabilityPrivate": "Privat",
     "soundsRemoveSavedSound": "Sound entfernen",
     "savedSoundSaveAction": "Speichern",
     "savedSoundPausePreviewAction": "Vorschau pausieren",
@@ -4052,11 +3619,8 @@
     "soundsSavedToLibrary": "In Sounds gespeichert",
     "videoEditorAudioCategoryFeatured": "Vorgestellt",
     "videoEditorAudioCategoryMySounds": "Meine Sounds",
-    "videoEditorAudioFeaturedEmptySubtitle": "Wir veröffentlichen vorgestellte Sounds hier, sobald sie bereit sind.",
-    "videoEditorAudioFeaturedEmptyTitle": "Vorgestellte Sounds folgen bald",
     "videoMetadataAudioReuseSubtitle": "Lass andere den Audio dieses Videos speichern und wiederverwenden.",
     "publishAudioReuseDegradedWarning": "Dein Video ist online, aber der Sound wurde nicht veröffentlicht. Bearbeite das Video, um ihn zu teilen.",
-    "videoMetadataAudioReuseTitle": "Diesen Sound veröffentlichen",
     "videoMetadataShareReplyToFeedTitle": "Auch in meinem Feed teilen",
     "videoMetadataShareReplyToFeedSubtitle": "Aus bedeutet, dass dieses Video nur im Kommentar-Thread bleibt.",
     "commentsRecordVideoButtonLabel": "Videokommentar aufnehmen",
@@ -4217,14 +3781,12 @@
     "videoEditorChromaKeyRemoveFailed": "Der Greenscreen konnte nicht entfernt werden. Dein Clip bleibt unverändert.",
     "videoEditorChromaKeyApplying": "Greenscreen wird angewendet …",
     "videoEditorChromaKeyPreviewUnavailable": "Dieses Gerät kann die Live-Vorschau nicht zeigen. Deine Einstellungen wirken beim Export trotzdem.",
-    "videoEditorOriginalAudioLabel": "Originalton",
     "videoEditorClipVolumeLabel": "Clip {index}",
     "dmReactionAddCustomA11yLabel": "Eigene Emoji-Reaktion hinzufügen",
     "dmReelReplyComposerHint": "Nachricht an {name}…",
     "dmReelReplyComposerHintSelf": "Dir selbst antworten…",
     "dmReelReplyComposerSemanticLabel": "Auf dieses Reel antworten",
     "dmReelReplyViewChat": "Chat ansehen",
-    "dmReelReplyViewChatA11yLabel": "Chat öffnen",
     "dmReelReplySentAnnouncement": "Antwort gesendet",
     "dmReelReactionSentAnnouncement": "Mit {emoji} reagiert",
     "dmReelReplyFailed": "Senden fehlgeschlagen",
@@ -4278,7 +3840,6 @@
     "reportReasonCsam": "Sexueller Kindesmissbrauch",
     "reportReasonCsamSubtitle": "Inhalte, die sexuellen Missbrauch von Minderjährigen darstellen",
     "minorAccountReviewWelcomePageTitle": "Familien-Guide",
-    "minorAccountReviewWelcomeCta": "Noch nicht 16? Kein Problem. Das kannst du tun.",
     "minorAccountReviewWelcomeTitle": "Noch nicht 16? Kein Problem.",
     "minorAccountReviewWelcomeBody": "Dass du dich auf diese Seite durchgeklickt hast, statt einfach die Antwort zu wählen, die dich reinlässt, zählt. Das zeigt Ehrlichkeit, Rückgrat und echte Rücksicht auf die Menschen um dich herum.\n\nDie Regeln für Menschen unter 16 sind je nach Wohnort verschieden. Bei Divine wollen wir, dass Familien gemeinsam darüber sprechen und entscheiden, wie gesunde Social-Media-Nutzung für sie aussieht.",
     "minorAccountReviewModerationTitle": "Wir brauchen noch einen Schritt",
@@ -4292,7 +3853,6 @@
     "minorAccountReviewChooseAgeBandTitle": "Wähl den passenden Weg",
     "minorAccountReviewUnder13Cta": "Unter 13",
     "minorAccountReviewTeenCta": "13 bis 15 Jahre",
-    "minorAccountReviewFamilyResourcesTitle": "Hilfreich für Familien",
     "minorAccountReviewFamilyResourcesBody": "Im Divine-Familien-Guide findest du praktische Tipps, Gesprächshilfen und Materialien, damit Jugendliche soziale Medien sicherer nutzen.",
     "minorAccountReviewFamilyResourcesCta": "Familien-Guides und Tipps holen",
     "minorAccountReviewFooter": "Wenn du 16 oder älter bist und versehentlich hier gelandet bist, wende dich an den Divine-Support – ein echter Mensch schaut sich das an.",
@@ -4481,15 +4041,6 @@
             }
         }
     },
-    "notificationSettingsSystem": "System",
-    "notificationSettingsSystemSubtitle": "App-Updates und Systemmeldungen",
-    "notificationSettingsPushNotificationsSection": "Push-Benachrichtigungen",
-    "notificationSettingsPushNotifications": "Push-Benachrichtigungen",
-    "notificationSettingsPushNotificationsSubtitle": "Benachrichtigungen erhalten, wenn die App geschlossen ist",
-    "notificationSettingsSound": "Ton",
-    "notificationSettingsSoundSubtitle": "Ton bei Benachrichtigungen abspielen",
-    "notificationSettingsVibration": "Vibration",
-    "notificationSettingsVibrationSubtitle": "Bei Benachrichtigungen vibrieren",
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4510,7 +4061,6 @@
     "videoEditorTransformFrameFailed": "Frame konnte nicht transformiert werden. Bitte versuche es erneut.",
     "videoEditorTransformRotateLabel": "Drehen",
     "videoEditorTransformFlipLabel": "Spiegeln",
-    "videoEditorTransformRatioLabel": "Format",
     "videoEditorTransformResetLabel": "Zurücksetzen",
     "videoEditorTransformApplySemanticLabel": "Transformation anwenden",
     "videoEditorTransformCancelSemanticLabel": "Transformation abbrechen",
@@ -4847,12 +4397,6 @@
     "deleteAccountSuccess": "Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.",
     "deleteAccountSuccessContentUnverified": "Kontolöschung angefragt. Für einige vorhandene Beiträge konnte die Löschung nicht einzeln bestätigt werden.",
     "deleteAccountWarningBody": "Das sendet Löschanfragen für dein Konto und deine Inhalte, löscht dein Divine-Konto wenn möglich und meldet dich auf diesem Gerät ab. Einige Relays, Clients und Suchindizes behalten möglicherweise Kopien. Andere angemeldete Geräte bleiben aktiv, bis du dort die Schlüssel entfernst.",
-    "exportProgressStageApplyingTextOverlay": "Text-Overlay wird hinzugefügt …",
-    "exportProgressStageComplete": "Export abgeschlossen!",
-    "exportProgressStageConcatenating": "Clips werden zusammengefügt …",
-    "exportProgressStageError": "Export fehlgeschlagen",
-    "exportProgressStageGeneratingThumbnail": "Vorschaubild wird erstellt …",
-    "exportProgressStageMixingAudio": "Ton wird hinzugefügt …",
     "findPeopleAnonymousUser": "Anonym",
     "findPeopleNoContacts": "Keine Kontakte gefunden.\nFolge Leuten, um sie hier zu sehen.",
     "geoBlockedCityLabel": "Stadt",
@@ -4888,21 +4432,15 @@
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Dieser Sound konnte nicht gefunden werden",
     "soundDetailNotFoundTitle": "Sound nicht gefunden",
-    "videoFeedDescriptionSemanticLabel": "Videobeschreibung",
     "videoFeedLoopCountLabel": "🔁 {count} Loops",
     "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
-    "videoFeedLoopCountSemanticLabel": "Anzahl der Video-Loops",
     "originalSoundUnavailableBody": "Der Ton aus diesem Video ist nicht separat verfügbar.",
     "originalSoundByCreator": "Originalton – {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
-    "globalUploadPendingCount": "Ausstehende Uploads ({count})",
-    "@globalUploadPendingCount": {"placeholders": {"count": {"type": "int"}}},
     "ogVinerBadgeLabel": "OG Viner",
     "profileBadgeOgVinerBody": "Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.",
     "profileBadgeCheckmarkTitle": "Profil-Häkchen",
     "profileBadgeCheckmarkBody": "Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.",
-    "shareVideoInListsCount": "{count, plural, =1{In 1 Liste} other{In {count} Listen}}",
-    "@shareVideoInListsCount": {"placeholders": {"count": {"type": "int"}}},
     "unfollowConfirmButton": "Nicht mehr folgen",
     "videoClipSaveFailed": "Clip konnte nicht gespeichert werden",
     "videoClipSaveTo": "In {destination} speichern",
@@ -4923,7 +4461,6 @@
     "@searchVideosSortRecent": {"description": "Label for the video search sort option that shows the newest results first."},
     "minorAccountReviewUnder13HonestyTitle": "Warum wir dir nicht einfach sagen, du sollst zurückgehen",
     "minorAccountReviewUnder13HonestyBody": "Ein großer Teil des Internets ist so aufgebaut, dass Leute belohnt werden, wenn sie einfach das sagen, was sie durch die Tür bringt. Das finden wir nicht gut. Ja, du könntest zurückgehen und angeben, dass du älter bist, als du bist, aber das wäre nicht ehrlich, und wir werden dir nicht beibringen, zu lügen, um zu bekommen, was du willst.",
-    "minorAccountReviewUnder13LegalTitle": "Warum die Antwort trotzdem nein ist",
     "minorAccountReviewUnder13LegalBody": "Wir versuchen, jungen Menschen zu helfen, Divine auf eine Weise zu nutzen, die für sie und ihr Umfeld gesund und positiv ist. Wir müssen uns außerdem an Gesetze halten, die von Ort zu Ort unterschiedlich sind. Wenn du also unter 13 bist, lautet die Antwort, dass du heute noch kein eigenes Konto haben kannst.",
     "minorAccountReviewParentConsentHonestyTitle": "Warum wir darum bitten, dass ein Elternteil oder Erziehungsberechtigter einbezogen wird",
     "minorAccountReviewParentConsentHonestyBody": "Divine muss sich weltweit an altersbezogene Gesetze halten. Wir wissen auch, dass die meisten technischen Alterskontrollen unvollkommen sind. Anstatt so zu tun, als gäbe es die Regeln nicht oder als wäre es cool, beim Alter zu lügen, möchten wir, dass Teenager und Familien überlegte Entscheidungen darüber treffen, wie sie Divine am besten nutzen. Deshalb bitten wir bei 13- bis 15-Jährigen die Eltern, Teil des Kontoerstellungsprozesses zu sein.",
@@ -5063,8 +4600,6 @@
   "authSignInOptionsHintCta": "Alle Anmeldeoptionen ansehen",
     "videoEditorStopMotionFramesPerImageLabel": "Frames pro Bild",
     "videoEditorStopMotionFramesPerImageValueSemanticLabel": "{count} Frames pro Bild",
-    "videoEditorStopMotionIncreaseFramesPerImageSemanticLabel": "Frames pro Bild erhöhen",
-    "videoEditorStopMotionDecreaseFramesPerImageSemanticLabel": "Frames pro Bild verringern",
     "videoEditorStopMotionFrameSemanticLabel": "Stop-Motion-Bild {position} von {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 Frame} other{{count} Frames}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
