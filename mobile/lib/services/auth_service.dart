@@ -15,8 +15,11 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage, SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/models/account_restore_failed_exception.dart';
 import 'package:openvine/models/auth_result.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/models/auth_state.dart';
+import 'package:openvine/models/auth_user_profile.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/account_deletion_proof_signer.dart';
@@ -41,7 +44,10 @@ import 'package:unified_logger/unified_logger.dart';
 
 // AuthResult moved to its own file (#4741) so auth/ collaborators can return it
 // without a facade import cycle; external consumers keep importing it here.
+export 'package:openvine/models/account_restore_failed_exception.dart';
 export 'package:openvine/models/auth_result.dart';
+export 'package:openvine/models/auth_state.dart';
+export 'package:openvine/models/auth_user_profile.dart';
 export 'package:openvine/models/authentication_source.dart';
 // Discovery callback contracts moved with the orchestrator (#4741); external
 // consumers (NostrService wiring) keep importing them from this facade.
@@ -60,24 +66,6 @@ const _kSessionRecoveryAnchorKey = 'session_recovery_anchor_npub';
 
 const _accountDeletionSessionExpiryMargin = Duration(minutes: 10);
 
-/// Authentication state for the user
-enum AuthState {
-  /// User is not authenticated (no keys stored)
-  unauthenticated,
-
-  /// User has keys but hasn't accepted Terms of Service yet
-  awaitingTosAcceptance,
-
-  /// User is authenticated (has valid keys and accepted TOS)
-  authenticated,
-
-  /// Authentication state is being checked
-  checking,
-
-  /// Authentication is in progress (generating/importing keys)
-  authenticating,
-}
-
 /// Whether the account-deletion flow may start.
 ///
 /// Deletion publishes irreversible events before it can attempt the reversible
@@ -92,72 +80,6 @@ enum AccountDeletionReadiness {
   /// destroy the user's content and leave their account alive. A fresh sign-in
   /// resolves it. Nothing has been published.
   requiresReauthentication,
-}
-
-/// Thrown by [AuthService.signInForAccount] when a returning-user sign-in
-/// does not restore the requested account — for example when an
-/// `importedKeys`/`automatic` account's identity keys are missing from secure
-/// storage, when a fallback authenticates a different primary account, or when
-/// [AuthService] lands in [AuthState.awaitingTosAcceptance] after an internal
-/// session-setup failure.
-///
-/// Previously these paths returned normally, leaving the caller (WelcomeBloc)
-/// believing the sign-in succeeded while the router kept the user pinned to
-/// `/welcome` — an invisible login loop. Throwing lets the caller route the
-/// user to the full login flow instead. See #5195.
-class AccountRestoreFailedException implements Exception {
-  const AccountRestoreFailedException(
-    this.pubkeyHex,
-    this.resolvedState, {
-    this.resolvedPubkeyHex,
-  });
-
-  /// The account (hex pubkey) whose restore was attempted.
-  final String pubkeyHex;
-
-  /// The [AuthState] the service resolved to.
-  final AuthState resolvedState;
-
-  /// The account (hex pubkey) that became active, if any.
-  final String? resolvedPubkeyHex;
-
-  @override
-  String toString() =>
-      'AccountRestoreFailedException: sign-in for $pubkeyHex resolved to '
-      '$resolvedState'
-      '${resolvedPubkeyHex == null ? '' : ' as $resolvedPubkeyHex'} '
-      'instead of the requested account';
-}
-
-/// User profile information
-class UserProfile {
-  const UserProfile({
-    required this.npub,
-    required this.publicKeyHex,
-    required this.displayName,
-    this.keyCreatedAt,
-    this.lastAccessAt,
-    this.about,
-    this.picture,
-    this.nip05,
-  });
-
-  /// Create minimal profile from secure key container
-  factory UserProfile.fromSecureContainer(SecureKeyContainer keyContainer) =>
-      UserProfile(
-        npub: keyContainer.npub,
-        publicKeyHex: keyContainer.publicKeyHex,
-        displayName: keyContainer.npub,
-      );
-
-  final String npub;
-  final String publicKeyHex;
-  final DateTime? keyCreatedAt;
-  final DateTime? lastAccessAt;
-  final String displayName;
-  final String? about;
-  final String? picture;
-  final String? nip05;
 }
 
 /// Callback to pre-fetch following list from REST API before auth state is set.
@@ -679,11 +601,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Keycast signer before building the identity so we get a
       // KeycastNostrIdentity instead of a LocalNostrIdentity.
       if (session != null && session.hasRpcAccess) {
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          session,
-          onTokenRefresh: _refreshAccessToken,
-        );
+        _setKeycastSigner(_newKeycastSigner(session));
       }
 
       await _setupUserSession(localKey!, AuthenticationSource.divineOAuth);
@@ -808,11 +726,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           return;
         }
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          refreshed,
-          onTokenRefresh: _refreshAccessToken,
-        );
+        // Same-pubkey re-emission: retain the live client's signer (#5909).
+        _setKeycastSigner(_newKeycastSigner(refreshed), closePrevious: false);
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
         _setRpcCapability(AuthRpcCapability.rpcReady);
@@ -1088,6 +1003,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// app-resume refresh all share a single refresh token exchange.
   Future<String?> _refreshAccessToken() =>
       _oauthCoordinator.refreshAccessToken();
+
+  KeycastRpc _newKeycastSigner(KeycastSession session) =>
+      KeycastRpc.fromSession(
+        _oauthConfig,
+        session,
+        onTokenRefresh: _refreshAccessToken,
+      );
+
+  void _setKeycastSigner(KeycastRpc? signer, {bool closePrevious = true}) {
+    if (identical(_keycastSigner, signer)) return;
+    final previous = _keycastSigner;
+    _keycastSigner = signer;
+    if (closePrevious) previous?.close();
+  }
 
   /// Get discovered user relays (NIP-65)
   List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
@@ -2801,20 +2730,23 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
+      // Unbound session: pubkey unknown here, treat as same — a wrong close
+      // strands the live client; a wrong retain leaks one HTTP client (#5909).
+      final closePrevious =
+          (session.userPubkey?.isNotEmpty ?? false) &&
+          session.userPubkey != currentPublicKeyHex;
       if (session.hasRpcAccess) {
-        _keycastSigner = KeycastRpc.fromSession(
-          _oauthConfig,
-          session,
-          onTokenRefresh: _refreshAccessToken,
+        _setKeycastSigner(
+          _newKeycastSigner(session),
+          closePrevious: closePrevious,
         );
       } else {
-        _keycastSigner = null;
+        _setKeycastSigner(null, closePrevious: closePrevious);
       }
 
-      // Prefer the pubkey stored in the session over an RPC call.
-      // session.userPubkey is ground truth once populated — it is
-      // bound to the session at the first sign-in, so subsequent
-      // reads get a pubkey that cannot mismatch the token.
+      // Prefer the pubkey stored in the session over an RPC call:
+      // userPubkey is ground truth once bound at first sign-in, so
+      // subsequent reads cannot mismatch the token.
       String? publicKeyHex = session.userPubkey;
       if (publicKeyHex == null || publicKeyHex.isEmpty) {
         publicKeyHex = await _keycastSigner?.getPublicKey();
@@ -2823,11 +2755,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         throw Exception('Could not retrieve public key from server');
       }
 
-      // If the session was created before userPubkey was populated
-      // (legacy or fresh from fromTokenResponse), bind the pubkey now
-      // and re-save. This is the fix for Bug 2: every saved session
-      // must carry its owning pubkey so subsequent archive/restore
-      // operations can validate ownership.
+      // If userPubkey was never populated (legacy or fresh from
+      // fromTokenResponse), bind the resolved pubkey now and re-save so
+      // archive/restore can validate ownership.
       if (session.userPubkey == null || session.userPubkey!.isEmpty) {
         final boundSession = session.copyWith(userPubkey: publicKeyHex);
         await boundSession.save(_flutterSecureStorage);
@@ -3514,7 +3444,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       // Clean up Keycast RPC signer if active
-      _keycastSigner = null;
+      _setKeycastSigner(null);
       _setRpcCapability(AuthRpcCapability.unavailable);
 
       // Detach any in-flight token refresh so post-signout logins start a
@@ -3687,7 +3617,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     try {
       await _clearAmberInfo();
     } catch (_) {}
-    _keycastSigner = null;
+    _setKeycastSigner(null);
     _setRpcCapability(AuthRpcCapability.unavailable);
     _keyStorage.clearCache();
 
@@ -4241,7 +4171,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        _keycastSigner = null;
+        // Never close: same-pubkey swaps (importing your own nsec) keep the live client's RPC open (#5909).
+        _setKeycastSigner(null, closePrevious: false);
       }
     }
     if (source != AuthenticationSource.bunker && _bunkerSigner != null) {
@@ -4524,6 +4455,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _currentIdentity = identity;
   }
 
+  /// Test seam that installs a [KeycastRpc] signer without a real OAuth flow.
+  ///
+  /// Arrange the *starting* signer here and drive the real code path for the
+  /// transition under test: a test that supplies [closePrevious] itself pins
+  /// this seam's parameter rather than the production call site's choice, so
+  /// it cannot fail when that call site stops passing it.
+  @visibleForTesting
+  void debugSetKeycastSigner(KeycastRpc? signer, {bool closePrevious = true}) =>
+      _setKeycastSigner(signer, closePrevious: closePrevious);
+
   /// Test seam that lets unit tests install a [SecureKeyContainer] so
   /// `signOut`'s account-scoped invalidation (and any other code path
   /// keyed on the current pubkey) can be exercised without driving the
@@ -4648,11 +4589,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           await clearDismissedDivineLoginBannerForCurrentUser();
           if (!resumeContextStillCurrent()) return;
-          _keycastSigner = KeycastRpc.fromSession(
-            _oauthConfig,
-            session,
-            onTokenRefresh: _refreshAccessToken,
-          );
+          _setKeycastSigner(_newKeycastSigner(session));
           _currentIdentity = _buildIdentity();
           _hasExpiredOAuthSession = false;
           _setRpcCapability(AuthRpcCapability.rpcReady);
@@ -4720,6 +4657,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // Close Amber signer if active
     _amberSigner?.close();
     _amberSigner = null;
+
+    _setKeycastSigner(null);
 
     _nostrConnect.dispose();
 

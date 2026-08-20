@@ -2,9 +2,12 @@
 // ABOUTME: Pins that locally-stored nsec bypasses Keycast RPC for signing.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -407,6 +410,192 @@ void main() {
             biometricPrompt: any(named: 'biometricPrompt'),
           ),
         );
+      },
+    );
+
+    test(
+      'same-pubkey RPC upgrade does not close signer retained by live client',
+      () async {
+        var retainedCalls = 0;
+        final retainedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'retained_token',
+          httpClient: MockClient((request) async {
+            retainedCalls++;
+            final body = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(body['method'], equals('nip44_encrypt'));
+            return http.Response(jsonEncode({'result': 'ciphertext'}), 200);
+          }),
+        );
+        addTearDown(retainedRpc.close);
+
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            matchingContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => matchingContainer);
+
+        authService = createAuthService();
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        // Stand in for the signer the live NostrClient was built with: #5909
+        // keeps that client across a same-pubkey re-emission, so it holds this
+        // identity — and this RPC — after AuthService moves on.
+        authService.debugSetKeycastSigner(retainedRpc);
+        final retainedIdentity = KeycastNostrIdentity(
+          pubkey: matchingContainer.publicKeyHex,
+          rpcSigner: retainedRpc,
+        );
+        authService.debugSetIdentity(retainedIdentity);
+
+        // Drive the real upgrade rather than calling the seam with
+        // `closePrevious: false` ourselves: the behaviour under test is
+        // _upgradeDivineRpcInBackground *choosing* not to close, so the test
+        // must go red if that call site stops passing the flag.
+        // No stored RPC session on resume forces the refresh branch.
+        when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => KeycastSession(
+            bunkerUrl: 'https://keycast.example.com',
+            accessToken: 'refreshed_access_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+            refreshToken: 'refreshed_refresh_token',
+            userPubkey: matchingContainer.publicKeyHex,
+          ),
+        );
+
+        await _ignoringDiscoveryErrors(() async {
+          authService.onAppResumed();
+          await pumpEventQueue();
+        });
+
+        expect(
+          authService.currentIdentity,
+          isNot(same(retainedIdentity)),
+          reason:
+              'The upgrade must have reached the signer swap and rebuilt the '
+              'identity — otherwise this test passes vacuously without ever '
+              'exercising the close decision.',
+        );
+        expect(
+          await retainedIdentity.nip44Encrypt(
+            otherContainer.publicKeyHex,
+            'hello',
+          ),
+          equals('ciphertext'),
+          reason:
+              'The RPC still held by the live NostrClient must survive the '
+              'upgrade; closing it strands every publish on that client.',
+        );
+        expect(retainedCalls, equals(1));
+      },
+    );
+
+    test(
+      'same-pubkey OAuth re-sign-in keeps signer retained by live client open',
+      () async {
+        var retainedCalls = 0;
+        final retainedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'retained_token',
+          httpClient: MockClient((request) async {
+            retainedCalls++;
+            return http.Response(jsonEncode({'result': 'ciphertext'}), 200);
+          }),
+        );
+        addTearDown(retainedRpc.close);
+
+        authService = createAuthService();
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        authService.debugSetKeycastSigner(retainedRpc);
+        final retainedIdentity = KeycastNostrIdentity(
+          pubkey: matchingContainer.publicKeyHex,
+          rpcSigner: retainedRpc,
+        );
+        authService.debugSetIdentity(retainedIdentity);
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(
+            session.copyWith(accessToken: 'refreshed_access_token'),
+          ),
+        );
+
+        expect(
+          await retainedIdentity.nip44Encrypt(
+            otherContainer.publicKeyHex,
+            'hello',
+          ),
+          equals('ciphertext'),
+        );
+        expect(retainedCalls, equals(1));
+      },
+    );
+
+    test(
+      'unbound-session OAuth re-sign-in keeps retained signer open',
+      () async {
+        // A fresh code-exchange session (fromTokenResponse) carries no
+        // userPubkey, so the close decision at the top of
+        // signInWithDivineOAuth cannot know the pubkey yet. It must treat
+        // unknown as same: closing here would strand the live NostrClient
+        // holding the retained RPC — even when the sign-in itself later
+        // fails, the close has already happened.
+        var retainedCalls = 0;
+        final retainedRpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'retained_token',
+          httpClient: MockClient((request) async {
+            retainedCalls++;
+            return http.Response(jsonEncode({'result': 'ciphertext'}), 200);
+          }),
+        );
+        addTearDown(retainedRpc.close);
+
+        authService = createAuthService();
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        authService.debugSetKeycastSigner(retainedRpc);
+        final retainedIdentity = KeycastNostrIdentity(
+          pubkey: matchingContainer.publicKeyHex,
+          rpcSigner: retainedRpc,
+        );
+        authService.debugSetIdentity(retainedIdentity);
+
+        final unboundSession = KeycastSession(
+          bunkerUrl: 'https://keycast.example.com',
+          accessToken: 'fresh_code_exchange_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          refreshToken: 'fresh_refresh_token',
+        );
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(unboundSession),
+        );
+
+        expect(
+          await retainedIdentity.nip44Encrypt(
+            otherContainer.publicKeyHex,
+            'hello',
+          ),
+          equals('ciphertext'),
+          reason:
+              'The RPC still held by the live NostrClient must survive a '
+              'same-pubkey re-sign-in whose session has not bound its '
+              'userPubkey yet.',
+        );
+        expect(retainedCalls, equals(1));
       },
     );
   });

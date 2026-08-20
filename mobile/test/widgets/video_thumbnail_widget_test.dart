@@ -26,7 +26,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_provider_overrides.dart'
-    show createMockMediaCacheManager;
+    show createMockMediaCacheManager, testMaterialApp;
 import '../test_data/video_test_data.dart';
 
 Finder _divineIcon(DivineIconName name) =>
@@ -915,6 +915,64 @@ void main() {
     );
 
     testWidgets(
+      'suppresses repeated unauthenticated Divine thumbnail requests after passive auth is blocked by preference',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        const hash =
+            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+        const url = 'https://media.divine.video/$hash.jpg';
+        when(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: any(named: 'sha256Hash'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => const ViewerAuthBlockedByPreference());
+
+        final container = ProviderContainer(
+          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+        );
+        addTearDown(container.dispose);
+
+        Widget buildSubject() => UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: PassiveAuthThumbnailImage(
+              url: url,
+              errorWidget: (_, _, error) => Text('fallback: $error'),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        final image = tester.widget<Image>(find.byType(Image));
+        image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+          StackTrace.current,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.textContaining('fallback:'), findsOneWidget);
+        verify(
+          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+            sha256Hash: hash,
+            serverUrl: 'https://media.divine.video',
+          ),
+        ).called(1);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(Image), findsNothing);
+        expect(find.textContaining('fallback:'), findsOneWidget);
+        verifyNoMoreInteractions(mediaAuthInterceptor);
+      },
+    );
+
+    testWidgets(
       'retries a suppressed thumbnail after a transient signer timeout',
       (tester) async {
         final mediaAuthInterceptor = _MockMediaAuthInterceptor();
@@ -934,9 +992,7 @@ void main() {
 
         Widget buildSubject() => UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: PassiveAuthThumbnailImage(url: url),
-          ),
+          child: const MaterialApp(home: PassiveAuthThumbnailImage(url: url)),
         );
 
         await tester.pumpWidget(buildSubject());
@@ -969,59 +1025,58 @@ void main() {
       },
     );
 
-    testWidgets(
-      'does not retry a signer timeout on a retained-state rebuild',
-      (tester) async {
-        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
-        const hash =
-            '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
-        const url = 'https://media.divine.video/$hash.jpg';
-        when(
-          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
-            sha256Hash: any(named: 'sha256Hash'),
-            serverUrl: any(named: 'serverUrl'),
-          ),
-        ).thenAnswer((_) async => const ViewerAuthSignerUnreachable());
-        final container = ProviderContainer(
-          overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
-        );
-        addTearDown(container.dispose);
+    testWidgets('does not retry a signer timeout on a retained-state rebuild', (
+      tester,
+    ) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      const hash =
+          '72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995';
+      const url = 'https://media.divine.video/$hash.jpg';
+      when(
+        () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+          sha256Hash: any(named: 'sha256Hash'),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      ).thenAnswer((_) async => const ViewerAuthSignerUnreachable());
+      final container = ProviderContainer(
+        overrides: _passiveAuthProviderOverrides(mediaAuthInterceptor),
+      );
+      addTearDown(container.dispose);
 
-        Widget buildSubject(double width) => UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: PassiveAuthThumbnailImage(url: url, width: width),
-          ),
-        );
+      Widget buildSubject(double width) => UncontrolledProviderScope(
+        container: container,
+        child: testMaterialApp(
+          home: PassiveAuthThumbnailImage(url: url, width: width),
+        ),
+      );
 
-        await tester.pumpWidget(buildSubject(100));
-        var image = tester.widget<Image>(find.byType(Image));
-        image.errorBuilder!(
-          tester.element(find.byType(Image)),
-          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
-          StackTrace.current,
-        );
-        await tester.pump();
-        await tester.pump();
+      await tester.pumpWidget(buildSubject(100));
+      var image = tester.widget<Image>(find.byType(Image));
+      image.errorBuilder!(
+        tester.element(find.byType(Image)),
+        NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+        StackTrace.current,
+      );
+      await tester.pump();
+      await tester.pump();
 
-        await tester.pumpWidget(buildSubject(101));
-        image = tester.widget<Image>(find.byType(Image));
-        image.errorBuilder!(
-          tester.element(find.byType(Image)),
-          NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
-          StackTrace.current,
-        );
-        await tester.pump();
-        await tester.pump();
+      await tester.pumpWidget(buildSubject(101));
+      image = tester.widget<Image>(find.byType(Image));
+      image.errorBuilder!(
+        tester.element(find.byType(Image)),
+        NetworkImageLoadException(statusCode: 401, uri: Uri.parse(url)),
+        StackTrace.current,
+      );
+      await tester.pump();
+      await tester.pump();
 
-        verify(
-          () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
-            sha256Hash: hash,
-            serverUrl: 'https://media.divine.video',
-          ),
-        ).called(1);
-      },
-    );
+      verify(
+        () => mediaAuthInterceptor.createPassiveAuthHeadersForAdultMedia(
+          sha256Hash: hash,
+          serverUrl: 'https://media.divine.video',
+        ),
+      ).called(1);
+    });
 
     testWidgets(
       'retries a suppressed thumbnail after filters change while unmounted',
@@ -1043,9 +1098,7 @@ void main() {
 
         Widget buildSubject() => UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: PassiveAuthThumbnailImage(url: url),
-          ),
+          child: const MaterialApp(home: PassiveAuthThumbnailImage(url: url)),
         );
 
         await tester.pumpWidget(buildSubject());
@@ -1192,9 +1245,7 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: MaterialApp(
-              home: PassiveAuthThumbnailImage(url: url),
-            ),
+            child: MaterialApp(home: PassiveAuthThumbnailImage(url: url)),
           ),
         );
         final image = tester.widget<Image>(find.byType(Image));
