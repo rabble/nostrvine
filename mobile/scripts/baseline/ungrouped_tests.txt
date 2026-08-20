@@ -28,7 +28,7 @@ test/screens/developer_options_screen_test.dart	2
 test/screens/explore_screen_apps_tab_test.dart	3
 test/screens/profile_screen_router_test.dart	3
 test/screens/relay_settings_screen_layout_test.dart	3
-test/screens/subtitle_editor/subtitle_editor_screen_test.dart	24
+test/screens/subtitle_editor/subtitle_editor_screen_test.dart	20
 test/screens/verify/verify_platform_labels_test.dart	1
 test/services/blossom_resumable_upload_integration_test.dart	2
 test/services/notification_preferences_service_test.dart	4

@@ -70,33 +70,33 @@ void main() {
 
       expect(find.text('Appearance'), findsOneWidget);
     });
-  });
 
-  testWidgets('meets the accessibility guidelines in both appearances', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final cubit = AppearanceCubit(
-      AppearanceRepository(await SharedPreferences.getInstance()),
-    );
-    addTearDown(cubit.close);
-
-    // Labelling and contrast only, in practice: the option rows are
-    // full-width children of a ListView, so they touch both a viewport and a
-    // scrollable edge and the tap-target guidelines skip them here. Their
-    // 48dp floor is covered non-vacuously by divine_selectable_row_test.dart,
-    // which pumps the row centred at a fixed width.
-    await expectMeetsAccessibilityGuidelinesInBothAppearances(
+    testWidgets('meets the accessibility guidelines in both appearances', (
       tester,
-      (theme) => MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: theme,
-        home: BlocProvider.value(
-          value: cubit,
-          child: const AppearanceSettingsScreen(),
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final cubit = AppearanceCubit(
+        AppearanceRepository(await SharedPreferences.getInstance()),
+      );
+      addTearDown(cubit.close);
+
+      // Labelling and contrast only, in practice: the option rows are
+      // full-width children of a ListView, so they touch both a viewport and a
+      // scrollable edge and the tap-target guidelines skip them here. Their
+      // 48dp floor is covered non-vacuously by divine_selectable_row_test.dart,
+      // which pumps the row centred at a fixed width.
+      await expectMeetsAccessibilityGuidelinesInBothAppearances(
+        tester,
+        (theme) => MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: theme,
+          home: BlocProvider.value(
+            value: cubit,
+            child: const AppearanceSettingsScreen(),
+          ),
         ),
-      ),
-    );
+      );
+    });
   });
 }
