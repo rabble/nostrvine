@@ -440,7 +440,7 @@ const _knownUntranslatedDebt = <String>{
   // #7881.
   'messageRequestBlockButton',
   'messageRequestDeclinedSnackbar',
-  'messageRequestBlockedSnackbar',
+  'messageRequestBlockConfirmBody',
 };
 
 const _profileBadgeSheetKeys = <String>{

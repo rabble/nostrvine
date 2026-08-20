@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Błędy, moderacja, sprawy konta — słuchamy.",
     "inboxSearchEmptyTitle": "Brak wyników",
     "inboxSearchEmptySubtitle": "Spróbuj innego imienia lub słowa.",
-    "inboxRemoveConfirmBody": "Spowoduje to usunięcie rozmowy z {displayName}. Tej operacji nie można cofnąć.",
+    "inboxRemoveConfirmBody": "To usuwa rozmowę z {displayName} z Twojej skrzynki odbiorczej. Jeśli ta osoba znów do Ciebie napisze, rozpocznie się nowa rozmowa.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

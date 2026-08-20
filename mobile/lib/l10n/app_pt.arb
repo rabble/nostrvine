@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bugs, moderação, questões de conta — estamos ouvindo.",
     "inboxSearchEmptyTitle": "Sem resultados",
     "inboxSearchEmptySubtitle": "Tente outro nome ou outra palavra.",
-    "inboxRemoveConfirmBody": "Isso apagará sua conversa com {displayName}. Esta ação não pode ser desfeita.",
+    "inboxRemoveConfirmBody": "Isso remove sua conversa com {displayName} da sua caixa de entrada. Se essa pessoa te enviar mensagem de novo, uma nova conversa começa.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

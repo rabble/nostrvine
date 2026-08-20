@@ -2444,7 +2444,7 @@
     "inboxSupportRowSubtitle": "不具合、モデレーション、アカウントのこと — お聞きします。",
     "inboxSearchEmptyTitle": "一致なし",
     "inboxSearchEmptySubtitle": "別の名前や言葉で試してください。",
-    "inboxRemoveConfirmBody": "{displayName}との会話が削除されます。この操作は取り消せません。",
+    "inboxRemoveConfirmBody": "{displayName}との会話が受信トレイから削除されます。相手からまたメッセージが届くと、新しい会話が始まります。",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

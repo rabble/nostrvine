@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bugs, modération, questions de compte — on vous écoute.",
     "inboxSearchEmptyTitle": "Aucun résultat",
     "inboxSearchEmptySubtitle": "Essaie un autre nom ou un autre mot.",
-    "inboxRemoveConfirmBody": "Cela supprimera votre conversation avec {displayName}. Cette action est irréversible.",
+    "inboxRemoveConfirmBody": "Cela retire de votre boîte de réception votre conversation avec {displayName}. Si cette personne vous réécrit, une nouvelle conversation commence.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

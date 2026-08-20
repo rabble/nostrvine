@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bug, moderazione, questioni sull'account: ti ascoltiamo.",
     "inboxSearchEmptyTitle": "Nessun risultato",
     "inboxSearchEmptySubtitle": "Prova con un altro nome o un'altra parola.",
-    "inboxRemoveConfirmBody": "Questo eliminerà la tua conversazione con {displayName}. Questa azione non può essere annullata.",
+    "inboxRemoveConfirmBody": "Questo rimuove la tua conversazione con {displayName} dalla tua posta in arrivo. Se ti scrive di nuovo, inizia una nuova conversazione.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

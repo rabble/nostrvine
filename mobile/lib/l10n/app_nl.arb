@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bugs, moderatie, accountzaken — we luisteren.",
     "inboxSearchEmptyTitle": "Geen resultaten",
     "inboxSearchEmptySubtitle": "Probeer een andere naam of een ander woord.",
-    "inboxRemoveConfirmBody": "Dit verwijdert je gesprek met {displayName}. Deze actie kan niet ongedaan worden gemaakt.",
+    "inboxRemoveConfirmBody": "Hiermee verwijder je je gesprek met {displayName} uit je inbox. Als deze persoon je weer een bericht stuurt, begint er een nieuw gesprek.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

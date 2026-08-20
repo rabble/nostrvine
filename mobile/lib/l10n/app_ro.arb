@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Buguri, moderare, chestiuni de cont — te ascultăm.",
     "inboxSearchEmptyTitle": "Nicio potrivire",
     "inboxSearchEmptySubtitle": "Încearcă alt nume sau alt cuvânt.",
-    "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} va fi ștearsă. Această acțiune nu poate fi anulată.",
+    "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

@@ -3269,7 +3269,7 @@
   },
   "inboxActionRemove": "Alih keluar perbualan",
   "inboxRemoveConfirmTitle": "Alih keluar perbualan?",
-  "inboxRemoveConfirmBody": "Ini akan memadam perbualan anda dengan {displayName}. Tindakan ini tidak boleh dibuat asal.",
+  "inboxRemoveConfirmBody": "Ini mengalih keluar perbualan anda dengan {displayName} daripada peti masuk anda. Jika dia menghantar mesej lagi, perbualan baharu akan bermula.",
   "@inboxRemoveConfirmBody": {
     "placeholders": {
       "displayName": {

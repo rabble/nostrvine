@@ -1797,7 +1797,7 @@
     "inboxSupportRowSubtitle": "버그, 모더레이션, 계정 문제 — 듣고 있어요.",
     "inboxSearchEmptyTitle": "일치하는 항목 없음",
     "inboxSearchEmptySubtitle": "다른 이름이나 단어로 시도해 보세요.",
-    "inboxRemoveConfirmBody": "{displayName}와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.",
+    "inboxRemoveConfirmBody": "{displayName}와의 대화가 받은 편지함에서 삭제돼요. 상대방이 다시 메시지를 보내면 새 대화가 시작돼요.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

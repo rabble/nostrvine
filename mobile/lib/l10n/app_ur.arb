@@ -3269,7 +3269,7 @@
   },
   "inboxActionRemove": "گفتگو ہٹائیں",
   "inboxRemoveConfirmTitle": "گفتگو ہٹائیں؟",
-  "inboxRemoveConfirmBody": "اس سے {displayName} کے ساتھ آپ کی گفتگو حذف ہو جائے گی۔ یہ کارروائی واپس نہیں ہو سکتی۔",
+  "inboxRemoveConfirmBody": "اس سے {displayName} کے ساتھ آپ کی گفتگو آپ کے ان باکس سے ہٹ جائے گی۔ اگر وہ آپ کو دوبارہ پیغام بھیجیں تو نئی گفتگو شروع ہو جائے گی۔",
   "@inboxRemoveConfirmBody": {
     "placeholders": {
       "displayName": {

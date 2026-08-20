@@ -6077,7 +6077,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Thao tác này sẽ xóa cuộc trò chuyện của bạn với $displayName. Không thể hoàn tác.';
+    return 'Thao tác này xóa cuộc trò chuyện của bạn với $displayName khỏi hộp thư đến. Nếu họ nhắn tin cho bạn lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.';
   }
 
   @override
@@ -7340,9 +7340,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String messageRequestBlockedSnackbar(String displayName) {
-    return 'Blocked $displayName';
-  }
+  String get messageRequestBlockConfirmBody =>
+      'They\'ll be removed from your requests and won\'t be able to message you. You can still read their past messages under Blocked.';
 
   @override
   String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';

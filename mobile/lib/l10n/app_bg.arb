@@ -2596,7 +2596,7 @@
     },
     "inboxActionRemove": "Премахни разговора",
     "inboxRemoveConfirmTitle": "Да премахнем разговора?",
-    "inboxRemoveConfirmBody": "Това ще изтрие разговора ти с {displayName}. Действието не може да бъде отменено.",
+    "inboxRemoveConfirmBody": "Това премахва разговора ти с {displayName} от входящата ти кутия. Ако ти пише отново, започва нов разговор.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

@@ -2811,7 +2811,7 @@
     },
     "inboxActionRemove": "ውይይት አስወግድ",
     "inboxRemoveConfirmTitle": "ውይይት ይወገድ?",
-    "inboxRemoveConfirmBody": "ይህ ከ{displayName} ጋር ያለህን ውይይት ይሰርዛል። ይህ እርምጃ ሊመለስ አይችልም።",
+    "inboxRemoveConfirmBody": "ይህ ከ{displayName} ጋር ያለህን ውይይት ከመልእክት ሳጥንህ ያስወግዳል። እንደገና መልእክት ከላከልህ አዲስ ውይይት ይጀምራል።",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

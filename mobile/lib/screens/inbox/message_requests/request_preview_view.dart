@@ -457,7 +457,6 @@ class _ActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final conversationId = context.read<RequestPreviewCubit>().conversationId;
-    final otherPubkey = participantPubkeys.first;
 
     return _ActionBar(
       children: [
@@ -472,7 +471,16 @@ class _ActionButtons extends StatelessWidget {
           },
         ),
         _DeclineAndRemoveButton(displayName: displayName),
-        _BlockButton(pubkey: otherPubkey, displayName: displayName),
+        // Block targets a single sender. `participantPubkeys` excludes self,
+        // so a group request has more than one counterparty and no reliably
+        // identified sender to block — offer Block only for a 1:1 request
+        // (#7881 review). Decline still removes a group request by its
+        // conversation ID.
+        if (participantPubkeys.length == 1)
+          _BlockButton(
+            pubkey: participantPubkeys.single,
+            displayName: displayName,
+          ),
       ],
     );
   }
@@ -502,11 +510,14 @@ class _DeclineAndRemoveButton extends StatelessWidget {
         final messenger = ScaffoldMessenger.of(context);
         final errorText = context.l10n.commonSomethingWentWrong;
         final name = displayName;
+        // A resolved counterparty names them in the confirmation; the
+        // unresolved states have no name, so fall back to the name-free
+        // "Removed conversation" rather than staying silent (#7881 review).
         final successText = name == null
-            ? null
+            ? context.l10n.inboxRemovedConversation
             : context.l10n.messageRequestDeclinedSnackbar(name);
-        await cubit.declineRequest(conversationId);
-        if (cubit.state.status != MessageRequestActionsStatus.success) {
+        final removed = await cubit.declineRequest(conversationId);
+        if (!removed) {
           messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(errorText, error: true),
           );
@@ -515,11 +526,9 @@ class _DeclineAndRemoveButton extends StatelessWidget {
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).
         if (context.mounted) context.safePop(fallback: InboxPage.path);
-        if (successText != null) {
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(successText),
-          );
-        }
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(successText),
+        );
       },
     );
   }
@@ -545,13 +554,18 @@ class _BlockButton extends StatelessWidget {
         if (cubit.state.status == MessageRequestActionsStatus.processing) {
           return;
         }
+        // Block removes the request and mutes the sender; confirm first so a
+        // single tap can't block a real person with no undo (#7881 review).
+        final confirmed = await _confirmBlock(context, displayName);
+        if (!confirmed || !context.mounted) return;
         final messenger = ScaffoldMessenger.of(context);
         final errorText = context.l10n.commonSomethingWentWrong;
-        final successText = context.l10n.messageRequestBlockedSnackbar(
-          displayName,
+        final successText = context.l10n.inboxBlockedUser(displayName);
+        final blocked = await cubit.blockAndRemoveRequest(
+          conversationId,
+          pubkey,
         );
-        await cubit.blockAndRemoveRequest(conversationId, pubkey);
-        if (cubit.state.status != MessageRequestActionsStatus.success) {
+        if (!blocked) {
           messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(errorText, error: true),
           );
@@ -562,6 +576,66 @@ class _BlockButton extends StatelessWidget {
           DivineSnackbarContainer.snackBar(successText),
         );
       },
+    );
+  }
+}
+
+/// Confirms a block in a bottom sheet before it runs. Returns `true` only when
+/// the user taps the destructive Block action.
+///
+/// A [VineBottomSheet] rather than a raw dialog: the design-system ratchet
+/// keeps new raw dialogs out of this file, and block confirmation already
+/// lives in a sheet elsewhere (the profile more-sheet).
+Future<bool> _confirmBlock(BuildContext context, String displayName) async {
+  final confirmed = await VineBottomSheet.show<bool>(
+    context: context,
+    scrollable: false,
+    showHeader: false,
+    body: _BlockConfirmContent(displayName: displayName),
+  );
+  return confirmed ?? false;
+}
+
+class _BlockConfirmContent extends StatelessWidget {
+  const _BlockConfirmContent({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.vineColors;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [
+          Text(
+            l10n.profileBlockTitle(displayName),
+            style: VineTheme.titleLargeFont(color: colors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            l10n.messageRequestBlockConfirmBody,
+            style: VineTheme.bodyMediumFont(color: colors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          DivineButton(
+            label: l10n.messageRequestBlockButton,
+            type: DivineButtonType.error,
+            expanded: true,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+          DivineButton(
+            label: l10n.commonCancel,
+            type: DivineButtonType.secondary,
+            expanded: true,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+        ],
+      ),
     );
   }
 }

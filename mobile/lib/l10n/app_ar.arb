@@ -2444,7 +2444,7 @@
     "inboxSupportRowSubtitle": "الأخطاء والإشراف ومشكلات الحساب — نحن نستمع.",
     "inboxSearchEmptyTitle": "لا توجد نتائج",
     "inboxSearchEmptySubtitle": "جرّب اسمًا أو كلمة أخرى.",
-    "inboxRemoveConfirmBody": "سيؤدي هذا إلى حذف محادثتك مع {displayName}. لا يمكن التراجع عن هذا الإجراء.",
+    "inboxRemoveConfirmBody": "يؤدي هذا إلى إزالة محادثتك مع {displayName} من صندوق الوارد. إذا راسلك مرة أخرى، تبدأ محادثة جديدة.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

@@ -6051,7 +6051,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'سيؤدي هذا إلى حذف محادثتك مع $displayName. لا يمكن التراجع عن هذا الإجراء.';
+    return 'يؤدي هذا إلى إزالة محادثتك مع $displayName من صندوق الوارد. إذا راسلك مرة أخرى، تبدأ محادثة جديدة.';
   }
 
   @override
@@ -7306,9 +7306,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String messageRequestBlockedSnackbar(String displayName) {
-    return 'Blocked $displayName';
-  }
+  String get messageRequestBlockConfirmBody =>
+      'They\'ll be removed from your requests and won\'t be able to message you. You can still read their past messages under Blocked.';
 
   @override
   String get messageRequestLoadFailed => 'تعذّر تحميل هذا الطلب.';

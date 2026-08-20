@@ -2451,7 +2451,7 @@
     "inboxSupportRowSubtitle": "Hatalar, moderasyon, hesap meseleleri — dinliyoruz.",
     "inboxSearchEmptyTitle": "Sonuç yok",
     "inboxSearchEmptySubtitle": "Başka bir isim veya kelime dene.",
-    "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",
+    "inboxRemoveConfirmBody": "Bu, {displayName} ile olan sohbetini gelen kutundan kaldırır. Sana tekrar yazarsa yeni bir sohbet başlar.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

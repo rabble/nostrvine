@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bugs, Moderation, Kontofragen — wir hören zu.",
     "inboxSearchEmptyTitle": "Keine Treffer",
     "inboxSearchEmptySubtitle": "Versuch einen anderen Namen oder ein anderes Wort.",
-    "inboxRemoveConfirmBody": "Dadurch wird deine Unterhaltung mit {displayName} gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.",
+    "inboxRemoveConfirmBody": "Dadurch wird deine Unterhaltung mit {displayName} aus deinem Posteingang entfernt. Wenn dir diese Person wieder schreibt, beginnt eine neue Unterhaltung.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {

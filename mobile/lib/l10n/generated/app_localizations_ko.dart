@@ -5814,7 +5814,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return '$displayName와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.';
+    return '$displayName와의 대화가 받은 편지함에서 삭제돼요. 상대방이 다시 메시지를 보내면 새 대화가 시작돼요.';
   }
 
   @override
@@ -7028,9 +7028,8 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String messageRequestBlockedSnackbar(String displayName) {
-    return 'Blocked $displayName';
-  }
+  String get messageRequestBlockConfirmBody =>
+      'They\'ll be removed from your requests and won\'t be able to message you. You can still read their past messages under Blocked.';
 
   @override
   String get messageRequestLoadFailed => '이 요청을 불러오지 못했어요.';

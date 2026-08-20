@@ -1624,7 +1624,7 @@
     "inboxActionUnblock": "I-unblock si {displayName}",
     "inboxActionRemove": "Alisin ang conversation",
     "inboxRemoveConfirmTitle": "Alisin ang conversation?",
-    "inboxRemoveConfirmBody": "Bubura nito ang conversation mo kay {displayName}. Hindi na ito mababawi.",
+    "inboxRemoveConfirmBody": "Aalisin nito sa iyong inbox ang usapan mo kay {displayName}. Kung magme-message ulit siya, magsisimula ng bagong usapan.",
     "inboxRemoveConfirmConfirm": "Alisin",
     "inboxConversationMuted": "Na-mute ang conversation",
     "inboxConversationUnmuted": "Na-unmute ang conversation",

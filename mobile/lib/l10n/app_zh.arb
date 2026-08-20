@@ -3269,7 +3269,7 @@
   },
   "inboxActionRemove": "删除会话",
   "inboxRemoveConfirmTitle": "删除会话？",
-  "inboxRemoveConfirmBody": "这会删除你与 {displayName} 的会话。此操作无法撤销。",
+  "inboxRemoveConfirmBody": "这会从你的收件箱中移除你与 {displayName} 的会话。如果对方再次给你发消息，会开始一个新会话。",
   "@inboxRemoveConfirmBody": {
     "placeholders": {
       "displayName": {
