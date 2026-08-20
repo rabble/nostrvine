@@ -1,5 +1,5 @@
 // ABOUTME: Riverpod wiring for NIP-65 relay-list publishing and dirty retry.
-// ABOUTME: Activated from app shell alongside other relay side-effect bridges.
+// ABOUTME: Activated by AppShellSideEffects with the other relay bridges.
 
 import 'dart:async';
 

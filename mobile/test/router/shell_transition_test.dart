@@ -10,6 +10,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/router/routes/shell.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/startup/app_side_effects.dart';
 
 class _FakeGoRouterState extends Fake implements GoRouterState {
   @override
@@ -85,11 +86,15 @@ void main() {
         'tab': 'feed',
         'source': 'startup',
       });
+      // The shell-tier app-wide side effects are activated above the page's
+      // content so AppShell itself stays pure chrome (see app_side_effects.dart).
+      expect(transitionPage.child, isA<AppShellSideEffects>());
+      final sideEffects = transitionPage.child as AppShellSideEffects;
       // The retap cubit wraps AppShell so the bottom nav and the home
       // branch's feed share one instance (see shell.dart).
-      expect(transitionPage.child, isA<BlocProvider<HomeFeedRetapCubit>>());
+      expect(sideEffects.child, isA<BlocProvider<HomeFeedRetapCubit>>());
       final retapProvider =
-          transitionPage.child as BlocProvider<HomeFeedRetapCubit>;
+          sideEffects.child as BlocProvider<HomeFeedRetapCubit>;
       expect(retapProvider.child, isA<AppShell>());
     });
   });

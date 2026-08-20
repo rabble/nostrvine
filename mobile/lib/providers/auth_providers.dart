@@ -292,8 +292,11 @@ final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
   return client;
 });
 
-/// Provider that sets Zendesk user identity when auth state changes
-/// Watch this provider at app startup to keep Zendesk identity in sync with auth
+/// Provider that sets Zendesk user identity when auth state changes.
+///
+/// Activated by `AppRootSideEffects`, above `MaterialApp.router`, so the
+/// identity is mirrored for the whole process rather than from the moment the
+/// bottom-nav shell mounts.
 @Riverpod(keepAlive: true)
 void zendeskIdentitySync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -333,8 +336,12 @@ void zendeskIdentitySync(Ref ref) {
 ///
 /// Deliberately independent of [zendeskIdentitySync]: campaign attribution
 /// joins BigQuery `user_id` against the ClickHouse pubkey, so it must not be
-/// coupled to the lifetime of the support-desk integration. Watch this
-/// provider at app startup to keep the analytics identity in sync with auth.
+/// coupled to the lifetime of the support-desk integration.
+///
+/// Activated by `AppRootSideEffects`. It used to be activated from
+/// `AppShell.build()`, which left every crash report and analytics event
+/// before the first bottom-nav tab — splash, auth restore, sign-up, e-mail
+/// verification, onboarding — without a `user_id`.
 @Riverpod(keepAlive: true)
 void analyticsIdentitySync(Ref ref) {
   final authService = ref.watch(authServiceProvider);

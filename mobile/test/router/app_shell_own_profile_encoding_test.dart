@@ -41,13 +41,6 @@ List<Override> _overrides({
   required RouteContext routeContext,
 }) => [
   pageContextProvider.overrideWith((ref) => Stream.value(routeContext)),
-  relayStatisticsBridgeProvider.overrideWithValue(null),
-  relaySetChangeBridgeProvider.overrideWithValue(null),
-  zendeskIdentitySyncProvider.overrideWithValue(null),
-  analyticsIdentitySyncProvider.overrideWithValue(null),
-  pushNotificationSyncProvider.overrideWithValue(null),
-  blocklistSyncBridgeProvider.overrideWithValue(null),
-  blockedFollowReconcilerProvider.overrideWithValue(null),
   authServiceProvider.overrideWithValue(mockAuthService),
   sharedPreferencesProvider.overrideWithValue(sharedPreferences),
   currentEnvironmentProvider.overrideWithValue(EnvironmentConfig.production),
