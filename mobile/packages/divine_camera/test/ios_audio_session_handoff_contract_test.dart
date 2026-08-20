@@ -14,8 +14,9 @@ String _readNativeSource(String fileName) {
   return file.readAsStringSync();
 }
 
-/// Returns the Swift declaration starting at [signature] up to its closing
-/// brace, so an assertion cannot match an identical line elsewhere in the file.
+/// Returns the Swift declaration or block starting at [signature] up to its
+/// closing brace, so an assertion cannot match an identical line elsewhere in
+/// the file, nor a line that sits outside the scope being asserted on.
 String _declarationAt(String source, String signature) {
   final start = source.indexOf(signature);
   if (start < 0) {
@@ -72,9 +73,23 @@ void main() {
         release,
         startsWith('func release(completion: (() -> Void)? = nil) {'),
       );
+
+      // Pin the dispatch inside the queued teardown and after the capture
+      // sessions stop. Asserting `contains` over the whole declaration still
+      // passes when the dispatch is hoisted out of the block, or moved to its
+      // top -- and either of those fires the completion before the capture
+      // sessions are stopped, which is the bug this file guards.
+      final teardown = _declarationAt(release, 'sessionQueue.async {');
+      expect(teardown, contains('self.audioCaptureSession?.stopRunning()'));
       expect(
-        release,
+        teardown,
         contains('DispatchQueue.main.async(execute: completion)'),
+      );
+      expect(
+        teardown.indexOf('DispatchQueue.main.async(execute: completion)'),
+        greaterThan(
+          teardown.indexOf('self.audioCaptureSession?.stopRunning()'),
+        ),
       );
     });
 
