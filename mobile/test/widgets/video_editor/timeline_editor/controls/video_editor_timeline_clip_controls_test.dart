@@ -663,6 +663,130 @@ void main() {
       },
     );
 
+    // The copy lands next to the clip it was made from, not at the end of the
+    // timeline: repeating a clip is the common case, and appending made the
+    // user drag the copy back past every following clip.
+    testWidgets('inserts the copy directly after the duplicated clip', (
+      tester,
+    ) async {
+      final editor = _MockProImageEditorState();
+      final stateManager = _MockStateManager();
+      final overlayBloc = _MockTimelineOverlayBloc();
+
+      when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
+      when(
+        () => overlayBloc.stream,
+      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
+      when(() => editor.stateManager).thenReturn(stateManager);
+      // No audio key in the meta => no sound tracks, so the commit takes the
+      // plain clip-state path.
+      when(() => stateManager.activeMeta).thenReturn(<String, dynamic>{});
+      when(
+        () => editor.addHistory(
+          layers: any(named: 'layers'),
+          filters: any(named: 'filters'),
+          meta: any(named: 'meta'),
+          newLayer: any(named: 'newLayer'),
+          transformConfigs: any(named: 'transformConfigs'),
+          tuneAdjustments: any(named: 'tuneAdjustments'),
+          blur: any(named: 'blur'),
+          heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
+          blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
+        ),
+      ).thenAnswer((_) {});
+      when(() => editor.setState(any())).thenAnswer((invocation) {
+        (invocation.positionalArguments.single as VoidCallback)();
+      });
+
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1'), clip('clip-2'), clip('clip-3')],
+          currentClipIndex: 1,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoEditorScope(
+                editorKey: GlobalKey<ProImageEditorState>(),
+                editorOverride: editor,
+                removeAreaKey: GlobalKey(),
+                originalClipAspectRatio: 9 / 16,
+                bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+                playTimeNotifier: ValueNotifier(Duration.zero),
+                fromLibrary: false,
+                onOpenCamera: () {},
+                onOpenClipsEditor: () {},
+                onAddStickers: () {},
+                onOpenMusicLibrary: () {},
+                onOpenVoiceOver: () {},
+                onOpenCaptions: () {},
+                onAddEditTextLayer: ([layer]) async => null,
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<ClipEditorBloc>.value(value: bloc),
+                    BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
+                  ],
+                  child: TimelineClipControls(
+                    playheadPosition: ValueNotifier(Duration.zero),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      tester
+          .widget<VideoEditorTimelineControls>(
+            find.byType(VideoEditorTimelineControls),
+          )
+          .onDuplicated!();
+      await tester.pump();
+
+      final inserted =
+          verify(
+                () => bloc.add(
+                  captureAny(that: isA<ClipEditorClipInserted>()),
+                ),
+              ).captured.single
+              as ClipEditorClipInserted;
+      expect(inserted.index, equals(2));
+      expect(inserted.clip.id, startsWith('clip-2_copy_'));
+
+      // The editor commit has to agree with the bloc event, or undo/redo and
+      // the render would replay a different clip order than the timeline shows.
+      final meta =
+          verify(
+                () => editor.addHistory(
+                  layers: any(named: 'layers'),
+                  filters: any(named: 'filters'),
+                  meta: captureAny(named: 'meta'),
+                  newLayer: any(named: 'newLayer'),
+                  transformConfigs: any(named: 'transformConfigs'),
+                  tuneAdjustments: any(named: 'tuneAdjustments'),
+                  blur: any(named: 'blur'),
+                  heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
+                  blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      final committed =
+          (meta[VideoEditorConstants.clipsStateHistoryKey] as List<dynamic>)
+              .cast<Map<String, dynamic>>()
+              .map((json) => json['id'] as String)
+              .toList();
+      expect(committed[0], equals('clip-1'));
+      expect(committed[1], equals('clip-2'));
+      expect(committed[2], startsWith('clip-2_copy_'));
+      expect(committed[3], equals('clip-3'));
+    });
+
     // #6401 on the clip-edit paths: duplicate and speed-down lengthen the
     // composition, and a sound clamped to the old end has to follow it.
     group('sound follows composition growth', () {
@@ -796,7 +920,7 @@ void main() {
       }
 
       testWidgets('duplicate grows a sound that covered the composition onto '
-          'the appended copy', (tester) async {
+          'the copy', (tester) async {
         final controls = await pumpWithEditor(
           tester,
           state: ClipEditorState(clips: [clip('clip-1')]),
