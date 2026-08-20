@@ -1,7 +1,10 @@
-// ABOUTME: Durable retry queue for first-party product analytics events.
-// ABOUTME: Persists payloads locally and flushes them to the analytics ingest API.
+// ABOUTME: Durable retry queue for version-two product analytics events.
+// ABOUTME: Separates anonymous acquisition from account-signed activity.
+
+import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/services/analytics_ingest_client.dart';
 
 class ProductEventRetryConfig {
@@ -11,6 +14,8 @@ class ProductEventRetryConfig {
     this.initialDelay = const Duration(seconds: 2),
     this.maxDelay = const Duration(minutes: 5),
     this.backoffMultiplier = 2.0,
+    this.maxRecords = 500,
+    this.maxAge = const Duration(days: 7),
   });
 
   final int maxAttempts;
@@ -18,6 +23,8 @@ class ProductEventRetryConfig {
   final Duration initialDelay;
   final Duration maxDelay;
   final double backoffMultiplier;
+  final int maxRecords;
+  final Duration maxAge;
 
   Duration backoffFor(int attemptCount) {
     if (attemptCount <= 0) return initialDelay;
@@ -37,46 +44,52 @@ class ProductEventQueue {
     ProductEventRetryConfig retryConfig = const ProductEventRetryConfig(),
     DateTime Function() now = DateTime.now,
     String? Function()? currentOwnerPubkey,
+    bool sendingEnabled = true,
   }) : _dao = dao,
        _ingestClient = ingestClient,
        _retryConfig = retryConfig,
        _now = now,
-       _currentOwnerPubkey = currentOwnerPubkey;
+       _currentOwnerPubkey = currentOwnerPubkey,
+       _sendingEnabled = sendingEnabled;
 
   final PendingProductEventsDao _dao;
   final AnalyticsIngestClient _ingestClient;
-
-  /// Reads the signed-in account's hex pubkey at flush time. When null (or the
-  /// reader returns null) the flush is unscoped — the legacy behaviour, used
-  /// where no account context is available.
-  ///
-  /// The flush signs the batch with the current account's NIP-98 token, so
-  /// events are filtered to this owner to avoid publishing another account's
-  /// queued events under the wrong signature.
   final String? Function()? _currentOwnerPubkey;
   final ProductEventRetryConfig _retryConfig;
   final DateTime Function() _now;
 
   bool _isFlushing = false;
+  bool _sendingEnabled;
 
-  Future<void> enqueue(ProductAnalyticsEvent event) async {
-    final ownerPubkey = event.userPubkey.isNotEmpty
-        ? event.userPubkey
-        : _currentOwnerPubkey?.call();
+  void setSendingEnabled(bool enabled) => _sendingEnabled = enabled;
+
+  Future<void> enqueue(
+    ProductAnalyticsV2Event event, {
+    String? ownerPubkey,
+  }) async {
+    final normalizedOwner = ownerPubkey?.trim();
     await _dao.enqueue(
       PendingProductEvent(
-        id: event.eventId,
+        id: event.envelope.eventId,
         eventName: event.eventName,
-        payloadJson: event.toPayloadJson(),
+        payloadJson: jsonEncode(event.toJson()),
         status: PendingProductEventStatus.pending,
-        createdAt: event.occurredAt,
-        ownerPubkey: ownerPubkey?.isEmpty ?? true ? null : ownerPubkey,
+        createdAt: event.envelope.occurredAt,
+        ownerPubkey: normalizedOwner == null || normalizedOwner.isEmpty
+            ? null
+            : normalizedOwner,
       ),
     );
+    await _prune();
   }
 
+  Future<void> clear() => _dao.deleteAll();
+
+  Future<void> clearOwner(String ownerPubkey) =>
+      _dao.deleteForOwner(ownerPubkey);
+
   Future<void> flush() async {
-    if (_isFlushing) return;
+    if (!_sendingEnabled || _isFlushing) return;
     _isFlushing = true;
     try {
       await _flushUnlocked();
@@ -86,7 +99,7 @@ class ProductEventQueue {
   }
 
   Future<void> recoverPublishingAndFlush() async {
-    if (_isFlushing) return;
+    if (!_sendingEnabled || _isFlushing) return;
     _isFlushing = true;
     try {
       await _dao.resetPublishingToPending();
@@ -97,48 +110,85 @@ class ProductEventQueue {
   }
 
   Future<void> _flushUnlocked() async {
+    await _prune();
+    await _flushOwner(null);
+    final currentOwner = _currentOwnerPubkey?.call();
+    if (currentOwner != null && currentOwner.isNotEmpty) {
+      await _flushOwner(currentOwner);
+    }
+  }
+
+  Future<void> _prune() => _dao.prune(
+    cutoff: _now().subtract(_retryConfig.maxAge),
+    maxRecords: _retryConfig.maxRecords,
+  );
+
+  Future<void> _flushOwner(String? ownerPubkey) async {
     final rows = await _dao.getRetryable(
       now: _now(),
       maxAttempts: _retryConfig.maxAttempts,
       limit: _retryConfig.batchSize,
-      ownerPubkey: _currentOwnerPubkey?.call(),
+      ownerPubkey: ownerPubkey,
     );
     if (rows.isEmpty) return;
 
     final claimed = <PendingProductEvent>[];
     for (final row in rows) {
-      final marked = await _dao.markPublishing(row.id);
-      if (marked) claimed.add(row);
+      if (await _dao.markPublishing(row.id)) claimed.add(row);
     }
     if (claimed.isEmpty) return;
 
-    final events = claimed
-        .map((row) => ProductAnalyticsEvent.fromPayloadJson(row.payloadJson))
-        .toList();
-    final result = await _ingestClient.publishBatch(events);
+    final events = <Map<String, Object?>>[];
+    try {
+      for (final row in claimed) {
+        events.add(
+          Map<String, Object?>.from(
+            jsonDecode(row.payloadJson) as Map<String, dynamic>,
+          ),
+        );
+      }
+    } catch (_) {
+      for (final row in claimed) {
+        await _dao.markDeadLetter(row.id, 'invalid_queued_payload');
+      }
+      return;
+    }
 
+    final result = ownerPubkey == null
+        ? await _ingestClient.publishAnonymousBatch(events)
+        : await _ingestClient.publishBatch(
+            events,
+            subjectPubkey: ownerPubkey,
+          );
+    await _applyResult(claimed, result);
+  }
+
+  Future<void> _applyResult(
+    List<PendingProductEvent> rows,
+    AnalyticsIngestResult result,
+  ) async {
     switch (result) {
       case AnalyticsIngestAccepted():
-        for (final row in claimed) {
+        for (final row in rows) {
           await _dao.deleteById(row.id);
         }
       case AnalyticsIngestRejected(:final reason):
-        for (final row in claimed) {
+        for (final row in rows) {
           await _dao.markDeadLetter(row.id, reason);
         }
       case AnalyticsIngestTransientFailure(:final reason):
-        for (final row in claimed) {
+        for (final row in rows) {
           if (row.attemptCount + 1 >= _retryConfig.maxAttempts) {
             await _dao.markDeadLetter(row.id, reason);
-            continue;
+          } else {
+            await _dao.markFailed(
+              row.id,
+              reason,
+              nextAttemptAt: _now().add(
+                _retryConfig.backoffFor(row.attemptCount + 1),
+              ),
+            );
           }
-          await _dao.markFailed(
-            row.id,
-            reason,
-            nextAttemptAt: _now().add(
-              _retryConfig.backoffFor(row.attemptCount + 1),
-            ),
-          );
         }
     }
   }

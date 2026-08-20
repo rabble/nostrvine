@@ -2,12 +2,14 @@
 // ABOUTME: Publishes Kind 22236 ephemeral Nostr view events for decentralized analytics
 
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/models/view_traffic_source.dart';
-import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -35,9 +37,8 @@ class AnalyticsService implements BackgroundAwareService {
     String Function()? sessionId,
     String Function()? platform,
     String Function()? appVersion,
-    String Function()? buildNumber,
     DateTime Function()? now,
-    String Function()? eventIdFactory,
+    bool? productAnalyticsEnabled,
     @visibleForTesting bool? disableNostrPublishing,
   }) : _viewEventPublisher = viewEventPublisher,
        _pendingViewEventsDao = pendingViewEventsDao,
@@ -48,14 +49,17 @@ class AnalyticsService implements BackgroundAwareService {
        _sessionIdOverride = sessionId,
        _platform = platform ?? _defaultPlatform,
        _appVersion = appVersion ?? _emptyString,
-       _buildNumber = buildNumber ?? _emptyString,
        _now = now ?? DateTime.now,
-       _eventIdFactory = eventIdFactory ?? _uuidV4,
+       _productAnalyticsEnabled =
+           productAnalyticsEnabled ??
+           (const bool.fromEnvironment('PRODUCT_ANALYTICS_ENABLED') ||
+               const String.fromEnvironment(
+                     'DEFAULT_ENV',
+                   ).toUpperCase() ==
+                   'STAGING'),
        _disableNostrPublishing = disableNostrPublishing ?? false;
 
   static const Uuid _uuid = Uuid();
-
-  static String _uuidV4() => _uuid.v4();
 
   static String _emptyString() => '';
 
@@ -72,9 +76,8 @@ class AnalyticsService implements BackgroundAwareService {
   final String Function()? _sessionIdOverride;
   final String Function() _platform;
   final String Function() _appVersion;
-  final String Function() _buildNumber;
   final DateTime Function() _now;
-  final String Function() _eventIdFactory;
+  final bool _productAnalyticsEnabled;
 
   /// Testing flag to disable Nostr publishing in unit tests.
   final bool _disableNostrPublishing;
@@ -85,6 +88,7 @@ class AnalyticsService implements BackgroundAwareService {
   bool _isInitialized = false;
   late final String _anonymousId = _uuid.v4();
   late String _sessionId = _uuid.v4();
+  final Map<String, String> _productAnalyticsUtm = {};
 
   // Track recent views to prevent duplicate tracking
   final Set<String> _recentlyTrackedViews = {};
@@ -110,6 +114,12 @@ class AnalyticsService implements BackgroundAwareService {
       final prefs = await SharedPreferences.getInstance();
       _analyticsEnabled = prefs.getBool(_analyticsEnabledKey) ?? true;
       _isInitialized = true;
+      _productEventQueue?.setSendingEnabled(
+        _productAnalyticsEnabled && _analyticsEnabled,
+      );
+      if (_productAnalyticsEnabled && _analyticsEnabled) {
+        _recoverQueuedProductEvents();
+      }
 
       // Set up periodic cleanup of tracked views
       _cleanupTimer = Timer.periodic(const Duration(minutes: 5), (_) {
@@ -153,6 +163,24 @@ class AnalyticsService implements BackgroundAwareService {
     if (_analyticsEnabled == enabled) return;
 
     _analyticsEnabled = enabled;
+    _productEventQueue?.setSendingEnabled(
+      _productAnalyticsEnabled && enabled,
+    );
+
+    if (!enabled) {
+      _productAnalyticsUtm.clear();
+      try {
+        await _productEventQueue?.clear();
+      } catch (error) {
+        Log.warning(
+          'Failed to clear queued product analytics after opt-out: $error',
+          name: 'AnalyticsService',
+          category: LogCategory.system,
+        );
+      }
+    } else if (_productAnalyticsEnabled) {
+      _recoverQueuedProductEvents();
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -172,44 +200,275 @@ class AnalyticsService implements BackgroundAwareService {
     }
   }
 
-  /// Track a first-party product analytics event into the durable ingest queue.
-  Future<void> track(
-    String eventName, {
-    required AnalyticsSurface surface,
-    Map<String, String> props = const {},
-    Map<String, double> propsNum = const {},
-    String? targetId,
-  }) async {
-    if (_isDisposed || !_analyticsEnabled) return;
+  Map<String, String> get productAnalyticsUtm =>
+      Map.unmodifiable(_productAnalyticsUtm);
 
-    final queue = _productEventQueue;
-    if (queue == null) return;
-
-    final event = ProductAnalyticsEvent(
-      eventId: _eventIdFactory(),
-      eventName: eventName,
-      occurredAt: _now(),
-      userPubkey: _currentUserPubkey?.call() ?? '',
-      anonymousId: _anonymousIdOverride?.call() ?? _anonymousId,
-      sessionId: _sessionIdOverride?.call() ?? _sessionId,
-      platform: _platform(),
-      appVersion: _appVersion(),
-      buildNumber: _buildNumber(),
-      surface: surface,
-      targetId: targetId,
-      props: props,
-      propsNum: propsNum,
-    );
-
+  void _recoverQueuedProductEvents() {
     try {
-      await queue.enqueue(event);
-    } catch (e) {
+      final recovery = _productEventQueue?.recoverPublishingAndFlush();
+      if (recovery != null) {
+        unawaited(recovery.catchError((Object _) {}));
+      }
+    } catch (_) {
+      // Queue recovery is best-effort and must not prevent app startup.
+    }
+  }
+
+  /// Retains only the four short campaign values allowed by the contract.
+  void captureProductAnalyticsUtm(Map<String, String> queryParameters) {
+    const keys = {'utm_source', 'utm_medium', 'utm_campaign', 'utm_content'};
+    final boundedValue = RegExp(r'^[a-z0-9][a-z0-9._-]{0,63}$');
+    final captured = <String, String>{};
+    for (final key in keys) {
+      final value = queryParameters[key]?.toLowerCase();
+      if (value != null && boundedValue.hasMatch(value)) {
+        captured[key] = value;
+      }
+    }
+    if (captured.isNotEmpty) {
+      _productAnalyticsUtm
+        ..clear()
+        ..addAll(captured);
+    }
+  }
+
+  /// Clears queued events owned by the outgoing account before logout/switch.
+  Future<void> handleIdentityChange(String? previousPubkey) async {
+    _productAnalyticsUtm.clear();
+    if (previousPubkey == null || previousPubkey.isEmpty) return;
+    await _productEventQueue?.clearOwner(previousPubkey);
+  }
+
+  Future<String?> recordContentImpression({
+    required String contentId,
+    required ProductAnalyticsV2Surface surface,
+    required int position,
+    required int visibleMs,
+    String? recommendationId,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2ContentImpressionRecordedEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2ContentImpressionRecordedProperties(
+        contentId: contentId,
+        surface: surface,
+        position: position,
+        visibleMs: visibleMs,
+        recommendationId: recommendationId,
+      ),
+    ),
+  );
+
+  Future<String?> recordPlaybackSession({
+    required String playbackSessionId,
+    required String contentId,
+    required ProductAnalyticsV2Surface surface,
+    required int durationMs,
+    required int watchedMs,
+    required int loopCount,
+    required bool completed,
+    required ProductAnalyticsV2PlaybackEndReason endReason,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2PlaybackSessionRecordedEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2PlaybackSessionRecordedProperties(
+        playbackSessionId: playbackSessionId,
+        contentId: contentId,
+        surface: surface,
+        durationMs: durationMs,
+        watchedMs: watchedMs,
+        loopCount: loopCount,
+        completed: completed,
+        endReason: endReason,
+      ),
+    ),
+  );
+
+  Future<String?> recordNavigationContext({
+    required ProductAnalyticsV2Surface fromSurface,
+    required ProductAnalyticsV2Surface toSurface,
+    required ProductAnalyticsV2NavigationAction action,
+    String? contentId,
+    String? recommendationId,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2NavigationContextRecordedEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2NavigationContextRecordedProperties(
+        fromSurface: fromSurface,
+        toSurface: toSurface,
+        action: action,
+        contentId: contentId,
+        recommendationId: recommendationId,
+      ),
+    ),
+  );
+
+  Future<String?> recordOnboardingStep({
+    required ProductAnalyticsV2OnboardingFlow flow,
+    required ProductAnalyticsV2OnboardingStep step,
+    required ProductAnalyticsV2OnboardingResult result,
+    ProductAnalyticsV2OnboardingReason? reason,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2OnboardingStepRecordedEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2OnboardingStepRecordedProperties(
+        flow: flow,
+        step: step,
+        result: result,
+        reason: reason,
+      ),
+    ),
+  );
+
+  Future<String?> recordExperimentExposure({
+    required String experimentKey,
+    required String variantKey,
+    required ProductAnalyticsV2AssignmentSource assignmentSource,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2ExperimentExposureEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2ExperimentExposureProperties(
+        experimentKey: experimentKey,
+        variantKey: variantKey,
+        assignmentSource: assignmentSource,
+      ),
+    ),
+  );
+
+  Future<String?> recordLandingViewed({
+    required ProductAnalyticsV2LandingPage landingPage,
+    required ProductAnalyticsV2ReferrerClass referrerClass,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2LandingViewedEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2LandingViewedProperties(
+        landingPage: landingPage,
+        referrerClass: referrerClass,
+        utmSource: _productAnalyticsUtm['utm_source'],
+        utmMedium: _productAnalyticsUtm['utm_medium'],
+        utmCampaign: _productAnalyticsUtm['utm_campaign'],
+        utmContent: _productAnalyticsUtm['utm_content'],
+      ),
+    ),
+    anonymous: true,
+  );
+
+  Future<String?> recordRegistrationStarted({
+    required ProductAnalyticsV2RegistrationEntryPoint entryPoint,
+  }) => _trackProductEvent(
+    (envelope) => ProductAnalyticsV2RegistrationStartedEvent(
+      envelope: envelope,
+      properties: ProductAnalyticsV2RegistrationStartedProperties(
+        entryPoint: entryPoint,
+        utmSource: _productAnalyticsUtm['utm_source'],
+        utmMedium: _productAnalyticsUtm['utm_medium'],
+        utmCampaign: _productAnalyticsUtm['utm_campaign'],
+        utmContent: _productAnalyticsUtm['utm_content'],
+      ),
+    ),
+    anonymous: true,
+  );
+
+  Future<String?> _trackProductEvent(
+    ProductAnalyticsV2Event Function(ProductAnalyticsV2Envelope) build, {
+    bool anonymous = false,
+  }) async {
+    if (_isDisposed || !_analyticsEnabled || !_productAnalyticsEnabled) {
+      return null;
+    }
+    final queue = _productEventQueue;
+    if (queue == null) return null;
+
+    final ownerPubkey = anonymous ? null : _currentUserPubkey?.call();
+    if (!anonymous && (ownerPubkey == null || ownerPubkey.isEmpty)) return null;
+
+    final emptyEnvelope = _productAnalyticsEnvelope('');
+    final eventId = computeProductAnalyticsEventId(
+      build(emptyEnvelope).toJson(),
+    );
+    final event = build(
+      ProductAnalyticsV2Envelope(
+        eventId: eventId,
+        schemaVersion: emptyEnvelope.schemaVersion,
+        occurredAt: emptyEnvelope.occurredAt,
+        anonymousId: emptyEnvelope.anonymousId,
+        sessionId: emptyEnvelope.sessionId,
+        source: emptyEnvelope.source,
+        platform: emptyEnvelope.platform,
+        release: emptyEnvelope.release,
+        consentCategory: emptyEnvelope.consentCategory,
+      ),
+    );
+    try {
+      await queue.enqueue(event, ownerPubkey: ownerPubkey);
+    } catch (error) {
       Log.warning(
-        'Failed to enqueue product analytics event $eventName: $e',
+        'Failed to enqueue product analytics event ${event.eventName}: $error',
         name: 'AnalyticsService',
         category: LogCategory.system,
       );
+      return null;
     }
+    try {
+      unawaited(queue.flush().catchError((Object _) {}));
+    } catch (_) {
+      // The durable row remains available for the next foreground flush.
+    }
+    return eventId;
+  }
+
+  ProductAnalyticsV2Envelope _productAnalyticsEnvelope(String eventId) {
+    final platform = switch (_platform().toLowerCase()) {
+      'ios' => ProductAnalyticsV2Platform.ios,
+      'android' => ProductAnalyticsV2Platform.android,
+      _ =>
+        defaultTargetPlatform == TargetPlatform.iOS
+            ? ProductAnalyticsV2Platform.ios
+            : ProductAnalyticsV2Platform.android,
+    };
+    return ProductAnalyticsV2Envelope(
+      eventId: eventId,
+      schemaVersion: productAnalyticsV2SchemaVersion,
+      occurredAt: _now().toUtc(),
+      anonymousId: _anonymousIdOverride?.call() ?? _anonymousId,
+      sessionId: _sessionIdOverride?.call() ?? _sessionId,
+      source: ProductAnalyticsV2Source.mobile,
+      platform: platform,
+      release: _appVersion().isEmpty ? '0.0.0' : _appVersion(),
+      consentCategory: ProductAnalyticsV2ConsentCategory.productAnalytics,
+    );
+  }
+
+  @visibleForTesting
+  static String computeProductAnalyticsEventId(Map<String, Object?> event) {
+    final unsigned = Map<String, Object?>.from(event)..remove('event_id');
+    return sha256.convert(utf8.encode(_canonicalJson(unsigned))).toString();
+  }
+
+  static String _canonicalJson(Object? value) {
+    if (value == null || value is bool || value is String) {
+      return jsonEncode(value);
+    }
+    if (value is int) return value.toString();
+    if (value is double) {
+      if (!value.isFinite) {
+        throw ArgumentError.value(value, 'value', 'must be finite');
+      }
+      if (value == 0) return '0';
+      if (value == value.truncateToDouble()) return value.toInt().toString();
+      return value.toString();
+    }
+    if (value is List) {
+      return '[${value.map(_canonicalJson).join(',')}]';
+    }
+    if (value is Map) {
+      final entries =
+          value.entries
+              .map((entry) => MapEntry(entry.key.toString(), entry.value))
+              .toList()
+            ..sort((a, b) => a.key.compareTo(b.key));
+      return '{${entries.map((entry) => '${jsonEncode(entry.key)}:${_canonicalJson(entry.value)}').join(',')}}';
+    }
+    throw ArgumentError.value(value, 'value', 'unsupported JSON value');
   }
 
   /// Track a basic video view (when video starts playing).

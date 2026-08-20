@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/profile_setup/widgets/widgets.dart';
@@ -309,6 +312,18 @@ class _ProfileSetupScreenViewState
 
   void _leaveProfileSetup(BuildContext context) {
     if (!_isLeavingProfileSetup && mounted) {
+      if (widget.isNewUser) {
+        unawaited(
+          ref
+              .read(analyticsServiceProvider)
+              .recordOnboardingStep(
+                flow: ProductAnalyticsV2OnboardingFlow.accountSetup,
+                step: ProductAnalyticsV2OnboardingStep.identity,
+                result: ProductAnalyticsV2OnboardingResult.skipped,
+                reason: ProductAnalyticsV2OnboardingReason.dismissed,
+              ),
+        );
+      }
       setState(() => _isLeavingProfileSetup = true);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {

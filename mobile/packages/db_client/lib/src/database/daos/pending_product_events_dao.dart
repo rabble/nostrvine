@@ -208,4 +208,42 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
       pendingProductEvents,
     )..where((table) => table.id.equals(id))).go();
   }
+
+  Future<int> deleteForOwner(String ownerPubkey) {
+    return (delete(
+      pendingProductEvents,
+    )..where((table) => table.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
+  Future<int> deleteAll() => delete(pendingProductEvents).go();
+
+  /// Removes expired rows, then trims the oldest survivors to [maxRecords].
+  Future<int> prune({
+    required DateTime cutoff,
+    required int maxRecords,
+  }) async {
+    return transaction(() async {
+      final deleted = await (delete(
+        pendingProductEvents,
+      )..where((table) => table.createdAt.isSmallerOrEqualValue(cutoff))).go();
+      final survivors =
+          await (selectOnly(pendingProductEvents)
+                ..addColumns([pendingProductEvents.id])
+                ..orderBy([
+                  OrderingTerm.asc(pendingProductEvents.createdAt),
+                ]))
+              .get();
+      final surplus = survivors.length - maxRecords;
+      if (surplus <= 0) return deleted;
+      final oldestIds = survivors
+          .take(surplus)
+          .map((row) => row.read(pendingProductEvents.id))
+          .whereType<String>()
+          .toList();
+      return deleted +
+          await (delete(
+            pendingProductEvents,
+          )..where((table) => table.id.isIn(oldestIds))).go();
+    });
+  }
 }

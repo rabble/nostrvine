@@ -538,6 +538,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             controller: controller,
             isActive: isActive,
             isFeedVisible: isFeedActive,
+            position: index,
             trafficSource: widget.trafficSource,
             sourceDetail: widget.sourceDetail,
             child: _Overlay(
