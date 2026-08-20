@@ -4,14 +4,19 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/minor_dm_approval.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/services/auth_service.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -118,6 +123,98 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ConversationView), findsOneWidget);
+      });
+
+      testWidgets('resolves the counterparty from the conversation row when '
+          'the route carried no extra (deep link / browser refresh)', (
+        tester,
+      ) async {
+        when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+        when(
+          () => mockDmRepository.getConversation(testConversationId),
+        ).thenAnswer(
+          (_) async => DmConversation(
+            id: testConversationId,
+            participantPubkeys: const [testPubkey, otherPubkey],
+            isGroup: false,
+            createdAt: 1700000000,
+          ),
+        );
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: const ConversationPage(
+              conversationId: testConversationId,
+              participantPubkeys: [],
+            ),
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
+              dmRepositoryProvider.overrideWithValue(mockDmRepository),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Without this the thread renders with no identity in its header and
+        // an unaddressable send bar (#3335).
+        final view = tester.widget<ConversationView>(
+          find.byType(ConversationView),
+        );
+        expect(view.participantPubkeys, equals([otherPubkey]));
+      });
+
+      testWidgets('a DM-restricted user deep-linking without extras is '
+          'bounced to the inbox and never reads the thread (#176)', (
+        tester,
+      ) async {
+        when(() => mockDmRepository.userPubkey).thenReturn(testPubkey);
+        final router = GoRouter(
+          initialLocation: ConversationPage.pathForId(testConversationId),
+          routes: [
+            GoRoute(
+              path: ConversationPage.pathPattern,
+              builder: (_, _) => const ConversationPage(
+                conversationId: testConversationId,
+                participantPubkeys: [],
+              ),
+            ),
+            GoRoute(
+              path: InboxPage.path,
+              builder: (_, _) => const Scaffold(body: Text('inbox')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          testProviderScope(
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(true),
+              dmRepositoryProvider.overrideWithValue(mockDmRepository),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ConversationView), findsNothing);
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          equals(InboxPage.path),
+        );
+        // Resolving counterparties is itself a read of conversation data the
+        // restricted user may not access, so the gate precedes the fallback.
+        verifyNever(() => mockDmRepository.getConversation(any()));
       });
     });
   });
