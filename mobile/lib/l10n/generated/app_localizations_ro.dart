@@ -7530,16 +7530,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Refuză și elimină';
 
   @override
-  String get messageRequestBlockButton => 'Block';
+  String get messageRequestBlockButton => 'Blochează';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
-    return 'Declined $displayName\'s request';
+    return 'Cererea lui $displayName a fost refuzată';
   }
 
   @override
   String get messageRequestBlockConfirmBody =>
-      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
+      'Astfel, cererea este eliminată, iar mesajele lor nu mai ajung în inbox. Tot ce trimit rămâne de citit în Blocate.';
 
   @override
   String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';

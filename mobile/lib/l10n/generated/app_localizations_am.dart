@@ -7198,16 +7198,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'አትቀበል እና አስወግድ';
 
   @override
-  String get messageRequestBlockButton => 'Block';
+  String get messageRequestBlockButton => 'አግድ';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
-    return 'Declined $displayName\'s request';
+    return 'የ$displayName ጥያቄ ውድቅ ተደርጓል';
   }
 
   @override
   String get messageRequestBlockConfirmBody =>
-      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
+      'ይህ ጥያቄውን ያስወግዳል፣ መልእክቶቻቸውም ወደ መልእክት ሳጥንህ አይገቡም። የሚልኩት ሁሉ አሁንም በታገዱ ክፍል ውስጥ ይነበባል።';
 
   @override
   String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';

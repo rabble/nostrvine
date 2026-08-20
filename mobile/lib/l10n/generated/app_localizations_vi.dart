@@ -7332,16 +7332,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Từ chối và xóa';
 
   @override
-  String get messageRequestBlockButton => 'Block';
+  String get messageRequestBlockButton => 'Chặn';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
-    return 'Declined $displayName\'s request';
+    return 'Đã từ chối yêu cầu của $displayName';
   }
 
   @override
   String get messageRequestBlockConfirmBody =>
-      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
+      'Thao tác này xóa yêu cầu và giữ tin nhắn của họ khỏi hộp thư đến. Mọi thứ họ gửi vẫn đọc được trong Đã chặn.';
 
   @override
   String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';

@@ -7287,16 +7287,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Tolak dan hapus';
 
   @override
-  String get messageRequestBlockButton => 'Block';
+  String get messageRequestBlockButton => 'Blokir';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
-    return 'Declined $displayName\'s request';
+    return 'Permintaan $displayName ditolak';
   }
 
   @override
   String get messageRequestBlockConfirmBody =>
-      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
+      'Ini menghapus permintaan dan menjaga pesan mereka tetap di luar kotak masukmu. Semua yang mereka kirim masih bisa dibaca di Diblokir.';
 
   @override
   String get messageRequestLoadFailed => 'Permintaan ini gagal dimuat.';

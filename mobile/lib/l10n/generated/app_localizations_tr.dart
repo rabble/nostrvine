@@ -7285,16 +7285,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Reddet ve kaldır';
 
   @override
-  String get messageRequestBlockButton => 'Block';
+  String get messageRequestBlockButton => 'Engelle';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
-    return 'Declined $displayName\'s request';
+    return '$displayName kişisinin isteği reddedildi';
   }
 
   @override
   String get messageRequestBlockConfirmBody =>
-      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
+      'Bu, isteği kaldırır ve mesajlarının gelen kutuna düşmesini engeller. Gönderdikleri her şeyi Engellenenler bölümünden okuyabilirsin.';
 
   @override
   String get messageRequestLoadFailed => 'Bu istek yüklenemedi.';
