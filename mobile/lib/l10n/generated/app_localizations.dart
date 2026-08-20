@@ -11795,6 +11795,12 @@ abstract class AppLocalizations {
   /// **'Video clip, {duration} seconds'**
   String videoClipSemanticLabel(String duration);
 
+  /// Accessibility label for an archived clip thumbnail shown inside a category. Wraps the clip's own label.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived. {label}'**
+  String videoClipArchivedSemanticLabel(String label);
+
   /// Accessibility label for a stop-motion clip thumbnail. {frames} is the already-localized frame count from videoEditorStopMotionFramesCount. Replaces the duration label, which is a misleading value for stop-motion and is hidden visually for the same reason.
   ///
   /// In en, this message translates to:
@@ -20619,6 +20625,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unarchive'**
   String get libraryUnarchiveAction;
+
+  /// Title of the sheet asking whether clips being archived should stay visible in the category they are filed under.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Keep it in its category?} other{Keep them in their categories?}}'**
+  String libraryArchiveKeepCategoryTitle(int count);
+
+  /// Archive-question option that archives the clips but leaves them filed under the named category.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in {name}'**
+  String libraryArchiveKeepCategoryAction(String name);
+
+  /// Archive-question option that archives the clips but leaves each one filed under its own category. Used when the selection spans more than one category.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in their categories'**
+  String get libraryArchiveKeepCategoryActionMixed;
+
+  /// Archive-question option that archives the clips and takes them out of the named category.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from {name}'**
+  String libraryArchiveRemoveCategoryAction(String name);
+
+  /// Archive-question option that archives the clips and takes each one out of its category. Used when the selection spans more than one category.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from their categories'**
+  String get libraryArchiveRemoveCategoryActionMixed;
 
   /// Accessibility label for the toolbar button that opens the selected-clips move sheet.
   ///

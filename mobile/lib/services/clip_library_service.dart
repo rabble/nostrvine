@@ -391,9 +391,9 @@ class ClipLibraryService {
   /// File the clip [clipId] under [categoryId], or pass `null` to remove it
   /// from its current category.
   ///
-  /// Filing into a category also clears the archive marker. A category's view
-  /// hides archived clips, so leaving the marker set would file the clip into
-  /// a place it could never show up — the move would silently do nothing.
+  /// Filing into a category also clears the archive marker. Picking a clip
+  /// out of a list and filing it is a request to work with it again; the user
+  /// can archive it afterwards to keep it filed but out of the default view.
   /// Unfiling (`categoryId == null`) leaves the marker alone: taking a clip
   /// out of a category is not a request to un-archive it.
   Future<void> setClipCategory({

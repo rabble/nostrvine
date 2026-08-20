@@ -6470,6 +6470,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return '已归档。$label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return '定格动画片段，$frames';
   }
@@ -11416,6 +11421,32 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => '取消归档';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '仍保留在分类中吗？',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return '保留在$name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => '保留在各自的分类中';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return '从$name中移除';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed => '从各自的分类中移除';
 
   @override
   String get libraryMoveSelectedClipsTooltip => '移动所选片段';

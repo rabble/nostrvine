@@ -6794,6 +6794,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'Đã lưu trữ. $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return 'Đoạn stop-motion, $frames';
   }
@@ -12077,6 +12082,34 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => 'Bỏ lưu trữ';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Giữ trong danh mục?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'Giữ trong $name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed =>
+      'Giữ trong danh mục của chúng';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'Xóa khỏi $name';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed =>
+      'Xóa khỏi danh mục của chúng';
 
   @override
   String get libraryMoveSelectedClipsTooltip => 'Chuyển các clip đã chọn';

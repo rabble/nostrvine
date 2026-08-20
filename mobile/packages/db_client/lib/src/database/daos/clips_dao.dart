@@ -247,7 +247,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// current category. Does not validate that the category exists.
   ///
   /// Pass [clearArchived] to drop the archive marker in the same statement
-  /// when filing an archived clip into a visible category. Unfiling leaves the
+  /// when filing an archived clip into a category. Unfiling leaves the
   /// archive marker alone.
   ///
   /// Returns true if a row was updated.

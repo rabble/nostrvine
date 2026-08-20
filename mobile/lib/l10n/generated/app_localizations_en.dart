@@ -6925,6 +6925,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'Archived. $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return 'Stop-motion clip, $frames';
   }
@@ -12222,6 +12227,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => 'Unarchive';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Keep them in their categories?',
+      one: 'Keep it in its category?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'Keep in $name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed =>
+      'Keep in their categories';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'Remove from $name';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed =>
+      'Remove from their categories';
 
   @override
   String get libraryMoveSelectedClipsTooltip => 'Move selected clips';

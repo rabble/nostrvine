@@ -99,9 +99,10 @@ enum LibraryClipTypeFilter {
 /// Which slice of the clip library the grid shows.
 ///
 /// All, Archive, and Deleted are built in and always available; the
-/// remaining filters are the user's own [ClipCategory] rows. A clip is in
-/// exactly one of these at a time — archiving or trashing takes it out of
-/// both All and its category.
+/// remaining filters are the user's own [ClipCategory] rows. Trashing takes
+/// a clip out of every one of them. Archiving takes it out of All only: an
+/// archived clip keeps showing under its category unless the user chose to
+/// take it out of there while archiving.
 sealed class ClipLibraryFilter extends Equatable {
   const ClipLibraryFilter();
 
@@ -146,9 +147,12 @@ final class ClipLibraryCategoryFilter extends ClipLibraryFilter {
   /// The [ClipCategory.id] this filter shows.
   final String categoryId;
 
+  /// Archived clips count: the archive question offers keeping the clip
+  /// filed here, and a clip that kept its category is meant to stay
+  /// visible in it. One that did not keep it has no [categoryId] left to
+  /// match, so it drops out on its own.
   @override
-  bool admits(DivineVideoClip clip) =>
-      clip.archivedAt == null && clip.categoryId == categoryId;
+  bool admits(DivineVideoClip clip) => clip.categoryId == categoryId;
 
   @override
   List<Object?> get props => [categoryId];
@@ -169,6 +173,7 @@ final class ClipsLibraryOrganizeResult extends Equatable {
     required this.action,
     required this.clipIds,
     this.categoryName,
+    this.previousCategoryIds = const {},
   });
 
   /// What happened to the clips.
@@ -181,8 +186,19 @@ final class ClipsLibraryOrganizeResult extends Equatable {
   /// user's own text, never a localized message.
   final String? categoryName;
 
+  /// Category each clip was filed under before the action took it out of
+  /// there, keyed by clip id. Only filled when archiving also unfiled the
+  /// clips, so the snackbar's undo can put them back where they were
+  /// instead of returning them category-less.
+  final Map<String, String> previousCategoryIds;
+
   @override
-  List<Object?> get props => [action, clipIds, categoryName];
+  List<Object?> get props => [
+    action,
+    clipIds,
+    categoryName,
+    previousCategoryIds,
+  ];
 }
 
 /// A long-press-and-drag range selection running on the clips grid.

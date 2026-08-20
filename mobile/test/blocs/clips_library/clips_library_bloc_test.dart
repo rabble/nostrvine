@@ -2086,6 +2086,131 @@ void main() {
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'archiving unfiles the clips when the user asked for that',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.setClipArchived(
+              clipId: any(named: 'clipId'),
+              archived: any(named: 'archived'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: any(named: 'clipId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => [travel]);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [onScreen.copyWith(categoryId: travel.id)],
+          categories: [travel],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipsLibraryClipsArchiveChanged(
+            clipIds: {'on-screen'},
+            archived: true,
+            clearCategory: true,
+          ),
+        ),
+        verify: (bloc) {
+          verify(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: 'on-screen',
+              categoryId: null,
+            ),
+          ).called(1);
+          // The undo needs to know where the clip came from.
+          expect(bloc.state.lastOrganizeResult?.previousCategoryIds, {
+            'on-screen': travel.id,
+          });
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'archiving leaves the category alone when the user kept it',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.setClipArchived(
+              clipId: any(named: 'clipId'),
+              archived: any(named: 'archived'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => [travel]);
+        },
+        build: createBloc,
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [onScreen.copyWith(categoryId: travel.id)],
+          categories: [travel],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipsLibraryClipsArchiveChanged(
+            clipIds: {'on-screen'},
+            archived: true,
+          ),
+        ),
+        verify: (bloc) {
+          verifyNever(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: any(named: 'clipId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          );
+          expect(bloc.state.lastOrganizeResult?.previousCategoryIds, isEmpty);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'undoing an archive files the clips back into their category',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.setClipArchived(
+              clipId: any(named: 'clipId'),
+              archived: any(named: 'archived'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: any(named: 'clipId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockClipLibraryService.getCategories(),
+          ).thenAnswer((_) async => [travel]);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ClipsLibraryClipsArchiveChanged(
+            clipIds: const {'on-screen'},
+            archived: false,
+            restoreCategoryIds: {'on-screen': travel.id},
+          ),
+        ),
+        verify: (bloc) {
+          verify(
+            () => mockClipLibraryService.setClipCategory(
+              clipId: 'on-screen',
+              categoryId: travel.id,
+            ),
+          ).called(1);
+          verify(
+            () => mockClipLibraryService.setClipArchived(
+              clipId: 'on-screen',
+              archived: false,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'archiving reports the clips so the UI can offer an undo',
         setUp: () {
           when(

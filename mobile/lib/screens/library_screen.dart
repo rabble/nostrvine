@@ -583,6 +583,10 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                         ClipsLibraryClipsArchiveChanged(
                           clipIds: result.clipIds,
                           archived: false,
+                          // Undo puts back both halves: the clips leave the
+                          // archive and return to the category the archive
+                          // took them out of.
+                          restoreCategoryIds: result.previousCategoryIds,
                         ),
                       );
                     }

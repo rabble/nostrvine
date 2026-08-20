@@ -4349,6 +4349,15 @@
       }
     }
   },
+  "videoClipArchivedSemanticLabel": "Archived. {label}",
+  "@videoClipArchivedSemanticLabel": {
+    "description": "Accessibility label for an archived clip thumbnail shown inside a category. Wraps the clip's own label.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "videoClipStopMotionSemanticLabel": "Stop-motion clip, {frames}",
   "@videoClipStopMotionSemanticLabel": {
     "description": "Accessibility label for a stop-motion clip thumbnail. {frames} is the already-localized frame count from videoEditorStopMotionFramesCount. Replaces the duration label, which is a misleading value for stop-motion and is hidden visually for the same reason.",
@@ -7546,6 +7555,41 @@
   "libraryUnarchiveAction": "Unarchive",
   "@libraryUnarchiveAction": {
     "description": "Move-sheet action that brings selected archived clips back into the main library view."
+  },
+  "libraryArchiveKeepCategoryTitle": "{count, plural, =1{Keep it in its category?} other{Keep them in their categories?}}",
+  "@libraryArchiveKeepCategoryTitle": {
+    "description": "Title of the sheet asking whether clips being archived should stay visible in the category they are filed under.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryArchiveKeepCategoryAction": "Keep in {name}",
+  "@libraryArchiveKeepCategoryAction": {
+    "description": "Archive-question option that archives the clips but leaves them filed under the named category.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryArchiveKeepCategoryActionMixed": "Keep in their categories",
+  "@libraryArchiveKeepCategoryActionMixed": {
+    "description": "Archive-question option that archives the clips but leaves each one filed under its own category. Used when the selection spans more than one category."
+  },
+  "libraryArchiveRemoveCategoryAction": "Remove from {name}",
+  "@libraryArchiveRemoveCategoryAction": {
+    "description": "Archive-question option that archives the clips and takes them out of the named category.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryArchiveRemoveCategoryActionMixed": "Remove from their categories",
+  "@libraryArchiveRemoveCategoryActionMixed": {
+    "description": "Archive-question option that archives the clips and takes each one out of its category. Used when the selection spans more than one category."
   },
   "libraryMoveSelectedClipsTooltip": "Move selected clips",
   "@libraryMoveSelectedClipsTooltip": {

@@ -182,4 +182,103 @@ void main() {
       expect(choice, isA<ClipCategoryMoveToUnarchive>());
     });
   });
+
+  group('$ClipCategoryActions.showArchiveCategoryPrompt', () {
+    late ClipArchiveCategoryChoice? choice;
+    late bool completed;
+
+    setUp(() {
+      choice = null;
+      completed = false;
+    });
+
+    Widget buildHost({String? categoryName, int clipCount = 1}) {
+      return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: VineTheme.theme,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: TextButton(
+                onPressed: () async {
+                  choice = await ClipCategoryActions.showArchiveCategoryPrompt(
+                    context: context,
+                    clipCount: clipCount,
+                    categoryName: categoryName,
+                  );
+                  completed = true;
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('keeping the clip filed names the category it stays in', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHost(categoryName: 'Travel'));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(en.libraryArchiveKeepCategoryTitle(1)),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.text(en.libraryArchiveKeepCategoryAction('Travel')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(choice, ClipArchiveCategoryChoice.keep);
+    });
+
+    testWidgets('unfiling the clip is the other answer', (tester) async {
+      await tester.pumpWidget(buildHost(categoryName: 'Travel'));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.text(en.libraryArchiveRemoveCategoryAction('Travel')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(choice, ClipArchiveCategoryChoice.remove);
+    });
+
+    testWidgets('a selection spanning categories drops the name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHost(clipCount: 3));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(en.libraryArchiveKeepCategoryActionMixed),
+        findsOneWidget,
+      );
+      expect(
+        find.text(en.libraryArchiveRemoveCategoryActionMixed),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('dismissing answers nothing, so the caller can cancel', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildHost(categoryName: 'Travel'));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(completed, isTrue);
+      expect(choice, isNull);
+    });
+  });
 }

@@ -6770,6 +6770,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'مؤرشف. $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return 'مقطع حركة إيقافية، $frames';
   }
@@ -12026,6 +12031,32 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => 'إلغاء الأرشفة';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'هل تبقى في فئتها؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'الإبقاء في $name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => 'الإبقاء في فئاتها';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'الإزالة من $name';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed => 'الإزالة من فئاتها';
 
   @override
   String get libraryMoveSelectedClipsTooltip => 'نقل المقاطع المحددة';

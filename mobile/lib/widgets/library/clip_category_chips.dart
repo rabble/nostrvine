@@ -14,7 +14,8 @@ import 'package:openvine/models/clip_category.dart';
 ///
 /// All is always offered. Archive and Deleted only render when
 /// [showBuiltInFilters] is true — the editor's clip picker leaves them off,
-/// since neither an archived nor a trashed clip can join a timeline.
+/// since a trashed clip cannot join a timeline and the picker is not where
+/// the user goes looking through the archive.
 class ClipCategoryChips extends StatelessWidget {
   const ClipCategoryChips({
     required this.categories,

@@ -6677,6 +6677,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'መዝገብ ውስጥ ተቀምጧል። $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return 'የእንቅስቃሴ-አልባ ቅንጥብ፣ $frames';
   }
@@ -11806,6 +11811,32 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => 'ከመዝገብ አውጣ';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'በምድቡ ውስጥ ይቆይ?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'በ$name ውስጥ አቆይ';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => 'በምድቦቻቸው ውስጥ አቆይ';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'ከ$name አስወግድ';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed => 'ከምድቦቻቸው አስወግድ';
 
   @override
   String get libraryMoveSelectedClipsTooltip => 'የተመረጡ ክሊፖችን አንቀሳቅስ';

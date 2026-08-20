@@ -961,8 +961,36 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   ) async {
     if (event.clipIds.isEmpty) return;
 
+    final clearCategory = event.archived && event.clearCategory;
+    // Read before the writes land, so the undo can put the clips back where
+    // they were rather than returning them category-less.
+    final previousCategoryIds = clearCategory
+        ? {
+            for (final clip in state.clips)
+              if (event.clipIds.contains(clip.id) && clip.categoryId != null)
+                clip.id: clip.categoryId!,
+          }
+        : const <String, String>{};
+
     try {
       for (final clipId in event.clipIds) {
+        if (clearCategory) {
+          await _clipLibraryService.setClipCategory(
+            clipId: clipId,
+            categoryId: null,
+          );
+        } else if (!event.archived) {
+          final restored = event.restoreCategoryIds[clipId];
+          // Filing into a category clears the archive marker on its own, so
+          // this covers the unarchive too; the write below is then a no-op
+          // that keeps the two paths identical.
+          if (restored != null) {
+            await _clipLibraryService.setClipCategory(
+              clipId: clipId,
+              categoryId: restored,
+            );
+          }
+        }
         await _clipLibraryService.setClipArchived(
           clipId: clipId,
           archived: event.archived,
@@ -977,6 +1005,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
               ? ClipsLibraryOrganizeAction.archived
               : ClipsLibraryOrganizeAction.unarchived,
           clipIds: event.clipIds,
+          previousCategoryIds: previousCategoryIds,
         ),
       );
     } catch (e, stackTrace) {

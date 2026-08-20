@@ -6826,6 +6826,11 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'آرکائیو شدہ۔ $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return 'اسٹاپ موشن کلپ، $frames';
   }
@@ -12107,6 +12112,32 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => 'آرکائیو سے نکالیں';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'کیا اسے اپنے زمرے میں رکھیں؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return '$name میں رکھیں';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => 'اپنے زمروں میں رکھیں';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return '$name سے ہٹائیں';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed => 'اپنے زمروں سے ہٹائیں';
 
   @override
   String get libraryMoveSelectedClipsTooltip => 'منتخب کلپس منتقل کریں';
