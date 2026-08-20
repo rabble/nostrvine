@@ -105,6 +105,10 @@ class DivineCamera {
   /// as a mirror image (like the preview).
   /// When `false`, the video shows the real-world orientation (non-mirrored).
   /// The preview is always mirrored.
+  /// [preferUnprocessedAudio] captures the microphone without the
+  /// speech-tuned noise suppression the platform applies by default, so
+  /// instruments and music survive at their real level. iOS only — every
+  /// other platform ignores it.
   ///
   /// Returns the initialized camera state.
   Future<CameraState> initialize({
@@ -113,6 +117,7 @@ class DivineCamera {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = true,
+    bool preferUnprocessedAudio = false,
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
@@ -129,6 +134,7 @@ class DivineCamera {
       enableScreenFlash: enableScreenFlash,
       mirrorFrontCameraOutput: mirrorFrontCameraOutput,
       enableAutoLensSwitch: enableAutoLensSwitch,
+      preferUnprocessedAudio: preferUnprocessedAudio,
     );
     _notifyStateChanged();
     return _state;

@@ -9,10 +9,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MethodChannelDivineCamera platform;
+  Map<dynamic, dynamic>? lastInitializeArgs;
   const channel = MethodChannel('divine_camera');
 
   setUp(() {
     platform = MethodChannelDivineCamera();
+    lastInitializeArgs = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (methodCall) async {
           final args = methodCall.arguments as Map<dynamic, dynamic>?;
@@ -20,6 +22,7 @@ void main() {
             case 'getPlatformVersion':
               return 'Android 14';
             case 'initializeCamera':
+              lastInitializeArgs = args;
               return {
                 'isInitialized': true,
                 'isRecording': false,
@@ -134,6 +137,23 @@ void main() {
       expect(state.hasFrontCamera, isTrue);
       expect(state.hasBackCamera, isTrue);
       expect(state.textureId, 1);
+    });
+
+    test(
+      'initializeCamera defaults to the platform audio processing',
+      () async {
+        await platform.initializeCamera();
+
+        expect(lastInitializeArgs?['preferUnprocessedAudio'], isFalse);
+      },
+    );
+
+    test('initializeCamera forwards the unprocessed-audio request', () async {
+      // iOS reads this key to pick the recording audio-session mode (#7796);
+      // dropping it here silently strands the Music mode setting.
+      await platform.initializeCamera(preferUnprocessedAudio: true);
+
+      expect(lastInitializeArgs?['preferUnprocessedAudio'], isTrue);
     });
 
     test('initializeCamera with front lens', () async {

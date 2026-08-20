@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Folosește limba dispozitivului (implicit)",
     "contentPreferencesAudioSharing": "Fă audio-ul meu disponibil pentru refolosire",
     "contentPreferencesAudioSharingSubtitle": "Când e activat, alții pot folosi audio din videoclipurile tale",
+    "contentPreferencesMusicMode": "Mod muzică",
+    "contentPreferencesMusicModeSubtitle": "Dezactivează reducerea zgomotului care turtește instrumentele. Mai bine pentru muzică, mai aspru pentru voci.",
     "contentPreferencesAccountLabels": "Etichete de cont",
     "contentPreferencesAccountLabelsEmpty": "Auto-etichetează-ți conținutul",
     "contentPreferencesAccountContentLabels": "Etichete de conținut pentru cont",

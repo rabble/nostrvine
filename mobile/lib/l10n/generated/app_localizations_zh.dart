@@ -338,6 +338,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get contentPreferencesAudioSharingSubtitle => '开启后，其他人可以使用你视频中的音频';
 
   @override
+  String get contentPreferencesMusicMode => '音乐模式';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      '关掉会压扁乐器声的降噪处理。更适合音乐，人声会糙一点。';
+
+  @override
   String get contentPreferencesAccountLabels => '账号标签';
 
   @override

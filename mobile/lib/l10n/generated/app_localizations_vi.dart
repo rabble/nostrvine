@@ -356,6 +356,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Khi bật, người khác có thể sử dụng âm thanh từ video của bạn';
 
   @override
+  String get contentPreferencesMusicMode => 'Chế độ âm nhạc';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Tắt bộ lọc tiếng ồn vốn làm bẹp tiếng nhạc cụ. Hợp với âm nhạc, thô hơn với giọng nói.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Nhãn tài khoản';
 
   @override

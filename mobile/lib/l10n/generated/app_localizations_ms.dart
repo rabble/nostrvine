@@ -354,6 +354,13 @@ class AppLocalizationsMs extends AppLocalizations {
       'Apabila didayakan, orang lain boleh menggunakan audio daripada video anda';
 
   @override
+  String get contentPreferencesMusicMode => 'Mod muzik';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Melangkau pembersihan hingar yang memampatkan bunyi alat muzik. Lebih baik untuk muzik, lebih kasar untuk suara.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Label Akaun';
 
   @override

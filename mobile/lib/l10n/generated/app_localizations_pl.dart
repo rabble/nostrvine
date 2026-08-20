@@ -395,6 +395,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Gdy włączone, inni mogą używać dźwięku z twoich filmów';
 
   @override
+  String get contentPreferencesMusicMode => 'Tryb muzyczny';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Wyłącza redukcję szumów, która spłaszcza instrumenty. Lepiej dla muzyki, gorzej dla głosu.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Etykiety konta';
 
   @override

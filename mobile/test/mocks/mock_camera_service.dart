@@ -34,6 +34,7 @@ class MockCameraService extends CameraService {
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     _currentLens = initialLens;
     _isInitialized = true;

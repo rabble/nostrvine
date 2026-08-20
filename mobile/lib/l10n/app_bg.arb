@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Използвай езика на устройството (по подразбиране)",
     "contentPreferencesAudioSharing": "Позволи моето аудио да се използва отново",
     "contentPreferencesAudioSharingSubtitle": "Когато е включено, други могат да използват аудио от твоите видеа",
+    "contentPreferencesMusicMode": "Музикален режим",
+    "contentPreferencesMusicModeSubtitle": "Изключва шумопотискането, което задушава инструментите. По-добре за музика, по-грубо за глас.",
     "contentPreferencesAccountLabels": "Етикети на акаунта",
     "contentPreferencesAccountLabelsEmpty": "Сам избираш етикетите за съдържанието си",
     "contentPreferencesAccountContentLabels": "Етикети за съдържанието на акаунта",

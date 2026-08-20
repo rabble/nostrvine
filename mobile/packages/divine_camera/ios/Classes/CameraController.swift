@@ -45,6 +45,18 @@ class CameraController: NSObject {
     private var audioWriterInput: AVAssetWriterInput?
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
 
+    /// When true the shared AVAudioSession is configured with
+    /// `.measurement`, the mode Apple documents as minimising system-supplied
+    /// signal processing on the input signal. The default `.videoRecording`
+    /// mode runs speech-tuned noise suppression that gates instruments away
+    /// (#7796). Set once per session from `initialize(preferUnprocessedAudio:)`.
+    private var prefersUnprocessedAudio = false
+
+    /// The AVAudioSession mode this controller wants for capture.
+    private var desiredAudioSessionMode: AVAudioSession.Mode {
+        prefersUnprocessedAudio ? .measurement : .videoRecording
+    }
+
     /// Set by the AVAudioSession interruption observer. While true the
     /// audio capture path is known to be silent and we skip appending
     /// audio buffers to the asset writer.
@@ -349,17 +361,46 @@ class CameraController: NSObject {
             // can fail or the mic gets no samples because the session
             // transitions while still active.
             try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
-            // .videoRecording mode enables system-level noise suppression and
-            // echo cancellation tuned for direct capture (vs .default which is
-            // tuned for VoIP). This gives better mic quality without extra work.
-            try audioSession.setCategory(
-                .playAndRecord,
-                mode: .videoRecording,
-                options: [.defaultToSpeaker, .allowBluetoothA2DP]
-            )
+            // Mode picks the input processing:
+            // - .videoRecording (default) applies system-level noise
+            //   suppression tuned for direct capture, which keeps speech
+            //   clean but treats sustained non-speech as noise and gates it
+            //   away — that is what eats an instrument (#7796).
+            // - .measurement is the mode Apple documents as minimising
+            //   system-supplied signal processing, so music survives at its
+            //   real level. It costs the camera-adjacent mic selection and
+            //   level normalisation .videoRecording does for speech, which is
+            //   why it is opt-in rather than the default.
+            var mode = desiredAudioSessionMode
+            do {
+                try audioSession.setCategory(
+                    .playAndRecord,
+                    mode: mode,
+                    options: [.defaultToSpeaker, .allowBluetoothA2DP]
+                )
+            } catch {
+                // A device that refuses .measurement must still record: the
+                // outer catch returns false, and a false here means the clip
+                // ships with no audio track at all — a far worse outcome than
+                // the processing the user opted out of.
+                guard mode != .videoRecording else { throw error }
+                DivineCameraLog.shared.warning(
+                    "Audio session rejected mode=\(mode.rawValue) "
+                        + "(\(error.localizedDescription)) — falling back to "
+                        + "videoRecording",
+                    name: "DivineCamera.AudioSession"
+                )
+                mode = .videoRecording
+                try audioSession.setCategory(
+                    .playAndRecord,
+                    mode: mode,
+                    options: [.defaultToSpeaker, .allowBluetoothA2DP]
+                )
+            }
             try audioSession.setActive(true)
             DivineCameraLog.shared.info(
-                "Audio session configured: A2DP playback, built-in mic for recording",
+                "Audio session configured: A2DP playback, built-in mic for "
+                    + "recording, mode=\(mode.rawValue)",
                 name: "DivineCamera.AudioSession"
             )
             return true
@@ -654,8 +695,9 @@ class CameraController: NSObject {
     private var videoEncodingBitRate = 8_000_000
 
     /// Initializes the camera with the specified lens and video quality.
-    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, mirrorFrontCameraOutput: Bool = true, enableAutoLensSwitch: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
+    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, mirrorFrontCameraOutput: Bool = true, enableAutoLensSwitch: Bool = true, preferUnprocessedAudio: Bool = false, completion: @escaping ([String: Any]?, String?) -> Void) {
         self.autoLensSwitchRequested = enableAutoLensSwitch
+        self.prefersUnprocessedAudio = preferUnprocessedAudio
         currentLensType = lens
         currentLens = getPositionForLensType(lens)
         screenFlashFeatureEnabled = enableScreenFlash
@@ -1009,7 +1051,11 @@ class CameraController: NSObject {
            self.audioInput != nil,
            self.audioOutput != nil {
             let session = AVAudioSession.sharedInstance()
+            // Mode is part of the contract, not just category: a session left
+            // on .videoRecording would keep gating instruments away even
+            // though the user asked for unprocessed capture (#7796).
             let needsReconfigure = session.category != .playAndRecord
+                || session.mode != desiredAudioSessionMode
             if needsReconfigure {
                 // CRITICAL: stop the audio AVCaptureSession before the
                 // setActive(false)/setActive(true) cycle inside
@@ -2178,6 +2224,7 @@ class CameraController: NSObject {
             DivineCameraLog.shared.info(
                 "Recording audio state: ready=\(audioReady), "
                     + "category=\(session.category.rawValue), "
+                    + "mode=\(session.mode.rawValue), "
                     + "inputs=[\(inputs)], outputs=[\(outputs)], "
                     + "inputMuted=\(inputMuted)",
                 name: "DivineCamera.Recording"
@@ -2660,7 +2707,7 @@ class CameraController: NSObject {
     /// after disposing the camera, and iOS rejects that `setCategory` with
     /// `InsufficientPriority` (OSStatus 561017449) while an audio capture
     /// session is still running. The editor then plays the clip back through
-    /// the recorder's `.playAndRecord` / `.videoRecording` configuration.
+    /// the recorder's `.playAndRecord` capture configuration.
     func release(completion: (() -> Void)? = nil) {
         // Restore screen brightness if screen flash was enabled
         disableScreenFlash()

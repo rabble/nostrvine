@@ -384,6 +384,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ሲነቃ ሌሎች ከቪዲዮዎችዎ ኦዲዮን መጠቀም ይችላሉ።';
 
   @override
+  String get contentPreferencesMusicMode => 'የሙዚቃ ሁነታ';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'የሙዚቃ መሣሪያዎችን የሚያደበዝዘውን የድምፅ ማጽጃ ያጠፋል። ለሙዚቃ የተሻለ፣ ለድምፅ ግን ትንሽ ሻካራ።';
+
+  @override
   String get contentPreferencesAccountLabels => 'መለያ መለያዎች';
 
   @override

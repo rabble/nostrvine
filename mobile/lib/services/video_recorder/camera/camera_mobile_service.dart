@@ -28,6 +28,7 @@ class CameraMobileService extends CameraService {
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     // Clear any previous error
     _initializationError = null;
@@ -43,6 +44,7 @@ class CameraMobileService extends CameraService {
         lens: initialLens,
         videoQuality: videoQuality,
         enableAutoLensSwitch: enableAutoLensSwitch,
+        preferUnprocessedAudio: preferUnprocessedAudio,
       );
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));

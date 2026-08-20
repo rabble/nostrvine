@@ -57,12 +57,15 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             // 1. AudioToolbox + AVAudioSession + mediaserverd XPC roundtrip.
             let audioSession = AVAudioSession.sharedInstance()
             do {
-                // Use the same mode as the real recording path
+                // Warm the mode the real recording path defaults to
                 // (CameraController.configureAudioSessionForRecording).
-                // Pre-warming with a different mode means the warmed audio
-                // route doesn't match what we actually use at record time,
-                // so the first recording still pays the mode-switch cost
-                // and the warmed behaviour drifts from the real one.
+                // Pre-warming a mode we don't record in leaves the warmed
+                // route mismatched, so the first recording still pays the
+                // mode-switch cost and the warmed behaviour drifts from the
+                // real one. This runs at plugin registration, long before
+                // Dart can report the user's unprocessed-audio preference
+                // (#7796), so it can only warm the default — the few users
+                // who opt in pay that switch once, on their first recording.
                 try audioSession.setCategory(
                     .playAndRecord,
                     mode: .videoRecording,
@@ -178,7 +181,8 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let enableScreenFlash = args["enableScreenFlash"] as? Bool ?? true
             let mirrorFrontCameraOutput = args["mirrorFrontCameraOutput"] as? Bool ?? true
             let enableAutoLensSwitch = args["enableAutoLensSwitch"] as? Bool ?? true
-            initializeCamera(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch, result: result)
+            let preferUnprocessedAudio = args["preferUnprocessedAudio"] as? Bool ?? false
+            initializeCamera(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch, preferUnprocessedAudio: preferUnprocessedAudio, result: result)
             
         case "disposeCamera":
             disposeCamera(result: result)
@@ -273,7 +277,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         return FlutterError(code: code, message: message, details: nil)
     }
 
-    private func initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Bool, mirrorFrontCameraOutput: Bool, enableAutoLensSwitch: Bool, result: @escaping FlutterResult) {
+    private func initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Bool, mirrorFrontCameraOutput: Bool, enableAutoLensSwitch: Bool, preferUnprocessedAudio: Bool, result: @escaping FlutterResult) {
         guard let registry = textureRegistry else {
             result(Self.cameraError("NO_REGISTRY", "Texture registry not available"))
             return
@@ -285,7 +289,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             reclaimLogSink: { [weak self] in self?.installLogSink() }
         )
 
-        cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch) { [weak self] state, error in
+        cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch, preferUnprocessedAudio: preferUnprocessedAudio) { [weak self] state, error in
             DispatchQueue.main.async {
                 if let error = error {
                     result(Self.cameraError("INIT_ERROR", error))

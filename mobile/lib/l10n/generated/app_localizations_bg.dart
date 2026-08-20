@@ -389,6 +389,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Когато е включено, други могат да използват аудио от твоите видеа';
 
   @override
+  String get contentPreferencesMusicMode => 'Музикален режим';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Изключва шумопотискането, което задушава инструментите. По-добре за музика, по-грубо за глас.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Етикети на акаунта';
 
   @override

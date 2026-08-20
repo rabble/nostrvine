@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Użyj języka urządzenia (domyślnie)",
     "contentPreferencesAudioSharing": "Udostępniaj moje audio do ponownego użycia",
     "contentPreferencesAudioSharingSubtitle": "Gdy włączone, inni mogą używać dźwięku z twoich filmów",
+    "contentPreferencesMusicMode": "Tryb muzyczny",
+    "contentPreferencesMusicModeSubtitle": "Wyłącza redukcję szumów, która spłaszcza instrumenty. Lepiej dla muzyki, gorzej dla głosu.",
     "contentPreferencesAccountLabels": "Etykiety konta",
     "contentPreferencesAccountLabelsEmpty": "Oznacz swoje treści",
     "contentPreferencesAccountContentLabels": "Etykiety treści konta",

@@ -386,6 +386,13 @@ class AppLocalizationsUr extends AppLocalizations {
       'فعال ہونے پر دوسرے لوگ آپ کی ویڈیوز کی آڈیو استعمال کر سکتے ہیں';
 
   @override
+  String get contentPreferencesMusicMode => 'موسیقی موڈ';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'شور کی وہ صفائی بند کر دیتا ہے جو سازوں کو دبا دیتی ہے۔ موسیقی کے لیے بہتر، آوازوں کے لیے کچھ کھردرا۔';
+
+  @override
   String get contentPreferencesAccountLabels => 'اکاؤنٹ لیبلز';
 
   @override

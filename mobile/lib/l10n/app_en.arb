@@ -194,6 +194,11 @@
   "contentPreferencesUseDeviceLanguage": "Use device language (default)",
   "contentPreferencesAudioSharing": "Make my audio available for reuse",
   "contentPreferencesAudioSharingSubtitle": "When enabled, others can use audio from your videos",
+  "contentPreferencesMusicMode": "Music mode",
+  "contentPreferencesMusicModeSubtitle": "Skips the noise cleanup that flattens instruments. Better for music, rougher on voices.",
+  "@contentPreferencesMusicModeSubtitle": {
+    "description": "Explains the trade-off behind the Music mode switch in Settings -> Content Preferences. Enabling it drops the platform's speech-tuned noise suppression, so instruments keep their real level but spoken audio loses the cleanup that flatters it."
+  },
   "contentPreferencesAccountLabels": "Account Labels",
   "contentPreferencesAccountLabelsEmpty": "Self-label your content",
   "contentPreferencesAccountContentLabels": "Account Content Labels",

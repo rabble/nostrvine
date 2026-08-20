@@ -107,6 +107,8 @@
     "contentPreferencesUseDeviceLanguage": "Gamitin ang wika ng device (default)",
     "contentPreferencesAudioSharing": "Gawing magagamit ng iba ang audio ko",
     "contentPreferencesAudioSharingSubtitle": "Kapag naka-enable, magagamit ng iba ang audio mula sa mga video mo",
+    "contentPreferencesMusicMode": "Music mode",
+    "contentPreferencesMusicModeSubtitle": "Ini-skip ang noise cleanup na pumipipi sa mga instrumento. Mas maganda sa musika, mas magaspang sa boses.",
     "contentPreferencesAccountLabels": "Mga Account Label",
     "contentPreferencesAccountLabelsEmpty": "I-label mo ang sarili mong content",
     "contentPreferencesAccountContentLabels": "Mga Account Content Label",

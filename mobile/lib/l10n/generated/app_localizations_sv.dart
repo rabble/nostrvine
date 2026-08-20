@@ -373,6 +373,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'När aktiverat kan andra använda ljud från dina videor';
 
   @override
+  String get contentPreferencesMusicMode => 'Musikläge';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Stänger av brusreduceringen som plattar till instrument. Bättre för musik, råare för röster.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Kontoetiketter';
 
   @override

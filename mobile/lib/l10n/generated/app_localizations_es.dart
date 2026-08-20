@@ -387,6 +387,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Si lo activás, otros pueden usar el audio de tus videos';
 
   @override
+  String get contentPreferencesMusicMode => 'Modo música';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Desactiva la limpieza de ruido que aplasta los instrumentos. Mejor para la música, más áspero para las voces.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Etiquetas de la cuenta';
 
   @override

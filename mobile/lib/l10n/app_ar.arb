@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "استخدام لغة الجهاز (افتراضي)",
     "contentPreferencesAudioSharing": "إتاحة صوتي للاستخدام",
     "contentPreferencesAudioSharingSubtitle": "عند التفعيل، يمكن للآخرين استخدام الصوت من فيديوهاتك",
+    "contentPreferencesMusicMode": "وضع الموسيقى",
+    "contentPreferencesMusicModeSubtitle": "يوقف تنقية الضوضاء التي تُخفّت صوت الآلات الموسيقية. أفضل للموسيقى، وأقسى على الأصوات.",
     "contentPreferencesAccountLabels": "وسوم الحساب",
     "contentPreferencesAccountLabelsEmpty": "ضع وسومًا لمحتواك",
     "contentPreferencesAccountContentLabels": "وسوم محتوى الحساب",

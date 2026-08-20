@@ -156,6 +156,8 @@
   "contentPreferencesUseDeviceLanguage": "ڈیوائس کی زبان استعمال کریں (ڈیفالٹ)",
   "contentPreferencesAudioSharing": "میری آڈیو دوبارہ استعمال کے لیے دستیاب کریں",
   "contentPreferencesAudioSharingSubtitle": "فعال ہونے پر دوسرے لوگ آپ کی ویڈیوز کی آڈیو استعمال کر سکتے ہیں",
+  "contentPreferencesMusicMode": "موسیقی موڈ",
+  "contentPreferencesMusicModeSubtitle": "شور کی وہ صفائی بند کر دیتا ہے جو سازوں کو دبا دیتی ہے۔ موسیقی کے لیے بہتر، آوازوں کے لیے کچھ کھردرا۔",
   "contentPreferencesAccountLabels": "اکاؤنٹ لیبلز",
   "contentPreferencesAccountLabelsEmpty": "اپنے مواد کو خود لیبل کریں",
   "contentPreferencesAccountContentLabels": "اکاؤنٹ مواد لیبلز",

@@ -51,10 +51,14 @@ abstract class CameraService {
   /// (default: front).
   /// [enableAutoLensSwitch] enables automatic lens switching based on zoom
   /// level (default: true).
+  /// [preferUnprocessedAudio] captures the microphone without the platform's
+  /// speech-tuned noise suppression, so instruments survive at their real
+  /// level (default: false). iOS only — see `MusicModePreferenceService`.
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   });
 
   /// Releases camera resources and cleans up.

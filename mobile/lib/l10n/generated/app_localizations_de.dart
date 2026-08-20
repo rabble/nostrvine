@@ -388,6 +388,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn aktiviert, können andere Audio aus deinen Videos verwenden';
 
   @override
+  String get contentPreferencesMusicMode => 'Musikmodus';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Schaltet die Rauschunterdrückung ab, die Instrumente plattmacht. Besser für Musik, rauer für Stimmen.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Konto-Labels';
 
   @override

@@ -385,6 +385,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Als dit aanstaat kunnen anderen audio uit je video\'s gebruiken';
 
   @override
+  String get contentPreferencesMusicMode => 'Muziekmodus';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Zet de ruisonderdrukking uit die instrumenten platslaat. Beter voor muziek, ruwer voor stemmen.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Accountlabels';
 
   @override

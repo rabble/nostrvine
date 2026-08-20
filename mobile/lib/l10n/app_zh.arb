@@ -156,6 +156,8 @@
   "contentPreferencesUseDeviceLanguage": "跟随系统语言（默认）",
   "contentPreferencesAudioSharing": "允许他人二次使用我的音频",
   "contentPreferencesAudioSharingSubtitle": "开启后，其他人可以使用你视频中的音频",
+  "contentPreferencesMusicMode": "音乐模式",
+  "contentPreferencesMusicModeSubtitle": "关掉会压扁乐器声的降噪处理。更适合音乐，人声会糙一点。",
   "contentPreferencesAccountLabels": "账号标签",
   "contentPreferencesAccountLabelsEmpty": "为自己的内容打标签",
   "contentPreferencesAccountContentLabels": "账号内容标签",
