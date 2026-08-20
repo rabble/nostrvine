@@ -1,0 +1,18 @@
+{
+  "artifacts": {
+    "productAnalytics.ts": {
+      "path": "analytics/generated/productAnalytics.ts",
+      "sha256": "66f803080fc42a9310a97ee087a8ae0d72d0c74d80f8a3a2d8bd748be9439c48"
+    },
+    "product_analytics.dart": {
+      "path": "analytics/generated/product_analytics.dart",
+      "sha256": "e3ba00fd68243f84dd2299893acf698b2db90c239c33e86d3c9932cbb1ce971a"
+    },
+    "product_analytics.rs": {
+      "path": "analytics/generated/product_analytics.rs",
+      "sha256": "fe7008ce56325e04df8543d85435fb932f31ff23381817fdb3897dcce2d0b918"
+    }
+  },
+  "contract_commit": "0aa587e38a9aea3bee70fd1d0bf492dac8266dd4",
+  "schema_version": 2
+}

@@ -112,6 +112,30 @@ esac
           );
         });
 
+        test('runs app CI for an analytics contract lock-only change', () {
+          expectScope(
+            runDetector(
+              event: event,
+              changedFiles: ['analytics-contract.lock'],
+              changedTotal: 1,
+            ),
+            app: true,
+            native: false,
+          );
+        });
+
+        test('runs app CI for an analytics contract manifest-only change', () {
+          expectScope(
+            runDetector(
+              event: event,
+              changedFiles: ['analytics-contract.manifest.json'],
+              changedTotal: 1,
+            ),
+            app: true,
+            native: false,
+          );
+        });
+
         test('skips app CI for a codemagic.yaml-only change', () {
           // Intentionally out of app-scope so a config-only edit does not
           // drag the full matrix. The Codemagic group guard must therefore
