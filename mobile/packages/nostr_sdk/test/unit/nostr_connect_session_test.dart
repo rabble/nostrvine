@@ -1453,13 +1453,22 @@ class _BlackholeServer {
 ///
 /// A socket the client closes takes a turn or two to register server-side, so
 /// asserting straight after a teardown reads the pre-close count.
+///
+/// Throws rather than returning on timeout: callers use this to establish a
+/// precondition, and giving up quietly would let the scenario be set up wrong
+/// and the test pass without exercising anything.
 Future<void> _waitForSockets(
   TestRelayServer server, {
   required int open,
 }) async {
   final deadline = DateTime.now().add(const Duration(seconds: 2));
-  while (server.openConnectionCount != open &&
-      DateTime.now().isBefore(deadline)) {
+  while (server.openConnectionCount != open) {
+    if (DateTime.now().isAfter(deadline)) {
+      throw StateError(
+        'server still holds ${server.openConnectionCount} open sockets, '
+        'expected $open',
+      );
+    }
     await Future<void>.delayed(const Duration(milliseconds: 10));
   }
 }

@@ -440,7 +440,12 @@ class NostrConnectSession {
     try {
       relay.disconnect();
       relay.dispose();
-    } catch (_) {}
+    } catch (e) {
+      logger(
+        '[NostrConnectSession] Error shutting down relay '
+        '${relay.relayStatus.addr}: $e',
+      );
+    }
   }
 
   void _setState(NostrConnectState newState) {

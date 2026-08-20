@@ -23,15 +23,19 @@ class TestRelayServer {
   /// How many sockets clients have opened over this server's lifetime.
   int connectionCount = 0;
 
-  /// How many of those the client has since closed.
+  /// How many of those have since closed, from either end — a client
+  /// teardown, [dropConnections], or [close].
   int closedConnectionCount = 0;
 
   bool _closed = false;
 
   String get url => 'ws://127.0.0.1:${_server.port}';
 
-  /// Sockets a client opened and never closed — the leak this harness exists
-  /// to catch.
+  /// Sockets that are still open — the leak this harness exists to catch.
+  ///
+  /// A server-side drop counts as closed too, so a test that calls
+  /// [dropConnections] and then sees this climb back is watching the client
+  /// dial a socket nothing is left holding.
   int get openConnectionCount => connectionCount - closedConnectionCount;
 
   static Future<TestRelayServer> start({int? port}) async {
