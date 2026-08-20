@@ -171,15 +171,15 @@ In order of preference:
    `¡Bienvenido a Divine!`, Portuguese `Bem-vindo ao Divine!` and Italian
    `Benvenuto su Divine!` greet every reader as a man, while French
    `Bienvenue sur Divine !` and Polish `Witaj w Divine!` say the same thing
-   with no gender at all. German has the same fix available for its 27
-   `Nutzer` keys — address the person (`wenn du jemanden blockierst`) rather
-   than naming the noun.
+   with no gender at all. German has the same fix available for the 44 keys
+   that name a `Nutzer` or `Benutzer` — address the person (`wenn du jemanden
+   blockierst`) rather than naming the noun.
 2. **When the language makes you choose, take the non-gendered form** —
    Spanish and Portuguese `-e` — over the masculine, and over the
    parenthesis-and-slash pile-up. **34 keys across six locales currently
    pile up**: `fr` `invité(e)`, `ro` `invitat(ă)`, `pt` `convidado(a)`, `it`
-   `bloccato/a`, `es` `eliminado/a`, and 10 Polish notification lines like
-   `{actorName} polubił(a) Twoje wideo`.
+   `bloccato/a`, `es` `eliminado/a`, and 10 Polish keys — 8 of them
+   notification lines like `{actorName} polubił(a) Twoje wideo`.
 3. **When the person's gender is genuinely unknown, do not guess and do not
    offer both.** The Polish notification strings are the hard case: the actor
    is any user in the world. The fix is a construction that does not inflect
