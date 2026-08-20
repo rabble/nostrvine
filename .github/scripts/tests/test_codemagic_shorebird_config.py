@@ -420,7 +420,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
                 continue
             command_lines = [line]
             cursor = index
-            while command_lines[-1].rstrip().endswith("\"):
+            while command_lines[-1].rstrip().endswith("\\"):
                 cursor += 1
                 command_lines.append(lines[cursor])
             commands.append("
