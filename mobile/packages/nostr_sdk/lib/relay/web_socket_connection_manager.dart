@@ -115,7 +115,6 @@ class WebSocketConnectionManager {
   bool _disposed = false;
 
   // Timers
-  Timer? _reconnectTimer;
   Timer? _heartbeatTimer;
 
   // Activity tracking for idle detection
@@ -235,8 +234,6 @@ class WebSocketConnectionManager {
 
       _setState(ConnectionState.connected);
       _reconnectAttempts = 0;
-      _reconnectTimer?.cancel();
-      _reconnectTimer = null;
 
       // Track connection time as initial activity
       _lastActivityAt = DateTime.now();
@@ -334,8 +331,6 @@ class WebSocketConnectionManager {
   /// Disconnect from the WebSocket server
   Future<void> disconnect() async {
     _shouldReconnect = false;
-    _reconnectTimer?.cancel();
-    _reconnectTimer = null;
     _stopHeartbeat();
 
     await _closeChannel();
@@ -545,8 +540,6 @@ class WebSocketConnectionManager {
   /// Reset reconnection state, allowing fresh attempts
   void resetReconnection() {
     _reconnectAttempts = 0;
-    _reconnectTimer?.cancel();
-    _reconnectTimer = null;
   }
 
   /// Force immediate reconnection, resetting backoff
