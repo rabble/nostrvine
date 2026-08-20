@@ -141,13 +141,6 @@ class WebSocketConnectionManager {
   /// Whether currently connected
   bool get isConnected => _state == ConnectionState.connected;
 
-  /// Whether [dispose] has been called.
-  ///
-  /// A disposed manager never opens another socket: its streams are closed
-  /// and the relay that owned it has already dropped its reference, so
-  /// anything it connected would be unreachable and therefore uncloseable.
-  bool get isDisposed => _disposed;
-
   /// Number of reconnection attempts made
   int get reconnectAttempts => _reconnectAttempts;
 
@@ -314,9 +307,7 @@ class WebSocketConnectionManager {
 
   void _onStreamError(dynamic error) {
     log('Stream error: $error');
-    if (!_errorController.isClosed) {
-      _errorController.add('Stream error: $error');
-    }
+    _emitError('Stream error: $error');
     _handleDisconnect();
   }
 
@@ -429,7 +420,7 @@ class WebSocketConnectionManager {
       return true;
     } catch (e) {
       log('Send error: $e');
-      _errorController.add('Send error: $e');
+      _emitError('Send error: $e');
       _handleDisconnect();
       return false;
     }
@@ -448,7 +439,7 @@ class WebSocketConnectionManager {
       encoded = jsonEncode(data);
     } catch (e) {
       log('JSON encode error: $e');
-      _errorController.add('JSON encode error: $e');
+      _emitError('JSON encode error: $e');
       return false;
     }
 
@@ -467,7 +458,7 @@ class WebSocketConnectionManager {
       if (_deadlineExpired(deadline)) return false;
       if (_reconnectAttempts >= config.maxReconnectAttempts) {
         log('Max reconnect attempts reached for $url');
-        _errorController.add('Max reconnect attempts reached');
+        _emitError('Max reconnect attempts reached');
         return false;
       }
 
