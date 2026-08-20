@@ -105,6 +105,35 @@ void main() {
       expect(factory.createdChannels, hasLength(1));
     });
 
+    // The pool drops a relay from every map at the moment it disposes it, so
+    // this is the belt to the pool flag's braces: a caller that still holds a
+    // `Relay` reference — `checkAndGenTempRelay` and `getRelay` both hand one
+    // out — must not be able to bring a dead relay back to life.
+    test('a disposed relay opens no further socket', () async {
+      final factory = FakeWebSocketChannelFactory();
+      final relay = RelayBase(
+        relayUrl,
+        RelayStatus(relayUrl),
+        channelFactory: factory,
+      );
+      expect(await relay.connect(), isTrue);
+      expect(factory.createdChannels, hasLength(1));
+
+      relay.dispose();
+
+      // forceReconnect falls through to connect() once dispose has dropped
+      // the connection manager, and connect() used to create a brand new one.
+      expect(await relay.forceReconnect(), isFalse);
+      expect(await relay.connect(), isFalse);
+      expect(
+        factory.createdChannels,
+        hasLength(1),
+        reason:
+            'a socket opened by a disposed relay has no owner left to '
+            'close it, and neither has the heartbeat timer it arms',
+      );
+    });
+
     test('add() after teardown began does not connect the relay', () async {
       await setUpPool();
       nostr.relayPool.beginClose();
