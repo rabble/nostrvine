@@ -431,6 +431,10 @@ const _knownUntranslatedDebt = <String>{
   // pass tracked in #7673, and required before any non-English campaign.
   'exploreFeaturedPaidPartnership',
   'exploreFeaturedSponsoredPillSemanticLabel',
+  // Create-account marketing opt-in copy is provisional (reuses the waitlist
+  // string) pending product approval in review; translation deferred until the
+  // final copy lands.
+  'authCreateAccountMarketingOptIn',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.
 };

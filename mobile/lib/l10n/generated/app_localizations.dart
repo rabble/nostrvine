@@ -5531,6 +5531,12 @@ abstract class AppLocalizations {
   /// **'Create account'**
   String get authCreateAccountTitle;
 
+  /// No description provided for @authCreateAccountMarketingOptIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send me Divine inspiration'**
+  String get authCreateAccountMarketingOptIn;
+
   /// No description provided for @authBackToInviteCode.
   ///
   /// In en, this message translates to:

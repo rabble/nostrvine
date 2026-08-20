@@ -3155,6 +3155,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get authCreateAccountTitle => 'Buat akun';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Kembali ke kode undangan';
 
   @override

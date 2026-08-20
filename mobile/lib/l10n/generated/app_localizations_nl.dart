@@ -3235,6 +3235,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authCreateAccountTitle => 'Account aanmaken';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'Terug naar invite-code';
 
   @override

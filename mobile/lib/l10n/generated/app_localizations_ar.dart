@@ -3192,6 +3192,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authCreateAccountTitle => 'إنشاء حساب';
 
   @override
+  String get authCreateAccountMarketingOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authBackToInviteCode => 'العودة إلى رمز الدعوة';
 
   @override
