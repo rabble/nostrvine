@@ -98,6 +98,37 @@ void main() {
       expect(config.getDefault(FeatureFlag.curatedLists), isTrue);
     });
 
+    test('post-publish experiment has a build-time off switch', () {
+      const config = BuildConfiguration();
+
+      expect(
+        config.getDefault(FeatureFlag.postPublishConfirmationExperiment),
+        const bool.fromEnvironment(
+          'FF_POST_PUBLISH_CONFIRMATION_EXPERIMENT',
+          defaultValue: true,
+        ),
+      );
+      expect(
+        config.getEnvironmentKey(
+          FeatureFlag.postPublishConfirmationExperiment,
+        ),
+        'FF_POST_PUBLISH_CONFIRMATION_EXPERIMENT',
+      );
+      expect(
+        config.getDefault(FeatureFlag.postPublishConfirmationTreatment),
+        const bool.fromEnvironment(
+          'FF_POST_PUBLISH_CONFIRMATION_TREATMENT',
+          defaultValue: true,
+        ),
+      );
+      expect(
+        config.getEnvironmentKey(
+          FeatureFlag.postPublishConfirmationTreatment,
+        ),
+        'FF_POST_PUBLISH_CONFIRMATION_TREATMENT',
+      );
+    });
+
     test('integratedApps should map to FF_INTEGRATED_APPS env var', () {
       const config = BuildConfiguration();
 

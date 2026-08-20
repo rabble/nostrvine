@@ -234,6 +234,58 @@ void main() {
     );
 
     test(
+      'disabled experiment stays in control and records no exposure',
+      () async {
+        final exposures = <PostPublishVariant>[];
+        final disabledExperiment = PostPublishExperiment(
+          analytics: analytics,
+          isEnabled: () => false,
+          recordExposure: (variant) async => exposures.add(variant),
+        );
+        final treatmentUser = _pubkeyForVariant(PostPublishVariant.viewShare);
+        final variant = disabledExperiment.variantForUser(treatmentUser);
+
+        await disabledExperiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: variant,
+          isExperimentExposure: true,
+        );
+
+        expect(variant, PostPublishVariant.control);
+        expect(disabledExperiment.completed({'publish-1'}), isNull);
+        expect(exposures, isEmpty);
+        expect(analytics.events.single.parameters['variant'], 'control');
+      },
+    );
+
+    test(
+      'A/A mode records assignments but gives both groups control',
+      () async {
+        final exposures = <PostPublishVariant>[];
+        final aaExperiment = PostPublishExperiment(
+          analytics: analytics,
+          isTreatmentEnabled: () => false,
+          recordExposure: (variant) async => exposures.add(variant),
+        );
+        final treatmentUser = _pubkeyForVariant(PostPublishVariant.viewShare);
+        final variant = aaExperiment.variantForUser(treatmentUser);
+
+        await aaExperiment.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: variant,
+          isExperimentExposure: true,
+        );
+
+        expect(variant, PostPublishVariant.viewShare);
+        expect(exposures, [PostPublishVariant.viewShare]);
+        expect(aaExperiment.completed({'publish-1'}), isNull);
+        expect(analytics.events.single.parameters['variant'], 'view_share');
+      },
+    );
+
+    test(
       'an exposure recording failure does not affect the publish flow',
       () async {
         final experimentWithFailure = PostPublishExperiment(
