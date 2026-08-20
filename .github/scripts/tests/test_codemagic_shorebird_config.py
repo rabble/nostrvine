@@ -124,7 +124,10 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertEqual(2, self.contents.count("shorebird_release_preflight.rb"))
         self.assertNotIn("shorebird releases info", self.contents)
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
-        self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
+        commands = self._shorebird_release_commands()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
 
     def test_ios_release_rejects_closed_app_store_version_before_shorebird(self) -> None:
         workflow = self._workflow_block("ios-build")
@@ -404,11 +407,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             return self.contents[start:]
         return self.contents[start : start + 1 + next_workflow.start()]
 
-    def _shorebird_patch_commands(self) -> list[str]:
+    def _shorebird_commands(self, subcommand: str) -> list[str]:
         commands = []
         lines = self.contents.splitlines()
+        command_pattern = re.compile(rf"^\s+shorebird {re.escape(subcommand)} ")
         for index, line in enumerate(lines):
-            if "shorebird patch " not in line:
+            if command_pattern.match(line) is None:
                 continue
             command_lines = [line]
             cursor = index
@@ -417,6 +421,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
                 command_lines.append(lines[cursor])
             commands.append("\n".join(command_lines))
         return commands
+
+    def _shorebird_patch_commands(self) -> list[str]:
+        return self._shorebird_commands("patch")
+
+    def _shorebird_release_commands(self) -> list[str]:
+        return self._shorebird_commands("release")
 
 
 if __name__ == "__main__":
