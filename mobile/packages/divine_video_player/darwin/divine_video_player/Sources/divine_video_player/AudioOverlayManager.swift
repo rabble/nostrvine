@@ -52,9 +52,9 @@ final class AudioOverlayManager {
 
     /// Sets volume for the overlay at `index`.
     func setTrackVolume(at index: Int, volume: Float) {
-        guard index >= 0, index < overlays.count else { 
+        guard index >= 0, index < overlays.count else {
             logger.warning("setTrackVolume: index out of bounds")
-            return 
+            return
         }
         logger.debug("setTrackVolume: index \(index) volume \(volume)")
         overlays[index].player.volume = volume
