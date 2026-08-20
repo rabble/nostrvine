@@ -4287,6 +4287,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przekaźnik nie przyjął tego żądania usunięcia. Spróbuj ponownie za chwilę.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Nie udało się połączyć z przekaźnikiem. Sprawdź połączenie i spróbuj ponownie.';
 
@@ -7601,6 +7605,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Nie udało nam się potwierdzić usunięcia konta u żadnego przekaźnika. Sprawdź połączenie i spróbuj ponownie.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Usuń wszystkie treści';

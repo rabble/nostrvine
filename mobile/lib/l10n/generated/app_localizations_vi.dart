@@ -4141,6 +4141,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Relay không chấp nhận yêu cầu xóa này. Thử lại sau ít phút.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Không kết nối được với relay. Kiểm tra kết nối của bạn rồi thử lại.';
 
@@ -7401,6 +7405,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Chúng tôi không xác nhận được việc xóa tài khoản với relay nào. Kiểm tra kết nối và thử lại.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';

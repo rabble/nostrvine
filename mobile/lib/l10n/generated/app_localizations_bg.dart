@@ -4216,6 +4216,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Релето не прие тази заявка за изтриване. Опитай пак след малко.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Не можем да достигнем релето. Провери връзката си и опитай пак.';
 
@@ -7498,6 +7502,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Не успяхме да потвърдим изтриването на профила с нито едно реле. Провери връзката си и опитай пак.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';

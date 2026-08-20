@@ -7,6 +7,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// User-facing class of an account deletion failure.
@@ -15,6 +16,7 @@ enum DeleteAccountFailureReason {
   noPubkey,
   signingFailed,
   vanishNotConfirmed,
+  accountRestricted,
   accountChanged,
   accountChangedAfterDeletion,
   unexpected,
@@ -129,6 +131,8 @@ class AccountDeletionService {
     timeout: Duration(seconds: 30),
     retryDelays: [Duration(seconds: 2), Duration(seconds: 5)],
   );
+  static const _interBatchDelay = Duration(milliseconds: 500);
+  static const _rateLimitRetryDelay = Duration(minutes: 1);
 
   /// Kinds this flow's own deletion machinery produces, excluded from the sweep.
   ///
@@ -152,6 +156,20 @@ class AccountDeletionService {
     if (expectedPubkey != null &&
         _authService.currentPublicKeyHex != expectedPubkey) {
       throw const AccountChangedDuringDeletion();
+    }
+  }
+
+  void _assertSignerStillMatches(
+    String? expectedPubkey, {
+    required bool anyConfirmed,
+  }) {
+    try {
+      _assertSignerMatches(expectedPubkey);
+    } on AccountChangedDuringDeletion {
+      if (anyConfirmed) {
+        throw const AccountChangedAfterDeletion();
+      }
+      rethrow;
     }
   }
 
@@ -250,7 +268,12 @@ class AccountDeletionService {
           category: LogCategory.system,
         );
         return DeleteAccountResult.failure(
-          DeleteAccountFailureReason.vanishNotConfirmed,
+          isAccountRestrictedOutcome(
+                outcome,
+                trustedRelayUrl: _nostrService.defaultRelayUrl,
+              )
+              ? DeleteAccountFailureReason.accountRestricted
+              : DeleteAccountFailureReason.vanishNotConfirmed,
           diagnosticError: outcome.summary,
         );
       }
@@ -324,16 +347,19 @@ class AccountDeletionService {
         event,
         timeout: _vanishPublish.timeout,
       );
-      try {
-        _assertSignerMatches(expectedPubkey);
-      } on AccountChangedDuringDeletion {
-        if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
-          throw const AccountChangedAfterDeletion();
-        }
-        rethrow;
-      }
+      _assertSignerStillMatches(
+        expectedPubkey,
+        anyConfirmed: outcome.confirmed || _isAlreadyVanishedOutcome(outcome),
+      );
 
       if (outcome.confirmed || _isAlreadyVanishedOutcome(outcome)) {
+        return outcome;
+      }
+
+      if (isAccountRestrictedOutcome(
+        outcome,
+        trustedRelayUrl: _nostrService.defaultRelayUrl,
+      )) {
         return outcome;
       }
 
@@ -452,7 +478,9 @@ class AccountDeletionService {
       eventsByKind.putIfAbsent(event.kind, () => []).add(event);
     }
 
-    for (final entry in eventsByKind.entries) {
+    final batches = eventsByKind.entries.toList(growable: false);
+    for (var batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      final entry = batches[batchIndex];
       final kind = entry.key;
       final kindEvents = entry.value;
 
@@ -472,14 +500,31 @@ class AccountDeletionService {
       }
 
       if (deleteEvent != null) {
-        final outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
-        try {
-          _assertSignerMatches(expectedPubkey);
-        } on AccountChangedDuringDeletion {
-          if (outcome.confirmed || successCount > 0) {
-            throw const AccountChangedAfterDeletion();
-          }
-          rethrow;
+        var outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        if (isRateLimitedOutcome(outcome)) {
+          await _retryDelay(_rateLimitRetryDelay);
+          _assertSignerStillMatches(
+            expectedPubkey,
+            anyConfirmed: successCount > 0,
+          );
+          outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        }
+        _assertSignerStillMatches(
+          expectedPubkey,
+          anyConfirmed: outcome.confirmed || successCount > 0,
+        );
+        if (isAccountRestrictedOutcome(
+          outcome,
+          trustedRelayUrl: _nostrService.defaultRelayUrl,
+        )) {
+          Log.warning(
+            'Stopping batch deletion after the configured relay reported an '
+            'account restriction',
+            name: 'AccountDeletionService',
+            category: LogCategory.system,
+          );
+          onProgress?.call(successCount, total);
+          return successCount;
         }
         if (outcome.confirmed) {
           successCount += kindEvents.length;
@@ -499,6 +544,13 @@ class AccountDeletionService {
       }
 
       onProgress?.call(successCount, total);
+      if (batchIndex < batches.length - 1) {
+        await _retryDelay(_interBatchDelay);
+        _assertSignerStillMatches(
+          expectedPubkey,
+          anyConfirmed: successCount > 0,
+        );
+      }
     }
 
     return successCount;

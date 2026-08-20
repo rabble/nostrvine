@@ -4235,6 +4235,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le relais n\'a pas accepté cette demande de suppression. Réessaie dans un instant.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Impossible de joindre le relais. Vérifie ta connexion et réessaie.';
 
@@ -7526,6 +7530,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'On n\'a pas pu confirmer la suppression du compte auprès d\'un relais. Vérifie ta connexion et réessaie.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Supprimer tout le contenu';

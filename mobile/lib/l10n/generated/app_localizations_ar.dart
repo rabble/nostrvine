@@ -4132,6 +4132,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يقبل الريلاي طلب الحذف هذا. حاول مرة أخرى بعد قليل.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'تعذّر الوصول إلى الريلاي. تحقق من اتصالك وحاول مرة أخرى.';
 
@@ -7371,6 +7375,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'تعذّر علينا تأكيد حذف الحساب مع أي ريلاي. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';

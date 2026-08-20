@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -584,9 +585,9 @@ Future<void> executeAccountDeletion({
       dismissProgressSheet();
       if (context.mounted) {
         final text = context.l10n.deleteAccountReauthRequired;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(text, error: true),
+        );
         announceOutcome(text);
       }
       return;
@@ -796,13 +797,32 @@ Future<void> executeAccountDeletion({
                 accountChangedAfterDeletionText:
                     accountChangedAfterDeletionText,
                 relayConfirmationFailedText: relayConfirmationFailedText,
+                accountRestrictedText:
+                    context.l10n.deleteAccountAccountRestricted,
                 reauthRequiredText: context.l10n.deleteAccountReauthRequired,
                 genericFailureText:
                     context.l10n.deleteAccountContentDeletionFailed,
               );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        final showSupportAction =
+            !burnCommitted &&
+            result.failureReason ==
+                DeleteAccountFailureReason.accountRestricted;
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            text,
+            error: true,
+            actionLabel: showSupportAction
+                ? context.l10n.supportContactSupport
+                : null,
+            onActionPressed: showSupportAction
+                ? () {
+                    messenger.hideCurrentSnackBar();
+                    context.push(RoutePaths.supportCenter);
+                  }
+                : null,
+          ),
+        );
         announceOutcome(text);
       }
     }
@@ -819,6 +839,7 @@ String _deleteAccountFailureText(
   required String accountChangedText,
   required String accountChangedAfterDeletionText,
   required String relayConfirmationFailedText,
+  required String accountRestrictedText,
   required String reauthRequiredText,
   required String genericFailureText,
 }) {
@@ -828,6 +849,7 @@ String _deleteAccountFailureText(
       accountChangedAfterDeletionText,
     DeleteAccountFailureReason.vanishNotConfirmed =>
       relayConfirmationFailedText,
+    DeleteAccountFailureReason.accountRestricted => accountRestrictedText,
     DeleteAccountFailureReason.notAuthenticated => reauthRequiredText,
     DeleteAccountFailureReason.noPubkey ||
     DeleteAccountFailureReason.signingFailed ||

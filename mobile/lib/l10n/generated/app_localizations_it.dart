@@ -4217,6 +4217,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il relay non ha accettato questa richiesta di eliminazione. Riprova tra poco.';
 
   @override
+  String get shareMenuDeleteFailedAccountRestricted =>
+      'Your account is restricted, so this delete request couldn\'t be sent. Contact support for help deleting it.';
+
+  @override
   String get shareMenuDeleteFailedRelayNoResponse =>
       'Non è stato possibile raggiungere il relay. Controlla la connessione e riprova.';
 
@@ -7502,6 +7506,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get deleteAccountRelayConfirmationFailed =>
       'Non siamo riusciti a confermare l\'eliminazione dell\'account con nessun relay. Controlla la connessione e riprova.';
+
+  @override
+  String get deleteAccountAccountRestricted =>
+      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Elimina tutti i contenuti';

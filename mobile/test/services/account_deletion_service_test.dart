@@ -78,6 +78,22 @@ const _alreadyVanished = PublishOutcome(
   noResponseFrom: <String>[],
 );
 
+const _accountRestricted = PublishOutcome(
+  eventId: 'restricted',
+  acceptedBy: <String>[],
+  rejectedBy: {'wss://relay.example.com': 'blocked: pubkey is suspended'},
+  noResponseFrom: <String>[],
+);
+
+const _rateLimited = PublishOutcome(
+  eventId: 'rate-limited',
+  acceptedBy: <String>[],
+  rejectedBy: {
+    'wss://relay.example.com': 'rate-limited: too many events, slow down',
+  },
+  noResponseFrom: <String>[],
+);
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
@@ -132,6 +148,9 @@ void main() {
       when(
         () => mockNostrService.connectedRelays,
       ).thenReturn(['wss://relay.example.com']);
+      when(
+        () => mockNostrService.defaultRelayUrl,
+      ).thenReturn('wss://relay.example.com');
       when(
         () => mockNostrService.publishEventAwaitOk(any()),
       ).thenAnswer((_) async => _confirmed);
@@ -323,6 +342,44 @@ void main() {
         DeleteAccountFailureReason.vanishNotConfirmed,
       );
       expect(result.diagnosticError, contains('rejected'));
+    });
+
+    test('deleteAccount does not retry an account restriction', () async {
+      final expectedEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 62,
+        tags: [
+          ['relay', 'ALL_RELAYS'],
+        ],
+        content: 'User requested account deletion via Divine app',
+      );
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => expectedEvent);
+      when(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async => _accountRestricted);
+
+      final result = await service.deleteAccount();
+
+      expect(result.success, isFalse);
+      expect(
+        result.failureReason,
+        DeleteAccountFailureReason.accountRestricted,
+      );
+      verify(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).called(1);
     });
 
     test(
@@ -839,6 +896,205 @@ void main() {
       );
 
       test(
+        'batch deletion retries once after a rate-limit rejection',
+        () async {
+          final delays = <Duration>[];
+          final retryingService = AccountDeletionService(
+            nostrService: mockNostrService,
+            authService: mockAuthService,
+            retryDelay: (delay) async => delays.add(delay),
+          );
+          final userEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1,
+            tags: [],
+            content: 'note',
+            id: 'rate_limited_note',
+          );
+          final kind5Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', userEvent.id],
+              ['k', '1'],
+            ],
+            content: 'deletion',
+          );
+          final nip62Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          );
+          when(
+            () => mockNostrService.queryEvents(any()),
+          ).thenAnswer((_) async => [userEvent]);
+          var createCalls = 0;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createCalls++ == 0 ? kind5Event : nip62Event,
+          );
+          var batchPublishes = 0;
+          when(() => mockNostrService.publishEventAwaitOk(any())).thenAnswer((
+            _,
+          ) async {
+            batchPublishes++;
+            return batchPublishes == 1 ? _rateLimited : _confirmed;
+          });
+
+          final result = await retryingService.deleteAccount();
+
+          expect(result.success, isTrue);
+          expect(result.deletedEventsCount, 1);
+          expect(batchPublishes, 2);
+          expect(delays, contains(const Duration(minutes: 1)));
+        },
+      );
+
+      test(
+        'restricted batch stops the sweep before publishing another kind',
+        () async {
+          final delays = <Duration>[];
+          final restrictedService = AccountDeletionService(
+            nostrService: mockNostrService,
+            authService: mockAuthService,
+            retryDelay: (delay) async => delays.add(delay),
+          );
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+                id: 'restricted_note',
+              ),
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 7,
+                tags: const [],
+                content: 'reaction',
+                id: 'unattempted_reaction',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _accountRestricted);
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => _accountRestricted);
+
+          final result = await restrictedService.deleteAccount();
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountRestricted,
+          );
+          verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
+          expect(delays, isEmpty);
+        },
+      );
+
+      test(
+        'reports partial deletion when the account changes during the '
+        'inter-batch delay after a batch was confirmed',
+        () async {
+          var current = testPublicKey;
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenAnswer((_) => current);
+
+          final delays = <Duration>[];
+          final pacingService = AccountDeletionService(
+            nostrService: mockNostrService,
+            authService: mockAuthService,
+            retryDelay: (delay) async {
+              delays.add(delay);
+              // Swap the signed-in account while the sweep waits between
+              // batches, after batch 0 has already been confirmed on relays.
+              current = 'a_different_pubkey_than_confirmed';
+            },
+          );
+
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+                id: 'kind1_note',
+              ),
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 7,
+                tags: const [],
+                content: 'reaction',
+                id: 'kind7_reaction',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _confirmed);
+
+          final result = await pacingService.deleteAccount(
+            expectedPubkey: testPublicKey,
+          );
+
+          // Two kind-5 deletion requests were already confirmed on relays
+          // before the swap, so the user must be told deletion began, not
+          // that nothing happened.
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            DeleteAccountFailureReason.accountChangedAfterDeletion,
+          );
+          expect(delays, contains(const Duration(milliseconds: 500)));
+        },
+      );
+
+      test(
         'batch deletion does not count events when every relay rejects',
         () async {
           // Arrange
@@ -1268,9 +1524,9 @@ void main() {
               content: 'deletion',
             ),
           );
-          when(
-            () => mockNostrService.publishEventAwaitOk(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrService.publishEventAwaitOk(any())).thenAnswer((
+            _,
+          ) async {
             current = 'a_different_pubkey_than_confirmed';
             return _confirmed;
           });
@@ -1284,9 +1540,7 @@ void main() {
             result.failureReason,
             DeleteAccountFailureReason.accountChangedAfterDeletion,
           );
-          verify(
-            () => mockNostrService.publishEventAwaitOk(any()),
-          ).called(1);
+          verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
           verifyNever(
             () => mockNostrService.publishEventAwaitOk(
               any(),

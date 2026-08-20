@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -44,7 +45,15 @@ DeleteAccountConfirmation _divineUsername() => DeleteAccountConfirmation(
 /// Minimal router wrapper so [context.pop()] works inside the sheet.
 Widget _wrapWithRouter(Widget child) {
   final router = GoRouter(
-    routes: [GoRoute(path: '/', builder: (_, state) => child)],
+    routes: [
+      GoRoute(path: '/', builder: (_, state) => child),
+      GoRoute(
+        path: RoutePaths.supportCenter,
+        builder: (_, state) => const Scaffold(
+          body: Text('Support destination'),
+        ),
+      ),
+    ],
   );
   return MaterialApp.router(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -659,6 +668,54 @@ void main() {
         );
       },
     );
+
+    testWidgets('explains when an account restriction blocks deletion', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      ).thenAnswer(
+        (_) async => DeleteAccountResult.failure(
+          DeleteAccountFailureReason.accountRestricted,
+        ),
+      );
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(_englishL10n().deleteAccountAccountRestricted),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(_englishL10n().supportContactSupport));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Support destination'), findsOneWidget);
+    });
 
     testWidgets('shows failure when local data cleanup fails after sign-out', (
       tester,
@@ -1631,10 +1688,7 @@ void main() {
           find.text(l10n.deleteAccountAccountChangedAfterDeletion),
           findsOneWidget,
         );
-        expect(
-          find.text(l10n.deleteAccountAccountChanged),
-          findsNothing,
-        );
+        expect(find.text(l10n.deleteAccountAccountChanged), findsNothing);
         verifyNever(authService.deleteKeycastAccount);
       },
     );
@@ -1688,10 +1742,8 @@ void main() {
         );
         verifyNever(authService.deleteKeycastAccount);
         verifyNever(
-          () => authService.signOut(
-            deleteKeys: true,
-            deleteLocalUserData: true,
-          ),
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
         );
       },
     );
@@ -1746,10 +1798,7 @@ void main() {
       );
       verify(authService.deleteKeycastAccount).called(1);
       verifyNever(
-        () => authService.signOut(
-          deleteKeys: true,
-          deleteLocalUserData: true,
-        ),
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       );
     });
 
@@ -1810,10 +1859,8 @@ void main() {
         );
         expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
         verifyNever(
-          () => authService.signOut(
-            deleteKeys: true,
-            deleteLocalUserData: true,
-          ),
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
         );
       },
     );
