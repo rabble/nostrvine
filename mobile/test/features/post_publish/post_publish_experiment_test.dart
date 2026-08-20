@@ -207,5 +207,51 @@ void main() {
         equals('view_share'),
       );
     });
+
+    test(
+      'records the first-party exposure only for an assigned user',
+      () async {
+        final exposures = <PostPublishVariant>[];
+        final experimentWithExposure = PostPublishExperiment(
+          analytics: analytics,
+          recordExposure: (variant) async => exposures.add(variant),
+        );
+
+        await experimentWithExposure.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: PostPublishVariant.control,
+          isExperimentExposure: true,
+        );
+        await experimentWithExposure.screenShown(
+          publishId: 'reply-1',
+          destination: 'video_reply',
+          variant: PostPublishVariant.control,
+        );
+
+        expect(exposures, [PostPublishVariant.control]);
+      },
+    );
+
+    test(
+      'an exposure recording failure does not affect the publish flow',
+      () async {
+        final experimentWithFailure = PostPublishExperiment(
+          analytics: analytics,
+          recordExposure: (_) => Future<void>.error(StateError('offline')),
+        );
+
+        await expectLater(
+          experimentWithFailure.screenShown(
+            publishId: 'publish-1',
+            destination: 'profile',
+            variant: PostPublishVariant.viewShare,
+            isExperimentExposure: true,
+          ),
+          completes,
+        );
+        expect(analytics.events.single.name, 'post_publish_screen_shown');
+      },
+    );
   });
 }
