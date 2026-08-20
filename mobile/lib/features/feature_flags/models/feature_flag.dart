@@ -80,6 +80,18 @@ enum FeatureFlag {
     'Client Seen-Video Filtering',
     'Demote recently-seen videos in home feeds and drop them from '
         'classics/discovery. Kill-switch for the Aug 2026 campaign load.',
+  ),
+  postPublishConfirmationExperiment(
+    'Post-Publish Confirmation Test',
+    'Enable the 50/50 View and Share confirmation test after publishing. '
+        'Turn off to use the normal control behavior.',
+    audience: FeatureFlagAudience.internal,
+  ),
+  postPublishConfirmationTreatment(
+    'Post-Publish Confirmation Treatment',
+    'Show the View and Share confirmation to its assigned group. Turn off '
+        'while checking that both identical groups measure the same.',
+    audience: FeatureFlagAudience.internal,
   );
 
   const FeatureFlag(
