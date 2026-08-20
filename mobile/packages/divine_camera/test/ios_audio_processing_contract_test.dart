@@ -5,22 +5,53 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+String _readNativeSource(String fileName) {
+  final file = [
+    File('ios/Classes/$fileName'),
+    File('packages/divine_camera/ios/Classes/$fileName'),
+  ].firstWhere((file) => file.existsSync());
+
+  return file.readAsStringSync();
+}
+
+/// Returns the Swift declaration starting at [signature] up to its closing
+/// brace, so an assertion cannot match an identical line elsewhere in the
+/// file, nor a line that sits outside the scope being asserted on.
+String _declarationAt(String source, String signature) {
+  final start = source.indexOf(signature);
+  if (start < 0) {
+    throw StateError('No declaration starting with "$signature".');
+  }
+
+  var depth = 0;
+  for (var i = source.indexOf('{', start); i < source.length; i++) {
+    if (source[i] == '{') depth++;
+    if (source[i] == '}') {
+      depth--;
+      if (depth == 0) return source.substring(start, i + 1);
+    }
+  }
+  throw StateError('Unbalanced braces after "$signature".');
+}
+
 void main() {
   group('iOS unprocessed audio contract', () {
     late final String controllerSource;
     late final String pluginSource;
-
-    String read(String relativePath) {
-      final file = [
-        File('ios/Classes/$relativePath'),
-        File('packages/divine_camera/ios/Classes/$relativePath'),
-      ].firstWhere((file) => file.existsSync());
-      return file.readAsStringSync();
-    }
+    late final String configureAudioSession;
+    late final String attachAudioToSession;
 
     setUpAll(() {
-      controllerSource = read('CameraController.swift');
-      pluginSource = read('DivineCameraPlugin.swift');
+      controllerSource = _readNativeSource('CameraController.swift');
+      pluginSource = _readNativeSource('DivineCameraPlugin.swift');
+      configureAudioSession = _declarationAt(
+        controllerSource,
+        'private func configureAudioSessionForRecording(',
+      );
+      attachAudioToSession = _declarationAt(
+        controllerSource,
+        'private func attachAudioToSessionIfNeeded(',
+      );
     });
 
     test('keeps the speech-tuned mode as the default', () {
@@ -49,9 +80,12 @@ void main() {
     test('configures the session from the resolved mode, not a literal', () {
       // A hardcoded `mode: .videoRecording` here would silently ignore the
       // preference while every other layer reported it as applied.
-      expect(controllerSource, contains('var mode = desiredAudioSessionMode'));
-      expect(controllerSource, contains('mode: mode,'));
-      expect(controllerSource, isNot(contains('mode: .videoRecording,')));
+      expect(
+        configureAudioSession,
+        contains('var mode = desiredAudioSessionMode'),
+      );
+      expect(configureAudioSession, contains('mode: mode,'));
+      expect(configureAudioSession, isNot(contains('mode: .videoRecording,')));
     });
 
     test('falls back to the default mode rather than losing the audio', () {
@@ -59,10 +93,21 @@ void main() {
       // returning false here ships a clip with no audio at all, which is
       // worse than the processing the user opted out of.
       expect(
-        controllerSource,
+        configureAudioSession,
         contains('guard mode != .videoRecording else { throw error }'),
       );
-      expect(controllerSource, contains('falling back to '));
+      expect(configureAudioSession, contains('falling back to '));
+    });
+
+    test('latches a refused mode so the reuse path stops churning', () {
+      // Without this the preference stays set after the fallback, so the
+      // reuse path below reads a permanent mode mismatch and tears the audio
+      // capture session down and back up before every recording — and its
+      // cheap setActive(true) interruption recovery never runs again.
+      expect(
+        configureAudioSession,
+        contains('prefersUnprocessedAudio = false'),
+      );
     });
 
     test(
@@ -71,7 +116,7 @@ void main() {
         // The reuse path returns early when the category already matches, so
         // without the mode check a warm session keeps the old processing.
         expect(
-          controllerSource,
+          attachAudioToSession,
           contains('|| session.mode != desiredAudioSessionMode'),
         );
       },

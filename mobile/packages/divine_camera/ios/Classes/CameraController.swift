@@ -396,6 +396,14 @@ class CameraController: NSObject {
                     mode: mode,
                     options: [.defaultToSpeaker, .allowBluetoothA2DP]
                 )
+                // Stop asking for a mode this device refuses. Left set, the
+                // reuse path in attachAudioToSessionIfNeeded() would read a
+                // permanent mode mismatch and tear the audio capture session
+                // down and back up before every recording, and its cheap
+                // setActive(true) interruption recovery would never run
+                // again. initialize() re-arms the preference, so the refusal
+                // only latches for this capture session.
+                prefersUnprocessedAudio = false
             }
             try audioSession.setActive(true)
             DivineCameraLog.shared.info(
