@@ -981,9 +981,8 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           );
         } else if (!event.archived) {
           final restored = event.restoreCategoryIds[clipId];
-          // Filing into a category clears the archive marker on its own, so
-          // this covers the unarchive too; the write below is then a no-op
-          // that keeps the two paths identical.
+          // Restore the category independently; the archive write below
+          // restores the other half of the state.
           if (restored != null) {
             await _clipLibraryService.setClipCategory(
               clipId: clipId,

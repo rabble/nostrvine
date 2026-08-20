@@ -565,8 +565,8 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                 context.l10n.libraryClipsUnarchived(count),
             };
 
-            // Archiving is the one action that makes clips disappear from
-            // the view the user is looking at, so it gets the undo.
+            // Archiving changes the clip's working status, and may also take
+            // it out of its category, so offer one undo for both changes.
             final canUndo =
                 result.action == ClipsLibraryOrganizeAction.archived;
             _showSnackBar(

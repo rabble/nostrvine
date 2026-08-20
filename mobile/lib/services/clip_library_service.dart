@@ -391,11 +391,8 @@ class ClipLibraryService {
   /// File the clip [clipId] under [categoryId], or pass `null` to remove it
   /// from its current category.
   ///
-  /// Filing into a category also clears the archive marker. Picking a clip
-  /// out of a list and filing it is a request to work with it again; the user
-  /// can archive it afterwards to keep it filed but out of the default view.
-  /// Unfiling (`categoryId == null`) leaves the marker alone: taking a clip
-  /// out of a category is not a request to un-archive it.
+  /// Filing and archiving are independent: changing a clip's category leaves
+  /// its archive marker alone.
   Future<void> setClipCategory({
     required String clipId,
     required String? categoryId,
@@ -405,7 +402,6 @@ class ClipLibraryService {
       (id) => _clipsDao.setClipCategory(
         id: id,
         categoryId: categoryId,
-        clearArchived: categoryId != null,
       ),
     );
   }
