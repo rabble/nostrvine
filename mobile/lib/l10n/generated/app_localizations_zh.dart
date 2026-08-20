@@ -5775,7 +5775,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return '这会删除你与 $displayName 的会话。此操作无法撤销。';
+    return '这会从你的收件箱中移除你与 $displayName 的会话。如果对方再次给你发消息，会开始一个新会话。';
   }
 
   @override
@@ -6966,6 +6966,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => '拒绝并移除';
+
+  @override
+  String get messageRequestBlockButton => '屏蔽';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return '已拒绝 $displayName 的请求';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      '这会移除该请求，并让对方的消息不再进入你的收件箱。他们发来的内容仍可在已屏蔽中查看。';
 
   @override
   String get messageRequestLoadFailed => '无法加载此请求。';

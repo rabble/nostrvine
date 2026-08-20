@@ -5793,7 +5793,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return '$displayNameとの会話が削除されます。この操作は取り消せません。';
+    return '$displayNameとの会話が受信トレイから削除されます。相手からまたメッセージが届くと、新しい会話が始まります。';
   }
 
   @override
@@ -6990,6 +6990,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => '拒否して削除';
+
+  @override
+  String get messageRequestBlockButton => 'ブロック';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return '$displayNameのリクエストを拒否したよ';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'リクエストが消えて、相手のメッセージは受信トレイに届かなくなるよ。送られてきたものはブロック済みでいつでも読めるよ。';
 
   @override
   String get messageRequestLoadFailed => 'このリクエストを読み込めませんでした。';

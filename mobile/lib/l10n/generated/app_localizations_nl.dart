@@ -6128,7 +6128,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Dit verwijdert je gesprek met $displayName. Deze actie kan niet ongedaan worden gemaakt.';
+    return 'Hiermee verwijder je je gesprek met $displayName uit je inbox. Als deze persoon je weer een bericht stuurt, begint er een nieuw gesprek.';
   }
 
   @override
@@ -7385,6 +7385,18 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Weigeren en verwijderen';
+
+  @override
+  String get messageRequestBlockButton => 'Blokkeren';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Verzoek van $displayName geweigerd';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Dit verwijdert het verzoek en houdt hun berichten uit je inbox. Alles wat ze sturen blijft leesbaar onder Geblokkeerd.';
 
   @override
   String get messageRequestLoadFailed =>

@@ -2451,7 +2451,7 @@
     "inboxSupportRowSubtitle": "Bug, moderasi, urusan akun — kami mendengarkan.",
     "inboxSearchEmptyTitle": "Tidak ada hasil",
     "inboxSearchEmptySubtitle": "Coba nama atau kata lain.",
-    "inboxRemoveConfirmBody": "Ini akan menghapus percakapanmu dengan {displayName}. Tindakan ini tidak bisa dibatalkan.",
+    "inboxRemoveConfirmBody": "Ini menghapus percakapanmu dengan {displayName} dari kotak masukmu. Jika dia mengirim pesan lagi, percakapan baru dimulai.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -4801,6 +4801,10 @@
     "inboxRequestsMarkAllRead": "Tandai semua permintaan sudah dibaca",
     "inboxRequestsRemoveAll": "Hapus semua permintaan",
     "messageRequestDeclineAndRemoveButton": "Tolak dan hapus",
+    "messageRequestBlockButton": "Blokir",
+    "messageRequestDeclinedSnackbar": "Permintaan {displayName} ditolak",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+    "messageRequestBlockConfirmBody": "Ini menghapus permintaan dan menjaga pesan mereka tetap di luar kotak masukmu. Semua yang mereka kirim masih bisa dibaca di Diblokir.",
     "messageRequestLoadFailed": "Permintaan ini gagal dimuat.",
     "messageRequestFollowersCount": "{count} Pengikut",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},

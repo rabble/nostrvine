@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Błędy, moderacja, sprawy konta — słuchamy.",
     "inboxSearchEmptyTitle": "Brak wyników",
     "inboxSearchEmptySubtitle": "Spróbuj innego imienia lub słowa.",
-    "inboxRemoveConfirmBody": "Spowoduje to usunięcie rozmowy z {displayName}. Tej operacji nie można cofnąć.",
+    "inboxRemoveConfirmBody": "To usuwa rozmowę z {displayName} z Twojej skrzynki odbiorczej. Jeśli ta osoba znów do Ciebie napisze, rozpocznie się nowa rozmowa.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -4801,6 +4801,10 @@
     "inboxRequestsMarkAllRead": "Oznacz wszystkie prośby jako przeczytane",
     "inboxRequestsRemoveAll": "Usuń wszystkie prośby",
     "messageRequestDeclineAndRemoveButton": "Odrzuć i usuń",
+    "messageRequestBlockButton": "Zablokuj",
+    "messageRequestDeclinedSnackbar": "Odrzucono prośbę od {displayName}",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+    "messageRequestBlockConfirmBody": "To usuwa prośbę i sprawia, że ich wiadomości nie trafiają do Twojej skrzynki odbiorczej. Wszystko, co wyślą, nadal możesz przeczytać w Zablokowane.",
     "messageRequestLoadFailed": "Nie udało się wczytać tej prośby.",
     "messageRequestFollowersCount": "{count} obserwujących",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},

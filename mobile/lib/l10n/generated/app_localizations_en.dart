@@ -6206,7 +6206,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return 'This removes your conversation with $displayName from your inbox. If they message you again, a new conversation starts.';
   }
 
   @override
@@ -7454,6 +7454,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Decline and remove';
+
+  @override
+  String get messageRequestBlockButton => 'Block';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Declined $displayName\'s request';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.';
 
   @override
   String get messageRequestLoadFailed => 'Couldn\'t load this request.';

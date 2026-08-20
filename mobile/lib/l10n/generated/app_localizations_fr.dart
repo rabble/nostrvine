@@ -6186,7 +6186,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Cela supprimera votre conversation avec $displayName. Cette action est irréversible.';
+    return 'Cela retire de votre boîte de réception votre conversation avec $displayName. Si cette personne vous réécrit, une nouvelle conversation commence.';
   }
 
   @override
@@ -7455,6 +7455,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Refuser et supprimer';
+
+  @override
+  String get messageRequestBlockButton => 'Bloquer';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Demande de $displayName refusée';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Cela retire la demande et garde leurs messages hors de votre boîte de réception. Tout ce qu\'ils envoient reste lisible dans Bloqués.';
 
   @override
   String get messageRequestLoadFailed => 'Impossible de charger cette demande.';

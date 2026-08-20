@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bugs, moderatie, accountzaken — we luisteren.",
     "inboxSearchEmptyTitle": "Geen resultaten",
     "inboxSearchEmptySubtitle": "Probeer een andere naam of een ander woord.",
-    "inboxRemoveConfirmBody": "Dit verwijdert je gesprek met {displayName}. Deze actie kan niet ongedaan worden gemaakt.",
+    "inboxRemoveConfirmBody": "Hiermee verwijder je je gesprek met {displayName} uit je inbox. Als deze persoon je weer een bericht stuurt, begint er een nieuw gesprek.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -4801,6 +4801,10 @@
     "inboxRequestsMarkAllRead": "Alle verzoeken als gelezen markeren",
     "inboxRequestsRemoveAll": "Alle verzoeken verwijderen",
     "messageRequestDeclineAndRemoveButton": "Weigeren en verwijderen",
+    "messageRequestBlockButton": "Blokkeren",
+    "messageRequestDeclinedSnackbar": "Verzoek van {displayName} geweigerd",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+    "messageRequestBlockConfirmBody": "Dit verwijdert het verzoek en houdt hun berichten uit je inbox. Alles wat ze sturen blijft leesbaar onder Geblokkeerd.",
     "messageRequestLoadFailed": "Dit berichtverzoek kon niet worden geladen.",
     "messageRequestFollowersCount": "{count} volgers",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},

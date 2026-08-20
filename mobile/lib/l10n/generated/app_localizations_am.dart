@@ -5972,7 +5972,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'ይህ ከ$displayName ጋር ያለህን ውይይት ይሰርዛል። ይህ እርምጃ ሊመለስ አይችልም።';
+    return 'ይህ ከ$displayName ጋር ያለህን ውይይት ከመልእክት ሳጥንህ ያስወግዳል። እንደገና መልእክት ከላከልህ አዲስ ውይይት ይጀምራል።';
   }
 
   @override
@@ -7196,6 +7196,18 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'አትቀበል እና አስወግድ';
+
+  @override
+  String get messageRequestBlockButton => 'አግድ';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'የ$displayName ጥያቄ ውድቅ ተደርጓል';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'ይህ ጥያቄውን ያስወግዳል፣ መልእክቶቻቸውም ወደ መልእክት ሳጥንህ አይገቡም። የሚልኩት ሁሉ አሁንም በታገዱ ክፍል ውስጥ ይነበባል።';
 
   @override
   String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';

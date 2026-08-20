@@ -6160,7 +6160,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Това ще изтрие разговора ти с $displayName. Действието не може да бъде отменено.';
+    return 'Това премахва разговора ти с $displayName от входящата ти кутия. Ако ти пише отново, започва нов разговор.';
   }
 
   @override
@@ -7427,6 +7427,18 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Откажи и премахни';
+
+  @override
+  String get messageRequestBlockButton => 'Блокирай';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Заявката на $displayName е отхвърлена';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Това премахва заявката и държи съобщенията им извън входящата ти кутия. Всичко, което изпратят, остава четимо в раздел Блокирани.';
 
   @override
   String get messageRequestLoadFailed => 'Заявката не можа да се зареди.';

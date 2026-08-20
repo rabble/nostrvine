@@ -3269,7 +3269,7 @@
   },
   "inboxActionRemove": "گفتگو ہٹائیں",
   "inboxRemoveConfirmTitle": "گفتگو ہٹائیں؟",
-  "inboxRemoveConfirmBody": "اس سے {displayName} کے ساتھ آپ کی گفتگو حذف ہو جائے گی۔ یہ کارروائی واپس نہیں ہو سکتی۔",
+  "inboxRemoveConfirmBody": "اس سے {displayName} کے ساتھ آپ کی گفتگو آپ کے ان باکس سے ہٹ جائے گی۔ اگر وہ آپ کو دوبارہ پیغام بھیجیں تو نئی گفتگو شروع ہو جائے گی۔",
   "@inboxRemoveConfirmBody": {
     "placeholders": {
       "displayName": {
@@ -4117,6 +4117,10 @@
   "inboxRequestsMarkAllRead": "تمام درخواستیں پڑھی ہوئی قرار دیں",
   "inboxRequestsRemoveAll": "تمام درخواستیں ہٹائیں",
   "messageRequestDeclineAndRemoveButton": "انکار کر کے ہٹائیں",
+  "messageRequestBlockButton": "بلاک کریں",
+  "messageRequestDeclinedSnackbar": "{displayName} کی درخواست مسترد کر دی",
+  "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+  "messageRequestBlockConfirmBody": "اس سے درخواست ہٹ جائے گی اور ان کے پیغامات آپ کے ان باکس میں نہیں آئیں گے۔ وہ جو کچھ بھی بھیجیں، اسے آپ مسدود میں پڑھ سکتے ہیں۔",
   "messageRequestLoadFailed": "یہ درخواست لوڈ نہیں ہو سکی۔",
   "messageRequestFollowersCount": "{count} فالوورز",
   "@messageRequestFollowersCount": {

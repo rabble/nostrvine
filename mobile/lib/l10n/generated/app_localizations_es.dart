@@ -6157,7 +6157,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Esto eliminará tu conversación con $displayName. Esta acción no se puede deshacer.';
+    return 'Esto quita de tu bandeja de entrada tu conversación con $displayName. Si te vuelve a escribir, se inicia una conversación nueva.';
   }
 
   @override
@@ -7425,6 +7425,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Rechazar y eliminar';
+
+  @override
+  String get messageRequestBlockButton => 'Bloquear';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Rechazaste la solicitud de $displayName';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Esto quita la solicitud y mantiene sus mensajes fuera de tu bandeja de entrada. Todo lo que envíen se puede seguir leyendo en Bloqueados.';
 
   @override
   String get messageRequestLoadFailed => 'No se pudo cargar esta solicitud.';

@@ -6149,7 +6149,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Bubura nito ang conversation mo kay $displayName. Hindi na ito mababawi.';
+    return 'Aalisin nito sa iyong inbox ang usapan mo kay $displayName. Kung magme-message ulit siya, magsisimula ng bagong usapan.';
   }
 
   @override
@@ -7411,6 +7411,18 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Tanggihan at alisin';
+
+  @override
+  String get messageRequestBlockButton => 'I-block';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Tinanggihan ang request ni $displayName';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Aalisin nito ang request at hindi na papasok sa inbox mo ang mga mensahe nila. Mababasa mo pa rin ang lahat ng ipapadala nila sa Naka-block.';
 
   @override
   String get messageRequestLoadFailed =>

@@ -6118,7 +6118,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Ini akan memadam perbualan anda dengan $displayName. Tindakan ini tidak boleh dibuat asal.';
+    return 'Ini mengalih keluar perbualan anda dengan $displayName daripada peti masuk anda. Jika dia menghantar mesej lagi, perbualan baharu akan bermula.';
   }
 
   @override
@@ -7372,6 +7372,18 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Tolak dan alih keluar';
+
+  @override
+  String get messageRequestBlockButton => 'Sekat';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Permintaan $displayName ditolak';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Ini mengalih keluar permintaan dan menghalang mesej mereka daripada masuk ke peti masuk anda. Apa sahaja yang mereka hantar masih boleh dibaca di Disekat.';
 
   @override
   String get messageRequestLoadFailed =>

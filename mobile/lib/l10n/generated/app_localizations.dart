@@ -10616,7 +10616,7 @@ abstract class AppLocalizations {
   /// No description provided for @inboxRemoveConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'This will delete your conversation with {displayName}. This action cannot be undone.'**
+  /// **'This removes your conversation with {displayName} from your inbox. If they message you again, a new conversation starts.'**
   String inboxRemoveConfirmBody(String displayName);
 
   /// No description provided for @inboxRemoveConfirmConfirm.
@@ -12718,6 +12718,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Decline and remove'**
   String get messageRequestDeclineAndRemoveButton;
+
+  /// No description provided for @messageRequestBlockButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get messageRequestBlockButton;
+
+  /// No description provided for @messageRequestDeclinedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Declined {displayName}\'s request'**
+  String messageRequestDeclinedSnackbar(String displayName);
+
+  /// Body of the confirmation shown before blocking the sender of a message request (#7881). The title reuses profileBlockTitle. Blocking does not stop the sender from sending — their messages are still received and retained, the inbox filter just hides them — so this copy must promise inbox hiding, not delivery prevention, and must say the messages stay readable under the Blocked filter (#7026).
+  ///
+  /// In en, this message translates to:
+  /// **'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.'**
+  String get messageRequestBlockConfirmBody;
 
   /// Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender.
   ///

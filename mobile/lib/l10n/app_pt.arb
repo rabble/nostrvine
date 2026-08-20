@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Bugs, moderação, questões de conta — estamos ouvindo.",
     "inboxSearchEmptyTitle": "Sem resultados",
     "inboxSearchEmptySubtitle": "Tente outro nome ou outra palavra.",
-    "inboxRemoveConfirmBody": "Isso apagará sua conversa com {displayName}. Esta ação não pode ser desfeita.",
+    "inboxRemoveConfirmBody": "Isso remove sua conversa com {displayName} da sua caixa de entrada. Se essa pessoa te enviar mensagem de novo, uma nova conversa começa.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -4801,6 +4801,10 @@
     "inboxRequestsMarkAllRead": "Marcar todas as solicitações como lidas",
     "inboxRequestsRemoveAll": "Remover todas as solicitações",
     "messageRequestDeclineAndRemoveButton": "Recusar e remover",
+    "messageRequestBlockButton": "Bloquear",
+    "messageRequestDeclinedSnackbar": "Solicitação de {displayName} recusada",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+    "messageRequestBlockConfirmBody": "Isso remove a solicitação e mantém as mensagens dessa pessoa fora da sua caixa de entrada. Tudo o que ela enviar continua legível em Bloqueados.",
     "messageRequestLoadFailed": "Não foi possível carregar esta solicitação.",
     "messageRequestFollowersCount": "{count} seguidores",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},

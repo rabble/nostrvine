@@ -6263,7 +6263,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Astfel, conversația ta cu $displayName va fi ștearsă. Această acțiune nu poate fi anulată.';
+    return 'Astfel, conversația ta cu $displayName este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.';
   }
 
   @override
@@ -7528,6 +7528,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Refuză și elimină';
+
+  @override
+  String get messageRequestBlockButton => 'Blochează';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Cererea lui $displayName a fost refuzată';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Astfel, cererea este eliminată, iar mesajele lor nu mai ajung în inbox. Tot ce trimit rămâne de citit în Blocate.';
 
   @override
   String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';

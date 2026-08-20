@@ -128,7 +128,10 @@ class RequestPreviewView extends ConsumerWidget {
                 messages: messages,
               ),
             ),
-            _ActionButtons(participantPubkeys: participantPubkeys),
+            _ActionButtons(
+              participantPubkeys: participantPubkeys,
+              displayName: displayName,
+            ),
           ],
         ),
       ),
@@ -443,9 +446,13 @@ class _ActionBar extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.participantPubkeys});
+  const _ActionButtons({
+    required this.participantPubkeys,
+    required this.displayName,
+  });
 
   final List<String> participantPubkeys;
+  final String displayName;
 
   @override
   Widget build(BuildContext context) {
@@ -463,7 +470,17 @@ class _ActionButtons extends StatelessWidget {
             );
           },
         ),
-        const _DeclineAndRemoveButton(),
+        _DeclineAndRemoveButton(displayName: displayName),
+        // Block targets a single sender. `participantPubkeys` excludes self,
+        // so a group request has more than one counterparty and no reliably
+        // identified sender to block — offer Block only for a 1:1 request
+        // (#7881 review). Decline still removes a group request by its
+        // conversation ID.
+        if (participantPubkeys.length == 1)
+          _BlockButton(
+            pubkey: participantPubkeys.single,
+            displayName: displayName,
+          ),
       ],
     );
   }
@@ -471,8 +488,13 @@ class _ActionButtons extends StatelessWidget {
 
 /// The one action that survives an unresolved counterparty: `declineRequest`
 /// takes the conversation ID, not the participants.
+///
+/// [displayName] is null on the unresolved-counterparty states, where there is
+/// no name to put in the confirmation snackbar; the decline still runs.
 class _DeclineAndRemoveButton extends StatelessWidget {
-  const _DeclineAndRemoveButton();
+  const _DeclineAndRemoveButton({this.displayName});
+
+  final String? displayName;
 
   @override
   Widget build(BuildContext context) {
@@ -481,13 +503,139 @@ class _DeclineAndRemoveButton extends StatelessWidget {
     return _SecondaryActionButton(
       label: context.l10n.messageRequestDeclineAndRemoveButton,
       onTap: () async {
-        await context.read<MessageRequestActionsCubit>().declineRequest(
-          conversationId,
-        );
+        final cubit = context.read<MessageRequestActionsCubit>();
+        if (cubit.state.status == MessageRequestActionsStatus.processing) {
+          return;
+        }
+        final messenger = ScaffoldMessenger.of(context);
+        final errorText = context.l10n.commonSomethingWentWrong;
+        final name = displayName;
+        // A resolved counterparty names them in the confirmation; the
+        // unresolved states have no name, so fall back to the name-free
+        // "Removed conversation" rather than staying silent (#7881 review).
+        final successText = name == null
+            ? context.l10n.inboxRemovedConversation
+            : context.l10n.messageRequestDeclinedSnackbar(name);
+        final removed = await cubit.declineRequest(conversationId);
+        if (!removed) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(errorText, error: true),
+          );
+          return;
+        }
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).
         if (context.mounted) context.safePop(fallback: InboxPage.path);
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(successText),
+        );
       },
+    );
+  }
+}
+
+/// The hard stop next to the soft one: blocks the sender and removes the
+/// request. The blocklist filter keeps future messages out of the inbox while
+/// leaving them readable behind the Blocked filter (#7026).
+class _BlockButton extends StatelessWidget {
+  const _BlockButton({required this.pubkey, required this.displayName});
+
+  final String pubkey;
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final conversationId = context.read<RequestPreviewCubit>().conversationId;
+
+    return _SecondaryActionButton(
+      label: context.l10n.messageRequestBlockButton,
+      onTap: () async {
+        final cubit = context.read<MessageRequestActionsCubit>();
+        if (cubit.state.status == MessageRequestActionsStatus.processing) {
+          return;
+        }
+        // Block removes the request and mutes the sender; confirm first so a
+        // single tap can't block a real person with no undo (#7881 review).
+        final confirmed = await _confirmBlock(context, displayName);
+        if (!confirmed || !context.mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        final errorText = context.l10n.commonSomethingWentWrong;
+        final successText = context.l10n.inboxBlockedUser(displayName);
+        final blocked = await cubit.blockAndRemoveRequest(
+          conversationId,
+          pubkey,
+        );
+        if (!blocked) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(errorText, error: true),
+          );
+          return;
+        }
+        if (context.mounted) context.safePop(fallback: InboxPage.path);
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(successText),
+        );
+      },
+    );
+  }
+}
+
+/// Confirms a block in a bottom sheet before it runs. Returns `true` only when
+/// the user taps the destructive Block action.
+///
+/// A [VineBottomSheet] rather than a raw dialog: the design-system ratchet
+/// keeps new raw dialogs out of this file, and block confirmation already
+/// lives in a sheet elsewhere (the profile more-sheet).
+Future<bool> _confirmBlock(BuildContext context, String displayName) async {
+  final confirmed = await VineBottomSheet.show<bool>(
+    context: context,
+    scrollable: false,
+    showHeader: false,
+    body: _BlockConfirmContent(displayName: displayName),
+  );
+  return confirmed ?? false;
+}
+
+class _BlockConfirmContent extends StatelessWidget {
+  const _BlockConfirmContent({required this.displayName});
+
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.vineColors;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [
+          Text(
+            l10n.profileBlockTitle(displayName),
+            style: VineTheme.titleLargeFont(color: colors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            l10n.messageRequestBlockConfirmBody,
+            style: VineTheme.bodyMediumFont(color: colors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          DivineButton(
+            label: l10n.messageRequestBlockButton,
+            type: DivineButtonType.error,
+            expanded: true,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+          DivineButton(
+            label: l10n.commonCancel,
+            type: DivineButtonType.secondary,
+            expanded: true,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+        ],
+      ),
     );
   }
 }

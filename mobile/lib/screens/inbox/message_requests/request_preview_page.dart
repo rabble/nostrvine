@@ -38,6 +38,7 @@ class RequestPreviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
@@ -57,7 +58,16 @@ class RequestPreviewPage extends ConsumerWidget {
           )..load(),
         ),
         BlocProvider(
-          create: (_) => MessageRequestActionsCubit(dmRepository: dmRepository),
+          // Re-key on the captured auth-flippable deps so the cubit is rebuilt
+          // bound to fresh instances on account switch, rather than acting on
+          // the previous account's blocklist. See
+          // .claude/rules/state_management.md ("Bridging Riverpod-provided
+          // dependencies into BlocProvider").
+          key: ValueKey((dmRepository, blocklistRepository)),
+          create: (_) => MessageRequestActionsCubit(
+            dmRepository: dmRepository,
+            blocklistRepository: blocklistRepository,
+          ),
         ),
         BlocProvider(
           create: (_) => CollaboratorInviteActionsCubit(

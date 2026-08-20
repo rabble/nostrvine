@@ -6182,7 +6182,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Dadurch wird deine Unterhaltung mit $displayName gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.';
+    return 'Dadurch wird deine Unterhaltung mit $displayName aus deinem Posteingang entfernt. Wenn dir diese Person wieder schreibt, beginnt eine neue Unterhaltung.';
   }
 
   @override
@@ -7447,6 +7447,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Ablehnen und entfernen';
+
+  @override
+  String get messageRequestBlockButton => 'Blockieren';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Anfrage von $displayName abgelehnt';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Das entfernt die Anfrage und hält ihre Nachrichten aus deinem Posteingang. Alles, was sie senden, bleibt unter Blockiert lesbar.';
 
   @override
   String get messageRequestLoadFailed =>

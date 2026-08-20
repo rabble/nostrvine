@@ -2452,7 +2452,7 @@
     "inboxSupportRowSubtitle": "Buguri, moderare, chestiuni de cont — te ascultăm.",
     "inboxSearchEmptyTitle": "Nicio potrivire",
     "inboxSearchEmptySubtitle": "Încearcă alt nume sau alt cuvânt.",
-    "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} va fi ștearsă. Această acțiune nu poate fi anulată.",
+    "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -4801,6 +4801,10 @@
     "inboxRequestsMarkAllRead": "Marchează toate cererile ca citite",
     "inboxRequestsRemoveAll": "Elimină toate cererile",
     "messageRequestDeclineAndRemoveButton": "Refuză și elimină",
+    "messageRequestBlockButton": "Blochează",
+    "messageRequestDeclinedSnackbar": "Cererea lui {displayName} a fost refuzată",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+    "messageRequestBlockConfirmBody": "Astfel, cererea este eliminată, iar mesajele lor nu mai ajung în inbox. Tot ce trimit rămâne de citit în Blocate.",
     "messageRequestLoadFailed": "Nu am putut încărca această cerere.",
     "messageRequestFollowersCount": "{count} urmăritori",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},

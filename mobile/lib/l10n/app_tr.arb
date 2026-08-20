@@ -2451,7 +2451,7 @@
     "inboxSupportRowSubtitle": "Hatalar, moderasyon, hesap meseleleri — dinliyoruz.",
     "inboxSearchEmptyTitle": "Sonuç yok",
     "inboxSearchEmptySubtitle": "Başka bir isim veya kelime dene.",
-    "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",
+    "inboxRemoveConfirmBody": "Bu, {displayName} ile olan sohbetini gelen kutundan kaldırır. Sana tekrar yazarsa yeni bir sohbet başlar.",
     "@inboxRemoveConfirmBody": {
         "placeholders": {
             "displayName": {
@@ -4801,6 +4801,10 @@
     "inboxRequestsMarkAllRead": "Tüm istekleri okundu olarak işaretle",
     "inboxRequestsRemoveAll": "Tüm istekleri kaldır",
     "messageRequestDeclineAndRemoveButton": "Reddet ve kaldır",
+    "messageRequestBlockButton": "Engelle",
+    "messageRequestDeclinedSnackbar": "{displayName} kişisinin isteği reddedildi",
+    "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+    "messageRequestBlockConfirmBody": "Bu, isteği kaldırır ve mesajlarının gelen kutuna düşmesini engeller. Gönderdikleri her şeyi Engellenenler bölümünden okuyabilirsin.",
     "messageRequestLoadFailed": "Bu istek yüklenemedi.",
     "messageRequestFollowersCount": "{count} Takipçi",
     "@messageRequestFollowersCount": {"placeholders": {"count": {"type": "String"}}},

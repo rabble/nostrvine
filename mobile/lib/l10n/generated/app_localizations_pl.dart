@@ -6258,7 +6258,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Spowoduje to usunięcie rozmowy z $displayName. Tej operacji nie można cofnąć.';
+    return 'To usuwa rozmowę z $displayName z Twojej skrzynki odbiorczej. Jeśli ta osoba znów do Ciebie napisze, rozpocznie się nowa rozmowa.';
   }
 
   @override
@@ -7528,6 +7528,18 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Odrzuć i usuń';
+
+  @override
+  String get messageRequestBlockButton => 'Zablokuj';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Odrzucono prośbę od $displayName';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'To usuwa prośbę i sprawia, że ich wiadomości nie trafiają do Twojej skrzynki odbiorczej. Wszystko, co wyślą, nadal możesz przeczytać w Zablokowane.';
 
   @override
   String get messageRequestLoadFailed => 'Nie udało się wczytać tej prośby.';

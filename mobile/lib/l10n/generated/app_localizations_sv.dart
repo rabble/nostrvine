@@ -6097,7 +6097,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Detta tar bort din konversation med $displayName. Denna åtgärd kan inte ångras.';
+    return 'Det här tar bort din konversation med $displayName från din inkorg. Om personen skriver till dig igen startar en ny konversation.';
   }
 
   @override
@@ -7348,6 +7348,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Avböj och ta bort';
+
+  @override
+  String get messageRequestBlockButton => 'Blockera';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return 'Förfrågan från $displayName avvisad';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Det här tar bort förfrågan och håller personens meddelanden borta från din inkorg. Allt som skickas går fortfarande att läsa under Blockerade.';
 
   @override
   String get messageRequestLoadFailed =>

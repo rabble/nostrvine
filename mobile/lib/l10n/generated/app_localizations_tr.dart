@@ -6040,7 +6040,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'Bu işlem, $displayName ile olan sohbetini siler. Bu işlem geri alınamaz.';
+    return 'Bu, $displayName ile olan sohbetini gelen kutundan kaldırır. Sana tekrar yazarsa yeni bir sohbet başlar.';
   }
 
   @override
@@ -7283,6 +7283,18 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get messageRequestDeclineAndRemoveButton => 'Reddet ve kaldır';
+
+  @override
+  String get messageRequestBlockButton => 'Engelle';
+
+  @override
+  String messageRequestDeclinedSnackbar(String displayName) {
+    return '$displayName kişisinin isteği reddedildi';
+  }
+
+  @override
+  String get messageRequestBlockConfirmBody =>
+      'Bu, isteği kaldırır ve mesajlarının gelen kutuna düşmesini engeller. Gönderdikleri her şeyi Engellenenler bölümünden okuyabilirsin.';
 
   @override
   String get messageRequestLoadFailed => 'Bu istek yüklenemedi.';

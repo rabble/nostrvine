@@ -3269,7 +3269,7 @@
   },
   "inboxActionRemove": "Xóa cuộc trò chuyện",
   "inboxRemoveConfirmTitle": "Xóa cuộc trò chuyện?",
-  "inboxRemoveConfirmBody": "Thao tác này sẽ xóa cuộc trò chuyện của bạn với {displayName}. Không thể hoàn tác.",
+  "inboxRemoveConfirmBody": "Thao tác này xóa cuộc trò chuyện của bạn với {displayName} khỏi hộp thư đến. Nếu họ nhắn tin cho bạn lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.",
   "@inboxRemoveConfirmBody": {
     "placeholders": {
       "displayName": {
@@ -4117,6 +4117,10 @@
   "inboxRequestsMarkAllRead": "Đánh dấu tất cả yêu cầu là đã đọc",
   "inboxRequestsRemoveAll": "Xóa tất cả yêu cầu",
   "messageRequestDeclineAndRemoveButton": "Từ chối và xóa",
+  "messageRequestBlockButton": "Chặn",
+  "messageRequestDeclinedSnackbar": "Đã từ chối yêu cầu của {displayName}",
+  "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+  "messageRequestBlockConfirmBody": "Thao tác này xóa yêu cầu và giữ tin nhắn của họ khỏi hộp thư đến. Mọi thứ họ gửi vẫn đọc được trong Đã chặn.",
   "messageRequestLoadFailed": "Không tải được yêu cầu này.",
   "messageRequestFollowersCount": "{count} người theo dõi",
   "@messageRequestFollowersCount": {
