@@ -16,6 +16,9 @@ enum PostPublishVariant {
   final String analyticsName;
 }
 
+typedef RecordPostPublishExposure =
+    Future<void> Function(PostPublishVariant variant);
+
 /// Marks a publish that should get the full confirmation — a sheet offering
 /// View and Share — rather than the bare snackbar the control arm sees.
 ///
@@ -31,11 +34,14 @@ class PostPublishConfirmationOffer {
 class PostPublishExperiment {
   PostPublishExperiment({
     required AnalyticsEventSink analytics,
+    RecordPostPublishExposure? recordExposure,
     DateTime Function()? now,
   }) : _analytics = analytics,
+       _recordExposure = recordExposure,
        _now = now ?? DateTime.now;
 
   final AnalyticsEventSink _analytics;
+  final RecordPostPublishExposure? _recordExposure;
   final DateTime Function() _now;
 
   /// Pending assignments, oldest first. A publish that neither succeeds nor
@@ -64,12 +70,24 @@ class PostPublishExperiment {
     required String publishId,
     required String destination,
     required PostPublishVariant variant,
+    bool isExperimentExposure = false,
   }) async {
     _publishVariants
       ..remove(publishId)
       ..[publishId] = variant;
     while (_publishVariants.length > _maxPendingVariants) {
       _publishVariants.remove(_publishVariants.keys.first);
+    }
+    if (isExperimentExposure && _recordExposure != null) {
+      try {
+        await _recordExposure(variant);
+      } catch (error) {
+        Log.warning(
+          'Post-publish experiment exposure failed: $error',
+          name: 'PostPublishExperiment',
+          category: LogCategory.system,
+        );
+      }
     }
     await _logEvent(
       name: 'post_publish_screen_shown',

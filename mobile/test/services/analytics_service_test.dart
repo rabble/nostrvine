@@ -276,6 +276,46 @@ void main() {
       );
     });
 
+    test('queues a private experiment assignment', () async {
+      final queue = _MockProductEventQueue();
+      when(
+        () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+      ).thenAnswer((_) async {});
+      analyticsService.dispose();
+      analyticsService = AnalyticsService(
+        productEventQueue: queue,
+        productAnalyticsEnabled: true,
+        currentUserPubkey: () => 'a' * 64,
+        anonymousId: () => '018ff7d7-2ef5-7000-8000-000000000001',
+        sessionId: () => '018ff7d7-2ef5-7000-8000-000000000002',
+        platform: () => 'ios',
+        appVersion: () => '1.2.3',
+        now: () => DateTime.utc(2026, 8, 21),
+      );
+      await analyticsService.initialize();
+
+      await analyticsService.recordExperimentExposure(
+        experimentKey: 'post_publish_confirmation',
+        variantKey: 'view_share',
+        assignmentSource: ProductAnalyticsV2AssignmentSource.client,
+      );
+
+      final captured = verify(
+        () => queue.enqueue(
+          captureAny(),
+          ownerPubkey: captureAny(named: 'ownerPubkey'),
+        ),
+      ).captured;
+      final event = captured[0] as ProductAnalyticsV2Event;
+      expect(captured[1], 'a' * 64);
+      expect(event.eventName, 'experiment_exposure');
+      expect(event.propertiesJson, {
+        'experiment_key': 'post_publish_confirmation',
+        'variant_key': 'view_share',
+        'assignment_source': 'client',
+      });
+    });
+
     test('keeps only bounded UTM values on anonymous registration', () async {
       final queue = _MockProductEventQueue();
       when(

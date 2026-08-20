@@ -622,6 +622,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
               publishId: publishDraft.id,
               destination: 'profile',
               variant: variant,
+              isExperimentExposure: true,
             ),
           );
           didNavigate = true;
