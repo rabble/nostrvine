@@ -1869,7 +1869,7 @@ class RelayPool {
       }
     }
 
-    _subscriptionSilenceProbes[subscription.id]?.cancel();
+    _subscriptionSilenceProbes.remove(subscription.id)?.cancel();
     if (!_closed) {
       _subscriptionSilenceProbes[subscription.id] = Timer(
         subscriptionSilenceProbe,
