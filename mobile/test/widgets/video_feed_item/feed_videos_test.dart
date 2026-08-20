@@ -276,8 +276,8 @@ List _buildOverrides({
   return [
     ...getStandardTestOverrides(
       mockAuthService: authService ?? createMockAuthService(),
+      analyticsService: _NoopAnalyticsService(),
     ),
-    analyticsServiceProvider.overrideWithValue(_NoopAnalyticsService()),
     seenVideosServiceProvider.overrideWithValue(_NoopSeenVideosService()),
     connectionStatusServiceProvider.overrideWithValue(
       _MockConnectionStatusService(),
