@@ -627,9 +627,10 @@ class RelayPool {
 
   /// Removes every relay from the pool.
   ///
-  /// This is teardown when reached through [Nostr.close], but it is also a
-  /// legitimate "start over with a different relay set" — so it deliberately
-  /// does not mark the pool closed. [beginClose] is what does that.
+  /// This on its own does not mark the pool closed, so a direct caller can
+  /// use it to start over with a different relay set. Reaching it through
+  /// [Nostr.close] is terminal instead, because that calls [beginClose]
+  /// first and nothing reopens a closed pool.
   void removeAll() {
     final keys = _relayKeysSnapshot();
     for (var url in keys) {
