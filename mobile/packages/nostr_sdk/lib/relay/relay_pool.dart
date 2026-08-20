@@ -599,6 +599,7 @@ class RelayPool {
 
   /// Whether the pool is closing or closed, and therefore must not open any
   /// further sockets.
+  @visibleForTesting
   bool get isClosed => _closed;
 
   /// Marks the pool as closing without tearing anything down yet.
