@@ -2,7 +2,7 @@
 name: check-l10n
 description: |
   Run before pushing a PR that touched UI to find untranslated keys in
-  any of the 16 non-English locales and to catch user-visible English
+  any of the 21 non-English locales and to catch user-visible English
   strings that bypass context.l10n. Reports findings as a checklist;
   refuses to declare clean until all are addressed or explicitly waived.
   Invoke with /check-l10n.
@@ -25,14 +25,21 @@ Catch the two ways localization breaks in this repo before users see English
 in a non-English build:
 
 1. **Untranslated keys.** A key added to `app_en.arb` but never translated
-   into one of the 16 non-English locales (`ar`, `am`, `bg`, `de`, `es`,
-   `fr`, `id`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `ro`, `sv`, `tr`).
+   into one of the 21 non-English locales (`am`, `ar`, `bg`, `de`, `es`,
+   `fil`, `fr`, `id`, `it`, `ja`, `ko`, `ms`, `nl`, `pl`, `pt`, `ro`, `sv`,
+   `tr`, `ur`, `vi`, `zh`). `mobile/lib/l10n/app_*.arb` is the live list.
 2. **Hardcoded user-visible English.** Strings rendered straight to the user
    from widget code without going through `context.l10n.<key>`. These never
    show up in `.arb` files because they were never extracted, so no amount
    of translation work fixes them.
 
 Run this before every PR push that touches `mobile/lib/`.
+
+This skill checks that a string is *translated*. Whether it is translated in
+the locale's voice is a separate question with its own source of truth:
+[`mobile/docs/LOCALIZATION_STYLE_GUIDE.md`](../../../mobile/docs/LOCALIZATION_STYLE_GUIDE.md)
+carries the per-locale register table, the Spanish dialect decision, the
+terms that never get translated, and the review tiers.
 
 ## Workflow
 
@@ -165,10 +172,12 @@ Each finding has three resolutions, in order of preference:
    identifier), consider whether the scanner needs an additional skip line
    pattern. A skip rule should be earned by at least 3 distinct examples;
    one-offs aren't worth the regex maintenance.
-3. **Waive with reason.** Brand strings that should NEVER be translated
-   ("OpenVine", "Divine") are legitimate hardcoded English. Note the waiver
-   in the PR description rather than silencing the scanner — future readers
-   should be able to see why this finding was accepted.
+3. **Waive with reason.** Brand strings and protocol tokens that should
+   NEVER be translated ("Divine", "Nostr", `npub`, `nsec`, `bunker://`) are
+   legitimate hardcoded English — the full locked list is in the
+   [localization style guide](../../../mobile/docs/LOCALIZATION_STYLE_GUIDE.md#locked-terms--never-translated-never-transliterated).
+   Note the waiver in the PR description rather than silencing the scanner —
+   future readers should be able to see why this finding was accepted.
 
 ## Common rule meanings
 

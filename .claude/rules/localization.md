@@ -2,6 +2,12 @@
 
 All user-facing strings must use the l10n system. Never hardcode English strings in widgets.
 
+This file covers the **mechanics**: where strings live, how to add a key, how
+to wire tests. For what a translation should *sound* like — which register
+each locale uses, the Spanish dialect decision, which terms never get
+translated, and who signs off — see
+[`mobile/docs/LOCALIZATION_STYLE_GUIDE.md`](../../mobile/docs/LOCALIZATION_STYLE_GUIDE.md).
+
 ---
 
 ## Using Localized Strings
@@ -47,6 +53,7 @@ When creating new UI, add strings to the ARB file first:
 - **No error strings in BLoC state** — use status enums + `addError()`
 - **`divine_ui` package stays l10n-free** — its widgets accept string params with English defaults
 - **Plurals use ICU syntax** in ARB files, not conditional logic in Dart
+- **Translated copy follows the per-locale register and terminology decisions** in [`mobile/docs/LOCALIZATION_STYLE_GUIDE.md`](../../mobile/docs/LOCALIZATION_STYLE_GUIDE.md) — the ARB parity guard proves a key exists, not that it is written in the locale's voice
 - **Every `MaterialApp` in tests needs delegates** — use `localizationsDelegates: AppLocalizations.localizationsDelegates` and `supportedLocales: AppLocalizations.supportedLocales`
 - **Never hardcode English strings in widget test assertions** — resolve the key from `AppLocalizations` instead, so the test survives copy changes and breaks loudly if the widget stops reading from l10n. Pick whichever lookup fits the test:
 
