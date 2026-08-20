@@ -6441,6 +6441,73 @@ void main() {
         },
       );
 
+      test(
+        'retraction tombstones evict beyond the 512-entry cap',
+        () async {
+          var sent = 0;
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async {
+            final event = MockEvent();
+            when(() => event.id).thenReturn('bounded_reaction_$sent');
+            sent++;
+            return event;
+          });
+          when(
+            () => mockNostrClient.deleteEvent(
+              any(),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => MockEvent());
+
+          repository = createRepository(withLocalStorage: false);
+          for (var i = 0; i < 513; i++) {
+            await repository.reactToEventWithEmoji(
+              eventId: 'bounded_target_$i',
+              authorPubkey: testAuthorPubkey,
+              emoji: '😂',
+            );
+            await repository.removeEmojiReaction('bounded_target_$i');
+          }
+
+          // Relay still serves both retracted kind 7s and its kind-5 read
+          // returns nothing, so the tombstone is the only deletion signal.
+          mockQueryEventsSequence([
+            [
+              createMockReaction(
+                id: 'bounded_reaction_0',
+                targetEventId: 'bounded_target_0',
+                authorPubkey: testUserPubkey,
+                content: '😂',
+              ),
+              createMockReaction(
+                id: 'bounded_reaction_512',
+                targetEventId: 'bounded_target_512',
+                authorPubkey: testUserPubkey,
+                content: '😂',
+              ),
+            ],
+            <Event>[],
+          ]);
+
+          final counts = await repository.getVoteCounts([
+            'bounded_target_0',
+            'bounded_target_512',
+          ]);
+          // The oldest tombstone was evicted, so its reaction re-counts —
+          // the accepted trade for a hard memory bound.
+          expect(counts.emojiReactions['bounded_target_0'], {'😂': 1});
+          // The newest tombstone is still within the cap and filters.
+          expect(counts.emojiReactions['bounded_target_512'], isEmpty);
+        },
+      );
+
       test('counts dedupe repeated reactions per pubkey', () async {
         const repeatPubkey = 'repeat_pubkey_1234567890abcdef';
         mockQueryEventsSequence([

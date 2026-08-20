@@ -24,6 +24,13 @@ import 'package:unified_logger/unified_logger.dart';
 /// Default limit for fetching user reactions from relays.
 const _defaultReactionFetchLimit = 500;
 
+/// Hard cap on session retraction tombstones (see `_retractedReactionIds`).
+///
+/// Each entry is a 64-char event id (~128 bytes), so the worst case holds
+/// ~64KB. A session that retracts this many reactions has long outlived
+/// the relay read-lag window the oldest tombstones were patching.
+const _maxRetractedReactionIds = 512;
+
 /// NIP-25 reaction content for a like/upvote.
 const _likeContent = '+';
 
@@ -217,7 +224,27 @@ class LikesRepository {
   /// record — a tap then reconciles to it without publishing, and the next
   /// removal publishes a redundant Kind 5 (#7784 device patrol). Consulted
   /// by the echo, the remote resolvers, and both vote/reaction read paths.
+  ///
+  /// Bounded at [_maxRetractedReactionIds] insertion-ordered entries (see
+  /// [_recordRetractedReaction]), so a long session cannot grow it without
+  /// limit.
   final Set<String> _retractedReactionIds = {};
+
+  /// Tombstones [reactionEventId], evicting the oldest entry once
+  /// [_maxRetractedReactionIds] is reached.
+  ///
+  /// Eviction re-exposes an evicted id to the relay's kind-5 read as the
+  /// only deletion signal — the accepted trade for a hard memory bound.
+  /// By eviction time the relay has had hundreds of retractions' worth of
+  /// time to index that deletion, so the lag window the tombstone patches
+  /// has long passed.
+  void _recordRetractedReaction(String reactionEventId) {
+    if (_retractedReactionIds.length >= _maxRetractedReactionIds &&
+        !_retractedReactionIds.contains(reactionEventId)) {
+      _retractedReactionIds.remove(_retractedReactionIds.first);
+    }
+    _retractedReactionIds.add(reactionEventId);
+  }
 
   /// In-memory cache of the user's own emoji reactions keyed by target
   /// event ID.
@@ -387,7 +414,7 @@ class LikesRepository {
       targetKind: EventKind.reaction,
     );
     if (deletionEvent != null) {
-      _retractedReactionIds.add(reactionEventId);
+      _recordRetractedReaction(reactionEventId);
     }
     return deletionEvent;
   }
@@ -2374,9 +2401,7 @@ class LikesRepository {
     // Session tombstones cover the relay's read lag: a reaction this
     // session just retracted must never re-count even when the kind-5
     // query misses its deletion (#7784 device patrol).
-    deleted.addAll(
-      _retractedReactionIds.intersection(reactionsById.keys.toSet()),
-    );
+    deleted.addAll(_retractedReactionIds.where(reactionsById.containsKey));
     return deleted;
   }
 
