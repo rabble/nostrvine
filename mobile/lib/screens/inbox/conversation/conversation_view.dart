@@ -930,9 +930,10 @@ class _MessageList extends StatelessWidget {
         // Suppress legacy NIP-04 invite plaintext duplicates (#3559).
         // Phase 1 stopped new sends from emitting this fallback, but
         // older app builds and cross-client senders can still produce
-        // bubbles that read "Open diVine to review and accept" — useless
-        // copy inside diVine, and the structured fields needed to render
-        // an actionable card are not recoverable from plaintext alone.
+        // bubbles that read "Open Divine to review and accept" (or its
+        // pre-#7915 "diVine" spelling) — useless copy inside Divine, and
+        // the structured fields needed to render an actionable card are
+        // not recoverable from plaintext alone.
         if (CollaboratorInviteService.hasInvitePlaintextSuffix(
           message.content,
         )) {

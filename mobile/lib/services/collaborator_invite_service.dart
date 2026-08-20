@@ -112,7 +112,7 @@ class CollaboratorInviteService {
       additionalTags: tags,
       // Structured invites cannot be represented in NIP-04; the legacy
       // fallback would publish a duplicate plaintext message that reads
-      // "Open diVine to review and accept" inside Divine itself (#3559).
+      // "Open Divine to review and accept" inside Divine itself (#3559).
       skipNip04Fallback: true,
     );
 
