@@ -71,6 +71,7 @@ class MockDivineCameraPlatform
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -1975,6 +1976,7 @@ class _RotatedFocusMock extends MockDivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return CameraState(
       isInitialized: true,
@@ -1994,6 +1996,7 @@ class _NoFocusSupportMock extends MockDivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return const CameraState(
       isInitialized: true,
@@ -2011,6 +2014,7 @@ class _NoExposureSupportMock extends MockDivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return const CameraState(isInitialized: true, isFocusPointSupported: true);
   }
@@ -2025,6 +2029,7 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return const CameraState(isInitialized: true, hasBackCamera: true);
   }

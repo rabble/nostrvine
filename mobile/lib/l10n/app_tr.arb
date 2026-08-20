@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Cihaz dilini kullan (varsayılan)",
     "contentPreferencesAudioSharing": "Sesimi yeniden kullanıma aç",
     "contentPreferencesAudioSharingSubtitle": "Etkinleştirildiğinde başkaları videolarındaki sesi kullanabilir",
+    "contentPreferencesMusicMode": "Müzik modu",
+    "contentPreferencesMusicModeSubtitle": "Enstrümanları ezen gürültü temizlemesini kapatır. Müzik için daha iyi, sesler için daha ham.",
     "contentPreferencesAccountLabels": "Hesap Etiketleri",
     "contentPreferencesAccountLabelsEmpty": "İçeriğini kendin etiketle",
     "contentPreferencesAccountContentLabels": "Hesap İçerik Etiketleri",

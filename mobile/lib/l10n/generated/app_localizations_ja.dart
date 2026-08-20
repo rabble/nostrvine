@@ -311,6 +311,13 @@ class AppLocalizationsJa extends AppLocalizations {
       'オンにすると、他の人があなたの動画の音声を使えるよ';
 
   @override
+  String get contentPreferencesMusicMode => '音楽モード';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      '楽器の音を潰してしまうノイズ除去をオフにします。音楽向きですが、声には少し粗くなります。';
+
+  @override
   String get contentPreferencesAccountLabels => 'アカウントラベル';
 
   @override

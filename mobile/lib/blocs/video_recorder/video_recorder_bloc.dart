@@ -33,6 +33,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/services/music_mode_preference_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -369,6 +370,10 @@ class VideoRecorderBloc
         videoQuality: event.videoQuality,
         initialLens: initialLens,
         enableAutoLensSwitch: true,
+        // Read at init because the audio-session mode is chosen once per
+        // capture session; flipping the setting applies to the next open.
+        preferUnprocessedAudio:
+            prefs.getBool(MusicModePreferenceService.prefsKey) ?? false,
       );
     } catch (e) {
       initError = e;

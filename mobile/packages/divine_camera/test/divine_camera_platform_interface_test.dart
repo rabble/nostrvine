@@ -17,6 +17,7 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async => const CameraState(isInitialized: true);
 
   @override

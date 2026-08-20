@@ -391,6 +391,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, others can use audio from your videos';
 
   @override
+  String get contentPreferencesMusicMode => 'Music mode';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Skips the noise cleanup that flattens instruments. Better for music, rougher on voices.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Account Labels';
 
   @override

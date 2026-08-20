@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Gerätesprache verwenden (Standard)",
     "contentPreferencesAudioSharing": "Mein Audio zur Wiederverwendung freigeben",
     "contentPreferencesAudioSharingSubtitle": "Wenn aktiviert, können andere Audio aus deinen Videos verwenden",
+    "contentPreferencesMusicMode": "Musikmodus",
+    "contentPreferencesMusicModeSubtitle": "Schaltet die Rauschunterdrückung ab, die Instrumente plattmacht. Besser für Musik, rauer für Stimmen.",
     "contentPreferencesAccountLabels": "Konto-Labels",
     "contentPreferencesAccountLabelsEmpty": "Kennzeichne deine Inhalte selbst",
     "contentPreferencesAccountContentLabels": "Konto-Inhalts-Labels",

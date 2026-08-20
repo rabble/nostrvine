@@ -176,6 +176,8 @@
     "contentPreferencesUseDeviceLanguage": "የመሣሪያውን ቋንቋ ተጠቀም (ነባሪ)",
     "contentPreferencesAudioSharing": "የእኔን ኦዲዮ ለእንደገና ጥቅም ላይ እንዲውል አድርግ",
     "contentPreferencesAudioSharingSubtitle": "ሲነቃ ሌሎች ከቪዲዮዎችዎ ኦዲዮን መጠቀም ይችላሉ።",
+    "contentPreferencesMusicMode": "የሙዚቃ ሁነታ",
+    "contentPreferencesMusicModeSubtitle": "የሙዚቃ መሣሪያዎችን የሚያደበዝዘውን የድምፅ ማጽጃ ያጠፋል። ለሙዚቃ የተሻለ፣ ለድምፅ ግን ትንሽ ሻካራ።",
     "contentPreferencesAccountLabels": "መለያ መለያዎች",
     "contentPreferencesAccountLabelsEmpty": "ይዘትዎን በራስ-ይሰይሙ",
     "contentPreferencesAccountContentLabels": "የመለያ ይዘት መለያዎች",

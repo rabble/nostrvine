@@ -156,6 +156,8 @@
   "contentPreferencesUseDeviceLanguage": "Dùng ngôn ngữ thiết bị (mặc định)",
   "contentPreferencesAudioSharing": "Cho phép dùng lại âm thanh của tôi",
   "contentPreferencesAudioSharingSubtitle": "Khi bật, người khác có thể sử dụng âm thanh từ video của bạn",
+  "contentPreferencesMusicMode": "Chế độ âm nhạc",
+  "contentPreferencesMusicModeSubtitle": "Tắt bộ lọc tiếng ồn vốn làm bẹp tiếng nhạc cụ. Hợp với âm nhạc, thô hơn với giọng nói.",
   "contentPreferencesAccountLabels": "Nhãn tài khoản",
   "contentPreferencesAccountLabelsEmpty": "Tự gắn nhãn nội dung của bạn",
   "contentPreferencesAccountContentLabels": "Nhãn nội dung tài khoản",

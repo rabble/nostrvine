@@ -355,6 +355,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kapag naka-enable, magagamit ng iba ang audio mula sa mga video mo';
 
   @override
+  String get contentPreferencesMusicMode => 'Music mode';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Ini-skip ang noise cleanup na pumipipi sa mga instrumento. Mas maganda sa musika, mas magaspang sa boses.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Mga Account Label';
 
   @override

@@ -323,6 +323,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Etkinleştirildiğinde başkaları videolarındaki sesi kullanabilir';
 
   @override
+  String get contentPreferencesMusicMode => 'Müzik modu';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Enstrümanları ezen gürültü temizlemesini kapatır. Müzik için daha iyi, sesler için daha ham.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Hesap Etiketleri';
 
   @override

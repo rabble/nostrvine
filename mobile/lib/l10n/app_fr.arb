@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Utiliser la langue de l'appareil (par défaut)",
     "contentPreferencesAudioSharing": "Rendre mon audio réutilisable",
     "contentPreferencesAudioSharingSubtitle": "Quand c'est activé, les autres peuvent utiliser l'audio de tes vidéos",
+    "contentPreferencesMusicMode": "Mode musique",
+    "contentPreferencesMusicModeSubtitle": "Désactive le nettoyage du bruit qui écrase les instruments. Mieux pour la musique, plus rugueux pour les voix.",
     "contentPreferencesAccountLabels": "Étiquettes de compte",
     "contentPreferencesAccountLabelsEmpty": "Auto-étiquette ton contenu",
     "contentPreferencesAccountContentLabels": "Étiquettes de contenu du compte",

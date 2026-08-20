@@ -156,6 +156,8 @@
   "contentPreferencesUseDeviceLanguage": "Guna bahasa peranti (lalai)",
   "contentPreferencesAudioSharing": "Benarkan audio saya digunakan semula",
   "contentPreferencesAudioSharingSubtitle": "Apabila didayakan, orang lain boleh menggunakan audio daripada video anda",
+  "contentPreferencesMusicMode": "Mod muzik",
+  "contentPreferencesMusicModeSubtitle": "Melangkau pembersihan hingar yang memampatkan bunyi alat muzik. Lebih baik untuk muzik, lebih kasar untuk suara.",
   "contentPreferencesAccountLabels": "Label Akaun",
   "contentPreferencesAccountLabelsEmpty": "Labelkan kandungan anda sendiri",
   "contentPreferencesAccountContentLabels": "Label Kandungan Akaun",

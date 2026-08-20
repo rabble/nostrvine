@@ -53,6 +53,7 @@ class MockDivineCameraPlatform
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -144,6 +145,7 @@ class _WideAspectRatioMock extends MockDivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return const CameraState(
       isInitialized: true,
@@ -162,6 +164,7 @@ class _RotatedPreviewMock extends MockDivineCameraPlatform {
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
     bool enableAutoLensSwitch = false,
+    bool preferUnprocessedAudio = false,
   }) async {
     return const CameraState(
       isInitialized: true,

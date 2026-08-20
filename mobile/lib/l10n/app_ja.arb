@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "デバイスの言語を使う (既定)",
     "contentPreferencesAudioSharing": "自分の音声を再利用可能にする",
     "contentPreferencesAudioSharingSubtitle": "オンにすると、他の人があなたの動画の音声を使えるよ",
+    "contentPreferencesMusicMode": "音楽モード",
+    "contentPreferencesMusicModeSubtitle": "楽器の音を潰してしまうノイズ除去をオフにします。音楽向きですが、声には少し粗くなります。",
     "contentPreferencesAccountLabels": "アカウントラベル",
     "contentPreferencesAccountLabelsEmpty": "自分のコンテンツにラベルを付けよう",
     "contentPreferencesAccountContentLabels": "アカウントのコンテンツラベル",

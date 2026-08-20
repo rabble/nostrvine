@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Gebruik apparaattaal (standaard)",
     "contentPreferencesAudioSharing": "Maak mijn audio beschikbaar voor hergebruik",
     "contentPreferencesAudioSharingSubtitle": "Als dit aanstaat kunnen anderen audio uit je video's gebruiken",
+    "contentPreferencesMusicMode": "Muziekmodus",
+    "contentPreferencesMusicModeSubtitle": "Zet de ruisonderdrukking uit die instrumenten platslaat. Beter voor muziek, ruwer voor stemmen.",
     "contentPreferencesAccountLabels": "Accountlabels",
     "contentPreferencesAccountLabelsEmpty": "Label je eigen inhoud",
     "contentPreferencesAccountContentLabels": "Inhoudslabels voor account",

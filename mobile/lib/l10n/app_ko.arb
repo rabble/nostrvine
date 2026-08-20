@@ -107,6 +107,8 @@
     "contentPreferencesUseDeviceLanguage": "기기 언어 사용 (기본값)",
     "contentPreferencesAudioSharing": "내 오디오 재사용 허용",
     "contentPreferencesAudioSharingSubtitle": "켜면 다른 사람들이 내 영상의 오디오를 쓸 수 있어요",
+    "contentPreferencesMusicMode": "음악 모드",
+    "contentPreferencesMusicModeSubtitle": "악기 소리를 뭉개는 노이즈 제거를 꺼요. 음악에는 좋고, 목소리에는 조금 거칠어요.",
     "contentPreferencesAccountLabels": "계정 라벨",
     "contentPreferencesAccountLabelsEmpty": "내 콘텐츠에 스스로 라벨 달기",
     "contentPreferencesAccountContentLabels": "계정 콘텐츠 라벨",

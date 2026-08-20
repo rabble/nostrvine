@@ -21,6 +21,7 @@ import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/music_mode_preference_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -2225,6 +2226,7 @@ void main() {
             videoQuality: any(named: 'videoQuality'),
             initialLens: any(named: 'initialLens'),
             enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+            preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2283,6 +2285,7 @@ void main() {
               videoQuality: any(named: 'videoQuality'),
               initialLens: any(named: 'initialLens'),
               enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+              preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
             ),
           ).thenThrow(Exception('camera boom')),
           build: buildTraced,
@@ -2303,6 +2306,28 @@ void main() {
               videoQuality: any(named: 'videoQuality'),
               initialLens: any(named: 'initialLens'),
               enableAutoLensSwitch: true,
+              preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'asks for unprocessed capture when Music mode is on',
+        setUp: () {
+          when(
+            () => prefs.getBool(MusicModePreferenceService.prefsKey),
+          ).thenReturn(true);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verify(
+            () => cameraService.initialize(
+              videoQuality: any(named: 'videoQuality'),
+              initialLens: any(named: 'initialLens'),
+              enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+              preferUnprocessedAudio: true,
             ),
           ).called(1);
         },
@@ -2657,6 +2682,7 @@ void main() {
               videoQuality: any(named: 'videoQuality'),
               initialLens: any(named: 'initialLens'),
               enableAutoLensSwitch: any(named: 'enableAutoLensSwitch'),
+              preferUnprocessedAudio: any(named: 'preferUnprocessedAudio'),
             ),
           ).thenAnswer((_) async {});
           when(

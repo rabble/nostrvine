@@ -370,6 +370,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'عند التفعيل، يمكن للآخرين استخدام الصوت من فيديوهاتك';
 
   @override
+  String get contentPreferencesMusicMode => 'وضع الموسيقى';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'يوقف تنقية الضوضاء التي تُخفّت صوت الآلات الموسيقية. أفضل للموسيقى، وأقسى على الأصوات.';
+
+  @override
   String get contentPreferencesAccountLabels => 'وسوم الحساب';
 
   @override

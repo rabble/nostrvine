@@ -325,6 +325,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat aktif, orang lain bisa memakai audio dari videomu';
 
   @override
+  String get contentPreferencesMusicMode => 'Mode musik';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Melewati pembersihan derau yang meredam alat musik. Lebih bagus untuk musik, lebih kasar untuk suara.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Label Akun';
 
   @override

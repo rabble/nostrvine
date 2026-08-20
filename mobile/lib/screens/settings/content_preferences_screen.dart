@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/audio_device/audio_device_cubit.dart';
 import 'package:openvine/blocs/audio_sharing/audio_sharing_cubit.dart';
 import 'package:openvine/blocs/language_setting/language_setting_cubit.dart';
+import 'package:openvine/blocs/music_mode/music_mode_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -43,6 +44,8 @@ class ContentPreferencesScreen extends ConsumerWidget {
               const _ContentFiltersTile(),
               const AccountContentLabelsTile(),
               const _AudioSharingToggle(),
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
+                const _MusicModeToggle(),
               if (!kIsWeb && defaultTargetPlatform != TargetPlatform.linux)
                 const _AudioDeviceSelector(),
             ],
@@ -252,6 +255,42 @@ class _AudioSharingToggleTile extends StatelessWidget {
       subtitle: context.l10n.contentPreferencesAudioSharingSubtitle,
       value: isEnabled,
       onChanged: (value) => context.read<AudioSharingCubit>().setEnabled(value),
+    );
+  }
+}
+
+/// Opt-in unprocessed microphone capture.
+///
+/// iOS-only for now: it maps to the recording audio-session mode, and no
+/// other platform acts on the preference yet (#7796).
+class _MusicModeToggle extends ConsumerWidget {
+  const _MusicModeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final service = ref.watch(musicModePreferenceServiceProvider);
+    return BlocProvider(
+      key: ValueKey(service),
+      create: (_) => MusicModeCubit(service: service)..load(),
+      child: const _MusicModeToggleTile(),
+    );
+  }
+}
+
+class _MusicModeToggleTile extends StatelessWidget {
+  const _MusicModeToggleTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = context.select(
+      (MusicModeCubit cubit) => cubit.state.isEnabled,
+    );
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.waveform,
+      title: context.l10n.contentPreferencesMusicMode,
+      subtitle: context.l10n.contentPreferencesMusicModeSubtitle,
+      value: isEnabled,
+      onChanged: (value) => context.read<MusicModeCubit>().setEnabled(value),
     );
   }
 }

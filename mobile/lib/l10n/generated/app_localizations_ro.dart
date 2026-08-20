@@ -406,6 +406,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când e activat, alții pot folosi audio din videoclipurile tale';
 
   @override
+  String get contentPreferencesMusicMode => 'Mod muzică';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Dezactivează reducerea zgomotului care turtește instrumentele. Mai bine pentru muzică, mai aspru pentru voci.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Etichete de cont';
 
   @override

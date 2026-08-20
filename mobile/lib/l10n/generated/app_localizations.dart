@@ -684,6 +684,18 @@ abstract class AppLocalizations {
   /// **'When enabled, others can use audio from your videos'**
   String get contentPreferencesAudioSharingSubtitle;
 
+  /// No description provided for @contentPreferencesMusicMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Music mode'**
+  String get contentPreferencesMusicMode;
+
+  /// Explains the trade-off behind the Music mode switch in Settings -> Content Preferences. Enabling it drops the platform's speech-tuned noise suppression, so instruments keep their real level but spoken audio loses the cleanup that flatters it.
+  ///
+  /// In en, this message translates to:
+  /// **'Skips the noise cleanup that flattens instruments. Better for music, rougher on voices.'**
+  String get contentPreferencesMusicModeSubtitle;
+
   /// No description provided for @contentPreferencesAccountLabels.
   ///
   /// In en, this message translates to:

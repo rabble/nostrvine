@@ -387,6 +387,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Quando ativado, outras pessoas podem usar o áudio dos seus vídeos';
 
   @override
+  String get contentPreferencesMusicMode => 'Modo música';
+
+  @override
+  String get contentPreferencesMusicModeSubtitle =>
+      'Desliga a limpeza de ruído que achata os instrumentos. Melhor para música, mais bruto nas vozes.';
+
+  @override
   String get contentPreferencesAccountLabels => 'Rótulos da conta';
 
   @override

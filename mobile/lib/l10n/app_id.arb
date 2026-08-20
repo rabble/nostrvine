@@ -159,6 +159,8 @@
     "contentPreferencesUseDeviceLanguage": "Pakai bahasa perangkat (bawaan)",
     "contentPreferencesAudioSharing": "Jadikan audioku bisa dipakai ulang",
     "contentPreferencesAudioSharingSubtitle": "Saat aktif, orang lain bisa memakai audio dari videomu",
+    "contentPreferencesMusicMode": "Mode musik",
+    "contentPreferencesMusicModeSubtitle": "Melewati pembersihan derau yang meredam alat musik. Lebih bagus untuk musik, lebih kasar untuk suara.",
     "contentPreferencesAccountLabels": "Label Akun",
     "contentPreferencesAccountLabelsEmpty": "Beri label sendiri pada kontenmu",
     "contentPreferencesAccountContentLabels": "Label Konten Akun",
