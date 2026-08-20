@@ -70,7 +70,7 @@ void main() {
       // Stands in for the app's "only show Divine-hosted videos" filter.
       final repo = build(
         contentFilter: (video) =>
-            !(Uri.parse(video.videoUrl ?? '').host.endsWith('.divine.video')),
+            !Uri.parse(video.videoUrl ?? '').host.endsWith('.divine.video'),
       );
 
       final result = await repo.lookupVideoForRouteId('34236:$_pubkey:$_dTag');

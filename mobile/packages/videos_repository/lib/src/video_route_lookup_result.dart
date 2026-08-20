@@ -16,8 +16,10 @@ sealed class VideoRouteLookupResult {
 
 /// A playable video the viewer is allowed to see.
 final class VideoRouteFound extends VideoRouteLookupResult {
+  /// Creates a result carrying the playable [video].
   const VideoRouteFound(this.video);
 
+  /// The resolved, hydrated video.
   final VideoEvent video;
 }
 
@@ -29,12 +31,15 @@ final class VideoRouteFound extends VideoRouteLookupResult {
 /// "only show Divine-hosted videos" setting) without this package having to
 /// know what the app's filters mean.
 final class VideoRouteHiddenByFilter extends VideoRouteLookupResult {
+  /// Creates a result carrying the [video] a content filter removed.
   const VideoRouteHiddenByFilter(this.video);
 
+  /// The parsed video, so callers can explain which preference hid it.
   final VideoEvent video;
 }
 
 /// No source supplied the video.
 final class VideoRouteMissing extends VideoRouteLookupResult {
+  /// Creates a result meaning no source supplied the video.
   const VideoRouteMissing();
 }
