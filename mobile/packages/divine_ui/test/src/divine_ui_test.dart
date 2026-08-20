@@ -652,8 +652,21 @@ void main() {
         expect(style.fontWeight, FontWeight.w600);
       });
 
-      testWidgets('emojiFont sizes the glyph and nothing else', (tester) async {
-        final style = VineTheme.emojiFont(fontSize: 28);
+      testWidgets('emojiDisplayFont sizes the glyph and nothing else', (
+        tester,
+      ) async {
+        final style = VineTheme.emojiDisplayFont();
+        expect(style.fontSize, 40);
+        expect(style.fontFamily, isNull);
+        expect(style.height, isNull);
+        expect(style.letterSpacing, isNull);
+        expect(style.color, isNull);
+      });
+
+      testWidgets('emojiPickerFont sizes the glyph and nothing else', (
+        tester,
+      ) async {
+        final style = VineTheme.emojiPickerFont();
         expect(style.fontSize, 28);
         expect(style.fontFamily, isNull);
         expect(style.height, isNull);
@@ -661,12 +674,30 @@ void main() {
         expect(style.color, isNull);
       });
 
-      testWidgets('emojiFont accepts a color override', (tester) async {
-        final style = VineTheme.emojiFont(
-          fontSize: 40,
-          color: VineTheme.vineGreen,
+      testWidgets('emojiBadgeFont sizes the glyph and nothing else', (
+        tester,
+      ) async {
+        final style = VineTheme.emojiBadgeFont();
+        expect(style.fontSize, 15);
+        expect(style.fontFamily, isNull);
+        expect(style.height, isNull);
+        expect(style.letterSpacing, isNull);
+        expect(style.color, isNull);
+      });
+
+      testWidgets('emoji role fonts accept a color override', (tester) async {
+        expect(
+          VineTheme.emojiDisplayFont(color: VineTheme.vineGreen).color,
+          VineTheme.vineGreen,
         );
-        expect(style.color, VineTheme.vineGreen);
+        expect(
+          VineTheme.emojiPickerFont(color: VineTheme.vineGreen).color,
+          VineTheme.vineGreen,
+        );
+        expect(
+          VineTheme.emojiBadgeFont(color: VineTheme.vineGreen).color,
+          VineTheme.vineGreen,
+        );
       });
     });
 

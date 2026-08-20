@@ -820,8 +820,25 @@ class VineTheme {
   /// text face's line-height / letter-spacing crops or floats the glyphs —
   /// callers size the glyph and nothing else. [color] exists for the rare
   /// mixed emoji-and-text run that must match its surroundings.
-  static TextStyle emojiFont({required double fontSize, Color? color}) =>
+  ///
+  /// Private on purpose: the public surface is the named role styles below
+  /// ([emojiDisplayFont] / [emojiPickerFont] / [emojiBadgeFont]), so ad-hoc
+  /// glyph sizes cannot accrete through a free-size factory.
+  static TextStyle _emojiFont({required double fontSize, Color? color}) =>
       TextStyle(fontSize: fontSize, color: color);
+
+  /// Emoji display run (40): jumbo glyphs standing in for body content —
+  /// the emoji-only comment / message rendering.
+  static TextStyle emojiDisplayFont({Color? color}) =>
+      _emojiFont(fontSize: 40, color: color);
+
+  /// Emoji picker run (28): reaction quick-row and picker buttons.
+  static TextStyle emojiPickerFont({Color? color}) =>
+      _emojiFont(fontSize: 28, color: color);
+
+  /// Emoji badge run (15): reaction pills and aggregated reaction chips.
+  static TextStyle emojiBadgeFont({Color? color}) =>
+      _emojiFont(fontSize: 15, color: color);
 
   /// Caption pill: Chivo Mono 300 16/24/0.5 — used by the inline subtitle
   /// pill above the author row in the home / fullscreen video overlays.

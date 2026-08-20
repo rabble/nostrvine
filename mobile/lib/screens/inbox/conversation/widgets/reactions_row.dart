@@ -275,7 +275,7 @@ class _ReactionPill extends StatelessWidget {
 /// forced line-height drops the glyph low on Android. Natural leading lets the
 /// Row centre the glyph box — mirrors reaction_picker_overlay.
 TextStyle _emojiTextStyleOf(BuildContext context) =>
-    VineTheme.emojiFont(fontSize: 15, color: context.vineColors.onSurface);
+    VineTheme.emojiBadgeFont(color: context.vineColors.onSurface);
 
 /// Duration of the reaction glyph grow-in.
 const _emojiPopDuration = Duration(milliseconds: 180);

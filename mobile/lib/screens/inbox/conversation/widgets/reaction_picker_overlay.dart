@@ -154,8 +154,7 @@ class _EmojiButton extends StatelessWidget {
             child: Center(
               child: DivineHeartText(
                 emoji,
-                style: VineTheme.emojiFont(
-                  fontSize: 28,
+                style: VineTheme.emojiPickerFont(
                   color: context.vineColors.onSurface,
                 ),
               ),

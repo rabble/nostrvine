@@ -472,9 +472,6 @@ bool _isEmojiOnly(String text) {
   );
 }
 
-/// Font size for emoji-only comments (1-3 emoji with no text).
-const _emojiOnlyFontSize = 40.0;
-
 /// Content section of a comment showing text with parsed @mentions.
 class _CommentContent extends StatelessWidget {
   const _CommentContent({required this.commentId, required this.content});
@@ -489,10 +486,7 @@ class _CommentContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEmoji = _isEmojiOnly(content);
     final baseStyle = isEmoji
-        ? VineTheme.emojiFont(
-            fontSize: _emojiOnlyFontSize,
-            color: context.vineColors.onSurface,
-          )
+        ? VineTheme.emojiDisplayFont(color: context.vineColors.onSurface)
         : VineTheme.bodyMediumFont(color: context.vineColors.onSurface);
     return LinkifiedText(
       text: content,
@@ -721,8 +715,7 @@ class _ReactionChip extends StatelessWidget {
             children: [
               Text(
                 emoji,
-                style: VineTheme.emojiFont(
-                  fontSize: 14,
+                style: VineTheme.emojiBadgeFont(
                   color: context.vineColors.onSurface,
                 ),
               ),
