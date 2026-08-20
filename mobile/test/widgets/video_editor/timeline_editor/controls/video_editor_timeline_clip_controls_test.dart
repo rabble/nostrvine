@@ -163,6 +163,118 @@ void main() {
       );
     }
 
+    // Stubs an editor whose history writes are captured rather than applied.
+    // [activeMeta] seeds the editor's current history entry, so a test that
+    // needs an existing sound passes its serialized audio key here.
+    void stubEditor({
+      required _MockProImageEditorState editor,
+      required _MockStateManager stateManager,
+      required _MockTimelineOverlayBloc overlayBloc,
+      Map<String, dynamic> activeMeta = const {},
+    }) {
+      when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
+      when(
+        () => overlayBloc.stream,
+      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
+      when(() => editor.stateManager).thenReturn(stateManager);
+      when(() => stateManager.activeMeta).thenReturn(activeMeta);
+      when(
+        () => editor.addHistory(
+          layers: any(named: 'layers'),
+          filters: any(named: 'filters'),
+          meta: any(named: 'meta'),
+          newLayer: any(named: 'newLayer'),
+          transformConfigs: any(named: 'transformConfigs'),
+          tuneAdjustments: any(named: 'tuneAdjustments'),
+          blur: any(named: 'blur'),
+          heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
+          blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
+        ),
+      ).thenAnswer((_) {});
+      when(() => editor.setState(any())).thenAnswer((invocation) {
+        (invocation.positionalArguments.single as VoidCallback)();
+      });
+    }
+
+    // Pumps the controls inside a VideoEditorScope backed by [editor]. Routed
+    // rather than a plain MaterialApp because the speed sheet confirms via
+    // `context.pop`.
+    Future<VideoEditorTimelineControls> pumpWithEditor(
+      WidgetTester tester, {
+      required _MockProImageEditorState editor,
+      required _MockTimelineOverlayBloc overlayBloc,
+      required ClipEditorState state,
+    }) async {
+      when(() => bloc.state).thenReturn(state);
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: GoRouter(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (context, routerState) => Scaffold(
+                    body: VideoEditorScope(
+                      editorKey: GlobalKey<ProImageEditorState>(),
+                      editorOverride: editor,
+                      removeAreaKey: GlobalKey(),
+                      originalClipAspectRatio: 9 / 16,
+                      bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                      zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+                      playTimeNotifier: ValueNotifier(Duration.zero),
+                      fromLibrary: false,
+                      onOpenCamera: () {},
+                      onOpenClipsEditor: () {},
+                      onAddStickers: () {},
+                      onOpenMusicLibrary: () {},
+                      onOpenVoiceOver: () {},
+                      onOpenCaptions: () {},
+                      onAddEditTextLayer: ([layer]) async => null,
+                      child: MultiBlocProvider(
+                        providers: [
+                          BlocProvider<ClipEditorBloc>.value(value: bloc),
+                          BlocProvider<TimelineOverlayBloc>.value(
+                            value: overlayBloc,
+                          ),
+                        ],
+                        child: TimelineClipControls(
+                          playheadPosition: ValueNotifier(Duration.zero),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      return tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+    }
+
+    // The meta of the single history entry [editor] was asked to commit.
+    Map<String, dynamic> capturedHistoryMeta(
+      _MockProImageEditorState editor,
+    ) =>
+        verify(
+              () => editor.addHistory(
+                layers: any(named: 'layers'),
+                filters: any(named: 'filters'),
+                meta: captureAny(named: 'meta'),
+                newLayer: any(named: 'newLayer'),
+                transformConfigs: any(named: 'transformConfigs'),
+                tuneAdjustments: any(named: 'tuneAdjustments'),
+                blur: any(named: 'blur'),
+                heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
+                blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
+              ),
+            ).captured.single
+            as Map<String, dynamic>;
+
     testWidgets('renders expected labels for single-clip state', (
       tester,
     ) async {
@@ -670,90 +782,31 @@ void main() {
       tester,
     ) async {
       final editor = _MockProImageEditorState();
-      final stateManager = _MockStateManager();
       final overlayBloc = _MockTimelineOverlayBloc();
-
-      when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
-      when(
-        () => overlayBloc.stream,
-      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
-      when(() => editor.stateManager).thenReturn(stateManager);
       // No audio key in the meta => no sound tracks, so the commit takes the
       // plain clip-state path.
-      when(() => stateManager.activeMeta).thenReturn(<String, dynamic>{});
-      when(
-        () => editor.addHistory(
-          layers: any(named: 'layers'),
-          filters: any(named: 'filters'),
-          meta: any(named: 'meta'),
-          newLayer: any(named: 'newLayer'),
-          transformConfigs: any(named: 'transformConfigs'),
-          tuneAdjustments: any(named: 'tuneAdjustments'),
-          blur: any(named: 'blur'),
-          heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
-          blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
-        ),
-      ).thenAnswer((_) {});
-      when(() => editor.setState(any())).thenAnswer((invocation) {
-        (invocation.positionalArguments.single as VoidCallback)();
-      });
+      stubEditor(
+        editor: editor,
+        stateManager: _MockStateManager(),
+        overlayBloc: overlayBloc,
+      );
 
-      when(() => bloc.state).thenReturn(
-        ClipEditorState(
+      final controls = await pumpWithEditor(
+        tester,
+        editor: editor,
+        overlayBloc: overlayBloc,
+        state: ClipEditorState(
           clips: [clip('clip-1'), clip('clip-2'), clip('clip-3')],
           currentClipIndex: 1,
         ),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: VideoEditorScope(
-                editorKey: GlobalKey<ProImageEditorState>(),
-                editorOverride: editor,
-                removeAreaKey: GlobalKey(),
-                originalClipAspectRatio: 9 / 16,
-                bodySizeNotifier: ValueNotifier(const Size(400, 600)),
-                zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
-                playTimeNotifier: ValueNotifier(Duration.zero),
-                fromLibrary: false,
-                onOpenCamera: () {},
-                onOpenClipsEditor: () {},
-                onAddStickers: () {},
-                onOpenMusicLibrary: () {},
-                onOpenVoiceOver: () {},
-                onOpenCaptions: () {},
-                onAddEditTextLayer: ([layer]) async => null,
-                child: MultiBlocProvider(
-                  providers: [
-                    BlocProvider<ClipEditorBloc>.value(value: bloc),
-                    BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
-                  ],
-                  child: TimelineClipControls(
-                    playheadPosition: ValueNotifier(Duration.zero),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      tester
-          .widget<VideoEditorTimelineControls>(
-            find.byType(VideoEditorTimelineControls),
-          )
-          .onDuplicated!();
+      controls.onDuplicated!();
       await tester.pump();
 
       final inserted =
           verify(
-                () => bloc.add(
-                  captureAny(that: isA<ClipEditorClipInserted>()),
-                ),
+                () => bloc.add(captureAny(that: isA<ClipEditorClipInserted>())),
               ).captured.single
               as ClipEditorClipInserted;
       expect(inserted.index, equals(2));
@@ -761,21 +814,7 @@ void main() {
 
       // The editor commit has to agree with the bloc event, or undo/redo and
       // the render would replay a different clip order than the timeline shows.
-      final meta =
-          verify(
-                () => editor.addHistory(
-                  layers: any(named: 'layers'),
-                  filters: any(named: 'filters'),
-                  meta: captureAny(named: 'meta'),
-                  newLayer: any(named: 'newLayer'),
-                  transformConfigs: any(named: 'transformConfigs'),
-                  tuneAdjustments: any(named: 'tuneAdjustments'),
-                  blur: any(named: 'blur'),
-                  heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
-                  blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
+      final meta = capturedHistoryMeta(editor);
       final committed =
           (meta[VideoEditorConstants.clipsStateHistoryKey] as List<dynamic>)
               .cast<Map<String, dynamic>>()
@@ -791,7 +830,6 @@ void main() {
     // composition, and a sound clamped to the old end has to follow it.
     group('sound follows composition growth', () {
       late _MockProImageEditorState editor;
-      late _MockStateManager stateManager;
       late _MockTimelineOverlayBloc overlayBloc;
 
       final coveringSound = AudioEvent(
@@ -805,115 +843,21 @@ void main() {
 
       setUp(() {
         editor = _MockProImageEditorState();
-        stateManager = _MockStateManager();
         overlayBloc = _MockTimelineOverlayBloc();
-
-        when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
-        when(
-          () => overlayBloc.stream,
-        ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
-        when(() => editor.stateManager).thenReturn(stateManager);
-        when(() => stateManager.activeMeta).thenReturn({
-          VideoEditorConstants.audioStateHistoryKey: [coveringSound.toJson()],
-        });
-        when(
-          () => editor.addHistory(
-            layers: any(named: 'layers'),
-            filters: any(named: 'filters'),
-            meta: any(named: 'meta'),
-            newLayer: any(named: 'newLayer'),
-            transformConfigs: any(named: 'transformConfigs'),
-            tuneAdjustments: any(named: 'tuneAdjustments'),
-            blur: any(named: 'blur'),
-            heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
-            blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
-          ),
-        ).thenAnswer((_) {});
-        when(() => editor.setState(any())).thenAnswer((invocation) {
-          (invocation.positionalArguments.single as VoidCallback)();
-        });
+        stubEditor(
+          editor: editor,
+          stateManager: _MockStateManager(),
+          overlayBloc: overlayBloc,
+          activeMeta: {
+            VideoEditorConstants.audioStateHistoryKey: [coveringSound.toJson()],
+          },
+        );
       });
 
-      Future<VideoEditorTimelineControls> pumpWithEditor(
-        WidgetTester tester, {
-        required ClipEditorState state,
-      }) async {
-        when(() => bloc.state).thenReturn(state);
-        // The speed sheet confirms via context.pop, so the harness needs a
-        // GoRouter rather than a plain MaterialApp.
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: GoRouter(
-                routes: [
-                  GoRoute(
-                    path: '/',
-                    builder: (context, state) => Scaffold(
-                      body: VideoEditorScope(
-                        editorKey: GlobalKey<ProImageEditorState>(),
-                        editorOverride: editor,
-                        removeAreaKey: GlobalKey(),
-                        originalClipAspectRatio: 9 / 16,
-                        bodySizeNotifier: ValueNotifier(const Size(400, 600)),
-                        zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
-                        playTimeNotifier: ValueNotifier(Duration.zero),
-                        fromLibrary: false,
-                        onOpenCamera: () {},
-                        onOpenClipsEditor: () {},
-                        onAddStickers: () {},
-                        onOpenMusicLibrary: () {},
-                        onOpenVoiceOver: () {},
-                        onOpenCaptions: () {},
-                        onAddEditTextLayer: ([layer]) async => null,
-                        child: MultiBlocProvider(
-                          providers: [
-                            BlocProvider<ClipEditorBloc>.value(value: bloc),
-                            BlocProvider<TimelineOverlayBloc>.value(
-                              value: overlayBloc,
-                            ),
-                          ],
-                          child: TimelineClipControls(
-                            playheadPosition: ValueNotifier(Duration.zero),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-        return tester.widget<VideoEditorTimelineControls>(
-          find.byType(VideoEditorTimelineControls),
-        );
-      }
-
       List<AudioEvent> capturedAudio() {
-        final meta =
-            verify(
-                  () => editor.addHistory(
-                    layers: any(named: 'layers'),
-                    filters: any(named: 'filters'),
-                    meta: captureAny(named: 'meta'),
-                    newLayer: any(named: 'newLayer'),
-                    transformConfigs: any(named: 'transformConfigs'),
-                    tuneAdjustments: any(named: 'tuneAdjustments'),
-                    blur: any(named: 'blur'),
-                    heroScreenshotRequired: any(
-                      named: 'heroScreenshotRequired',
-                    ),
-                    blockCaptureScreenshot: any(
-                      named: 'blockCaptureScreenshot',
-                    ),
-                  ),
-                ).captured.single
-                as Map<String, dynamic>;
-        final raw =
-            meta[VideoEditorConstants.audioStateHistoryKey] as List<dynamic>;
-        return raw
+        final meta = capturedHistoryMeta(editor);
+        return (meta[VideoEditorConstants.audioStateHistoryKey]
+                as List<dynamic>)
             .cast<Map<String, dynamic>>()
             .map(AudioEvent.fromJson)
             .toList();
@@ -923,6 +867,8 @@ void main() {
           'the copy', (tester) async {
         final controls = await pumpWithEditor(
           tester,
+          editor: editor,
+          overlayBloc: overlayBloc,
           state: ClipEditorState(clips: [clip('clip-1')]),
         );
 
@@ -936,6 +882,8 @@ void main() {
           'composition onto the stretched end', (tester) async {
         final controls = await pumpWithEditor(
           tester,
+          editor: editor,
+          overlayBloc: overlayBloc,
           state: ClipEditorState(clips: [clip('clip-1')]),
         );
 
