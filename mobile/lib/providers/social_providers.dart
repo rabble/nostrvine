@@ -9,8 +9,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
-import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -590,13 +590,14 @@ AnalyticsService analyticsService(Ref ref) {
   final viewPublisher = ref.watch(viewEventPublisherProvider);
   final retryService = ref.watch(viewEventRetryServiceProvider);
   final productQueue = ref.watch(productEventQueueProvider);
+  final appVersion = ref.watch(appVersionProvider);
   final service = AnalyticsService(
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
     flushPendingViewEvents: retryService?.sweep,
     productEventQueue: productQueue,
     currentUserPubkey: () => authService.currentPublicKeyHex,
-    appVersion: () => AppConfig.appVersion,
+    appVersion: () => appVersion,
   );
 
   var lastPubkey = authService.currentPublicKeyHex;
