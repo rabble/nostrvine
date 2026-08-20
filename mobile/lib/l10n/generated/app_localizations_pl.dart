@@ -6499,20 +6499,20 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dmStatusFailed => 'Nie udało się wysłać';
 
   @override
-  String get inboxConversationActionsSheetLabel => 'Akcje konwersacji';
+  String get inboxConversationActionsSheetLabel => 'Akcje rozmowy';
 
   @override
   String inboxConversationTileLabel(String displayName) {
-    return 'Konwersacja z $displayName';
+    return 'Rozmowa z $displayName';
   }
 
   @override
   String inboxConversationTileLabelUnread(String displayName) {
-    return 'Nieprzeczytana, konwersacja z $displayName';
+    return 'Nieprzeczytana, rozmowa z $displayName';
   }
 
   @override
-  String get inboxConversationTileLongPressHint => 'Pokaż akcje konwersacji';
+  String get inboxConversationTileLongPressHint => 'Pokaż akcje rozmowy';
 
   @override
   String get reportDialogCancel => 'Anuluj';
