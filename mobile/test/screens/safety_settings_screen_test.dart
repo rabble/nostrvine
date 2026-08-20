@@ -23,9 +23,9 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/services/video_provenance_filter_service.dart';
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {
