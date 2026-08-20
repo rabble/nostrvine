@@ -93,6 +93,14 @@ print_baseline_header() {
 # minor_account_review*.dart. This is reviewed, legally-sensitive copy already
 # translated into 21 locales, so it is staged rather than deleted — build the
 # sections or have product retire them; do not drop them silently.
+#
+# Three alternatives from that flow WERE deleted, each superseded by a live
+# sibling that already renders in a built section: minorAccountReviewWelcomeCta
+# (-> authUnder16Prefix + authUnder16ChoicesCta),
+# minorAccountReviewFamilyResourcesTitle (-> minorAccountReviewLearnMoreTitle)
+# and minorAccountReviewUnder13LegalTitle (-> minorAccountReviewUnder13WhyTitle).
+# They are distinct authored, translated wordings: recoverable from history if
+# product ever prefers one, but no longer live keys.
 EOF
 }
 

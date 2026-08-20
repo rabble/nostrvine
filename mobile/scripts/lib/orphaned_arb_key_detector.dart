@@ -152,6 +152,12 @@ void main(List<String> args) {
   // lib/ ONLY, deliberately. A test cannot make a key rendered, and taking
   // test references as evidence hid 9 product-orphans — four of them held up
   // by a `findsNothing` assertion, which proves the string is NOT on screen.
+  //
+  // mobile/packages/ is out of scope for a stronger reason than judgement:
+  // AppLocalizations lives in the app, no package depends on package:openvine,
+  // and check_package_flutter_boundary.sh keeps it that way — so a package
+  // CANNOT reference an ARB key. Scanning it would only add name collisions.
+  //
   // Pass roots explicitly to widen the scan.
   final scanRoots = positional.length > 1
       ? positional.sublist(1)
