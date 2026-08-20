@@ -19,6 +19,7 @@ import 'package:openvine/models/auth_result.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/services/account_deletion_proof_signer.dart';
 import 'package:openvine/services/auth/known_accounts_registry.dart';
 import 'package:openvine/services/auth/nostr_connect_coordinator.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
@@ -3162,6 +3163,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // runs before this call, and refuses a session the signed-in account
       // cannot claim — deletion is irreversible, so the account it lands on
       // has to be the one that asked for it.
+      //
+      // Sampled before minting, not after: [activeAccountKeycastToken] reads
+      // the same getter on entry, so this names the account it validates the
+      // session against. Sampling afterwards would name the *new* account if
+      // a switch landed in between, and the pin below would then approve the
+      // very mismatch it exists to catch.
+      final tokenOwnerPubkey = currentPublicKeyHex;
       final accessToken = await activeAccountKeycastToken();
       if (accessToken == null) {
         Log.warning(
@@ -3177,17 +3185,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       }
 
-      // Prefer a NIP-98 proof-of-key over the bearer token.
-      // [activeAccountKeycastToken] above may have just minted a refreshed
-      // token, and a refreshed token no longer carries the server's first-party
-      // fact — so the bearer path is exactly the one that gets refused, after
-      // the irreversible NIP-62 vanish has already been published. Signing
-      // proves key control instead. Falls back to the bearer token when signing
-      // is unavailable, so this can ship before the server accepts proofs.
+      // The bearer token authorizes this; the signer is only a 403 retry.
+      // Keycast's delete route parses `Bearer ` and rejects every other
+      // scheme, so leading with a NIP-98 proof gets a 401 back before the
+      // proof is read at all — after the irreversible NIP-62 vanish has
+      // already been published. keycast#331 closed keycast#323 by preserving
+      // the first-party fact across refresh rotation instead of accepting
+      // proofs here, which is what makes the refreshed bearer token usable.
       // See #5756 / #4881 / keycast#323.
       final result = await _oauthClient.deleteAccount(
         accessToken,
-        nip98Signer: _signAccountDeletionProof,
+        nip98Signer: (url) =>
+            _deletionProof.sign(url, tokenOwnerPubkey: tokenOwnerPubkey),
       );
 
       if (result.success) {
@@ -3223,53 +3232,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  /// NIP-98 signer, built on first use against this instance.
+  /// Signs the proof-of-key the deletion retry offers after a 403.
   ///
-  /// Reuses the audited token construction in [Nip98AuthService] rather than
-  /// hand-rolling a second kind-27235 code path for one call site. Deliberately
-  /// nullable rather than `late final`, so [dispose] does not construct one (and
-  /// start its cache-cleanup timer) purely in order to tear it down.
-  Nip98AuthService? _nip98AuthService;
+  /// Deferred rather than eager so [dispose] does not build one purely to tear
+  /// it down. Lives in its own class so deletion work stops accreting into
+  /// this already-oversized service (#4338).
+  AccountDeletionProofSigner? _deletionProofSigner;
 
-  Nip98AuthService get _nip98Auth =>
-      _nip98AuthService ??= Nip98AuthService(authService: this);
-
-  /// Sign a NIP-98 proof-of-key for the account-deletion request at [url].
-  ///
-  /// Returns the base64 event body, or null when a proof cannot be produced —
-  /// in which case the caller falls back to the bearer token. Never throws:
-  /// failing to sign must not abort a deletion that the bearer path could still
-  /// complete.
-  ///
-  /// The signer must still be alive here. It is: the flow signs and publishes
-  /// the kind-62 vanish moments earlier, so a working signer is a precondition
-  /// of reaching this point at all. If that ordering ever changes, this returns
-  /// null and the call silently degrades to the bearer token — which is the
-  /// behavior this exists to avoid, so keep the ordering.
-  Future<String?> _signAccountDeletionProof(String url) async {
-    try {
-      final token = await _nip98Auth.createAuthToken(
-        url: url,
-        method: HttpMethod.delete,
+  AccountDeletionProofSigner get _deletionProof =>
+      _deletionProofSigner ??= AccountDeletionProofSigner(
+        buildNip98Auth: () => Nip98AuthService(authService: this),
+        activePubkey: () => currentPublicKeyHex,
       );
-      if (token == null) {
-        Log.warning(
-          'Could not sign NIP-98 proof for account deletion; '
-          'falling back to bearer token',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      }
-      return token?.token;
-    } catch (e) {
-      Log.warning(
-        'NIP-98 proof signing threw for account deletion: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return null;
-    }
-  }
 
   /// Sign out the current user.
   ///
@@ -4740,8 +4714,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _bunkerSigner = null;
 
     // Cancels the NIP-98 token cache's periodic cleanup timer, if one was built.
-    _nip98AuthService?.dispose();
-    _nip98AuthService = null;
+    _deletionProofSigner?.dispose();
+    _deletionProofSigner = null;
 
     // Close Amber signer if active
     _amberSigner?.close();
