@@ -124,7 +124,10 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertEqual(2, self.contents.count("shorebird_release_preflight.rb"))
         self.assertNotIn("shorebird releases info", self.contents)
         self.assertIn("--build-name=$BUILD_NAME", self.contents)
-        self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", self.contents)
+        commands = self._shorebird_release_commands()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
 
     def test_ios_release_rejects_closed_app_store_version_before_shorebird(self) -> None:
         workflow = self._workflow_block("ios-build")
@@ -184,8 +187,25 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             "shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging",
             self.contents,
         )
-        self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", self.contents)
         self.assertNotIn("--track=stable", self.contents)
+        # Per command, not whole-file: the release commands also carry these
+        # flags, so a substring search over the file passes even when a patch
+        # command is missing one. Shipping only --private-key-path is what
+        # made every patch build die with "Both public and private keys must
+        # be provided."
+        commands = self._shorebird_patch_commands()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
+            self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", command)
+
+    def test_patch_workflows_materialize_both_signing_keys(self) -> None:
+        # A key path on the command line is inert unless some step wrote the
+        # file it names.
+        for workflow in ("ios-patch", "android-patch"):
+            block = self._workflow_block(workflow)
+            self.assertIn("*write_shorebird_public_key", block)
+            self.assertIn("*write_shorebird_private_key", block)
 
     def test_shorebird_patch_workflows_use_private_provenance(self) -> None:
         self.assertIn('if [ "$CM_BRANCH" != "main" ]; then', self.contents)
@@ -387,11 +407,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             return self.contents[start:]
         return self.contents[start : start + 1 + next_workflow.start()]
 
-    def _shorebird_patch_commands(self) -> list[str]:
+    def _shorebird_commands(self, subcommand: str) -> list[str]:
         commands = []
         lines = self.contents.splitlines()
+        command_pattern = re.compile(rf"^\s+shorebird {re.escape(subcommand)} ")
         for index, line in enumerate(lines):
-            if "shorebird patch " not in line:
+            if command_pattern.match(line) is None:
                 continue
             command_lines = [line]
             cursor = index
@@ -400,6 +421,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
                 command_lines.append(lines[cursor])
             commands.append("\n".join(command_lines))
         return commands
+
+    def _shorebird_patch_commands(self) -> list[str]:
+        return self._shorebird_commands("patch")
+
+    def _shorebird_release_commands(self) -> list[str]:
+        return self._shorebird_commands("release")
 
 
 if __name__ == "__main__":
