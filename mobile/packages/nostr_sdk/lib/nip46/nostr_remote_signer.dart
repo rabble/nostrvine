@@ -100,6 +100,15 @@ class NostrRemoteSigner extends NostrSigner {
       }
     });
     final results = await Future.wait(futures.toList());
+    // `close()` can land inside that dial. Adopting a relay after it has run
+    // would put a live socket on a list nothing will ever walk again, so shut
+    // down what finished connecting instead (#7962).
+    if (_isClosed) {
+      for (final relay in results) {
+        if (relay != null) _shutDownRelay(relay);
+      }
+      return null;
+    }
     for (final relay in results) {
       if (relay != null) relays.add(relay);
     }
@@ -259,6 +268,14 @@ class NostrRemoteSigner extends NostrSigner {
     return relay;
   }
 
+  /// Whether a reconnect that has already suspended must drop its connect.
+  ///
+  /// Re-checked after every await in [_reconnectRelay]: [close] landing inside
+  /// one of those waits takes the relay off [relays], so a connect resuming
+  /// afterwards opens a socket and arms a heartbeat that no owner is left to
+  /// close (#7962).
+  bool get _reconnectAbandoned => _isClosed || _isPaused;
+
   /// Attempts to reconnect a relay after disconnection
   /// Uses exponential backoff to avoid hammering the relay
   Future<void> _reconnectRelay(Relay relay) async {
@@ -309,10 +326,21 @@ class NostrRemoteSigner extends NostrSigner {
     );
     await Future<void>.delayed(Duration(milliseconds: backoffMs));
 
+    if (_reconnectAbandoned) {
+      log('[NIP46] _reconnectRelay: abandoned during backoff for $addr');
+      return;
+    }
+
     try {
       // Add subscription query to pending messages before reconnecting
       if (relay.pendingMessages.isEmpty) {
         await addPenddingQueryMsg(relay);
+        if (_reconnectAbandoned) {
+          log(
+            '[NIP46] _reconnectRelay: abandoned while queueing REQ for $addr',
+          );
+          return;
+        }
       }
 
       await relay.connect();
@@ -409,8 +437,14 @@ class NostrRemoteSigner extends NostrSigner {
     NostrRemoteRequest request, {
     int timeout = 60,
   }) async {
-    // Check and reconnect any disconnected relays before sending
-    for (var relay in relays) {
+    // Check and reconnect any disconnected relays before sending.
+    // Iterate a snapshot: `close()` clears `relays`, and landing inside the
+    // connect below would otherwise throw ConcurrentModificationError.
+    for (final relay in List<Relay>.of(relays)) {
+      if (_isClosed) {
+        log('[NIP46] sendAndWaitForResult: signer closed, abandoning request');
+        return null;
+      }
       final status = relay.relayStatus.connected;
       log(
         '[NIP46] sendAndWaitForResult: checking relay ${relay.relayStatus.addr}, status=$status',
@@ -431,6 +465,11 @@ class NostrRemoteSigner extends NostrSigner {
           log('[NIP46] sendAndWaitForResult: failed to reconnect relay: $e');
         }
       }
+    }
+
+    if (_isClosed) {
+      log('[NIP46] sendAndWaitForResult: signer closed, abandoning request');
+      return null;
     }
 
     var senderPubkey = await localNostrSigner.getPublicKey();
@@ -454,6 +493,14 @@ class NostrRemoteSigner extends NostrSigner {
         log(
           '[NIP46] sendAndWaitForResult: sending event id=${event.id} to ${relays.length} relays',
         );
+
+        if (_isClosed) {
+          log(
+            '[NIP46] sendAndWaitForResult: signer closed while signing, '
+            'abandoning request',
+          );
+          return null;
+        }
 
         // set completer to callbacks
         var completer = Completer<String?>();
@@ -594,6 +641,22 @@ class NostrRemoteSigner extends NostrSigner {
   /// Whether the signer is currently paused
   bool get isPaused => _isPaused;
 
+  /// Takes a relay down for good.
+  ///
+  /// [Relay.disconnect] alone leaves the relay connectable: it closes the
+  /// socket but keeps the connection manager, so a reconnect resuming later
+  /// reuses it and opens a fresh socket plus heartbeat. [Relay.dispose] is
+  /// what sets the disposed flag that makes the relay refuse that connect
+  /// (#7962, guard added in #7367).
+  void _shutDownRelay(Relay relay) {
+    try {
+      relay.disconnect();
+      relay.dispose();
+    } catch (e) {
+      log('[NIP46] error shutting down relay ${relay.relayStatus.addr}: $e');
+    }
+  }
+
   @override
   void close() {
     log('[NIP46] close: closing signer and disconnecting all relays');
@@ -601,13 +664,7 @@ class NostrRemoteSigner extends NostrSigner {
 
     // Disconnect all relays to stop reconnection attempts
     for (final relay in relays) {
-      try {
-        relay.disconnect();
-      } catch (e) {
-        log(
-          '[NIP46] close: error disconnecting relay ${relay.relayStatus.addr}: $e',
-        );
-      }
+      _shutDownRelay(relay);
     }
     relays.clear();
 

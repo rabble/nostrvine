@@ -9,6 +9,8 @@ import 'package:nostr_sdk/nip46/nostr_remote_response.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:test/test.dart';
 
+import '../support/test_relay_server.dart';
+
 void main() {
   group('NostrRemoteSignerInfo nostrconnect:// support', () {
     test('isNostrConnectUrl returns true for nostrconnect:// URLs', () {
@@ -289,8 +291,8 @@ void main() {
     });
 
     test('addRelay dedupes configured and connected relays', () async {
-      final primaryRelay = await _TestRelayServer.start();
-      final callbackRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
+      final callbackRelay = await TestRelayServer.start();
       addTearDown(primaryRelay.close);
       addTearDown(callbackRelay.close);
 
@@ -319,7 +321,7 @@ void main() {
     });
 
     test('addRelay stops admitting signer relays at the cap', () async {
-      final primaryRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
       addTearDown(primaryRelay.close);
 
       final session = NostrConnectSession(relays: [primaryRelay.url]);
@@ -327,9 +329,9 @@ void main() {
 
       await session.start();
 
-      final callbackRelays = <_TestRelayServer>[];
+      final callbackRelays = <TestRelayServer>[];
       for (var i = 0; i <= RelayListCaps.nip46Callback; i++) {
-        final relay = await _TestRelayServer.start();
+        final relay = await TestRelayServer.start();
         addTearDown(relay.close);
         callbackRelays.add(relay);
         await session.addRelay(relay.url);
@@ -346,7 +348,7 @@ void main() {
     });
 
     test('addRelay does not spend the cap on a relay that failed', () async {
-      final primaryRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
       final failedPort = await _unusedLoopbackPort();
       addTearDown(primaryRelay.close);
 
@@ -359,7 +361,7 @@ void main() {
         await session.addRelay('ws://127.0.0.1:$failedPort');
       }
 
-      final callbackRelay = await _TestRelayServer.start();
+      final callbackRelay = await TestRelayServer.start();
       addTearDown(callbackRelay.close);
 
       await session.addRelay(callbackRelay.url);
@@ -371,7 +373,7 @@ void main() {
     });
 
     test('addRelay holds the cap when callbacks arrive together', () async {
-      final primaryRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
       addTearDown(primaryRelay.close);
 
       final session = NostrConnectSession(relays: [primaryRelay.url]);
@@ -379,9 +381,9 @@ void main() {
 
       await session.start();
 
-      final callbackRelays = <_TestRelayServer>[];
+      final callbackRelays = <TestRelayServer>[];
       for (var i = 0; i < RelayListCaps.nip46Callback + 3; i++) {
-        final relay = await _TestRelayServer.start();
+        final relay = await TestRelayServer.start();
         addTearDown(relay.close);
         callbackRelays.add(relay);
       }
@@ -400,7 +402,7 @@ void main() {
     });
 
     test('addRelay dials a repeated callback relay once', () async {
-      final primaryRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
       addTearDown(primaryRelay.close);
 
       final session = NostrConnectSession(relays: [primaryRelay.url]);
@@ -408,7 +410,7 @@ void main() {
 
       await session.start();
 
-      final callbackRelay = await _TestRelayServer.start();
+      final callbackRelay = await TestRelayServer.start();
       addTearDown(callbackRelay.close);
 
       await Future.wait([
@@ -424,7 +426,7 @@ void main() {
     });
 
     test('addRelay treats a trailing slash as the same relay', () async {
-      final primaryRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
       addTearDown(primaryRelay.close);
 
       final session = NostrConnectSession(relays: [primaryRelay.url]);
@@ -432,7 +434,7 @@ void main() {
 
       await session.start();
 
-      final callbackRelay = await _TestRelayServer.start();
+      final callbackRelay = await TestRelayServer.start();
       addTearDown(callbackRelay.close);
 
       await session.addRelay(callbackRelay.url);
@@ -446,7 +448,7 @@ void main() {
     });
 
     test('addRelay is a no-op unless the session is listening', () async {
-      final callbackRelay = await _TestRelayServer.start();
+      final callbackRelay = await TestRelayServer.start();
       addTearDown(callbackRelay.close);
 
       final idleSession = NostrConnectSession(relays: ['ws://127.0.0.1:9']);
@@ -461,7 +463,7 @@ void main() {
     });
 
     test('addRelay excludes relays whose connect returns false', () async {
-      final primaryRelay = await _TestRelayServer.start();
+      final primaryRelay = await TestRelayServer.start();
       final failedPort = await _unusedLoopbackPort();
       final callbackUrl = 'ws://127.0.0.1:$failedPort';
       addTearDown(primaryRelay.close);
@@ -472,7 +474,7 @@ void main() {
       await session.start();
       await session.addRelay(callbackUrl);
 
-      final callbackRelay = await _TestRelayServer.start(port: failedPort);
+      final callbackRelay = await TestRelayServer.start(port: failedPort);
       addTearDown(callbackRelay.close);
 
       await session.addRelay(callbackUrl);
@@ -486,7 +488,7 @@ void main() {
     test(
       'addRelay excludes relays whose connect times out',
       () async {
-        final primaryRelay = await _TestRelayServer.start();
+        final primaryRelay = await TestRelayServer.start();
         final blackhole = await _BlackholeServer.start();
         final callbackUrl = blackhole.url;
         addTearDown(primaryRelay.close);
@@ -500,7 +502,7 @@ void main() {
 
         final failedPort = blackhole.port;
         await blackhole.close();
-        final callbackRelay = await _TestRelayServer.start(port: failedPort);
+        final callbackRelay = await TestRelayServer.start(port: failedPort);
         addTearDown(callbackRelay.close);
 
         await session.addRelay(callbackUrl);
@@ -516,7 +518,7 @@ void main() {
     test(
       'addRelay disconnects a relay that connects after the session timeout',
       () async {
-        final primaryRelay = await _TestRelayServer.start();
+        final primaryRelay = await TestRelayServer.start();
         final delayedRelay = await _DelayedUpgradeRelayServer.start(
           delay: const Duration(seconds: 9),
         );
@@ -544,6 +546,76 @@ void main() {
       },
       timeout: const Timeout(Duration(seconds: 20)),
     );
+  });
+
+  group('relay lifecycle after cancel (#7962)', () {
+    test('a reconnect in flight when the session is cancelled opens no '
+        'socket', () async {
+      final server = await TestRelayServer.start();
+      addTearDown(server.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [server.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      expect(server.connectionCount, equals(1));
+
+      // Drop the relay the way a flaky network would, then let the session
+      // notice before asking it to recover.
+      await server.dropConnections();
+      await _waitForSockets(server, open: 0);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      unawaited(session.ensureConnected());
+      session.cancel();
+
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(
+        logs.where((line) => line.contains('Reconnecting to')),
+        isNotEmpty,
+        reason:
+            'the session never attempted a reconnect, so this test would '
+            'pass without exercising anything',
+      );
+      expect(
+        server.connectionCount,
+        equals(1),
+        reason:
+            'a reconnect resuming after cancel() opens a socket and arms '
+            'a heartbeat that nothing is left holding',
+      );
+      expect(server.openConnectionCount, isZero);
+    });
+
+    test('a relay that finishes dialing after cancel is shut down', () async {
+      final server = await TestRelayServer.start();
+      addTearDown(server.close);
+
+      final session = NostrConnectSession(relays: [server.url]);
+      addTearDown(session.dispose);
+
+      // start() suspends inside the dial, so the cancel lands while the relay
+      // is still connecting and the socket opens after the cleanup has run.
+      final starting = session.start();
+      session.cancel();
+      await starting;
+
+      await _waitForSockets(server, open: 0);
+
+      expect(
+        server.openConnectionCount,
+        isZero,
+        reason:
+            'a relay adopted after _cleanup() is a live socket on a list '
+            'nothing will ever walk again',
+      );
+      expect(session.state, equals(NostrConnectState.cancelled));
+    });
   });
 
   group('NostrConnectState enum', () {
@@ -743,7 +815,7 @@ void main() {
     test(
       'never logs the matched secret while handling a successful response',
       () async {
-        final relay = await _TestRelayServer.start();
+        final relay = await TestRelayServer.start();
         addTearDown(relay.close);
 
         final logs = <String>[];
@@ -800,7 +872,7 @@ void main() {
     test(
       'logs neither the response result nor the expected secret on a mismatch',
       () async {
-        final relay = await _TestRelayServer.start();
+        final relay = await TestRelayServer.start();
         addTearDown(relay.close);
 
         final logs = <String>[];
@@ -850,7 +922,7 @@ void main() {
 
     test('keeps listening through an injected error response and still binds '
         'on the real secret (pairing-DoS regression, #5683)', () async {
-      final relay = await _TestRelayServer.start();
+      final relay = await TestRelayServer.start();
       addTearDown(relay.close);
 
       final session = NostrConnectSession(relays: [relay.url]);
@@ -920,7 +992,7 @@ void main() {
 
     test('keeps listening through an auth_url challenge, dedupes relay '
         'replays of the same id, and still binds on the real secret', () async {
-      final relay = await _TestRelayServer.start();
+      final relay = await TestRelayServer.start();
       addTearDown(relay.close);
 
       final logs = <String>[];
@@ -998,7 +1070,7 @@ void main() {
     test(
       'restarts the wait window exactly once across multiple challenges',
       () async {
-        final relay = await _TestRelayServer.start();
+        final relay = await TestRelayServer.start();
         addTearDown(relay.close);
 
         final logs = <String>[];
@@ -1050,7 +1122,7 @@ void main() {
 
     test('extends the deadline once: a challenge mid-wait moves the timeout '
         'to a full window from the challenge, then still times out', () async {
-      final relay = await _TestRelayServer.start();
+      final relay = await TestRelayServer.start();
       addTearDown(relay.close);
 
       final logs = <String>[];
@@ -1103,7 +1175,7 @@ void main() {
 
     test('ignores a secret match that arrives after the wait timed out — '
         'the session must not flip to connected with nobody waiting', () async {
-      final relay = await _TestRelayServer.start();
+      final relay = await TestRelayServer.start();
       addTearDown(relay.close);
 
       final logs = <String>[];
@@ -1139,7 +1211,7 @@ void main() {
     });
 
     test('never logs the challenge URL (#3760 redaction contract)', () async {
-      final relay = await _TestRelayServer.start();
+      final relay = await TestRelayServer.start();
       addTearDown(relay.close);
 
       final logs = <String>[];
@@ -1188,7 +1260,7 @@ void main() {
   group('event id integrity (#6151)', () {
     test('drops a tampered relay copy that reuses the real response id, so the '
         'genuine secret still binds instead of being deduped away', () async {
-      final relay = await _TestRelayServer.start();
+      final relay = await TestRelayServer.start();
       addTearDown(relay.close);
 
       final logs = <String>[];
@@ -1290,64 +1362,6 @@ Future<int> _unusedLoopbackPort() async {
   return port;
 }
 
-class _TestRelayServer {
-  _TestRelayServer._(this._server) {
-    _requests = _server.listen(_handleRequest);
-  }
-
-  final HttpServer _server;
-  final _sockets = <WebSocket>[];
-  final receivedMessages = <List<dynamic>>[];
-  late final StreamSubscription<HttpRequest> _requests;
-  int connectionCount = 0;
-  bool _closed = false;
-
-  String get url => 'ws://127.0.0.1:${_server.port}';
-
-  /// Sends a relay message (e.g. `['EVENT', subId, eventJson]`) to every
-  /// connected client. The session ignores the subscription id, so any value
-  /// works.
-  void push(Object message) {
-    final text = jsonEncode(message);
-    for (final socket in _sockets) {
-      socket.add(text);
-    }
-  }
-
-  static Future<_TestRelayServer> start({int? port}) async {
-    final server = await HttpServer.bind(
-      InternetAddress.loopbackIPv4,
-      port ?? 0,
-    );
-    return _TestRelayServer._(server);
-  }
-
-  Future<void> _handleRequest(HttpRequest request) async {
-    if (!WebSocketTransformer.isUpgradeRequest(request)) {
-      request.response.statusCode = HttpStatus.badRequest;
-      await request.response.close();
-      return;
-    }
-
-    final socket = await WebSocketTransformer.upgrade(request);
-    _sockets.add(socket);
-    connectionCount += 1;
-    socket.listen((message) {
-      receivedMessages.add(jsonDecode(message as String) as List<dynamic>);
-    });
-  }
-
-  Future<void> close() async {
-    if (_closed) return;
-    _closed = true;
-    for (final socket in _sockets) {
-      await socket.close();
-    }
-    await _requests.cancel();
-    await _server.close(force: true);
-  }
-}
-
 bool _isReqMessage(List<dynamic> message) =>
     message.isNotEmpty && message.first == 'REQ';
 
@@ -1432,5 +1446,20 @@ class _BlackholeServer {
     }
     await _requests.cancel();
     await _server.close();
+  }
+}
+
+/// Waits until the server holds exactly [open] client sockets.
+///
+/// A socket the client closes takes a turn or two to register server-side, so
+/// asserting straight after a teardown reads the pre-close count.
+Future<void> _waitForSockets(
+  TestRelayServer server, {
+  required int open,
+}) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 2));
+  while (server.openConnectionCount != open &&
+      DateTime.now().isBefore(deadline)) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
   }
 }
