@@ -4394,7 +4394,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           }
           // Since we're filtering by d tag at the relay level, this should be our video
           Log.info(
-            'Found video event for vine ID $vineId: ${event.id}...',
+            'Found video event for vine ID $vineId: ${event.id}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );
