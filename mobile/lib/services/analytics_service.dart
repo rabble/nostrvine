@@ -158,6 +158,12 @@ class AnalyticsService implements BackgroundAwareService {
   /// Whether analytics tracking is currently operational.
   bool get isOperational => _analyticsEnabled;
 
+  /// Release label written into first-party product analytics events.
+  String get productAnalyticsRelease {
+    final release = _appVersion();
+    return release.isEmpty ? '0.0.0' : release;
+  }
+
   /// Set analytics enabled state.
   Future<void> setAnalyticsEnabled(bool enabled) async {
     if (_analyticsEnabled == enabled) return;
@@ -433,7 +439,7 @@ class AnalyticsService implements BackgroundAwareService {
       sessionId: _sessionIdOverride?.call() ?? _sessionId,
       source: ProductAnalyticsV2Source.mobile,
       platform: platform,
-      release: _appVersion().isEmpty ? '0.0.0' : _appVersion(),
+      release: productAnalyticsRelease,
       consentCategory: ProductAnalyticsV2ConsentCategory.productAnalytics,
     );
   }

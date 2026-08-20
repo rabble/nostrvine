@@ -411,7 +411,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'311c736c591aaa15de97f94cc0017b74578db781';
+String _$analyticsServiceHash() => r'86308b01ace44291a42738a0e4053f8fc230c7c7';
 
 /// Hashtag cache service for persistent hashtag storage
 
