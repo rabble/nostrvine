@@ -139,6 +139,27 @@ void main() {
       ]);
     });
 
+    test('leaves audio in portable form when useOriginalPath is set', () {
+      final restored = DivineVideoDraft.fromJson(
+        _draft().toJson(),
+        _newDocs,
+        useOriginalPath: true,
+      );
+
+      expect(_historyAudioUrls(restored), [
+        'draft_audio_imports/draft_1/song.m4a',
+        'voice_over_recordings/take_1.m4a',
+      ]);
+      expect(
+        _parametersAudioUrl(restored),
+        'draft_audio_imports/draft_1/song.m4a',
+      );
+      expect(
+        restored.selectedSound?.url,
+        'draft_audio_imports/draft_1/song.m4a',
+      );
+    });
+
     test('reports rebased paths for draft-delete cleanup', () {
       final restored = DivineVideoDraft.fromJson(_draft().toJson(), _newDocs);
 
