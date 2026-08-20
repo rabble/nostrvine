@@ -106,7 +106,10 @@ enum BookmarkToggleFailure {
   /// Relays were reachable but did not answer before the query deadline.
   timedOut,
 
-  /// The list reconciled, but the new version was not published.
+  /// The list reconciled, but the change failed to complete: auth
+  /// disappeared mid-flow, signing failed, the private items could not
+  /// be re-encrypted, no relay accepted the publish, or the publish
+  /// path threw for another reason.
   publishDidNotComplete,
 
   /// There is no signed-in identity to read or publish as.
@@ -699,8 +702,9 @@ class BookmarkService {
       wasBookmarked: wasBookmarked,
       isBookmarked: succeeded ? !wasBookmarked : wasBookmarked,
       // The read already reconciled, so anything failing past this point is
-      // the publish leg: auth disappeared, signing failed, relay OK never came
-      // back true, or the publish path threw.
+      // the publish leg: auth disappeared, signing failed, the private items
+      // could not be re-encrypted, no relay accepted the publish, or the
+      // publish path threw.
       failure: succeeded ? null : BookmarkToggleFailure.publishDidNotComplete,
     );
   }
