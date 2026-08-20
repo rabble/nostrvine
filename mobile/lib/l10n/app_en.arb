@@ -1,43 +1,115 @@
 {
   "@@locale": "en",
   "devOptionsClipRecovery": "Clip Recovery",
-  "@devOptionsClipRecovery": {"description": "Header of the Developer Options section that recovers clips the app can no longer show."},
+  "@devOptionsClipRecovery": {
+    "description": "Header of the Developer Options section that recovers clips the app can no longer show."
+  },
   "devOptionsClipRecoveryDescription": "Finds recordings stored under another account and video files no entry references any more.",
-  "@devOptionsClipRecoveryDescription": {"description": "Explains that the tool finds clips hidden under another account plus video files with no database row."},
+  "@devOptionsClipRecoveryDescription": {
+    "description": "Explains that the tool finds clips hidden under another account plus video files with no database row."
+  },
   "devOptionsClipRecoveryScan": "Scan",
-  "@devOptionsClipRecoveryScan": {"description": "Button that starts the clip-recovery scan."},
+  "@devOptionsClipRecoveryScan": {
+    "description": "Button that starts the clip-recovery scan."
+  },
   "devOptionsClipRecoveryFailure": "Clip recovery failed",
-  "@devOptionsClipRecoveryFailure": {"description": "Shown when the clip-recovery scan failed."},
+  "@devOptionsClipRecoveryFailure": {
+    "description": "Shown when the clip-recovery scan failed."
+  },
   "devOptionsClipRecoveryVisible": "Visible now: {clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} draft} other{{drafts} drafts}}",
-  "@devOptionsClipRecoveryVisible": {"description": "How much of the local library the signed-in account can already see.", "placeholders": {"clips": {"type": "int"}, "drafts": {"type": "int"}}},
+  "@devOptionsClipRecoveryVisible": {
+    "description": "How much of the local library the signed-in account can already see.",
+    "placeholders": {
+      "clips": {
+        "type": "int"
+      },
+      "drafts": {
+        "type": "int"
+      }
+    }
+  },
   "devOptionsClipRecoveryOtherAccounts": "Hidden under other accounts",
-  "@devOptionsClipRecoveryOtherAccounts": {"description": "Subheading above the groups of rows stored under a different account."},
+  "@devOptionsClipRecoveryOtherAccounts": {
+    "description": "Subheading above the groups of rows stored under a different account."
+  },
   "devOptionsClipRecoveryCounts": "{clips, plural, =1{{clips} clip} other{{clips} clips}}, {drafts, plural, =1{{drafts} draft} other{{drafts} drafts}}",
-  "@devOptionsClipRecoveryCounts": {"description": "How many clips and drafts one owner group holds.", "placeholders": {"clips": {"type": "int"}, "drafts": {"type": "int"}}},
+  "@devOptionsClipRecoveryCounts": {
+    "description": "How many clips and drafts one owner group holds.",
+    "placeholders": {
+      "clips": {
+        "type": "int"
+      },
+      "drafts": {
+        "type": "int"
+      }
+    }
+  },
   "devOptionsClipRecoveryClaim": "Move to this account",
-  "@devOptionsClipRecoveryClaim": {"description": "Button that restamps an owner group onto the signed-in account."},
+  "@devOptionsClipRecoveryClaim": {
+    "description": "Button that restamps an owner group onto the signed-in account."
+  },
   "devOptionsClipRecoveryOrphanFiles": "Unreferenced files: {count} ({size})",
-  "@devOptionsClipRecoveryOrphanFiles": {"description": "How many video files on disk no database row references, and their total size.", "placeholders": {"count": {"type": "int"}, "size": {"type": "String"}}},
+  "@devOptionsClipRecoveryOrphanFiles": {
+    "description": "How many video files on disk no database row references, and their total size.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "devOptionsClipRecoveryImport": "Rebuild in library",
-  "@devOptionsClipRecoveryImport": {"description": "Button that rebuilds library entries for the unreferenced video files."},
+  "@devOptionsClipRecoveryImport": {
+    "description": "Button that rebuilds library entries for the unreferenced video files."
+  },
   "devOptionsClipRecoveryEmpty": "Nothing to recover",
-  "@devOptionsClipRecoveryEmpty": {"description": "Shown when a scan found no hidden owners and no unreferenced files."},
+  "@devOptionsClipRecoveryEmpty": {
+    "description": "Shown when a scan found no hidden owners and no unreferenced files."
+  },
   "devOptionsClipRecoveryRecovered": "{count, plural, =1{Recovered {count} clip} other{Recovered {count} clips}}",
-  "@devOptionsClipRecoveryRecovered": {"description": "Confirmation of how many clips the last claim or rebuild recovered.", "placeholders": {"count": {"type": "int"}}},
+  "@devOptionsClipRecoveryRecovered": {
+    "description": "Confirmation of how many clips the last claim or rebuild recovered.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "devOptionsClipRecoveryCopied": "Recovery report copied",
-  "@devOptionsClipRecoveryCopied": {"description": "Confirmation shown after the recovery report is copied to the clipboard."},
+  "@devOptionsClipRecoveryCopied": {
+    "description": "Confirmation shown after the recovery report is copied to the clipboard."
+  },
   "devOptionsStorageFootprint": "Storage Footprint",
-  "@devOptionsStorageFootprint": {"description": "Header of the Developer Options section that measures the app's on-disk footprint."},
+  "@devOptionsStorageFootprint": {
+    "description": "Header of the Developer Options section that measures the app's on-disk footprint."
+  },
   "devOptionsStorageFootprintDescription": "Every directory the app writes to. Clearing caches only reclaims part of this.",
-  "@devOptionsStorageFootprintDescription": {"description": "Explains that the footprint covers more than the caches the Storage screen can clear."},
+  "@devOptionsStorageFootprintDescription": {
+    "description": "Explains that the footprint covers more than the caches the Storage screen can clear."
+  },
   "devOptionsStorageFootprintMeasure": "Measure",
-  "@devOptionsStorageFootprintMeasure": {"description": "Button that starts walking every directory the app writes to."},
+  "@devOptionsStorageFootprintMeasure": {
+    "description": "Button that starts walking every directory the app writes to."
+  },
   "devOptionsStorageFootprintTotal": "Total: {size}",
-  "@devOptionsStorageFootprintTotal": {"description": "Total bytes across every measured directory.", "placeholders": {"size": {"type": "String"}}},
+  "@devOptionsStorageFootprintTotal": {
+    "description": "Total bytes across every measured directory.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "devOptionsStorageFootprintCopied": "Storage report copied",
-  "@devOptionsStorageFootprintCopied": {"description": "Confirmation shown after the footprint report is copied to the clipboard."},
+  "@devOptionsStorageFootprintCopied": {
+    "description": "Confirmation shown after the footprint report is copied to the clipboard."
+  },
   "devOptionsStorageFootprintFailure": "Could not measure storage",
-  "@devOptionsStorageFootprintFailure": {"description": "Shown when the footprint measurement failed."},
+  "@devOptionsStorageFootprintFailure": {
+    "description": "Shown when the footprint measurement failed."
+  },
   "feedTuningMoreLabel": "More like this",
   "@feedTuningMoreLabel": {
     "description": "Indicator and snackbar text when the user swipes right to get more videos like the current one."
@@ -470,7 +542,7 @@
   "profileMessageLabel": "Message",
   "profileDeletedAccountName": "Deleted account",
   "@profileDeletedAccountName": {
-    "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear \u2014 the inbox row, the conversation header, and the following bar."
+    "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
   "inboxConversationDeletedAccountSubtitle": "This account was deleted",
   "@inboxConversationDeletedAccountSubtitle": {
@@ -662,7 +734,7 @@
   "videoGridDeletingContent": "Deleting content...",
   "exploreTabFeatured": "Featured",
   "@exploreTabFeatured": {
-    "description": "Name of the Explore tab that shows a server-curated collection. The collection's own name is not this string \u2014 it rides beside it in a pill."
+    "description": "Name of the Explore tab that shows a server-curated collection. The collection's own name is not this string — it rides beside it in a pill."
   },
   "exploreTabClassics": "Classics",
   "exploreTabNew": "New",
@@ -922,7 +994,16 @@
     "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
   },
   "videoInspiredByAttributionMultiple": "Inspired by @{creatorName} +{additionalCreatorCount}",
-  "@videoInspiredByAttributionMultiple": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@videoInspiredByAttributionMultiple": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "videoInspiredByAttribution": "Inspired by @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -1985,7 +2066,9 @@
   "@authVerificationResendCooldown": {
     "description": "Disabled-state label for the resend button during its cooldown. {time} is a preformatted m:ss countdown (e.g. 4:59).",
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "authVerificationResendFailed": "We couldn't resend the email. Try again.",
@@ -2173,7 +2256,11 @@
   "crosspostViewPost": "View post",
   "crosspostReconnectPrompt": "Reconnect {platform} in crossposting settings to keep posting.",
   "@crosspostReconnectPrompt": {
-    "placeholders": { "platform": { "type": "String" } }
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
   },
   "crosspostReconnect": "Reconnect",
   "crosspostErrorNotOwner": "Only your own videos can be crossposted.",
@@ -2319,7 +2406,9 @@
   "shareMenuDeleteFailedCouldNotSign": "Couldn't sign the delete request. Try again.",
   "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
   "shareMenuDeleteFailedAccountRestricted": "Your account is restricted, so this delete request couldn't be sent. Contact support for help deleting it.",
-  "@shareMenuDeleteFailedAccountRestricted": {"description": "Shown when every responding relay explicitly rejects an owner's content-deletion request because the publishing account is suspended or banned."},
+  "@shareMenuDeleteFailedAccountRestricted": {
+    "description": "Shown when every responding relay explicitly rejects an owner's content-deletion request because the publishing account is suspended or banned."
+  },
   "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
   "shareMenuDeletePartiallyConfirmed": "Deleted. Not every relay confirmed, so it may still show up in other apps.",
   "shareMenuDeleteFailedGeneric": "Couldn't delete this video. Try again.",
@@ -2867,14 +2956,20 @@
   "listShareText": "Check out {name} on Divine: {url}",
   "@listShareText": {
     "placeholders": {
-      "name": { "type": "String" },
-      "url": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "listShareSubject": "{name} on Divine",
   "@listShareSubject": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "listCancel": "Cancel",
@@ -3420,13 +3515,12 @@
     }
   },
   "dmSendNoRecipientMessage": "We couldn't tell who this thread is with. Open it again from your inbox.",
-  "@dmSendNoRecipientMessage": {"description": "SnackBar text shown when a send is dispatched with no recipient (#7335). Unlike every other send failure there is no queue row and so no red \"Not delivered\" bubble to carry the news, which is why this one outcome gets a toast. Reachable only by opening the conversation route without participants, e.g. a hand-crafted deep link."},
+  "@dmSendNoRecipientMessage": {
+    "description": "SnackBar text shown when a send is dispatched with no recipient (#7335). Unlike every other send failure there is no queue row and so no red \"Not delivered\" bubble to carry the news, which is why this one outcome gets a toast. Reachable only by opening the conversation route without participants, e.g. a hand-crafted deep link."
+  },
   "dmSendBlockedMessage": "You can only message official Divine accounts",
-
   "@dmSendBlockedMessage": {
-
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
-
   },
   "dmSendBlockedRetiredMessage": "Nobody is reading this conversation. Message Divine Moderation instead.",
   "@dmSendBlockedRetiredMessage": {
@@ -4097,7 +4191,13 @@
   "commentsInputSemanticLabelEdit": "Edit input",
   "commentsInputSemanticLabelReply": "Reply input",
   "classicVinersViewProfileSemanticLabel": "View profile for {displayName}",
-  "@classicVinersViewProfileSemanticLabel": {"placeholders": {"displayName": {"type": "String"}}},
+  "@classicVinersViewProfileSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "classicsEmptyDescription": "The Classics archive is being loaded",
   "classicsEmptyTitle": "No Classics Found",
   "classicsErrorTitle": "Failed to load Classics",
@@ -4106,10 +4206,22 @@
   "classicsUnavailableTitle": "Classics Unavailable",
   "hashtagFeedEmptySubtitle": "Be the first to post a video with this hashtag!",
   "hashtagFeedEmptyTitle": "No videos found for #{hashtag}",
-  "@hashtagFeedEmptyTitle": {"placeholders": {"hashtag": {"type": "String"}}},
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
   "hashtagFeedLoadingSubtitle": "This may take a few moments",
   "hashtagFeedLoadingTitle": "Loading videos about #{hashtag}...",
-  "@hashtagFeedLoadingTitle": {"placeholders": {"hashtag": {"type": "String"}}},
+  "@hashtagFeedLoadingTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
   "hashtagInputHint": "Add hashtags... #vine #nostr",
   "newVideosTabEmptySubtitle": "Check back later for new content",
   "newVideosTabEmptyTitle": "No videos in New Videos",
@@ -4120,11 +4232,29 @@
   "popularVideosFeedSourceLabel": "Popular feed source",
   "trendingHashtagsLoading": "Loading hashtags...",
   "trendingHashtagsViewVideosTagged": "View videos tagged {hashtag}",
-  "@trendingHashtagsViewVideosTagged": {"placeholders": {"hashtag": {"type": "String"}}},
+  "@trendingHashtagsViewVideosTagged": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
   "videoGridAuthorSemanticLabel": "Video author: {name}",
-  "@videoGridAuthorSemanticLabel": {"placeholders": {"name": {"type": "String"}}},
+  "@videoGridAuthorSemanticLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "videoGridDescriptionSemanticLabel": "Video description: {description}",
-  "@videoGridDescriptionSemanticLabel": {"placeholders": {"description": {"type": "String"}}},
+  "@videoGridDescriptionSemanticLabel": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
   "forYouAlgorithmChoiceBody": "Divine's vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you'll be able to choose from multiple recommendation approaches:",
   "forYouAlgorithmChoiceChronological": "Chronological timeline from creators you follow",
   "forYouAlgorithmChoiceClosing": "This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.",
@@ -4132,21 +4262,21 @@
   "forYouAlgorithmChoicePersonalizedFeed": "Personalized \"For You\" feed",
   "forYouAlgorithmChoiceTitle": "Your Algorithm, Your Choice",
   "forYouAlgorithmChoiceTrending": "Trending and popular content",
-  "forYouAlgorithmCommentsDescription": "Strong signal \u2014 you were engaged enough to respond",
+  "forYouAlgorithmCommentsDescription": "Strong signal — you were engaged enough to respond",
   "forYouAlgorithmHowItWorksBody": "Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.",
   "forYouAlgorithmHowItWorksTitle": "How It Works",
   "forYouAlgorithmInteractionsIntro": "Different actions signal different levels of interest:",
   "forYouAlgorithmNewToDivineBody1": "If you haven't built up a viewing history yet, we show a mix of what's currently popular and trending alongside recent uploads. This gives you a great starting point to explore.",
   "forYouAlgorithmNewToDivineBody2": "As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.",
   "forYouAlgorithmNewToDivineTitle": "New to Divine?",
-  "forYouAlgorithmOpenSourceBody": "We're building an open system where developers can implement their own algorithms, and you can choose which ones to use \u2014 or opt out entirely.",
+  "forYouAlgorithmOpenSourceBody": "We're building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.",
   "forYouAlgorithmOpenSourceTitle": "Open Source & Transparent",
-  "forYouAlgorithmReactionsDescription": "Medium signal \u2014 a quick way to show appreciation",
+  "forYouAlgorithmReactionsDescription": "Medium signal — a quick way to show appreciation",
   "forYouAlgorithmReactionsTitle": "Reactions",
-  "forYouAlgorithmRepostsDescription": "Strongest signal \u2014 sharing with your followers is a powerful endorsement",
+  "forYouAlgorithmRepostsDescription": "Strongest signal — sharing with your followers is a powerful endorsement",
   "forYouAlgorithmSubtitle": "Powered by Gorse, an open-source recommendation engine",
   "forYouAlgorithmTitle": "The Divine Algorithm",
-  "forYouAlgorithmViewsDescription": "Light signal \u2014 indicates basic interest",
+  "forYouAlgorithmViewsDescription": "Light signal — indicates basic interest",
   "forYouEmptyDescription": "Watch and like some videos to get personalized recommendations.",
   "forYouEmptyTitle": "No Recommendations Yet",
   "forYouErrorTitle": "Failed to load recommendations",
@@ -4156,79 +4286,189 @@
   "inboxConversationViewProfileButton": "View profile",
   "inboxMessageRequestsEmpty": "No message requests",
   "inboxMessageRequestsSemanticLabel": "Message requests, {requestCount} pending",
-  "@inboxMessageRequestsSemanticLabel": {"placeholders": {"requestCount": {"type": "int"}}},
+  "@inboxMessageRequestsSemanticLabel": {
+    "placeholders": {
+      "requestCount": {
+        "type": "int"
+      }
+    }
+  },
   "inboxMessageRequestsTitle": "Message requests",
   "inboxMessagesTab": "Messages",
   "inboxRequestTileLabel": "{displayName} message request",
-  "@inboxRequestTileLabel": {"placeholders": {"displayName": {"type": "String"}}},
+  "@inboxRequestTileLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "inboxRequestTileSubtitle": "Sent a message request",
   "inboxRequestsMarkAllRead": "Mark all requests as read",
   "inboxRequestsRemoveAll": "Remove all requests",
   "messageRequestDeclineAndRemoveButton": "Decline and remove",
   "messageRequestBlockButton": "Block",
   "messageRequestDeclinedSnackbar": "Declined {displayName}'s request",
-  "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
+  "@messageRequestDeclinedSnackbar": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "messageRequestBlockConfirmBody": "This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.",
-  "@messageRequestBlockConfirmBody": {"description": "Body of the confirmation shown before blocking the sender of a message request (#7881). The title reuses profileBlockTitle. Blocking does not stop the sender from sending — their messages are still received and retained, the inbox filter just hides them — so this copy must promise inbox hiding, not delivery prevention, and must say the messages stay readable under the Blocked filter (#7026)."},
+  "@messageRequestBlockConfirmBody": {
+    "description": "Body of the confirmation shown before blocking the sender of a message request (#7881). The title reuses profileBlockTitle. Blocking does not stop the sender from sending — their messages are still received and retained, the inbox filter just hides them — so this copy must promise inbox hiding, not delivery prevention, and must say the messages stay readable under the Blocked filter (#7026)."
+  },
   "messageRequestLoadFailed": "Couldn't load this request.",
-  "@messageRequestLoadFailed": {"description": "Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender."},
+  "@messageRequestLoadFailed": {
+    "description": "Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender."
+  },
   "messageRequestFollowersCount": "{countValue, plural, =1{{count} Follower} other{{count} Followers}}",
-  "@messageRequestFollowersCount": {"placeholders": {"countValue": {"type": "int"}, "count": {"type": "String"}}},
+  "@messageRequestFollowersCount": {
+    "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "messageRequestVideosCount": "{countValue, plural, =1{{count} video} other{{count} videos}}",
-  "@messageRequestVideosCount": {"placeholders": {"countValue": {"type": "int"}, "count": {"type": "String"}}},
+  "@messageRequestVideosCount": {
+    "placeholders": {
+      "countValue": {
+        "type": "int"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "messageRequestMessageCount": "{count, plural, =1{1 message} other{{count} messages}}",
-  "@messageRequestMessageCount": {"placeholders": {"count": {"type": "int"}}},
+  "@messageRequestMessageCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "messageRequestViewMessagesButton": "View messages",
   "messageRequestViewProfileButton": "View profile",
   "messageRequestWantsToMessageYou": "{displayName} wants to message you, they've sent {messageText}.",
-  "@messageRequestWantsToMessageYou": {"placeholders": {"displayName": {"type": "String"}, "messageText": {"type": "String"}}},
+  "@messageRequestWantsToMessageYou": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      },
+      "messageText": {
+        "type": "String"
+      }
+    }
+  },
   "deleteAccountAccountChanged": "You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.",
-  "@deleteAccountAccountChanged": {"description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."},
+  "@deleteAccountAccountChanged": {
+    "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
+  },
   "deleteAccountAccountChangedAfterDeletion": "Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.",
-  "@deleteAccountAccountChangedAfterDeletion": {"description": "Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish."},
+  "@deleteAccountAccountChangedAfterDeletion": {
+    "description": "Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish."
+  },
   "deleteAccountBurnUsernameFailed": "Couldn't release your username. Your account was not deleted. Try again, or uncheck the option.",
-  "@deleteAccountBurnUsernameFailed": {"description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."},
+  "@deleteAccountBurnUsernameFailed": {
+    "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
+  },
   "deleteAccountBurnUsernameReleased": "Your username {username} has been permanently released, but we couldn't finish deleting your account. Tap Delete again to finish.",
-  "@deleteAccountBurnUsernameReleased": {"description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.", "placeholders": {"username": {"type": "String"}}},
+  "@deleteAccountBurnUsernameReleased": {
+    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
   "deleteAccountBurnUsernameToggle": "Also permanently give up {username}",
-  "@deleteAccountBurnUsernameToggle": {"description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.", "placeholders": {"username": {"type": "String"}}},
+  "@deleteAccountBurnUsernameToggle": {
+    "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
   "deleteAccountConfirmDeletePrompt": "To confirm, type:",
-  "@deleteAccountConfirmDeletePrompt": {"description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."},
+  "@deleteAccountConfirmDeletePrompt": {
+    "description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."
+  },
   "deleteAccountConfirmUsernamePrompt": "To confirm, type your username:",
-  "@deleteAccountConfirmUsernamePrompt": {"description": "Prompt above the confirmation field when the account has a username; the user re-types their username to confirm deletion."},
+  "@deleteAccountConfirmUsernamePrompt": {
+    "description": "Prompt above the confirmation field when the account has a username; the user re-types their username to confirm deletion."
+  },
   "deleteAccountConfirmationHint": "Type DELETE",
-  "@deleteAccountConfirmationHint": {"description": "Label on the delete-confirmation field when the user must type the DELETE token. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."},
+  "@deleteAccountConfirmationHint": {
+    "description": "Label on the delete-confirmation field when the user must type the DELETE token. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."
+  },
   "deleteAccountConfirmationHintUsername": "Type your username",
-  "@deleteAccountConfirmationHintUsername": {"description": "Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."},
+  "@deleteAccountConfirmationHintUsername": {
+    "description": "Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."
+  },
   "deleteAccountContentDeletionFailed": "Failed to delete content from relays",
   "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
   "deleteAccountAccountRestricted": "Your account is restricted, so deletion couldn't continue. Contact support for help deleting your account.",
-  "@deleteAccountAccountRestricted": {"description": "Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned."},
-  "@deleteAccountRelayConfirmationFailed": {"description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."},
+  "@deleteAccountAccountRestricted": {
+    "description": "Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned."
+  },
+  "@deleteAccountRelayConfirmationFailed": {
+    "description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."
+  },
   "deleteAccountDeleteAllContentButton": "Delete All Content",
   "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
-  "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
-  "deleteAccountFinalConfirmationTitle": "\u26a0\ufe0f Final Confirmation",
-  "deleteAccountKeyDeletionWarning": "Deletion requests sent, but your keys may not have been fully removed from this device. Go to Settings \u2192 Nostr Keys \u2192 Remove Keys to retry.",
+  "@deleteAccountDeletionIncomplete": {
+    "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
+  },
+  "deleteAccountFinalConfirmationTitle": "⚠️ Final Confirmation",
+  "deleteAccountKeyDeletionWarning": "Deletion requests sent, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.",
   "deleteAccountLocalDataDeletionFailed": "Deletion requests sent and you're signed out, but some local data could not be removed from this device.",
   "deleteAccountPreparingDeletion": "Preparing deletion...",
   "deleteAccountProgressEvents": "{current} / {total} events",
-  "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
+  "@deleteAccountProgressEvents": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "deleteAccountRemoveKeysBody": "This removes the local login for this account from this device. It won't delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you'll return to the login screen.",
   "deleteAccountRemoveKeysConfirm": "Remove from device",
   "deleteAccountRemoveKeysTitle": "Remove this account from this device?",
   "deleteAccountReauthRequired": "Sign in again to delete your account. Nothing has been deleted yet.",
-  "@deleteAccountReauthRequired": {"description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."},
+  "@deleteAccountReauthRequired": {
+    "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
+  },
   "deleteAccountServerDeletionFailed": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Try again in a bit.",
-  "@deleteAccountServerDeletionFailed": {"description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion failed for a reason a fresh sign-in cannot clear (5xx, 404, or an unreachable server). Must not claim that nothing was deleted, because the vanish request has already reached relays, and must not tell the user to sign in again, which does not clear a server failure."},
+  "@deleteAccountServerDeletionFailed": {
+    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion failed for a reason a fresh sign-in cannot clear (5xx, 404, or an unreachable server). Must not claim that nothing was deleted, because the vanish request has already reached relays, and must not tell the user to sign in again, which does not clear a server failure."
+  },
   "deleteAccountServerDeletionRequiresReauth": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Sign in again to finish.",
-  "@deleteAccountServerDeletionRequiresReauth": {"description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."},
+  "@deleteAccountServerDeletionRequiresReauth": {
+    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
+  },
   "deleteAccountSuccess": "Deletion requests sent. You're signed out on this device.",
-  "@deleteAccountSuccess": {"description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."},
+  "@deleteAccountSuccess": {
+    "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
+  },
   "deleteAccountSuccessContentUnverified": "Account deletion requested. Some existing posts could not be individually confirmed for deletion.",
-  "@deleteAccountSuccessContentUnverified": {"description": "Snackbar when the account-wide vanish request was published but the relay query failed or at least one per-item deletion request was not confirmed. Must not imply every existing post was individually requested or confirmed for deletion."},
+  "@deleteAccountSuccessContentUnverified": {
+    "description": "Snackbar when the account-wide vanish request was published but the relay query failed or at least one per-item deletion request was not confirmed. Must not imply every existing post was individually requested or confirmed for deletion."
+  },
   "deleteAccountWarningBody": "This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.",
-  "@deleteAccountWarningBody": {"description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."},
+  "@deleteAccountWarningBody": {
+    "description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."
+  },
   "findPeopleAnonymousUser": "Anonymous",
   "findPeopleNoContacts": "No contacts found.\nStart following people to see them here.",
   "geoBlockedCityLabel": "City",
@@ -4240,7 +4480,7 @@
   "likedVideosEmpty": "No liked videos",
   "likedVideosInvalidRoute": "Invalid route",
   "likedVideosTitle": "Liked Videos",
-  "uploadFailureSheetRetryingSnackbar": "Retrying upload\u2026",
+  "uploadFailureSheetRetryingSnackbar": "Retrying upload…",
   "uploadFailureSheetSaveToDraftsButton": "Save to Drafts",
   "uploadFailureSheetSavedToDraftsSnackbar": "Saved to drafts",
   "uploadFailureSheetTitle": "Upload Failed",
@@ -4255,12 +4495,33 @@
   "publishErrorTimeout": "The upload timed out. Try a stronger connection or a smaller video.",
   "publishErrorTls": "Secure connection failed. Check your network — public Wi-Fi can block uploads.",
   "publishErrorServerNotFound": "The media server ({serverName}) is not available. You can choose another in your settings.",
-  "@publishErrorServerNotFound": {"description": "Shown when the media (Blossom) server returns 404. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
+  "@publishErrorServerNotFound": {
+    "description": "Shown when the media (Blossom) server returns 404. {serverName} is the server host.",
+    "placeholders": {
+      "serverName": {
+        "type": "String"
+      }
+    }
+  },
   "publishErrorFileTooLarge": "The video file is too large for the server. Try trimming it or lowering the quality.",
   "publishErrorServerInternalError": "The media server ({serverName}) had an internal error. You can choose another in your settings.",
-  "@publishErrorServerInternalError": {"description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
+  "@publishErrorServerInternalError": {
+    "description": "Shown when the media (Blossom) server returns 500. {serverName} is the server host.",
+    "placeholders": {
+      "serverName": {
+        "type": "String"
+      }
+    }
+  },
   "publishErrorServerDown": "The media server ({serverName}) is temporarily down. Try again shortly or choose another in your settings.",
-  "@publishErrorServerDown": {"description": "Shown when the media (Blossom) server returns 502/503. {serverName} is the server host.", "placeholders": {"serverName": {"type": "String"}}},
+  "@publishErrorServerDown": {
+    "description": "Shown when the media (Blossom) server returns 502/503. {serverName} is the server host.",
+    "placeholders": {
+      "serverName": {
+        "type": "String"
+      }
+    }
+  },
   "publishErrorForbidden": "You don’t have permission to upload to this server.",
   "publishErrorFileNotFound": "The video file could not be found. It may have been deleted. Re-record and try again.",
   "publishErrorLowStorage": "Not enough storage on your device. Free up some space and try again.",
@@ -4277,26 +4538,86 @@
   "publishErrorOverlaysUnavailable": "The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.",
   "publishErrorUnknownServer": "Unknown server",
   "searchFilterPillSemanticLabel": "Filter: {filter}",
-  "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},
+  "@searchFilterPillSemanticLabel": {
+    "placeholders": {
+      "filter": {
+        "type": "String"
+      }
+    }
+  },
   "searchNoResultsFound": "No results found for \"{query}\"",
-  "@searchNoResultsFound": {"placeholders": {"query": {"type": "String"}}},
+  "@searchNoResultsFound": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "searchTagChipViewVideosTaggedLabel": "View videos tagged {tag}",
-  "@searchTagChipViewVideosTaggedLabel": {"placeholders": {"tag": {"type": "String"}}},
+  "@searchTagChipViewVideosTaggedLabel": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
   "audioAttributionRowSemanticLabel": "Sound: {soundName} by {creatorName}. Tap to view sound details.",
-  "@audioAttributionRowSemanticLabel": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
+  "@audioAttributionRowSemanticLabel": {
+    "placeholders": {
+      "soundName": {
+        "type": "String"
+      },
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
   "metadataSoundsOriginalSoundSemantics": "Original sound by {creatorName}. Tap to use this sound.",
-  "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
+  "@metadataSoundsOriginalSoundSemantics": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
   "metadataSoundsSharedSoundSemantics": "Sound: {soundName} by {creatorName}. Tap to view details.",
-  "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
+  "@metadataSoundsSharedSoundSemantics": {
+    "placeholders": {
+      "soundName": {
+        "type": "String"
+      },
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
   "soundDetailLoadError": "Failed to load sound: {error}",
-  "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+  "@soundDetailLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "soundDetailNotFoundMessage": "This sound could not be found",
   "soundDetailNotFoundTitle": "Sound Not Found",
-  "videoFeedLoopCountLabel": "{count, plural, =1{\ud83d\udd01 {count} loop} other{\ud83d\udd01 {count} loops}}",
-  "@videoFeedLoopCountLabel": {"placeholders": {"count": {"type": "int"}}},
+  "videoFeedLoopCountLabel": "{count, plural, =1{🔁 {count} loop} other{🔁 {count} loops}}",
+  "@videoFeedLoopCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "originalSoundUnavailableBody": "Audio from this video is not available separately.",
   "originalSoundByCreator": "Original sound - {creatorName}",
-  "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
+  "@originalSoundByCreator": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
   "ogVinerBadgeLabel": "OG Viner",
   "profileBadgeOgVinerBody": "This person posted an original Vine that Divine found in the archive. It is not an account verification badge.",
   "@profileBadgeOgVinerBody": {
@@ -4313,12 +4634,33 @@
   "unfollowConfirmButton": "Unfollow",
   "videoClipSaveFailed": "Failed to save clip",
   "videoClipSaveTo": "Save to {destination}",
-  "@videoClipSaveTo": {"placeholders": {"destination": {"type": "String"}}},
+  "@videoClipSaveTo": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
   "videoClipDelete": "Delete clip",
   "inspiredByAttributionMultipleSemanticLabel": "Inspired by {creatorName} +{additionalCreatorCount}. Tap to view their profile.",
-  "@inspiredByAttributionMultipleSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}, "additionalCreatorCount": {"type": "int"}}},
+  "@inspiredByAttributionMultipleSemanticLabel": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      },
+      "additionalCreatorCount": {
+        "type": "int"
+      }
+    }
+  },
   "inspiredByAttributionSemanticLabel": "Inspired by {creatorName}. Tap to view their profile.",
-  "@inspiredByAttributionSemanticLabel": {"placeholders": {"creatorName": {"type": "String"}}},
+  "@inspiredByAttributionSemanticLabel": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
   "supportPublicSubmissionTitle": "Public GitHub post",
@@ -4453,12 +4795,18 @@
   "blueskyEnabledSubtitle": "Your videos will be published to Bluesky",
   "blueskyDisabledSubtitle": "Your videos will not be published to Bluesky",
   "blueskyBackfillDisclosureTitle": "Your past videos will post too",
-  "@blueskyBackfillDisclosureTitle": {"description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."},
+  "@blueskyBackfillDisclosureTitle": {
+    "description": "Title for the Bluesky publishing disclosure explaining historical videos are backfilled when crossposting is enabled."
+  },
   "blueskyBackfillDisclosureSubtitle": "When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.",
-  "@blueskyBackfillDisclosureSubtitle": {"description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."},
+  "@blueskyBackfillDisclosureSubtitle": {
+    "description": "Body text for the Bluesky publishing disclosure explaining that enabling crossposting starts a historical video backfill."
+  },
   "blueskyHandle": "Bluesky Handle",
   "blueskyDid": "Bluesky DID",
-  "@blueskyDid": {"description": "Label for the ATProto DID shown when a Bluesky account is provisioned."},
+  "@blueskyDid": {
+    "description": "Label for the ATProto DID shown when a Bluesky account is provisioned."
+  },
   "blueskyStatus": "Status",
   "blueskyStatusReady": "Account provisioned and ready",
   "blueskyStatusPending": "Account provisioning in progress...",
@@ -5243,7 +5591,9 @@
   "@videoEditorVoiceOverTakeName": {
     "description": "Title for a single recorded voice-over take, numbered by capture position.",
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "videoEditorOpenVoiceOverSemanticLabel": "Record a voice over",
@@ -5254,7 +5604,9 @@
   "@videoEditorVoiceOverRecordingsCount": {
     "description": "Counts the voice-over takes recorded so far in the recorder screen.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "videoEditorVoiceOverDeleteLast": "Delete last recording",
@@ -5336,7 +5688,9 @@
   "@videoEditorStopMotionFramesCount": {
     "description": "Short frames-per-image value shown on the stop-motion preview badge and action button (e.g. '2 frames').",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
@@ -5347,15 +5701,21 @@
   "@videoEditorStopMotionFramesPerImageValueSemanticLabel": {
     "description": "Accessibility value announcing the current stop-motion hold length, in output frames per still.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "videoEditorStopMotionFrameSemanticLabel": "Stop-motion frame {position} of {total}",
   "@videoEditorStopMotionFrameSemanticLabel": {
     "description": "Accessibility label for a single still tile in the stop-motion timeline strip.",
     "placeholders": {
-      "position": { "type": "int" },
-      "total": { "type": "int" }
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "videoEditorEditLabel": "Edit",
@@ -5543,7 +5903,9 @@
   "@videoEditorTransitionCurveOptionSemanticLabel": {
     "description": "Accessibility label for an easing-curve option in the transition picker, identified by its position. The curve shape is shown visually as a glyph; screen readers announce the option number instead.",
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "videoEditorLayerAnimationLabel": "Animation",
@@ -5819,7 +6181,7 @@
   },
   "videoMetadataSaveToDraftsWithoutGalleryHint": "Save video to drafts. No rendered video yet, so no copy is added to {destination}.",
   "@videoMetadataSaveToDraftsWithoutGalleryHint": {
-    "description": "Accessibility hint on the Save-for-later button while no rendered video file exists yet \u2014 the render is still running, or it failed. The button stays enabled, since a draft needs no rendered file, but the gallery copy is made from that file and is therefore skipped.",
+    "description": "Accessibility hint on the Save-for-later button while no rendered video file exists yet — the render is still running, or it failed. The button stays enabled, since a draft needs no rendered file, but the gallery copy is made from that file and is therefore skipped.",
     "placeholders": {
       "destination": {
         "type": "String"
@@ -5945,11 +6307,32 @@
   "badgeDetailBlockClaimantsEmptyTitle": "No one claims this badge right now",
   "badgeDetailBlockClaimantsEmptyBody": "We did not find any current claimants to block.",
   "badgeDetailBlockClaimantsHeading": "{count, plural, =1{Block 1 claimant?} other{Block {count} claimants?}}",
-  "@badgeDetailBlockClaimantsHeading": {"description": "Full-screen confirmation heading before blocking everyone who currently claims a badge.", "placeholders": {"count": {"type": "int"}}},
+  "@badgeDetailBlockClaimantsHeading": {
+    "description": "Full-screen confirmation heading before blocking everyone who currently claims a badge.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "badgeDetailBlockClaimantsBody": "{count, plural, =1{This blocks the account currently claiming this badge. Their posts will leave your feeds, and they will not be notified.} other{This blocks the {count} accounts currently claiming this badge. Their posts will leave your feeds, and they will not be notified.}}",
-  "@badgeDetailBlockClaimantsBody": {"description": "Full-screen confirmation body explaining the effect of blocking everyone who currently claims a badge.", "placeholders": {"count": {"type": "int"}}},
+  "@badgeDetailBlockClaimantsBody": {
+    "description": "Full-screen confirmation body explaining the effect of blocking everyone who currently claims a badge.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "badgeDetailBlockClaimantsConfirm": "{count, plural, =1{Block 1 account} other{Block {count} accounts}}",
-  "@badgeDetailBlockClaimantsConfirm": {"description": "Destructive confirmation button for blocking everyone who currently claims a badge.", "placeholders": {"count": {"type": "int"}}},
+  "@badgeDetailBlockClaimantsConfirm": {
+    "description": "Destructive confirmation button for blocking everyone who currently claims a badge.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "badgeDetailBlockClaimantsSuccess": "Badge claimants blocked",
   "badgeDetailBlockClaimantsFailure": "Could not block badge claimants",
   "badgeDetailLoadError": "Could not load this badge",
@@ -6169,7 +6552,7 @@
   "devOptionsProtectedMinorCurrentStateLabel": "Current state",
   "devOptionsProtectedMinorStateProtected": "Protected minor (13-15)",
   "devOptionsProtectedMinorStateNotProtected": "Not protected",
-  "devOptionsProtectedMinorStateLoading": "Loading\u2026",
+  "devOptionsProtectedMinorStateLoading": "Loading…",
   "devOptionsProtectedMinorStateError": "Error reading state",
   "devOptionsProtectedMinorOverrideNone": "No override (real account state)",
   "devOptionsProtectedMinorOverrideProtected": "Override: forced protected",
@@ -6304,373 +6687,648 @@
     "description": "Inline green call-to-action on the welcome screen that opens the family-guidance flow for under-16 users."
   },
   "minorAccountReviewUnder13WhyTitle": "Here's why",
-    "generalSettingsHoldToRecord": "Hold to record",
-    "generalSettingsHoldToRecordSubtitle": "Start recording when you press and hold, then stop when you release",
-    "uploadPublishedCountMessage": "{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}",
-    "@uploadPublishedCountMessage": {
-        "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
-        "placeholders": {
-            "count": {
-                "type": "int",
-                "example": "2"
-            }
-        }
-    },
-    "dmMessageSendLabel": "Send message",
-    "@dmMessageSendLabel": {
-        "description": "Screen-reader label for the send button at the bottom of a DM conversation."
-    },
-    "emojiPickerSearchHint": "Search",
-    "@emojiPickerSearchHint": {
-        "description": "Hint text in the search field of the full emoji picker opened from the DM reaction '+' button."
-    },
-    "emojiCategoryRecent": "Recent",
-    "@emojiCategoryRecent": {
-        "description": "Title for the 'Recent' category in the full emoji picker."
-    },
-    "emojiCategorySmileys": "Smileys & People",
-    "@emojiCategorySmileys": {
-        "description": "Title for the 'Smileys & People' category in the full emoji picker."
-    },
-    "emojiCategoryAnimals": "Animals & Nature",
-    "@emojiCategoryAnimals": {
-        "description": "Title for the 'Animals & Nature' category in the full emoji picker."
-    },
-    "emojiCategoryFood": "Food & Drink",
-    "@emojiCategoryFood": {
-        "description": "Title for the 'Food & Drink' category in the full emoji picker."
-    },
-    "emojiCategoryActivities": "Activities",
-    "@emojiCategoryActivities": {
-        "description": "Title for the 'Activities' category in the full emoji picker."
-    },
-    "emojiCategoryTravel": "Travel & Places",
-    "@emojiCategoryTravel": {
-        "description": "Title for the 'Travel & Places' category in the full emoji picker."
-    },
-    "emojiCategoryObjects": "Objects",
-    "@emojiCategoryObjects": {
-        "description": "Title for the 'Objects' category in the full emoji picker."
-    },
-    "emojiCategorySymbols": "Symbols",
-    "@emojiCategorySymbols": {
-        "description": "Title for the 'Symbols' category in the full emoji picker."
-    },
-    "emojiCategoryFlags": "Flags",
-    "@emojiCategoryFlags": {
-        "description": "Title for the 'Flags' category in the full emoji picker."
-    },
-    "videoEditorMarkerLabel": "Marker",
-    "videoEditorAddTimelineMarkerSemanticLabel": "Add timeline marker",
-    "videoEditorRemoveTimelineMarkerSemanticLabel": "Remove timeline marker",
-    "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Remove marker at playhead",
-    "@videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": {
-        "description": "Semantic label for the marker-mode bottom-bar delete button, which immediately removes the marker at the current playhead position. Distinct from videoEditorRemoveTimelineMarkerSemanticLabel (the per-marker dot, which asks for confirmation) so screen-reader users can tell the two delete controls apart."
-    },
-    "videoEditorDeleteTimelineMarkerTitle": "Delete marker?",
-    "videoEditorDeleteTimelineMarkerSubtitle": "This removes the marker from the timeline. Your edit stays intact.",
-    "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",
-    "@videoEditorVolumeLongPressHint": {
-        "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
-    },
-    "videoEditorSplitFailed": "Split failed. Please try again.",
-    "videoEditEditSubtitles": "Edit subtitles",
-    "subtitleEditorTitle": "Edit subtitles",
-    "subtitleEditorSave": "Save",
-    "subtitleEditorProcessing": "Subtitles are still being generated. Check back in a moment.",
-    "subtitleEditorNoSpeech": "No speech was detected in this video, so there's nothing to caption.",
-    "subtitleEditorWriteOwn": "Write them yourself",
-    "subtitleEditorAddCue": "Add a line",
-    "subtitleEditorRemoveCue": "Remove this line",
-    "subtitleEditorPreviewUnavailable": "The video can't be played right now, but you can still fix the captions.",
-    "@subtitleEditorPreviewUnavailable": {
-        "description": "Shown in place of the subtitle editor's video preview when the video cannot be played, so the creator knows the captions are still editable."
-    },
-    "subtitleEditorPlayPreview": "Play the video",
-    "@subtitleEditorPlayPreview": {
-        "description": "Screen-reader label for the subtitle editor's video preview while it is paused; tapping it starts playback."
-    },
-    "subtitleEditorPausePreview": "Pause the video",
-    "@subtitleEditorPausePreview": {
-        "description": "Screen-reader label for the subtitle editor's video preview while it is playing; tapping it pauses playback."
-    },
-    "subtitleEditorInvalidHint": "Every line needs text and an end after its start.",
-    "subtitleEditorLoadError": "Couldn't load subtitles. Try again.",
-    "subtitleEditorSaveSuccess": "Subtitles updated",
-    "subtitleEditorSaveError": "Couldn't save subtitles. Try again.",
-    "subtitleEditorRetry": "Retry",
-    "subtitleEditorCueHint": "Caption text",
-    "imageCropEditorRotateLabel": "Rotate",
-    "@imageCropEditorRotateLabel": {
-        "description": "Bottom-bar action in the image crop editor that rotates the image 90 degrees."
-    },
-    "imageCropEditorFlipLabel": "Flip",
-    "@imageCropEditorFlipLabel": {
-        "description": "Bottom-bar action in the image crop editor that mirrors the image horizontally."
-    },
-    "imageCropEditorResetLabel": "Reset",
-    "@imageCropEditorResetLabel": {
-        "description": "Bottom-bar action in the image crop editor that reverts all crop, rotate and flip changes."
-    },
-    "imageCropEditorCloseSemanticLabel": "Cancel cropping",
-    "@imageCropEditorCloseSemanticLabel": {
-        "description": "Accessibility label for the close button in the image crop editor that discards changes and returns without uploading."
-    },
-    "imageCropEditorDoneSemanticLabel": "Apply crop",
-    "@imageCropEditorDoneSemanticLabel": {
-        "description": "Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload."
-    },
-    "imageCropEditorProcessing": "Applying crop…",
-    "@imageCropEditorProcessing": {
-        "description": "Loading message shown while the image crop editor generates the final cropped image after the user taps done."
-    },
-    "backgroundUploadNotificationTitle": "Uploading video",
-    "@backgroundUploadNotificationTitle": {
-        "description": "Title of the Android foreground-service notification shown while a video uploads in the background so the transfer survives app suspension."
-    },
-    "monetizationSettingsTitle": "Creator Support",
-    "@monetizationSettingsTitle": {"description": "Title for the settings screen where creators configure outbound support links."},
-    "monetizationSettingsSubtitle": "Add tip and subscription links",
-    "@monetizationSettingsSubtitle": {"description": "Subtitle for the settings row that opens creator support link settings."},
-    "monetizationSettingsIntroTitle": "Outbound links only",
-    "@monetizationSettingsIntroTitle": {"description": "Heading explaining monetization links do not create in-app payments."},
-    "monetizationSettingsIntroBody": "Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.",
-    "@monetizationSettingsIntroBody": {"description": "Body copy explaining profile monetization links are external only."},
-    "monetizationSettingsConfiguredCount": "{count, plural, =1{{count} active link on your profile} other{{count} active links on your profile}}",
-    "@monetizationSettingsConfiguredCount": {"description": "Summary of active monetization links configured on the profile.", "placeholders": {"count": {"type": "int"}}},
-    "monetizationSettingsTipSection": "Send a tip",
-    "@monetizationSettingsTipSection": {"description": "Section header for one-time tip link providers."},
-    "monetizationSettingsSubscriptionSection": "Subscribe / support",
-    "@monetizationSettingsSubscriptionSection": {"description": "Section header for recurring or creator-support link providers."},
-    "monetizationSettingsSave": "Save support links",
-    "@monetizationSettingsSave": {"description": "Button label to save profile monetization links."},
-    "monetizationSettingsSaving": "Saving...",
-    "@monetizationSettingsSaving": {"description": "Button label while profile monetization links are saving."},
-    "monetizationSettingsSaved": "Support links updated",
-    "@monetizationSettingsSaved": {"description": "Snackbar shown after monetization links are saved."},
-    "monetizationSettingsSaveFailed": "Could not save support links. Check your connection and try again.",
-    "@monetizationSettingsSaveFailed": {"description": "Snackbar shown when profile monetization links fail to save."},
-    "monetizationSettingsErrorEmpty": "Add a handle or URL.",
-    "@monetizationSettingsErrorEmpty": {"description": "Validation error for an empty monetization link input."},
-    "monetizationSettingsErrorInvalid": "That link does not look right.",
-    "@monetizationSettingsErrorInvalid": {"description": "Validation error for a malformed monetization link input."},
-    "monetizationSettingsErrorWrongProvider": "Use a link for this provider.",
-    "@monetizationSettingsErrorWrongProvider": {"description": "Validation error when a monetization link uses the wrong provider domain."},
-    "monetizationSettingsHintCashApp": "$cashtag or cash.app link",
-    "@monetizationSettingsHintCashApp": {"description": "Input hint for Cash App monetization link."},
-    "monetizationSettingsHintPayPal": "PayPal.me handle or link",
-    "@monetizationSettingsHintPayPal": {"description": "Input hint for PayPal monetization link."},
-    "monetizationSettingsHintVenmo": "Venmo handle or link",
-    "@monetizationSettingsHintVenmo": {"description": "Input hint for Venmo monetization link."},
-    "monetizationSettingsHintPatreon": "Patreon handle or link",
-    "@monetizationSettingsHintPatreon": {"description": "Input hint for Patreon monetization link."},
-    "monetizationSettingsHintSubstack": "Substack domain or link",
-    "@monetizationSettingsHintSubstack": {"description": "Input hint for Substack monetization link."},
-    "monetizationSettingsHintMedium": "Medium handle or link",
-    "@monetizationSettingsHintMedium": {"description": "Input hint for Medium monetization link."},
-    "monetizationSettingsHintOpenCollective": "Open Collective slug or link",
-    "@monetizationSettingsHintOpenCollective": {"description": "Input hint for Open Collective monetization link."},
-    "profileSupportSheetTitle": "Support this creator",
-    "@profileSupportSheetTitle": {"description": "Title for the profile support links bottom sheet."},
-    "profileSupportSheetBody": "These links open outside Divine. Nothing here unlocks content in the app.",
-    "@profileSupportSheetBody": {"description": "Policy copy in the profile support links bottom sheet."},
-    "profileSupportTipSection": "Send a tip",
-    "@profileSupportTipSection": {"description": "Section header for tip links in the profile support sheet."},
-    "profileSupportSubscriptionSection": "Subscribe / support",
-    "@profileSupportSubscriptionSection": {"description": "Section header for subscription links in the profile support sheet."},
-    "profileSupportButtonLabel": "Support",
-    "@profileSupportButtonLabel": {"description": "Compact button label on a profile that opens creator support links."},
-    "monetizationTipsSettingsTitle": "Tips",
-    "@monetizationTipsSettingsTitle": {"description": "App Store-safe title for the settings screen where creators configure optional tip links."},
-    "monetizationTipsSettingsSubtitle": "Add optional tip links",
-    "@monetizationTipsSettingsSubtitle": {"description": "App Store-safe subtitle for the settings row that opens optional tip link settings."},
-    "monetizationTipsSettingsIntroTitle": "Optional tips only",
-    "@monetizationTipsSettingsIntroTitle": {"description": "App Store-safe heading explaining tip links are optional user-to-user gifts."},
-    "monetizationTipsSettingsIntroBody": "Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.",
-    "@monetizationTipsSettingsIntroBody": {"description": "App Store-safe body copy explaining tips do not unlock digital content or services."},
-    "monetizationTipsSettingsConfiguredCount": "{count, plural, =1{{count} active tip link on your profile} other{{count} active tip links on your profile}}",
-    "@monetizationTipsSettingsConfiguredCount": {"description": "App Store-safe summary of active tip links configured on the profile.", "placeholders": {"count": {"type": "int"}}},
-    "monetizationTipsSettingsSave": "Save tip links",
-    "@monetizationTipsSettingsSave": {"description": "App Store-safe button label to save optional tip links."},
-    "monetizationTipsSettingsSaved": "Tip links updated",
-    "@monetizationTipsSettingsSaved": {"description": "App Store-safe snackbar shown after optional tip links are saved."},
-    "profileTipButtonLabel": "Tip",
-    "@profileTipButtonLabel": {"description": "App Store-safe compact button label on a profile that opens optional creator tip links."},
-    "profileTipSheetTitle": "Tip this creator",
-    "@profileTipSheetTitle": {"description": "App Store-safe title for the profile tip links bottom sheet."},
-    "profileTipSheetBody": "Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.",
-    "@profileTipSheetBody": {"description": "App Store-safe policy copy in the profile tip links bottom sheet."},
+  "generalSettingsHoldToRecord": "Hold to record",
+  "generalSettingsHoldToRecordSubtitle": "Start recording when you press and hold, then stop when you release",
+  "uploadPublishedCountMessage": "{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}",
+  "@uploadPublishedCountMessage": {
+    "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "dmMessageSendLabel": "Send message",
+  "@dmMessageSendLabel": {
+    "description": "Screen-reader label for the send button at the bottom of a DM conversation."
+  },
+  "emojiPickerSearchHint": "Search",
+  "@emojiPickerSearchHint": {
+    "description": "Hint text in the search field of the full emoji picker opened from the DM reaction '+' button."
+  },
+  "emojiCategoryRecent": "Recent",
+  "@emojiCategoryRecent": {
+    "description": "Title for the 'Recent' category in the full emoji picker."
+  },
+  "emojiCategorySmileys": "Smileys & People",
+  "@emojiCategorySmileys": {
+    "description": "Title for the 'Smileys & People' category in the full emoji picker."
+  },
+  "emojiCategoryAnimals": "Animals & Nature",
+  "@emojiCategoryAnimals": {
+    "description": "Title for the 'Animals & Nature' category in the full emoji picker."
+  },
+  "emojiCategoryFood": "Food & Drink",
+  "@emojiCategoryFood": {
+    "description": "Title for the 'Food & Drink' category in the full emoji picker."
+  },
+  "emojiCategoryActivities": "Activities",
+  "@emojiCategoryActivities": {
+    "description": "Title for the 'Activities' category in the full emoji picker."
+  },
+  "emojiCategoryTravel": "Travel & Places",
+  "@emojiCategoryTravel": {
+    "description": "Title for the 'Travel & Places' category in the full emoji picker."
+  },
+  "emojiCategoryObjects": "Objects",
+  "@emojiCategoryObjects": {
+    "description": "Title for the 'Objects' category in the full emoji picker."
+  },
+  "emojiCategorySymbols": "Symbols",
+  "@emojiCategorySymbols": {
+    "description": "Title for the 'Symbols' category in the full emoji picker."
+  },
+  "emojiCategoryFlags": "Flags",
+  "@emojiCategoryFlags": {
+    "description": "Title for the 'Flags' category in the full emoji picker."
+  },
+  "videoEditorMarkerLabel": "Marker",
+  "videoEditorAddTimelineMarkerSemanticLabel": "Add timeline marker",
+  "videoEditorRemoveTimelineMarkerSemanticLabel": "Remove timeline marker",
+  "videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": "Remove marker at playhead",
+  "@videoEditorRemoveTimelineMarkerAtPlayheadSemanticLabel": {
+    "description": "Semantic label for the marker-mode bottom-bar delete button, which immediately removes the marker at the current playhead position. Distinct from videoEditorRemoveTimelineMarkerSemanticLabel (the per-marker dot, which asks for confirmation) so screen-reader users can tell the two delete controls apart."
+  },
+  "videoEditorDeleteTimelineMarkerTitle": "Delete marker?",
+  "videoEditorDeleteTimelineMarkerSubtitle": "This removes the marker from the timeline. Your edit stays intact.",
+  "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",
+  "@videoEditorVolumeLongPressHint": {
+    "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
+  },
+  "videoEditorSplitFailed": "Split failed. Please try again.",
+  "videoEditEditSubtitles": "Edit subtitles",
+  "subtitleEditorTitle": "Edit subtitles",
+  "subtitleEditorSave": "Save",
+  "subtitleEditorProcessing": "Subtitles are still being generated. Check back in a moment.",
+  "subtitleEditorNoSpeech": "No speech was detected in this video, so there's nothing to caption.",
+  "subtitleEditorWriteOwn": "Write them yourself",
+  "subtitleEditorAddCue": "Add a line",
+  "subtitleEditorRemoveCue": "Remove this line",
+  "subtitleEditorPreviewUnavailable": "The video can't be played right now, but you can still fix the captions.",
+  "@subtitleEditorPreviewUnavailable": {
+    "description": "Shown in place of the subtitle editor's video preview when the video cannot be played, so the creator knows the captions are still editable."
+  },
+  "subtitleEditorPlayPreview": "Play the video",
+  "@subtitleEditorPlayPreview": {
+    "description": "Screen-reader label for the subtitle editor's video preview while it is paused; tapping it starts playback."
+  },
+  "subtitleEditorPausePreview": "Pause the video",
+  "@subtitleEditorPausePreview": {
+    "description": "Screen-reader label for the subtitle editor's video preview while it is playing; tapping it pauses playback."
+  },
+  "subtitleEditorInvalidHint": "Every line needs text and an end after its start.",
+  "subtitleEditorLoadError": "Couldn't load subtitles. Try again.",
+  "subtitleEditorSaveSuccess": "Subtitles updated",
+  "subtitleEditorSaveError": "Couldn't save subtitles. Try again.",
+  "subtitleEditorRetry": "Retry",
+  "subtitleEditorCueHint": "Caption text",
+  "imageCropEditorRotateLabel": "Rotate",
+  "@imageCropEditorRotateLabel": {
+    "description": "Bottom-bar action in the image crop editor that rotates the image 90 degrees."
+  },
+  "imageCropEditorFlipLabel": "Flip",
+  "@imageCropEditorFlipLabel": {
+    "description": "Bottom-bar action in the image crop editor that mirrors the image horizontally."
+  },
+  "imageCropEditorResetLabel": "Reset",
+  "@imageCropEditorResetLabel": {
+    "description": "Bottom-bar action in the image crop editor that reverts all crop, rotate and flip changes."
+  },
+  "imageCropEditorCloseSemanticLabel": "Cancel cropping",
+  "@imageCropEditorCloseSemanticLabel": {
+    "description": "Accessibility label for the close button in the image crop editor that discards changes and returns without uploading."
+  },
+  "imageCropEditorDoneSemanticLabel": "Apply crop",
+  "@imageCropEditorDoneSemanticLabel": {
+    "description": "Accessibility label for the done button in the image crop editor that confirms the crop and proceeds with the upload."
+  },
+  "imageCropEditorProcessing": "Applying crop…",
+  "@imageCropEditorProcessing": {
+    "description": "Loading message shown while the image crop editor generates the final cropped image after the user taps done."
+  },
+  "backgroundUploadNotificationTitle": "Uploading video",
+  "@backgroundUploadNotificationTitle": {
+    "description": "Title of the Android foreground-service notification shown while a video uploads in the background so the transfer survives app suspension."
+  },
+  "monetizationSettingsTitle": "Creator Support",
+  "@monetizationSettingsTitle": {
+    "description": "Title for the settings screen where creators configure outbound support links."
+  },
+  "monetizationSettingsSubtitle": "Add tip and subscription links",
+  "@monetizationSettingsSubtitle": {
+    "description": "Subtitle for the settings row that opens creator support link settings."
+  },
+  "monetizationSettingsIntroTitle": "Outbound links only",
+  "@monetizationSettingsIntroTitle": {
+    "description": "Heading explaining monetization links do not create in-app payments."
+  },
+  "monetizationSettingsIntroBody": "Add creator-controlled destinations. Divine never handles the payment or unlocks in-app content from these links.",
+  "@monetizationSettingsIntroBody": {
+    "description": "Body copy explaining profile monetization links are external only."
+  },
+  "monetizationSettingsConfiguredCount": "{count, plural, =1{{count} active link on your profile} other{{count} active links on your profile}}",
+  "@monetizationSettingsConfiguredCount": {
+    "description": "Summary of active monetization links configured on the profile.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monetizationSettingsTipSection": "Send a tip",
+  "@monetizationSettingsTipSection": {
+    "description": "Section header for one-time tip link providers."
+  },
+  "monetizationSettingsSubscriptionSection": "Subscribe / support",
+  "@monetizationSettingsSubscriptionSection": {
+    "description": "Section header for recurring or creator-support link providers."
+  },
+  "monetizationSettingsSave": "Save support links",
+  "@monetizationSettingsSave": {
+    "description": "Button label to save profile monetization links."
+  },
+  "monetizationSettingsSaving": "Saving...",
+  "@monetizationSettingsSaving": {
+    "description": "Button label while profile monetization links are saving."
+  },
+  "monetizationSettingsSaved": "Support links updated",
+  "@monetizationSettingsSaved": {
+    "description": "Snackbar shown after monetization links are saved."
+  },
+  "monetizationSettingsSaveFailed": "Could not save support links. Check your connection and try again.",
+  "@monetizationSettingsSaveFailed": {
+    "description": "Snackbar shown when profile monetization links fail to save."
+  },
+  "monetizationSettingsErrorEmpty": "Add a handle or URL.",
+  "@monetizationSettingsErrorEmpty": {
+    "description": "Validation error for an empty monetization link input."
+  },
+  "monetizationSettingsErrorInvalid": "That link does not look right.",
+  "@monetizationSettingsErrorInvalid": {
+    "description": "Validation error for a malformed monetization link input."
+  },
+  "monetizationSettingsErrorWrongProvider": "Use a link for this provider.",
+  "@monetizationSettingsErrorWrongProvider": {
+    "description": "Validation error when a monetization link uses the wrong provider domain."
+  },
+  "monetizationSettingsHintCashApp": "$cashtag or cash.app link",
+  "@monetizationSettingsHintCashApp": {
+    "description": "Input hint for Cash App monetization link."
+  },
+  "monetizationSettingsHintPayPal": "PayPal.me handle or link",
+  "@monetizationSettingsHintPayPal": {
+    "description": "Input hint for PayPal monetization link."
+  },
+  "monetizationSettingsHintVenmo": "Venmo handle or link",
+  "@monetizationSettingsHintVenmo": {
+    "description": "Input hint for Venmo monetization link."
+  },
+  "monetizationSettingsHintPatreon": "Patreon handle or link",
+  "@monetizationSettingsHintPatreon": {
+    "description": "Input hint for Patreon monetization link."
+  },
+  "monetizationSettingsHintSubstack": "Substack domain or link",
+  "@monetizationSettingsHintSubstack": {
+    "description": "Input hint for Substack monetization link."
+  },
+  "monetizationSettingsHintMedium": "Medium handle or link",
+  "@monetizationSettingsHintMedium": {
+    "description": "Input hint for Medium monetization link."
+  },
+  "monetizationSettingsHintOpenCollective": "Open Collective slug or link",
+  "@monetizationSettingsHintOpenCollective": {
+    "description": "Input hint for Open Collective monetization link."
+  },
+  "profileSupportSheetTitle": "Support this creator",
+  "@profileSupportSheetTitle": {
+    "description": "Title for the profile support links bottom sheet."
+  },
+  "profileSupportSheetBody": "These links open outside Divine. Nothing here unlocks content in the app.",
+  "@profileSupportSheetBody": {
+    "description": "Policy copy in the profile support links bottom sheet."
+  },
+  "profileSupportTipSection": "Send a tip",
+  "@profileSupportTipSection": {
+    "description": "Section header for tip links in the profile support sheet."
+  },
+  "profileSupportSubscriptionSection": "Subscribe / support",
+  "@profileSupportSubscriptionSection": {
+    "description": "Section header for subscription links in the profile support sheet."
+  },
+  "profileSupportButtonLabel": "Support",
+  "@profileSupportButtonLabel": {
+    "description": "Compact button label on a profile that opens creator support links."
+  },
+  "monetizationTipsSettingsTitle": "Tips",
+  "@monetizationTipsSettingsTitle": {
+    "description": "App Store-safe title for the settings screen where creators configure optional tip links."
+  },
+  "monetizationTipsSettingsSubtitle": "Add optional tip links",
+  "@monetizationTipsSettingsSubtitle": {
+    "description": "App Store-safe subtitle for the settings row that opens optional tip link settings."
+  },
+  "monetizationTipsSettingsIntroTitle": "Optional tips only",
+  "@monetizationTipsSettingsIntroTitle": {
+    "description": "App Store-safe heading explaining tip links are optional user-to-user gifts."
+  },
+  "monetizationTipsSettingsIntroBody": "Tips are optional user-to-user gifts. They do not unlock content, subscriptions, features, ranking, visibility, or access in Divine.",
+  "@monetizationTipsSettingsIntroBody": {
+    "description": "App Store-safe body copy explaining tips do not unlock digital content or services."
+  },
+  "monetizationTipsSettingsConfiguredCount": "{count, plural, =1{{count} active tip link on your profile} other{{count} active tip links on your profile}}",
+  "@monetizationTipsSettingsConfiguredCount": {
+    "description": "App Store-safe summary of active tip links configured on the profile.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "monetizationTipsSettingsSave": "Save tip links",
+  "@monetizationTipsSettingsSave": {
+    "description": "App Store-safe button label to save optional tip links."
+  },
+  "monetizationTipsSettingsSaved": "Tip links updated",
+  "@monetizationTipsSettingsSaved": {
+    "description": "App Store-safe snackbar shown after optional tip links are saved."
+  },
+  "profileTipButtonLabel": "Tip",
+  "@profileTipButtonLabel": {
+    "description": "App Store-safe compact button label on a profile that opens optional creator tip links."
+  },
+  "profileTipSheetTitle": "Tip this creator",
+  "@profileTipSheetTitle": {
+    "description": "App Store-safe title for the profile tip links bottom sheet."
+  },
+  "profileTipSheetBody": "Tips open outside Divine. They are optional and do not unlock content, subscriptions, features, or access in Divine.",
+  "@profileTipSheetBody": {
+    "description": "App Store-safe policy copy in the profile tip links bottom sheet."
+  },
   "settingsStorageTitle": "Storage",
-  "@settingsStorageTitle": {"description": "Title of the Storage settings screen and its entry in the settings list."},
+  "@settingsStorageTitle": {
+    "description": "Title of the Storage settings screen and its entry in the settings list."
+  },
   "settingsStorageCacheSectionTitle": "Cached media",
-  "@settingsStorageCacheSectionTitle": {"description": "Section header for the clearable media caches on the Storage screen."},
+  "@settingsStorageCacheSectionTitle": {
+    "description": "Section header for the clearable media caches on the Storage screen."
+  },
   "settingsStorageCacheDescription": "Cached feed videos, thumbnails and temporary renders. Clearing them is safe — they're re-downloaded or regenerated when needed.",
-  "@settingsStorageCacheDescription": {"description": "Explains what the cached-media section clears and that it is safe."},
+  "@settingsStorageCacheDescription": {
+    "description": "Explains what the cached-media section clears and that it is safe."
+  },
   "settingsStorageMeasuring": "Measuring…",
-  "@settingsStorageMeasuring": {"description": "Placeholder shown while the cache size is being computed."},
+  "@settingsStorageMeasuring": {
+    "description": "Placeholder shown while the cache size is being computed."
+  },
   "settingsStorageCacheInUse": "{size} in use",
-  "@settingsStorageCacheInUse": {"description": "Shows how much disk the caches currently use.", "placeholders": {"size": {"type": "String"}}},
+  "@settingsStorageCacheInUse": {
+    "description": "Shows how much disk the caches currently use.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "settingsStorageClearButton": "Clear cache",
-  "@settingsStorageClearButton": {"description": "Button that clears the media caches."},
+  "@settingsStorageClearButton": {
+    "description": "Button that clears the media caches."
+  },
   "settingsStorageClearConfirmTitle": "Clear cached media?",
-  "@settingsStorageClearConfirmTitle": {"description": "Title of the confirmation sheet before clearing caches."},
+  "@settingsStorageClearConfirmTitle": {
+    "description": "Title of the confirmation sheet before clearing caches."
+  },
   "settingsStorageClearConfirmMessage": "This frees up {size}. Your clip library is not affected.",
-  "@settingsStorageClearConfirmMessage": {"description": "Body of the clear-cache confirmation sheet.", "placeholders": {"size": {"type": "String"}}},
+  "@settingsStorageClearConfirmMessage": {
+    "description": "Body of the clear-cache confirmation sheet.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "settingsStorageClearConfirmAction": "Clear",
-  "@settingsStorageClearConfirmAction": {"description": "Confirm button that performs the cache clear."},
+  "@settingsStorageClearConfirmAction": {
+    "description": "Confirm button that performs the cache clear."
+  },
   "settingsStorageCleared": "Cache cleared",
-  "@settingsStorageCleared": {"description": "Accessibility announcement after the cache is cleared."},
+  "@settingsStorageCleared": {
+    "description": "Accessibility announcement after the cache is cleared."
+  },
   "settingsStorageLibrarySectionTitle": "Clip library",
-  "@settingsStorageLibrarySectionTitle": {"description": "Section header for the clip-library audit on the Storage screen."},
+  "@settingsStorageLibrarySectionTitle": {
+    "description": "Section header for the clip-library audit on the Storage screen."
+  },
   "settingsStorageLibraryDescription": "Check for broken clips whose video file is missing.",
-  "@settingsStorageLibraryDescription": {"description": "Explains what the clip-library check does."},
+  "@settingsStorageLibraryDescription": {
+    "description": "Explains what the clip-library check does."
+  },
   "settingsStorageScanButton": "Check library",
-  "@settingsStorageScanButton": {"description": "Button that scans the clip library for broken clips."},
+  "@settingsStorageScanButton": {
+    "description": "Button that scans the clip library for broken clips."
+  },
   "settingsStorageLibraryHealthy": "No broken clips found",
-  "@settingsStorageLibraryHealthy": {"description": "Shown when the library scan finds no broken clips."},
+  "@settingsStorageLibraryHealthy": {
+    "description": "Shown when the library scan finds no broken clips."
+  },
   "settingsStorageBrokenClipsFound": "Broken clips found: {count}",
-  "@settingsStorageBrokenClipsFound": {"description": "Shows how many broken clips the scan found.", "placeholders": {"count": {"type": "int"}}},
+  "@settingsStorageBrokenClipsFound": {
+    "description": "Shows how many broken clips the scan found.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsStorageRemoveBrokenButton": "Remove broken clips",
-  "@settingsStorageRemoveBrokenButton": {"description": "Button that removes the broken clips found by the scan."},
+  "@settingsStorageRemoveBrokenButton": {
+    "description": "Button that removes the broken clips found by the scan."
+  },
   "settingsStorageBrokenClipsRemoved": "Broken clips removed",
-  "@settingsStorageBrokenClipsRemoved": {"description": "Accessibility announcement after broken clips are removed."},
+  "@settingsStorageBrokenClipsRemoved": {
+    "description": "Accessibility announcement after broken clips are removed."
+  },
   "settingsStorageError": "Something went wrong",
-  "@settingsStorageError": {"description": "Generic error shown when a storage operation fails."},
+  "@settingsStorageError": {
+    "description": "Generic error shown when a storage operation fails."
+  },
   "settingsStorageMaxVideoCacheLabel": "Maximum video cache",
-  "@settingsStorageMaxVideoCacheLabel": {"description": "Label above the slider that sets the maximum video-cache size."},
+  "@settingsStorageMaxVideoCacheLabel": {
+    "description": "Label above the slider that sets the maximum video-cache size."
+  },
   "settingsStorageApproxVideos": "{count, plural, =1{≈ {count} video} other{≈ {count} videos}}",
-  "@settingsStorageApproxVideos": {"description": "Approximate number of videos that fit in the chosen cache size.", "placeholders": {"count": {"type": "int"}}},
+  "@settingsStorageApproxVideos": {
+    "description": "Approximate number of videos that fit in the chosen cache size.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsStorageRemoveBrokenConfirmTitle": "Remove broken clips?",
-  "@settingsStorageRemoveBrokenConfirmTitle": {"description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."},
+  "@settingsStorageRemoveBrokenConfirmTitle": {
+    "description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."
+  },
   "settingsStorageRepairSectionTitle": "Repair install",
-  "@settingsStorageRepairSectionTitle": {"description": "Section header for the last-resort local-data reset on the Storage screen."},
+  "@settingsStorageRepairSectionTitle": {
+    "description": "Section header for the last-resort local-data reset on the Storage screen."
+  },
   "settingsStorageRepairDescription": "If the app keeps crashing or acting strange, resetting its local data usually fixes it. Your clips and drafts stay.",
-  "@settingsStorageRepairDescription": {"description": "Explains when to reach for the repair reset and what survives it."},
+  "@settingsStorageRepairDescription": {
+    "description": "Explains when to reach for the repair reset and what survives it."
+  },
   "settingsStorageRepairButton": "Reset app data",
-  "@settingsStorageRepairButton": {"description": "Button that wipes local app data to recover from a broken install."},
+  "@settingsStorageRepairButton": {
+    "description": "Button that wipes local app data to recover from a broken install."
+  },
   "settingsStorageRepairConfirmTitle": "Reset app data?",
-  "@settingsStorageRepairConfirmTitle": {"description": "Title of the confirmation sheet before the repair reset."},
+  "@settingsStorageRepairConfirmTitle": {
+    "description": "Title of the confirmation sheet before the repair reset."
+  },
   "settingsStorageRepairConfirmMessage": "This clears cached feed data and temporary files. Your clips, drafts, settings and sign-in stay, but you'll need to restart the app afterwards.",
-  "@settingsStorageRepairConfirmMessage": {"description": "Body of the repair confirmation sheet: what is removed, what survives, and that a restart is needed."},
+  "@settingsStorageRepairConfirmMessage": {
+    "description": "Body of the repair confirmation sheet: what is removed, what survives, and that a restart is needed."
+  },
   "settingsStorageRepairFootprint": "{size} will be removed",
-  "@settingsStorageRepairFootprint": {"description": "Shows how much disk the repair reset frees, inside the confirmation sheet.", "placeholders": {"size": {"type": "String"}}},
+  "@settingsStorageRepairFootprint": {
+    "description": "Shows how much disk the repair reset frees, inside the confirmation sheet.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "settingsStorageRepairConfirmAction": "Reset",
-  "@settingsStorageRepairConfirmAction": {"description": "Confirm button that performs the repair reset."},
+  "@settingsStorageRepairConfirmAction": {
+    "description": "Confirm button that performs the repair reset."
+  },
   "settingsStorageRepairInProgress": "Resetting…",
-  "@settingsStorageRepairInProgress": {"description": "Shown while the repair reset is running."},
+  "@settingsStorageRepairInProgress": {
+    "description": "Shown while the repair reset is running."
+  },
   "settingsStorageRepairSuccess": "Done — restart the app to finish.",
-  "@settingsStorageRepairSuccess": {"description": "Shown and announced after a successful repair reset."},
+  "@settingsStorageRepairSuccess": {
+    "description": "Shown and announced after a successful repair reset."
+  },
   "settingsStorageRepairFailure": "Couldn't reset everything. Try again after a restart.",
-  "@settingsStorageRepairFailure": {"description": "Shown and announced when the repair reset could not complete."},
+  "@settingsStorageRepairFailure": {
+    "description": "Shown and announced when the repair reset could not complete."
+  },
   "nostrSettingsSignatureVerification": "Signature verification",
-  "@nostrSettingsSignatureVerification": {"description": "Title for the Nostr relay signature verification setting."},
+  "@nostrSettingsSignatureVerification": {
+    "description": "Title for the Nostr relay signature verification setting."
+  },
   "nostrSettingsSignatureVerificationIntro": "Choose when Divine checks relay event signatures. Event IDs are always validated first.",
-  "@nostrSettingsSignatureVerificationIntro": {"description": "Intro copy for the Nostr relay signature verification setting screen."},
+  "@nostrSettingsSignatureVerificationIntro": {
+    "description": "Intro copy for the Nostr relay signature verification setting screen."
+  },
   "nostrSettingsSignatureVerificationAll": "All relays",
-  "@nostrSettingsSignatureVerificationAll": {"description": "Option label to verify event signatures from all Nostr relays."},
+  "@nostrSettingsSignatureVerificationAll": {
+    "description": "Option label to verify event signatures from all Nostr relays."
+  },
   "nostrSettingsSignatureVerificationAllSubtitle": "Safest. Verify every relay event signature.",
-  "@nostrSettingsSignatureVerificationAllSubtitle": {"description": "Option subtitle for verifying every Nostr relay event signature."},
+  "@nostrSettingsSignatureVerificationAllSubtitle": {
+    "description": "Option subtitle for verifying every Nostr relay event signature."
+  },
   "nostrSettingsSignatureVerificationUntrusted": "Untrusted relays",
-  "@nostrSettingsSignatureVerificationUntrusted": {"description": "Option label to verify event signatures only from untrusted Nostr relays."},
+  "@nostrSettingsSignatureVerificationUntrusted": {
+    "description": "Option label to verify event signatures only from untrusted Nostr relays."
+  },
   "nostrSettingsSignatureVerificationUntrustedSubtitle": "Skip checks for relays already in your configured pool.",
-  "@nostrSettingsSignatureVerificationUntrustedSubtitle": {"description": "Option subtitle for skipping signature checks on configured relays."},
+  "@nostrSettingsSignatureVerificationUntrustedSubtitle": {
+    "description": "Option subtitle for skipping signature checks on configured relays."
+  },
   "nostrSettingsSignatureVerificationNonDivine": "Non-Divine relays",
-  "@nostrSettingsSignatureVerificationNonDivine": {"description": "Option label to verify event signatures only from non-Divine Nostr relays."},
+  "@nostrSettingsSignatureVerificationNonDivine": {
+    "description": "Option label to verify event signatures only from non-Divine Nostr relays."
+  },
   "nostrSettingsSignatureVerificationNonDivineSubtitle": "Trust Divine relays, verify the rest.",
-  "@nostrSettingsSignatureVerificationNonDivineSubtitle": {"description": "Option subtitle for trusting Divine-hosted relays while verifying other relay signatures."},
+  "@nostrSettingsSignatureVerificationNonDivineSubtitle": {
+    "description": "Option subtitle for trusting Divine-hosted relays while verifying other relay signatures."
+  },
   "settingsCrosspostingTitle": "Crossposting",
-  "@settingsCrosspostingTitle": {"description": "Settings row and screen title for crossposting videos to external platforms."},
+  "@settingsCrosspostingTitle": {
+    "description": "Settings row and screen title for crossposting videos to external platforms."
+  },
   "settingsCrosspostingSubtitle": "Share your videos to other platforms",
-  "@settingsCrosspostingSubtitle": {"description": "Settings row subtitle for the crossposting screen."},
+  "@settingsCrosspostingSubtitle": {
+    "description": "Settings row subtitle for the crossposting screen."
+  },
   "crosspostingSignInRequired": "Sign in with Divine to manage crossposting",
-  "@crosspostingSignInRequired": {"description": "Shown on the crossposting screen when the user is signed out."},
+  "@crosspostingSignInRequired": {
+    "description": "Shown on the crossposting screen when the user is signed out."
+  },
   "crosspostingLoadFailed": "Couldn't load your crossposting settings",
-  "@crosspostingLoadFailed": {"description": "Error shown when the crossposting settings fail to load."},
+  "@crosspostingLoadFailed": {
+    "description": "Error shown when the crossposting settings fail to load."
+  },
   "crosspostingNoPlatforms": "No crossposting platforms are available right now",
-  "@crosspostingNoPlatforms": {"description": "Empty state when the service has no enabled crossposting platforms."},
+  "@crosspostingNoPlatforms": {
+    "description": "Empty state when the service has no enabled crossposting platforms."
+  },
   "crosspostingRetry": "Retry",
-  "@crosspostingRetry": {"description": "Button label to retry loading crossposting settings."},
+  "@crosspostingRetry": {
+    "description": "Button label to retry loading crossposting settings."
+  },
   "crosspostingNotConnected": "Not connected",
-  "@crosspostingNotConnected": {"description": "Status line for a platform without a linked account."},
+  "@crosspostingNotConnected": {
+    "description": "Status line for a platform without a linked account."
+  },
   "crosspostingConnected": "Connected",
-  "@crosspostingConnected": {"description": "Status line for a connected platform whose account name and external ID are unavailable."},
+  "@crosspostingConnected": {
+    "description": "Status line for a connected platform whose account name and external ID are unavailable."
+  },
   "crosspostingNeedsReconnect": "Needs reconnecting",
-  "@crosspostingNeedsReconnect": {"description": "Status line for a platform whose account link expired."},
+  "@crosspostingNeedsReconnect": {
+    "description": "Status line for a platform whose account link expired."
+  },
   "crosspostingConnect": "Connect",
-  "@crosspostingConnect": {"description": "Button label to link an external platform account."},
+  "@crosspostingConnect": {
+    "description": "Button label to link an external platform account."
+  },
   "crosspostingReconnect": "Reconnect",
-  "@crosspostingReconnect": {"description": "Button label to re-link a platform account that needs re-authorization."},
+  "@crosspostingReconnect": {
+    "description": "Button label to re-link a platform account that needs re-authorization."
+  },
   "crosspostingDisconnect": "Disconnect",
-  "@crosspostingDisconnect": {"description": "Button label to unlink an external platform account."},
+  "@crosspostingDisconnect": {
+    "description": "Button label to unlink an external platform account."
+  },
   "crosspostingModeOff": "Off",
-  "@crosspostingModeOff": {"description": "Posting-mode option: never crosspost to this platform."},
+  "@crosspostingModeOff": {
+    "description": "Posting-mode option: never crosspost to this platform."
+  },
   "crosspostingModeManual": "Manual",
-  "@crosspostingModeManual": {"description": "Posting-mode option: user picks per video."},
+  "@crosspostingModeManual": {
+    "description": "Posting-mode option: user picks per video."
+  },
   "crosspostingModeManualSubtitle": "You choose per video",
-  "@crosspostingModeManualSubtitle": {"description": "Explains the manual posting mode."},
+  "@crosspostingModeManualSubtitle": {
+    "description": "Explains the manual posting mode."
+  },
   "crosspostingModeAutomatic": "Automatic",
-  "@crosspostingModeAutomatic": {"description": "Posting-mode option: every future video is crossposted."},
+  "@crosspostingModeAutomatic": {
+    "description": "Posting-mode option: every future video is crossposted."
+  },
   "crosspostingModeAutomaticSubtitle": "Future videos post automatically — only videos published after you turn this on",
-  "@crosspostingModeAutomaticSubtitle": {"description": "Explains the automatic posting mode and that it is not retroactive."},
+  "@crosspostingModeAutomaticSubtitle": {
+    "description": "Explains the automatic posting mode and that it is not retroactive."
+  },
   "crosspostingNotConnectedError": "Connect this platform first to change how it posts.",
-  "@crosspostingNotConnectedError": {"description": "Error shown when a posting mode is set on a platform that isn't connected."},
+  "@crosspostingNotConnectedError": {
+    "description": "Error shown when a posting mode is set on a platform that isn't connected."
+  },
   "crosspostingGenericError": "Something went wrong. Try again.",
-  "@crosspostingGenericError": {"description": "Generic error for failed crossposting actions."},
+  "@crosspostingGenericError": {
+    "description": "Generic error for failed crossposting actions."
+  },
   "crosspostingCallbackTimeoutError": "We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.",
-  "@crosspostingCallbackTimeoutError": {"description": "Error shown when the crossposting OAuth browser session ends without a validated callback (for example when Android app-link verification fails)."},
+  "@crosspostingCallbackTimeoutError": {
+    "description": "Error shown when the crossposting OAuth browser session ends without a validated callback (for example when Android app-link verification fails)."
+  },
   "crosspostingConnectionSuccess": "{platform} connected",
   "@crosspostingConnectionSuccess": {
     "description": "Snackbar after returning from a successful platform connection.",
-    "placeholders": {"platform": {"type": "String"}}
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
   },
   "crosspostingConnectionFailed": "Couldn't connect {platform}",
   "@crosspostingConnectionFailed": {
     "description": "Snackbar after returning from a failed platform connection.",
-    "placeholders": {"platform": {"type": "String"}}
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
   },
   "crosspostingConnectionDenied": "Connection was canceled on {platform}",
   "@crosspostingConnectionDenied": {
     "description": "Snackbar when the user denied the connection on the provider's page.",
-    "placeholders": {"platform": {"type": "String"}}
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
   },
   "supporterTitle": "Divine Supporters",
-  "@supporterTitle": {"description": "Title of the supporter subscription settings screen and its settings tile."},
+  "@supporterTitle": {
+    "description": "Title of the supporter subscription settings screen and its settings tile."
+  },
   "supporterTileSubtitle": "Support Divine with an optional monthly subscription.",
-  "@supporterTileSubtitle": {"description": "Subtitle of the supporter subscription settings tile."},
+  "@supporterTileSubtitle": {
+    "description": "Subtitle of the supporter subscription settings tile."
+  },
   "supporterHeroTitle": "Keep Divine running",
-  "@supporterHeroTitle": {"description": "Headline at the top of the supporter subscription screen."},
+  "@supporterHeroTitle": {
+    "description": "Headline at the top of the supporter subscription screen."
+  },
   "supporterHeroBody": "Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.",
-  "@supporterHeroBody": {"description": "Introductory copy on the supporter subscription screen explaining the optional monthly support."},
+  "@supporterHeroBody": {
+    "description": "Introductory copy on the supporter subscription screen explaining the optional monthly support."
+  },
   "supporterActiveBadge": "You're a Divine Supporter. Thank you for keeping this going.",
-  "@supporterActiveBadge": {"description": "Confirmation shown to users with an active supporter subscription."},
+  "@supporterActiveBadge": {
+    "description": "Confirmation shown to users with an active supporter subscription."
+  },
   "supporterPurchasePending": "Your purchase is pending approval.",
-  "@supporterPurchasePending": {"description": "Status note shown while a supporter purchase awaits store approval."},
+  "@supporterPurchasePending": {
+    "description": "Status note shown while a supporter purchase awaits store approval."
+  },
   "supporterPurchaseConfirming": "Confirming your support…",
-  "@supporterPurchaseConfirming": {"description": "Status note shown while the server verifies a supporter purchase."},
+  "@supporterPurchaseConfirming": {
+    "description": "Status note shown while the server verifies a supporter purchase."
+  },
   "supporterStoreChecking": "Checking the store…",
-  "@supporterStoreChecking": {"description": "Loading note shown while supporter subscription tiers are fetched from the store."},
+  "@supporterStoreChecking": {
+    "description": "Loading note shown while supporter subscription tiers are fetched from the store."
+  },
   "supporterUnavailable": "Supporter subscriptions are not available here right now.",
-  "@supporterUnavailable": {"description": "Note shown when no supporter subscription tiers are available on this device or storefront."},
+  "@supporterUnavailable": {
+    "description": "Note shown when no supporter subscription tiers are available on this device or storefront."
+  },
   "supporterRestorePurchases": "Restore purchases",
-  "@supporterRestorePurchases": {"description": "Button label that re-checks the store for an existing supporter subscription."},
+  "@supporterRestorePurchases": {
+    "description": "Button label that re-checks the store for an existing supporter subscription."
+  },
   "supporterDismissError": "Dismiss error",
-  "@supporterDismissError": {"description": "Accessibility label for the button that dismisses the supporter error banner."},
+  "@supporterDismissError": {
+    "description": "Accessibility label for the button that dismisses the supporter error banner."
+  },
   "supporterErrorStoreUnavailable": "The store is unavailable on this device.",
-  "@supporterErrorStoreUnavailable": {"description": "Error shown when the device cannot reach the app store billing client."},
+  "@supporterErrorStoreUnavailable": {
+    "description": "Error shown when the device cannot reach the app store billing client."
+  },
   "supporterErrorPurchaseFailed": "The purchase did not complete. You were not charged.",
-  "@supporterErrorPurchaseFailed": {"description": "Error shown when a supporter purchase fails or is cancelled."},
+  "@supporterErrorPurchaseFailed": {
+    "description": "Error shown when a supporter purchase fails or is cancelled."
+  },
   "supporterErrorPurchasePending": "Your purchase is pending approval.",
-  "@supporterErrorPurchasePending": {"description": "Error-banner variant shown when a supporter purchase is left in a pending state."},
+  "@supporterErrorPurchasePending": {
+    "description": "Error-banner variant shown when a supporter purchase is left in a pending state."
+  },
   "supporterErrorRestoreFailed": "No supporter subscription was found to restore.",
-  "@supporterErrorRestoreFailed": {"description": "Error shown when restoring purchases finds no supporter subscription."},
+  "@supporterErrorRestoreFailed": {
+    "description": "Error shown when restoring purchases finds no supporter subscription."
+  },
   "supporterErrorOwnershipConflict": "This purchase belongs to another Divine account.",
-  "@supporterErrorOwnershipConflict": {"description": "Error shown when the store purchase is already claimed by a different Divine account."},
+  "@supporterErrorOwnershipConflict": {
+    "description": "Error shown when the store purchase is already claimed by a different Divine account."
+  },
   "supporterErrorVerificationUnavailable": "Divine could not confirm supporter status right now.",
-  "@supporterErrorVerificationUnavailable": {"description": "Error shown when the server-side verification of a supporter purchase is temporarily unavailable."},
+  "@supporterErrorVerificationUnavailable": {
+    "description": "Error shown when the server-side verification of a supporter purchase is temporarily unavailable."
+  },
   "supporterErrorUnknown": "Something went wrong. Please try again.",
-  "@supporterErrorUnknown": {"description": "Generic supporter flow error shown when no more specific message applies."},
+  "@supporterErrorUnknown": {
+    "description": "Generic supporter flow error shown when no more specific message applies."
+  },
   "supporterDisclaimer": "Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.",
-  "@supporterDisclaimer": {"description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."},
+  "@supporterDisclaimer": {
+    "description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."
+  },
   "profileNotifyBellOff": "Get notified about new vines",
   "@profileNotifyBellOff": {
     "description": "Accessibility label on the profile bell when the viewer is not subscribed. Describes the action the tap performs, not the current state."
@@ -6701,13 +7359,17 @@
   "soundCreatorBy": "By {creator}",
   "@soundCreatorBy": {
     "placeholders": {
-      "creator": {"type": "String"}
+      "creator": {
+        "type": "String"
+      }
     }
   },
   "soundSharedBy": "Shared by {publisher}",
   "@soundSharedBy": {
     "placeholders": {
-      "publisher": {"type": "String"}
+      "publisher": {
+        "type": "String"
+      }
     }
   },
   "soundRemixingAllowed": "Remixing allowed",
@@ -6728,29 +7390,54 @@
   "videoEditorDiscardToolChangesSemanticLabel": "Discard changes in {tool}",
   "@videoEditorDiscardToolChangesSemanticLabel": {
     "description": "Accessibility label for closing a named video-editor tool without applying its changes.",
-    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+    "placeholders": {
+      "tool": {
+        "type": "String",
+        "example": "Draw"
+      }
+    }
   },
   "videoEditorApplyToolChangesSemanticLabel": "Apply changes in {tool}",
   "@videoEditorApplyToolChangesSemanticLabel": {
     "description": "Accessibility label for applying changes made in a named video-editor tool.",
-    "placeholders": {"tool": {"type": "String", "example": "Draw"}}
+    "placeholders": {
+      "tool": {
+        "type": "String",
+        "example": "Draw"
+      }
+    }
   },
   "videoEditorRemoveAudioSemanticLabel": "Remove audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
   "@rgbColorSemanticLabel": {
     "description": "Accessibility label announcing a color swatch as its RGB triplet, used when the color has no human-readable name.",
     "placeholders": {
-      "red": {"type": "int", "example": "255"},
-      "green": {"type": "int", "example": "0"},
-      "blue": {"type": "int", "example": "0"}
+      "red": {
+        "type": "int",
+        "example": "255"
+      },
+      "green": {
+        "type": "int",
+        "example": "0"
+      },
+      "blue": {
+        "type": "int",
+        "example": "0"
+      }
     }
   },
   "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
   "@videoEditorColorPickerSwatchSemanticLabel": {
     "description": "Joins the custom color swatch's picker role and its color description into one accessibility label. Translate the separator, not the placeholders: locales that do not list with a Latin comma should use their own (for example '、' or '، '), matching rgbColorSemanticLabel.",
     "placeholders": {
-      "picker": {"type": "String", "example": "Color picker"},
-      "color": {"type": "String", "example": "RGB 100, 20, 20"}
+      "picker": {
+        "type": "String",
+        "example": "Color picker"
+      },
+      "color": {
+        "type": "String",
+        "example": "RGB 100, 20, 20"
+      }
     }
   },
   "verifyTitle": "Verified accounts",
@@ -6801,22 +7488,34 @@
   "@verifyUnlinkSemanticLabel": {
     "description": "Screen reader label for the button that removes a linked account.",
     "placeholders": {
-      "platform": {"type": "String", "example": "GitHub"},
-      "identity": {"type": "String", "example": "octocat"}
+      "platform": {
+        "type": "String",
+        "example": "GitHub"
+      },
+      "identity": {
+        "type": "String",
+        "example": "octocat"
+      }
     }
   },
   "verifyUnlinkConfirmTitle": "Unlink {platform}?",
   "@verifyUnlinkConfirmTitle": {
     "description": "Title of the sheet confirming an account unlink. {platform} is the platform's display name.",
     "placeholders": {
-      "platform": {"type": "String", "example": "GitHub"}
+      "platform": {
+        "type": "String",
+        "example": "GitHub"
+      }
     }
   },
   "verifyUnlinkConfirmSubtitle": "{identity} stops showing on your profile. You can link it again later, but you will have to sign in or post a new proof.",
   "@verifyUnlinkConfirmSubtitle": {
     "description": "Body of the sheet confirming an account unlink. {identity} is the handle being unlinked.",
     "placeholders": {
-      "identity": {"type": "String", "example": "octocat"}
+      "identity": {
+        "type": "String",
+        "example": "octocat"
+      }
     }
   },
   "verifyUnlinkConfirmCta": "Unlink",
@@ -6827,7 +7526,10 @@
   "@verifyLinkSemanticLabel": {
     "description": "Screen reader label for a row that opens the flow for linking one platform.",
     "placeholders": {
-      "platform": {"type": "String", "example": "GitHub"}
+      "platform": {
+        "type": "String",
+        "example": "GitHub"
+      }
     }
   },
   "verifyOneTapBadge": "One tap",
@@ -6838,14 +7540,20 @@
   "@verifyConnectOauthExplainer": {
     "description": "Explains the sign-in route for linking a platform. Reassures that nothing is posted to the account.",
     "placeholders": {
-      "platform": {"type": "String", "example": "Twitter / X"}
+      "platform": {
+        "type": "String",
+        "example": "Twitter / X"
+      }
     }
   },
   "verifyConnectOauthCta": "Continue with {platform}",
   "@verifyConnectOauthCta": {
     "description": "Button that opens the platform's sign-in page to link the account.",
     "placeholders": {
-      "platform": {"type": "String", "example": "Twitter / X"}
+      "platform": {
+        "type": "String",
+        "example": "Twitter / X"
+      }
     }
   },
   "verifyConnectProofTitle": "Or post a proof",
@@ -6940,7 +7648,10 @@
   "@verifyLinkedConfirmation": {
     "description": "Confirmation shown on the verify screen right after an account was linked and published. {platform} is the platform's display name.",
     "placeholders": {
-      "platform": {"type": "String", "example": "GitHub"}
+      "platform": {
+        "type": "String",
+        "example": "GitHub"
+      }
     }
   },
   "verifyErrorTelegramNotPublic": "That's a private channel or an invite. Give the channel a public link, then paste the message link.",
@@ -7169,18 +7880,18 @@
   },
   "changeEmailSentExpiry": "The links stop working after 24 hours.",
   "changeEmailSentDone": "Got it",
-    "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}",
-    "@searchUserVideoCount": {
-        "description": "Secondary line on a people-search result row: how many videos this user has published.",
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "formattedCount": {
-                "type": "String"
-            }
-        }
-    },
+  "searchUserVideoCount": "{count, plural, =1{{formattedCount} video} other{{formattedCount} videos}}",
+  "@searchUserVideoCount": {
+    "description": "Secondary line on a people-search result row: how many videos this user has published.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "formattedCount": {
+        "type": "String"
+      }
+    }
+  },
   "socialProofMutual": "Mutual",
   "@socialProofMutual": {
     "description": "Secondary line on a user row: the viewer and this account follow each other. Shown in place of a truncated npub, which cannot tell two same-named people apart."
@@ -7214,49 +7925,134 @@
     "description": "Shown on the video feed when the device has no network, or when even the status page (on a different CDN) is unreachable."
   },
   "dbFailureTitle": "couldn't unlock your local database",
-  "@dbFailureTitle": {"description": "Title of the fail-closed startup screen shown when the encrypted local database cannot be opened."},
+  "@dbFailureTitle": {
+    "description": "Title of the fail-closed startup screen shown when the encrypted local database cannot be opened."
+  },
   "dbFailureAdviceResettable": "A restart won't fix this one. Resetting the local database below gives Divine a clean start — your account stays.",
-  "@dbFailureAdviceResettable": {"description": "Advice on the database-failure screen when a reset is offered, because the database is provably unusable."},
+  "@dbFailureAdviceResettable": {
+    "description": "Advice on the database-failure screen when a reset is offered, because the database is provably unusable."
+  },
   "dbFailureAdviceRestart": "Restart Divine after unlocking your device. If this keeps happening, update the app or contact support.",
-  "@dbFailureAdviceRestart": {"description": "Advice on the database-failure screen when no reset is offered, because the database is intact and only its keystore was unreachable."},
+  "@dbFailureAdviceRestart": {
+    "description": "Advice on the database-failure screen when no reset is offered, because the database is intact and only its keystore was unreachable."
+  },
   "dbFailureDiagnostic": "Diagnostic: {code}",
-  "@dbFailureDiagnostic": {"description": "Short diagnostic code rendered on the database-failure screen so a support report can name the cause without a stack trace.", "placeholders": {"code": {"type": "String"}}},
+  "@dbFailureDiagnostic": {
+    "description": "Short diagnostic code rendered on the database-failure screen so a support report can name the cause without a stack trace.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "dbFailureCloseApp": "close Divine",
-  "@dbFailureCloseApp": {"description": "Button that quits the app from the database-failure screen."},
+  "@dbFailureCloseApp": {
+    "description": "Button that quits the app from the database-failure screen."
+  },
   "dbFailureResetAction": "reset local database",
-  "@dbFailureResetAction": {"description": "Button that opens the confirmation step for the destructive local-database reset."},
+  "@dbFailureResetAction": {
+    "description": "Button that opens the confirmation step for the destructive local-database reset."
+  },
   "dbFailureConfirmTitle": "reset your local database?",
-  "@dbFailureConfirmTitle": {"description": "Title of the confirmation step before the local database is reset."},
+  "@dbFailureConfirmTitle": {
+    "description": "Title of the confirmation step before the local database is reset."
+  },
   "dbFailureConfirmBody": "Your account stays. Drafts and clips saved on this device are deleted — messages and feeds come back from the network.",
-  "@dbFailureConfirmBody": {"description": "Body of the confirmation step explaining what a local-database reset deletes and what survives."},
+  "@dbFailureConfirmBody": {
+    "description": "Body of the confirmation step explaining what a local-database reset deletes and what survives."
+  },
   "dbFailureResetConfirm": "reset and close",
-  "@dbFailureResetConfirm": {"description": "Button that performs the local-database reset and then closes the app."},
+  "@dbFailureResetConfirm": {
+    "description": "Button that performs the local-database reset and then closes the app."
+  },
   "dbFailureCancel": "cancel",
-  "@dbFailureCancel": {"description": "Button that returns from the reset confirmation to the failure screen."},
+  "@dbFailureCancel": {
+    "description": "Button that returns from the reset confirmation to the failure screen."
+  },
   "dbFailureResetFailed": "That didn't work. Close Divine and try again.",
-  "@dbFailureResetFailed": {"description": "Message shown when the local-database reset itself failed or timed out."},
+  "@dbFailureResetFailed": {
+    "description": "Message shown when the local-database reset itself failed or timed out."
+  },
   "dbFailureResetDoneTitle": "local database reset",
-  "@dbFailureResetDoneTitle": {"description": "Title of the terminal step after a successful local-database reset."},
+  "@dbFailureResetDoneTitle": {
+    "description": "Title of the terminal step after a successful local-database reset."
+  },
   "dbFailureResetDoneBody": "Close Divine and open it again — the next launch builds a fresh local database.",
-  "@dbFailureResetDoneBody": {"description": "Body of the terminal step after a successful reset, telling the user to relaunch."},
+  "@dbFailureResetDoneBody": {
+    "description": "Body of the terminal step after a successful reset, telling the user to relaunch."
+  },
   "authSignInOptionsInfo": "About sign-in options",
-  "@authSignInOptionsInfo": {"description": "Screen-reader label for the info button on the sign-in options screen, which opens a sheet explaining each sign-in method."},
+  "@authSignInOptionsInfo": {
+    "description": "Screen-reader label for the info button on the sign-in options screen, which opens a sheet explaining each sign-in method."
+  },
   "authShowPassword": "Show password",
-  "@authShowPassword": {"description": "Screen-reader label for the control that reveals the typed password."},
+  "@authShowPassword": {
+    "description": "Screen-reader label for the control that reveals the typed password."
+  },
   "authHidePassword": "Hide password",
-  "@authHidePassword": {"description": "Screen-reader label for the control that re-masks the typed password."},
+  "@authHidePassword": {
+    "description": "Screen-reader label for the control that re-masks the typed password."
+  },
   "followUserSemanticLabel": "Follow user",
-  "@followUserSemanticLabel": {"description": "Screen-reader label for the follow button on a user row."},
+  "@followUserSemanticLabel": {
+    "description": "Screen-reader label for the follow button on a user row."
+  },
   "unfollowUserSemanticLabel": "Unfollow user",
-  "@unfollowUserSemanticLabel": {"description": "Screen-reader label for the unfollow button on a user row."},
+  "@unfollowUserSemanticLabel": {
+    "description": "Screen-reader label for the unfollow button on a user row."
+  },
   "commentsLoadingSemanticLabel": "Loading comments",
-  "@commentsLoadingSemanticLabel": {"description": "Screen-reader label announced while the comment list is still loading."},
+  "@commentsLoadingSemanticLabel": {
+    "description": "Screen-reader label announced while the comment list is still loading."
+  },
   "analyticsWindowAll": "All",
-  "@analyticsWindowAll": {"description": "Creator-analytics time window covering all time, shown next to 7D / 28D / 90D."},
+  "@analyticsWindowAll": {
+    "description": "Creator-analytics time window covering all time, shown next to 7D / 28D / 90D."
+  },
   "followUserIndexedSemanticLabel": "Follow user {index}",
-  "@followUserIndexedSemanticLabel": {"description": "Screen-reader label for the follow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.", "placeholders": {"index": {"type": "String"}}},
+  "@followUserIndexedSemanticLabel": {
+    "description": "Screen-reader label for the follow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.",
+    "placeholders": {
+      "index": {
+        "type": "String"
+      }
+    }
+  },
   "unfollowUserIndexedSemanticLabel": "Unfollow user {index}",
-  "@unfollowUserIndexedSemanticLabel": {"description": "Screen-reader label for the unfollow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.", "placeholders": {"index": {"type": "String"}}},
+  "@unfollowUserIndexedSemanticLabel": {
+    "description": "Screen-reader label for the unfollow button on a user row inside a list, carrying the row position so end-to-end flows can target a specific row.",
+    "placeholders": {
+      "index": {
+        "type": "String"
+      }
+    }
+  },
   "supporterTierMonthlyLabel": "{title} — {price} / month",
-  "@supporterTierMonthlyLabel": {"description": "Label on a supporter subscription button: the tier name, its price, and the monthly billing period.", "placeholders": {"title": {"type": "String"}, "price": {"type": "String"}}}
+  "@supporterTierMonthlyLabel": {
+    "description": "Label on a supporter subscription button: the tier name, its price, and the monthly billing period.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "videoDetailHiddenBySettingsTitle": "Hidden by your settings",
+  "videoDetailHiddenByHostFilterBody": "This one's hosted on {host}, and you're set to only show Divine-hosted videos.",
+  "@videoDetailHiddenByHostFilterBody": {
+    "description": "Shown when a video is hidden because its media host is not a Divine host and the 'only show Divine-hosted videos' safety setting is on.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "videoDetailHiddenByContentFilterBody": "Your content filters are hiding this one.",
+  "videoDetailHiddenByProvenanceFilterBody": "This one has no capture chain back to a camera, and you're set to only show camera-verified videos.",
+  "videoDetailHiddenShowAnyway": "Show it anyway",
+  "videoDetailHiddenOpenSettings": "Change setting",
+  "safetySettingsShowVerifiedOnly": "Only show camera-verified videos",
+  "safetySettingsShowVerifiedOnlySubtitle": "Hide videos without a capture chain back to a camera. Vine archive videos are always shown."
 }

@@ -2,16 +2,17 @@
 // ABOUTME: Fetches video from Nostr and displays it in full-screen player
 
 import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart' show NostrClient;
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/providers/analytics_providers.dart';
@@ -20,10 +21,12 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/takeover_close_button.dart';
 import 'package:openvine/widgets/tv_static_message_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class VideoDetailRouteExtra {
   const VideoDetailRouteExtra({
@@ -86,6 +89,10 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   VideoEvent? _video;
   bool _isLoading = true;
   _VideoDetailError? _error;
+
+  /// The video a content filter removed, kept so the viewer can override
+  /// the filter for this one video without another round trip (#7892).
+  VideoEvent? _hiddenVideo;
   StreamSubscription? _relayReadySubscription;
   bool _retryScheduled = false;
   bool _hasRetriedAfterRelayReady = false;
@@ -153,12 +160,31 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       // fetchVideoWithStats handles cache→relay lookup and bulk-stats
       // hydration in one call, matching what feed providers do.
       final videosRepository = ref.read(videosRepositoryProvider);
-      final video = widget.fallbackVideoIds.isEmpty
-          ? await videosRepository.fetchVideoWithStatsForRouteId(widget.videoId)
-          : await videosRepository.fetchVideoWithStatsForRouteId(
-              widget.videoId,
-              fallbackRouteIds: widget.fallbackVideoIds,
-            );
+      final lookup = await videosRepository.lookupVideoForRouteId(
+        widget.videoId,
+        fallbackRouteIds: widget.fallbackVideoIds,
+      );
+
+      // A filtered video is not a missing one: it resolved and plays, and
+      // reporting it as "not found" leaves the viewer with no way to act
+      // on a setting they may never have chosen (#7892).
+      if (lookup case VideoRouteHiddenByFilter(:final video)) {
+        Log.info(
+          'Video hidden by content filters: ${widget.videoId}',
+          name: 'VideoDetailScreen',
+          category: LogCategory.video,
+        );
+        if (mounted) {
+          setState(() {
+            _hiddenVideo = video;
+            _error = _VideoDetailError.hiddenBySettings;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      final video = lookup is VideoRouteFound ? lookup.video : null;
 
       if (video != null) {
         Log.info(
@@ -235,6 +261,21 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
   }
 
+  /// Renders the filtered video for this screen only.
+  ///
+  /// The lookup already parsed it, so the override is a state change rather
+  /// than a refetch, and it deliberately does not touch the stored setting —
+  /// overriding one video is not the same as turning the filter off.
+  void _showHiddenVideoAnyway() {
+    final video = _hiddenVideo;
+    if (video == null) return;
+    setState(() {
+      _video = video;
+      _error = null;
+      _isLoading = false;
+    });
+  }
+
   bool _scheduleRelayReadyRetry(NostrClient nostrClient) {
     if (_retryScheduled || _hasRetriedAfterRelayReady) {
       return false;
@@ -286,6 +327,14 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (_error case final error?) {
       return switch (error) {
         _VideoDetailError.notFound => _NotFoundScreen(
+          onClose: () => _handleExit(context),
+        ),
+        _VideoDetailError.hiddenBySettings => _HiddenBySettingsScreen(
+          video: _hiddenVideo!,
+          isHostFilter:
+              !_hiddenVideo!.isFromDivineServer &&
+              ref.read(divineHostFilterServiceProvider).showDivineHostedOnly,
+          onShowAnyway: _showHiddenVideoAnyway,
           onClose: () => _handleExit(context),
         ),
         _VideoDetailError.loadFailed => TvStaticMessageScreen(
@@ -399,4 +448,52 @@ class _NotFoundScreen extends StatelessWidget {
   }
 }
 
-enum _VideoDetailError { notFound, loadFailed }
+enum _VideoDetailError { notFound, loadFailed, hiddenBySettings }
+
+/// Explains that a content filter — not a missing video — is why nothing
+/// played, and offers both ways out: change the setting, or override it for
+/// this one video.
+class _HiddenBySettingsScreen extends StatelessWidget {
+  const _HiddenBySettingsScreen({
+    required this.video,
+    required this.isHostFilter,
+    required this.onShowAnyway,
+    required this.onClose,
+  });
+
+  final VideoEvent video;
+
+  /// Whether the "only show Divine-hosted videos" setting is responsible, as
+  /// opposed to some other content filter. Drives which explanation is shown
+  /// so the copy never names a setting that is not the cause.
+  final bool isHostFilter;
+
+  final VoidCallback onShowAnyway;
+  final VoidCallback onClose;
+
+  String _host() {
+    final url = video.videoUrl;
+    if (url == null || url.isEmpty) return '';
+    return Uri.tryParse(url)?.host ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TvStaticMessageScreen(
+      sticker: .alert,
+      title: context.l10n.videoDetailHiddenBySettingsTitle,
+      description: isHostFilter
+          ? context.l10n.videoDetailHiddenByHostFilterBody(_host())
+          : context.l10n.videoDetailHiddenByContentFilterBody,
+      actionLabel: context.l10n.videoDetailHiddenShowAnyway,
+      onAction: onShowAnyway,
+      onClose: onClose,
+      closeSemanticLabel: context.l10n.videoDetailCloseSemanticLabel,
+      footer: DivineButton(
+        label: context.l10n.videoDetailHiddenOpenSettings,
+        type: DivineButtonType.secondary,
+        onPressed: () => context.push(SafetySettingsScreen.path),
+      ),
+    );
+  }
+}

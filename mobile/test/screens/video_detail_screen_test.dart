@@ -127,9 +127,9 @@ void main() {
         tester,
       ) async {
         // fetchVideoWithStatsForRouteId stays pending
-        final completer = Completer<VideoEvent?>();
+        final completer = Completer<VideoRouteLookupResult>();
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          () => mockVideosRepository.lookupVideoForRouteId(any()),
         ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(buildSubject());
@@ -143,11 +143,11 @@ void main() {
         (tester) async {
           // A lookup that never resolves — cold start before the relays are
           // queryable — used to strand the user on the spinner with no exit.
-          final completer = Completer<VideoEvent?>();
+          final completer = Completer<VideoRouteLookupResult>();
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+            () => mockVideosRepository.lookupVideoForRouteId(any()),
           ).thenAnswer((_) => completer.future);
-          addTearDown(() => completer.complete(null));
+          addTearDown(() => completer.complete(const VideoRouteMissing()));
 
           final router = GoRouter(
             routes: [
@@ -214,11 +214,11 @@ void main() {
       testWidgets('exit lands on the feed when there is nothing to pop', (
         tester,
       ) async {
-        final completer = Completer<VideoEvent?>();
+        final completer = Completer<VideoRouteLookupResult>();
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          () => mockVideosRepository.lookupVideoForRouteId(any()),
         ).thenAnswer((_) => completer.future);
-        addTearDown(() => completer.complete(null));
+        addTearDown(() => completer.complete(const VideoRouteMissing()));
 
         final router = GoRouter(
           initialLocation: VideoDetailScreen.pathForId('test_video_id'),
@@ -282,10 +282,10 @@ void main() {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
           var attempts = 0;
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+            () => mockVideosRepository.lookupVideoForRouteId(any()),
           ).thenAnswer((_) async {
             attempts++;
-            return null;
+            return const VideoRouteMissing();
           });
 
           final router = GoRouter(
@@ -354,6 +354,93 @@ void main() {
       );
     });
 
+    group('hidden by a content filter', () {
+      VideoEvent offHostVideo() => createTestVideoEvent(
+        id: 'off_host_video',
+        videoUrl: 'https://separately-robust-roughy.edgecompute.app/abc123',
+      );
+
+      void stubHidden(VideoEvent video) {
+        when(
+          () => mockVideosRepository.lookupVideoForRouteId(
+            any(),
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).thenAnswer((_) async => VideoRouteHiddenByFilter(video));
+      }
+
+      testWidgets('explains the filter instead of claiming "not found"', (
+        tester,
+      ) async {
+        stubHidden(offHostVideo());
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(
+          find.text(l10n.videoDetailHiddenBySettingsTitle),
+          findsOneWidget,
+        );
+        // The old behaviour — the lie this exists to stop.
+        expect(find.text(l10n.videoErrorNotFound), findsNothing);
+      });
+
+      testWidgets('names the media host that triggered the host filter', (
+        tester,
+      ) async {
+        stubHidden(offHostVideo());
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(
+          find.text(
+            l10n.videoDetailHiddenByHostFilterBody(
+              'separately-robust-roughy.edgecompute.app',
+            ),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('offers both a settings route and a per-video override', (
+        tester,
+      ) async {
+        stubHidden(offHostVideo());
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text(l10n.videoDetailHiddenShowAnyway), findsOneWidget);
+        expect(find.text(l10n.videoDetailHiddenOpenSettings), findsOneWidget);
+      });
+
+      testWidgets('"show it anyway" plays the video without a refetch', (
+        tester,
+      ) async {
+        stubHidden(offHostVideo());
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        await tester.tap(find.text(l10n.videoDetailHiddenShowAnyway));
+        await tester.pump();
+
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+        expect(
+          find.text(l10n.videoDetailHiddenBySettingsTitle),
+          findsNothing,
+        );
+        // The lookup already carried the video; overriding must not refetch.
+        verify(
+          () => mockVideosRepository.lookupVideoForRouteId(
+            any(),
+            fallbackRouteIds: any(named: 'fallbackRouteIds'),
+          ),
+        ).called(1);
+      });
+    });
+
     group('video found', () {
       testWidgets('renders supplied route video without fetching it again', (
         tester,
@@ -395,7 +482,7 @@ void main() {
         expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
         expect(capturedVideo, same(initialVideo));
         verifyNever(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          () => mockVideosRepository.lookupVideoForRouteId(any()),
         );
       });
 
@@ -409,10 +496,10 @@ void main() {
           );
 
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            () => mockVideosRepository.lookupVideoForRouteId(
               'test_video_id',
             ),
-          ).thenAnswer((_) async => video);
+          ).thenAnswer((_) async => VideoRouteFound(video));
 
           await tester.pumpWidget(buildSubject());
           await tester.pump();
@@ -434,11 +521,11 @@ void main() {
           );
 
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            () => mockVideosRepository.lookupVideoForRouteId(
               '34236:test_pubkey:stable_id',
               fallbackRouteIds: const ['raw_video_id'],
             ),
-          ).thenAnswer((_) async => video);
+          ).thenAnswer((_) async => VideoRouteFound(video));
 
           await tester.pumpWidget(
             buildSubject(
@@ -453,7 +540,7 @@ void main() {
             findsOneWidget,
           );
           verify(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            () => mockVideosRepository.lookupVideoForRouteId(
               '34236:test_pubkey:stable_id',
               fallbackRouteIds: const ['raw_video_id'],
             ),
@@ -478,10 +565,10 @@ void main() {
 
           VideoEvent? capturedVideo;
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            () => mockVideosRepository.lookupVideoForRouteId(
               'test_video_id',
             ),
-          ).thenAnswer((_) async => videoWithStats);
+          ).thenAnswer((_) async => VideoRouteFound(videoWithStats));
 
           await tester.pumpWidget(
             testMaterialApp(
@@ -532,15 +619,15 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'first_video_id',
           ),
-        ).thenAnswer((_) async => firstVideo);
+        ).thenAnswer((_) async => VideoRouteFound(firstVideo));
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'second_video_id',
           ),
-        ).thenAnswer((_) async => secondVideo);
+        ).thenAnswer((_) async => VideoRouteFound(secondVideo));
 
         VideoEvent? capturedVideo;
 
@@ -603,8 +690,8 @@ void main() {
         'renders error when fetchVideoWithStatsForRouteId returns null',
         (tester) async {
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
-          ).thenAnswer((_) async => null);
+            () => mockVideosRepository.lookupVideoForRouteId(any()),
+          ).thenAnswer((_) async => const VideoRouteMissing());
 
           await tester.pumpWidget(buildSubject());
           await tester.pump();
@@ -640,9 +727,8 @@ void main() {
           // contract.
           const coordinate = '34236:owner_pubkey_hex:my-vine-id';
           when(
-            () =>
-                mockVideosRepository.fetchVideoWithStatsForRouteId(coordinate),
-          ).thenAnswer((_) async => null);
+            () => mockVideosRepository.lookupVideoForRouteId(coordinate),
+          ).thenAnswer((_) async => const VideoRouteMissing());
 
           await tester.pumpWidget(buildSubject(videoId: coordinate));
           await tester.pump();
@@ -676,14 +762,14 @@ void main() {
           );
 
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            () => mockVideosRepository.lookupVideoForRouteId(
               'cold_start_video',
             ),
           ).thenAnswer((_) async {
             if (!isInitialized || connectedRelayCount == 0) {
-              return null;
+              return const VideoRouteMissing();
             }
-            return video;
+            return VideoRouteFound(video);
           });
 
           await tester.pumpWidget(buildSubject(videoId: 'cold_start_video'));
@@ -730,16 +816,16 @@ void main() {
 
         var attempts = 0;
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'dropped_relay_video',
           ),
         ).thenAnswer((_) async {
           attempts++;
           if (attempts == 1) {
             connectedRelayCount = 0;
-            return null;
+            return const VideoRouteMissing();
           }
-          return video;
+          return VideoRouteFound(video);
         });
 
         await tester.pumpWidget(buildSubject(videoId: 'dropped_relay_video'));
@@ -768,7 +854,7 @@ void main() {
         'renders error message when fetchVideoWithStatsForRouteId throws',
         (tester) async {
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+            () => mockVideosRepository.lookupVideoForRouteId(any()),
           ).thenAnswer((_) => Future.error(Exception('Network error')));
 
           await tester.pumpWidget(buildSubject());
@@ -789,7 +875,7 @@ void main() {
         // message, so a corrupt local database showed the user the raw
         // SqliteException — SQL, parameters and all.
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          () => mockVideosRepository.lookupVideoForRouteId(any()),
         ).thenAnswer(
           (_) => Future.error(
             Exception(
@@ -816,12 +902,12 @@ void main() {
         );
         var attempts = 0;
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          () => mockVideosRepository.lookupVideoForRouteId(any()),
         ).thenAnswer((_) {
           attempts++;
           return attempts == 1
-              ? Future<VideoEvent?>.error(Exception('Network error'))
-              : Future<VideoEvent?>.value(video);
+              ? Future<VideoRouteLookupResult>.error(Exception('Network error'))
+              : Future<VideoRouteLookupResult>.value(VideoRouteFound(video));
         });
 
         await tester.pumpWidget(buildSubject());
@@ -840,17 +926,17 @@ void main() {
       testWidgets('shows the loading state while the retry is in flight', (
         tester,
       ) async {
-        final refetch = Completer<VideoEvent?>();
+        final refetch = Completer<VideoRouteLookupResult>();
         var attempts = 0;
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          () => mockVideosRepository.lookupVideoForRouteId(any()),
         ).thenAnswer((_) {
           attempts++;
           return attempts == 1
-              ? Future<VideoEvent?>.error(Exception('Network error'))
+              ? Future<VideoRouteLookupResult>.error(Exception('Network error'))
               : refetch.future;
         });
-        addTearDown(() => refetch.complete(null));
+        addTearDown(() => refetch.complete(const VideoRouteMissing()));
 
         await tester.pumpWidget(buildSubject());
         await tester.pump();
@@ -873,10 +959,12 @@ void main() {
           // the user on an unbounded spinner with no way back to Retry.
           var attempts = 0;
           when(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+            () => mockVideosRepository.lookupVideoForRouteId(any()),
           ).thenAnswer((_) {
             attempts++;
-            return Future<VideoEvent?>.error(Exception('Network error'));
+            return Future<VideoRouteLookupResult>.error(
+              Exception('Network error'),
+            );
           });
 
           await tester.pumpWidget(buildSubject());
@@ -911,10 +999,10 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'blocked_video_id',
           ),
-        ).thenAnswer((_) async => video);
+        ).thenAnswer((_) async => VideoRouteFound(video));
         when(
           () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);
@@ -935,10 +1023,10 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'blocked_video_id',
           ),
-        ).thenAnswer((_) async => video);
+        ).thenAnswer((_) async => VideoRouteFound(video));
         when(
           () => mockBlocklistRepository.hasBlockedUs('blocked_pubkey'),
         ).thenReturn(true);
@@ -960,10 +1048,10 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'hidden_video_id',
           ),
-        ).thenAnswer((_) async => video);
+        ).thenAnswer((_) async => VideoRouteFound(video));
         when(
           () => mockVideoEventService.shouldHideVideo(video),
         ).thenReturn(true);
@@ -988,10 +1076,10 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'deleted_video_id',
           ),
-        ).thenAnswer((_) async => video);
+        ).thenAnswer((_) async => VideoRouteFound(video));
         when(
           () => mockVideoEventService.isVideoEventKnownDeleted(video),
         ).thenReturn(true);
@@ -1020,10 +1108,10 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          () => mockVideosRepository.lookupVideoForRouteId(
             'unblocked_video_id',
           ),
-        ).thenAnswer((_) async => video);
+        ).thenAnswer((_) async => VideoRouteFound(video));
         when(
           () => mockVideoEventService.shouldHideVideo(video),
         ).thenReturn(true);
