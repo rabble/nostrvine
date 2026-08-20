@@ -558,6 +558,11 @@ class WebSocketConnectionManager {
 
     resetReconnection();
     _shouldReconnect = true;
+    // Neither resetReconnection nor _closeChannel touches the heartbeat, so
+    // without this a reconnect that fails leaves the previous connection's
+    // Timer.periodic running with nothing to beat on. disconnect() and
+    // _handleDisconnect both stop it; this is the sibling that did not.
+    _stopHeartbeat();
     await _closeChannel();
     _setState(ConnectionState.disconnected);
     return _doConnect();

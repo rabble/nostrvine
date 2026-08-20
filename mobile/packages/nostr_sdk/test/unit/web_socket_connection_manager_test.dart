@@ -158,6 +158,56 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
   }
 }
 
+/// Runs [body] in a zone that counts the periodic timers currently armed.
+///
+/// The heartbeat is a `Timer.periodic` with no accessor, and it does nothing
+/// observable while the connection is down, so counting the timers the zone
+/// hands out is the only way to see one survive a failed reconnect.
+Future<void> countingPeriodicTimers(
+  Future<void> Function(int Function() armed) body,
+) {
+  var armed = 0;
+  return runZoned(
+    () => body(() => armed),
+    zoneSpecification: ZoneSpecification(
+      createPeriodicTimer: (self, parent, zone, period, callback) {
+        armed++;
+        late final _CountingTimer wrapper;
+        final inner = parent.createPeriodicTimer(
+          zone,
+          period,
+          (_) => callback(wrapper),
+        );
+        wrapper = _CountingTimer(inner, () => armed--);
+        return wrapper;
+      },
+    ),
+  );
+}
+
+class _CountingTimer implements Timer {
+  _CountingTimer(this._inner, this._onCancel);
+
+  final Timer _inner;
+  final void Function() _onCancel;
+  bool _cancelled = false;
+
+  @override
+  void cancel() {
+    if (!_cancelled) {
+      _cancelled = true;
+      _onCancel();
+    }
+    _inner.cancel();
+  }
+
+  @override
+  bool get isActive => _inner.isActive;
+
+  @override
+  int get tick => _inner.tick;
+}
+
 void main() {
   group('WebSocketConnectionManager', () {
     late MockWebSocketChannelFactory mockFactory;
@@ -600,6 +650,33 @@ void main() {
         expect(mockFactory.createdChannels.length, equals(2));
         expect(mockFactory.lastChannel, isNot(equals(firstChannel)));
         expect(manager.isConnected, isTrue);
+      });
+
+      test('a failed reconnect does not leave the heartbeat armed', () async {
+        await countingPeriodicTimers((armed) async {
+          final factory = MockWebSocketChannelFactory();
+          final reconnecting = WebSocketConnectionManager(
+            url: 'wss://test.relay.com',
+            channelFactory: factory,
+            logger: logMessages.add,
+          );
+
+          expect(await reconnecting.connect(), isTrue);
+          expect(armed(), 1, reason: 'the connect arms the heartbeat');
+
+          // A relay that has gone quiet gets force-reconnected, and on a bad
+          // network that reconnect is the one most likely to fail.
+          factory.shouldFail = true;
+          expect(await reconnecting.reconnect(), isFalse);
+
+          expect(
+            armed(),
+            isZero,
+            reason: 'the old heartbeat has no connection left to beat on',
+          );
+
+          await reconnecting.dispose();
+        });
       });
 
       test('does not reconnect after explicit disconnect', () async {
