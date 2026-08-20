@@ -76,6 +76,13 @@ print_baseline_header() {
 #   '# staged: <why>'        deliberately ahead of its call site.
 # A key with no live counterpart belongs in neither category — delete it from
 # app_en.arb and every app_*.arb locale. Issue: #3630.
+#
+# The minorAccountReview* block is one decision, not eleven: sections of the
+# under-16 flow (#3531) that were authored alongside the screens and never
+# placed. 90 of that flow's 101 keys render across lib/screens/
+# minor_account_review*.dart. This is reviewed, legally-sensitive copy already
+# translated into 21 locales, so it is staged rather than deleted — build the
+# sections or have product retire them; do not drop them silently.
 EOF
 }
 

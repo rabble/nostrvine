@@ -19,18 +19,18 @@
 # minor_account_review*.dart. This is reviewed, legally-sensitive copy already
 # translated into 21 locales, so it is staged rather than deleted — build the
 # sections or have product retire them; do not drop them silently.
-authNip07ExtensionNotFound  # wire: auth_service.dart:2142 throws the English text; screens/auth/login_options_screen.dart:254 renders result.errorMessage, whose l10n fallback is authNip07ConnectionFailed (a different key), so this key never renders
-minorAccountReviewApproachBody  # staged: #3531, "How Divine thinks about it" section, unplaced pair
-minorAccountReviewApproachTitle  # staged: #3531, "How Divine thinks about it" section, unplaced pair
-minorAccountReviewFamilyResourcesBody  # staged: #3531, family-resources body; heading renders as LearnMoreTitle, CTA is live
-minorAccountReviewFooter  # staged: #3531, welcome-screen footer, unplaced
-minorAccountReviewParentConsentLegalBody  # staged: #3531, parent-consent legal body, unplaced
-minorAccountReviewParentConsentPauseNote  # staged: #3531, parent-consent pause note, unplaced
-minorAccountReviewRulesBody  # staged: #3531, "The rules are not the same everywhere" section, unplaced pair
-minorAccountReviewRulesTitle  # staged: #3531, "The rules are not the same everywhere" section, unplaced pair
-minorAccountReviewUnder13HonestyBody  # staged: #3531, under-13 honesty section, unplaced pair
-minorAccountReviewUnder13HonestyTitle  # staged: #3531, under-13 honesty section, unplaced pair
-minorAccountReviewUnder13LegalBody  # staged: #3531, under-13 legal body; heading renders as Under13WhyTitle
-relayDiagnosticFailed  # wire: relay_diagnostic_screen.dart:1018, Text(result.errorMessage ?? ...) fallback
-relayDiagnosticNoRelaysConfigured  # wire: relay_diagnostic_screen.dart:250, rendered at :1018
-soundsSearchResults  # wire: search_results/widgets/videos_section.dart:106 passes contextTitle literally
+authNip07ExtensionNotFound # wire: auth_service.dart:2142 throws the English text; screens/auth/login_options_screen.dart:254 renders result.errorMessage, whose l10n fallback is authNip07ConnectionFailed (a different key), so this key never renders
+minorAccountReviewApproachBody # staged: #3531, "How Divine thinks about it" section, unplaced pair
+minorAccountReviewApproachTitle # staged: #3531, "How Divine thinks about it" section, unplaced pair
+minorAccountReviewFamilyResourcesBody # staged: #3531, family-resources body; heading renders as LearnMoreTitle, CTA is live
+minorAccountReviewFooter # staged: #3531, welcome-screen footer, unplaced
+minorAccountReviewParentConsentLegalBody # staged: #3531, parent-consent legal body, unplaced
+minorAccountReviewParentConsentPauseNote # staged: #3531, parent-consent pause note, unplaced
+minorAccountReviewRulesBody # staged: #3531, "The rules are not the same everywhere" section, unplaced pair
+minorAccountReviewRulesTitle # staged: #3531, "The rules are not the same everywhere" section, unplaced pair
+minorAccountReviewUnder13HonestyBody # staged: #3531, under-13 honesty section, unplaced pair
+minorAccountReviewUnder13HonestyTitle # staged: #3531, under-13 honesty section, unplaced pair
+minorAccountReviewUnder13LegalBody # staged: #3531, under-13 legal body; heading renders as Under13WhyTitle
+relayDiagnosticFailed # wire: relay_diagnostic_screen.dart:1018, Text(result.errorMessage ?? ...) fallback
+relayDiagnosticNoRelaysConfigured # wire: relay_diagnostic_screen.dart:250, rendered at :1018
+soundsSearchResults # wire: search_results/widgets/videos_section.dart:106 passes contextTitle literally
