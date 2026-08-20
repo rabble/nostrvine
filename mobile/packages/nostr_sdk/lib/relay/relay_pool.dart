@@ -1294,6 +1294,11 @@ class RelayPool {
     }
   }
 
+  /// Connects [relay] so a REQ queued while it was down is actually written.
+  ///
+  /// As with [_reconnectSilentRelay], the closed-check cannot be reached on
+  /// its own — [_probeSubscriptionSilence] is the only caller and it already
+  /// refuses on a closed pool — and is kept for a future caller's benefit.
   Future<void> _reconnectDroppedRelay(Relay relay) async {
     if (_closed) return;
     try {
@@ -2613,6 +2618,12 @@ class RelayPool {
   /// Force-cycles [relay]'s socket. [Relay.onConnected] re-issues the saved
   /// subscriptions and pending one-shot queries on the fresh connection, so an
   /// in-flight REQ that the closed socket swallowed still runs.
+  ///
+  /// The closed-check is belt and braces, not a second line of defence that
+  /// can be reached on its own: [_repairSilentRelays] is the only caller and
+  /// it checks the same flag with no suspension point in between. It is kept
+  /// so a future second caller inherits the refusal rather than having to
+  /// remember it.
   Future<void> _reconnectSilentRelay(RelayBase relay) async {
     if (_closed) return;
     try {
@@ -2653,6 +2664,12 @@ class RelayPool {
 
     return tempRelay;
   }
+
+  /// Whether the idle-temp-relay sweep is armed. Tests assert on this to
+  /// prove teardown leaves no `Timer.periodic` behind, which is the shape
+  /// that strands into an unrelated later suite under a merged isolate.
+  @visibleForTesting
+  bool get hasTempRelaySweepScheduled => _tempRelaySweepTimer != null;
 
   void _ensureTempRelaySweepScheduled() {
     if (_closed) return;

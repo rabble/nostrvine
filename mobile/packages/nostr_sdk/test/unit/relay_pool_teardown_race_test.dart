@@ -16,12 +16,18 @@ void main() {
 
     late Nostr nostr;
     late FakeWebSocketChannelFactory factory;
+    late FakeWebSocketChannelFactory tempFactory;
 
     Future<void> setUpPool({Object? initialConnectError}) async {
       final signer = LocalNostrSigner(
         '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
       );
-      nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
+      tempFactory = FakeWebSocketChannelFactory();
+      nostr = Nostr(
+        signer,
+        [],
+        (url) => RelayBase(url, RelayStatus(url), channelFactory: tempFactory),
+      );
       await nostr.refreshPublicKey();
       factory = FakeWebSocketChannelFactory(readyError: initialConnectError);
       await nostr.relayPool.add(
@@ -60,24 +66,60 @@ void main() {
       );
     });
 
-    test('the whole teardown window leaves no socket open', () async {
+    // The probes are the repair trigger that `beginClose` disarms outright,
+    // so nothing timer-driven survives into the window. This one does: it is
+    // reached straight off `unsubscribe`, which is what the first await of
+    // `NostrClient.dispose()` — `closeAllSubscriptions()` — spends its time
+    // doing. Without the flag the pool force-reconnects the relay it is in
+    // the middle of tearing down.
+    test('closing subscriptions inside the window repairs nothing', () async {
+      await setUpPool();
+      // The relay answered nothing since the REQ, which is what marks it as a
+      // half-open zombie worth force-cycling.
+      nostr.relayPool.minSubscriptionAgeBeforeRepair = Duration.zero;
+      final subId = subscribeToFeed();
+      await Future<void>.delayed(Duration.zero);
+
+      nostr.relayPool.beginClose();
+      nostr.unsubscribe(subId);
+      await Future<void>.delayed(afterProbe);
+
+      expect(
+        factory.createdChannels,
+        hasLength(1),
+        reason:
+            'the repair would force-reconnect a relay that removeAll() is '
+            'about to dispose, stranding the fresh socket and its heartbeat',
+      );
+    });
+
+    // A query that lands during teardown routes through a temp relay, which
+    // both dials the address and arms the pool-wide idle sweep.
+    test('a temp relay minted inside the window connects nothing', () async {
+      await setUpPool();
+      nostr.relayPool.beginClose();
+
+      nostr.relayPool.checkAndGenTempRelay(otherUrl);
+      await Future<void>.delayed(afterProbe);
+
+      expect(tempFactory.createdChannels, isEmpty);
+      expect(
+        nostr.relayPool.hasTempRelaySweepScheduled,
+        isFalse,
+        reason: 'a periodic sweep armed here outlives the pool that armed it',
+      );
+    });
+
+    test('teardown leaves no live socket behind', () async {
       await setUpPool();
       subscribeToFeed();
       await Future<void>.delayed(Duration.zero);
 
-      // dispose(): beginClose() before the first await, then the awaits, then
-      // the teardown that actually disposes the relays.
       nostr.relayPool.beginClose();
-      await Future<void>.delayed(afterProbe);
       nostr.relayPool.removeAll();
       await Future<void>.delayed(afterProbe);
 
-      expect(factory.createdChannels, hasLength(1));
-      expect(
-        factory.createdChannels.single.isClosed,
-        isTrue,
-        reason: 'dispose must leave no live socket behind',
-      );
+      expect(factory.createdChannels.single.isClosed, isTrue);
     });
 
     test('a subscription issued after teardown began arms no probe', () async {
