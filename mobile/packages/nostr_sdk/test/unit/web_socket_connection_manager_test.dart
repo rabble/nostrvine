@@ -128,6 +128,10 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
   /// instead of succeeding. Simulates DNS/TLS handshake failures.
   Object? readyError;
 
+  /// When set, the channel's `ready` stays pending until this completes.
+  /// A real handshake is a network round trip that other work can run inside.
+  Completer<void>? readyGate;
+
   @override
   WebSocketChannel create(Uri uri) {
     if (shouldFail) {
@@ -136,7 +140,7 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
     final channel = MockWebSocketChannel(
       readyFuture: readyError != null
           ? Future.error(readyError!)
-          : Future.value(),
+          : (readyGate?.future ?? Future.value()),
     );
     createdChannels.add(channel);
     return channel;
@@ -150,6 +154,7 @@ class MockWebSocketChannelFactory implements WebSocketChannelFactory {
     shouldFail = false;
     failureMessage = null;
     readyError = null;
+    readyGate = null;
   }
 }
 
@@ -656,6 +661,61 @@ void main() {
         await Future.delayed(Duration.zero);
 
         expect(stateStreamClosed, isTrue);
+      });
+
+      // A connect that is already in flight when dispose runs would otherwise
+      // finish onto a manager nobody holds a reference to any more, arming a
+      // heartbeat `Timer.periodic` on a socket nothing can ever close (#7367).
+      test('a reconnect that resumes after dispose opens no socket', () async {
+        await manager.connect();
+        final closeGate = mockFactory.lastChannel!.blockClose();
+
+        // Parks inside reconnect's own close of the old channel.
+        final reconnecting = manager.reconnect();
+        await Future<void>.delayed(Duration.zero);
+
+        // The owner tears the manager down while the reconnect is parked.
+        await manager.dispose();
+        closeGate.complete();
+
+        expect(await reconnecting, isFalse);
+        expect(
+          mockFactory.createdChannels,
+          hasLength(1),
+          reason: 'a disposed manager must not open another socket',
+        );
+        expect(manager.state, equals(ConnectionState.disconnected));
+      });
+
+      test('a handshake that completes after dispose closes its own '
+          'socket', () async {
+        final factory = MockWebSocketChannelFactory();
+        final gate = Completer<void>();
+        factory.readyGate = gate;
+        final racing = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+        );
+
+        final connecting = racing.connect();
+        await Future<void>.delayed(Duration.zero);
+        final orphan = factory.lastChannel!;
+
+        await racing.dispose();
+        gate.complete();
+
+        expect(
+          await connecting,
+          isFalse,
+          reason: 'the handshake has no owner left to hand the socket to',
+        );
+        expect(orphan.isClosed, isTrue);
+        expect(
+          racing.state,
+          isNot(equals(ConnectionState.connected)),
+          reason: 'reaching connected is what arms the heartbeat timer',
+        );
       });
     });
   });

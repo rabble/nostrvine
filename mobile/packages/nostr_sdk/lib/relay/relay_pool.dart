@@ -192,6 +192,9 @@ class RelayPool {
   /// Armed silence probes, keyed by subscription id.
   final Map<String, Timer> _subscriptionSilenceProbes = {};
 
+  /// Whether teardown has begun. See [beginClose].
+  bool _closed = false;
+
   /// One-shot queries at least one relay has already answered.
   ///
   /// Sticky for the query's lifetime rather than a property of the call that
@@ -534,6 +537,7 @@ class RelayPool {
     bool init = false,
     int relayType = RelayType.normal,
   }) async {
+    if (_closed) return false;
     if (relayType == RelayType.normal) {
       if (_relays.containsKey(relay.url)) {
         return true;
@@ -593,6 +597,38 @@ class RelayPool {
     return list;
   }
 
+  /// Whether the pool is closing or closed, and therefore must not open any
+  /// further sockets.
+  bool get isClosed => _closed;
+
+  /// Marks the pool as closing without tearing anything down yet.
+  ///
+  /// [removeAll] is what actually disposes the relays, but an owner reaches it
+  /// only after a sequence of awaits (see `NostrClient.dispose`). Every one of
+  /// those awaits is a window in which an armed repair can fire and call
+  /// `connect()`; the socket and heartbeat timer it opens then outlive the
+  /// [removeAll] that was supposed to close them, because the relay holding
+  /// them is disposed a moment later and nothing can reach them again (#7367).
+  /// Calling this first closes that window: the probes are disarmed and every
+  /// path that could start a connection turns into a no-op.
+  void beginClose() {
+    if (_closed) return;
+    _closed = true;
+    _cancelSilenceProbes();
+  }
+
+  void _cancelSilenceProbes() {
+    for (final probe in _subscriptionSilenceProbes.values) {
+      probe.cancel();
+    }
+    _subscriptionSilenceProbes.clear();
+  }
+
+  /// Removes every relay from the pool.
+  ///
+  /// This is teardown when reached through [Nostr.close], but it is also a
+  /// legitimate "start over with a different relay set" — so it deliberately
+  /// does not mark the pool closed. [beginClose] is what does that.
   void removeAll() {
     final keys = _relayKeysSnapshot();
     for (var url in keys) {
@@ -608,10 +644,7 @@ class RelayPool {
     _tempRelaySweepTimer = null;
     // Nothing left to repair, and a probe outliving the pool would fire into
     // an empty relay set on every armed subscription.
-    for (final probe in _subscriptionSilenceProbes.values) {
-      probe.cancel();
-    }
-    _subscriptionSilenceProbes.clear();
+    _cancelSilenceProbes();
   }
 
   /// Drops the pool-side state keyed by [url] so a relay that comes back is
@@ -1229,6 +1262,7 @@ class RelayPool {
   ///   relay that is already connected or connecting.
   void _probeSubscriptionSilence(String subId) {
     _subscriptionSilenceProbes.remove(subId);
+    if (_closed) return;
     if (!_subscriptions.containsKey(subId)) return;
     final sentAt = _subscriptionSentAt[subId];
     if (sentAt == null) return;
@@ -1259,6 +1293,7 @@ class RelayPool {
   }
 
   Future<void> _reconnectDroppedRelay(Relay relay) async {
+    if (_closed) return;
     try {
       await relay.connect();
     } catch (e) {
@@ -1835,10 +1870,12 @@ class RelayPool {
     }
 
     _subscriptionSilenceProbes[subscription.id]?.cancel();
-    _subscriptionSilenceProbes[subscription.id] = Timer(
-      subscriptionSilenceProbe,
-      () => _probeSubscriptionSilence(subscription.id),
-    );
+    if (!_closed) {
+      _subscriptionSilenceProbes[subscription.id] = Timer(
+        subscriptionSilenceProbe,
+        () => _probeSubscriptionSilence(subscription.id),
+      );
+    }
 
     return subscription.id;
   }
@@ -2546,6 +2583,7 @@ class RelayPool {
   /// connection so the next attempt runs on a live socket; the reconnect
   /// re-issues the relay's saved REQs (see [Relay.onConnected]).
   void _repairSilentRelays(List<String> silentRelayUrls, DateTime sentAt) {
+    if (_closed) return;
     final now = DateTime.now();
     for (final url in silentRelayUrls) {
       final relay = _relays[url] ?? _cacheRelays[url] ?? _tempRelays[url];
@@ -2574,6 +2612,7 @@ class RelayPool {
   /// subscriptions and pending one-shot queries on the fresh connection, so an
   /// in-flight REQ that the closed socket swallowed still runs.
   Future<void> _reconnectSilentRelay(RelayBase relay) async {
+    if (_closed) return;
     try {
       await relay.forceReconnect();
     } catch (e) {
@@ -2582,6 +2621,7 @@ class RelayPool {
   }
 
   void reconnect() {
+    if (_closed) return;
     for (final relay in _relaysSnapshot()) {
       relay.connect();
     }
@@ -2604,7 +2644,7 @@ class RelayPool {
       // Temp relays serve one-shot queries like any other relay, so they need
       // the same drop-releases-the-query sweep [add] wires up.
       _observeRelayStatus(tempRelay);
-      tempRelay.connect();
+      if (!_closed) tempRelay.connect();
       _tempRelays[addr] = tempRelay;
       _ensureTempRelaySweepScheduled();
     }
@@ -2613,6 +2653,7 @@ class RelayPool {
   }
 
   void _ensureTempRelaySweepScheduled() {
+    if (_closed) return;
     if (_tempRelaySweepTimer != null) return;
     _tempRelaySweepTimer = Timer.periodic(
       tempRelaySweepInterval,

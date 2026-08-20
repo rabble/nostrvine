@@ -110,6 +110,10 @@ class WebSocketConnectionManager {
   int _reconnectAttempts = 0;
   bool _shouldReconnect = true;
 
+  /// Set by [dispose] before its first await, so a connect that is already
+  /// in flight can tell that its owner is gone by the time it resumes.
+  bool _disposed = false;
+
   // Timers
   Timer? _reconnectTimer;
   Timer? _heartbeatTimer;
@@ -136,6 +140,13 @@ class WebSocketConnectionManager {
 
   /// Whether currently connected
   bool get isConnected => _state == ConnectionState.connected;
+
+  /// Whether [dispose] has been called.
+  ///
+  /// A disposed manager never opens another socket: its streams are closed
+  /// and the relay that owned it has already dropped its reference, so
+  /// anything it connected would be unreachable and therefore uncloseable.
+  bool get isDisposed => _disposed;
 
   /// Number of reconnection attempts made
   int get reconnectAttempts => _reconnectAttempts;
@@ -167,6 +178,11 @@ class WebSocketConnectionManager {
 
   /// Connect to the WebSocket server
   Future<bool> connect() async {
+    if (_disposed) {
+      log('Connect refused: $url manager is disposed');
+      return false;
+    }
+
     if (_state == ConnectionState.connected) {
       log('Already connected to $url');
       return true;
@@ -182,8 +198,14 @@ class WebSocketConnectionManager {
   }
 
   Future<bool> _doConnect() async {
+    if (_disposed) {
+      log('Connect refused: $url manager is disposed');
+      return false;
+    }
+
     _setState(ConnectionState.connecting);
 
+    WebSocketChannel? channel;
     try {
       final uri = Uri.parse(url);
       if (uri.scheme != 'ws' && uri.scheme != 'wss') {
@@ -191,16 +213,27 @@ class WebSocketConnectionManager {
       }
 
       log('Connecting to $url');
-      _channel = _channelFactory.create(uri);
+      channel = _channelFactory.create(uri);
+      _channel = channel;
 
       // Wait for the WebSocket handshake to complete. Without this,
       // IOWebSocketChannel.connect() returns immediately and DNS/TLS
       // failures surface as unhandled async errors in the zone instead
       // of being caught here.
-      await _channel!.ready.timeout(config.connectionTimeout);
+      await channel.ready.timeout(config.connectionTimeout);
+
+      // A dispose, a disconnect, or a newer connect can all run inside the
+      // handshake window, and each of them detaches this channel. Adopting it
+      // anyway would arm a heartbeat `Timer.periodic` and hold a live socket
+      // that no owner can reach — so nothing could ever close either (#7367).
+      if (_disposed || !identical(_channel, channel)) {
+        log('Discarding socket for $url: its owner went away mid-handshake');
+        await _closeOrphanedChannel(channel);
+        return false;
+      }
 
       // Set up message listener
-      _channelSubscription = _channel!.stream.listen(
+      _channelSubscription = channel.stream.listen(
         _onMessage,
         onError: _onStreamError,
         onDone: _onStreamDone,
@@ -223,27 +256,50 @@ class WebSocketConnectionManager {
       return true;
     } on WebSocketChannelException catch (e) {
       log('Connection failed (WebSocket): $e');
-      _errorController.add('Connection failed: $e');
-      _channel = null;
+      _emitError('Connection failed: $e');
+      _detachChannel(channel);
       _setState(ConnectionState.disconnected);
       return false;
     } on TimeoutException {
       log('Connection timed out after ${config.connectionTimeout}');
-      _errorController.add('Connection timed out');
+      _emitError('Connection timed out');
       // Clean up the channel that never finished connecting
-      try {
-        await _channel?.sink.close();
-      } catch (_) {}
-      _channel = null;
+      await _closeOrphanedChannel(channel);
+      _detachChannel(channel);
       _setState(ConnectionState.disconnected);
       return false;
     } catch (e) {
       log('Connection failed: $e');
-      _errorController.add('Connection failed: $e');
-      _channel = null;
+      _emitError('Connection failed: $e');
+      _detachChannel(channel);
       _setState(ConnectionState.disconnected);
       return false;
     }
+  }
+
+  /// Clears [_channel] unless something else already installed a different
+  /// one, so a failing connect cannot null out a channel it does not own.
+  ///
+  /// A null [channel] means creation itself failed and there is no attempt
+  /// left to keep — the field is cleared, as it always was.
+  void _detachChannel(WebSocketChannel? channel) {
+    if (channel == null || identical(_channel, channel)) _channel = null;
+  }
+
+  /// Closes a socket that no longer has an owner.
+  Future<void> _closeOrphanedChannel(WebSocketChannel? channel) async {
+    if (channel == null) return;
+    try {
+      await channel.sink.close();
+    } catch (e) {
+      log('Error closing orphaned channel: $e');
+    }
+  }
+
+  /// Publishes to [errorStream] unless teardown already closed it.
+  void _emitError(String message) {
+    if (_errorController.isClosed) return;
+    _errorController.add(message);
   }
 
   void _onMessage(dynamic message) {
@@ -504,6 +560,11 @@ class WebSocketConnectionManager {
 
   /// Force immediate reconnection, resetting backoff
   Future<bool> reconnect() async {
+    if (_disposed) {
+      log('Reconnect refused: $url manager is disposed');
+      return false;
+    }
+
     resetReconnection();
     _shouldReconnect = true;
     await _closeChannel();
@@ -569,7 +630,11 @@ class WebSocketConnectionManager {
   }
 
   /// Dispose of resources
+  ///
+  /// [_disposed] is set before the first await so a connect that is already
+  /// in flight sees it the moment it resumes.
   Future<void> dispose() async {
+    _disposed = true;
     await disconnect();
     await _stateController.close();
     await _messageController.close();
