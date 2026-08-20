@@ -609,8 +609,9 @@ void main() {
     });
 
     test('keeps earlier markers in place when a clip is appended', () {
-      // Mirrors the clip-duplication call site: the copy is added at the
-      // end, so markers on the existing clips must not move.
+      // A clip added at the end leaves every existing clip's start time
+      // alone, so markers on them must not move. The duplicate call site
+      // now inserts after the source; see the mid-timeline case above.
       final oldClips = [_clip('a', 3), _clip('b', 5)];
       final newClips = [_clip('a', 3), _clip('b', 5), _clip('a_copy', 3)];
 
