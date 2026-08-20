@@ -5,16 +5,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/notifications/services/notification_refresh_coordinator.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
-import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
-import 'package:openvine/providers/repository_providers.dart';
-import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/foreground_idle_warmup_coordinator.dart';
 
 /// Tracks whether foreground feeds have recently been under user control.
@@ -80,26 +76,6 @@ final foregroundIdleWarmupCoordinatorProvider =
                 ref.read(funnelcakeAvailableProvider).asData?.value == true,
             run: () async {
               await ref.read(forYouFeedProvider.future);
-            },
-          ),
-          ForegroundIdleWarmupTask(
-            id: ForegroundIdleWarmupTaskId.following,
-            cooldown: const Duration(minutes: 10),
-            run: () async {
-              final following = ref
-                  .read(followRepositoryProvider)
-                  .followingPubkeys;
-              if (following.isEmpty) return;
-
-              await ref
-                  .read(videosRepositoryProvider)
-                  .getHomeFeedVideos(
-                    authors: following,
-                    userPubkey: ref
-                        .read(authServiceProvider)
-                        .currentPublicKeyHex,
-                    limit: AppConstants.paginationBatchSize,
-                  );
             },
           ),
           ForegroundIdleWarmupTask(
