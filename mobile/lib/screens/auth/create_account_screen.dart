@@ -2,6 +2,8 @@
 // ABOUTME: Provides DivineAuthCubit in sign-up mode
 // DESIGN: https://www.figma.com/design/rp1DsDEUuCaicW0lk6I2aZ/UI-Design?node-id=7391-55983
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -24,7 +27,7 @@ import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
 
 /// Create account screen — Page that provides [DivineAuthCubit] in sign-up
 /// mode.
-class CreateAccountScreen extends ConsumerWidget {
+class CreateAccountScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const String routeName = 'create-account';
 
@@ -34,7 +37,15 @@ class CreateAccountScreen extends ConsumerWidget {
   const CreateAccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CreateAccountScreen> createState() =>
+      _CreateAccountScreenState();
+}
+
+class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
+  bool _recordedRegistrationStart = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final oauthClient = ref.watch(oauthClientProvider);
     final authService = ref.watch(authServiceProvider);
@@ -43,6 +54,18 @@ class CreateAccountScreen extends ConsumerWidget {
     );
     final inviteApiClient = context.read<InviteApiClient>();
     final inviteAccessGrant = context.read<InviteGateBloc>().state.accessGrant;
+    if (!_recordedRegistrationStart) {
+      _recordedRegistrationStart = true;
+      unawaited(
+        ref
+            .read(analyticsServiceProvider)
+            .recordRegistrationStarted(
+              entryPoint: inviteAccessGrant == null
+                  ? ProductAnalyticsV2RegistrationEntryPoint.landing
+                  : ProductAnalyticsV2RegistrationEntryPoint.invite,
+            ),
+      );
+    }
 
     return BlocProvider(
       create: (_) => DivineAuthCubit(

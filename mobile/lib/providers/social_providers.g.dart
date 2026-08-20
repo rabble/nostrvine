@@ -354,7 +354,7 @@ final class ProductEventQueueProvider
   }
 }
 
-String _$productEventQueueHash() => r'036ae0aac74a5bcb7613c56f074fbbe020b20002';
+String _$productEventQueueHash() => r'a257ac97036478f13c9407e24c3bc431ebc3bc4f';
 
 /// Analytics service with opt-out support.
 ///
@@ -411,7 +411,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'd86ad0633e379e991437845121e14ac3820c96ce';
+String _$analyticsServiceHash() => r'311c736c591aaa15de97f94cc0017b74578db781';
 
 /// Hashtag cache service for persistent hashtag storage
 

@@ -1,9 +1,12 @@
-// ABOUTME: Tests for durable product analytics retry queue.
-// ABOUTME: Verifies enqueue, flush, transient retry, and dead-letter behavior.
+// ABOUTME: Tests the durable version-two product analytics retry queue.
+// ABOUTME: Verifies immutable payloads, account boundaries, retries, and purging.
+
+import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/product_event_queue.dart';
 
@@ -14,9 +17,10 @@ class _MockAnalyticsIngestClient extends Mock
     implements AnalyticsIngestClient {}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(_pendingProductEventFallback());
-  });
+  const owner =
+      '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+
+  setUpAll(() => registerFallbackValue(_pendingProductEventFallback()));
 
   group(ProductEventQueue, () {
     late _MockPendingProductEventsDao dao;
@@ -33,139 +37,177 @@ void main() {
           maxAttempts: 3,
           initialDelay: Duration(seconds: 1),
         ),
-        now: () => DateTime.utc(2026, 7, 7, 12),
+        now: () => DateTime.utc(2026, 8, 20),
+        currentOwnerPubkey: () => owner,
       );
+      when(
+        () => dao.prune(
+          cutoff: any(named: 'cutoff'),
+          maxRecords: any(named: 'maxRecords'),
+        ),
+      ).thenAnswer((_) async => 0);
     });
 
     test(
-      'enqueue persists complete payload and does not call network',
+      'enqueue stores the exact version-two event without sending it',
       () async {
         when(() => dao.enqueue(any())).thenAnswer((_) async {});
         final event = _event('event-a');
 
-        await queue.enqueue(event);
+        await queue.enqueue(event, ownerPubkey: owner);
 
-        final captured =
+        final row =
             verify(() => dao.enqueue(captureAny())).captured.single
                 as PendingProductEvent;
-        expect(captured.id, 'event-a');
-        expect(captured.eventName, 'screen_time');
-        expect(captured.payloadJson, contains('"event_id":"event-a"'));
-        expect(captured.status, PendingProductEventStatus.pending);
-        expect(
-          captured.ownerPubkey,
-          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+        expect(row.id, 'event-a');
+        expect(row.eventName, 'content_impression_recorded');
+        expect(row.ownerPubkey, owner);
+        expect(jsonDecode(row.payloadJson), event.toJson());
+        verify(
+          () => dao.prune(
+            cutoff: DateTime.utc(2026, 8, 13),
+            maxRecords: 500,
+          ),
+        ).called(1);
+        verifyNever(
+          () => client.publishBatch(
+            any(),
+            subjectPubkey: any(named: 'subjectPubkey'),
+          ),
         );
-        verifyNever(() => client.publishBatch(any()));
+        verifyNever(() => client.publishAnonymousBatch(any()));
       },
     );
 
-    test('enqueue scopes anonymous payloads to the current account', () async {
-      const owner =
-          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
-      final scopedQueue = ProductEventQueue(
-        dao: dao,
-        ingestClient: client,
-        currentOwnerPubkey: () => owner,
-      );
+    test('anonymous events remain ownerless', () async {
       when(() => dao.enqueue(any())).thenAnswer((_) async {});
-      final event = _event('event-anon', userPubkey: '');
 
-      await scopedQueue.enqueue(event);
+      await queue.enqueue(_event('event-anonymous'));
 
-      final captured =
+      final row =
           verify(() => dao.enqueue(captureAny())).captured.single
               as PendingProductEvent;
-      expect(captured.ownerPubkey, owner);
+      expect(row.ownerPubkey, isNull);
     });
 
-    test('flush filters retryable events to the current account', () async {
-      const owner =
-          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
-      final scopedQueue = ProductEventQueue(
-        dao: dao,
-        ingestClient: client,
-        now: () => DateTime.utc(2026, 7, 7, 12),
-        currentOwnerPubkey: () => owner,
-      );
-      when(
-        () => dao.getRetryable(
-          now: any(named: 'now'),
-          maxAttempts: any(named: 'maxAttempts'),
-          limit: any(named: 'limit'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => []);
+    test('does not read or send while delivery is disabled', () async {
+      queue.setSendingEnabled(false);
 
-      await scopedQueue.flush();
-
-      verify(
-        () => dao.getRetryable(
-          now: any(named: 'now'),
-          maxAttempts: any(named: 'maxAttempts'),
-          limit: any(named: 'limit'),
-          ownerPubkey: owner,
-        ),
-      ).called(1);
-    });
-
-    test('flush deletes rows accepted by ingest', () async {
-      when(
-        () => dao.getRetryable(
-          now: any(named: 'now'),
-          maxAttempts: any(named: 'maxAttempts'),
-          limit: any(named: 'limit'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => [_row('event-a')]);
-      when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
-      when(
-        () => client.publishBatch(any()),
-      ).thenAnswer((_) async => const AnalyticsIngestAccepted());
-      when(() => dao.deleteById('event-a')).thenAnswer((_) async => 1);
-
+      await queue.recoverPublishingAndFlush();
       await queue.flush();
 
-      verify(() => client.publishBatch(any(that: hasLength(1)))).called(1);
-      verify(() => dao.deleteById('event-a')).called(1);
+      verifyNever(() => dao.resetPublishingToPending());
+      verifyNever(
+        () => dao.getRetryable(
+          now: any(named: 'now'),
+          maxAttempts: any(named: 'maxAttempts'),
+          limit: any(named: 'limit'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      );
+      verifyNever(() => client.publishAnonymousBatch(any()));
+      verifyNever(
+        () => client.publishBatch(
+          any(),
+          subjectPubkey: any(named: 'subjectPubkey'),
+        ),
+      );
     });
 
     test(
-      'recoverPublishingAndFlush resets orphaned publishing rows first',
+      'flush sends anonymous and current-account batches separately',
       () async {
-        when(() => dao.resetPublishingToPending()).thenAnswer((_) async => 1);
         when(
           () => dao.getRetryable(
             now: any(named: 'now'),
             maxAttempts: any(named: 'maxAttempts'),
             limit: any(named: 'limit'),
-            ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).thenAnswer((_) async => [_row('event-a')]);
-        when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => [_row('anonymous')]);
         when(
-          () => client.publishBatch(any()),
+          () => dao.getRetryable(
+            now: any(named: 'now'),
+            maxAttempts: any(named: 'maxAttempts'),
+            limit: any(named: 'limit'),
+            ownerPubkey: owner,
+          ),
+        ).thenAnswer((_) async => [_row('signed', ownerPubkey: owner)]);
+        when(() => dao.markPublishing(any())).thenAnswer((_) async => true);
+        when(
+          () => client.publishAnonymousBatch(any()),
         ).thenAnswer((_) async => const AnalyticsIngestAccepted());
-        when(() => dao.deleteById('event-a')).thenAnswer((_) async => 1);
+        when(
+          () => client.publishBatch(any(), subjectPubkey: owner),
+        ).thenAnswer((_) async => const AnalyticsIngestAccepted());
+        when(() => dao.deleteById(any())).thenAnswer((_) async => 1);
 
-        await queue.recoverPublishingAndFlush();
+        await queue.flush();
 
-        verifyInOrder([
-          () => dao.resetPublishingToPending(),
-          () => dao.getRetryable(
-            now: any(named: 'now'),
-            maxAttempts: any(named: 'maxAttempts'),
-            limit: any(named: 'limit'),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-          () => dao.markPublishing('event-a'),
-          () => client.publishBatch(any(that: hasLength(1))),
-          () => dao.deleteById('event-a'),
-        ]);
+        final anonymousPayload =
+            verify(
+                  () => client.publishAnonymousBatch(captureAny()),
+                ).captured.single
+                as List<Map<String, Object?>>;
+        final signedPayload =
+            verify(
+                  () => client.publishBatch(captureAny(), subjectPubkey: owner),
+                ).captured.single
+                as List<Map<String, Object?>>;
+        expect(anonymousPayload.single['event_id'], 'anonymous');
+        expect(signedPayload.single['event_id'], 'signed');
+        verify(() => dao.deleteById('anonymous')).called(1);
+        verify(() => dao.deleteById('signed')).called(1);
       },
     );
 
-    test('flush schedules retry after transient failure', () async {
+    test(
+      'a temporary failure retains the original event ID for retry',
+      () async {
+        final row = _row('event-a', ownerPubkey: owner);
+        when(
+          () => dao.getRetryable(
+            now: any(named: 'now'),
+            maxAttempts: any(named: 'maxAttempts'),
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((invocation) async {
+          final selected = invocation.namedArguments[#ownerPubkey];
+          return selected == owner ? [row] : <PendingProductEvent>[];
+        });
+        when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
+        when(
+          () => client.publishBatch(any(), subjectPubkey: owner),
+        ).thenAnswer(
+          (_) async => const AnalyticsIngestTransientFailure('timeout'),
+        );
+        when(
+          () => dao.markFailed(
+            'event-a',
+            'timeout',
+            nextAttemptAt: any(named: 'nextAttemptAt'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await queue.flush();
+
+        final sent =
+            verify(
+                  () => client.publishBatch(captureAny(), subjectPubkey: owner),
+                ).captured.single
+                as List<Map<String, Object?>>;
+        expect(sent.single['event_id'], 'event-a');
+        verify(
+          () => dao.markFailed(
+            'event-a',
+            'timeout',
+            nextAttemptAt: DateTime.utc(2026, 8, 20, 0, 0, 1),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('permanent rejection dead-letters the batch', () async {
       when(
         () => dao.getRetryable(
           now: any(named: 'now'),
@@ -173,44 +215,15 @@ void main() {
           limit: any(named: 'limit'),
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
-      ).thenAnswer((_) async => [_row('event-a')]);
+      ).thenAnswer((invocation) async {
+        return invocation.namedArguments[#ownerPubkey] == owner
+            ? [_row('event-a', ownerPubkey: owner)]
+            : <PendingProductEvent>[];
+      });
       when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
-      when(() => client.publishBatch(any())).thenAnswer(
-        (_) async => const AnalyticsIngestTransientFailure('timeout'),
-      );
       when(
-        () => dao.markFailed(
-          'event-a',
-          'timeout',
-          nextAttemptAt: any(named: 'nextAttemptAt'),
-        ),
-      ).thenAnswer((_) async => true);
-
-      await queue.flush();
-
-      final captured =
-          verify(
-                () => dao.markFailed(
-                  'event-a',
-                  'timeout',
-                  nextAttemptAt: captureAny(named: 'nextAttemptAt'),
-                ),
-              ).captured.single
-              as DateTime;
-      expect(captured, DateTime.utc(2026, 7, 7, 12, 0, 1));
-    });
-
-    test('flush dead-letters non-retryable rejected rows', () async {
-      when(
-        () => dao.getRetryable(
-          now: any(named: 'now'),
-          maxAttempts: any(named: 'maxAttempts'),
-          limit: any(named: 'limit'),
-          ownerPubkey: any(named: 'ownerPubkey'),
-        ),
-      ).thenAnswer((_) async => [_row('event-a')]);
-      when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
-      when(() => client.publishBatch(any())).thenAnswer(
+        () => client.publishBatch(any(), subjectPubkey: owner),
+      ).thenAnswer(
         (_) async => const AnalyticsIngestRejected(
           statusCode: 422,
           reason: 'schema rejected',
@@ -224,36 +237,51 @@ void main() {
 
       verify(() => dao.markDeadLetter('event-a', 'schema rejected')).called(1);
     });
+
+    test('clear and clearOwner purge private queued data', () async {
+      when(() => dao.deleteAll()).thenAnswer((_) async => 2);
+      when(() => dao.deleteForOwner(owner)).thenAnswer((_) async => 1);
+
+      await queue.clear();
+      await queue.clearOwner(owner);
+
+      verify(() => dao.deleteAll()).called(1);
+      verify(() => dao.deleteForOwner(owner)).called(1);
+    });
   });
 }
 
-ProductAnalyticsEvent _event(String id, {String? userPubkey}) {
-  return ProductAnalyticsEvent(
-    eventId: id,
-    eventName: 'screen_time',
-    occurredAt: DateTime.utc(2026, 7, 7, 12),
-    userPubkey:
-        userPubkey ??
-        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
-    anonymousId: '018ff7d7-2ef5-7000-8000-000000000001',
-    sessionId: '018ff7d7-2ef5-7000-8000-000000000002',
-    platform: 'ios',
-    appVersion: '1.2.3',
-    buildNumber: '123',
-    surface: AnalyticsSurface.feed,
+ProductAnalyticsV2Event _event(String id) {
+  return ProductAnalyticsV2ContentImpressionRecordedEvent(
+    envelope: ProductAnalyticsV2Envelope(
+      eventId: id,
+      schemaVersion: 2,
+      occurredAt: DateTime.utc(2026, 8, 20),
+      anonymousId: '22222222-2222-4222-8222-222222222222',
+      sessionId: '33333333-3333-4333-8333-333333333333',
+      source: ProductAnalyticsV2Source.mobile,
+      platform: ProductAnalyticsV2Platform.ios,
+      release: '1.2.3',
+      consentCategory: ProductAnalyticsV2ConsentCategory.productAnalytics,
+    ),
+    properties: const ProductAnalyticsV2ContentImpressionRecordedProperties(
+      contentId: 'content-a',
+      surface: ProductAnalyticsV2Surface.feed,
+      position: 1,
+      visibleMs: 1000,
+    ),
   );
 }
 
-PendingProductEvent _row(String id) {
+PendingProductEvent _row(String id, {String? ownerPubkey}) {
   return PendingProductEvent(
     id: id,
-    eventName: 'screen_time',
-    payloadJson: _event(id).toPayloadJson(),
+    eventName: 'content_impression_recorded',
+    payloadJson: jsonEncode(_event(id).toJson()),
     status: PendingProductEventStatus.pending,
-    createdAt: DateTime.utc(2026, 7, 7, 12),
+    createdAt: DateTime.utc(2026, 8, 20),
+    ownerPubkey: ownerPubkey,
   );
 }
 
-PendingProductEvent _pendingProductEventFallback() {
-  return _row('fallback');
-}
+PendingProductEvent _pendingProductEventFallback() => _row('fallback');

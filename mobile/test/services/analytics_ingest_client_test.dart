@@ -1,5 +1,5 @@
-// ABOUTME: Tests for first-party product analytics ingest client.
-// ABOUTME: Covers NIP-98 auth, batch POST shape, and outcome classification.
+// ABOUTME: Tests the version-two product analytics HTTP client.
+// ABOUTME: Covers signed and anonymous request shapes plus retry classification.
 
 import 'dart:convert';
 
@@ -17,16 +17,29 @@ class _MockNip98AuthService extends Mock implements Nip98AuthService {}
 void main() {
   const testPubkey =
       '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+  final event = <String, Object?>{
+    'event_id': 'event-a',
+    'schema_version': 2,
+    'occurred_at': '2026-08-20T00:00:00.000Z',
+    'anonymous_id': '22222222-2222-4222-8222-222222222222',
+    'session_id': '33333333-3333-4333-8333-333333333333',
+    'source': 'mobile',
+    'platform': 'ios',
+    'release': '1.2.3',
+    'consent_category': 'product_analytics',
+    'event_name': 'content_impression_recorded',
+    'properties': <String, Object?>{
+      'content_id': 'content-a',
+      'surface': 'feed',
+      'position': 1,
+      'visible_ms': 1000,
+    },
+  };
 
   late _MockNip98AuthService mockNip98;
 
-  setUpAll(() {
-    registerFallbackValue(HttpMethod.post);
-  });
-
-  setUp(() {
-    mockNip98 = _MockNip98AuthService();
-  });
+  setUpAll(() => registerFallbackValue(HttpMethod.post));
+  setUp(() => mockNip98 = _MockNip98AuthService());
 
   Nip98Token buildToken() {
     final signedEvent = Event(
@@ -58,121 +71,115 @@ void main() {
     ).thenAnswer((_) async => token);
   }
 
-  AnalyticsIngestClient buildClient(http.Client httpClient) {
-    return AnalyticsIngestClient(
-      httpClient: httpClient,
-      nip98AuthService: mockNip98,
-      apiBaseUrl: () => 'https://api.divine.video',
-    );
-  }
-
-  ProductAnalyticsEvent buildEvent(String id) {
-    return ProductAnalyticsEvent(
-      eventId: id,
-      eventName: 'screen_time',
-      occurredAt: DateTime.utc(2026, 7, 7, 12),
-      userPubkey: testPubkey,
-      anonymousId: '018ff7d7-2ef5-7000-8000-000000000001',
-      sessionId: '018ff7d7-2ef5-7000-8000-000000000002',
-      platform: 'ios',
-      appVersion: '1.2.3',
-      buildNumber: '123',
-      surface: AnalyticsSurface.feed,
-      props: const {'screen_name': 'feed'},
-      propsNum: const {'duration_ms': 1500.0},
-    );
-  }
-
-  group(AnalyticsIngestClient, () {
-    test(
-      'POSTs batch JSON to /api/analytics/events with NIP-98 auth',
-      () async {
-        stubToken(buildToken());
-        http.Request? captured;
-        final client = buildClient(
-          MockClient((request) async {
-            captured = request;
-            return http.Response(jsonEncode({'accepted': true}), 200);
-          }),
-        );
-
-        await client.publishBatch([buildEvent('event-a')]);
-
-        expect(captured, isNotNull);
-        expect(captured!.method, equals('POST'));
-        expect(
-          captured!.url.toString(),
-          equals('https://api.divine.video/api/analytics/events'),
-        );
-        expect(captured!.headers['Authorization'], 'Nostr fake-base64-token');
-        final body = jsonDecode(captured!.body) as Map<String, dynamic>;
-        final events = body['events'] as List<dynamic>;
-        expect(events, hasLength(1));
-        expect(events.single, containsPair('event_id', 'event-a'));
-        expect(events.single, containsPair('event_name', 'screen_time'));
-        expect(events.single, containsPair('surface', 'feed'));
-        expect(events.single, containsPair('schema_version', 1));
-      },
-    );
-
-    test('returns accepted on 200 accepted response', () async {
-      stubToken(buildToken());
-      final client = buildClient(
-        MockClient(
-          (_) async => http.Response(jsonEncode({'accepted': true}), 200),
-        ),
-      );
-
-      final result = await client.publishBatch([buildEvent('event-a')]);
-
-      expect(result, isA<AnalyticsIngestAccepted>());
-    });
-
-    for (final status in [400, 401, 403, 422]) {
-      test('returns rejected on non-retryable $status', () async {
-        stubToken(buildToken());
-        final client = buildClient(
-          MockClient((_) async => http.Response('bad event', status)),
-        );
-
-        final result = await client.publishBatch([buildEvent('event-a')]);
-
-        expect(result, isA<AnalyticsIngestRejected>());
-        expect((result as AnalyticsIngestRejected).statusCode, status);
-      });
-    }
-
-    test('returns transient failure on timeout', () async {
-      stubToken(buildToken());
-      final client = AnalyticsIngestClient(
-        httpClient: MockClient((_) async {
-          await Future<void>.delayed(const Duration(seconds: 30));
-          return http.Response('', 200);
-        }),
+  AnalyticsIngestClient buildClient(http.Client client) =>
+      AnalyticsIngestClient(
+        httpClient: client,
         nip98AuthService: mockNip98,
         apiBaseUrl: () => 'https://api.divine.video',
-        timeout: const Duration(milliseconds: 50),
       );
 
-      final result = await client.publishBatch([buildEvent('event-a')]);
+  test('signed batches put the subject outside version-two events', () async {
+    stubToken(buildToken());
+    http.Request? captured;
+    final client = buildClient(
+      MockClient((request) async {
+        captured = request;
+        return http.Response('{"accepted":true}', 200);
+      }),
+    );
 
-      expect(result, isA<AnalyticsIngestTransientFailure>());
+    final result = await client.publishBatch([
+      event,
+    ], subjectPubkey: testPubkey);
+
+    expect(result, isA<AnalyticsIngestAccepted>());
+    expect(
+      captured!.url.toString(),
+      'https://api.divine.video/api/analytics/events',
+    );
+    expect(captured!.headers['Authorization'], 'Nostr fake-base64-token');
+    final body = jsonDecode(captured!.body) as Map<String, dynamic>;
+    expect(body['subject_pubkey'], testPubkey);
+    expect((body['events'] as List).single, event);
+    expect((body['events'] as List).single, isNot(contains('user_pubkey')));
+  });
+
+  test('anonymous acquisition batches do not request authentication', () async {
+    http.Request? captured;
+    final client = buildClient(
+      MockClient((request) async {
+        captured = request;
+        return http.Response('{"accepted":true}', 202);
+      }),
+    );
+
+    final result = await client.publishAnonymousBatch([event]);
+
+    expect(result, isA<AnalyticsIngestAccepted>());
+    expect(
+      captured!.url.toString(),
+      'https://api.divine.video/api/analytics/events/anonymous',
+    );
+    expect(captured!.headers, isNot(contains('Authorization')));
+    expect(jsonDecode(captured!.body), {
+      'events': [event],
     });
+    verifyNever(
+      () => mockNip98.createAuthToken(
+        url: any(named: 'url'),
+        method: any(named: 'method'),
+        payload: any(named: 'payload'),
+      ),
+    );
+  });
 
-    test('does not POST without a NIP-98 token', () async {
-      stubToken(null);
-      var requested = false;
+  for (final status in [400, 401, 403, 404, 422]) {
+    test('drops permanent HTTP $status responses', () async {
+      stubToken(buildToken());
       final client = buildClient(
-        MockClient((_) async {
-          requested = true;
-          return http.Response('', 200);
-        }),
+        MockClient((_) async => http.Response('bad event', status)),
       );
 
-      final result = await client.publishBatch([buildEvent('event-a')]);
+      final result = await client.publishBatch(
+        [event],
+        subjectPubkey: testPubkey,
+      );
+
+      expect(result, isA<AnalyticsIngestRejected>());
+    });
+  }
+
+  for (final status in [429, 500, 503]) {
+    test('retries temporary HTTP $status responses', () async {
+      stubToken(buildToken());
+      final client = buildClient(
+        MockClient((_) async => http.Response('try again', status)),
+      );
+
+      final result = await client.publishBatch(
+        [event],
+        subjectPubkey: testPubkey,
+      );
 
       expect(result, isA<AnalyticsIngestTransientFailure>());
-      expect(requested, isFalse);
     });
+  }
+
+  test('does not POST a signed batch without a NIP-98 token', () async {
+    stubToken(null);
+    var requested = false;
+    final client = buildClient(
+      MockClient((_) async {
+        requested = true;
+        return http.Response('', 200);
+      }),
+    );
+
+    final result = await client.publishBatch([
+      event,
+    ], subjectPubkey: testPubkey);
+
+    expect(result, isA<AnalyticsIngestTransientFailure>());
+    expect(requested, isFalse);
   });
 }

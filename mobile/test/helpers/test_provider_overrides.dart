@@ -373,7 +373,6 @@ List<dynamic> getStandardTestOverrides({
   return [
     // Mirror DeviceScope's required bootstrap override for test containers.
     appVersionProvider.overrideWithValue('test'),
-
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 

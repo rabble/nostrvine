@@ -8,8 +8,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/generated/product_analytics.dart';
 import 'package:openvine/models/view_traffic_source.dart';
-import 'package:openvine/services/analytics_ingest_client.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/product_event_queue.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -23,13 +23,10 @@ class _MockProductEventQueue extends Mock implements ProductEventQueue {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
-class _FakeProductAnalyticsEvent extends Fake
-    implements ProductAnalyticsEvent {}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
-    registerFallbackValue(_FakeProductAnalyticsEvent());
+    registerFallbackValue(_productAnalyticsEventFallback());
     registerFallbackValue(_pendingViewEventFallback());
     registerFallbackValue(ViewTrafficSource.unknown);
   });
@@ -136,53 +133,230 @@ void main() {
       expect(true, isTrue);
     });
 
-    test('track stamps identity and session before enqueueing', () async {
+    test('matches the cross-language event ID vector', () {
+      final eventWithoutId = <String, Object?>{
+        'schema_version': 2,
+        'occurred_at': '2026-08-20T00:00:00Z',
+        'anonymous_id': '22222222-2222-4222-8222-222222222222',
+        'session_id': '33333333-3333-4333-8333-333333333333',
+        'source': 'web',
+        'platform': 'web',
+        'release': '2026.08.20',
+        'consent_category': 'product_analytics',
+        'event_name': 'content_impression_recorded',
+        'properties': <String, Object?>{
+          'content_id':
+              '4444444444444444444444444444444444444444444444444444444444444444',
+          'surface': 'feed',
+          'position': 3,
+          'visible_ms': 1500,
+        },
+      };
+
+      expect(
+        AnalyticsService.computeProductAnalyticsEventId(eventWithoutId),
+        '0592b5a4908ee37cc24348ca8292152498e7caed970c043526051818c15b22cd',
+      );
+      expect(
+        AnalyticsService.computeProductAnalyticsEventId({
+          'properties': eventWithoutId['properties'],
+          ...eventWithoutId,
+        }),
+        '0592b5a4908ee37cc24348ca8292152498e7caed970c043526051818c15b22cd',
+      );
+    });
+
+    test(
+      'records a signed version-two impression with no raw identity',
+      () async {
+        final queue = _MockProductEventQueue();
+        when(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+          currentUserPubkey: () =>
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          anonymousId: () => '018ff7d7-2ef5-7000-8000-000000000001',
+          sessionId: () => '018ff7d7-2ef5-7000-8000-000000000002',
+          platform: () => 'ios',
+          appVersion: () => '1.2.3',
+          now: () => DateTime.utc(2026, 8, 20),
+        );
+        await analyticsService.initialize();
+
+        final eventId = await analyticsService.recordContentImpression(
+          contentId:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          surface: ProductAnalyticsV2Surface.feed,
+          position: 4,
+          visibleMs: 1000,
+        );
+
+        final captured = verify(
+          () => queue.enqueue(
+            captureAny(),
+            ownerPubkey: captureAny(named: 'ownerPubkey'),
+          ),
+        ).captured;
+        final event = captured[0] as ProductAnalyticsV2Event;
+        expect(
+          captured[1],
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        );
+        expect(event.eventName, 'content_impression_recorded');
+        expect(event.envelope.eventId, eventId);
+        expect(event.envelope.eventId, hasLength(64));
+        expect(event.envelope.schemaVersion, 2);
+        expect(event.envelope.occurredAt, DateTime.utc(2026, 8, 20));
+        expect(
+          event.envelope.anonymousId,
+          '018ff7d7-2ef5-7000-8000-000000000001',
+        );
+        expect(
+          event.envelope.sessionId,
+          '018ff7d7-2ef5-7000-8000-000000000002',
+        );
+        expect(event.envelope.platform, ProductAnalyticsV2Platform.ios);
+        expect(event.envelope.release, '1.2.3');
+        expect(event.toJson(), isNot(contains('user_pubkey')));
+        expect(event.propertiesJson, containsPair('position', 4));
+        expect(event.propertiesJson, containsPair('visible_ms', 1000));
+      },
+    );
+
+    test(
+      'does not collect product events while the launch flag is off',
+      () async {
+        final queue = _MockProductEventQueue();
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: false,
+          currentUserPubkey: () => 'a' * 64,
+        );
+        await analyticsService.initialize();
+
+        final eventId = await analyticsService.recordContentImpression(
+          contentId: 'b' * 64,
+          surface: ProductAnalyticsV2Surface.feed,
+          position: 0,
+          visibleMs: 1000,
+        );
+
+        expect(eventId, isNull);
+        verifyNever(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        );
+      },
+    );
+
+    test('requires an identity for user-linked product events', () async {
       final queue = _MockProductEventQueue();
-      when(() => queue.enqueue(any())).thenAnswer((_) async {});
       analyticsService.dispose();
       analyticsService = AnalyticsService(
         productEventQueue: queue,
-        currentUserPubkey: () =>
-            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        anonymousId: () => '018ff7d7-2ef5-7000-8000-000000000001',
-        sessionId: () => '018ff7d7-2ef5-7000-8000-000000000002',
-        platform: () => 'ios',
-        appVersion: () => '1.2.3',
-        buildNumber: () => '123',
-        now: () => DateTime.utc(2026, 7, 7, 12),
-        eventIdFactory: () => '018ff7d7-2ef5-7000-8000-000000000003',
+        productAnalyticsEnabled: true,
+        currentUserPubkey: () => null,
       );
       await analyticsService.initialize();
 
-      await analyticsService.track(
-        'screen_time',
-        surface: AnalyticsSurface.feed,
-        props: const {'screen_name': 'feed'},
-        propsNum: const {'duration_ms': 1250.0},
-        targetId:
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      final eventId = await analyticsService.recordContentImpression(
+        contentId: 'b' * 64,
+        surface: ProductAnalyticsV2Surface.feed,
+        position: 0,
+        visibleMs: 1000,
       );
 
-      final captured =
-          verify(() => queue.enqueue(captureAny())).captured.single
-              as ProductAnalyticsEvent;
-      expect(captured.eventId, '018ff7d7-2ef5-7000-8000-000000000003');
-      expect(captured.eventName, 'screen_time');
-      expect(captured.occurredAt, DateTime.utc(2026, 7, 7, 12));
-      expect(
-        captured.userPubkey,
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      expect(eventId, isNull);
+      verifyNever(
+        () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
       );
-      expect(captured.anonymousId, '018ff7d7-2ef5-7000-8000-000000000001');
-      expect(captured.sessionId, '018ff7d7-2ef5-7000-8000-000000000002');
-      expect(captured.platform, 'ios');
-      expect(captured.appVersion, '1.2.3');
-      expect(captured.buildNumber, '123');
-      expect(captured.surface, AnalyticsSurface.feed);
-      expect(captured.targetId, contains('aaaaaaaa'));
-      expect(captured.props, containsPair('screen_name', 'feed'));
-      expect(captured.propsNum, containsPair('duration_ms', 1250.0));
     });
+
+    test('keeps only bounded UTM values on anonymous registration', () async {
+      final queue = _MockProductEventQueue();
+      when(
+        () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+      ).thenAnswer((_) async {});
+      analyticsService.dispose();
+      analyticsService = AnalyticsService(
+        productEventQueue: queue,
+        productAnalyticsEnabled: true,
+        currentUserPubkey: () => null,
+      );
+      await analyticsService.initialize();
+
+      analyticsService.captureProductAnalyticsUtm({
+        'utm_source': 'Newsletter',
+        'utm_medium': 'email',
+        'utm_campaign': 'launch-1',
+        'utm_term': 'private',
+        'utm_content': 'has spaces',
+      });
+      await analyticsService.recordRegistrationStarted(
+        entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
+      );
+
+      final event =
+          verify(
+                () => queue.enqueue(captureAny()),
+              ).captured.single
+              as ProductAnalyticsV2Event;
+      expect(event.eventName, 'registration_started');
+      expect(event.propertiesJson, {
+        'entry_point': 'invite',
+        'utm_source': 'newsletter',
+        'utm_medium': 'email',
+        'utm_campaign': 'launch-1',
+      });
+    });
+
+    test(
+      'consent withdrawal clears queued events and acquisition data',
+      () async {
+        final queue = _MockProductEventQueue();
+        when(queue.clear).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+        );
+        await analyticsService.initialize();
+        analyticsService.captureProductAnalyticsUtm({
+          'utm_source': 'newsletter',
+        });
+
+        await analyticsService.setAnalyticsEnabled(false);
+
+        verify(queue.clear).called(1);
+        expect(analyticsService.productAnalyticsUtm, isEmpty);
+      },
+    );
+
+    test(
+      'account changes purge the previous owner and acquisition data',
+      () async {
+        final queue = _MockProductEventQueue();
+        when(() => queue.clearOwner(any())).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+        );
+        await analyticsService.initialize();
+        analyticsService.captureProductAnalyticsUtm({
+          'utm_source': 'newsletter',
+        });
+
+        await analyticsService.handleIdentityChange('a' * 64);
+
+        verify(() => queue.clearOwner('a' * 64)).called(1);
+        expect(analyticsService.productAnalyticsUtm, isEmpty);
+      },
+    );
 
     test('enqueues eligible view_end before triggering a retry flush', () async {
       final tempDir = Directory.systemTemp.createTempSync(
@@ -605,5 +779,25 @@ PendingViewEvent _pendingViewEventFallback() {
     trafficSource: 'unknown',
     status: PendingViewEventStatus.pending,
     createdAt: DateTime.utc(2026, 5),
+  );
+}
+
+ProductAnalyticsV2Event _productAnalyticsEventFallback() {
+  return ProductAnalyticsV2LandingViewedEvent(
+    envelope: ProductAnalyticsV2Envelope(
+      eventId: 'fallback',
+      schemaVersion: 2,
+      occurredAt: DateTime.utc(2026, 8, 20),
+      anonymousId: '22222222-2222-4222-8222-222222222222',
+      sessionId: '33333333-3333-4333-8333-333333333333',
+      source: ProductAnalyticsV2Source.mobile,
+      platform: ProductAnalyticsV2Platform.ios,
+      release: 'test',
+      consentCategory: ProductAnalyticsV2ConsentCategory.productAnalytics,
+    ),
+    properties: const ProductAnalyticsV2LandingViewedProperties(
+      landingPage: ProductAnalyticsV2LandingPage.home,
+      referrerClass: ProductAnalyticsV2ReferrerClass.direct,
+    ),
   );
 }
