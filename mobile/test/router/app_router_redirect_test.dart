@@ -13,6 +13,7 @@ import 'package:openvine/providers/minor_account_review_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -206,14 +207,18 @@ void main() {
       when(() => authService.hasExpiredOAuthSession).thenReturn(false);
     });
 
-    // A resolved active status so the minor-account-review gates fall through
-    // to the authenticated auth-route handling this group exercises.
-    Future<ProviderContainer> buildContainer() async {
+    // Defaults to a resolved active status so the minor-account-review gates
+    // fall through to the authenticated auth-route handling this group
+    // exercises; pass a restricted status to assert the gate ordering holds.
+    Future<ProviderContainer> buildContainer({
+      MinorAccountReviewStatus? reviewStatus,
+    }) async {
+      final status = reviewStatus ?? MinorAccountReviewStatus.active();
       final container = ProviderContainer(
         overrides: [
           authServiceProvider.overrideWithValue(authService),
           currentMinorAccountReviewStatusProvider.overrideWith(
-            (ref) async => MinorAccountReviewStatus.active(),
+            (ref) async => status,
           ),
           checkEmptyFollowingRedirectProvider.overrideWith(
             (ref, location) => null,
@@ -263,6 +268,27 @@ void main() {
         );
 
         expect(result, VideoFeedPage.pathForIndex(0));
+      },
+    );
+
+    test(
+      'still routes a restricted-minor anonymous user to review even with the '
+      'recovery email param — the recovery exception must not outrank the '
+      'load-bearing minor-review gate',
+      () async {
+        final container = await buildContainer(
+          reviewStatus: const MinorAccountReviewStatus(
+            restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+          ),
+        );
+        final ref = container.read(_refProbeProvider);
+
+        final result = appRouterRedirect(
+          ref,
+          stateFor('/welcome/login-options?email=user%40example.com'),
+        );
+
+        expect(result, MinorAccountReviewScreen.path);
       },
     );
   });
