@@ -184,8 +184,25 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
             "shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging",
             self.contents,
         )
-        self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", self.contents)
         self.assertNotIn("--track=stable", self.contents)
+        # Per command, not whole-file: the release commands also carry these
+        # flags, so a substring search over the file passes even when a patch
+        # command is missing one. Shipping only --private-key-path is what
+        # made every patch build die with "Both public and private keys must
+        # be provided."
+        commands = self._shorebird_patch_commands()
+        self.assertEqual(2, len(commands))
+        for command in commands:
+            self.assertIn("--public-key-path=build/shorebird/patch_public_key.pem", command)
+            self.assertIn("--private-key-path=build/shorebird/patch_private_key.pem", command)
+
+    def test_patch_workflows_materialize_both_signing_keys(self) -> None:
+        # A key path on the command line is inert unless some step wrote the
+        # file it names.
+        for workflow in ("ios-patch", "android-patch"):
+            block = self._workflow_block(workflow)
+            self.assertIn("*write_shorebird_public_key", block)
+            self.assertIn("*write_shorebird_private_key", block)
 
     def test_shorebird_patch_workflows_use_private_provenance(self) -> None:
         self.assertIn('if [ "$CM_BRANCH" != "main" ]; then', self.contents)

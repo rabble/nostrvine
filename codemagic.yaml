@@ -514,8 +514,13 @@ definitions:
         # behaviour beyond the code fix. Shorebird refuses to patch when it
         # detects native or asset diffs; do NOT add --allow-native-diffs or
         # --allow-asset-diffs to force past that — cut a new release instead.
+        # Signing needs both halves: the private key signs the patch and the
+        # public key validates that signature against the one baked into the
+        # release. Passing only one fails with "Both public and private keys
+        # must be provided."
         shorebird patch android --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
           --dart-define-from-file=build/shorebird/dart_defines.json \
+          --public-key-path=build/shorebird/patch_public_key.pem \
           --private-key-path=build/shorebird/patch_private_key.pem
     - &build_macos
       name: Build macOS app
@@ -606,8 +611,10 @@ definitions:
       script: |
         # See the Android patch step for why there is no --flutter-version and
         # why the dart-defines must match the release's.
+        # See the Android patch step for why both key halves are required.
         shorebird patch ios --release-version=${{ inputs.RELEASE_VERSION }} --track=staging \
           --dart-define-from-file=build/shorebird/dart_defines.json \
+          --public-key-path=build/shorebird/patch_public_key.pem \
           --private-key-path=build/shorebird/patch_private_key.pem \
           --export-options-plist=/Users/builder/export_options.plist
     - &upload_dsyms_to_crashlytics
@@ -1160,6 +1167,7 @@ workflows:
       - *fetch_and_verify_shorebird_provenance
       - *prepare_patch_source
       - *check_ios_extension_signing_contract
+      - *write_shorebird_public_key
       - *write_shorebird_private_key
       - *setup_code_signing_xcode
       - *clean_ios_workspace_state
@@ -1246,6 +1254,7 @@ workflows:
       - *prepare_patch_source
       - *setup_local_properties
       - *configure_gradle_memory
+      - *write_shorebird_public_key
       - *write_shorebird_private_key
       - *patch_android
 
