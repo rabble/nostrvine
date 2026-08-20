@@ -18,14 +18,15 @@ import 'package:openvine/services/auth_service.dart';
 /// dependencies.
 ///
 /// The authenticated auth-route decision (rule 1, including the expired-session
-/// login-options exception) delegates to the real
+/// and anonymous recovery exceptions) delegates to the real
 /// [authenticatedRedirectsFromAuthEntry] helper, so that branch cannot drift
 /// from the router. Only the unauthenticated `isAuthRoute` mirror (rule 2)
 /// remains a local copy — keep it in sync when adding a new auth route.
 ///
 /// The actual redirect logic is:
 /// 1. If authenticated AND on top-level auth entry routes -> redirect to /home/0
-///    (EXCEPT expired-session users navigating to loginOptionsPath)
+///    (EXCEPT expired-session users and anonymous email-recovery users
+///    navigating to loginOptionsPath)
 ///    (EXCEPT import-key, which doubles as an authenticated account-switch route)
 /// 2. If NOT on auth route AND unauthenticated -> redirect to /welcome
 /// 3. Otherwise -> null (no redirect)
@@ -33,6 +34,7 @@ String? testRedirectLogic({
   required String location,
   required AuthState authState,
   bool hasExpiredOAuthSession = false,
+  bool isAnonymous = false,
 }) {
   // Auth routes that should be accessible without authentication.
   // Mirrors the isAuthRoute check in app_router.dart.
@@ -52,6 +54,7 @@ String? testRedirectLogic({
       authenticatedRedirectsFromAuthEntry(
         location,
         hasExpiredOAuthSession: hasExpiredOAuthSession,
+        isAnonymous: isAnonymous,
       )) {
     return VideoFeedPage.pathForIndex(0);
   }
@@ -486,6 +489,28 @@ void main() {
   });
 
   group('authenticatedRedirectsFromAuthEntry', () {
+    test('anonymous email recovery has no pending home redirect', () {
+      expect(
+        authenticatedRedirectsFromAuthEntry(
+          '${WelcomeScreen.loginOptionsPath}?email=existing%40example.com',
+          hasExpiredOAuthSession: false,
+          isAnonymous: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('registered users with an email query still redirect home', () {
+      expect(
+        authenticatedRedirectsFromAuthEntry(
+          '${WelcomeScreen.loginOptionsPath}?email=existing%40example.com',
+          hasExpiredOAuthSession: false,
+          isAnonymous: false,
+        ),
+        isTrue,
+      );
+    });
+
     group('redirects an authenticated user home from', () {
       for (final location in <String>[
         WelcomeScreen.path,
@@ -499,6 +524,7 @@ void main() {
             authenticatedRedirectsFromAuthEntry(
               location,
               hasExpiredOAuthSession: false,
+              isAnonymous: false,
             ),
             isTrue,
             reason: '$location is a sign-in entry point — bounce home',
@@ -521,6 +547,7 @@ void main() {
             authenticatedRedirectsFromAuthEntry(
               location,
               hasExpiredOAuthSession: false,
+              isAnonymous: false,
             ),
             isFalse,
             reason: '$location is a route the router leaves the user on',
@@ -534,6 +561,7 @@ void main() {
         authenticatedRedirectsFromAuthEntry(
           WelcomeScreen.loginOptionsPath,
           hasExpiredOAuthSession: true,
+          isAnonymous: false,
         ),
         isFalse,
         reason: 'expired-session users must reach login options to re-auth',
@@ -545,6 +573,7 @@ void main() {
         authenticatedRedirectsFromAuthEntry(
           WelcomeScreen.path,
           hasExpiredOAuthSession: true,
+          isAnonymous: false,
         ),
         isTrue,
         reason: 'the expired-session exception only applies to login options',

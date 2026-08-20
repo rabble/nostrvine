@@ -459,9 +459,7 @@ void main() {
             'SecurePass123!',
           );
 
-          await tester.tap(
-            find.widgetWithText(DivineButton, 'Secure account'),
-          );
+          await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
 
@@ -778,9 +776,7 @@ void main() {
 
       testWidgets(
         'shows in-place recovery choices instead of navigating away',
-        (
-          tester,
-        ) async {
+        (tester) async {
           final router = await pumpConflict(tester);
           final l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -849,6 +845,63 @@ void main() {
         );
       });
 
+      testWidgets(
+        'resubmitting clears stale recovery actions and renders the new result',
+        (tester) async {
+          await pumpConflict(tester);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final retry = Completer<(HeadlessRegisterResult, String)>();
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              nsec: any(named: 'nsec'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer((_) => retry.future);
+
+          await tester.tap(
+            find.widgetWithText(DivineButton, l10n.authSecureAccountTitle),
+          );
+          await tester.pump();
+
+          expect(
+            find.text(l10n.authSecureAccountAlreadyRegistered),
+            findsNothing,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSignInButton),
+            findsNothing,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authContactSupport),
+            findsNothing,
+          );
+
+          retry.complete((
+            HeadlessRegisterResult(
+              success: true,
+              pubkey: 'test-pubkey',
+              verificationRequired: false,
+              email: 'existing@example.com',
+            ),
+            'test-verifier',
+          ));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text(l10n.authRegistrationComplete), findsOneWidget);
+          expect(
+            find.widgetWithText(DivineButton, l10n.authSignInButton),
+            findsNothing,
+          );
+          expect(
+            find.widgetWithText(DivineButton, l10n.authContactSupport),
+            findsNothing,
+          );
+        },
+      );
+
       testWidgets('Sign in routes to the recovery hub with the email', (
         tester,
       ) async {
@@ -860,10 +913,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.text('login-options:existing@example.com'),
-          findsOneWidget,
-        );
+        expect(find.text('login-options:existing@example.com'), findsOneWidget);
       });
 
       testWidgets('Contact support routes to the support center', (

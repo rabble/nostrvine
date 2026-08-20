@@ -491,7 +491,7 @@ const _knownUntranslatedDebt = <String>{
   'exploreFeaturedPaidPartnership',
   'exploreFeaturedSponsoredPillSemanticLabel',
   // Secure-account key-conflict recovery copy is new; translation pass
-  // tracked in #7782.
+  // tracked in #7984.
   'authSecureAccountAlreadyRegistered',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.

@@ -105,6 +105,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       _passwordError = null;
       _confirmPasswordError = null;
       _generalError = null;
+      _hasConflict = false;
     });
 
     final l10n = context.l10n;
@@ -171,8 +172,8 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           _hasConflict = true;
           _generalError = context.l10n.authSecureAccountAlreadyRegistered;
         });
-        // The state change disables the form and swaps the buttons; announce it
-        // so a screen-reader user knows registration hit a recoverable conflict.
+        // Announce the new recovery state so a screen-reader user knows
+        // registration hit a recoverable conflict.
         SemanticsService.sendAnnouncement(
           View.of(context),
           context.l10n.authSecureAccountAlreadyRegistered,
