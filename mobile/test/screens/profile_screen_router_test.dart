@@ -89,8 +89,12 @@ class _InMemoryCacheDao implements CacheDao {
 }
 
 const _npub = 'npub1424242424242424242424242424242424242424242424242424qamrcaj';
+
+/// The hex [_npub] decodes to. The profile route carries the npub while the
+/// feed carries hex, and [ProfileFeedCubit] drops live updates whose pubkey
+/// does not match the profile's, so the two must describe one identity.
 const _authorPubkeyHex =
-    'aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552aaaa552a';
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 void main() {
   final now = DateTime.now();
