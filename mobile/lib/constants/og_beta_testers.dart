@@ -3,17 +3,29 @@
 
 /// Pubkeys shown the OG beta tester badge.
 ///
-/// Membership was frozen on 2026-08-17, the close of the beta window, and
-/// cannot change: a pubkey qualifies only by having published a non-archive
-/// video (kind 34236) from a Divine handle (`@openvine.co` or a
-/// `divine.video` host) between 2025-01-01 and that cutoff. Nostr has no
-/// account-creation timestamp to re-derive this from at runtime — kind 0 is
-/// replaceable, so its `created_at` tracks the last profile edit rather than
-/// signup, and 11% of this roster edits a profile in any given month.
+/// Membership was frozen when the beta window closed at the end of
+/// 2026-08-17 and cannot change. A pubkey qualifies by having published a
+/// non-archive video (kind 34236) from a Divine handle (`@openvine.co` or a
+/// `divine.video` host) between 2025-01-01 and that cutoff. The derivation
+/// query is committed beside this file as `og_beta_testers.sql`; five QA
+/// accounts were removed from its output in review.
+///
+/// Frozen rather than re-derived at runtime because Nostr has no
+/// account-creation timestamp: kind 0 is replaceable, so its `created_at`
+/// tracks the last profile edit rather than signup, and 11% of this roster
+/// edits a profile in any given month. A live date check would strip the
+/// badge from the most active members first.
+///
+/// This is not the app's only badge mechanism — NIP-58 awards render on the
+/// profile header via `badge_repository`, and would show on divine-web for
+/// free, which this roster never will. The tradeoff is deliberate: NIP-58
+/// display is opt-in on the recipient's kind-10008, so most of this cohort
+/// would show nothing. The cost is that a `const` list has no revocation
+/// lever, unlike every other pinned list in the app — a correction needs an
+/// app-store release.
 ///
 /// Accounts that also hold classic Vine archive videos are deliberately
-/// absent. They render the OG Viner badge instead, which takes precedence,
-/// and excluding them here keeps that precedence out of the render path.
+/// absent; they render the OG Viner chit instead, which takes precedence.
 ///
 /// Sorted, so regenerating the roster produces a reviewable diff.
 const ogBetaTesterPubkeys = <String>[
@@ -915,7 +927,6 @@ const ogBetaTesterPubkeys = <String>[
   '4d9ccb6f4e42181d2e76ee1471ed78350a81feab3eaf259a2330f79bacd92d23',
   '4da669e6792428a13775c1c7dbac4d343a8f2ee589393bde5b3dcce17eb29d6a',
   '4da75881b5e999e45056c892ab7f0c02d45e96649554722fc9632a432ebea858',
-  '4de491306110fbf1c80e70dfa7ab2618b793551c630e8b914c40fd29a9739733',
   '4e112f39f04049c9503b653e1976dbf6895050c793c177e641f59ef7ebab44d2',
   '4e2c60967a80190ed92212e04ade568e56882e03b6c408a58cf5f88e4f9ba7c8',
   '4e42fd24f43dd71f69835df32aa4deb1316e275209ea68576ae8538225dbc332',
@@ -1035,7 +1046,6 @@ const ogBetaTesterPubkeys = <String>[
   '581e74ae78fdb3b7e8c93341d76b63ebf59f767e172baba655376a5576206907',
   '5828600ad96ea0c7fd2bf647e7338b3fec7b9578cb32a3d8a5c4fbc946228ecb',
   '58291041205493a689194dadb2711e6e258a995acc05202f0f2538bf1328d15e',
-  '5836679acacf73563b8749cec318e3a26e7f8a6225dc7b620ca07062e35fed0b',
   '583e8c9e1267823e6008d488391ee2cd79cb6e1b1f14c5e7830ffbd14aedceb2',
   '5854f48141de8a33037951f781c635f5f400bd53c12b47657d149694a07bdd29',
   '587730832059f09a4fae40e4613ee2ea5f626d87b32cd2b608b4979f3b727daf',
@@ -1100,7 +1110,6 @@ const ogBetaTesterPubkeys = <String>[
   '5e0ea20a44bc2bd83d875a487a035987a14ef1ed08f60f97bcee570949d2f600',
   '5e2a8cc4ae49fd6d5b6df5bce80c7c759c3d4b985c3f5e70e31d53ae23c19aa5',
   '5e3eb17cb5056946b83aa058bfe94992a362c7ed0b88949eabe95cbb3c18639f',
-  '5e3f074dcb7950c7b94228a1a90de2129cded21e60d612d3500849f826fe68c8',
   '5e5808a3a587edaf240b953ac4093a8c4ef48d70f9c2606393d329323664e7c6',
   '5e6ab54869fda9091ab81788dca65cac9ce74bad9530fc9edf32842d562aa706',
   '5e7a7860986a5396b54ceadc04731dae740e4e070898ed9f36f32e9320d096ad',
@@ -1185,7 +1194,6 @@ const ogBetaTesterPubkeys = <String>[
   '65dbb26e3494b9cf204d8a1f0944f75ebfed97bd9097d52dde8b63e2c8e6ac47',
   '65dc6ad6dd51ca07ac8086ce3a99bdc83661783ab596d284f8362be5c7f201e0',
   '65dde545880efd813d1350814eb41658a9be3d73bc31f0b6d3a56dd738ba9fff',
-  '65fec3676537d0b4a7408d831fb6406ebb84bc659b3db69d2f6b525f7b9319df',
   '660370b7ad7f5aee240fe16501e87a967201976c0dad97913d407a9bb21dc43a',
   '660a54d16abfd6ea57b8a34bafee51c40e97c6fd3d4b0f8f4fa4d4597876ce67',
   '6614048ddcd35392598c34d1ec97d514f40fc4d4e1ecfb688bfc828037c991f9',
@@ -1696,7 +1704,6 @@ const ogBetaTesterPubkeys = <String>[
   '938c0628bba2476caa541abc2bcb963f05a3112304a66d3fe0485deadca3f0e7',
   '93a50ba6339f43c07977562293f8f90d71e35407af13e7bc497104daa69e25b5',
   '93ae797269be6df9941bf5ebd0a82817a5e194ff89cca788a1bb607e3a40afd4',
-  '93ba1e8d52c93ace0103c49bef51afadabf7a3fbe003a2779a8a0d1311e4df29',
   '93c88d89c8b9d75d7da2b7dfa123b4b3db4b502baff2eb7577bb8f7e97c02af5',
   '93d1de6c20b765b68efceb72869a90ede406bcbf02335419723afefc0d909552',
   '93e19fb4a5b9b4eeb6c6e55071a21243dc97efe8dc96e84423dab46df2687423',

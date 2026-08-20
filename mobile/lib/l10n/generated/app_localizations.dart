@@ -12035,7 +12035,7 @@ abstract class AppLocalizations {
   /// **'This person posted an original Vine that Divine found in the archive. It is not an account verification badge.'**
   String get profileBadgeOgVinerBody;
 
-  /// Label for the badge marking accounts that tested Divine during the beta. Kept in English across locales, matching ogVinerBadgeLabel.
+  /// Label for the badge marking accounts that tested Divine during the beta. Currently mirrored verbatim into every locale, but 'Beta Tester' is an ordinary noun phrase and translators should adapt it where the target language has one.
   ///
   /// In en, this message translates to:
   /// **'OG Beta Tester'**

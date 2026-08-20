@@ -10,7 +10,10 @@ void main() {
       // The roster is frozen, so its length is a constant. Without this a
       // truncated or paginated regeneration still satisfies every shape
       // check below and ships silently.
-      expect(ogBetaTesterPubkeys, hasLength(2947));
+      //
+      // 2,947 from the derivation query, less 5 QA accounts (all holding
+      // `_@test*.divine.video` handles) removed in review.
+      expect(ogBetaTesterPubkeys, hasLength(2942));
     });
 
     test('contains only lowercase 64-character hex pubkeys', () {

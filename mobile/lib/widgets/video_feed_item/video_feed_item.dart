@@ -27,6 +27,7 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
+import 'package:openvine/widgets/profile_badge_explanation_sheet.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -302,10 +303,18 @@ class VideoOverlayActions extends ConsumerWidget {
                         (service) => service.isOgViner(authorPubkey),
                       ),
                     );
-                    // Rosters are disjoint by construction; the guard keeps
-                    // the "one chit per name" rule explicit at the callsite.
+                    final showCheckmark = shouldShowSpecialProfileCheckmark(
+                      authorPubkey,
+                    );
+                    // The beta chit yields to both the checkmark and the OG
+                    // Viner chit, so a name never carries two of them. The
+                    // Viner rosters are disjoint by construction; the
+                    // checkmark is an independent list that 15 of its 19
+                    // pubkeys share with the beta roster.
                     final isOgBetaTester =
-                        !isOgViner && isOgBetaTesterPubkey(authorPubkey);
+                        !isOgViner &&
+                        !showCheckmark &&
+                        isOgBetaTesterPubkey(authorPubkey);
 
                     void navigateToProfile() {
                       onInteracted?.call();
@@ -380,12 +389,18 @@ class VideoOverlayActions extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    if (shouldShowSpecialProfileCheckmark(
-                                      authorPubkey,
-                                    ))
+                                    if (showCheckmark)
                                       const SpecialProfileCheckmark(),
                                     if (isOgViner) const OgVinerBadge(),
-                                    if (isOgBetaTester) const OgBetaBadge(),
+                                    if (isOgBetaTester)
+                                      OgBetaBadge(
+                                        onTap: () =>
+                                            showProfileBadgeExplanationSheet(
+                                              context,
+                                              ProfileBadgeExplanationType
+                                                  .ogBetaTester,
+                                            ),
+                                      ),
                                   ],
                                 ),
                                 _VideoCardMetaLine(

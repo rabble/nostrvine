@@ -141,10 +141,13 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
         (service) => service.isOgViner(userIdHex),
       ),
     );
-    // Rosters are disjoint by construction; the guard keeps the "one chit
-    // per name" rule explicit at the callsite.
-    final isOgBetaTester = !isOgViner && isOgBetaTesterPubkey(userIdHex);
     final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
+    // The beta chit yields to both the checkmark and the OG Viner chit, so a
+    // name never carries two of them. The Viner rosters are disjoint by
+    // construction; the checkmark is an independent list that 15 of its 19
+    // pubkeys share with the beta roster, so that one has to be checked here.
+    final isOgBetaTester =
+        !isOgViner && !showCheckmark && isOgBetaTesterPubkey(userIdHex);
     final name = isVanished
         // Deliberately not a UserName: that widget re-resolves the profile
         // through its own provider and falls back to a generated handle, which
