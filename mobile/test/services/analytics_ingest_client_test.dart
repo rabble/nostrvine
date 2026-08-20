@@ -149,7 +149,7 @@ void main() {
     });
   }
 
-  for (final status in [429, 500, 503]) {
+  for (final status in [408, 429, 500, 503]) {
     test('retries temporary HTTP $status responses', () async {
       stubToken(buildToken());
       final client = buildClient(
