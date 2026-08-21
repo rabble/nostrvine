@@ -89,6 +89,62 @@ class CameraController: NSObject {
     /// cross-queue convention as `lastVideoFrameEndPTS`.
     private var appendedAudioBufferCount = 0
     private var maxAudioPeakDb: Float = -160
+
+    /// Audio-alignment diagnostics (#7888). "Recording starts, but the first
+    /// couple of seconds have no sound" is not reproducible in-house — five
+    /// captures on an M4 iPad all put the audio track at 0ms — so the finished
+    /// clip has to carry its own evidence, or every such report costs another
+    /// blind investigation.
+    ///
+    /// Nothing in the capture path couples the two tracks: the writer session
+    /// is anchored on the first video frame, while audio comes from a separate
+    /// AVCaptureSession whose first buffer can land either side of that anchor
+    /// (measured -66ms to +35ms). A device whose mic takes longer to deliver
+    /// pushes that gap into audible territory, and only the numbers below can
+    /// tell that apart from the alternatives — a slow attach on the record
+    /// tap, or a mic that delivered nothing at all.
+    ///
+    /// Written on `videoOutputQueue`, read once after the writer finished —
+    /// same loose cross-queue convention as `lastVideoFrameEndPTS`.
+    private var writerAnchorPTS: CMTime?
+    private var firstAppendedAudioPTS: CMTime?
+    /// PTS of the first audio buffer the delegate saw for this recording,
+    /// recorded before every gate that can drop it — the writer session not
+    /// being open yet, an interruption in progress, or no audio writer input
+    /// at all. Inside those gates a clip whose mic never delivered and a clip
+    /// whose buffers were all discarded report the same nothing, which is the
+    /// one distinction this field exists to make.
+    private var firstSeenAudioPTS: CMTime?
+    /// Wall-clock instant the record request entered the native layer, and how
+    /// long `attachAudioToSessionIfNeeded()` blocked. A slow attach delays the
+    /// *whole* recording — video included — so it loses leading content
+    /// without shifting audio against video. Distinguishing that from real
+    /// leading silence is the point of measuring both.
+    private var recordRequestTime: Date?
+    private var lastAudioAttachMs: Double = 0
+    /// Which branch the most recent `attachAudioToSessionIfNeeded()` took, and
+    /// what the shared session looked like on entry. A drifted category forces
+    /// the slow deactivate/reconfigure/activate cycle inline on the record tap,
+    /// which delays the whole recording rather than just audio.
+    ///
+    /// Process-wide, not per recording: the deferred pre-warm, the
+    /// interruption-ended handler and `resumePreview()` all attach again and
+    /// can land mid-recording.
+    private var lastAudioAttachPath = "unknown"
+    private var lastAudioEntryRoute = "unknown"
+    /// The pair above as it stood for *this* recording, snapshotted at the
+    /// record tap next to `lastAudioAttachMs`. Reading the live values at
+    /// stop time would print one attach's path beside another attach's
+    /// duration: `sessionQueue` is serial, so the deferred pre-warm cannot
+    /// overlap the tap's attach — it becomes ready at its deadline and runs
+    /// straight after it, mid-recording, overwriting the pair while
+    /// `lastAudioAttachMs` still holds the tap's own cost.
+    private var recordingAudioAttachPath = "unknown"
+    private var recordingAudioEntryRoute = "unknown"
+    /// Wall clock at which the writer session was anchored, i.e. when capture
+    /// actually began. Against `recordRequestTime` this is the tap-to-capture
+    /// delay the user experiences as lost leading content.
+    private var writerSessionStartedAt: Date?
     
     private var textureRegistry: FlutterTextureRegistry
 
@@ -1064,6 +1120,11 @@ class CameraController: NSObject {
             // though the user asked for unprocessed capture (#7796).
             let needsReconfigure = session.category != .playAndRecord
                 || session.mode != desiredAudioSessionMode
+            self.lastAudioEntryRoute = "category=\(session.category.rawValue)"
+                + ",mode=\(session.mode.rawValue)"
+                + ",running=\(existing.isRunning)"
+            self.lastAudioAttachPath = needsReconfigure
+                ? "reconfigure" : (existing.isRunning ? "warm" : "restart")
             if needsReconfigure {
                 // CRITICAL: stop the audio AVCaptureSession before the
                 // setActive(false)/setActive(true) cycle inside
@@ -1121,6 +1182,11 @@ class CameraController: NSObject {
         // captured buffers would be silent. Returning false here keeps
         // the new `audioReady` contract honest — the recording proceeds
         // without an audio track instead of producing a silent AAC track.
+        let entrySession = AVAudioSession.sharedInstance()
+        let entryRunning = self.audioCaptureSession?.isRunning ?? false
+        self.lastAudioEntryRoute = "category=\(entrySession.category.rawValue)"
+            + ",mode=\(entrySession.mode.rawValue),running=\(entryRunning)"
+        self.lastAudioAttachPath = "build"
         if !configureAudioSessionForRecording() {
             return false
         }
@@ -2183,7 +2249,8 @@ class CameraController: NSObject {
         }
         
         self.maxDurationMs = maxDurationMs
-        
+        let recordRequestedAt = Date()
+
         // Build and start the dedicated audio capture session on first record.
         // The audio session was pre-built in the background ~1s after the
         // first preview frame (see completeInitializationIfNeeded), so this
@@ -2199,7 +2266,12 @@ class CameraController: NSObject {
             // (!audioInterrupted) limits the damage; full protection would
             // require a writer-level lock that is not worth the added
             // complexity here.
+            self.recordRequestTime = recordRequestedAt
+            let attachStart = Date()
             let audioAttached = self.attachAudioToSessionIfNeeded()
+            self.lastAudioAttachMs = Date().timeIntervalSince(attachStart) * 1000
+            self.recordingAudioAttachPath = self.lastAudioAttachPath
+            self.recordingAudioEntryRoute = self.lastAudioEntryRoute
             if audioAttached && self.audioInterrupted {
                 self.audioInterrupted = false
                 DivineCameraLog.shared.info(
@@ -2364,6 +2436,10 @@ class CameraController: NSObject {
             self.isRecording = true
             self.isWriterSessionStarted = false  // Will be set to true when first frame is received
             self.lastVideoFrameEndPTS = nil
+            self.writerAnchorPTS = nil
+            self.writerSessionStartedAt = nil
+            self.firstAppendedAudioPTS = nil
+            self.firstSeenAudioPTS = nil
             self.recordingStartTime = Date()
             self.appendedAudioBufferCount = 0
             self.maxAudioPeakDb = -160
@@ -2504,6 +2580,8 @@ class CameraController: NSObject {
                         let hasAudioTrack = !asset.tracks(withMediaType: .audio).isEmpty
                         let audioStats = "audioBuffers=\(self.appendedAudioBufferCount), "
                             + "maxPeakDb=\(String(format: "%.1f", self.maxAudioPeakDb))"
+
+                        self.logAudioAlignmentDiagnostics(asset: asset)
                         if hasAudioTrack {
                             DivineCameraLog.shared.info(
                                 "Recording completed with audio track (durationMs=\(duration), \(audioStats))",
@@ -2698,6 +2776,43 @@ class CameraController: NSObject {
         }
     }
 
+    /// Emits the #7888 audio-alignment breadcrumb for a finished recording:
+    /// how far the first encoded audio sample sits behind the writer anchor,
+    /// how much of that gap predates any mic buffer at all, and which audio
+    /// attach path this recording took.
+    private func logAudioAlignmentDiagnostics(asset: AVAsset) {
+        func ms(_ later: CMTime?, _ earlier: CMTime?) -> String {
+            guard let later, let earlier,
+                  later.isNumeric, earlier.isNumeric else { return "n/a" }
+            return String(format: "%.0f", (later - earlier).seconds * 1000)
+        }
+
+        var startDelayMs = "n/a"
+        if let requested = self.recordRequestTime, let anchored = self.writerSessionStartedAt {
+            startDelayMs = String(format: "%.0f", anchored.timeIntervalSince(requested) * 1000)
+        }
+
+        var trackStartMs = "n/a"
+        if let audioTrack = asset.tracks(withMediaType: .audio).first {
+            let start = audioTrack.timeRange.start
+            if start.isNumeric {
+                trackStartMs = String(format: "%.0f", start.seconds * 1000)
+            }
+        }
+
+        DivineCameraLog.shared.info(
+            "Audio alignment: appendLeadInMs=\(ms(self.firstAppendedAudioPTS, self.writerAnchorPTS)), "
+                + "micLeadInMs=\(ms(self.firstSeenAudioPTS, self.writerAnchorPTS)), "
+                + "audioTrackStartMs=\(trackStartMs), "
+                + "tapToCaptureMs=\(startDelayMs), "
+                + "attachMs=\(String(format: "%.0f", self.lastAudioAttachMs)), "
+                + "attachPath=\(self.recordingAudioAttachPath), "
+                + "entry=[\(self.recordingAudioEntryRoute)], "
+                + "stabilization=\(self.reportedStabilizationString())",
+            name: "DivineCamera.Recording"
+        )
+    }
+
     private func photoFlashMode(for output: AVCapturePhotoOutput) -> AVCaptureDevice.FlashMode {
         let requestedMode = currentFlashMode
         let supportedModes = output.supportedFlashModes
@@ -2864,6 +2979,8 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 if !isWriterSessionStarted && writer.status == .writing {
                     writer.startSession(atSourceTime: timestamp)
                     isWriterSessionStarted = true
+                    writerAnchorPTS = timestamp
+                    writerSessionStartedAt = Date()
                     // Native-only event (sample-buffer delegate, no method
                     // call): reclaim the UI engine's diagnostics sink first.
                     reclaimLogSink?()
@@ -2893,6 +3010,14 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         // Handle audio output
         else if output == audioOutput {
+            // Note the mic's first buffer ahead of every gate below. Inside
+            // them a recording that never got an audio writer input, one
+            // dropped by an interruption, and one whose mic delivered nothing
+            // all log micLeadInMs=n/a — and telling those apart is the whole
+            // point of the field.
+            if isRecording, firstSeenAudioPTS == nil {
+                firstSeenAudioPTS = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            }
             // Skip appending while interrupted — iOS keeps delivering
             // (silent) buffers after the session is deactivated, which
             // would produce a valid AAC track with no sound.
@@ -2900,6 +3025,9 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 // Only append audio after session has started
                 if isWriterSessionStarted && writer.status == .writing && audioInput.isReadyForMoreMediaData {
                     audioInput.append(sampleBuffer)
+                    if firstAppendedAudioPTS == nil {
+                        firstAppendedAudioPTS = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                    }
                     appendedAudioBufferCount += 1
                     for channel in connection.audioChannels {
                         maxAudioPeakDb = max(maxAudioPeakDb, channel.peakHoldLevel)
