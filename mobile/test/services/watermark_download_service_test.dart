@@ -45,12 +45,17 @@ class _FakeProVideoEditor extends ProVideoEditor {
     );
   }
 
+  /// The last task handed to the renderer, so tests can assert what the
+  /// service asked the native side to produce.
+  VideoRenderData? lastRenderTask;
+
   @override
   Future<String> renderVideoToFile(
     String filePath,
     VideoRenderData value, {
     NativeLogLevel? nativeLogLevel,
   }) async {
+    lastRenderTask = value;
     File(filePath).writeAsStringSync('watermarked');
     return filePath;
   }
@@ -355,6 +360,52 @@ void main() {
           ]);
         },
       );
+
+      test('caps the rendered frame rate so the camera roll does not treat '
+          'the download as slow motion', () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'watermark-fps-test',
+        );
+        final videoFile = File('${tempDir.path}/video.mp4');
+        await videoFile.writeAsBytes(const [1, 2, 3, 4]);
+        addTearDown(() async {
+          if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+        });
+
+        final originalPathProvider = PathProviderPlatform.instance;
+        PathProviderPlatform.instance = MockPathProviderPlatform()
+          ..setTemporaryPath(tempDir.path);
+        addTearDown(() {
+          PathProviderPlatform.instance = originalPathProvider;
+        });
+
+        final fakeEditor = _FakeProVideoEditor();
+        final originalProVideoEditor = ProVideoEditor.instance;
+        ProVideoEditor.instance = fakeEditor;
+        addTearDown(() {
+          ProVideoEditor.instance = originalProVideoEditor;
+        });
+
+        when(() => mockCache.getCachedFileSync(any())).thenReturn(videoFile);
+        when(
+          () => mockGallerySave.saveVideoToGallery(any()),
+        ).thenAnswer((_) async => const GallerySaveSuccess());
+
+        final result = await service.downloadWithWatermark(
+          video: _createTestVideo(),
+          watermarkText: 'alice@divine.video',
+          onProgress: (_) {},
+        );
+
+        expect(result, isA<WatermarkDownloadSuccess>());
+        // iOS Photos plays an import above ~60 fps back as Slo-Mo, and a
+        // 120 fps rendition otherwise carries straight through the render.
+        expect(fakeEditor.lastRenderTask!.maxFrameRate, isNotNull);
+        expect(
+          fakeEditor.lastRenderTask!.maxFrameRate,
+          lessThanOrEqualTo(60),
+        );
+      });
     });
 
     group('_getVideoFile (cached file fallback)', () {
