@@ -346,7 +346,8 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
 
   if (authState == AuthState.authenticated &&
       deletionAttempt?.requiresRecoveryScreen == true &&
-      !isDeletionRecoveryRoute) {
+      !isDeletionRecoveryRoute &&
+      !isSupportRoute) {
     return AccountDeletionRecoveryScreen.path;
   }
   if (authState == AuthState.authenticated &&

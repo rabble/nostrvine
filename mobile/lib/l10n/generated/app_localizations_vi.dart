@@ -6721,15 +6721,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
 
   @override
-  String get deleteAccountDeletionIncomplete =>
-      'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
-
-  @override
   String get accountDeletionRecoveryTitle => 'Hoàn tất xóa tài khoản của bạn';
 
   @override
   String get accountDeletionRecoveryBody =>
       'Bọn mình chưa xóa xong tài khoản của bạn. Tên người dùng vẫn được giữ cho bạn và vẫn có thể lấy lại.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername =>
@@ -6750,6 +6751,28 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get accountDeletionRecoveryStatusFailed =>
       'Bọn mình không kiểm tra được trạng thái xóa của bạn. Kiểm tra kết nối và thử lại.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Xác nhận lần cuối';

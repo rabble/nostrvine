@@ -5,12 +5,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/providers/account_deletion_recovery_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
 
 class AccountDeletionRecoveryScreen extends ConsumerStatefulWidget {
   const AccountDeletionRecoveryScreen({super.key});
@@ -32,32 +35,43 @@ class _AccountDeletionRecoveryScreenState
   Future<void> _finishDeletion() async {
     if (_isSigningOut) return;
     _isSigningOut = true;
-    // Captured before the await so the catch can localize without reading
-    // BuildContext across an async gap.
-    final keyDeletionWarning = context.l10n.deleteAccountKeyDeletionWarning;
     try {
       await ref
           .read(authServiceProvider)
           .signOut(deleteKeys: true, deleteLocalUserData: true);
+    } on SecureKeyStorageException {
+      if (!mounted) return;
+      setState(() {
+        _isSigningOut = false;
+        _error = context.l10n.deleteAccountKeyDeletionWarning;
+      });
+    } on UserDataCleanupException {
+      if (!mounted) return;
+      setState(() {
+        _isSigningOut = false;
+        _error = context.l10n.deleteAccountLocalDataDeletionFailed;
+      });
     } on Object {
-      // Whichever half of the local cleanup failed, the account is already
-      // gone server-side and credentials may still be on the device. Naming
-      // the keys is the conservative read and the one with a remedy the user
-      // can act on. Telling them apart would mean importing the service layer
-      // into a screen, which the UI boundary does not allow.
-      _reportCleanupFailure(keyDeletionWarning);
+      if (!mounted) return;
+      setState(() {
+        _isSigningOut = false;
+        _error = context.l10n.deleteAccountLocalDataDeletionFailed;
+      });
     }
   }
 
-  /// The server already reported `completed`, so nothing here may suggest the
-  /// account survived or that a username is being restored. Only the local
-  /// cleanup failed, and that is what the message names.
-  void _reportCleanupFailure(String message) {
-    if (!mounted) return;
-    setState(() {
-      _isSigningOut = false;
-      _error = message;
-    });
+  Future<void> _signOut() async {
+    if (_isSigningOut) return;
+    setState(() => _isSigningOut = true);
+    try {
+      await ref.read(authServiceProvider).signOut();
+    } on Object {
+      if (!mounted) return;
+      setState(() {
+        _isSigningOut = false;
+        _error = context.l10n.accountDeletionRecoveryStatusFailed;
+      });
+    }
   }
 
   Future<void> _restore(AccountDeletionAttempt attempt) async {
@@ -67,10 +81,16 @@ class _AccountDeletionRecoveryScreenState
     });
     try {
       final repository = ref.read(accountDeletionRecoveryRepositoryProvider);
-      final ready = attempt.status == AccountDeletionAttemptStatus.preparing
-          ? await repository.prepare(username: attempt.username)
+      final ready =
+          attempt.status == AccountDeletionAttemptStatus.preparing &&
+              attempt.username != null
+          ? await repository.resumePreparation(attempt)
           : attempt;
-      if (ready.status != AccountDeletionAttemptStatus.recoverable) {
+      final canCancelPreparingAttempt =
+          ready.status == AccountDeletionAttemptStatus.preparing &&
+          ready.username == null;
+      if (ready.status != AccountDeletionAttemptStatus.recoverable &&
+          !canCancelPreparingAttempt) {
         throw const AccountDeletionRecoveryException(
           'Username preparation did not become recoverable',
         );
@@ -127,13 +147,13 @@ class _AccountDeletionRecoveryScreenState
                 });
                 return const Center(child: CircularProgressIndicator());
               }
+              final error = _error;
               if (value.status == AccountDeletionAttemptStatus.completed) {
-                if (!_isSigningOut) {
+                if (!_isSigningOut && error == null) {
                   WidgetsBinding.instance.addPostFrameCallback(
                     (_) => _finishDeletion(),
                   );
                 }
-                final error = _error;
                 return error == null
                     ? const Center(child: CircularProgressIndicator())
                     : _RecoveryContent(
@@ -142,17 +162,46 @@ class _AccountDeletionRecoveryScreenState
                         onPressed: _finishDeletion,
                       );
               }
-              final error = _error;
+              if (value.status ==
+                  AccountDeletionAttemptStatus.terminalFailure) {
+                final failureMessage = value.failureMessage?.trim();
+                final failureCode = value.failureCode?.trim();
+                final terminalBody =
+                    failureMessage == null || failureMessage.isEmpty
+                    ? context.l10n.accountDeletionTerminalFailureBody
+                    : failureMessage;
+                return _RecoveryContent(
+                  body:
+                      error ??
+                      (failureCode == null || failureCode.isEmpty
+                          ? terminalBody
+                          : '$terminalBody\n\n$failureCode'),
+                  actionLabel: context.l10n.supportContactSupport,
+                  onPressed: () => context.push(RoutePaths.supportCenter),
+                  secondaryActionLabel: context.l10n.accountDeletionSignOut,
+                  onSecondaryPressed: _isSigningOut ? null : _signOut,
+                );
+              }
               if (value.status == AccountDeletionAttemptStatus.recoverable ||
                   value.status == AccountDeletionAttemptStatus.preparing) {
+                final expiresAt = value.usernameExpiresAt;
+                final usernameRecoveryBody = expiresAt == null
+                    ? context.l10n.accountDeletionRecoveryBody
+                    : context.l10n.accountDeletionRecoveryBodyWithExpiry(
+                        MaterialLocalizations.of(context).formatFullDate(
+                          DateTime.fromMillisecondsSinceEpoch(
+                            expiresAt * Duration.millisecondsPerSecond,
+                          ).toLocal(),
+                        ),
+                      );
                 return _RecoveryContent(
                   body:
                       error ??
                       (value.username == null
-                          ? context.l10n.accountDeletionFinishingBody
-                          : context.l10n.accountDeletionRecoveryBody),
+                          ? context.l10n.accountDeletionCancelAttemptBody
+                          : usernameRecoveryBody),
                   actionLabel: value.username == null
-                      ? context.l10n.commonCancel
+                      ? context.l10n.accountDeletionCancelAttempt
                       : context.l10n.accountDeletionRestoreUsername,
                   onPressed: _isCancelling ? null : () => _restore(value),
                   showProgress: _isCancelling,
@@ -177,12 +226,16 @@ class _RecoveryContent extends StatelessWidget {
     required this.actionLabel,
     required this.onPressed,
     this.showProgress = false,
+    this.secondaryActionLabel,
+    this.onSecondaryPressed,
   });
 
   final String body;
   final String actionLabel;
   final VoidCallback? onPressed;
   final bool showProgress;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -195,9 +248,7 @@ class _RecoveryContent extends StatelessWidget {
         Text(
           body,
           textAlign: TextAlign.center,
-          style: VineTheme.bodyLargeFont(
-            color: context.vineColors.primaryText,
-          ),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
         ),
         DivineButton(
           label: actionLabel,
@@ -205,6 +256,12 @@ class _RecoveryContent extends StatelessWidget {
           leadingIcon: DivineIconName.arrowCounterClockwise,
           isLoading: showProgress,
         ),
+        if (secondaryActionLabel != null)
+          DivineButton(
+            label: secondaryActionLabel!,
+            type: DivineButtonType.secondary,
+            onPressed: onSecondaryPressed,
+          ),
       ],
     );
   }

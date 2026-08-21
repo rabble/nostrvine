@@ -6426,14 +6426,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
 
   @override
-  String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
-
-  @override
   String get accountDeletionRecoveryTitle => '계정 삭제 마무리하기';
 
   @override
   String get accountDeletionRecoveryBody =>
       '계정 삭제를 완료하지 못했어요. 사용자명은 그대로 예약돼 있어서 아직 되돌릴 수 있어요.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername => '사용자명 되돌리기';
@@ -6452,6 +6454,28 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get accountDeletionRecoveryStatusFailed =>
       '삭제 상태를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 최종 확인';

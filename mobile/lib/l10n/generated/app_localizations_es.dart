@@ -6812,15 +6812,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Eliminar todo el contenido';
 
   @override
-  String get deleteAccountDeletionIncomplete =>
-      'No pudimos terminar de eliminar tu cuenta. Probá de nuevo.';
-
-  @override
   String get accountDeletionRecoveryTitle => 'Terminá de eliminar tu cuenta';
 
   @override
   String get accountDeletionRecoveryBody =>
       'No pudimos terminar de eliminar tu cuenta. Tu nombre de usuario está reservado para vos y todavía se puede recuperar.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername => 'Recuperar mi nombre de usuario';
@@ -6840,6 +6841,28 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accountDeletionRecoveryStatusFailed =>
       'No pudimos consultar el estado de tu eliminación. Revisá tu conexión y probá de nuevo.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmación final';

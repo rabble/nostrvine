@@ -39,7 +39,6 @@ const _completedAttempt = AccountDeletionAttempt(
   username: 'alice',
 );
 
-/// What the coordinator returns for a deletion that releases no handle.
 const _recoverableAttemptWithoutUsername = AccountDeletionAttempt(
   id: 'attempt-id',
   status: AccountDeletionAttemptStatus.recoverable,
@@ -918,6 +917,7 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       // The pre-flight gate runs on every path; default it to ready so
       // these tests exercise the behaviour under test, not the gate.
       when(
@@ -936,14 +936,13 @@ void main() {
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
-      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       when(
-        () => recoveryRepository.prepare(username: any(named: 'username')),
+        recoveryRepository.prepare,
       ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
       when(
         () => recoveryRepository.submit(
-          attemptId: any(named: 'attemptId'),
-          vanishEventId: any(named: 'vanishEventId'),
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
         ),
       ).thenAnswer((_) async => _completedAttemptWithoutUsername);
 
@@ -968,14 +967,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The attempt is still opened — it is what makes the deletion
-      // resumable — but it must not name the handle the user kept.
-      final prepared = verify(
-        () => recoveryRepository.prepare(
-          username: captureAny(named: 'username'),
+      verify(recoveryRepository.prepare).called(1);
+      verifyNever(() => recoveryRepository.prepare(username: 'alice'));
+      verify(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
         ),
-      ).captured;
-      expect(prepared, equals([null]));
+      ).called(1);
     });
 
     testWidgets('opted-in burn aborts when recovery repository is null', (
@@ -1081,102 +1080,6 @@ void main() {
             ).accountDeletionRecoveryBody,
           ),
           findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'a deletion that releases no handle never offers to restore one',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
-        when(
-          () => recoveryRepository.prepare(username: any(named: 'username')),
-        ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.vanishNotConfirmed,
-            diagnosticError: 'relay down',
-          ),
-        );
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          deletionRecoveryRepository: recoveryRepository,
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.accountDeletionRestoreUsername), findsNothing);
-        expect(find.text(l10n.accountDeletionRecoveryBody), findsNothing);
-        expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
-        expect(find.text(l10n.commonCancel), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'a failed prepare without a handle does not blame the username',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
-        when(
-          () => recoveryRepository.prepare(username: any(named: 'username')),
-        ).thenThrow(const AccountDeletionRecoveryException('connection lost'));
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          deletionRecoveryRepository: recoveryRepository,
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
-        expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
-        verifyNever(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
         );
       },
     );
@@ -1555,6 +1458,50 @@ void main() {
           ).deleteAccountBurnUsernameFailed,
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('coordinator outage uses generic copy without a username', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(recoveryRepository.prepare).thenThrow(
+        const AccountDeletionRecoveryException('connection lost'),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.accountDeletionStartFailed), findsOneWidget);
+      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
     });
 

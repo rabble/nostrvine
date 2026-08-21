@@ -6674,15 +6674,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';
 
   @override
-  String get deleteAccountDeletionIncomplete =>
-      'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
-
-  @override
   String get accountDeletionRecoveryTitle => 'Hesap silme işlemini tamamla';
 
   @override
   String get accountDeletionRecoveryBody =>
       'Hesabını silme işlemini tamamlayamadık. Kullanıcı adın senin için ayrılmış durumda ve hâlâ geri alınabilir.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername => 'Kullanıcı adımı geri al';
@@ -6702,6 +6703,28 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get accountDeletionRecoveryStatusFailed =>
       'Silme durumunu kontrol edemedik. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';

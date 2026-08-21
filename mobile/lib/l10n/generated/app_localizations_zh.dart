@@ -6379,13 +6379,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
 
   @override
-  String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
-
-  @override
   String get accountDeletionRecoveryTitle => '完成账号删除';
 
   @override
   String get accountDeletionRecoveryBody => '我们没能完成账号删除。你的用户名仍为你保留，还可以找回。';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername => '找回我的用户名';
@@ -6401,6 +6403,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get accountDeletionRecoveryStatusFailed => '我们无法查询你的删除状态。请检查网络连接后重试。';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最终确认';

@@ -506,33 +506,26 @@ Future<void> executeAccountDeletion({
   final accountChangedAfterDeletionText =
       context.l10n.deleteAccountAccountChangedAfterDeletion;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
+  final startDeletionFailedText = context.l10n.accountDeletionStartFailed;
   final relayConfirmationFailedText =
       context.l10n.deleteAccountRelayConfirmationFailed;
   final handleLabel = ownedUsername != null
       ? '@${ownedUsername.name}.divine.video'
       : null;
   final recoveryBodyText = context.l10n.accountDeletionRecoveryBody;
+  final cancelAttemptBodyText = context.l10n.accountDeletionCancelAttemptBody;
   final restoreUsernameText = context.l10n.accountDeletionRestoreUsername;
+  final cancelAttemptText = context.l10n.accountDeletionCancelAttempt;
   final usernameRestoredText = context.l10n.accountDeletionUsernameRestored;
+  final attemptCancelledText = context.l10n.accountDeletionAttemptCancelled;
   final recoveryFailedText = context.l10n.accountDeletionRecoveryFailed;
   final finishingDeletionText = context.l10n.accountDeletionFinishingBody;
-  final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
-
-  // Every deletion now opens a coordinator attempt, so these outcomes are also
-  // reached by accounts that never had a handle. Only a run that opted into the
-  // release has a username to talk about; the rest get the same plain cancel
-  // the recovery screen already offers for a username-less attempt.
-  final durableOutcomeBody = burnUsername
-      ? recoveryBodyText
-      : finishingDeletionText;
-  final durableOutcomeActionLabel = burnUsername
-      ? restoreUsernameText
-      : context.l10n.commonCancel;
 
   AccountDeletionAttempt? deletionAttempt;
-  var releasePrepared = false;
+  var attemptPrepared = false;
+  var usernamePrepared = false;
 
-  void showDurableDeletionOutcome(String message, {bool offerRestore = true}) {
+  void showDurableDeletionOutcome(String message, {bool offerCancel = true}) {
     final attempt = deletionAttempt;
     final repository = deletionRecoveryRepository;
     if (!context.mounted || attempt == null || repository == null) return;
@@ -541,8 +534,10 @@ Future<void> executeAccountDeletion({
         message,
         error: true,
         duration: const Duration(seconds: 12),
-        actionLabel: offerRestore ? durableOutcomeActionLabel : null,
-        onActionPressed: offerRestore
+        actionLabel: offerCancel
+            ? (usernamePrepared ? restoreUsernameText : cancelAttemptText)
+            : null,
+        onActionPressed: offerCancel
             ? () {
                 unawaited(
                   repository
@@ -553,9 +548,9 @@ Future<void> executeAccountDeletion({
                             restored.status ==
                             AccountDeletionAttemptStatus.cancelled;
                         final text = succeeded
-                            ? (burnUsername
+                            ? (usernamePrepared
                                   ? usernameRestoredText
-                                  : deletionIncompleteText)
+                                  : attemptCancelledText)
                             : recoveryFailedText;
                         ScaffoldMessenger.of(context).showSnackBar(
                           DivineSnackbarContainer.snackBar(
@@ -596,8 +591,10 @@ Future<void> executeAccountDeletion({
     );
     dismissProgressSheet();
     if (context.mounted) {
-      if (releasePrepared) {
-        showDurableDeletionOutcome(durableOutcomeBody);
+      if (attemptPrepared) {
+        showDurableDeletionOutcome(
+          usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
@@ -683,7 +680,8 @@ Future<void> executeAccountDeletion({
           );
         }
         deletionAttempt = prepared;
-        releasePrepared = true;
+        attemptPrepared = true;
+        usernamePrepared = prepared.username != null;
         Log.info(
           'Prepared durable account deletion attempt before deletion',
           name: screenName,
@@ -698,13 +696,15 @@ Future<void> executeAccountDeletion({
         );
         dismissProgressSheet();
         if (context.mounted) {
-          final text = burnUsername
-              ? burnUsernameFailedText
-              : deletionIncompleteText;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
-          announceOutcome(text);
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              burnUsername ? burnUsernameFailedText : startDeletionFailedText,
+              error: true,
+            ),
+          );
+          announceOutcome(
+            burnUsername ? burnUsernameFailedText : startDeletionFailedText,
+          );
         }
         return;
       }
@@ -720,8 +720,10 @@ Future<void> executeAccountDeletion({
       );
       dismissProgressSheet();
       if (context.mounted) {
-        if (releasePrepared) {
-          showDurableDeletionOutcome(durableOutcomeBody);
+        if (attemptPrepared) {
+          showDurableDeletionOutcome(
+            usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+          );
         } else {
           final text = context.l10n.deleteAccountReauthRequired;
           ScaffoldMessenger.of(
@@ -746,14 +748,16 @@ Future<void> executeAccountDeletion({
       // deletion and sign-out resolve the account that is active right now.
       if (stopCleanupIfAccountChanged()) return;
 
-      if (releasePrepared) {
+      if (attemptPrepared) {
         final attempt = deletionAttempt;
         final eventId = result.deleteEventId;
         if (attempt == null ||
             eventId == null ||
             deletionRecoveryRepository == null) {
           dismissProgressSheet();
-          showDurableDeletionOutcome(durableOutcomeBody);
+          showDurableDeletionOutcome(
+            usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+          );
           return;
         }
         try {
@@ -766,7 +770,7 @@ Future<void> executeAccountDeletion({
             dismissProgressSheet();
             showDurableDeletionOutcome(
               finishingDeletionText,
-              offerRestore: false,
+              offerCancel: false,
             );
             return;
           }
@@ -778,17 +782,14 @@ Future<void> executeAccountDeletion({
             error: error,
           );
           dismissProgressSheet();
-          showDurableDeletionOutcome(
-            finishingDeletionText,
-            offerRestore: false,
-          );
+          showDurableDeletionOutcome(finishingDeletionText, offerCancel: false);
           return;
         }
       }
 
       // Step 2: Delete Keycast account if one exists (invalidates signer).
       // For username-release attempts, Funnelcake owns this terminal step.
-      final keycast = releasePrepared
+      final keycast = attemptPrepared
           ? (success: true, error: null, requiresReauthentication: false)
           : await authService.deleteKeycastAccount();
       // Check before interpreting the result: `isRegistered` and every later
@@ -801,7 +802,7 @@ Future<void> executeAccountDeletion({
         // prevent re-login. Show error and do NOT sign out.
         Log.error(
           'Keycast account deletion failed for registered user: $keycastError'
-          '${releasePrepared ? ' (recoverable username release prepared)' : ''}',
+          '${usernamePrepared ? ' (recoverable username release prepared)' : ''}',
           name: screenName,
           category: LogCategory.auth,
         );
@@ -881,7 +882,7 @@ Future<void> executeAccountDeletion({
       }
     } else {
       // Content deletion (NIP-62) failed.
-      if (releasePrepared) {
+      if (attemptPrepared) {
         Log.error(
           'Content deletion failed after releasing $handleLabel',
           name: screenName,
@@ -890,8 +891,10 @@ Future<void> executeAccountDeletion({
       }
       dismissProgressSheet();
       if (context.mounted) {
-        if (releasePrepared) {
-          showDurableDeletionOutcome(durableOutcomeBody);
+        if (attemptPrepared) {
+          showDurableDeletionOutcome(
+            usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,
+          );
           return;
         }
         final text = _deleteAccountFailureText(

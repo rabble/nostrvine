@@ -6816,15 +6816,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
 
   @override
-  String get deleteAccountDeletionIncomplete =>
-      'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
-
-  @override
   String get accountDeletionRecoveryTitle => 'Довърши изтриването на акаунта';
 
   @override
   String get accountDeletionRecoveryBody =>
       'Не успяхме да довършим изтриването на акаунта ти. Потребителското ти име е запазено за теб и още може да бъде върнато.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername => 'Върни потребителското ми име';
@@ -6844,6 +6845,28 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get accountDeletionRecoveryStatusFailed =>
       'Не успяхме да проверим състоянието на изтриването. Провери връзката си и опитай пак.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Последно потвърждение';

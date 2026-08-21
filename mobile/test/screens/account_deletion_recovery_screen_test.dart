@@ -16,6 +16,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/screens/account_deletion_recovery_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
 
 class _MockRecoveryRepository extends Mock
     implements AccountDeletionRecoveryRepository {}
@@ -26,6 +27,7 @@ const _recoverable = AccountDeletionAttempt(
   id: 'attempt-id',
   status: AccountDeletionAttemptStatus.recoverable,
   username: 'alice',
+  usernameExpiresAt: 1787450400,
 );
 
 Widget _app({
@@ -62,13 +64,15 @@ Widget _app({
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_recoverable);
+  });
+
   testWidgets('recoverable attempt restores username and returns home', (
     tester,
   ) async {
     final repository = _MockRecoveryRepository();
-    when(
-      () => repository.cancel(attemptId: 'attempt-id'),
-    ).thenAnswer(
+    when(() => repository.cancel(attemptId: 'attempt-id')).thenAnswer(
       (_) async => const AccountDeletionAttempt(
         id: 'attempt-id',
         status: AccountDeletionAttemptStatus.cancelled,
@@ -81,7 +85,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.accountDeletionRecoveryBody), findsOneWidget);
+    expect(find.textContaining('reserved for you until'), findsOneWidget);
     await tester.tap(
       find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
     );
@@ -96,11 +100,9 @@ void main() {
   ) async {
     final repository = _MockRecoveryRepository();
     when(
-      () => repository.prepare(username: 'alice'),
+      () => repository.resumePreparation(any()),
     ).thenAnswer((_) async => _recoverable);
-    when(
-      () => repository.cancel(attemptId: 'attempt-id'),
-    ).thenAnswer(
+    when(() => repository.cancel(attemptId: 'attempt-id')).thenAnswer(
       (_) async => const AccountDeletionAttempt(
         id: 'attempt-id',
         status: AccountDeletionAttemptStatus.cancelled,
@@ -125,7 +127,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    verify(() => repository.prepare(username: 'alice')).called(1);
+    verify(
+      () => repository.resumePreparation(
+        const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.preparing,
+          username: 'alice',
+        ),
+      ),
+    ).called(1);
     verify(() => repository.cancel(attemptId: 'attempt-id')).called(1);
     expect(find.text('Home'), findsOneWidget);
   });
@@ -192,10 +202,7 @@ void main() {
     final repository = _MockRecoveryRepository();
     final authService = _MockAuthService();
     when(
-      () => authService.signOut(
-        deleteKeys: true,
-        deleteLocalUserData: true,
-      ),
+      () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
     ).thenAnswer((_) async {});
     await tester.pumpWidget(
       _app(
@@ -210,10 +217,107 @@ void main() {
     await tester.pump();
 
     verify(
-      () => authService.signOut(
-        deleteKeys: true,
-        deleteLocalUserData: true,
-      ),
+      () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
     ).called(1);
+  });
+
+  testWidgets('preparing attempt without username cancels by existing id', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    when(() => repository.cancel(attemptId: 'attempt-id')).thenAnswer(
+      (_) async => const AccountDeletionAttempt(
+        id: 'attempt-id',
+        status: AccountDeletionAttemptStatus.cancelled,
+      ),
+    );
+    await tester.pumpWidget(
+      _app(
+        attempt: const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.preparing,
+        ),
+        repository: repository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.accountDeletionCancelAttemptBody), findsOneWidget);
+    await tester.tap(
+      find.widgetWithText(DivineButton, l10n.accountDeletionCancelAttempt),
+    );
+    await tester.pumpAndSettle();
+
+    verifyNever(() => repository.prepare(username: any(named: 'username')));
+    verifyNever(() => repository.resumePreparation(any()));
+    verify(() => repository.cancel(attemptId: 'attempt-id')).called(1);
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets('terminal failure offers support and non-destructive sign out', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    final authService = _MockAuthService();
+    when(authService.signOut).thenAnswer((_) async {});
+    await tester.pumpWidget(
+      _app(
+        attempt: const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.terminalFailure,
+          failureCode: 'coordinator_failed',
+          failureMessage: 'Deletion could not be completed safely.',
+        ),
+        repository: repository,
+        authService: authService,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(
+      find.textContaining('Deletion could not be completed safely.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('coordinator_failed'), findsOneWidget);
+    expect(
+      find.widgetWithText(DivineButton, l10n.supportContactSupport),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+    );
+    await tester.pump();
+
+    verify(authService.signOut).called(1);
+  });
+
+  testWidgets('completed cleanup failure says deletion already happened', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    final authService = _MockAuthService();
+    when(
+      () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+    ).thenThrow(const UserDataCleanupException('cleanup failed'));
+    await tester.pumpWidget(
+      _app(
+        attempt: const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.completed,
+        ),
+        repository: repository,
+        authService: authService,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(
+      find.text(l10n.deleteAccountLocalDataDeletionFailed),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.accountDeletionRecoveryFailed), findsNothing);
   });
 }

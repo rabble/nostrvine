@@ -6816,16 +6816,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Elimina tutti i contenuti';
 
   @override
-  String get deleteAccountDeletionIncomplete =>
-      'Non siamo riusciti a completare l\'eliminazione del tuo account. Riprova.';
-
-  @override
   String get accountDeletionRecoveryTitle =>
       'Completa l\'eliminazione del tuo account';
 
   @override
   String get accountDeletionRecoveryBody =>
       'Non siamo riusciti a completare l\'eliminazione del tuo account. Il tuo nome utente è riservato a te e può ancora essere ripristinato.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
 
   @override
   String get accountDeletionRestoreUsername => 'Ripristina il mio nome utente';
@@ -6845,6 +6846,28 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get accountDeletionRecoveryStatusFailed =>
       'Non siamo riusciti a controllare lo stato dell\'eliminazione. Controlla la connessione e riprova.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
+
+  @override
+  String get accountDeletionStartFailed =>
+      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Conferma finale';

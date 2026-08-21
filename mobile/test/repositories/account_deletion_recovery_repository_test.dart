@@ -144,6 +144,49 @@ void main() {
     },
   );
 
+  test(
+    'resume preparation preserves the existing coordinator attempt id',
+    () async {
+      final requests = <http.Request>[];
+      final result =
+          await repository(
+            MockClient((request) async {
+              requests.add(request);
+              if (request.url.host == 'names.divine.video') {
+                return http.Response(
+                  jsonEncode({
+                    'attempt_id': 'existing-attempt',
+                    'state': 'pending',
+                    'expires_at': 1787450400,
+                  }),
+                  200,
+                );
+              }
+              return http.Response(
+                jsonEncode({
+                  'id': 'existing-attempt',
+                  'status': 'recoverable',
+                  'username': 'alice',
+                }),
+                200,
+              );
+            }),
+          ).resumePreparation(
+            const AccountDeletionAttempt(
+              id: 'existing-attempt',
+              status: AccountDeletionAttemptStatus.preparing,
+              username: 'alice',
+            ),
+          );
+
+      expect(result.id, 'existing-attempt');
+      expect(requests.map((request) => request.url.path), [
+        '/api/username/release/prepare',
+        '/api/account-deletion/attempts/existing-attempt/username-prepared',
+      ]);
+    },
+  );
+
   test('submit encodes IDs and surfaces processing state', () async {
     http.Request? captured;
     final result = await repository(
@@ -250,12 +293,7 @@ Nip98Token _token({
   final now = clock.now();
   return Nip98Token(
     token: 'token',
-    signedEvent: Event(
-      pubkey,
-      27235,
-      const [],
-      '',
-    ),
+    signedEvent: Event(pubkey, 27235, const [], ''),
     createdAt: now,
     expiresAt: now.add(const Duration(seconds: 45)),
   );

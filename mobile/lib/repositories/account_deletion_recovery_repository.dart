@@ -64,6 +64,23 @@ class AccountDeletionRecoveryRepository {
       acceptedStatusCodes: const {200, 201},
     );
     if (username == null) return attempt;
+    return resumePreparation(attempt);
+  }
+
+  /// Completes the username handshake for an existing preparing attempt.
+  ///
+  /// Recovery must preserve the coordinator's attempt id. Creating another
+  /// attempt here would rely on an undocumented POST idempotency contract and
+  /// could orphan the attempt returned by `fetchCurrent`.
+  Future<AccountDeletionAttempt> resumePreparation(
+    AccountDeletionAttempt attempt,
+  ) async {
+    final username = attempt.username;
+    if (username == null) {
+      throw const AccountDeletionRecoveryException(
+        'Preparing username attempt did not include a username',
+      );
+    }
     if (attempt.status == AccountDeletionAttemptStatus.recoverable) {
       return attempt;
     }
@@ -73,10 +90,7 @@ class AccountDeletionRecoveryRepository {
       );
     }
 
-    final nameBody = jsonEncode({
-      'name': username,
-      'attempt_id': attempt.id,
-    });
+    final nameBody = jsonEncode({'name': username, 'attempt_id': attempt.id});
     final nameHeaders = await _authHeaders(
       uri: _namePrepareUri,
       method: HttpMethod.post,
