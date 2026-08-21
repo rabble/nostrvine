@@ -1,6 +1,7 @@
 // ABOUTME: Tests the durable account-deletion coordinator HTTP contract.
 // ABOUTME: Pins exact NIP-98 URLs, payload bytes, states, and 404 semantics.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
@@ -33,15 +34,27 @@ void main() {
     ).thenAnswer((_) async => _token());
   });
 
-  AccountDeletionRecoveryRepository repository(http.Client client) =>
-      AccountDeletionRecoveryRepository(
-        baseUrl: 'https://api.divine.video/',
-        nameServerBaseUrl: 'https://names.divine.video/',
-        httpClient: client,
-        nip98AuthService: nip98,
-        currentPubkey: () =>
-            '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
-      );
+  AccountDeletionRecoveryRepository repository(
+    http.Client client, {
+    Duration timeout = const Duration(seconds: 15),
+  }) => AccountDeletionRecoveryRepository(
+    baseUrl: 'https://api.divine.video/',
+    nameServerBaseUrl: 'https://names.divine.video/',
+    httpClient: client,
+    nip98AuthService: nip98,
+    currentPubkey: () =>
+        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+    timeout: timeout,
+  );
+
+  http.Response coordinatorPreparing(http.Request request) => http.Response(
+    jsonEncode({
+      'id': 'attempt-1',
+      'status': 'preparing',
+      'username': 'alice',
+    }),
+    201,
+  );
 
   test('prepare signs and posts the exact coordinator URL and body', () async {
     http.Request? captured;
@@ -177,6 +190,35 @@ void main() {
         ),
       ).fetchCurrent(),
       throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('a stalled Name Server keeps the repository failure type', () async {
+    expect(
+      () => repository(
+        MockClient((request) async {
+          if (request.url.host == 'names.divine.video') {
+            return Completer<http.Response>().future;
+          }
+          return coordinatorPreparing(request);
+        }),
+        timeout: const Duration(milliseconds: 50),
+      ).prepare(username: 'alice'),
+      throwsA(isA<AccountDeletionRecoveryException>()),
+    );
+  });
+
+  test('a non-JSON Name Server reply keeps the repository failure type', () {
+    expect(
+      () => repository(
+        MockClient((request) async {
+          if (request.url.host == 'names.divine.video') {
+            return http.Response('<html>502</html>', 200);
+          }
+          return coordinatorPreparing(request);
+        }),
+      ).prepare(username: 'alice'),
+      throwsA(isA<AccountDeletionRecoveryException>()),
     );
   });
 

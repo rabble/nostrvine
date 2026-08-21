@@ -82,15 +82,29 @@ class AccountDeletionRecoveryRepository {
       method: HttpMethod.post,
       payload: nameBody,
     );
-    final nameResponse = await _httpClient
-        .post(_namePrepareUri, headers: nameHeaders, body: nameBody)
-        .timeout(_timeout);
+    final http.Response nameResponse;
+    try {
+      nameResponse = await _httpClient
+          .post(_namePrepareUri, headers: nameHeaders, body: nameBody)
+          .timeout(_timeout);
+    } on TimeoutException {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation timed out',
+      );
+    }
     if (nameResponse.statusCode != 200) {
       throw AccountDeletionRecoveryException(
         'Username preparation failed (${nameResponse.statusCode})',
       );
     }
-    final nameJson = jsonDecode(nameResponse.body) as Map<String, dynamic>;
+    final Map<String, dynamic> nameJson;
+    try {
+      nameJson = jsonDecode(nameResponse.body) as Map<String, dynamic>;
+    } on Object {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation returned an invalid response',
+      );
+    }
     final expiresAt = (nameJson['expires_at'] as num?)?.toInt();
     final returnedAttemptId = nameJson['attempt_id'] as String?;
     if (expiresAt == null || returnedAttemptId != attempt.id) {
