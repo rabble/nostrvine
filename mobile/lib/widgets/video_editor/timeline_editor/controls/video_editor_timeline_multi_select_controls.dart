@@ -76,8 +76,9 @@ class TimelineMultiSelectControls extends StatelessWidget {
 }
 
 /// Action bar shown while a stop-motion composition is in frame multi-select
-/// mode: selection count plus hold / Delete / Done actions on the selected
-/// stills. Delete is gated so at least one still always remains.
+/// mode: selection count plus hold / Reverse / Duplicate / Delete / Done
+/// actions on the selected stills. Delete is gated so at least one still
+/// always remains.
 class TimelineFrameMultiSelectControls extends StatelessWidget {
   const TimelineFrameMultiSelectControls({super.key});
 
@@ -98,8 +99,8 @@ class TimelineFrameMultiSelectControls extends StatelessWidget {
     if (data == null) return const SizedBox.shrink();
 
     final selectedCount = data.selected.length;
-    final canDelete = selectedCount >= 1 && selectedCount < data.frameCount;
-    final canSetHold = selectedCount >= 1;
+    final hasSelection = selectedCount >= 1;
+    final canDelete = hasSelection && selectedCount < data.frameCount;
     final canReverse = selectedCount >= 2;
 
     return DecoratedBox(
@@ -145,7 +146,7 @@ class TimelineFrameMultiSelectControls extends StatelessWidget {
                         semanticLabel: context
                             .l10n
                             .videoEditorStopMotionFramesPerImageLabel,
-                        onPressed: canSetHold
+                        onPressed: hasSelection
                             ? () => editStopMotionFramesHold(
                                 context,
                                 clipId: data.clipId,
@@ -161,6 +162,16 @@ class TimelineFrameMultiSelectControls extends StatelessWidget {
                             .l10n
                             .videoEditorReverseSelectedFramesSemanticLabel,
                         onPressed: canReverse ? () => _reverse(context) : null,
+                      ),
+                      _ControlButton(
+                        icon: .copy,
+                        label: context.l10n.videoEditorDuplicateLabel,
+                        semanticLabel: context
+                            .l10n
+                            .videoEditorDuplicateSelectedFramesSemanticLabel,
+                        onPressed: hasSelection
+                            ? () => _duplicate(context)
+                            : null,
                       ),
                       _ControlButton(
                         icon: .trash,
@@ -209,6 +220,31 @@ class TimelineFrameMultiSelectControls extends StatelessWidget {
         frames,
         state.selectedFrameIndexes,
       ),
+    );
+  }
+
+  /// Repeats the selected stills right after the last of them, then moves the
+  /// selection onto the copies — so the highlight shows what was just created
+  /// and a follow-up drag or hold change acts on the new stills, not the
+  /// originals.
+  void _duplicate(BuildContext context) {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (!isStopMotionComposition(state.clips)) return;
+    final clip = state.clips.first;
+    final frames = clip.stopMotionFrames ?? const [];
+    final selection = state.selectedFrameIndexes;
+
+    final duplicated = StopMotionFrameOps.duplicateFrames(frames, selection);
+    if (identical(duplicated, frames)) return;
+
+    commitStopMotionFrames(context, clipId: clip.id, frames: duplicated);
+
+    final firstCopy = selection.reduce((a, b) => a > b ? a : b) + 1;
+    bloc.add(
+      ClipEditorFrameMultiSelectionSet({
+        for (var i = 0; i < selection.length; i++) firstCopy + i,
+      }),
     );
   }
 

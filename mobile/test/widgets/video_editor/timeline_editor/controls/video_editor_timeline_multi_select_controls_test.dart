@@ -1,5 +1,5 @@
-// ABOUTME: Widget tests for TimelineMultiSelectControls.
-// ABOUTME: Verifies the count label, merge/delete gating, and event dispatch.
+// ABOUTME: Widget tests for the clip and stop-motion-frame multi-select bars.
+// ABOUTME: Verifies the count label, action gating, and event dispatch.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -11,11 +11,29 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_multi_select_controls.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
     implements ClipEditorBloc {}
+
+DivineVideoClip _stopMotionClip(String id, int frameCount) {
+  return DivineVideoClip(
+    id: id,
+    duration: Duration(milliseconds: 500 * frameCount),
+    recordedAt: DateTime(2025),
+    targetAspectRatio: model.AspectRatio.vertical,
+    originalAspectRatio: 9 / 16,
+    stopMotionFrames: [
+      for (var i = 0; i < frameCount; i++)
+        StopMotionClipFrame(
+          path: '/tmp/$id-$i.png',
+          duration: const Duration(milliseconds: 500),
+        ),
+    ],
+  );
+}
 
 DivineVideoClip _clip(String id) {
   return DivineVideoClip(
@@ -214,6 +232,76 @@ void main() {
       verify(
         () => bloc.add(const ClipEditorSelectedClipsRemoved()),
       ).called(1);
+    });
+  });
+
+  group(TimelineFrameMultiSelectControls, () {
+    late _MockClipEditorBloc bloc;
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    setUp(() {
+      bloc = _MockClipEditorBloc();
+      when(
+        () => bloc.stream,
+      ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
+    });
+
+    Widget build() {
+      return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BlocProvider<ClipEditorBloc>.value(
+            value: bloc,
+            child: const TimelineFrameMultiSelectControls(),
+          ),
+        ),
+      );
+    }
+
+    DivineIconButton buttonWithLabel(WidgetTester tester, String label) {
+      return tester
+          .widgetList<DivineIconButton>(find.byType(DivineIconButton))
+          .firstWhere((b) => b.semanticLabel == label);
+    }
+
+    testWidgets('offers Duplicate on the selected stills', (tester) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [_stopMotionClip('a', 4)],
+          isMultiSelectMode: true,
+          selectedFrameIndexes: const {1, 2},
+        ),
+      );
+
+      await tester.pumpWidget(build());
+
+      expect(
+        buttonWithLabel(
+          tester,
+          l10n.videoEditorDuplicateSelectedFramesSemanticLabel,
+        ).onPressed,
+        isNotNull,
+      );
+    });
+
+    testWidgets('disables Duplicate with nothing selected', (tester) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [_stopMotionClip('a', 4)],
+          isMultiSelectMode: true,
+        ),
+      );
+
+      await tester.pumpWidget(build());
+
+      expect(
+        buttonWithLabel(
+          tester,
+          l10n.videoEditorDuplicateSelectedFramesSemanticLabel,
+        ).onPressed,
+        isNull,
+      );
     });
   });
 }

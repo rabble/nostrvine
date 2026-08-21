@@ -351,6 +351,61 @@ void main() {
     });
   });
 
+  group('duplicateFrames', () {
+    test('repeats the selected run right after its last still', () {
+      final result = StopMotionFrameOps.duplicateFrames(
+        framesOf([1, 1, 1, 1]),
+        {1, 2},
+      );
+      expect(result.map((f) => f.path), [
+        'f0.jpg',
+        'f1.jpg',
+        'f2.jpg',
+        'f1.jpg',
+        'f2.jpg',
+        'f3.jpg',
+      ]);
+    });
+
+    test('gathers a non-contiguous selection into one copied block', () {
+      final result = StopMotionFrameOps.duplicateFrames(
+        framesOf([1, 1, 1, 1]),
+        {0, 2},
+      );
+      expect(result.map((f) => f.path), [
+        'f0.jpg',
+        'f1.jpg',
+        'f2.jpg',
+        'f0.jpg',
+        'f2.jpg',
+        'f3.jpg',
+      ]);
+    });
+
+    test("carries each copied still's hold", () {
+      final result = StopMotionFrameOps.duplicateFrames(framesOf([1, 7]), {1});
+      expect(
+        result.map(
+          (f) => StopMotionFrameOps.durationToFramesPerImage(f.duration),
+        ),
+        [1, 7, 7],
+      );
+    });
+
+    test('returns the list unchanged for an empty selection', () {
+      final frames = framesOf([1, 1]);
+      expect(
+        StopMotionFrameOps.duplicateFrames(frames, const {}),
+        same(frames),
+      );
+    });
+
+    test('returns the list unchanged for out-of-range indexes', () {
+      final frames = framesOf([1, 1]);
+      expect(StopMotionFrameOps.duplicateFrames(frames, {0, 5}), same(frames));
+    });
+  });
+
   group('moveFrames', () {
     test('moves the selected stills as one block to the slot', () {
       // Select f0 + f1, insert at slot 2 of the remaining [f2, f3].

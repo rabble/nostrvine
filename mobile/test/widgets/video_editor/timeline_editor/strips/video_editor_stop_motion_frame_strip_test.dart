@@ -35,6 +35,17 @@ void main() {
 
   tearDown(() => tempDir.deleteSync(recursive: true));
 
+  /// [count] stills of 0.5s each — 50px-wide tiles at the test's 100 pps.
+  List<StopMotionClipFrame> makeFrames(int count) => [
+    for (var i = 0; i < count; i++)
+      StopMotionClipFrame(
+        path: (File(
+          '${tempDir.path}/f$i.png',
+        )..writeAsBytesSync(pngBytes)).path,
+        duration: const Duration(milliseconds: 500),
+      ),
+  ];
+
   Future<void> pump(
     WidgetTester tester, {
     required ValueChanged<int> onFrameTapped,
@@ -274,6 +285,69 @@ void main() {
       expect(movedToSlot, isNull);
     },
   );
+
+  testWidgets('block drag drops the selection under the finger', (
+    tester,
+  ) async {
+    int? movedToSlot;
+    frames = makeFrames(8);
+    await pump(
+      tester,
+      onFrameTapped: (_) {},
+      isMultiSelectMode: true,
+      selectedFrameIndexes: {0, 1, 2, 3},
+      onBlockMove: (slot) => movedToSlot = slot,
+    );
+
+    // Pick the block up by its LAST still (centre x=175) and release over the
+    // 7th still (x=310). The drop follows the finger — the block lands after
+    // the two unselected stills it was dragged past (slot 2), not three tiles
+    // short of the finger where its own first still used to sit.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(Image).at(3)),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+    await gesture.moveBy(const Offset(135, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(movedToSlot, 2);
+  });
+
+  testWidgets('insertion marker follows the finger during a block drag', (
+    tester,
+  ) async {
+    frames = makeFrames(8);
+    await pump(
+      tester,
+      onFrameTapped: (_) {},
+      isMultiSelectMode: true,
+      selectedFrameIndexes: {0, 1, 2, 3},
+      onBlockMove: (_) {},
+    );
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(Image).at(3)),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+    await gesture.moveBy(const Offset(135, 0));
+    await tester.pump();
+
+    final marker = find.byWidgetPredicate(
+      (w) => w is ColoredBox && w.color == VineTheme.accentYellow,
+    );
+    expect(
+      tester.getTopLeft(marker).dx,
+      closeTo(310, 30),
+      reason: 'marker sits at the finger, not a block-width behind it',
+    );
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
 
   testWidgets('block drag does not start on an unselected tile', (
     tester,

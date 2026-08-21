@@ -341,6 +341,37 @@ abstract class StopMotionFrameOps {
     return frames;
   }
 
+  /// [frames] with a copy of every still at [indexes] — in their current
+  /// relative order — inserted as one block directly after the last selected
+  /// still (frame multi-select "duplicate").
+  ///
+  /// The copies land together rather than each beside its own source, so a
+  /// selected run duplicates into a repeat of itself — the point of the action
+  /// in a stop-motion sequence. A single selected still therefore behaves
+  /// exactly like the per-still duplicate in the clip controls: the copy
+  /// follows its source.
+  ///
+  /// Copies share the source still's image file and hold; nothing about a
+  /// still is per-instance, so the frames are reused rather than cloned.
+  /// Returns the list unchanged when the selection is empty or contains an
+  /// out-of-range index.
+  static List<StopMotionClipFrame> duplicateFrames(
+    List<StopMotionClipFrame> frames,
+    Set<int> indexes,
+  ) {
+    if (indexes.isEmpty ||
+        indexes.any((index) => index < 0 || index >= frames.length)) {
+      return frames;
+    }
+    final at = indexes.reduce((a, b) => a > b ? a : b) + 1;
+    return [
+      ...frames.sublist(0, at),
+      for (var i = 0; i < frames.length; i++)
+        if (indexes.contains(i)) frames[i],
+      ...frames.sublist(at),
+    ];
+  }
+
   /// [frames] with every still at [indexes] held for [framesPerImage] output
   /// frames, each marked as an individual override (see [setFrameHold]).
   /// Out-of-range indexes are ignored.
