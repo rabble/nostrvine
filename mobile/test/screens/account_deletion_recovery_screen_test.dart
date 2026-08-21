@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/providers/account_deletion_recovery_providers.dart';
@@ -150,6 +152,41 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+    'failed local cleanup after a completed deletion says what actually failed',
+    (tester) async {
+      final repository = _MockRecoveryRepository();
+      final authService = _MockAuthService();
+      when(
+        () => authService.signOut(
+          deleteKeys: true,
+          deleteLocalUserData: true,
+        ),
+      ).thenThrow(const SecureKeyStorageException('keychain locked'));
+      await tester.pumpWidget(
+        _app(
+          attempt: const AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.completed,
+            username: 'alice',
+          ),
+          repository: repository,
+          authService: authService,
+        ),
+      );
+      // Not pumpAndSettle: the completed branch shows a progress indicator,
+      // which never settles.
+      await tester.pump();
+      await tester.pump();
+
+      // The server already deleted the account, so nothing here may offer to
+      // restore a username or imply the account survived.
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionRecoveryFailed), findsNothing);
+      expect(find.text(l10n.deleteAccountKeyDeletionWarning), findsOneWidget);
+    },
+  );
 
   testWidgets('completed deletion removes local credentials', (tester) async {
     final repository = _MockRecoveryRepository();

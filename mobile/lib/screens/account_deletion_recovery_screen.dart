@@ -32,17 +32,32 @@ class _AccountDeletionRecoveryScreenState
   Future<void> _finishDeletion() async {
     if (_isSigningOut) return;
     _isSigningOut = true;
+    // Captured before the await so the catch can localize without reading
+    // BuildContext across an async gap.
+    final keyDeletionWarning = context.l10n.deleteAccountKeyDeletionWarning;
     try {
       await ref
           .read(authServiceProvider)
           .signOut(deleteKeys: true, deleteLocalUserData: true);
     } on Object {
-      if (!mounted) return;
-      setState(() {
-        _isSigningOut = false;
-        _error = context.l10n.accountDeletionRecoveryFailed;
-      });
+      // Whichever half of the local cleanup failed, the account is already
+      // gone server-side and credentials may still be on the device. Naming
+      // the keys is the conservative read and the one with a remedy the user
+      // can act on. Telling them apart would mean importing the service layer
+      // into a screen, which the UI boundary does not allow.
+      _reportCleanupFailure(keyDeletionWarning);
     }
+  }
+
+  /// The server already reported `completed`, so nothing here may suggest the
+  /// account survived or that a username is being restored. Only the local
+  /// cleanup failed, and that is what the message names.
+  void _reportCleanupFailure(String message) {
+    if (!mounted) return;
+    setState(() {
+      _isSigningOut = false;
+      _error = message;
+    });
   }
 
   Future<void> _restore(AccountDeletionAttempt attempt) async {
