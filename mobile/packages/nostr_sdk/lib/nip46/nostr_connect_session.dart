@@ -247,6 +247,9 @@ class NostrConnectSession {
 
       // Connect to relays and start listening
       await _connectToRelays();
+      // A cancel landing inside that dial has already torn the session down;
+      // announcing `listening` afterwards would undo its terminal state.
+      if (_isClosed) return;
 
       _setState(NostrConnectState.listening);
       logger('[NostrConnectSession] Now listening for bunker response...');
@@ -325,8 +328,14 @@ class NostrConnectSession {
         .toList();
 
     for (final relay in disconnected) {
+      if (_isClosed) return;
       await _reconnectRelay(relay);
     }
+
+    // A cleanup landing inside one of those reconnects has already emptied
+    // `_relays`, which reads here as "all relays lost". Dialing from scratch
+    // then opens sockets for a session that is over (#7962).
+    if (_isClosed) return;
 
     // If all relays were lost, try to reconnect from scratch
     if (_relays.isEmpty) {
@@ -375,7 +384,7 @@ class NostrConnectSession {
     try {
       final relay = await _connectToRelay(relayUrl);
       if (_isClosed) {
-        relay.disconnect();
+        _shutDownRelay(relay);
         _signerSuppliedRelayCount--;
         return;
       }
@@ -415,11 +424,28 @@ class NostrConnectSession {
     _timeoutTimer = null;
 
     for (final relay in _relays) {
-      try {
-        relay.disconnect();
-      } catch (_) {}
+      _shutDownRelay(relay);
     }
     _relays.clear();
+  }
+
+  /// Takes a relay down for good.
+  ///
+  /// [Relay.disconnect] alone leaves the relay connectable: it closes the
+  /// socket but keeps the connection manager, so a reconnect resuming later
+  /// reuses it and opens a fresh socket plus heartbeat. [Relay.dispose] is
+  /// what sets the disposed flag that makes the relay refuse that connect
+  /// (#7962, guard added in #7367).
+  void _shutDownRelay(Relay relay) {
+    try {
+      relay.disconnect();
+      relay.dispose();
+    } catch (e) {
+      logger(
+        '[NostrConnectSession] Error shutting down relay '
+        '${relay.relayStatus.addr}: $e',
+      );
+    }
   }
 
   void _setState(NostrConnectState newState) {
@@ -440,6 +466,15 @@ class NostrConnectSession {
       }
     });
     final results = await Future.wait(futures.toList());
+    // `cancel()` / `dispose()` can land inside that dial. Adopting a relay
+    // after the cleanup has run would put a live socket on a list nothing
+    // will ever walk again, so shut down what finished connecting (#7962).
+    if (_isClosed) {
+      for (final relay in results) {
+        if (relay != null) _shutDownRelay(relay);
+      }
+      return;
+    }
     for (final relay in results) {
       if (relay != null) _relays.add(relay);
     }
@@ -480,13 +515,23 @@ class NostrConnectSession {
     }
   }
 
+  /// Reconnects one dropped relay.
+  ///
+  /// Checks [_isClosed] itself rather than trusting the caller's single
+  /// pre-loop check: every attempt suspends, and a cleanup landing inside one
+  /// of those waits takes the relay off [_relays] — a connect resuming
+  /// afterwards opens a socket and arms a heartbeat that no owner is left to
+  /// close (#7962).
   Future<void> _reconnectRelay(Relay relay) async {
+    if (_isClosed) return;
+
     final addr = relay.relayStatus.addr;
     logger('[NostrConnectSession] Reconnecting to $addr');
 
     try {
       // Re-add the subscription filter so it is sent on connect
       await _addSubscription(relay);
+      if (_isClosed) return;
       final connected = await relay.connect().timeout(_relayConnectTimeout);
       if (connected) {
         logger('[NostrConnectSession] Reconnected to $addr');
