@@ -1,10 +1,10 @@
-// ABOUTME: String utility functions for safe operations and formatting
+// ABOUTME: String utility functions for formatting and sanitization
 // ABOUTME: Provides compact-number formatting and UTF-16 sanitization
 
 import 'package:count_formatter/count_formatter.dart';
 import 'package:text_sanitizer/text_sanitizer.dart' as text_sanitizer;
 
-/// Utility functions for safe string operations
+/// Utility functions for string formatting and sanitization.
 class StringUtils {
   /// Format a number to a compact, locale-aware string.
   ///
