@@ -82,6 +82,8 @@ class CuratedListService extends ChangeNotifier {
 
   static const String listsStorageKey = 'curated_lists';
   static const String subscribedListsStorageKey = 'subscribed_list_ids';
+  static const String deletedListCoordinatesStorageKey =
+      'deleted_curated_list_coordinates';
   static const String defaultListDeletedStorageKey =
       'curated_lists_default_deleted';
   static const String defaultListId = 'my_vine_list';
@@ -219,6 +221,45 @@ class CuratedListService extends ChangeNotifier {
     return _prefs.getBool(defaultListDeletedStorageKey) ?? false;
   }
 
+  /// The `<pubkey>:<d-tag>` form of a kind 30005 coordinate.
+  ///
+  /// A `d` tag is only unique per author, so a deletion has to be remembered
+  /// against its owner. Keying on the identifier alone would suppress a list
+  /// that merely shares it — another account on this device, or someone
+  /// else's list arriving from a relay.
+  String _listCoordinate(String ownerPubkey, String listId) =>
+      '$ownerPubkey:$listId';
+
+  /// Coordinates this install has deleted.
+  ///
+  /// NIP-09 is advisory: a relay may never see the deletion request, or may
+  /// decline it, and keep replaying the original event. Without a local record
+  /// the next sync adds the list straight back. The set is not pruned — an
+  /// entry is a few dozen bytes, deletions are rare, and there is no point at
+  /// which every relay is known to have honoured the request.
+  Set<String> _deletedListCoordinates() =>
+      (_prefs.getStringList(deletedListCoordinatesStorageKey) ?? const [])
+          .toSet();
+
+  Future<void> _recordListDeletion(String ownerPubkey, String listId) async {
+    final coordinates = _deletedListCoordinates()
+      ..add(_listCoordinate(ownerPubkey, listId));
+    await _prefs.setStringList(
+      deletedListCoordinatesStorageKey,
+      coordinates.toList(growable: false),
+    );
+  }
+
+  /// Lifts the tombstone so a re-created list can sync again.
+  Future<void> _forgetListDeletion(String ownerPubkey, String listId) async {
+    final coordinates = _deletedListCoordinates();
+    if (!coordinates.remove(_listCoordinate(ownerPubkey, listId))) return;
+    await _prefs.setStringList(
+      deletedListCoordinatesStorageKey,
+      coordinates.toList(growable: false),
+    );
+  }
+
   /// Get the default "My List" for quick adding
   CuratedList? getDefaultList() {
     try {
@@ -316,6 +357,13 @@ class CuratedListService extends ChangeNotifier {
         thumbnailEventId: thumbnailEventId,
         playOrder: playOrder,
       );
+
+      // Re-using a deleted identifier has to lift its tombstone, or the new
+      // list's own relay events would be discarded for the life of the install
+      // and it would never reach another device.
+      if (ownerPubkey != null) {
+        await _forgetListDeletion(ownerPubkey, listId);
+      }
 
       _lists.add(newList);
       await _saveLists();
@@ -706,6 +754,15 @@ class CuratedListService extends ChangeNotifier {
       }
 
       await _removeListAndSubscription(listId);
+      // Recorded whatever the local event id says. A null id does not mean no
+      // relay holds this coordinate — another device can have published the
+      // same stable d-tag independently, which is the case the unpublished
+      // merge in [_processListEvent] exists to handle.
+      final ownerPubkey =
+          list.pubkey ?? _relayGateway.currentAuthenticatedPubkey();
+      if (ownerPubkey != null) {
+        await _recordListDeletion(ownerPubkey, listId);
+      }
       if (listId == defaultListId) {
         await _prefs.setBool(defaultListDeletedStorageKey, true);
       }
@@ -1714,6 +1771,20 @@ class CuratedListService extends ChangeNotifier {
           );
         }
       } else {
+        // Checked here rather than earlier so the tombstone only ever blocks a
+        // resurrection. A list still present locally keeps syncing normally,
+        // which is what should happen if a delete failed after recording it.
+        if (_deletedListCoordinates().contains(
+          _listCoordinate(event.pubkey, dTag),
+        )) {
+          Log.debug(
+            'Skipping deleted list event from relay: $dTag',
+            name: 'CuratedListService',
+            category: LogCategory.system,
+          );
+          return;
+        }
+
         // Add new list from relay
         Log.debug(
           'Adding new list from relay: ${curatedList.name}',
