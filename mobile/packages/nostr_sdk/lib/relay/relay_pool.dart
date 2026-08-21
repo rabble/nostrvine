@@ -1761,6 +1761,23 @@ class RelayPool {
         relay.failCountQuery(subscriptionId, reason);
       }
 
+      // CLOSED terminates this relay's copy of a live REQ. Forget it locally
+      // immediately so reconnect cannot replay a subscription the relay has
+      // already refused. Other relays may still be serving the same logical
+      // subscription; only fail that subscription once none remain.
+      if (relay.discardSubscription(subscriptionId)) {
+        final subscription = _subscriptions[subscriptionId];
+        if (subscription != null &&
+            _getRelaysWithSubscription(subscriptionId).isEmpty) {
+          _subscriptionSilenceProbes.remove(subscriptionId)?.cancel();
+          _subscriptions.remove(subscriptionId);
+          _subscriptionEoseRelays.remove(subscriptionId);
+          _subscriptionSentAt.remove(subscriptionId);
+          subscription.onClosed?.call(reason);
+        }
+        return;
+      }
+
       // A refused/abandoned REQ is terminal unless it is the pre-AUTH probe
       // that must stay saved for replay after NIP-42 succeeds.
       if (_shouldReplayQueryAfterAuth(relay, reason)) {
@@ -1812,6 +1829,7 @@ class RelayPool {
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
     void Function()? onEose,
+    void Function(String reason)? onClosed,
   }) {
     if (filters.isEmpty) {
       throw ArgumentError("No filters given", "filters");
@@ -1825,6 +1843,7 @@ class RelayPool {
       onEvent,
       id: id,
       onEose: onEose,
+      onClosed: onClosed,
     );
     _subscriptions[subscription.id] = subscription;
     _subscriptionSentAt[subscription.id] = DateTime.now();

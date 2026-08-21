@@ -282,7 +282,7 @@ class SubscribedListVideoCache extends ChangeNotifier {
 
     if (filters.isEmpty) return;
 
-    final eventStream = _nostrService.subscribe(filters);
+    final eventStream = _nostrService.subscribe(filters, closeOnEose: true);
     final seenIds = <String>{};
 
     // Use 3 second timeout for relay fetches (faster initial load)

@@ -481,7 +481,7 @@ Stream<List<VideoEvent>> _curatedListVideoEvents({
     if (nostrClient == null) return;
 
     if (filters.isNotEmpty) {
-      final eventStream = nostrClient.subscribe(filters);
+      final eventStream = nostrClient.subscribe(filters, closeOnEose: true);
       final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {
@@ -704,7 +704,7 @@ Stream<List<VideoEvent>> _videoEventsByIds({
     if (nostrClient == null) return;
 
     if (filters.isNotEmpty) {
-      final eventStream = nostrClient.subscribe(filters);
+      final eventStream = nostrClient.subscribe(filters, closeOnEose: true);
       final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {

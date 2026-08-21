@@ -315,6 +315,7 @@ class Nostr {
     bool sendAfterAuth =
         false, // if relay not connected, it will send after auth
     void Function()? onEose,
+    void Function(String reason)? onClosed,
   }) {
     return _pool.subscribe(
       filters,
@@ -325,6 +326,7 @@ class Nostr {
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
       onEose: onEose,
+      onClosed: onClosed,
     );
   }
 
