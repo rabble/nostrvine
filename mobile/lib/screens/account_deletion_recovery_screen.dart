@@ -223,19 +223,20 @@ class _AccountDeletionRecoveryScreenState
   }
 }
 
+/// Localized copy for a terminal-failure attempt's stable `failure_code`.
+///
+/// The coordinator sets one of `username_attempt_expired`,
+/// `keycast_deletion_failed`, `relay_erasure_unconfirmed`, or
+/// `deletion_deadline_exceeded`. Only the first two have copy that says
+/// something the generic terminal message does not; the rest — and any code a
+/// later coordinator adds — fall back to it rather than rendering server
+/// English.
 String _failureBody(
   BuildContext context,
   String? failureCode,
 ) => switch (failureCode) {
   'username_attempt_expired' => context.l10n.deleteAccountDeletionIncomplete,
   'keycast_deletion_failed' => context.l10n.deleteAccountServerDeletionFailed,
-  'relay_erasure_unconfirmed' =>
-    context.l10n.accountDeletionTerminalFailureBody,
-  'deletion_deadline_exceeded' =>
-    context.l10n.accountDeletionTerminalFailureBody,
-  'cancellation_after_commit' ||
-  'illegal_transition' ||
-  'attempt_not_found' => context.l10n.accountDeletionTerminalFailureBody,
   _ => context.l10n.accountDeletionTerminalFailureBody,
 };
 
