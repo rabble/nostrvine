@@ -63,8 +63,9 @@
 // What stays allowed is anything that discloses no key material: a status
 // expression such as `account.nsec != null`, and equally a variable spelling
 // of one — `canExportLocalNsec` and `hasPrivateKey` are both booleans in this
-// repo. Matching is by SUFFIX, so compound secrets (`rawPrivateKey`) are
-// caught, with a predicate-prefix exclusion keeping the booleans out.
+// repo. Matching finds a secret word at camelCase boundaries, so compound
+// secrets (`rawPrivateKey`, `privateKeyHex`) are caught, with a
+// predicate-prefix exclusion keeping the booleans out.
 //
 // Limits, stated plainly
 // ----------------------
@@ -477,16 +478,31 @@ const _predicatePrefixes = {
 
 /// True when [name] names a credential rather than a public identifier.
 ///
-/// Suffix matching, not the whole-or-last-segment rule used for public ids:
-/// a secret is routinely carried in a compound name (`rawPrivateKey`,
-/// `ephemeralPrivateKey`), and both of those end in the generic segment `Key`,
-/// so last-segment matching would miss every one of them.
+/// A secret is routinely carried in a compound name (`rawPrivateKey`,
+/// `privateKeyHex`). Match the full lexicon word at camelCase boundaries so
+/// representation suffixes cannot hide it, without treating prose-like
+/// substrings inside a single word as credentials.
 bool isSecretName(String name) {
   if (_hasPredicatePrefix(name)) return false;
   final bare = name.startsWith('_') ? name.substring(1) : name;
   if (bare.isEmpty) return false;
   final lower = bare.toLowerCase();
-  return _secretLexicon.any(lower.endsWith);
+  for (final secret in _secretLexicon) {
+    var start = lower.indexOf(secret);
+    while (start >= 0) {
+      final end = start + secret.length;
+      final startsAtBoundary = start == 0 || _isUppercaseAscii(bare, start);
+      final endsAtBoundary = end == bare.length || _isUppercaseAscii(bare, end);
+      if (startsAtBoundary && endsAtBoundary) return true;
+      start = lower.indexOf(secret, start + 1);
+    }
+  }
+  return false;
+}
+
+bool _isUppercaseAscii(String value, int index) {
+  final codeUnit = value.codeUnitAt(index);
+  return codeUnit >= 0x41 && codeUnit <= 0x5A;
 }
 
 /// True when [name] starts with a [_predicatePrefixes] word followed by an

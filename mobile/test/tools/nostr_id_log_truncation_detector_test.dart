@@ -392,6 +392,27 @@ void report(String rawPrivateKey) {
         expect(sites.single.how, 'secret-in-log');
       });
 
+      test('a secret with a trailing representation segment', () {
+        final sites = scan(r'''
+void report(
+  String privateKeyHex,
+  String senderPrivateKeyHex,
+  String privateKeyBytes,
+  String nsecString,
+) {
+  Log.error('$privateKeyHex $senderPrivateKeyHex $privateKeyBytes $nsecString');
+}
+''');
+
+        expect(sites.map((site) => site.identifier), [
+          'privateKeyHex',
+          'senderPrivateKeyHex',
+          'privateKeyBytes',
+          'nsecString',
+        ]);
+        expect(sites.map((site) => site.how).toSet(), {'secret-in-log'});
+      });
+
       test('a secret concatenated into a message', () {
         final sites = scan('''
 void report(String nsec) {

@@ -58,7 +58,7 @@ DART_BIN="${NOSTR_ID_LOG_TRUNCATION_DART:-dart}"
 # scope — all four are already at zero.
 SCAN_DIR="${NOSTR_ID_LOG_TRUNCATION_SCAN_DIR:-$MOBILE_DIR/lib $MOBILE_DIR/packages $MOBILE_DIR/test $MOBILE_DIR/integration_test}"
 
-NEW_HINT="For a PUBLIC identifier, log the whole value: drop the .substring()/preview local or mask helper and interpolate the value itself. For a SECRET (nsec, ncryptsec, a private/signing key), never log the value: omit it or replace it with a non-value presence/status message. For UI, shorten at the widget with maxLines + TextOverflow.ellipsis so the copied value stays exact. AGENTS.md → Nostr And Async Rules; #3372."
+NEW_HINT="For a PUBLIC identifier, log the whole value: drop the .substring()/preview local or mask helper, remove a literal ellipsis immediately after the interpolation, and interpolate the value itself. For a SECRET (nsec, ncryptsec, a private/signing key), never log the value: omit it or replace it with a non-value presence/status message. For UI, shorten at the widget with maxLines + TextOverflow.ellipsis so the copied value stays exact. AGENTS.md → Nostr And Async Rules; #3372."
 STALE_HINT="A file stopped shortening a Nostr identifier on its way into a log."
 FOOTER="Shortened public Nostr identifiers and disclosed Nostr secrets are frozen at zero.
 A truncated id looks correlatable and is not: it cannot be grepped against
