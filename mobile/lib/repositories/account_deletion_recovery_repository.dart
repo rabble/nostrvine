@@ -20,6 +20,7 @@ class AccountDeletionRecoveryException implements Exception {
 class AccountDeletionRecoveryRepository {
   AccountDeletionRecoveryRepository({
     required String baseUrl,
+    required String nameServerBaseUrl,
     required http.Client httpClient,
     required Nip98AuthService nip98AuthService,
     required String? Function() currentPubkey,
@@ -28,6 +29,9 @@ class AccountDeletionRecoveryRepository {
            ? baseUrl.substring(0, baseUrl.length - 1)
            : baseUrl,
        _httpClient = httpClient,
+       _nameServerBaseUrl = nameServerBaseUrl.endsWith('/')
+           ? nameServerBaseUrl.substring(0, nameServerBaseUrl.length - 1)
+           : nameServerBaseUrl,
        _nip98AuthService = nip98AuthService,
        _currentPubkey = currentPubkey,
        _timeout = timeout;
@@ -36,6 +40,7 @@ class AccountDeletionRecoveryRepository {
 
   final String _baseUrl;
   final http.Client _httpClient;
+  final String _nameServerBaseUrl;
   final Nip98AuthService _nip98AuthService;
   final String? Function() _currentPubkey;
   final Duration _timeout;
@@ -46,12 +51,61 @@ class AccountDeletionRecoveryRepository {
       Uri.parse('$_baseUrl$_attemptsPath/${Uri.encodeComponent(id)}/submit');
   Uri _cancelUri(String id) =>
       Uri.parse('$_baseUrl$_attemptsPath/${Uri.encodeComponent(id)}/cancel');
+  Uri _usernamePreparedUri(String id) => Uri.parse(
+    '$_baseUrl$_attemptsPath/${Uri.encodeComponent(id)}/username-prepared',
+  );
+  Uri get _namePrepareUri =>
+      Uri.parse('$_nameServerBaseUrl/api/username/release/prepare');
 
-  Future<AccountDeletionAttempt> prepare({required String username}) async {
-    return _post(
+  Future<AccountDeletionAttempt> prepare({String? username}) async {
+    final attempt = await _post(
       uri: _attemptsUri,
-      body: jsonEncode({'username': username}),
+      body: jsonEncode({'username': ?username}),
       acceptedStatusCodes: const {200, 201},
+    );
+    if (username == null) return attempt;
+    if (attempt.status == AccountDeletionAttemptStatus.recoverable) {
+      return attempt;
+    }
+    if (attempt.status != AccountDeletionAttemptStatus.preparing) {
+      throw AccountDeletionRecoveryException(
+        'Coordinator prepare returned ${attempt.status.name}',
+      );
+    }
+
+    final nameBody = jsonEncode({
+      'name': username,
+      'attempt_id': attempt.id,
+    });
+    final nameHeaders = await _authHeaders(
+      uri: _namePrepareUri,
+      method: HttpMethod.post,
+      payload: nameBody,
+    );
+    final nameResponse = await _httpClient
+        .post(_namePrepareUri, headers: nameHeaders, body: nameBody)
+        .timeout(_timeout);
+    if (nameResponse.statusCode != 200) {
+      throw AccountDeletionRecoveryException(
+        'Username preparation failed (${nameResponse.statusCode})',
+      );
+    }
+    final nameJson = jsonDecode(nameResponse.body) as Map<String, dynamic>;
+    final expiresAt = (nameJson['expires_at'] as num?)?.toInt();
+    final returnedAttemptId = nameJson['attempt_id'] as String?;
+    if (expiresAt == null || returnedAttemptId != attempt.id) {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation returned an invalid response',
+      );
+    }
+    return _post(
+      uri: _usernamePreparedUri(attempt.id),
+      body: jsonEncode({
+        'attempt_id': attempt.id,
+        'username': username,
+        'expires_at': expiresAt,
+      }),
+      acceptedStatusCodes: const {200},
     );
   }
 

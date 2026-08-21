@@ -36,6 +36,7 @@ void main() {
   AccountDeletionRecoveryRepository repository(http.Client client) =>
       AccountDeletionRecoveryRepository(
         baseUrl: 'https://api.divine.video/',
+        nameServerBaseUrl: 'https://names.divine.video/',
         httpClient: client,
         nip98AuthService: nip98,
         currentPubkey: () =>
@@ -80,6 +81,55 @@ void main() {
 
     expect(result, isNull);
   });
+
+  test(
+    'preparing username completes owner prepare and verified handshake',
+    () async {
+      final requests = <http.Request>[];
+      final result = await repository(
+        MockClient((request) async {
+          requests.add(request);
+          if (request.url.path == '/api/account-deletion/attempts') {
+            return http.Response(
+              jsonEncode({
+                'id': 'attempt-00000001',
+                'status': 'preparing',
+                'username': 'alice',
+              }),
+              201,
+            );
+          }
+          if (request.url.host == 'names.divine.video') {
+            return http.Response(
+              jsonEncode({
+                'attempt_id': 'attempt-00000001',
+                'state': 'pending',
+                'expires_at': 1787450400,
+              }),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'id': 'attempt-00000001',
+              'status': 'recoverable',
+              'username': 'alice',
+              'username_expires_at': 1787450400,
+            }),
+            200,
+          );
+        }),
+      ).prepare(username: 'alice');
+
+      expect(result.status, AccountDeletionAttemptStatus.recoverable);
+      expect(result.usernameExpiresAt, 1787450400);
+      expect(requests.map((request) => request.url.path), [
+        '/api/account-deletion/attempts',
+        '/api/username/release/prepare',
+        '/api/account-deletion/attempts/attempt-00000001/username-prepared',
+      ]);
+    },
+  );
 
   test('submit encodes IDs and surfaces processing state', () async {
     http.Request? captured;

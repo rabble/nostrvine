@@ -89,6 +89,45 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
   });
 
+  testWidgets('preparing attempt finishes its handshake before rollback', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    when(
+      () => repository.prepare(username: 'alice'),
+    ).thenAnswer((_) async => _recoverable);
+    when(
+      () => repository.cancel(attemptId: 'attempt-id'),
+    ).thenAnswer(
+      (_) async => const AccountDeletionAttempt(
+        id: 'attempt-id',
+        status: AccountDeletionAttemptStatus.cancelled,
+        username: 'alice',
+      ),
+    );
+    await tester.pumpWidget(
+      _app(
+        attempt: const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.preparing,
+          username: 'alice',
+        ),
+        repository: repository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
+    );
+    await tester.pumpAndSettle();
+
+    verify(() => repository.prepare(username: 'alice')).called(1);
+    verify(() => repository.cancel(attemptId: 'attempt-id')).called(1);
+    expect(find.text('Home'), findsOneWidget);
+  });
+
   testWidgets('processing attempt cannot be rolled back from the screen', (
     tester,
   ) async {

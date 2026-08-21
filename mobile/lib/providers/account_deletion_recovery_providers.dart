@@ -16,6 +16,9 @@ final accountDeletionRecoveryRepositoryProvider =
       ref.onDispose(client.close);
       return AccountDeletionRecoveryRepository(
         baseUrl: ref.watch(currentEnvironmentProvider).apiBaseUrl,
+        nameServerBaseUrl: ref
+            .watch(currentEnvironmentProvider)
+            .nameServerBaseUrl,
         httpClient: client,
         nip98AuthService: ref.watch(nip98AuthServiceProvider),
         currentPubkey: () => ref.read(authServiceProvider).currentPublicKeyHex,

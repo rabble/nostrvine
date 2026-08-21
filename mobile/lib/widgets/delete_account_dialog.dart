@@ -646,21 +646,22 @@ Future<void> executeAccountDeletion({
     }
     if (!context.mounted) return;
 
-    // Prepare the recoverable release before any destructive step, so a failed
-    // preparation leaves everything intact. The server—not process memory—
-    // owns the durable recovery state.
-    if (burnUsername) {
+    // Create the durable coordinator attempt for every deletion. When the user
+    // opted to burn a username, the repository also performs the owner-auth
+    // Name Server prepare and the coordinator's verified handshake.
+    if (deletionRecoveryRepository != null || burnUsername) {
       // Opted in to burn. A missing handle or repository means we cannot honor
       // it, so we must NOT proceed — treated the same as a failed release
       // (hard-block, symmetric in both directions).
       try {
-        if (ownedUsername == null || deletionRecoveryRepository == null) {
+        if ((burnUsername && ownedUsername == null) ||
+            deletionRecoveryRepository == null) {
           throw const AccountDeletionRecoveryException(
             'Deletion recovery is unavailable',
           );
         }
         final prepared = await deletionRecoveryRepository.prepare(
-          username: ownedUsername.canonical,
+          username: burnUsername ? ownedUsername!.canonical : null,
         );
         if (prepared.status != AccountDeletionAttemptStatus.recoverable) {
           throw AccountDeletionRecoveryException(
@@ -670,7 +671,7 @@ Future<void> executeAccountDeletion({
         deletionAttempt = prepared;
         releasePrepared = true;
         Log.info(
-          'Prepared recoverable release for $handleLabel before deletion',
+          'Prepared durable account deletion attempt before deletion',
           name: screenName,
           category: LogCategory.auth,
         );

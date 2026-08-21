@@ -51,9 +51,16 @@ class _AccountDeletionRecoveryScreenState
       _error = null;
     });
     try {
-      final restored = await ref
-          .read(accountDeletionRecoveryRepositoryProvider)
-          .cancel(attemptId: attempt.id);
+      final repository = ref.read(accountDeletionRecoveryRepositoryProvider);
+      final ready = attempt.status == AccountDeletionAttemptStatus.preparing
+          ? await repository.prepare(username: attempt.username)
+          : attempt;
+      if (ready.status != AccountDeletionAttemptStatus.recoverable) {
+        throw const AccountDeletionRecoveryException(
+          'Username preparation did not become recoverable',
+        );
+      }
+      final restored = await repository.cancel(attemptId: ready.id);
       if (!mounted) return;
       if (restored.status != AccountDeletionAttemptStatus.cancelled) {
         throw const AccountDeletionRecoveryException(
@@ -64,7 +71,11 @@ class _AccountDeletionRecoveryScreenState
       context.go(RoutePaths.videoFeedForIndex(0));
     } on Object {
       if (!mounted) return;
-      setState(() => _error = context.l10n.accountDeletionRecoveryFailed);
+      setState(
+        () => _error = attempt.username == null
+            ? context.l10n.accountDeletionRecoveryStatusFailed
+            : context.l10n.accountDeletionRecoveryFailed,
+      );
     } finally {
       if (mounted) setState(() => _isCancelling = false);
     }
@@ -120,8 +131,14 @@ class _AccountDeletionRecoveryScreenState
               if (value.status == AccountDeletionAttemptStatus.recoverable ||
                   value.status == AccountDeletionAttemptStatus.preparing) {
                 return _RecoveryContent(
-                  body: error ?? context.l10n.accountDeletionRecoveryBody,
-                  actionLabel: context.l10n.accountDeletionRestoreUsername,
+                  body:
+                      error ??
+                      (value.username == null
+                          ? context.l10n.accountDeletionFinishingBody
+                          : context.l10n.accountDeletionRecoveryBody),
+                  actionLabel: value.username == null
+                      ? context.l10n.commonCancel
+                      : context.l10n.accountDeletionRestoreUsername,
                   onPressed: _isCancelling ? null : () => _restore(value),
                   showProgress: _isCancelling,
                 );

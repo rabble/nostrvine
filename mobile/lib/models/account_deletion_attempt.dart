@@ -25,6 +25,8 @@ class AccountDeletionAttempt {
     required this.id,
     required this.status,
     this.username,
+    this.usernameExpiresAt,
+    this.failureCode,
     this.failureMessage,
   });
 
@@ -38,6 +40,8 @@ class AccountDeletionAttempt {
       id: id,
       status: AccountDeletionAttemptStatus.fromJson(status),
       username: json['username'] as String?,
+      usernameExpiresAt: (json['username_expires_at'] as num?)?.toInt(),
+      failureCode: json['failure_code'] as String?,
       failureMessage: json['failure_message'] as String?,
     );
   }
@@ -45,11 +49,14 @@ class AccountDeletionAttempt {
   final String id;
   final AccountDeletionAttemptStatus status;
   final String? username;
+  final int? usernameExpiresAt;
+  final String? failureCode;
   final String? failureMessage;
 
   bool get requiresRecoveryScreen =>
       status == AccountDeletionAttemptStatus.preparing ||
       status == AccountDeletionAttemptStatus.recoverable ||
       status == AccountDeletionAttemptStatus.processing ||
+      status == AccountDeletionAttemptStatus.completed ||
       status == AccountDeletionAttemptStatus.terminalFailure;
 }
