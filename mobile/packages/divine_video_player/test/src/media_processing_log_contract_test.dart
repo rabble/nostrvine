@@ -113,6 +113,28 @@ void main() {
       );
     });
 
+    test('mutates overlay state on the main queue after a seek', () {
+      final source = _appleAudioOverlaySourceFile().readAsStringSync();
+
+      final seekCompletion = source.indexOf('] completed in');
+      final mainHop = source.indexOf(
+        'DispatchQueue.main.async',
+        seekCompletion,
+      );
+      final statusReport = source.indexOf('reportStatusIfChanged', mainHop);
+
+      expect(seekCompletion, greaterThanOrEqualTo(0));
+      expect(mainHop, greaterThan(seekCompletion));
+      expect(
+        statusReport,
+        greaterThan(mainHop),
+        reason:
+            'AVFoundation does not document which queue delivers a seek '
+            'completion, so the handler must hop to main before it touches '
+            'the entry state that the 0.2s update also writes.',
+      );
+    });
+
     test('keeps console traces out of release builds', () {
       final source = _appleAudioOverlaySourceFile().readAsStringSync();
 

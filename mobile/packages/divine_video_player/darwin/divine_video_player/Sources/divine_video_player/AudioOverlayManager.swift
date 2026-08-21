@@ -201,15 +201,24 @@ final class AudioOverlayManager {
             toleranceBefore: .zero,
             toleranceAfter: .zero
         ) { [weak self, weak entry] completed in
-            guard let self, let entry else { return }
-            let message = "Audio overlay track \(entry.trackIndex): " +
-                "\(reason) seek completed=\(completed)"
-            if completed {
-                self.log.debug(message, name: self.logName)
-            } else {
-                self.log.warning(message, name: self.logName)
+            // AVFoundation does not document which queue delivers this, and
+            // AVPlayer is not thread-safe. Every other read and write of
+            // overlay state happens on the main queue, so hop back before
+            // touching the entry's last-reported status fields.
+            DispatchQueue.main.async {
+                guard let self, let entry else { return }
+                let message = "Audio overlay track \(entry.trackIndex): " +
+                    "\(reason) seek completed=\(completed)"
+                if completed {
+                    self.log.debug(message, name: self.logName)
+                } else {
+                    self.log.warning(message, name: self.logName)
+                }
+                self.reportStatusIfChanged(
+                    for: entry,
+                    context: "\(reason) seek"
+                )
             }
-            self.reportStatusIfChanged(for: entry, context: "\(reason) seek")
         }
     }
 
