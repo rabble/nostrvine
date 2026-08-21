@@ -283,10 +283,10 @@ test-backed.
    reviewer must read that complete output before proceeding; the relevant iOS
    or Android platform owner must approve promotion.
 1. The workflow publishes to `staging`, never directly to `stable`. Validate
-   the exact release plus staged patch on the affected platform with
-   `shorebird preview --track staging --release-version <version>` or an
-   equivalent installed build. Verify the regression, adjacent behavior,
-   startup, and the current patch number in logs or Crashlytics.
+   the exact release plus staged patch on the affected platform using the
+   **Shorebird patch** section in Settings → Developer Options (see
+   [Validating a staged patch](#validating-a-staged-patch) below). Verify the
+   regression, adjacent behavior, startup, and the current patch number.
 1. Record the incident owner, mobile reviewer, platform owner, release version,
    patch number, validation evidence, and rollback decision in the incident or
    patch issue. Then promote the exact approved patch:
@@ -321,6 +321,37 @@ commit is `a46851e924b183fa0cb2ce6c6cfaae7ed02cc189`; the equivalent reachable
 `a17e0660a782e439c5d405c2d06dd49e5b7fbc81`, which CI verifies. Its private
 record is deliberately marked unpatchable because the historical dart-defines
 cannot be established from source control.
+
+### Validating a staged patch
+
+An installed build only ever polls `stable`. Nothing in a store binary asks
+for `staging`, so a patch published there is invisible to it — and the only
+way to make it visible would be to promote it to production, which is the
+deploy that validation is supposed to gate.
+
+`shorebird preview` cannot close that gap on iOS. It downloads the release
+artifact and tries to install it, but our IPA is signed for App Store
+distribution: `get-task-allow` is false, `beta-reports-active` is true, and
+the profile carries no `ProvisionedDevices`. `ideviceinstaller` rejects it
+with `0xe800801f`. That is a property of the artifact we ship, not a
+misconfiguration — an installable preview would need a development- or
+ad-hoc-signed build, which is a different binary from the one under test.
+
+So the affordance lives in the app. Settings → Developer Options →
+**Shorebird patch** shows the running patch number and offers two actions
+that call `ShorebirdUpdater` with `UpdateTrack.staging` explicitly:
+
+- **Check staging track** — reports whether a staged patch is waiting.
+- **Apply staged patch** — downloads and installs it; relaunch to run it.
+
+Install the TestFlight build of the exact release under test, run the patch
+workflow, then pull the patch through this section. The build number shown in
+Settings must match the release version you patched. The section reports
+"Shorebird not available in this build" on a plain `flutter run` — the updater
+is only linked by `shorebird release`, so a debug build can never validate a
+patch.
+
+Promotion to `stable` happens only after this validation succeeds.
 
 ### A patch targets a release version, not a channel
 
@@ -434,6 +465,15 @@ on every cache hit.
 To upgrade Shorebird, review a tagged CLI revision, update the 40-character CLI
 SHA and expected version together, then run the CI configuration tests. Never
 replace the revision pin with a branch or tag.
+
+**Upgrading strands every release recorded under the old pin.** Provenance
+records `shorebird_cli_version` and `shorebird_cli_revision`, and the patch
+workflow refuses to patch a release whose recorded CLI does not match the
+pinned one. Moving the pin therefore makes every existing release permanently
+unpatchable — the record is create-only and must not be rewritten to match.
+Sequence an upgrade as: merge the pin bump, cut a **new** store release under
+the new pin, and patch only releases recorded under it. Never upgrade while a
+shipped release is the only thing standing between production and a hot fix.
 
 Then `shorebird login`. You need access to the Divine organization; membership
 is managed in the Shorebird console.

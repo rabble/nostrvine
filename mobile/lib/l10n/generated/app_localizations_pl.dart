@@ -2027,6 +2027,51 @@ class AppLocalizationsPl extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Tryb dewelopera wyłączony';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+
+  @override
+  String devOptionsShorebirdCurrentPatch(int number) {
+    return 'Patch $number';
+  }
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'No patch installed';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Patches only run in a build made by shorebird release.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Check staging track';
+
+  @override
+  String get devOptionsShorebirdApply => 'Apply staged patch';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'A staged patch is ready to apply.';
+
+  @override
+  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Installed. Restart the app to load it.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'That didn\'t work. Check the logs for details.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Czasy ładowania stron';
 
   @override

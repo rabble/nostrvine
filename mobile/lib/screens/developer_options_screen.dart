@@ -27,6 +27,7 @@ import 'package:openvine/screens/clip_recovery_screen.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/widgets/developer/storage_footprint_section.dart';
+import 'package:openvine/widgets/developer_options/shorebird_patch_section.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Returns a color indicating speed: green (<1s), orange (1-3s), red (>3s).
@@ -197,7 +198,12 @@ class _DeveloperOptionsScreenState
                 );
               }),
 
-              // Divider between environments and page load times
+              // Divider between environments and Shorebird patches
+              Divider(color: context.vineColors.outline, height: 32),
+
+              const ShorebirdPatchSection(),
+
+              // Divider between Shorebird patches and page load times
               Divider(color: context.vineColors.outline, height: 32),
 
               // Page Load Times section header
