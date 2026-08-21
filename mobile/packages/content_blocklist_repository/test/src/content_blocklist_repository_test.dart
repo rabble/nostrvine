@@ -2154,6 +2154,37 @@ void main() {
       expect(service.blockedPubkeysForAccount(ourPubkey), isEmpty);
     });
 
+    test(
+      'a refused relay subscription does not become an uncaught error',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final service = ContentBlocklistRepository(prefs: prefs);
+        final mockClient = _MockNostrClient();
+        when(() => mockClient.subscribe(any())).thenAnswer(
+          (_) => Stream<Event>.error(
+            const RelaySubscriptionRefusedException(
+              'error: too many subscriptions',
+            ),
+          ),
+        );
+
+        // Both syncs listen without awaiting. Without an onError handler the
+        // stream error reaches the zone and is reported as a crash.
+        await service.syncMuteListsInBackground(mockClient, ourPubkey);
+        final mockSigner = _MockBlockListSigner();
+        when(() => mockSigner.isAuthenticated).thenReturn(false);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(service.blockedPubkeysForAccount(ourPubkey), isEmpty);
+      },
+    );
+
     test('is empty for the empty pubkey', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final prefs = await SharedPreferences.getInstance();
@@ -3727,6 +3758,52 @@ void main() {
     }) => Event(author, kind, tags, '', createdAt: createdAt)
       ..id = id
       ..sig = 'signature';
+
+    test(
+      'a refused by-author watch does not become an uncaught error',
+      () async {
+        // The by-author watch is a long-lived REQ. A relay that runs out of
+        // subscription slots ends it with CLOSED, which reaches the stream as
+        // an error; without an onError handler it escapes to the zone.
+        when(
+          () => mockNostrService.subscribe(
+            any(),
+            subscriptionId: any(
+              named: 'subscriptionId',
+              that: contains('author-watch'),
+            ),
+          ),
+        ).thenAnswer(
+          (_) => Stream<Event>.error(
+            const RelaySubscriptionRefusedException(
+              'error: too many subscriptions',
+            ),
+          ),
+        );
+
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: 'block-event',
+          ),
+        );
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+      },
+    );
 
     test(
       'hasBlockedUs clears when the blocker republishes a kind-30000 list '

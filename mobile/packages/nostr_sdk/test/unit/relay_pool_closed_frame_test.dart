@@ -68,6 +68,15 @@ class _ControlledQueryRelay extends Relay {
     fail('RelayPool never registered a pending query for the REQ');
   }
 
+  Future<String> awaitPendingSubscription() async {
+    for (var i = 0; i < 1000; i++) {
+      final subId = capturedSubId;
+      if (subId != null && hasSubscriptionById(subId)) return subId;
+      await Future<void>.delayed(Duration.zero);
+    }
+    fail('RelayPool never registered a live subscription for the REQ');
+  }
+
   Future<void> awaitReqCount(int count) async {
     for (var i = 0; i < 1000; i++) {
       final reqCount = sentMessages.where((m) => m.first == 'REQ').length;
@@ -142,6 +151,185 @@ void main() {
       final result = await pending;
       expect(result.timedOut, isFalse);
       expect(result.events, isEmpty);
+    });
+
+    test(
+      'CLOSED releases the last live subscription and prevents replay',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(signer, [], dummyTempRelay);
+        final refusedRelay = _ControlledQueryRelay(
+          'wss://refused-live.example',
+        );
+        expect(await nostr.relayPool.add(refusedRelay), isTrue);
+
+        String? closedReason;
+        nostr.subscribe(
+          [
+            {
+              'kinds': [1],
+            },
+          ],
+          (_) {},
+          onClosed: (reason) => closedReason = reason,
+        );
+
+        final subId = await refusedRelay.awaitPendingSubscription();
+        await refusedRelay.deliver([
+          'CLOSED',
+          subId,
+          'error: too many subscriptions',
+        ]);
+
+        expect(closedReason, 'error: too many subscriptions');
+        expect(refusedRelay.hasSubscriptionById(subId), isFalse);
+
+        final replacementRelay = _ControlledQueryRelay(
+          'wss://replacement.example',
+        );
+        expect(
+          await nostr.relayPool.add(replacementRelay, autoSubscribe: true),
+          isTrue,
+        );
+        expect(
+          replacementRelay.sentMessages.where((m) => m.first == 'REQ'),
+          isEmpty,
+          reason: 'a refused subscription must not replay on a new socket',
+        );
+      },
+    );
+
+    test(
+      'CLOSED from one relay preserves a subscription served by another',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(signer, [], dummyTempRelay);
+        final refusedRelay = _ControlledQueryRelay(
+          'wss://refused-peer.example',
+        );
+        final servingRelay = _ControlledQueryRelay(
+          'wss://serving-peer.example',
+        );
+        expect(await nostr.relayPool.add(refusedRelay), isTrue);
+        expect(await nostr.relayPool.add(servingRelay), isTrue);
+
+        var closed = false;
+        nostr.subscribe(
+          [
+            {
+              'kinds': [1],
+            },
+          ],
+          (_) {},
+          onClosed: (_) => closed = true,
+        );
+
+        final subId = await refusedRelay.awaitPendingSubscription();
+        expect(await servingRelay.awaitPendingSubscription(), subId);
+        await refusedRelay.deliver(['CLOSED', subId, 'error: refused']);
+
+        expect(closed, isFalse);
+        expect(refusedRelay.hasSubscriptionById(subId), isFalse);
+        expect(servingRelay.hasSubscriptionById(subId), isTrue);
+      },
+    );
+
+    test('CLOSED lets EOSE from every remaining relay complete', () async {
+      final signer = LocalNostrSigner(
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+      );
+      final nostr = Nostr(signer, [], dummyTempRelay);
+      final completedRelay = _ControlledQueryRelay('wss://completed.example');
+      final refusedRelay = _ControlledQueryRelay('wss://refused-after.example');
+      expect(await nostr.relayPool.add(completedRelay), isTrue);
+      expect(await nostr.relayPool.add(refusedRelay), isTrue);
+
+      var eoseCount = 0;
+      nostr.subscribe(
+        [
+          {
+            'kinds': [1],
+          },
+        ],
+        (_) {},
+        onEose: () => eoseCount++,
+      );
+
+      final subId = await completedRelay.awaitPendingSubscription();
+      expect(await refusedRelay.awaitPendingSubscription(), subId);
+      await completedRelay.deliver(['EOSE', subId]);
+      expect(eoseCount, 0);
+
+      await refusedRelay.deliver(['CLOSED', subId, 'error: refused']);
+
+      expect(eoseCount, 1);
+    });
+
+    test(
+      'EOSE then CLOSED from one relay does not complete the rest',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(signer, [], dummyTempRelay);
+        final earlyRelay = _ControlledQueryRelay('wss://early.example');
+        final slowRelay = _ControlledQueryRelay('wss://slow.example');
+        expect(await nostr.relayPool.add(earlyRelay), isTrue);
+        expect(await nostr.relayPool.add(slowRelay), isTrue);
+
+        var eoseCount = 0;
+        nostr.subscribe(
+          [
+            {
+              'kinds': [1],
+            },
+          ],
+          (_) {},
+          onEose: () => eoseCount++,
+        );
+
+        final subId = await earlyRelay.awaitPendingSubscription();
+        expect(await slowRelay.awaitPendingSubscription(), subId);
+
+        await earlyRelay.deliver(['EOSE', subId]);
+        await earlyRelay.deliver(['CLOSED', subId, 'error: refused']);
+
+        expect(eoseCount, 0, reason: 'slow.example has not reported EOSE yet');
+
+        await slowRelay.deliver(['EOSE', subId]);
+        expect(eoseCount, 1);
+      },
+    );
+
+    test('auth-required CLOSED keeps a live subscription for replay', () async {
+      final signer = LocalNostrSigner(
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+      );
+      final nostr = Nostr(signer, [], dummyTempRelay);
+      final relay = _ControlledQueryRelay('wss://auth-live.example');
+      expect(await nostr.relayPool.add(relay), isTrue);
+
+      var closed = false;
+      nostr.subscribe(
+        [
+          {
+            'kinds': [1],
+          },
+        ],
+        (_) {},
+        sendAfterAuth: true,
+        onClosed: (_) => closed = true,
+      );
+
+      final subId = await relay.awaitPendingSubscription();
+      await relay.deliver(['CLOSED', subId, 'auth-required: sign in']);
+
+      expect(closed, isFalse);
+      expect(relay.hasSubscriptionById(subId), isTrue);
     });
 
     test('auth-required CLOSED keeps the query for post-AUTH replay', () async {

@@ -92,7 +92,7 @@ void main() {
 
         // Mock Nostr service to not need relay fetch (all cached)
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Sync list with these video IDs
@@ -124,7 +124,7 @@ void main() {
           () => mockVideoEventService.getVideoById(video1Id),
         ).thenReturn(video1);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Add video to two different lists
@@ -157,7 +157,7 @@ void main() {
 
           // Subscribe should still be called but for empty list
           when(
-            () => mockNostrService.subscribe(any()),
+            () => mockNostrService.subscribe(any(), closeOnEose: true),
           ).thenAnswer((_) => const Stream<Event>.empty());
 
           await cache.syncList('list1', [cachedVideoId]);
@@ -199,7 +199,9 @@ void main() {
 
         // Setup stream to emit the event
         final controller = StreamController<Event>();
-        when(() => mockNostrService.subscribe(any())).thenAnswer((_) {
+        when(
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
+        ).thenAnswer((_) {
           // Emit event and close after a delay
           Future.delayed(const Duration(milliseconds: 10), () {
             controller.add(mockEvent);
@@ -211,13 +213,38 @@ void main() {
         await cache.syncList('list1', [missingVideoId]);
 
         // Verify subscribe was called
-        verify(() => mockNostrService.subscribe(any())).called(1);
+        verify(
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
+        ).called(1);
+      });
+
+      test('a refused relay read does not escape syncList', () async {
+        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+        when(
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
+        ).thenAnswer(
+          (_) => Stream<Event>.error(
+            const RelaySubscriptionRefusedException(
+              'error: too many subscriptions',
+            ),
+          ),
+        );
+
+        const missingVideoId =
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+        // syncAllSubscribedLists runs from an unawaited microtask, so an
+        // escaping error would land in the zone as an uncaught async error.
+        await expectLater(
+          cache.syncList('list1', [missingVideoId]),
+          completes,
+        );
       });
 
       test('separates event IDs from addressable coordinates', () async {
         when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         const eventId =
@@ -227,7 +254,9 @@ void main() {
         await cache.syncList('list1', [eventId, addressableCoord]);
 
         // Verify subscribe was called - should handle both types
-        verify(() => mockNostrService.subscribe(any())).called(1);
+        verify(
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
+        ).called(1);
       });
 
       test('notifies listeners after sync', () async {
@@ -243,7 +272,7 @@ void main() {
           () => mockVideoEventService.getVideoById(videoId),
         ).thenReturn(video);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         var notified = false;
@@ -294,7 +323,7 @@ void main() {
           () => mockVideoEventService.getVideoById(video2Id),
         ).thenReturn(video2);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         await cache.syncAllSubscribedLists();
@@ -328,7 +357,7 @@ void main() {
           () => mockVideoEventService.getVideoById(video2Id),
         ).thenReturn(video2);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Sync two lists
@@ -364,7 +393,7 @@ void main() {
             () => mockVideoEventService.getVideoById(videoId),
           ).thenReturn(video1);
           when(
-            () => mockNostrService.subscribe(any()),
+            () => mockNostrService.subscribe(any(), closeOnEose: true),
           ).thenAnswer((_) => const Stream<Event>.empty());
 
           // Add video1 to both lists
@@ -392,7 +421,7 @@ void main() {
           () => mockVideoEventService.getVideoById(videoId),
         ).thenReturn(video);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         await cache.syncList('list1', [videoId]);
@@ -422,7 +451,7 @@ void main() {
           () => mockVideoEventService.getVideoById(sharedVideoId),
         ).thenReturn(video1);
         when(
-          () => mockNostrService.subscribe(any()),
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
         ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Add same video to three lists

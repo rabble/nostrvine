@@ -100,7 +100,11 @@ void main() {
 
       // Mock subscribe to return our controlled stream
       when(
-        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        () => mockNostr.subscribe(
+          any(),
+          onEose: any(named: 'onEose'),
+          closeOnEose: true,
+        ),
       ).thenAnswer((_) => eventController.stream);
 
       service = CuratedListService(
@@ -339,7 +343,11 @@ void main() {
         // Capture the filter passed to subscribe
         Filter? capturedFilter;
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((invocation) {
           final filters = invocation.positionalArguments[0] as List<Filter>;
           capturedFilter = filters.first;
@@ -420,7 +428,11 @@ void main() {
       test('completes empty when relays EOSE without events', () async {
         void Function()? onEose;
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((invocation) {
           onEose = invocation.namedArguments[#onEose] as void Function()?;
           return eventController.stream;
@@ -446,7 +458,11 @@ void main() {
       test('completes with received events when relays EOSE', () async {
         void Function()? onEose;
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((invocation) {
           onEose = invocation.namedArguments[#onEose] as void Function()?;
           return eventController.stream;
@@ -487,7 +503,11 @@ void main() {
             },
           );
           when(
-            () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+            () => mockNostr.subscribe(
+              any(),
+              onEose: any(named: 'onEose'),
+              closeOnEose: true,
+            ),
           ).thenAnswer((_) => eventController.stream);
 
           Object? receivedError;
@@ -519,7 +539,11 @@ void main() {
           },
         );
         when(
-          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+          () => mockNostr.subscribe(
+            any(),
+            onEose: any(named: 'onEose'),
+            closeOnEose: true,
+          ),
         ).thenAnswer((_) => eventController.stream);
 
         final subscription = service.streamPublicListsFromRelays().listen(

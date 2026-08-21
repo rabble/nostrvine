@@ -34,6 +34,7 @@ class _StreamingNostrService implements NostrClient {
     List<int> relayTypes = const [],
     bool sendAfterAuth = false,
     void Function()? onEose,
+    bool closeOnEose = false,
   }) {
     if (onEose != null) {
       Future.microtask(onEose);

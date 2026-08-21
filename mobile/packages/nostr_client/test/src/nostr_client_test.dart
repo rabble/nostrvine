@@ -1831,6 +1831,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -1848,6 +1849,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).captured.single;
         return captured as void Function(Event);
@@ -2110,6 +2112,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -2126,8 +2129,129 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(1);
+      });
+
+      test(
+        'closeOnEose releases the relay subscription and closes the stream',
+        () async {
+          void Function()? onEose;
+          when(
+            () => mockNostr.subscribe(
+              any(),
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
+            ),
+          ).thenAnswer((invocation) {
+            onEose = invocation.namedArguments[#onEose] as void Function()?;
+            return invocation.namedArguments[#id] as String;
+          });
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final stream = client.subscribe(
+            [
+              Filter(kinds: [EventKind.textNote]),
+            ],
+            closeOnEose: true,
+          );
+          final done = expectLater(stream, emitsDone);
+
+          onEose!();
+
+          await done;
+          verify(() => mockNostr.unsubscribe(any())).called(1);
+          expect(client.activeSubscriptionCount, 0);
+        },
+      );
+
+      test('EOSE preserves long-lived subscriptions by default', () async {
+        void Function()? onEose;
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
+          ),
+        ).thenAnswer((invocation) {
+          onEose = invocation.namedArguments[#onEose] as void Function()?;
+          return invocation.namedArguments[#id] as String;
+        });
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        var done = false;
+        final subscription = client
+            .subscribe([
+              Filter(kinds: [EventKind.textNote]),
+            ])
+            .listen((_) {}, onDone: () => done = true);
+
+        onEose!();
+        await pumpEventQueue();
+
+        expect(done, isFalse);
+        expect(client.activeSubscriptionCount, 1);
+        verifyNever(() => mockNostr.unsubscribe(any()));
+        await subscription.cancel();
+      });
+
+      test('CLOSED surfaces its reason as a typed stream error', () async {
+        void Function(String reason)? onClosed;
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
+          ),
+        ).thenAnswer((invocation) {
+          onClosed =
+              invocation.namedArguments[#onClosed]
+                  as void Function(String reason)?;
+          return invocation.namedArguments[#id] as String;
+        });
+        when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+        final stream = client.subscribe([
+          Filter(kinds: [EventKind.textNote]),
+        ]);
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([
+            emitsError(
+              isA<RelaySubscriptionRefusedException>().having(
+                (error) => error.reason,
+                'reason',
+                'error: too many subscriptions',
+              ),
+            ),
+            emitsDone,
+          ]),
+        );
+
+        onClosed!('error: too many subscriptions');
+
+        await expectation;
+        verify(() => mockNostr.unsubscribe(any())).called(1);
+        expect(client.activeSubscriptionCount, 0);
       });
 
       test('creates new subscription for different filters', () {
@@ -2148,6 +2272,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -2166,6 +2291,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(2);
       });
@@ -2186,6 +2312,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((invocation) {
           final id = invocation.namedArguments[#id] as String;
@@ -2209,6 +2336,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(2);
       });
@@ -2230,6 +2358,7 @@ void main() {
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
               onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer(
             (invocation) => invocation.namedArguments[#id] as String,
@@ -2261,6 +2390,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer(
           (invocation) => invocation.namedArguments[#id] as String,
@@ -2291,6 +2421,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn(customId);
 
@@ -2306,6 +2437,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(1);
       });
@@ -2327,6 +2459,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
 
@@ -2349,6 +2482,7 @@ void main() {
             relayTypes: [RelayType.normal],
             sendAfterAuth: true,
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).called(1);
       });
@@ -2369,6 +2503,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('nostr-generated-id');
 
@@ -2395,6 +2530,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn(subscriptionId);
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -2435,6 +2571,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((_) => 'sub-${callCount++}');
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -3768,6 +3905,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('test-sub-id');
         when(() => mockNostr.unsubscribe(any())).thenReturn(null);
@@ -3855,6 +3993,8 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer((invocation) {
             capturedCallback =
@@ -3900,6 +4040,8 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer((invocation) {
             capturedCallback =
@@ -3937,6 +4079,8 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+              onClosed: any(named: 'onClosed'),
             ),
           ).thenAnswer((invocation) {
             capturedCallback =
@@ -4471,6 +4615,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((invocation) {
           // Get the callback and call it with test event
@@ -4503,6 +4648,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('search-sub-id');
 
@@ -4519,6 +4665,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).captured;
 
@@ -4547,6 +4694,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenAnswer((invocation) {
           final callback =
@@ -4575,6 +4723,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).thenReturn('search-sub-id');
 
@@ -4590,6 +4739,7 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
+            onClosed: any(named: 'onClosed'),
           ),
         ).captured;
 

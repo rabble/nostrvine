@@ -13,6 +13,18 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 import 'package:pool/pool.dart';
 
+/// The relay ended a live subscription before the client unsubscribed.
+class RelaySubscriptionRefusedException implements Exception {
+  /// Creates an exception preserving the relay-provided [reason].
+  const RelaySubscriptionRefusedException(this.reason);
+
+  /// The reason supplied by the relay's `CLOSED` frame.
+  final String reason;
+
+  @override
+  String toString() => 'RelaySubscriptionRefusedException: $reason';
+}
+
 /// Observer for NostrClient activity statistics.
 ///
 /// Implement this interface and set it via [NostrClient.statisticsObserver]
@@ -1172,6 +1184,12 @@ class NostrClient {
   /// re-enter safely after a previous listener was canceled. The returned
   /// stream is closed when its last listener cancels; call [subscribe] again
   /// instead of retaining and re-listening to the old stream.
+  ///
+  /// Set [closeOnEose] for bounded reads. Their stream closes after every
+  /// serving relay reports EOSE, and the relay subscription is released.
+  ///
+  /// The stream emits a [RelaySubscriptionRefusedException] if every serving
+  /// relay ends the REQ with `CLOSED`.
   Stream<Event> subscribe(
     List<Filter> filters, {
     String? subscriptionId,
@@ -1180,6 +1198,7 @@ class NostrClient {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     void Function()? onEose,
+    bool closeOnEose = false,
   }) {
     final effectiveTempRelays = _allowedRelays(tempRelays);
     final effectiveTargetRelays = _allowedRelays(targetRelays);
@@ -1250,7 +1269,16 @@ class NostrClient {
       targetRelays: effectiveTargetRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
-      onEose: onEose,
+      onEose: () {
+        onEose?.call();
+        if (closeOnEose) cleanupSubscription();
+      },
+      onClosed: (reason) {
+        if (!controller.isClosed) {
+          controller.addError(RelaySubscriptionRefusedException(reason));
+        }
+        cleanupSubscription();
+      },
     );
 
     // If nostr_sdk generated a different ID, update our mapping

@@ -8,10 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -23,6 +26,8 @@ class _MockPeopleListsRepository extends Mock
     implements PeopleListsRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
 
 // Full-length 64-char Nostr pubkeys — never truncate.
 const String _ownerA =
@@ -298,6 +303,89 @@ void main() {
   });
 
   group(videoEventsByIdsProvider, () {
+    test('uses an EOSE-bounded relay read for missing videos', () async {
+      final videoEventService = _MockVideoEventService();
+      final nostrClient = _MockNostrClient();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(null);
+      when(
+        () => nostrClient.subscribe(any(), closeOnEose: true),
+      ).thenAnswer((_) => const Stream.empty());
+
+      final container = ProviderContainer(
+        overrides: [
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          nostrServiceProvider.overrideWithValue(nostrClient),
+        ],
+      );
+      addTearDown(container.dispose);
+      final provider = videoEventsByIdsProvider([_allowedVideoId]);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+
+      await expectLater(container.read(provider.future), completion(isEmpty));
+      verify(
+        () => nostrClient.subscribe(any(), closeOnEose: true),
+      ).called(1);
+    });
+
+    test('keeps cached videos when every relay refuses the read', () async {
+      final cachedVideo = _video(id: _allowedVideoId, pubkey: _ownerA);
+      final videoEventService = _MockVideoEventService();
+      final nostrClient = _MockNostrClient();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(cachedVideo);
+      when(
+        () => videoEventService.getVideoById(_blockedVideoId),
+      ).thenReturn(null);
+      when(
+        () => videoEventService.shouldHideVideo(cachedVideo),
+      ).thenReturn(false);
+      when(() => nostrClient.subscribe(any(), closeOnEose: true)).thenAnswer(
+        (_) => Stream<Event>.error(
+          const RelaySubscriptionRefusedException(
+            'error: too many subscriptions',
+          ),
+        ),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          nostrServiceProvider.overrideWithValue(nostrClient),
+        ],
+      );
+      addTearDown(container.dispose);
+      final provider = videoEventsByIdsProvider([
+        _allowedVideoId,
+        _blockedVideoId,
+      ]);
+      final states = <AsyncValue<List<VideoEvent>>>[];
+      final subscription = container.listen(
+        provider,
+        (_, next) => states.add(next),
+      );
+      addTearDown(subscription.close);
+
+      await container.read(provider.future);
+      await pumpEventQueue();
+
+      expect(
+        states.where((state) => state.hasError),
+        isEmpty,
+        reason: 'a refused relay read must not fail the provider',
+      );
+      expect(states.last.value?.map((v) => v.id), [_allowedVideoId]);
+    });
+
     test(
       'filters hidden addressable videos found in the local cache',
       () async {
@@ -415,6 +503,40 @@ void main() {
   });
 
   group(curatedListVideoEventsProvider, () {
+    test('uses an EOSE-bounded relay read for missing videos', () async {
+      const listId = 'relay-list';
+      final videoEventService = _MockVideoEventService();
+      final nostrClient = _MockNostrClient();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(null);
+      when(
+        () => nostrClient.subscribe(any(), closeOnEose: true),
+      ).thenAnswer((_) => const Stream.empty());
+
+      final container = ProviderContainer(
+        overrides: [
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          nostrServiceProvider.overrideWithValue(nostrClient),
+          curatedListVideosProvider(
+            listId,
+          ).overrideWith((ref) => [_allowedVideoId]),
+        ],
+      );
+      addTearDown(container.dispose);
+      final provider = curatedListVideoEventsProvider(listId);
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+
+      await expectLater(container.read(provider.future), completion(isEmpty));
+      verify(
+        () => nostrClient.subscribe(any(), closeOnEose: true),
+      ).called(1);
+    });
+
     test(
       'filters hidden videos found by plain event id in the local cache',
       () async {
