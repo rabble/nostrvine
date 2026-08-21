@@ -34,45 +34,45 @@ class OgBetaBadge extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
-          // The chit itself is far smaller than the 48dp minimum touch
-          // target, so when it is interactive the box around it carries the
-          // target instead — the same trick the profile header already uses.
-          child: SizedBox.square(
-            dimension: onTap == null
-                ? null
-                : DivineIcon.scaleSize(context, _minTouchTarget),
-            child: Container(
-              margin: EdgeInsetsDirectional.only(start: leadingGap),
-              width: dimension,
-              height: dimension,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: VineTheme.primary,
-                shape: BoxShape.circle,
-              ),
-              // The glyph is a logo mark sized off the circle, not readable text:
-              // `dimension` already carries the text scale, so scaling the font
-              // again would square the factor. `FittedBox` keeps the two letters
-              // inside the circle whatever the font fallback metrics turn out to
-              // be, and the inset stops them touching the rim.
-              child: Padding(
-                padding: EdgeInsets.all(dimension * 0.16),
-                child: FittedBox(
-                  child: Text(
-                    'OG',
-                    textAlign: TextAlign.center,
-                    textScaler: TextScaler.noScaling,
-                    // Bricolage Grotesque ExtraBold, the only 800 face in the
-                    // bundle. Inter ships at 400/600 only, so asking
-                    // labelSmallFont for w800 gets synthetic bold instead:
-                    // thickened strokes with the O and G counters closed up.
-                    style: VineTheme.titleTinyFont(color: VineTheme.onPrimary)
-                        .copyWith(
-                          fontSize: dimension * 0.6,
-                          letterSpacing: -0.5,
-                          height: 1,
-                        ),
-                  ),
+          // Deliberately below the 48dp minimum touch target from
+          // accessibility.md. Padding the chit out to 48dp grows an inline
+          // name row from 14dp to 48dp, but only for rows that carry a
+          // badge, so comment threads and search results render ragged and
+          // the chit floats detached from the name. The compliant
+          // affordance is the profile header, which is a full route with
+          // room for a real target and renders the same explainer; this is
+          // a convenience path to it, not the only way to reach it.
+          child: Container(
+            margin: EdgeInsetsDirectional.only(start: leadingGap),
+            width: dimension,
+            height: dimension,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: VineTheme.primary,
+              shape: BoxShape.circle,
+            ),
+            // The glyph is a logo mark sized off the circle, not readable text:
+            // `dimension` already carries the text scale, so scaling the font
+            // again would square the factor. `FittedBox` keeps the two letters
+            // inside the circle whatever the font fallback metrics turn out to
+            // be, and the inset stops them touching the rim.
+            child: Padding(
+              padding: EdgeInsets.all(dimension * 0.16),
+              child: FittedBox(
+                child: Text(
+                  'OG',
+                  textAlign: TextAlign.center,
+                  textScaler: TextScaler.noScaling,
+                  // Bricolage Grotesque ExtraBold, the only 800 face in the
+                  // bundle. Inter ships at 400/600 only, so asking
+                  // labelSmallFont for w800 gets synthetic bold instead:
+                  // thickened strokes with the O and G counters closed up.
+                  style: VineTheme.titleTinyFont(color: VineTheme.onPrimary)
+                      .copyWith(
+                        fontSize: dimension * 0.6,
+                        letterSpacing: -0.5,
+                        height: 1,
+                      ),
                 ),
               ),
             ),
@@ -82,6 +82,3 @@ class OgBetaBadge extends StatelessWidget {
     );
   }
 }
-
-/// Minimum interactive size from `accessibility.md`.
-const double _minTouchTarget = 48;
