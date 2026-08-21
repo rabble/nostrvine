@@ -144,6 +144,7 @@ class _SignOutRedirectNotifier extends ChangeNotifier {
   }
 }
 
+const _callerScreenMarker = 'Caller screen';
 const _welcomeLocation = '/welcome';
 const _welcomeMarker = 'Welcome destination';
 
@@ -977,6 +978,66 @@ void main() {
         expect(find.text(_welcomeMarker), findsOneWidget);
         expect(
           find.text(_englishL10n().deleteAccountSuccess),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'takes down its own sheet and leaves the screen under it standing',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        // Held open so a frame can run while the sheet is up. Every other
+        // test here finishes the deletion inside one microtask turn, so the
+        // sheet is dismissed before it has ever built — and the dismissal
+        // never reaches the route it captured.
+        final deletionGate = Completer<DeleteAccountResult>();
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer((_) => deletionGate.future);
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: Text(_callerScreenMarker));
+              },
+            ),
+          ),
+        );
+
+        final deletion = executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        // Not pumpAndSettle: the sheet's progress indicator never goes quiet.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(VineBottomSheet), findsOneWidget);
+
+        deletionGate.complete(
+          DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+          ),
+        );
+        await deletion;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(VineBottomSheet), findsNothing);
+        expect(find.text(_callerScreenMarker), findsOneWidget);
+        expect(
+          find.text(_englishL10n().deleteAccountRelayConfirmationFailed),
           findsOneWidget,
         );
       },
