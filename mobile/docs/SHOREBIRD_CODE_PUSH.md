@@ -360,6 +360,46 @@ between PEM lines. CI decodes and validates that envelope before invoking
 Shorebird. Release jobs materialize only the public key; patch jobs materialize
 both keys.
 
+### The signing key is bound to the release
+
+Shorebird links the public key into the release binary and the installed app
+verifies every patch signature against *that* key. Sign a patch with a rotated
+private key and the app rejects it — on device, after download, with nothing in
+the build log to explain it.
+
+So provenance records `patch_public_key_sha256`, a plain SHA-256 of the
+normalized public PEM, and the patch workflow aborts when the key it is about
+to sign with is not the key the release was built with:
+
+```
+ERROR: patch signing key does not match the key this release was built with
+```
+
+The digest is deliberately not the keyed HMAC used for `config_fingerprints` —
+the key is public, so a value anyone can recompute is worth more than
+concealment. It covers the PEM with surrounding whitespace stripped, so
+recompute it as:
+
+```
+printf '%s' "$(openssl pkey -pubin -in key.pem)" | shasum -a 256
+```
+
+The `$( )` is load-bearing: it drops the trailing newline `openssl` emits, and
+`shasum` on the file directly returns a different digest.
+
+When that error appears, restore the release's key pair rather than editing the
+record; provenance is create-only.
+
+Releases recorded before this field existed verify with a note on stderr rather
+than an abort. Nothing can be checked for them, which is the reason to prefer
+patching a release cut under the current scheme.
+
+**Rotating the patch-signing pair strands every release built with the old
+one**, exactly as moving the CLI pin does. Rotate immediately after a store
+release, never while a shipped release is the only thing standing between
+production and a hot fix, and retain the retired pair for as long as any
+release signed with it can still be patched.
+
 The `github_credentials` token used by release and patch jobs must have read
 and write access to the private `divinevideo/divine-release-provenance`
 repository. Provenance writes are create-only. Never delete or replace a record

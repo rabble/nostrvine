@@ -36,6 +36,23 @@ def fingerprint_key
   key
 end
 
+PUBLIC_KEY_PEM = /\A-----BEGIN PUBLIC KEY-----\n.+\n-----END PUBLIC KEY-----\z/m
+SHA256_HEX = /\A[0-9a-f]{64}\z/
+
+# Digest of the patch-signing public key baked into the release binary.
+#
+# Shorebird verifies a patch signature on-device against the key linked into
+# the release, so a rotated key produces patches the installed app silently
+# refuses. This is a plain digest, not the keyed fingerprint used for
+# dart-defines: the key is public, and a digest anyone can recompute from the
+# PEM is what makes the mismatch diagnosable.
+def patch_public_key_digest
+  pem = required_env('SHOREBIRD_PATCH_PUBLIC_KEY').gsub('\\n', "\n").strip
+  abort_with('SHOREBIRD_PATCH_PUBLIC_KEY is not a public-key PEM') unless pem.match?(PUBLIC_KEY_PEM)
+
+  OpenSSL::Digest::SHA256.hexdigest(pem)
+end
+
 def fingerprints(defines, key)
   defines.sort.to_h do |name, value|
     abort_with("dart-define #{name} must be a string") unless value.is_a?(String)
@@ -142,6 +159,7 @@ when 'emit'
     'shorebird_cli_revision' => options[:shorebird_cli_revision],
     'config_fingerprint_key_id' => required_env('SHOREBIRD_PROVENANCE_HMAC_KEY_ID'),
     'config_fingerprints' => fingerprints(defines, fingerprint_key),
+    'patch_public_key_sha256' => patch_public_key_digest,
     'patchable' => true,
   }
   record['record_hmac'] = record_hmac(record, fingerprint_key)
@@ -181,6 +199,16 @@ when 'verify'
   abort_with('patch Flutter version does not match release provenance') unless record['flutter_version'] == options[:flutter_version]
   abort_with('patch Shorebird CLI version does not match release provenance') unless record['shorebird_cli_version'] == options[:shorebird_cli_version]
   abort_with('patch Shorebird CLI revision does not match release provenance') unless record['shorebird_cli_revision'] == options[:shorebird_cli_revision]
+
+  recorded_key_digest = record['patch_public_key_sha256']
+  if recorded_key_digest.nil?
+    warn('NOTE: this release predates patch-signing-key binding; the signing key cannot be checked')
+  else
+    abort_with('release provenance patch_public_key_sha256 is invalid') unless recorded_key_digest.is_a?(String) && recorded_key_digest.match?(SHA256_HEX)
+    unless secure_compare(recorded_key_digest, patch_public_key_digest)
+      abort_with('patch signing key does not match the key this release was built with')
+    end
+  end
 
   recorded_fingerprints = record['config_fingerprints']
   abort_with('release provenance config_fingerprints is invalid') unless recorded_fingerprints.is_a?(Hash)
