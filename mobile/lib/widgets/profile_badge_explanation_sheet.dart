@@ -10,10 +10,10 @@ enum ProfileBadgeExplanationType { ogViner, ogBetaTester, profileCheckmark }
 
 /// Opens the explainer for a compact profile badge.
 ///
-/// This is only for profile-header actions, where the caller is on a full route
-/// rather than inside an existing bottom sheet. Inline name-row badges stay
-/// non-interactive because their visual box is intentionally smaller than a
-/// 48 dp touch target and many of those rows already navigate to the profile.
+/// Called from the profile header and from the inline chits in feeds,
+/// comments, search and grids, so the disclaimer is reachable everywhere a
+/// badge appears. Safe to open from inside an existing bottom sheet: it
+/// stacks on the root navigator rather than replacing the sheet below it.
 Future<void> showProfileBadgeExplanationSheet(
   BuildContext context,
   ProfileBadgeExplanationType type,
