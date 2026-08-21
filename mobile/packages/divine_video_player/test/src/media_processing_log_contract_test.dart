@@ -90,6 +90,26 @@ void main() {
       );
     });
   });
+
+  group('Apple audio-overlay diagnostic contract', () {
+    test('exports curated outcomes without forwarding periodic ticks', () {
+      final source = _appleAudioOverlaySourceFile().readAsStringSync();
+
+      expect(source, isNot(contains('import os')));
+      expect(source, contains('DivineVideoPlayerLog.shared'));
+      expect(source, contains('trackIndex: index'));
+      expect(source, contains('player.currentItem?.status'));
+      expect(source, contains('player.currentItem?.error'));
+      expect(source, contains('player.status'));
+      expect(source, contains('seek completed='));
+      expect(source, contains('skipping invalid uri'));
+      expect(
+        source,
+        contains('print("[AudioOverlay] update: position'),
+        reason: 'The 5 Hz position trace must stay out of bug-report logs.',
+      );
+    });
+  });
 }
 
 File _androidSourceFile() {
@@ -121,5 +141,21 @@ File _appleSourceFile() {
     'packages/divine_video_player/'
     'darwin/divine_video_player/Sources/divine_video_player/'
     'DivineVideoPlayerInstance.swift',
+  );
+}
+
+File _appleAudioOverlaySourceFile() {
+  final packageRelative = File(
+    'darwin/divine_video_player/Sources/divine_video_player/'
+    'AudioOverlayManager.swift',
+  );
+  if (packageRelative.existsSync()) {
+    return packageRelative;
+  }
+
+  return File(
+    'packages/divine_video_player/'
+    'darwin/divine_video_player/Sources/divine_video_player/'
+    'AudioOverlayManager.swift',
   );
 }
