@@ -417,4 +417,28 @@ void main() {
       expect(LibraryClipTypeFilter.video.matches(stopMotionClip), isFalse);
     });
   });
+
+  group(ClipLibraryCategoryFilter, () {
+    final archivedAndFiled = DivineVideoClip(
+      id: 'archived-and-filed',
+      video: EditorVideo.file('/path/to/archived.mp4'),
+      duration: const Duration(seconds: 4),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
+      categoryId: 'cat-travel',
+      archivedAt: DateTime(2026, 3, 6),
+    );
+
+    test('shows an archived clip that stayed filed under the category', () {
+      expect(
+        const ClipLibraryCategoryFilter('cat-travel').admits(archivedAndFiled),
+        isTrue,
+      );
+    });
+
+    test('All still hides that clip, which is what archiving is for', () {
+      expect(const ClipLibraryAllFilter().admits(archivedAndFiled), isFalse);
+    });
+  });
 }

@@ -244,23 +244,16 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   // -- Category and archive methods --
 
   /// File a clip under [categoryId], or pass `null` to remove it from its
-  /// current category. Does not validate that the category exists.
-  ///
-  /// Pass [clearArchived] to drop the archive marker in the same statement
-  /// when filing an archived clip into a visible category. Unfiling leaves the
-  /// archive marker alone.
+  /// current category. Does not validate that the category exists or change
+  /// the clip's archive marker.
   ///
   /// Returns true if a row was updated.
   Future<bool> setClipCategory({
     required String id,
     required String? categoryId,
-    bool clearArchived = false,
   }) async {
     final rows = await (update(clips)..where((t) => t.id.equals(id))).write(
-      ClipsCompanion(
-        categoryId: Value(categoryId),
-        archivedAt: clearArchived ? const Value(null) : const Value.absent(),
-      ),
+      ClipsCompanion(categoryId: Value(categoryId)),
     );
     return rows > 0;
   }

@@ -69,8 +69,10 @@ class ClipsTab extends StatelessWidget {
   /// the user create, rename, and delete categories.
   ///
   /// Only the standalone library sets this. The clip pickers leave it off:
-  /// neither an archived nor a trashed clip can join a timeline, and
-  /// managing categories is not what the user came to the picker for.
+  /// a trashed clip cannot join a timeline, and managing categories is not
+  /// what the user came to the picker for. An archived clip that kept its
+  /// category still shows up under it, badged as archived — the category is
+  /// the whole truth about where a clip appears.
   final bool showCategoryManagement;
 
   @override
@@ -270,6 +272,9 @@ class _FilterContent extends StatelessWidget {
     return _MasonryLayout(
       clips: visibleClips,
       columnCount: state.gridColumnCount,
+      // Only inside a category, where archived clips sit next to active ones
+      // and nothing else tells them apart.
+      markArchivedClips: state.filter is ClipLibraryCategoryFilter,
       backgroundColor: backgroundColor,
       selectedClipIds: state.selectedClipIds,
       selectionEnabled: selectionEnabled,
@@ -470,6 +475,7 @@ class _MasonryLayout extends StatelessWidget {
     required this.selectedClipIds,
     required this.selectionEnabled,
     required this.onTapClip,
+    this.markArchivedClips = false,
     this.disabledClipIds = const {},
     this.scrollController,
     this.targetAspectRatio,
@@ -486,6 +492,9 @@ class _MasonryLayout extends StatelessWidget {
   /// a selection badge, a tap toggles one, and a long press drags a range of
   /// them out.
   final bool selectionEnabled;
+
+  /// Whether an archived clip in [clips] carries the archived marker.
+  final bool markArchivedClips;
 
   final Set<String> disabledClipIds;
   final ScrollController? scrollController;
@@ -565,6 +574,7 @@ class _MasonryLayout extends StatelessWidget {
                 clip: clip,
                 selectionIndex: selectionIndex,
                 showSelectionIndicator: selectionEnabled,
+                showArchivedBadge: markArchivedClips && clip.archivedAt != null,
                 disabled: disabled,
                 onTap: () => onTapClip(clip),
                 // No long press here: it belongs to the drag selection above,

@@ -6171,6 +6171,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return 'Архивирано. $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return 'Стоп-моушън клип, $frames';
   }
@@ -11359,6 +11364,34 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => 'Извади от архива';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Оставяне в тези категории?',
+      one: 'Оставяне в тази категория?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return 'Остави в $name';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => 'Остави в категориите им';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return 'Премахни от $name';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed =>
+      'Премахни от категориите им';
 
   @override
   String get libraryMoveSelectedClipsTooltip =>

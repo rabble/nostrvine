@@ -625,7 +625,7 @@ class Clips extends Table {
 
   /// Archive marker. NULL = active; non-NULL = archived since this time.
   /// Archived clips are hidden from the library's default view and shown
-  /// only under its Archive filter.
+  /// under its Archive filter and any category they remain filed under.
   DateTimeColumn get archivedAt => dateTime().nullable().named('archived_at')();
 
   @override

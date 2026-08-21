@@ -1014,21 +1014,46 @@ void main() {
         expect(await service.getAllClips(), hasLength(1));
       });
 
-      test('filing an archived clip into a category unarchives it', () async {
-        final category = await service.createCategory('Travel');
+      test(
+        'filing an archived clip into a category keeps it archived',
+        () async {
+          final category = await service.createCategory('Travel');
+          await service.saveClip(libraryClip('clip_1'));
+          await service.setClipCategory(
+            clipId: 'clip_1',
+            categoryId: category!.id,
+          );
+          await service.setClipArchived(clipId: 'clip_1', archived: true);
+
+          await service.setClipCategory(
+            clipId: 'clip_1',
+            categoryId: category.id,
+          );
+
+          final reloaded = (await service.getAllClips()).single;
+          expect(reloaded.categoryId, category.id);
+          expect(reloaded.archivedAt, isNotNull);
+        },
+      );
+
+      test('moving an archived clip keeps it archived', () async {
+        final travel = await service.createCategory('Travel');
+        final work = await service.createCategory('Work');
         await service.saveClip(libraryClip('clip_1'));
+        await service.setClipCategory(
+          clipId: 'clip_1',
+          categoryId: travel!.id,
+        );
         await service.setClipArchived(clipId: 'clip_1', archived: true);
 
         await service.setClipCategory(
           clipId: 'clip_1',
-          categoryId: category!.id,
+          categoryId: work!.id,
         );
 
-        // A category's view hides archived clips, so a clip left archived
-        // would be filed somewhere it could never be seen.
         final reloaded = (await service.getAllClips()).single;
-        expect(reloaded.categoryId, category.id);
-        expect(reloaded.archivedAt, isNull);
+        expect(reloaded.categoryId, work.id);
+        expect(reloaded.archivedAt, isNotNull);
       });
 
       test('unfiling a clip leaves it archived', () async {

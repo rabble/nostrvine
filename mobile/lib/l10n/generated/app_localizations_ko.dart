@@ -5822,6 +5822,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String videoClipArchivedSemanticLabel(String label) {
+    return '보관됨. $label';
+  }
+
+  @override
   String videoClipStopMotionSemanticLabel(String frames) {
     return '스톱모션 클립, $frames';
   }
@@ -10699,6 +10704,33 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get libraryUnarchiveAction => '보관 취소';
+
+  @override
+  String libraryArchiveKeepCategoryTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '이 카테고리들에 유지할까요?',
+      one: '이 카테고리에 유지할까요?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryArchiveKeepCategoryAction(String name) {
+    return '$name에 유지';
+  }
+
+  @override
+  String get libraryArchiveKeepCategoryActionMixed => '카테고리에 유지';
+
+  @override
+  String libraryArchiveRemoveCategoryAction(String name) {
+    return '$name에서 제거';
+  }
+
+  @override
+  String get libraryArchiveRemoveCategoryActionMixed => '카테고리에서 제거';
 
   @override
   String get libraryMoveSelectedClipsTooltip => '선택한 클립 이동';

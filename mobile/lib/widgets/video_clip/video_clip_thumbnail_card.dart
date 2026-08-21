@@ -21,6 +21,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
     this.showSelectionIndicator = true,
     this.disabled = false,
     this.showDurationBadge = true,
+    this.showArchivedBadge = false,
     super.key,
   });
 
@@ -43,6 +44,14 @@ class VideoClipThumbnailCard extends StatefulWidget {
 
   /// Whether to show the duration badge at the bottom-left corner.
   final bool showDurationBadge;
+
+  /// Whether to mark the clip as archived.
+  ///
+  /// Only the category views set this: an archived clip can stay filed under
+  /// its category, and there the marker is the one thing separating it from
+  /// the active clips beside it. In the archive view every clip carries the
+  /// state, so the marker would say nothing.
+  final bool showArchivedBadge;
 
   /// Whether this clip is disabled and cannot be interacted with.
   /// When disabled, the card is shown with reduced opacity and tap handlers
@@ -68,21 +77,25 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
         widget.showDurationBadge && !widget.clip.isStopMotion;
 
     final l10n = context.l10n;
+    // A stop-motion clip's playback length is a tiny, misleading value, which
+    // is why the duration badge is hidden for it. Announcing that same number
+    // would leak to screen readers exactly what the UI withholds, so describe
+    // the clip by its still count instead.
+    final label = widget.clip.isStopMotion
+        ? l10n.videoClipStopMotionSemanticLabel(
+            l10n.videoEditorStopMotionFramesCount(
+              widget.clip.stopMotionFrames?.length ?? 0,
+            ),
+          )
+        : l10n.videoClipSemanticLabel(
+            widget.clip.duration.toFormattedSeconds(),
+          );
+
     return Semantics(
       container: true,
-      // A stop-motion clip's playback length is a tiny, misleading value, which
-      // is why the duration badge is hidden for it. Announcing that same number
-      // would leak to screen readers exactly what the UI withholds, so describe
-      // the clip by its still count instead.
-      label: widget.clip.isStopMotion
-          ? l10n.videoClipStopMotionSemanticLabel(
-              l10n.videoEditorStopMotionFramesCount(
-                widget.clip.stopMotionFrames?.length ?? 0,
-              ),
-            )
-          : l10n.videoClipSemanticLabel(
-              widget.clip.duration.toFormattedSeconds(),
-            ),
+      label: widget.showArchivedBadge
+          ? l10n.videoClipArchivedSemanticLabel(label)
+          : label,
       value: _isSelected
           // The badge shows the pick order, which decides the order clips are
           // stitched into, so announce it rather than letting the badge's bare
@@ -123,10 +136,14 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     /// Thumbnail or placeholder
                     _Thumbnail(clip: widget.clip),
 
-                    /// Stop-motion marker + still count - top left
-                    if (widget.clip.isStopMotion)
-                      _StopMotionBadge(
-                        frameCount: widget.clip.stopMotionFrames?.length ?? 0,
+                    /// Stop-motion marker + still count and the archived
+                    /// marker - top left
+                    if (widget.clip.isStopMotion || widget.showArchivedBadge)
+                      _TopLeftBadges(
+                        frameCount: widget.clip.isStopMotion
+                            ? widget.clip.stopMotionFrames?.length ?? 0
+                            : null,
+                        showArchived: widget.showArchivedBadge,
                       ),
 
                     /// Duration badge - bottom left. Hidden for stop-motion
@@ -217,8 +234,62 @@ class _TitleBadge extends StatelessWidget {
   }
 }
 
+/// The badge row in the top-left corner: the stop-motion marker, the
+/// archived marker, or both side by side.
+class _TopLeftBadges extends StatelessWidget {
+  const _TopLeftBadges({required this.frameCount, required this.showArchived});
+
+  /// Number of captured stills, or `null` when the clip is not a
+  /// stop-motion recording and carries no stop-motion badge.
+  final int? frameCount;
+
+  /// Whether the archived marker is part of the row.
+  final bool showArchived;
+
+  @override
+  Widget build(BuildContext context) {
+    return PositionedDirectional(
+      start: 6,
+      top: 6,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        children: [
+          if (frameCount case final count?) _StopMotionBadge(frameCount: count),
+          if (showArchived) const _ArchivedBadge(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Marks a clip shown inside a category as archived.
+class _ArchivedBadge extends StatelessWidget {
+  const _ArchivedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    // Decorative: the card's own label already announces the archived state,
+    // and a second node here would sit inside the card's button.
+    return ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: VineTheme.scrim65,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const DivineIcon(
+          icon: .stackSimple,
+          color: VineTheme.lightText,
+          size: 14,
+        ),
+      ),
+    );
+  }
+}
+
 /// Marks a clip in the library as a stop-motion recording and shows how many
-/// stills it holds (top-left corner).
+/// stills it holds.
 class _StopMotionBadge extends StatelessWidget {
   const _StopMotionBadge({required this.frameCount});
 
@@ -227,34 +298,30 @@ class _StopMotionBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PositionedDirectional(
-      start: 6,
-      top: 6,
-      // Fully decorative: the card's own label already announces that this is
-      // a stop-motion clip and how many stills it holds. Emitting a node here
-      // too would put a second, non-actionable node inside the card's button.
-      child: ExcludeSemantics(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          decoration: BoxDecoration(
-            color: VineTheme.scrim65,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 3,
-            children: [
-              const DivineIcon(
-                icon: .imagesSquare,
-                color: VineTheme.lightText,
-                size: 14,
-              ),
-              Text(
-                '$frameCount',
-                style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
-              ),
-            ],
-          ),
+    // Fully decorative: the card's own label already announces that this is
+    // a stop-motion clip and how many stills it holds. Emitting a node here
+    // too would put a second, non-actionable node inside the card's button.
+    return ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        decoration: BoxDecoration(
+          color: VineTheme.scrim65,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 3,
+          children: [
+            const DivineIcon(
+              icon: .imagesSquare,
+              color: VineTheme.lightText,
+              size: 14,
+            ),
+            Text(
+              '$frameCount',
+              style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
+            ),
+          ],
         ),
       ),
     );

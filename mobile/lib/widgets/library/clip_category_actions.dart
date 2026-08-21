@@ -43,6 +43,18 @@ final class ClipCategoryMoveToUnarchive extends ClipCategoryMoveChoice {
 /// What the user picked in the category management sheet.
 enum ClipCategoryManageChoice { rename, delete }
 
+/// What the user answered when asked what archiving should do to the clips'
+/// category.
+enum ClipArchiveCategoryChoice {
+  /// Archive the clips and leave them filed where they are, so they stay
+  /// visible under their category.
+  keep,
+
+  /// Archive the clips and take them out of their category, leaving the
+  /// archive as the only place they show up.
+  remove,
+}
+
 /// Which archive action the move sheet offers for the current selection.
 enum ClipCategoryArchiveOption {
   /// The selection is in the working set and can be archived out of it.
@@ -141,8 +153,32 @@ abstract final class ClipCategoryActions {
       case ClipCategoryMoveToNew():
         await runCreateFlow(context: context, bloc: bloc, clipIds: clipIds);
       case ClipCategoryMoveToArchive():
+        // Archiving no longer empties a category, so a filed clip has two
+        // plausible destinations and the user picks which one they meant.
+        final filedCategoryIds = {
+          for (final clip in selected) ?clip.categoryId,
+        };
+        var clearCategory = false;
+        if (filedCategoryIds.isNotEmpty) {
+          final categoryChoice = await showArchiveCategoryPrompt(
+            context: context,
+            categoryCount: filedCategoryIds.length,
+            categoryName: filedCategoryIds.length == 1
+                ? _categoryName(state.categories, filedCategoryIds.first)
+                : null,
+          );
+          // Dismissing the question cancels the archive rather than picking
+          // for the user — either answer moves clips out of a view they are
+          // looking at.
+          if (categoryChoice == null) return;
+          clearCategory = categoryChoice == ClipArchiveCategoryChoice.remove;
+        }
         bloc.add(
-          ClipsLibraryClipsArchiveChanged(clipIds: clipIds, archived: true),
+          ClipsLibraryClipsArchiveChanged(
+            clipIds: clipIds,
+            archived: true,
+            clearCategory: clearCategory,
+          ),
         );
       case ClipCategoryMoveToUnarchive():
         bloc.add(
@@ -160,6 +196,61 @@ abstract final class ClipCategoryActions {
           ),
         );
     }
+  }
+
+  /// Name of the category [categoryId], or `null` when it no longer exists.
+  static String? _categoryName(
+    List<ClipCategory> categories,
+    String categoryId,
+  ) {
+    for (final category in categories) {
+      if (category.id == categoryId) return category.name;
+    }
+    return null;
+  }
+
+  /// Asks whether archiving should leave the clips filed under their
+  /// category or take them out of it.
+  ///
+  /// [categoryCount] is how many distinct categories the selection spans,
+  /// not how many clips it holds: the sheet asks about the destination, and
+  /// three clips filed under one category are still one category to keep
+  /// them in. [categoryName] names that category when there is only one;
+  /// pass `null` for a selection spanning several, which drops the name
+  /// from the wording.
+  ///
+  /// Returns null when the sheet is dismissed without an answer.
+  static Future<ClipArchiveCategoryChoice?> showArchiveCategoryPrompt({
+    required BuildContext context,
+    required int categoryCount,
+    String? categoryName,
+  }) async {
+    final l10n = context.l10n;
+    ClipArchiveCategoryChoice? choice;
+    await VineBottomSheetActionMenu.show(
+      context: context,
+      title: Text(
+        l10n.libraryArchiveKeepCategoryTitle(categoryCount),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
+      ),
+      options: [
+        VineBottomSheetActionData(
+          iconPath: DivineIconName.folderOpen.assetPath,
+          label: categoryName == null
+              ? l10n.libraryArchiveKeepCategoryActionMixed
+              : l10n.libraryArchiveKeepCategoryAction(categoryName),
+          onTap: () => choice = ClipArchiveCategoryChoice.keep,
+        ),
+        VineBottomSheetActionData(
+          iconPath: DivineIconName.prohibit.assetPath,
+          label: categoryName == null
+              ? l10n.libraryArchiveRemoveCategoryActionMixed
+              : l10n.libraryArchiveRemoveCategoryAction(categoryName),
+          onTap: () => choice = ClipArchiveCategoryChoice.remove,
+        ),
+      ],
+    );
+    return choice;
   }
 
   /// Sentinel option values for the move sheet. Category ids are UUIDs, so

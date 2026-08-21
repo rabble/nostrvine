@@ -153,6 +153,65 @@ void main() {
         expect(find.text(en.libraryNoClipsYetTitle), findsNothing);
       });
 
+      testWidgets('marks an archived clip that stayed filed in its category', (
+        tester,
+      ) async {
+        final archived = clip1.copyWith(
+          categoryId: 'cat-travel',
+          archivedAt: DateTime(2026, 3, 6),
+        );
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            filter: const ClipLibraryCategoryFilter('cat-travel'),
+            clips: [archived, clip2],
+            sortedClips: [archived, clip2],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget(showCategoryManagement: true));
+
+        final cards = tester
+            .widgetList<VideoClipThumbnailCard>(
+              find.byType(VideoClipThumbnailCard),
+            )
+            .toList();
+        expect(
+          cards.singleWhere((c) => c.clip.id == 'clip1').showArchivedBadge,
+          isTrue,
+        );
+        // The active clip beside it stays unmarked.
+        expect(
+          cards.singleWhere((c) => c.clip.id == 'clip2').showArchivedBadge,
+          isFalse,
+        );
+      });
+
+      testWidgets('leaves the archive view unmarked, where all clips are', (
+        tester,
+      ) async {
+        final archived = clip1.copyWith(archivedAt: DateTime(2026, 3, 6));
+        when(() => mockBloc.state).thenReturn(
+          ClipsLibraryState(
+            status: ClipsLibraryStatus.loaded,
+            filter: const ClipLibraryArchiveFilter(),
+            clips: [archived],
+            sortedClips: [archived],
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget(showCategoryManagement: true));
+
+        expect(
+          tester
+              .widget<VideoClipThumbnailCard>(
+                find.byType(VideoClipThumbnailCard),
+              )
+              .showArchivedBadge,
+          isFalse,
+        );
+      });
+
       testWidgets('the trash list instead of the grid under Deleted', (
         tester,
       ) async {

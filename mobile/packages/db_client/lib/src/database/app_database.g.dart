@@ -8267,7 +8267,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
 
   /// Archive marker. NULL = active; non-NULL = archived since this time.
   /// Archived clips are hidden from the library's default view and shown
-  /// only under its Archive filter.
+  /// under its Archive filter and any category they remain filed under.
   final DateTime? archivedAt;
   const ClipRow({
     required this.id,

@@ -252,29 +252,7 @@ void main() {
     );
 
     test(
-      'setClipCategory can clear the archive marker in the same write',
-      () async {
-        await insertCategory('cat-a');
-        await insertLibraryClip('clip-1');
-        await clipsDao.setClipArchived(
-          id: 'clip-1',
-          archivedAt: DateTime(2026, 3, 2),
-        );
-
-        await clipsDao.setClipCategory(
-          id: 'clip-1',
-          categoryId: 'cat-a',
-          clearArchived: true,
-        );
-
-        final row = await clipsDao.getClipById('clip-1');
-        expect(row?.categoryId, 'cat-a');
-        expect(row?.archivedAt, null);
-      },
-    );
-
-    test(
-      'setClipCategory leaves the archive marker alone by default',
+      'setClipCategory leaves the archive marker alone',
       () async {
         await insertLibraryClip('clip-1');
         await clipsDao.setClipArchived(
