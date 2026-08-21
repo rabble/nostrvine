@@ -6348,11 +6348,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return '你的用户名 $username 已被永久释放，但我们没能完成账号删除。再次点删除以完成。';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '同时永久放弃 $username';
   }
@@ -6382,6 +6377,50 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
+
+  @override
+  String get accountDeletionRecoveryTitle => '完成账号删除';
+
+  @override
+  String get accountDeletionRecoveryBody => '我们没能完成账号删除。你的用户名仍为你保留，还可以找回。';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername => '找回我的用户名';
+
+  @override
+  String get accountDeletionFinishingBody => '你的删除请求仍在处理中。离开此页面前请再确认一次。';
+
+  @override
+  String get accountDeletionRecoveryFailed => '我们还没能找回你的用户名。请检查网络连接后重试。';
+
+  @override
+  String get accountDeletionUsernameRestored => '你的用户名已找回，你的账号未被删除。';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed => '我们无法查询你的删除状态。请检查网络连接后重试。';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
 
   @override
   String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';

@@ -3780,15 +3780,6 @@
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
   },
-  "deleteAccountBurnUsernameReleased": "Tên người dùng {username} của bạn đã được nhả vĩnh viễn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Chạm Xóa lần nữa để hoàn tất.",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountBurnUsernameToggle": "Cũng từ bỏ vĩnh viễn {username}",
   "@deleteAccountBurnUsernameToggle": {
     "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
@@ -3818,6 +3809,13 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
+  "accountDeletionRecoveryTitle": "Hoàn tất xóa tài khoản của bạn",
+  "accountDeletionRecoveryBody": "Bọn mình chưa xóa xong tài khoản của bạn. Tên người dùng vẫn được giữ cho bạn và vẫn có thể lấy lại.",
+  "accountDeletionRestoreUsername": "Lấy lại tên người dùng của mình",
+  "accountDeletionFinishingBody": "Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.",
+  "accountDeletionRecoveryFailed": "Bọn mình chưa lấy lại được tên người dùng của bạn. Kiểm tra kết nối và thử lại.",
+  "accountDeletionUsernameRestored": "Tên người dùng của bạn đã được lấy lại. Tài khoản của bạn chưa bị xóa.",
+  "accountDeletionRecoveryStatusFailed": "Bọn mình không kiểm tra được trạng thái xóa của bạn. Kiểm tra kết nối và thử lại.",
   "deleteAccountFinalConfirmationTitle": "⚠️ Xác nhận lần cuối",
   "deleteAccountKeyDeletionWarning": "Đã gửi yêu cầu xóa, nhưng khóa của bạn có thể chưa được gỡ hết khỏi thiết bị này. Vào Cài đặt → Khóa Nostr → Xóa khóa để thử lại.",
   "deleteAccountLocalDataDeletionFailed": "Đã gửi yêu cầu xóa và bạn đã đăng xuất, nhưng một số dữ liệu cục bộ không gỡ được khỏi thiết bị này.",

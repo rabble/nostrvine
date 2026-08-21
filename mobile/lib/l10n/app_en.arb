@@ -4391,15 +4391,6 @@
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
   },
-  "deleteAccountBurnUsernameReleased": "Your username {username} has been permanently released, but we couldn't finish deleting your account. Tap Delete again to finish.",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountBurnUsernameToggle": "Also permanently give up {username}",
   "@deleteAccountBurnUsernameToggle": {
     "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
@@ -4435,10 +4426,34 @@
     "description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."
   },
   "deleteAccountDeleteAllContentButton": "Delete All Content",
+  "accountDeletionRecoveryTitle": "Finish deleting your account",
+  "@accountDeletionRecoveryTitle": {"description": "Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared."},
+  "accountDeletionRecoveryBody": "We couldn't finish deleting your account. Your username is reserved for you and can still be restored.",
+  "@accountDeletionRecoveryBody": {"description": "Explains that an interrupted deletion left the username safely reserved and recoverable."},
+  "accountDeletionRecoveryBodyWithExpiry": "We couldn't finish deleting your account. Your username is reserved for you until {expiryDate} and can still be restored.",
+  "@accountDeletionRecoveryBodyWithExpiry": {"description": "Explains that an interrupted deletion left the username safely reserved until the coordinator's expiry date.", "placeholders": {"expiryDate": {"type": "String"}}},
+  "accountDeletionRestoreUsername": "Restore my username",
+  "@accountDeletionRestoreUsername": {"description": "Button that cancels an interrupted account deletion and restores its pending username."},
+  "accountDeletionFinishingBody": "Your deletion request is still being processed. Check again before leaving this screen.",
+  "@accountDeletionFinishingBody": {"description": "Shown while the server is durably completing an immediate account deletion."},
+  "accountDeletionRecoveryFailed": "We couldn't restore your username yet. Check your connection and try again.",
+  "@accountDeletionRecoveryFailed": {"description": "Shown when rollback of a pending username release was not confirmed."},
+  "accountDeletionUsernameRestored": "Your username is restored. Your account was not deleted.",
+  "@accountDeletionUsernameRestored": {"description": "Confirms that cancelling an interrupted deletion restored the pending username."},
+  "accountDeletionRecoveryStatusFailed": "We couldn't check your deletion status. Check your connection and try again.",
+  "@accountDeletionRecoveryStatusFailed": {"description": "Shown when the app cannot load a durable account-deletion attempt."},
+  "accountDeletionCancelAttemptBody": "We couldn't finish deleting your account. You can cancel this attempt and keep your account.",
+  "@accountDeletionCancelAttemptBody": {"description": "Explains that an interrupted deletion without a reserved username can be cancelled safely."},
+  "accountDeletionCancelAttempt": "Keep my account",
+  "@accountDeletionCancelAttempt": {"description": "Button that cancels an interrupted account-deletion attempt that has not begun server processing."},
+  "accountDeletionAttemptCancelled": "Account deletion cancelled. Your account was not deleted.",
+  "@accountDeletionAttemptCancelled": {"description": "Confirms cancellation of an interrupted account-deletion attempt without claiming a username was restored."},
+  "accountDeletionTerminalFailureBody": "We couldn't delete your account. Contact support for help or sign out to leave this screen.",
+  "@accountDeletionTerminalFailureBody": {"description": "Fallback explanation for a terminal account-deletion failure when the server supplies no safe detail."},
+  "accountDeletionSignOut": "Sign out",
+  "@accountDeletionSignOut": {"description": "Secondary action that leaves an account-deletion recovery gate without deleting local credentials."},
   "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
-  "@deleteAccountDeletionIncomplete": {
-    "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
-  },
+  "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and no claim about username state is safe."},
   "deleteAccountFinalConfirmationTitle": "⚠️ Final Confirmation",
   "deleteAccountKeyDeletionWarning": "Deletion requests sent, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.",
   "deleteAccountLocalDataDeletionFailed": "Deletion requests sent and you're signed out, but some local data could not be removed from this device.",

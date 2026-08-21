@@ -10,20 +10,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
-import 'package:profile_repository/profile_repository.dart';
 
 class _MockAccountDeletionService extends Mock
     implements AccountDeletionService {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockProfileRepository extends Mock implements ProfileRepository {}
+class _MockAccountDeletionRecoveryRepository extends Mock
+    implements AccountDeletionRecoveryRepository {}
+
+const _recoverableAttempt = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+  username: 'alice',
+);
+
+const _completedAttempt = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.completed,
+  username: 'alice',
+);
+
+const _recoverableAttemptWithoutUsername = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+);
+
+const _completedAttemptWithoutUsername = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.completed,
+);
 
 const _pubkeyHex =
     '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
@@ -49,9 +73,8 @@ Widget _wrapWithRouter(Widget child) {
       GoRoute(path: '/', builder: (_, state) => child),
       GoRoute(
         path: RoutePaths.supportCenter,
-        builder: (_, state) => const Scaffold(
-          body: Text('Support destination'),
-        ),
+        builder: (_, state) =>
+            const Scaffold(body: Text('Support destination')),
       ),
     ],
   );
@@ -772,7 +795,7 @@ void main() {
       expect(find.text(l10n.deleteAccountSuccess), findsNothing);
     });
 
-    testWidgets('opted-in burn failure aborts deletion and shows error', (
+    testWidgets('opted-in burn aborts when recovery is unavailable', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -782,11 +805,6 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
-      when(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      ).thenAnswer((_) async => const UsernameReleaseNotOwner());
-
       late BuildContext capturedContext;
       await tester.pumpWidget(
         _wrapWithRouter(
@@ -803,7 +821,6 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
         burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
@@ -833,10 +850,16 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       when(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      ).thenAnswer((_) async => const UsernameReleaseSuccess());
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenAnswer((_) async => _recoverableAttempt);
+      when(
+        () => recoveryRepository.submit(
+          attemptId: any(named: 'attemptId'),
+          vanishEventId: any(named: 'vanishEventId'),
+        ),
+      ).thenAnswer((_) async => _completedAttempt);
       when(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -867,7 +890,7 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
+        deletionRecoveryRepository: recoveryRepository,
         burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
@@ -879,7 +902,14 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).called(1);
-      verify(() => profileRepository.releaseUsername(name: 'alice')).called(1);
+      verify(() => recoveryRepository.prepare(username: 'alice')).called(1);
+      verify(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
+        ),
+      ).called(1);
+      verifyNever(authService.deleteKeycastAccount);
     });
 
     testWidgets('does not release the username when burn is not opted in', (
@@ -887,12 +917,12 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       // The pre-flight gate runs on every path; default it to ready so
       // these tests exercise the behaviour under test, not the gate.
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
       when(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -906,6 +936,15 @@ void main() {
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
+      when(
+        recoveryRepository.prepare,
+      ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
+      when(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
+        ),
+      ).thenAnswer((_) async => _completedAttemptWithoutUsername);
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -923,17 +962,22 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
+        deletionRecoveryRepository: recoveryRepository,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
-      verifyNever(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      );
+      verify(recoveryRepository.prepare).called(1);
+      verifyNever(() => recoveryRepository.prepare(username: 'alice'));
+      verify(
+        () => recoveryRepository.submit(
+          attemptId: 'attempt-id',
+          vanishEventId: 'event-id',
+        ),
+      ).called(1);
     });
 
-    testWidgets('opted-in burn aborts when profileRepository is null', (
+    testWidgets('opted-in burn aborts when recovery repository is null', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -956,8 +1000,7 @@ void main() {
         ),
       );
 
-      // profileRepository omitted (null): an opted-in burn must abort, not
-      // delete.
+      // Recovery repository omitted: an opted-in release must abort.
       await executeAccountDeletion(
         context: capturedContext,
         deletionService: deletionService,
@@ -993,10 +1036,10 @@ void main() {
         when(
           authService.checkAccountDeletionReadiness,
         ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final profileRepository = _MockProfileRepository();
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
         when(
-          () => profileRepository.releaseUsername(name: any(named: 'name')),
-        ).thenAnswer((_) async => const UsernameReleaseSuccess());
+          () => recoveryRepository.prepare(username: any(named: 'username')),
+        ).thenAnswer((_) async => _recoverableAttempt);
         when(
           () => deletionService.deleteAccount(
             onProgress: any(named: 'onProgress'),
@@ -1024,7 +1067,7 @@ void main() {
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
-          profileRepository: profileRepository,
+          deletionRecoveryRepository: recoveryRepository,
           burnUsername: true,
           ownedUsername: (name: 'alice', canonical: 'alice'),
         );
@@ -1034,7 +1077,7 @@ void main() {
           find.text(
             lookupAppLocalizations(
               const Locale('en'),
-            ).deleteAccountBurnUsernameReleased('@alice.divine.video'),
+            ).accountDeletionRecoveryBody,
           ),
           findsOneWidget,
         );
@@ -1283,7 +1326,7 @@ void main() {
     );
 
     testWidgets(
-      'discloses the release when keycast deletion fails after burn',
+      'keeps recovery available while the coordinator is processing',
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
@@ -1292,10 +1335,22 @@ void main() {
         when(
           authService.checkAccountDeletionReadiness,
         ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final profileRepository = _MockProfileRepository();
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
         when(
-          () => profileRepository.releaseUsername(name: any(named: 'name')),
-        ).thenAnswer((_) async => const UsernameReleaseSuccess());
+          () => recoveryRepository.prepare(username: any(named: 'username')),
+        ).thenAnswer((_) async => _recoverableAttempt);
+        when(
+          () => recoveryRepository.submit(
+            attemptId: any(named: 'attemptId'),
+            vanishEventId: any(named: 'vanishEventId'),
+          ),
+        ).thenAnswer(
+          (_) async => const AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.processing,
+            username: 'alice',
+          ),
+        );
         when(
           () => deletionService.deleteAccount(
             onProgress: any(named: 'onProgress'),
@@ -1328,7 +1383,7 @@ void main() {
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
-          profileRepository: profileRepository,
+          deletionRecoveryRepository: recoveryRepository,
           burnUsername: true,
           ownedUsername: (name: 'alice', canonical: 'alice'),
         );
@@ -1338,73 +1393,22 @@ void main() {
           find.text(
             lookupAppLocalizations(
               const Locale('en'),
-            ).deleteAccountBurnUsernameReleased('@alice.divine.video'),
+            ).accountDeletionFinishingBody,
           ),
           findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'network-error release with name still owned aborts as failed',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        // The pre-flight gate runs on every path; default it to ready so
-        // these tests exercise the behaviour under test, not the gate.
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final profileRepository = _MockProfileRepository();
-        when(
-          () => profileRepository.releaseUsername(name: any(named: 'name')),
-        ).thenAnswer((_) async => const UsernameReleaseNetworkError());
-        when(() => authService.currentPublicKeyHex).thenReturn('abc');
-        when(
-          () => profileRepository.getUsernameByPubkey(
-            pubkeyHex: any(named: 'pubkeyHex'),
-          ),
-        ).thenAnswer((_) async => (name: 'alice', canonical: 'alice'));
-
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
-          ),
-        );
-
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          profileRepository: profileRepository,
-          burnUsername: true,
-          ownedUsername: (name: 'alice', canonical: 'alice'),
-        );
-        await tester.pumpAndSettle();
-
-        verifyNever(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-          ),
         );
         expect(
           find.text(
             lookupAppLocalizations(
               const Locale('en'),
-            ).deleteAccountBurnUsernameFailed,
+            ).accountDeletionRestoreUsername,
           ),
-          findsOneWidget,
+          findsNothing,
         );
       },
     );
 
-    testWidgets('network-error release we cannot resolve shows incomplete', (
+    testWidgets('prepare network failure aborts before relay deletion', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1414,16 +1418,10 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       when(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      ).thenAnswer((_) async => const UsernameReleaseNetworkError());
-      when(() => authService.currentPublicKeyHex).thenReturn('abc');
-      when(
-        () => profileRepository.getUsernameByPubkey(
-          pubkeyHex: any(named: 'pubkeyHex'),
-        ),
-      ).thenAnswer((_) async => null);
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenThrow(const AccountDeletionRecoveryException('connection lost'));
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -1441,7 +1439,7 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
+        deletionRecoveryRepository: recoveryRepository,
         burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
@@ -1457,9 +1455,53 @@ void main() {
         find.text(
           lookupAppLocalizations(
             const Locale('en'),
-          ).deleteAccountDeletionIncomplete,
+          ).deleteAccountBurnUsernameFailed,
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('coordinator outage uses generic copy without a username', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(recoveryRepository.prepare).thenThrow(
+        const AccountDeletionRecoveryException('connection lost'),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
+      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
       );
     });
 
@@ -1473,7 +1515,6 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -1493,7 +1534,6 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
         burnUsername: true,
       );
       await tester.pumpAndSettle();
@@ -1503,9 +1543,6 @@ void main() {
           onProgress: any(named: 'onProgress'),
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
-      );
-      verifyNever(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
       );
     });
 
@@ -1517,7 +1554,6 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      final profileRepository = _MockProfileRepository();
       when(
         () => authService.currentPublicKeyHex,
       ).thenReturn('now_a_different_pk');
@@ -1554,16 +1590,12 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
-        profileRepository: profileRepository,
         burnUsername: true,
         ownedUsername: (name: 'rabble', canonical: 'rabble'),
         confirmedPubkey: _pubkeyHex,
       );
       await tester.pumpAndSettle();
 
-      verifyNever(
-        () => profileRepository.releaseUsername(name: any(named: 'name')),
-      );
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),

@@ -3780,15 +3780,6 @@
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
   },
-  "deleteAccountBurnUsernameReleased": "آپ کا صارف نام {username} مستقل طور پر چھوڑ دیا گیا ہے، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ مکمل کرنے کے لیے حذف کریں پر دوبارہ ٹیپ کریں۔",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountBurnUsernameToggle": "{username} بھی مستقل طور پر چھوڑ دیں",
   "@deleteAccountBurnUsernameToggle": {
     "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
@@ -3818,6 +3809,13 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
+  "accountDeletionRecoveryTitle": "اپنے اکاؤنٹ کا حذف مکمل کریں",
+  "accountDeletionRecoveryBody": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ آپ کا صارف نام آپ کے لیے محفوظ ہے اور اب بھی بحال کیا جا سکتا ہے۔",
+  "accountDeletionRestoreUsername": "میرا صارف نام بحال کریں",
+  "accountDeletionFinishingBody": "آپ کی حذف کی درخواست پر ابھی کام ہو رہا ہے۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔",
+  "accountDeletionRecoveryFailed": "ہم ابھی آپ کا صارف نام بحال نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
+  "accountDeletionUsernameRestored": "آپ کا صارف نام بحال ہو گیا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔",
+  "accountDeletionRecoveryStatusFailed": "ہم آپ کے حذف کی صورتحال چیک نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "deleteAccountFinalConfirmationTitle": "⚠️ آخری تصدیق",
   "deleteAccountKeyDeletionWarning": "حذف کی درخواستیں بھیج دی گئیں، لیکن ممکن ہے آپ کی کلیدیں اس ڈیوائس سے مکمل نہ ہٹائی گئی ہوں۔ دوبارہ کوشش کے لیے ترتیبات → Nostr کلیدیں → کلیدیں ہٹائیں پر جائیں۔",
   "deleteAccountLocalDataDeletionFailed": "حذف کی درخواستیں بھیج دی گئیں اور آپ سائن آؤٹ ہو گئے، لیکن کچھ مقامی ڈیٹا اس ڈیوائس سے نہیں ہٹایا جا سکا۔",

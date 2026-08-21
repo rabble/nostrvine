@@ -3780,15 +3780,6 @@
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
   },
-  "deleteAccountBurnUsernameReleased": "Nama pengguna anda {username} telah dilepaskan secara kekal, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Ketik Padam sekali lagi untuk melengkapkannya.",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountBurnUsernameToggle": "Juga serahkan {username} secara kekal",
   "@deleteAccountBurnUsernameToggle": {
     "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
@@ -3818,6 +3809,13 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
+  "accountDeletionRecoveryTitle": "Selesaikan pemadaman akaun anda",
+  "accountDeletionRecoveryBody": "Kami tidak dapat melengkapkan pemadaman akaun anda. Nama pengguna anda masih ditempah untuk anda dan masih boleh dipulihkan.",
+  "accountDeletionRestoreUsername": "Pulihkan nama pengguna saya",
+  "accountDeletionFinishingBody": "Permintaan pemadaman anda masih diproses. Semak semula sebelum anda meninggalkan skrin ini.",
+  "accountDeletionRecoveryFailed": "Kami belum dapat memulihkan nama pengguna anda. Semak sambungan anda dan cuba lagi.",
+  "accountDeletionUsernameRestored": "Nama pengguna anda telah dipulihkan. Akaun anda tidak dipadam.",
+  "accountDeletionRecoveryStatusFailed": "Kami tidak dapat menyemak status pemadaman anda. Semak sambungan anda dan cuba lagi.",
   "deleteAccountFinalConfirmationTitle": "⚠️ Pengesahan Akhir",
   "deleteAccountKeyDeletionWarning": "Permintaan pemadaman dihantar, tetapi kunci anda mungkin tidak dialih keluar sepenuhnya daripada peranti ini. Pergi ke Tetapan → Kunci Nostr → Alih Keluar Kunci untuk cuba semula.",
   "deleteAccountLocalDataDeletionFailed": "Permintaan pemadaman dihantar dan anda telah dilog keluar, tetapi sesetengah data setempat tidak dapat dialih keluar daripada peranti ini.",

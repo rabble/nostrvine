@@ -6663,11 +6663,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'تم تحرير اسم المستخدم $username نهائيًا، لكن تعذّر علينا إكمال حذف حسابك. اضغط «حذف» مرّة أخرى للإنهاء.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'تخلَّ نهائيًا أيضًا عن $username';
   }
@@ -6700,6 +6695,55 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
+
+  @override
+  String get accountDeletionRecoveryTitle => 'إكمال حذف حسابك';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      'تعذّر علينا إكمال حذف حسابك. اسم المستخدم الخاص بك محجوز لك ولا يزال من الممكن استعادته.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername => 'استعادة اسم المستخدم';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      'لا يزال طلب الحذف قيد المعالجة. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      'تعذّرت استعادة اسم المستخدم حتى الآن. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.';
+
+  @override
+  String get accountDeletionUsernameRestored =>
+      'تمّت استعادة اسم المستخدم. لم يُحذف حسابك.';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      'تعذّر التحقق من حالة الحذف. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
 
   @override
   String get deleteAccountDeletionIncomplete =>

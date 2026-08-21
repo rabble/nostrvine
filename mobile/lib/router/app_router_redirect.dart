@@ -306,6 +306,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   }
 
   final reviewStatusAsync = ref.read(currentMinorAccountReviewStatusProvider);
+  final deletionAttempt = ref.read(currentAccountDeletionAttemptProvider).value;
   final reviewStatus = reviewStatusAsync.value;
   final moderationConversationId = _moderationConversationId(
     authService,
@@ -313,6 +314,8 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   );
 
   final isReviewRoute = location == MinorAccountReviewScreen.path;
+  final isDeletionRecoveryRoute =
+      location == AccountDeletionRecoveryScreen.path;
   final isPublicReviewRoute = location == MinorAccountReviewScreen.welcomePath;
   final isReviewLoadingRoute = location == MinorAccountReviewLoadingScreen.path;
   final isPublicParentConsentRoute =
@@ -340,6 +343,18 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // Auth routes don't require authentication — user is in the
   // process of logging in.
   final isAuthRoute = _isAuthEntryLocation(location);
+
+  if (authState == AuthState.authenticated &&
+      deletionAttempt?.requiresRecoveryScreen == true &&
+      !isDeletionRecoveryRoute &&
+      !isSupportRoute) {
+    return AccountDeletionRecoveryScreen.path;
+  }
+  if (authState == AuthState.authenticated &&
+      deletionAttempt?.requiresRecoveryScreen != true &&
+      isDeletionRecoveryRoute) {
+    return VideoFeedPage.pathForIndex(0);
+  }
 
   // Only bounce to the loading screen on a true cold load (no value yet).
   // Riverpod keeps the previous value during a background refetch

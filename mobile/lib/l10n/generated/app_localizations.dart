@@ -11540,12 +11540,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.'**
   String get deleteAccountBurnUsernameFailed;
 
-  /// Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.
-  ///
-  /// In en, this message translates to:
-  /// **'Your username {username} has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.'**
-  String deleteAccountBurnUsernameReleased(String username);
-
   /// Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.
   ///
   /// In en, this message translates to:
@@ -11600,7 +11594,85 @@ abstract class AppLocalizations {
   /// **'Delete All Content'**
   String get deleteAccountDeleteAllContentButton;
 
-  /// Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it.
+  /// Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish deleting your account'**
+  String get accountDeletionRecoveryTitle;
+
+  /// Explains that an interrupted deletion left the username safely reserved and recoverable.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.'**
+  String get accountDeletionRecoveryBody;
+
+  /// Explains that an interrupted deletion left the username safely reserved until the coordinator's expiry date.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish deleting your account. Your username is reserved for you until {expiryDate} and can still be restored.'**
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate);
+
+  /// Button that cancels an interrupted account deletion and restores its pending username.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore my username'**
+  String get accountDeletionRestoreUsername;
+
+  /// Shown while the server is durably completing an immediate account deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Your deletion request is still being processed. Check again before leaving this screen.'**
+  String get accountDeletionFinishingBody;
+
+  /// Shown when rollback of a pending username release was not confirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t restore your username yet. Check your connection and try again.'**
+  String get accountDeletionRecoveryFailed;
+
+  /// Confirms that cancelling an interrupted deletion restored the pending username.
+  ///
+  /// In en, this message translates to:
+  /// **'Your username is restored. Your account was not deleted.'**
+  String get accountDeletionUsernameRestored;
+
+  /// Shown when the app cannot load a durable account-deletion attempt.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check your deletion status. Check your connection and try again.'**
+  String get accountDeletionRecoveryStatusFailed;
+
+  /// Explains that an interrupted deletion without a reserved username can be cancelled safely.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.'**
+  String get accountDeletionCancelAttemptBody;
+
+  /// Button that cancels an interrupted account-deletion attempt that has not begun server processing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep my account'**
+  String get accountDeletionCancelAttempt;
+
+  /// Confirms cancellation of an interrupted account-deletion attempt without claiming a username was restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion cancelled. Your account was not deleted.'**
+  String get accountDeletionAttemptCancelled;
+
+  /// Fallback explanation for a terminal account-deletion failure when the server supplies no safe detail.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.'**
+  String get accountDeletionTerminalFailureBody;
+
+  /// Secondary action that leaves an account-deletion recovery gate without deleting local credentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get accountDeletionSignOut;
+
+  /// Neutral error when account deletion could not complete and no claim about username state is safe.
   ///
   /// In en, this message translates to:
   /// **'We couldn\'t finish deleting your account. Try again.'**

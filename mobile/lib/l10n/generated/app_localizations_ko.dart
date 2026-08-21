@@ -6395,11 +6395,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '사용자명을 해제하지 못했어요. 계정은 삭제되지 않았어요. 다시 시도하거나 옵션 선택을 해제해주세요.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return '사용자명 $username는 영구적으로 해제됐지만, 계정 삭제를 완료하지 못했어요. 삭제를 다시 탭해서 마무리해주세요.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '$username도 영구적으로 포기하기';
   }
@@ -6429,6 +6424,54 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
+
+  @override
+  String get accountDeletionRecoveryTitle => '계정 삭제 마무리하기';
+
+  @override
+  String get accountDeletionRecoveryBody =>
+      '계정 삭제를 완료하지 못했어요. 사용자명은 그대로 예약돼 있어서 아직 되돌릴 수 있어요.';
+
+  @override
+  String accountDeletionRecoveryBodyWithExpiry(String expiryDate) {
+    return 'We couldn\'t finish deleting your account. Your username is reserved for you until $expiryDate and can still be restored.';
+  }
+
+  @override
+  String get accountDeletionRestoreUsername => '사용자명 되돌리기';
+
+  @override
+  String get accountDeletionFinishingBody =>
+      '삭제 요청을 아직 처리하고 있어요. 이 화면을 나가기 전에 다시 확인해 주세요.';
+
+  @override
+  String get accountDeletionRecoveryFailed =>
+      '사용자명을 아직 되돌리지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get accountDeletionUsernameRestored => '사용자명을 되돌렸어요. 계정은 삭제되지 않았어요.';
+
+  @override
+  String get accountDeletionRecoveryStatusFailed =>
+      '삭제 상태를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
+
+  @override
+  String get accountDeletionCancelAttemptBody =>
+      'We couldn\'t finish deleting your account. You can cancel this attempt and keep your account.';
+
+  @override
+  String get accountDeletionCancelAttempt => 'Keep my account';
+
+  @override
+  String get accountDeletionAttemptCancelled =>
+      'Account deletion cancelled. Your account was not deleted.';
+
+  @override
+  String get accountDeletionTerminalFailureBody =>
+      'We couldn\'t delete your account. Contact support for help or sign out to leave this screen.';
+
+  @override
+  String get accountDeletionSignOut => 'Sign out';
 
   @override
   String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';

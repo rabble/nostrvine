@@ -3780,15 +3780,6 @@
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
   },
-  "deleteAccountBurnUsernameReleased": "你的用户名 {username} 已被永久释放，但我们没能完成账号删除。再次点删除以完成。",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountBurnUsernameToggle": "同时永久放弃 {username}",
   "@deleteAccountBurnUsernameToggle": {
     "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
@@ -3818,6 +3809,13 @@
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
   },
+  "accountDeletionRecoveryTitle": "完成账号删除",
+  "accountDeletionRecoveryBody": "我们没能完成账号删除。你的用户名仍为你保留，还可以找回。",
+  "accountDeletionRestoreUsername": "找回我的用户名",
+  "accountDeletionFinishingBody": "你的删除请求仍在处理中。离开此页面前请再确认一次。",
+  "accountDeletionRecoveryFailed": "我们还没能找回你的用户名。请检查网络连接后重试。",
+  "accountDeletionUsernameRestored": "你的用户名已找回，你的账号未被删除。",
+  "accountDeletionRecoveryStatusFailed": "我们无法查询你的删除状态。请检查网络连接后重试。",
   "deleteAccountFinalConfirmationTitle": "⚠️ 最终确认",
   "deleteAccountKeyDeletionWarning": "删除请求已发送，但你的密钥可能未从此设备完全移除。前往“设置 → Nostr 密钥 → 移除密钥”重试。",
   "deleteAccountLocalDataDeletionFailed": "删除请求已发送且你已退出登录，但部分本地数据无法从此设备移除。",

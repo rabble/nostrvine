@@ -7,7 +7,6 @@ test/infrastructure/mass_test_generation_test.dart
 test/infrastructure/test_infrastructure_setup_test.dart
 test/models/thumbnail_url_preservation_test.dart
 test/performance/camera_initialization_benchmark_test.dart
-test/providers/account_deletion_provider_test.dart
 test/providers/curation_provider_lifecycle_test.dart
 test/providers/curation_provider_tab_refresh_test.dart
 test/providers/explore_active_video_test.dart
