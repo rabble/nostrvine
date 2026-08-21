@@ -55,7 +55,7 @@ class ShorebirdPatchRepository {
   // process-wide tail is therefore required to prevent their Shorebird FFI
   // calls from overlapping. The upstream calls have no timeout; if one hangs,
   // later operations intentionally remain queued until the app is relaunched.
-  static Future<void> _operationTail = Future<void>.value();
+  static Future<void>? _operationTail;
 
   final ShorebirdUpdater _updater;
   final SharedPreferences _preferences;
@@ -135,13 +135,20 @@ class ShorebirdPatchRepository {
 
   Future<T> _runExclusive<T>(Future<T> Function() operation) {
     final result = Completer<T>();
-    _operationTail = _operationTail.then((_) async {
-      try {
-        result.complete(await operation());
-      } catch (error, stackTrace) {
-        result.completeError(error, stackTrace);
-      }
-    });
+    final previousOperation = _operationTail;
+    late final Future<void> operationTail;
+    operationTail = (previousOperation ?? Future<void>.value())
+        .then((_) async {
+          try {
+            result.complete(await operation());
+          } catch (error, stackTrace) {
+            result.completeError(error, stackTrace);
+          }
+        })
+        .whenComplete(() {
+          if (identical(_operationTail, operationTail)) _operationTail = null;
+        });
+    _operationTail = operationTail;
     return result.future;
   }
 }

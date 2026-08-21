@@ -110,6 +110,23 @@ void main() {
     },
   );
 
+  test(
+    'apply does not claim an already-pending patch as newly downloaded',
+    () async {
+      final updater = _FakeUpdater(current: const Patch(number: 3))
+        ..next = const Patch(number: 4);
+      final repository = ShorebirdPatchRepository(
+        updater: updater,
+        preferences: preferences,
+      );
+
+      final result = await repository.applyStagingPatch();
+
+      expect(result, ShorebirdPatchApplyResult.unchanged);
+      expect(repository.subscribedTrack, ShorebirdSubscribedTrack.stable);
+    },
+  );
+
   test('apply persists staging only after a new next patch appears', () async {
     final updater = _FakeUpdater(
       current: const Patch(number: 3),
