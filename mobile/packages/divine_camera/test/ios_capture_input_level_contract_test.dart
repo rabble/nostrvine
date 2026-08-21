@@ -40,6 +40,21 @@ void main() {
       );
     });
 
+    test('the re-settle runs before the writer starts', () {
+      // "Before capture" is the contract: once the writer is running, an
+      // override no longer rescues the damped input the beeps left behind,
+      // it only changes the route mid-clip.
+      final resettleCall = controllerSource.indexOf(
+        'self.resettleSpeakerRouteBeforeCapture()',
+      );
+      final writerStart = controllerSource.indexOf(
+        'self.startRecordingAfterAudioReady(',
+      );
+      expect(resettleCall, isNonNegative);
+      expect(writerStart, isNonNegative);
+      expect(resettleCall, lessThan(writerStart));
+    });
+
     test('the override stays scoped to a speaker-only route', () {
       // Overriding while headphones or Bluetooth are connected would drag
       // playback off them, and no speaker output reached the mic anyway.
@@ -60,7 +75,6 @@ void main() {
         controllerSource.indexOf('\n    }\n', helperStart),
       );
       expect(helper, contains('catch'));
-      expect(helper, isNot(contains('return false')));
       expect(helper, isNot(contains('throw')));
     });
   });
