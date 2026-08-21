@@ -2032,8 +2032,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يتم تثبيت أي شيء. تحقق من مسار الاختبار وحاول مرة أخرى.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'جارٍ اختيار المسار المستقر…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'تمت استعادة التحديثات المستقرة.';
+      'تم اختيار المسار المستقر. أعد تشغيل التطبيق للتحقق من وجود تصحيح مستقر.';
 
   @override
   String get devOptionsShorebirdFailure =>

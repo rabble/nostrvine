@@ -1896,7 +1896,11 @@ class AppLocalizationsJa extends AppLocalizations {
       '何もインストールされませんでした。ステージングトラックを確認して再試行してください。';
 
   @override
-  String get devOptionsShorebirdStableRestored => '安定版アップデートに戻しました。';
+  String get devOptionsShorebirdSelectingStableTrack => '安定版トラックを選択中…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      '安定版トラックを選択しました。再起動して安定版パッチを確認してください。';
 
   @override
   String get devOptionsShorebirdFailure => '処理に失敗しました。詳細はログを確認してください。';

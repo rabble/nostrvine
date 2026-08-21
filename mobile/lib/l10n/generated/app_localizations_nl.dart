@@ -2059,7 +2059,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is niets geïnstalleerd. Controleer de stagingtrack en probeer opnieuw.';
 
   @override
-  String get devOptionsShorebirdStableRestored => 'Stabiele updates hersteld.';
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Stabiel kanaal selecteren…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Stabiel kanaal geselecteerd. Start de app opnieuw om op een stabiele patch te controleren.';
 
   @override
   String get devOptionsShorebirdFailure =>

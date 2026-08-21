@@ -16,11 +16,14 @@ class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
   static const _logName = 'ShorebirdPatchCubit';
 
   Future<void> load() async {
+    final usesStagingTrack =
+        _repository.subscribedTrack == ShorebirdSubscribedTrack.staging;
     if (!_repository.isAvailable) {
       emitIfOpen(
         state.copyWith(
           status: ShorebirdPatchValidationStatus.unavailable,
           clearCurrentPatchNumber: true,
+          usesStagingTrack: usesStagingTrack,
         ),
       );
       return;
@@ -33,12 +36,16 @@ class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
           status: ShorebirdPatchValidationStatus.notChecked,
           currentPatchNumber: snapshot.current?.number,
           clearCurrentPatchNumber: snapshot.current == null,
-          usesStagingTrack:
-              _repository.subscribedTrack == ShorebirdSubscribedTrack.staging,
+          usesStagingTrack: usesStagingTrack,
         ),
       );
     } catch (error, stackTrace) {
-      _reportFailure('Failed to read Shorebird patch state', error, stackTrace);
+      _reportFailure(
+        'Failed to read Shorebird patch state',
+        error,
+        stackTrace,
+        usesStagingTrack: usesStagingTrack,
+      );
     }
   }
 
@@ -102,6 +109,11 @@ class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
 
   Future<void> useStableTrack() async {
     if (state.isBusy) return;
+    emitIfOpen(
+      state.copyWith(
+        status: ShorebirdPatchValidationStatus.selectingStableTrack,
+      ),
+    );
     try {
       await _repository.useStableTrack();
       emitIfOpen(
@@ -127,7 +139,12 @@ class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
     };
   }
 
-  void _reportFailure(String message, Object error, StackTrace stackTrace) {
+  void _reportFailure(
+    String message,
+    Object error,
+    StackTrace stackTrace, {
+    bool? usesStagingTrack,
+  }) {
     Log.error(
       message,
       name: _logName,
@@ -136,6 +153,11 @@ class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
       stackTrace: stackTrace,
     );
     addError(error, stackTrace);
-    emitIfOpen(state.copyWith(status: ShorebirdPatchValidationStatus.failure));
+    emitIfOpen(
+      state.copyWith(
+        status: ShorebirdPatchValidationStatus.failure,
+        usesStagingTrack: usesStagingTrack,
+      ),
+    );
   }
 }

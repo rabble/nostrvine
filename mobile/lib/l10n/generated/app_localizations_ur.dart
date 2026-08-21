@@ -2052,8 +2052,12 @@ class AppLocalizationsUr extends AppLocalizations {
       'کچھ انسٹال نہیں ہوا۔ اسٹیجنگ ٹریک چیک کریں اور دوبارہ کوشش کریں۔';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'مستحکم ٹریک منتخب کیا جا رہا ہے…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'مستحکم اپ ڈیٹس بحال ہو گئیں۔';
+      'مستحکم ٹریک منتخب ہو گیا۔ مستحکم پیچ چیک کرنے کے لیے ایپ دوبارہ شروع کریں۔';
 
   @override
   String get devOptionsShorebirdFailure =>

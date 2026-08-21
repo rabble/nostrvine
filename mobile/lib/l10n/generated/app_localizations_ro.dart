@@ -2099,8 +2099,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a instalat nimic. Verifică canalul de testare și încearcă din nou.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Se selectează canalul stabil…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Actualizările stabile au fost restabilite.';
+      'Canal stabil selectat. Repornește aplicația pentru a verifica dacă există un patch stabil.';
 
   @override
   String get devOptionsShorebirdFailure =>

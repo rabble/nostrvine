@@ -1906,7 +1906,11 @@ class AppLocalizationsKo extends AppLocalizations {
       '설치된 항목이 없습니다. 스테이징 트랙을 확인하고 다시 시도하세요.';
 
   @override
-  String get devOptionsShorebirdStableRestored => '안정 업데이트를 복원했습니다.';
+  String get devOptionsShorebirdSelectingStableTrack => '안정 트랙 선택 중…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      '안정 트랙을 선택했습니다. 안정 패치를 확인하려면 앱을 다시 시작하세요.';
 
   @override
   String get devOptionsShorebirdFailure => '작동하지 않았습니다. 자세한 내용은 로그를 확인하세요.';

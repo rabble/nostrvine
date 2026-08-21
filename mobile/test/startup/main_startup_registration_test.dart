@@ -1,9 +1,108 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/main.dart' as app;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
+
+class _FakeUpdater implements ShorebirdUpdater {
+  _FakeUpdater({this.status = UpdateStatus.upToDate, this.updateError});
+
+  final UpdateStatus status;
+  final Object? updateError;
+
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Future<UpdateStatus> checkForUpdate({UpdateTrack? track}) async => status;
+
+  @override
+  Future<Patch?> readCurrentPatch() async => null;
+
+  @override
+  Future<Patch?> readNextPatch() async => null;
+
+  @override
+  Future<void> update({UpdateTrack? track}) async {
+    if (updateError case final error?) throw error;
+  }
+}
 
 void main() {
+  test(
+    'registers the Shorebird track update for the first rendered app',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      FrameCallback? callback;
+      var updaterCreations = 0;
+      var updateCalls = 0;
+
+      app.registerShorebirdStartupUpdate(
+        preferences: preferences,
+        addPostFrameCallback: (value) => callback = value,
+        updaterFactory: () {
+          updaterCreations++;
+          return _FakeUpdater();
+        },
+        updateSubscribedTrack:
+            ({required updater, required preferences}) async {
+              updateCalls++;
+            },
+      );
+
+      expect(callback, isNotNull);
+      expect(updaterCreations, 0);
+      expect(updateCalls, 0);
+
+      callback!(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(updaterCreations, 1);
+      expect(updateCalls, 1);
+    },
+  );
+
+  test('does not report expected Shorebird update failures', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    var reports = 0;
+
+    await app.updateShorebirdFromSubscribedTrack(
+      updater: _FakeUpdater(
+        status: UpdateStatus.outdated,
+        updateError: const UpdateException(
+          message: 'download failed',
+          reason: UpdateFailureReason.downloadFailed,
+        ),
+      ),
+      preferences: preferences,
+      reportUnexpectedError: (error, stackTrace) async => reports++,
+    );
+
+    expect(reports, 0);
+  });
+
+  test('reports unexpected Shorebird startup failures', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    Object? reported;
+    final error = StateError('broken invariant');
+
+    await app.updateShorebirdFromSubscribedTrack(
+      updater: _FakeUpdater(
+        status: UpdateStatus.outdated,
+        updateError: error,
+      ),
+      preferences: preferences,
+      reportUnexpectedError: (value, stackTrace) async => reported = value,
+    );
+
+    expect(reported, same(error));
+  });
+
   test('initializes disk-backed startup services before runApp', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

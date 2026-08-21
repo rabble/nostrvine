@@ -165,6 +165,8 @@ class _CurrentPatchTile extends StatelessWidget {
       ShorebirdPatchValidationStatus.applied => l10n.devOptionsShorebirdApplied,
       ShorebirdPatchValidationStatus.unchanged =>
         l10n.devOptionsShorebirdUnchanged,
+      ShorebirdPatchValidationStatus.selectingStableTrack =>
+        l10n.devOptionsShorebirdSelectingStableTrack,
       ShorebirdPatchValidationStatus.stableRestored =>
         l10n.devOptionsShorebirdStableRestored,
       ShorebirdPatchValidationStatus.failure => l10n.devOptionsShorebirdFailure,

@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// The update track this installation checks at startup.
 enum ShorebirdSubscribedTrack { stable, staging }
@@ -49,6 +50,11 @@ class ShorebirdPatchRepository {
        _preferences = preferences;
 
   static const _subscribedTrackKey = 'shorebird_subscribed_track';
+
+  // Startup and Developer Options create separate repository instances. A
+  // process-wide tail is therefore required to prevent their Shorebird FFI
+  // calls from overlapping. The upstream calls have no timeout; if one hangs,
+  // later operations intentionally remain queued until the app is relaunched.
   static Future<void> _operationTail = Future<void>.value();
 
   final ShorebirdUpdater _updater;
@@ -104,7 +110,13 @@ class ShorebirdPatchRepository {
 
   /// Replaces Shorebird's native launch updater while supporting custom tracks.
   Future<void> updateSubscribedTrackAtStartup() => _runExclusive(() async {
-    if (!isAvailable) return;
+    if (!isAvailable) {
+      Log.warning(
+        'Skipping automatic patch check because Shorebird is unavailable',
+        name: 'ShorebirdPatchRepository',
+      );
+      return;
+    }
 
     final track = switch (subscribedTrack) {
       ShorebirdSubscribedTrack.stable => UpdateTrack.stable,

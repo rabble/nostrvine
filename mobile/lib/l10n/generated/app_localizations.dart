@@ -3505,10 +3505,16 @@ abstract class AppLocalizations {
   /// **'Nothing was installed. Check the staging track and try again.'**
   String get devOptionsShorebirdUnchanged;
 
+  /// No description provided for @devOptionsShorebirdSelectingStableTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Selecting stable track…'**
+  String get devOptionsShorebirdSelectingStableTrack;
+
   /// No description provided for @devOptionsShorebirdStableRestored.
   ///
   /// In en, this message translates to:
-  /// **'Stable updates restored.'**
+  /// **'Stable track selected. Restart to check for a stable patch.'**
   String get devOptionsShorebirdStableRestored;
 
   /// No description provided for @devOptionsShorebirdFailure.

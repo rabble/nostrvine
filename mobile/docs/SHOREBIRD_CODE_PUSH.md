@@ -343,13 +343,15 @@ misconfiguration — an installable preview would need a development- or
 ad-hoc-signed build, which is a different binary from the one under test.
 
 So the affordance lives in the app. Settings → Developer Options →
-**Shorebird Patches** shows the running patch number and offers actions
-that call `ShorebirdUpdater` with `UpdateTrack.staging` explicitly:
+**Shorebird Patches** shows the running patch number. Its check and apply
+actions call `ShorebirdUpdater` with `UpdateTrack.staging` explicitly:
 
 - **Check staging track** — reports whether a staged patch is waiting.
 - **Apply staged patch** — downloads and installs it; relaunch to run it.
-- **Return to stable updates** — appears after a staged patch is downloaded;
-  use it only after that exact patch is promoted to `stable`.
+- **Return to stable updates** — selects `stable` for the next launch; it does
+  not immediately remove the downloaded or running staging patch. Use it only
+  after that exact patch is promoted to `stable`, then relaunch so the app can
+  check the stable track and reconcile the installed patch.
 
 Install the TestFlight build of the exact release under test, run the patch
 workflow, then pull the patch through this section. The build number shown in

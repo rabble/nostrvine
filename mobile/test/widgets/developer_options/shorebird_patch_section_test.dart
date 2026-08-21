@@ -46,12 +46,7 @@ void main() {
     }
 
     final subtitles =
-        <
-          ShorebirdPatchValidationStatus,
-          String Function(
-            AppLocalizations,
-          )
-        >{
+        <ShorebirdPatchValidationStatus, String Function(AppLocalizations)>{
           ShorebirdPatchValidationStatus.loading: (l) =>
               l.devOptionsShorebirdLoading,
           ShorebirdPatchValidationStatus.notChecked: (l) =>
@@ -74,6 +69,8 @@ void main() {
               l.devOptionsShorebirdApplied,
           ShorebirdPatchValidationStatus.unchanged: (l) =>
               l.devOptionsShorebirdUnchanged,
+          ShorebirdPatchValidationStatus.selectingStableTrack: (l) =>
+              l.devOptionsShorebirdSelectingStableTrack,
           ShorebirdPatchValidationStatus.stableRestored: (l) =>
               l.devOptionsShorebirdStableRestored,
           ShorebirdPatchValidationStatus.failure: (l) =>

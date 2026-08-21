@@ -2025,8 +2025,12 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không có gì được cài đặt. Hãy kiểm tra kênh thử nghiệm và thử lại.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Đang chọn kênh ổn định…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Đã khôi phục cập nhật ổn định.';
+      'Đã chọn kênh ổn định. Khởi động lại ứng dụng để kiểm tra bản vá ổn định.';
 
   @override
   String get devOptionsShorebirdFailure =>

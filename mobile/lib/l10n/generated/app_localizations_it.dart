@@ -2080,8 +2080,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è stato installato nulla. Controlla il canale di staging e riprova.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Selezione del canale stabile…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Aggiornamenti stabili ripristinati.';
+      'Canale stabile selezionato. Riavvia l’app per cercare una patch stabile.';
 
   @override
   String get devOptionsShorebirdFailure =>

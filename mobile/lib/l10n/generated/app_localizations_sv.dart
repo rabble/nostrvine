@@ -2046,8 +2046,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inget installerades. Kontrollera testspåret och försök igen.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Väljer den stabila kanalen…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Stabila uppdateringar återställda.';
+      'Den stabila kanalen har valts. Starta om appen för att söka efter en stabil patch.';
 
   @override
   String get devOptionsShorebirdFailure =>

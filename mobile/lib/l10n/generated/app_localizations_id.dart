@@ -1980,8 +1980,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak ada yang terpasang. Periksa track staging dan coba lagi.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack => 'Memilih jalur stabil…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Pembaruan stabil dipulihkan.';
+      'Jalur stabil dipilih. Mulai ulang aplikasi untuk memeriksa patch stabil.';
 
   @override
   String get devOptionsShorebirdFailure =>

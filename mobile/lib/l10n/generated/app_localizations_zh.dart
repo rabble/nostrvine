@@ -1919,7 +1919,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsShorebirdUnchanged => '未安装任何内容。请检查预发布通道后重试。';
 
   @override
-  String get devOptionsShorebirdStableRestored => '已恢复稳定版更新。';
+  String get devOptionsShorebirdSelectingStableTrack => '正在选择稳定版通道…';
+
+  @override
+  String get devOptionsShorebirdStableRestored => '已选择稳定版通道。请重启应用以检查稳定版补丁。';
 
   @override
   String get devOptionsShorebirdFailure => '操作失败。请查看日志了解详情。';

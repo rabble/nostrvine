@@ -1987,8 +1987,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hiçbir şey yüklenmedi. Hazırlama kanalını kontrol edip tekrar deneyin.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Kararlı kanal seçiliyor…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Kararlı güncellemeler geri yüklendi.';
+      'Kararlı kanal seçildi. Kararlı bir yamayı kontrol etmek için uygulamayı yeniden başlat.';
 
   @override
   String get devOptionsShorebirdFailure =>

@@ -2073,8 +2073,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se instaló nada. Comprueba el canal de pruebas e inténtalo de nuevo.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Seleccionando el canal estable…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Actualizaciones estables restauradas.';
+      'Canal estable seleccionado. Reinicia la app para buscar un parche estable.';
 
   @override
   String get devOptionsShorebirdFailure =>

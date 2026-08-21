@@ -85,6 +85,37 @@ void main() {
 
   group(ShorebirdPatchCubit, () {
     blocTest<ShorebirdPatchCubit, ShorebirdPatchState>(
+      'load preserves the staging escape hatch when patch reads fail',
+      setUp: () async {
+        await preferences.setString('shorebird_subscribed_track', 'staging');
+      },
+      build: () => cubitFor(_FakeUpdater(readThrows: true)),
+      act: (cubit) => cubit.load(),
+      expect: () => const [
+        ShorebirdPatchState(
+          status: ShorebirdPatchValidationStatus.failure,
+          usesStagingTrack: true,
+        ),
+      ],
+      errors: () => [isNotNull],
+    );
+
+    blocTest<ShorebirdPatchCubit, ShorebirdPatchState>(
+      'load preserves the staging escape hatch when updater is unavailable',
+      setUp: () async {
+        await preferences.setString('shorebird_subscribed_track', 'staging');
+      },
+      build: () => cubitFor(_FakeUpdater(isAvailable: false)),
+      act: (cubit) => cubit.load(),
+      expect: () => const [
+        ShorebirdPatchState(
+          status: ShorebirdPatchValidationStatus.unavailable,
+          usesStagingTrack: true,
+        ),
+      ],
+    );
+
+    blocTest<ShorebirdPatchCubit, ShorebirdPatchState>(
       'load reports not checked and refreshes the running patch',
       build: () => cubitFor(_FakeUpdater(current: const Patch(number: 7))),
       act: (cubit) => cubit.load(),
@@ -101,9 +132,7 @@ void main() {
       build: () => cubitFor(_FakeUpdater(isAvailable: false, readThrows: true)),
       act: (cubit) => cubit.load(),
       expect: () => const [
-        ShorebirdPatchState(
-          status: ShorebirdPatchValidationStatus.unavailable,
-        ),
+        ShorebirdPatchState(status: ShorebirdPatchValidationStatus.unavailable),
       ],
     );
 
@@ -262,6 +291,31 @@ void main() {
         ShorebirdPatchState(status: ShorebirdPatchValidationStatus.failure),
       ],
       errors: () => [isA<Exception>()],
+    );
+
+    blocTest<ShorebirdPatchCubit, ShorebirdPatchState>(
+      'returning to stable is busy until the subscription is persisted',
+      setUp: () async {
+        await preferences.setString('shorebird_subscribed_track', 'staging');
+      },
+      seed: () => const ShorebirdPatchState(
+        status: ShorebirdPatchValidationStatus.applied,
+        usesStagingTrack: true,
+      ),
+      build: () => cubitFor(_FakeUpdater()),
+      act: (cubit) => cubit.useStableTrack(),
+      expect: () => const [
+        ShorebirdPatchState(
+          status: ShorebirdPatchValidationStatus.selectingStableTrack,
+          usesStagingTrack: true,
+        ),
+        ShorebirdPatchState(
+          status: ShorebirdPatchValidationStatus.stableRestored,
+        ),
+      ],
+      verify: (_) {
+        expect(preferences.getString('shorebird_subscribed_track'), 'stable');
+      },
     );
 
     test(

@@ -2057,7 +2057,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing was installed. Check the staging track and try again.';
 
   @override
-  String get devOptionsShorebirdStableRestored => 'Stable updates restored.';
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Selecting stable track…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Stable track selected. Restart to check for a stable patch.';
 
   @override
   String get devOptionsShorebirdFailure =>

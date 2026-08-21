@@ -2035,8 +2035,11 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tiada apa-apa dipasang. Periksa trek pementasan dan cuba lagi.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack => 'Memilih trek stabil…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Kemas kini stabil dipulihkan.';
+      'Trek stabil dipilih. Mulakan semula aplikasi untuk menyemak tampalan stabil.';
 
   @override
   String get devOptionsShorebirdFailure =>

@@ -13,6 +13,7 @@ enum ShorebirdPatchValidationStatus {
   applying,
   applied,
   unchanged,
+  selectingStableTrack,
   stableRestored,
   failure,
 }
@@ -32,7 +33,8 @@ class ShorebirdPatchState extends Equatable {
   bool get isBusy =>
       status == ShorebirdPatchValidationStatus.loading ||
       status == ShorebirdPatchValidationStatus.checking ||
-      status == ShorebirdPatchValidationStatus.applying;
+      status == ShorebirdPatchValidationStatus.applying ||
+      status == ShorebirdPatchValidationStatus.selectingStableTrack;
 
   bool get isAvailable => status != ShorebirdPatchValidationStatus.unavailable;
 

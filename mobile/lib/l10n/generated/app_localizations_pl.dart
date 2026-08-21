@@ -2089,8 +2089,12 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nic nie zainstalowano. Sprawdź kanał testowy i spróbuj ponownie.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Wybieranie stabilnego kanału…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Przywrócono stabilne aktualizacje.';
+      'Wybrano stabilny kanał. Uruchom aplikację ponownie, aby sprawdzić stabilną poprawkę.';
 
   @override
   String get devOptionsShorebirdFailure =>

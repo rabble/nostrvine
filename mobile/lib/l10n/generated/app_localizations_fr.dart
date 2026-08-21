@@ -2086,8 +2086,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rien n’a été installé. Vérifiez le canal de test et réessayez.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Sélection du canal stable…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Mises à jour stables rétablies.';
+      'Canal stable sélectionné. Redémarrez l’app pour rechercher un patch stable.';
 
   @override
   String get devOptionsShorebirdFailure =>

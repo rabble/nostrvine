@@ -2053,8 +2053,12 @@ class AppLocalizationsFil extends AppLocalizations {
       'Walang na-install. Suriin ang staging track at subukan ulit.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Pinipili ang stable track…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Naibalik ang stable na mga update.';
+      'Napili ang stable track. I-restart ang app para tingnan kung may stable patch.';
 
   @override
   String get devOptionsShorebirdFailure =>

@@ -2008,7 +2008,11 @@ class AppLocalizationsAm extends AppLocalizations {
       'ምንም አልተጫነም። የሙከራ ትራኩን ፈትሸው እንደገና ይሞክሩ።';
 
   @override
-  String get devOptionsShorebirdStableRestored => 'የተረጋጉ ዝማኔዎች ተመልሰዋል።';
+  String get devOptionsShorebirdSelectingStableTrack => 'የተረጋጋ ትራክ በመምረጥ ላይ…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'የተረጋጋ ትራክ ተመርጧል። የተረጋጋ ፓች ለመፈተሽ መተግበሪያውን ዳግም ያስጀምሩ።';
 
   @override
   String get devOptionsShorebirdFailure => 'አልተሳካም። ለዝርዝሮች ምዝግቦቹን ይመልከቱ።';

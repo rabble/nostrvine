@@ -2077,8 +2077,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nichts wurde installiert. Staging-Track prüfen und erneut versuchen.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Stabiler Kanal wird ausgewählt…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Stabile Updates wiederhergestellt.';
+      'Stabiler Kanal ausgewählt. Starte die App neu, um nach einem stabilen Patch zu suchen.';
 
   @override
   String get devOptionsShorebirdFailure =>

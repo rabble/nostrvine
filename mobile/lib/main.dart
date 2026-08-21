@@ -16,6 +16,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show FrameCallback;
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -179,6 +180,13 @@ bool shouldRenderLocalPushNotification(RemoteMessage message) {
 }
 
 typedef BackgroundFirebaseInitializer = Future<void> Function();
+typedef ShorebirdTrackUpdate =
+    Future<void> Function({
+      required ShorebirdUpdater updater,
+      required SharedPreferences preferences,
+    });
+typedef UnexpectedShorebirdErrorReporter =
+    Future<void> Function(Object error, StackTrace stackTrace);
 typedef BackgroundLocalPushRenderer =
     Future<void> Function({
       required int id,
@@ -904,6 +912,27 @@ StartupCoordinator createStartupCoordinatorForTesting(
   return _createStartupCoordinator(container);
 }
 
+/// Registers the Dart updater before startup can render either the normal app
+/// or the database-bootstrap failure app.
+///
+/// The updater's synchronous FFI availability probe remains off the startup
+/// path: construction and all update work begin only after the first frame.
+@visibleForTesting
+void registerShorebirdStartupUpdate({
+  required SharedPreferences preferences,
+  required void Function(FrameCallback callback) addPostFrameCallback,
+  ShorebirdUpdater Function() updaterFactory = ShorebirdUpdater.new,
+  ShorebirdTrackUpdate updateSubscribedTrack =
+      updateShorebirdFromSubscribedTrack,
+}) {
+  addPostFrameCallback((_) {
+    final updater = updaterFactory();
+    unawaited(
+      updateSubscribedTrack(updater: updater, preferences: preferences),
+    );
+  });
+}
+
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
   final startTime = DateTime.now();
@@ -1247,6 +1276,16 @@ Future<void> _startOpenVineApp() async {
   // Load package info for version checking (non-blocking, fast).
   final packageInfo = await PackageInfo.fromPlatform();
 
+  // This registration must precede database bootstrap. That bootstrap can
+  // render its own failure app and return early; the failure app still needs
+  // the updater so a broken patch can receive a rollback or replacement.
+  ShorebirdUpdater? startupShorebirdUpdater;
+  registerShorebirdStartupUpdate(
+    preferences: sharedPreferences,
+    addPostFrameCallback: WidgetsBinding.instance.addPostFrameCallback,
+    updaterFactory: () => startupShorebirdUpdater ??= ShorebirdUpdater(),
+  );
+
   // Resolve the at-rest database cipher key before the container so the
   // database provider opens an encrypted SQLite3MultipleCiphers connection on
   // first use. This also verifies package:sqlite3 loaded the sqlite3mc hook
@@ -1467,25 +1506,18 @@ Future<void> _startOpenVineApp() async {
   final buildTag = '${packageInfo.version}+${packageInfo.buildNumber}';
   unawaited(CrashReportingService.instance.setCustomKey('build_tag', buildTag));
 
-  // Provenance is diagnostic, so it waits for the first frame. Constructing a
-  // ShorebirdUpdater probes the Rust updater over FFI on the calling thread,
-  // which upstream flags as a hang risk while the auto-update thread holds the
-  // config lock — not something to run before runApp.
+  // Provenance is diagnostic, so it waits for the first frame. Reuse the
+  // updater constructed by the earlier recovery-critical callback when that
+  // callback has already run.
   final environment = container.read(currentEnvironmentProvider).environment;
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final shorebirdUpdater = ShorebirdUpdater();
+    final shorebirdUpdater = startupShorebirdUpdater ??= ShorebirdUpdater();
     unawaited(
       _recordBuildProvenance(
         packageInfo: packageInfo,
         installSource: installSource,
         environment: environment,
         shorebirdUpdater: shorebirdUpdater,
-      ),
-    );
-    unawaited(
-      _updateShorebirdFromSubscribedTrack(
-        updater: shorebirdUpdater,
-        preferences: sharedPreferences,
       ),
     );
   });
@@ -1567,15 +1599,26 @@ Future<void> _recordBuildProvenance({
   }
 }
 
-Future<void> _updateShorebirdFromSubscribedTrack({
+@visibleForTesting
+Future<void> updateShorebirdFromSubscribedTrack({
   required ShorebirdUpdater updater,
   required SharedPreferences preferences,
+  UnexpectedShorebirdErrorReporter reportUnexpectedError =
+      _reportUnexpectedShorebirdStartupError,
 }) async {
   try {
     await ShorebirdPatchRepository(
       updater: updater,
       preferences: preferences,
     ).updateSubscribedTrackAtStartup();
+  } on UpdateException catch (error) {
+    // Download/install failures are expected network or IO outcomes. Keep them
+    // in diagnostic logs without flooding Crashlytics on every cold start.
+    Log.warning(
+      'Automatic Shorebird update did not install: $error',
+      name: 'Main',
+      category: LogCategory.system,
+    );
   } catch (error, stackTrace) {
     Log.error(
       'Automatic Shorebird update failed',
@@ -1584,13 +1627,18 @@ Future<void> _updateShorebirdFromSubscribedTrack({
       error: error,
       stackTrace: stackTrace,
     );
-    await CrashReportingService.instance.recordError(
-      error,
-      stackTrace,
-      reason: 'Automatic Shorebird update failed',
-    );
+    await reportUnexpectedError(error, stackTrace);
   }
 }
+
+Future<void> _reportUnexpectedShorebirdStartupError(
+  Object error,
+  StackTrace stackTrace,
+) => CrashReportingService.instance.recordError(
+  error,
+  stackTrace,
+  reason: 'Automatic Shorebird update failed',
+);
 
 String _startupPlatformName() {
   if (kIsWeb) return 'web';

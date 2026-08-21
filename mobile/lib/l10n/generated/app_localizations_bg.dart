@@ -2085,8 +2085,12 @@ class AppLocalizationsBg extends AppLocalizations {
       'Нищо не е инсталирано. Проверете тестовия канал и опитайте отново.';
 
   @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Избиране на стабилния канал…';
+
+  @override
   String get devOptionsShorebirdStableRestored =>
-      'Стабилните актуализации са възстановени.';
+      'Стабилният канал е избран. Рестартирайте, за да проверите за стабилна корекция.';
 
   @override
   String get devOptionsShorebirdFailure =>
