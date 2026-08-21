@@ -16186,6 +16186,42 @@ abstract class AppLocalizations {
   /// **'Check out this badge on Divine: {link}'**
   String badgeDetailShareMessage(String link);
 
+  /// Label of the per-recipient revoke button on the badge detail screen, shown only to the badge's issuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Take badge back'**
+  String get badgeDetailRevokeAction;
+
+  /// No description provided for @badgeDetailRevokeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take this badge back?'**
+  String get badgeDetailRevokeTitle;
+
+  /// No description provided for @badgeDetailRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This asks relays to drop the award you gave this person. Relays can refuse, and if they already pinned the badge it stays on their profile until they take it down. Either way, they are not told.'**
+  String get badgeDetailRevokeBody;
+
+  /// Body of the revoke sheet when the issuer is taking the badge back from themselves. Unlike the general case, their own pin is removed too, because the profile badge list is their own event.
+  ///
+  /// In en, this message translates to:
+  /// **'This asks relays to drop the award you gave yourself, and takes the badge off your profile. If the relays refuse the deletion, nothing changes.'**
+  String get badgeDetailRevokeSelfBody;
+
+  /// No description provided for @badgeDetailRevokeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Take it back'**
+  String get badgeDetailRevokeConfirm;
+
+  /// No description provided for @badgeDetailRevokeSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Badge taken back'**
+  String get badgeDetailRevokeSuccess;
+
   /// No description provided for @badgeDetailBlockClaimantsAction.
   ///
   /// In en, this message translates to:

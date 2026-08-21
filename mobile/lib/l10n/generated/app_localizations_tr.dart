@@ -9395,6 +9395,26 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Rozeti geri al';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Bu rozet geri alınsın mı?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Bu, relaylerden bu kişiye verdiğin ödülü kaldırmalarını ister. Relayler reddedebilir, rozeti profiline sabitlediyse kendisi kaldırana kadar orada kalır. Her hâlükârda kendisine bildirim gitmez.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'Bu, relaylerden kendine verdiğin ödülü kaldırmalarını ister ve rozeti profilinden alır. Relayler silmeyi reddederse hiçbir şey değişmez.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Geri al';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Rozet geri alındı';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Rozeti taşıyanları engelle';
 
   @override

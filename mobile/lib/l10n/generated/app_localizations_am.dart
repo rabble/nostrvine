@@ -9250,6 +9250,26 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'ባጁን መልስ';
+
+  @override
+  String get badgeDetailRevokeTitle => 'ይህን ባጅ ትመልሰዋለህ?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'ይህ ሪሌዮች ለዚህ ሰው የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል። ሪሌዮች ሊከለክሉ ይችላሉ፣ ባጁን በመገለጫቸው ላይ ሰክተውት ከሆነም እስኪያስወግዱት ድረስ እዚያው ይቆያል። ለማንኛውም አይነገራቸውም።';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'ይህ ሪሌዮች ለራስህ የሰጠኸውን ሽልማት እንዲያስወግዱ ይጠይቃል፣ ባጁንም ከመገለጫህ ላይ ያነሳል። ሪሌዮቹ ስረዛውን ካልተቀበሉት ምንም አይለወጥም።';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'መልስ';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'ባጁ ተመልሷል';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'የባጅ ጠያቂዎችን አግድ';
 
   @override

@@ -11,6 +11,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
+import 'package:openvine/screens/badges/widgets/badge_recipient_row.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -72,6 +73,18 @@ void main() {
           routerConfig: router,
         ),
       );
+    }
+
+    /// Scrolls the awardee list into view and opens the revoke sheet.
+    ///
+    /// The badge hero fills the default test viewport, so a recipient row is
+    /// built into the sliver's cache extent but never laid out — which keeps
+    /// it out of the semantics tree, where `bySemanticsLabel` reads from.
+    Future<void> tapRevoke(WidgetTester tester) async {
+      await tester.ensureVisible(find.byType(BadgeRecipientRow));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel(l10n.badgeDetailRevokeAction));
+      await tester.pumpAndSettle();
     }
 
     testWidgets('offers awarding and editing to the badge owner', (
@@ -293,6 +306,7 @@ void main() {
       when(() => repository.deleteBadge(any())).thenThrow(
         const BadgePublishException(
           'rejected',
+          eventKind: EventKind.eventDeletion,
           outcome: PublishOutcome(
             eventId: 'deadbeef',
             acceptedBy: [],
@@ -316,6 +330,134 @@ void main() {
       );
       // The badge is still there, so the page must not have popped.
       expect(find.text('Scene Stealer'), findsWidgets);
+    });
+
+    testWidgets('revokes a recipient only after the owner confirms', (
+      tester,
+    ) async {
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(
+          definition: _definition(),
+          isOwner: true,
+          recipients: [_recipient()],
+        ),
+      );
+      when(
+        () => repository.revokeAward(
+          coordinate: any(named: 'coordinate'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tapRevoke(tester);
+
+      expect(find.text(l10n.badgeDetailRevokeTitle), findsOneWidget);
+      expect(find.text(l10n.badgeDetailRevokeBody), findsOneWidget);
+      // Someone else's pin is their event, so the copy only promises to ask.
+      expect(find.text(l10n.badgeDetailRevokeSelfBody), findsNothing);
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+      verifyNever(
+        () => repository.revokeAward(
+          coordinate: any(named: 'coordinate'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+        ),
+      );
+
+      await tapRevoke(tester);
+      await tester.tap(find.text(l10n.badgeDetailRevokeConfirm));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.revokeAward(
+          coordinate: _coordinate,
+          recipientPubkey: _pubkey(2),
+        ),
+      ).called(1);
+      expect(find.text(l10n.badgeDetailRevokeSuccess), findsOneWidget);
+    });
+
+    testWidgets('promises to unpin only when you revoke yourself', (
+      tester,
+    ) async {
+      // The general copy says the badge stays until the recipient takes it
+      // down. For your own pin that undersells it — the revoke removes it.
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(
+          definition: _definition(),
+          isOwner: true,
+          recipients: [_recipient(isViewer: true)],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tapRevoke(tester);
+
+      expect(find.text(l10n.badgeDetailRevokeSelfBody), findsOneWidget);
+      expect(find.text(l10n.badgeDetailRevokeBody), findsNothing);
+    });
+
+    testWidgets('tells the owner when a relay refuses the revoke', (
+      tester,
+    ) async {
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(
+          definition: _definition(),
+          isOwner: true,
+          recipients: [_recipient()],
+        ),
+      );
+      when(
+        () => repository.revokeAward(
+          coordinate: any(named: 'coordinate'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+        ),
+      ).thenThrow(
+        const BadgePublishException(
+          'rejected',
+          eventKind: EventKind.eventDeletion,
+          outcome: PublishOutcome(
+            eventId: 'deadbeef',
+            acceptedBy: [],
+            rejectedBy: {'wss://relay.divine.video': 'delete not authorized'},
+            noResponseFrom: [],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tapRevoke(tester);
+      await tester.tap(find.text(l10n.badgeDetailRevokeConfirm));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.shareMenuDeleteFailedRelayRejected),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides the revoke action from non-owners', (tester) async {
+      when(() => repository.loadBadgeDetail(any())).thenAnswer(
+        (_) async => _detail(
+          definition: _definition(),
+          isOwner: false,
+          recipients: [_recipient()],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(BadgeRecipientRow));
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel(l10n.badgeDetailRevokeAction), findsNothing);
     });
 
     testWidgets('hides the delete action from non-owners', (tester) async {
@@ -365,13 +507,23 @@ BadgeDetailData _detail({
   required bool isOwner,
   Nip58BadgeDefinition? definition,
   BadgeAwardViewData? viewerAward,
+  List<BadgeRecipientViewData> recipients = const [],
 }) {
   return BadgeDetailData(
     coordinate: _coordinate,
     definition: definition,
-    recipients: const [],
+    recipients: recipients,
     isOwner: isOwner,
     viewerAward: viewerAward,
+  );
+}
+
+BadgeRecipientViewData _recipient({bool isViewer = false}) {
+  return BadgeRecipientViewData(
+    pubkey: _pubkey(2),
+    awardEventId: '2'.padLeft(64, '0'),
+    isAccepted: true,
+    isViewer: isViewer,
   );
 }
 

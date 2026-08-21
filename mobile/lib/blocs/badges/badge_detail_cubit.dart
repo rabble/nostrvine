@@ -1,15 +1,18 @@
 // ABOUTME: Cubit for one badge's detail page: definition, awardees, awarding
-// ABOUTME: new recipients, and accepting or removing the viewer's own award.
+// ABOUTME: and revoking recipients, and accepting or removing the viewer's award.
 
 import 'package:badge_repository/badge_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/blocs/close_guard.dart';
 
 part 'badge_detail_state.dart';
 
 /// Loads and mutates a single badge.
-class BadgeDetailCubit extends Cubit<BadgeDetailState> {
+class BadgeDetailCubit extends Cubit<BadgeDetailState>
+    with CloseGuardedEmit<BadgeDetailState> {
   /// Creates the cubit for the badge at [coordinate].
   BadgeDetailCubit({
     required BadgeRepository repository,
@@ -71,10 +74,10 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
     emit(state.copyWith(actionStatus: BadgeDetailActionStatus.deleting));
     try {
       await _repository.deleteBadge(state.coordinate);
-      emit(state.copyWith(actionStatus: BadgeDetailActionStatus.deleted));
+      emitIfOpen(state.copyWith(actionStatus: BadgeDetailActionStatus.deleted));
     } on BadgePublishException catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(
+      emitIfOpen(
         state.copyWith(
           actionStatus: error.outcome.rejectedBy.isEmpty
               ? BadgeDetailActionStatus.failure
@@ -83,7 +86,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(state.copyWith(actionStatus: BadgeDetailActionStatus.failure));
+      emitIfOpen(state.copyWith(actionStatus: BadgeDetailActionStatus.failure));
     }
   }
 
@@ -94,6 +97,26 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
     return _runAction(
       BadgeDetailActionStatus.removing,
       () => _repository.removeAward(award),
+    );
+  }
+
+  /// Takes this badge back from [recipientPubkey].
+  ///
+  /// Reloads afterwards so the revoked row disappears.
+  Future<void> revokeAward(String recipientPubkey) {
+    return _runAction(
+      BadgeDetailActionStatus.revoking,
+      () => _repository.revokeAward(
+        coordinate: state.coordinate,
+        recipientPubkey: recipientPubkey,
+      ),
+      recipient: recipientPubkey,
+      completedStatus: BadgeDetailActionStatus.revoked,
+      // Revoking a just-published award is the case the issue exists for,
+      // and it is the one a relay is most likely to refuse — same refusal,
+      // same advice as a refused badge deletion.
+      rejectionStatus: BadgeDetailActionStatus.deleteRejected,
+      rejectionEventKind: EventKind.eventDeletion,
     );
   }
 
@@ -115,7 +138,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
   Future<void> _load() async {
     try {
       final detail = await _repository.loadBadgeDetail(state.coordinate);
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: BadgeDetailStatus.loaded,
           // Same as the catch below: a reload clears the previous action's
@@ -130,7 +153,7 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: BadgeDetailStatus.failure,
           actionStatus: BadgeDetailActionStatus.idle,
@@ -139,29 +162,59 @@ class BadgeDetailCubit extends Cubit<BadgeDetailState> {
     }
   }
 
+  /// Runs [action], optionally reloading the badge once it lands.
+  ///
+  /// [recipient] names the awardee an action targets, so the UI can show the
+  /// work on that row rather than across the whole list.
+  ///
+  /// [completedStatus] and [rejectionStatus] let one action carry its own
+  /// outcome where the UI has something better to say than the shared
+  /// [BadgeDetailActionStatus.completed] / [BadgeDetailActionStatus.failure]
+  /// — the latter only when a relay refused the publish outright. When an
+  /// action publishes several events, [rejectionEventKind] restricts that
+  /// message to the relevant stage.
   Future<void> _runAction(
     BadgeDetailActionStatus actionStatus,
     Future<void> Function() action, {
     bool reload = true,
+    String? recipient,
+    BadgeDetailActionStatus completedStatus = BadgeDetailActionStatus.completed,
+    BadgeDetailActionStatus? rejectionStatus,
+    int? rejectionEventKind,
   }) async {
-    emit(state.copyWith(actionStatus: actionStatus));
+    emit(
+      state.copyWith(actionStatus: actionStatus, actionRecipient: recipient),
+    );
     try {
       await action();
       if (!reload) {
-        emit(state.copyWith(actionStatus: BadgeDetailActionStatus.completed));
+        emitIfOpen(state.copyWith(actionStatus: completedStatus));
         return;
       }
       final detail = await _repository.loadBadgeDetail(state.coordinate);
-      emit(
+      emitIfOpen(
         state.copyWith(
           status: BadgeDetailStatus.loaded,
-          actionStatus: BadgeDetailActionStatus.completed,
+          actionStatus: completedStatus,
           detail: detail,
+        ),
+      );
+    } on BadgePublishException catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emitIfOpen(
+        state.copyWith(
+          actionStatus:
+              rejectionStatus != null &&
+                  error.outcome.rejectedBy.isNotEmpty &&
+                  (rejectionEventKind == null ||
+                      error.eventKind == rejectionEventKind)
+              ? rejectionStatus
+              : BadgeDetailActionStatus.failure,
         ),
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(state.copyWith(actionStatus: BadgeDetailActionStatus.failure));
+      emitIfOpen(state.copyWith(actionStatus: BadgeDetailActionStatus.failure));
     }
   }
 }

@@ -9566,6 +9566,26 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Вземи знака обратно';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Да вземем ли знака обратно?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Това моли релетата да премахнат раздаването, което направи на този човек. Релетата може да откажат, а ако вече е закачил знака, той остава в профила му, докато сам не го махне. Така или иначе, никой не му казва.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'Това моли релетата да премахнат раздаването, което направи на себе си, и сваля знака от профила ти. Ако релетата откажат изтриването, нищо не се променя.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Вземи обратно';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Знакът е взет обратно';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Блокирай заявилите значката';
 
   @override

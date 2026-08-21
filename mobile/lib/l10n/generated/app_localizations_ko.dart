@@ -9034,6 +9034,26 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => '배지 회수';
+
+  @override
+  String get badgeDetailRevokeTitle => '이 배지를 회수할까요?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      '이 사람에게 준 수여 기록을 지워 달라고 릴레이에 요청해요. 릴레이는 거절할 수 있고, 이미 프로필에 고정했다면 직접 뺄 때까지 그대로 남아요. 어느 쪽이든 알림은 가지 않아요.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      '자기 자신에게 준 수여 기록을 지워 달라고 릴레이에 요청하고, 배지를 프로필에서 내려요. 릴레이가 삭제를 거절하면 아무것도 바뀌지 않아요.';
+
+  @override
+  String get badgeDetailRevokeConfirm => '회수';
+
+  @override
+  String get badgeDetailRevokeSuccess => '배지를 회수했어요';
+
+  @override
   String get badgeDetailBlockClaimantsAction => '배지 주장 계정 차단';
 
   @override

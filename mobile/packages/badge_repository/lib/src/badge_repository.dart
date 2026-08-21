@@ -125,6 +125,7 @@ class BadgeRecipientViewData {
     required this.pubkey,
     required this.awardEventId,
     required this.isAccepted,
+    this.isViewer = false,
   });
 
   final String pubkey;
@@ -132,7 +133,15 @@ class BadgeRecipientViewData {
   /// The award event that named this recipient.
   final String awardEventId;
 
-  /// Whether the recipient's profile badge list references [awardEventId].
+  /// Whether this recipient is the current user.
+  ///
+  /// Revoking yourself also takes your own pin down, which the confirmation
+  /// promises only in that case — for anyone else the pin is their event.
+  /// Resolved here so the UI does not have to reach for the signed-in pubkey.
+  final bool isViewer;
+
+  /// Whether the recipient's profile badge list references this badge's
+  /// coordinate.
   ///
   /// Null when acceptance was not resolved for this recipient, which happens
   /// past the recipient-check limit. Everyone awarded the badge is still
@@ -302,10 +311,17 @@ class IssuedBadgeRecipientViewData {
 ///
 /// Carries the relay-level [outcome] for logging and triage.
 class BadgePublishException implements Exception {
-  const BadgePublishException(this.message, {required this.outcome});
+  const BadgePublishException(
+    this.message, {
+    required this.outcome,
+    this.eventKind,
+  });
 
   final String message;
   final PublishOutcome outcome;
+
+  /// The kind of event whose publish failed, when known.
+  final int? eventKind;
 
   @override
   String toString() => 'BadgePublishException: $message';
@@ -718,6 +734,7 @@ class BadgeRepository {
           isAccepted: checked.contains(entry.key)
               ? _containsBadgeCoordinate(profileBadges[entry.key], entry.value)
               : null,
+          isViewer: entry.key == viewerPubkey,
         ),
     ];
 
@@ -888,6 +905,99 @@ class BadgeRepository {
       throw StateError('Signed badge award event is not parseable');
     }
     return award;
+  }
+
+  /// Takes the badge at [coordinate] back from [recipientPubkey], leaving
+  /// every other holder untouched.
+  ///
+  /// Every award naming them is revoked, not just their newest: the recipient
+  /// list resolves someone through their newest award, so an older one left
+  /// behind puts them straight back on it.
+  ///
+  /// NIP-58 has no per-recipient revoke and NIP-09 deletes whole events, so
+  /// an award that also names other people is replaced rather than merely
+  /// deleted — a fresh award for the remaining recipients goes out first, and
+  /// only then does the deletion request. That order matters: a refused
+  /// deletion strips the badge off nobody, where the reverse order would take
+  /// it off the bystanders too.
+  ///
+  /// Acceptance is coordinate-based, so replacing a shared award does not
+  /// require the remaining recipients to accept the badge again. Nobody is
+  /// notified: a `kind:5` from the issuer reaches no notification path.
+  ///
+  /// Publishes no award or deletion when nothing names [recipientPubkey],
+  /// but still takes down the current user's own pin.
+  ///
+  /// Throws:
+  ///
+  /// * [ArgumentError] if [recipientPubkey] is not a hex pubkey.
+  /// * [StateError] if there is no current pubkey, the badge belongs to
+  ///   someone else, or an event cannot be signed.
+  /// * [BadgePublishException] when no relay accepts one of the events.
+  Future<void> revokeAward({
+    required BadgeCoordinate coordinate,
+    required String recipientPubkey,
+  }) async {
+    final pubkey = _requireCurrentPubkey();
+    if (coordinate.pubkey != pubkey) {
+      throw StateError('Cannot revoke a badge issued by someone else');
+    }
+    if (!isBadgePubkey(recipientPubkey)) {
+      throw ArgumentError.value(
+        recipientPubkey,
+        'recipientPubkey',
+        'Badge recipient must be a hex pubkey',
+      );
+    }
+
+    final awards = await _queryAwardsForCoordinate(coordinate);
+    final revoked = [
+      for (final award in awards)
+        if (award.recipientPubkeys.contains(recipientPubkey)) award,
+    ];
+
+    if (revoked.isNotEmpty) {
+      final remaining = <String>{
+        for (final award in revoked)
+          for (final recipient in award.recipientPubkeys)
+            if (recipient != recipientPubkey && isBadgePubkey(recipient))
+              recipient,
+      }.toList(growable: false);
+      final hasReplacement = awards.any((award) {
+        final recipients = {
+          for (final recipient in award.recipientPubkeys)
+            if (isBadgePubkey(recipient)) recipient,
+        };
+        // A deletion retry can read the replacement published by its first
+        // attempt alongside the still-present original. Reuse that award
+        // instead of minting another identical event on every retry.
+        return recipients.length == remaining.length &&
+            recipients.containsAll(remaining);
+      });
+      if (remaining.isNotEmpty && !hasReplacement) {
+        await awardBadge(coordinate: coordinate, recipientPubkeys: remaining);
+      }
+
+      // No `a` tag here, unlike [deleteBadge]: that one addresses the
+      // definition, and a revoke must leave the badge itself standing.
+      await _signAndPublish(
+        kind: EventKind.eventDeletion,
+        label: 'badge award revocation',
+        tags: [
+          for (final award in revoked) ['e', award.event.id],
+          ['k', '${EventKind.badgeAward}'],
+        ],
+      );
+    }
+
+    // Taking a badge back from yourself is the one case where the pin is
+    // ours to take down too. For anyone else the profile badge list is their
+    // event and can only be asked about; leaving your own behind shows the
+    // badge on your profile with the award already gone. Outside the block
+    // above so a retry still reaches it once the awards are already deleted.
+    if (recipientPubkey == pubkey) {
+      await _unpinCoordinate(coordinate.value);
+    }
   }
 
   /// Requests deletion of the badge at [coordinate] and every award the
@@ -1145,17 +1255,22 @@ class BadgeRepository {
   /// * [StateError] if there is no current pubkey or the profile badge event
   ///   cannot be signed.
   /// * [BadgePublishException] when no relay confirms the published list.
-  Future<void> removeAward(BadgeAwardViewData award) async {
+  Future<void> removeAward(BadgeAwardViewData award) =>
+      _unpinCoordinate(award.definitionCoordinate);
+
+  /// Drops the badge at [coordinate] from the current user's profile badge
+  /// list, publishing nothing when it was not pinned in the first place.
+  Future<void> _unpinCoordinate(String coordinate) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
-    final refs =
-        (currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[])
-            .where(
-              (ref) => ref.definitionCoordinate != award.definitionCoordinate,
-            )
-            .toList(growable: false);
+    final refs = currentProfileBadges?.badges ?? const <Nip58ProfileBadgeRef>[];
+    final remaining = [
+      for (final ref in refs)
+        if (ref.definitionCoordinate != coordinate) ref,
+    ];
+    if (remaining.length == refs.length) return;
 
-    await _publishProfileBadges(refs);
+    await _publishProfileBadges(remaining);
   }
 
   /// Brings the dismissed badge at [definitionCoordinate] back into the
@@ -1405,6 +1520,7 @@ class BadgeRepository {
       throw BadgePublishException(
         'Could not publish $label event: ${outcome.summary}',
         outcome: outcome,
+        eventKind: kind,
       );
     }
     return event;

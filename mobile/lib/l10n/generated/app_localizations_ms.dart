@@ -9489,6 +9489,26 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'Tarik balik lencana';
+
+  @override
+  String get badgeDetailRevokeTitle => 'Tarik balik lencana ini?';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'Ini meminta geganti membuang pemberian yang anda buat kepada orang ini. Geganti boleh menolak, dan jika lencana itu sudah disematkan, ia kekal pada profil mereka sehingga mereka membuangnya. Apa pun, mereka tidak diberitahu.';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'Ini meminta geganti membuang pemberian yang anda buat kepada diri sendiri, dan menanggalkan lencana daripada profil anda. Jika geganti menolak pemadaman, tiada apa yang berubah.';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'Tarik balik';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'Lencana ditarik balik';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'Sekat pemegang lencana';
 
   @override

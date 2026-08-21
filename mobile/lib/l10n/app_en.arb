@@ -5939,6 +5939,18 @@
       }
     }
   },
+  "badgeDetailRevokeAction": "Take badge back",
+  "@badgeDetailRevokeAction": {
+    "description": "Label of the per-recipient revoke button on the badge detail screen, shown only to the badge's issuer."
+  },
+  "badgeDetailRevokeTitle": "Take this badge back?",
+  "badgeDetailRevokeBody": "This asks relays to drop the award you gave this person. Relays can refuse, and if they already pinned the badge it stays on their profile until they take it down. Either way, they are not told.",
+  "badgeDetailRevokeSelfBody": "This asks relays to drop the award you gave yourself, and takes the badge off your profile. If the relays refuse the deletion, nothing changes.",
+  "@badgeDetailRevokeSelfBody": {
+    "description": "Body of the revoke sheet when the issuer is taking the badge back from themselves. Unlike the general case, their own pin is removed too, because the profile badge list is their own event."
+  },
+  "badgeDetailRevokeConfirm": "Take it back",
+  "badgeDetailRevokeSuccess": "Badge taken back",
   "badgeDetailBlockClaimantsAction": "Block badge claimants",
   "badgeDetailBlockClaimantsTitle": "Block badge claimants",
   "badgeDetailBlockClaimantsLoadError": "Could not load claimants for this badge",

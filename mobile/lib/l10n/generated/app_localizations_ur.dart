@@ -9471,6 +9471,26 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get badgeDetailRevokeAction => 'بیج واپس لیں';
+
+  @override
+  String get badgeDetailRevokeTitle => 'یہ بیج واپس لیں؟';
+
+  @override
+  String get badgeDetailRevokeBody =>
+      'یہ ریلے سے کہتا ہے کہ اس شخص کو دیا گیا ایوارڈ ہٹا دیں۔ ریلے انکار کر سکتے ہیں، اور اگر بیج پہلے ہی پروفائل پر لگا ہے تو وہ خود ہٹانے تک وہیں رہے گا۔ دونوں صورتوں میں انہیں اطلاع نہیں دی جاتی۔';
+
+  @override
+  String get badgeDetailRevokeSelfBody =>
+      'یہ ریلے سے کہتا ہے کہ آپ نے خود کو دیا گیا ایوارڈ ہٹا دیں، اور بیج کو آپ کے پروفائل سے اتار دیتا ہے۔ اگر ریلے حذف کرنے سے انکار کر دیں تو کچھ نہیں بدلتا۔';
+
+  @override
+  String get badgeDetailRevokeConfirm => 'واپس لیں';
+
+  @override
+  String get badgeDetailRevokeSuccess => 'بیج واپس لے لیا گیا';
+
+  @override
   String get badgeDetailBlockClaimantsAction => 'بیج رکھنے والوں کو بلاک کریں';
 
   @override
