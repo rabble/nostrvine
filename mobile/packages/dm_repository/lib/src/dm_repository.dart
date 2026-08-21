@@ -2513,6 +2513,27 @@ class DmRepository {
         return;
       }
 
+      // A kind-4's `created_at` is signed, but by its own author — nothing
+      // binds it to real time. Bound it once here, before any store sees it,
+      // the same way the NIP-17 rumor path does (#7343): the conversation
+      // upsert only follows the newest timestamp, so a future-dated value pins
+      // the thread to the top and stops its unread badge from ever flipping
+      // back. Every use below reads this local, never the raw event, so a
+      // later write site cannot reintroduce the gap. Placed after the replay
+      // check so a replayed event does not re-log the warning. #8001.
+      final clock = DmClock.now();
+      final persistedCreatedAt = clock.atMostNow(nip04Event.createdAt);
+      if (nip04Event.createdAt >
+          clock.nowSeconds + DmSyncState.maxFutureSkewSeconds) {
+        Log.warning(
+          'Clamped DM (kind ${EventKind.directMessage}) from '
+          '${nip04Event.pubkey}: event created_at ${nip04Event.createdAt} is '
+          'beyond the expected skew of ${DmSyncState.maxFutureSkewSeconds}s '
+          '(now ${clock.nowSeconds})',
+          category: LogCategory.system,
+        );
+      }
+
       // Extract recipient from p tag
       String? recipientPubkey;
       for (final tag in nip04Event.tags) {
@@ -2564,7 +2585,7 @@ class DmRepository {
         conversationId: conversationId,
         senderPubkey: senderPubkey,
         content: plaintext,
-        createdAt: nip04Event.createdAt,
+        createdAt: persistedCreatedAt,
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
@@ -2597,7 +2618,7 @@ class DmRepository {
           conversationId: conversationId,
           ownerPubkey: ownerPubkey,
         );
-        if (removedAt != null && nip04Event.createdAt <= removedAt!) {
+        if (removedAt != null && persistedCreatedAt <= removedAt!) {
           suppressedByRemovedConversation = true;
           return;
         }
@@ -2607,7 +2628,7 @@ class DmRepository {
           conversationId: conversationId,
           senderPubkey: senderPubkey,
           content: plaintext,
-          createdAt: nip04Event.createdAt,
+          createdAt: persistedCreatedAt,
           giftWrapId: nip04Event.id,
           messageKind: EventKind.directMessage,
           ownerPubkey: ownerPubkey,
@@ -2623,9 +2644,9 @@ class DmRepository {
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: false,
-          createdAt: existing?.createdAt ?? nip04Event.createdAt,
+          createdAt: existing?.createdAt ?? persistedCreatedAt,
           lastMessageContent: plaintext,
-          lastMessageTimestamp: nip04Event.createdAt,
+          lastMessageTimestamp: persistedCreatedAt,
           lastMessageSenderPubkey: senderPubkey,
           isRead: isSentByMe,
           currentUserHasSent:
@@ -2655,7 +2676,7 @@ class DmRepository {
         await _recordProcessedWrap(nip04Event.id);
         Log.debug(
           'Suppressed NIP-04 DM ${nip04Event.id} in removed conversation '
-          '$conversationId: createdAt ${nip04Event.createdAt} is at or '
+          '$conversationId: createdAt $persistedCreatedAt is at or '
           'before removal at $removedAt',
           category: LogCategory.system,
         );
@@ -2676,17 +2697,18 @@ class DmRepository {
       }
 
       // NIP-04 created_at values are not randomized (unlike NIP-17 gift
-      // wraps) so the event timestamp is safe to use directly.
+      // wraps), so this bounded timestamp is a real send time and safe to
+      // record as a cursor.
       await _syncState?.recordSeen(
         _userPubkey,
-        createdAt: nip04Event.createdAt,
+        createdAt: persistedCreatedAt,
       );
 
       Log.debug(
         'Persisted NIP-04 DM ${nip04Event.id} '
         '(kind ${EventKind.directMessage}) in conversation '
         '$conversationId from $senderPubkey '
-        'createdAt=${nip04Event.createdAt}',
+        'createdAt=$persistedCreatedAt',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
