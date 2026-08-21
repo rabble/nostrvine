@@ -1,6 +1,8 @@
 // ABOUTME: Proves product analytics uses the running app version.
 // ABOUTME: Prevents release coverage from collapsing into the old 1.0.0 constant.
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,4 +92,65 @@ void main() {
       '2026.8.21-dogfood',
     );
   });
+
+  test(
+    'first login applies an identity boundary and logout does not repeat it',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final database = AppDatabase.test(NativeDatabase.memory());
+      final authService = _MockAuthService();
+      final queue = _MockProductEventQueue();
+      final viewPublisher = _MockViewEventPublisher();
+      final authStates = StreamController<AuthState>();
+      Future<void> Function()? beforeTeardown;
+      String? currentPubkey;
+
+      when(
+        () => authService.currentPublicKeyHex,
+      ).thenAnswer((_) => currentPubkey);
+      when(
+        () => authService.authStateStream,
+      ).thenAnswer((_) => authStates.stream);
+      when(
+        () => authService.registerBeforeSessionTeardownCallback(any()),
+      ).thenAnswer((invocation) {
+        beforeTeardown =
+            invocation.positionalArguments.single as Future<void> Function();
+        return () {};
+      });
+      when(queue.clear).thenAnswer((_) async {});
+      when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          appVersionProvider.overrideWithValue('2026.8.21-dogfood'),
+          databaseProvider.overrideWithValue(database),
+          authServiceProvider.overrideWithValue(authService),
+          productEventQueueProvider.overrideWithValue(queue),
+          viewEventPublisherProvider.overrideWithValue(viewPublisher),
+          viewEventRetryServiceProvider.overrideWithValue(null),
+        ],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await authStates.close();
+        await database.close();
+      });
+
+      final analytics = container.read(analyticsServiceProvider);
+      await analytics.initialize();
+      currentPubkey = 'a' * 64;
+      authStates.add(AuthState.authenticated);
+      await pumpEventQueue();
+
+      verify(queue.clear).called(1);
+
+      await beforeTeardown!();
+      currentPubkey = null;
+      authStates.add(AuthState.unauthenticated);
+      await pumpEventQueue();
+
+      verify(queue.clear).called(1);
+    },
+  );
 }

@@ -85,9 +85,6 @@ class ProductEventQueue {
 
   Future<void> clear() => _dao.deleteAll();
 
-  Future<void> clearOwner(String ownerPubkey) =>
-      _dao.deleteForOwner(ownerPubkey);
-
   Future<void> flush() async {
     if (!_sendingEnabled || _isFlushing) return;
     _isFlushing = true;

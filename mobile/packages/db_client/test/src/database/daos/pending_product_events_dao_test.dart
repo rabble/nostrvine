@@ -208,18 +208,6 @@ void main() {
           expect(retryable.map((event) => event.id).toSet(), {'legacy'});
         },
       );
-
-      test('deleteForOwner removes only that account', () async {
-        await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
-        await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
-        await dao.enqueue(makeEvent(id: 'anonymous'));
-
-        expect(await dao.deleteForOwner(ownerA), 1);
-
-        expect(await dao.getById('for-a'), isNull);
-        expect(await dao.getById('for-b'), isNotNull);
-        expect(await dao.getById('anonymous'), isNotNull);
-      });
     });
 
     test('deleteAll removes signed and anonymous rows', () async {

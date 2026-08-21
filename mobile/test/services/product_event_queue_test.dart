@@ -296,15 +296,12 @@ void main() {
       verify(() => dao.markDeadLetter('event-a', 'schema rejected')).called(1);
     });
 
-    test('clear and clearOwner purge private queued data', () async {
+    test('clear purges all private queued data', () async {
       when(() => dao.deleteAll()).thenAnswer((_) async => 2);
-      when(() => dao.deleteForOwner(owner)).thenAnswer((_) async => 1);
 
       await queue.clear();
-      await queue.clearOwner(owner);
 
       verify(() => dao.deleteAll()).called(1);
-      verify(() => dao.deleteForOwner(owner)).called(1);
     });
   });
 }

@@ -355,10 +355,25 @@ void main() {
     });
 
     test(
-      'consent withdrawal clears queued events and acquisition data',
+      'consent withdrawal rotates identifiers and clears queued data',
       () async {
         final queue = _MockProductEventQueue();
+        final recordedEvents = <ProductAnalyticsV2Event>[];
+        when(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((invocation) async {
+          recordedEvents.add(
+            invocation.positionalArguments.single as ProductAnalyticsV2Event,
+          );
+        });
+        when(() => queue.enqueue(any())).thenAnswer((invocation) async {
+          recordedEvents.add(
+            invocation.positionalArguments.single as ProductAnalyticsV2Event,
+          );
+        });
         when(queue.clear).thenAnswer((_) async {});
+        when(queue.flush).thenAnswer((_) async {});
+        when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
           productEventQueue: queue,
@@ -368,11 +383,24 @@ void main() {
         analyticsService.captureProductAnalyticsUtm({
           'utm_source': 'newsletter',
         });
+        await analyticsService.recordRegistrationStarted(
+          entryPoint: ProductAnalyticsV2RegistrationEntryPoint.landing,
+        );
 
         await analyticsService.setAnalyticsEnabled(false);
+        await analyticsService.setAnalyticsEnabled(true);
+        await analyticsService.recordRegistrationStarted(
+          entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
+        );
 
         verify(queue.clear).called(1);
         expect(analyticsService.productAnalyticsUtm, isEmpty);
+        final envelopes = recordedEvents
+            .map((event) => event.envelope)
+            .toList();
+        expect(envelopes, hasLength(2));
+        expect(envelopes[1].anonymousId, isNot(envelopes[0].anonymousId));
+        expect(envelopes[1].sessionId, isNot(envelopes[0].sessionId));
       },
     );
 
@@ -391,7 +419,7 @@ void main() {
           'utm_source': 'newsletter',
         });
 
-        await analyticsService.handleIdentityChange('a' * 64);
+        await analyticsService.handleIdentityChange();
 
         verify(queue.clear).called(1);
         expect(analyticsService.productAnalyticsUtm, isEmpty);
@@ -483,7 +511,7 @@ void main() {
           position: 0,
           visibleMs: 1000,
         );
-        await analyticsService.handleIdentityChange('a' * 64);
+        await analyticsService.handleIdentityChange();
         await analyticsService.recordContentImpression(
           contentId: 'c' * 64,
           surface: ProductAnalyticsV2Surface.feed,
@@ -530,7 +558,7 @@ void main() {
         );
         // First login is still an identity boundary. Pre-login activity must
         // not be joinable to the newly authenticated account.
-        await analyticsService.handleIdentityChange(null);
+        await analyticsService.handleIdentityChange();
         await analyticsService.recordRegistrationStarted(
           entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
         );
