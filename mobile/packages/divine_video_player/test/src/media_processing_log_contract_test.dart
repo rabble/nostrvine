@@ -106,10 +106,60 @@ void main() {
       expect(
         source,
         contains('print("[AudioOverlay] update: position'),
-        reason: 'The 5 Hz position trace must stay out of bug-report logs.',
+        reason:
+            'The position trace stays on the console instead of the log '
+            'bridge, so it cannot crowd state transitions and failures out '
+            'of an exported bug report.',
+      );
+    });
+
+    test('keeps console traces out of release builds', () {
+      final source = _appleAudioOverlaySourceFile().readAsStringSync();
+
+      expect(
+        _printsOutsideDebugGuards(source),
+        isEmpty,
+        reason:
+            'update() runs five times a second on the main queue for every '
+            'player, and a console trace never reaches a bug report, so '
+            'these traces must not ship in release builds.',
       );
     });
   });
+}
+
+/// Returns every `print(` in [source] that is not inside a `#if DEBUG` block.
+List<String> _printsOutsideDebugGuards(String source) {
+  final offenders = <String>[];
+  final enclosingDebugGuards = <bool>[];
+  final lines = source.split('\n');
+
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i].trim();
+
+    if (line.startsWith('#if')) {
+      enclosingDebugGuards.add(line == '#if DEBUG');
+      continue;
+    }
+    if (line.startsWith('#else') || line.startsWith('#elseif')) {
+      if (enclosingDebugGuards.isNotEmpty) {
+        enclosingDebugGuards[enclosingDebugGuards.length - 1] = false;
+      }
+      continue;
+    }
+    if (line.startsWith('#endif')) {
+      if (enclosingDebugGuards.isNotEmpty) {
+        enclosingDebugGuards.removeLast();
+      }
+      continue;
+    }
+
+    if (line.startsWith('//') || !line.contains('print(')) continue;
+    if (enclosingDebugGuards.contains(true)) continue;
+    offenders.add('line ${i + 1}: $line');
+  }
+
+  return offenders;
 }
 
 File _androidSourceFile() {

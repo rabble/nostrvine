@@ -114,9 +114,14 @@ final class AudioOverlayManager {
     /// Starts, pauses, or drift-corrects each overlay based on whether
     /// the video position falls within that track's active range.
     func update(videoPositionSec: Double, isPlaying: Bool, speed: Double) {
-        // This runs every 0.2 seconds. Keep it out of UnifiedLogger so user
-        // bug reports retain capacity for state transitions and failures.
+        guard !overlays.isEmpty else { return }
+        // Runs every 0.2 seconds on the main queue for every player instance.
+        // Console-only so user bug reports retain capacity for state
+        // transitions and failures, and debug-only because a console trace
+        // never reaches a bug report in the first place.
+        #if DEBUG
         print("[AudioOverlay] update: position \(videoPositionSec)")
+        #endif
         for entry in overlays {
             reportStatusIfChanged(for: entry, context: "update")
             let inRange = videoPositionSec >= entry.videoStartSec &&
@@ -156,10 +161,12 @@ final class AudioOverlayManager {
                     let actualSec = CMTimeGetSeconds(entry.player.currentTime())
                     let drift = abs(expectedAudioSec - actualSec)
                     if drift > driftThreshold {
+                        #if DEBUG
                         print(
                             "[AudioOverlay] track \(entry.trackIndex): " +
                                 "drift correction \(drift)s"
                         )
+                        #endif
                         let audioTime = CMTime(seconds: expectedAudioSec, preferredTimescale: 600)
                         seek(entry, to: audioTime, reason: "drift correction")
                     }
