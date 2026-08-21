@@ -277,7 +277,7 @@ Icon(Icons.search, color: VineTheme.lightText)
 
 ---
 
-## Typography
+## VineTheme Typography
 
 ### Use VineTheme Font Methods
 Use `VineTheme` font methods (e.g. `titleMediumFont()`, `bodyMediumFont()`) instead of raw `TextStyle` constructors. VineTheme methods apply the correct font family, weight, line height, and letter spacing from the design system.
@@ -293,6 +293,140 @@ Text('Secondary info', style: VineTheme.bodyMediumFont(color: VineTheme.secondar
 Text('Display name', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))
 Text('Secondary info', style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14))
 ```
+
+---
+
+## Text Fields
+
+Every `TextField` / `TextFormField` / `DivineAuthTextField` sets its input
+traits explicitly. Left alone, a single-line field gets `TextInputType.text`,
+`TextCapitalization.none` and `TextInputAction.done` — rarely what the field
+actually wants, and the damage only shows up fully on a real device: a keyboard
+with no `@` key, an auto-capitalized email address, or the wrong action key.
+Widget tests can assert the configured traits, but they cannot validate the
+platform keyboard those traits produce. Multiline is the one shape Flutter
+partly derives on its own, and the section below says why that matters. Treat
+these choices as part of writing the field rather than a later polish pass.
+
+### `textInputAction`: chain the single-line fields, skip the multiline ones
+
+**Single-line fields** form a chain: each one except the last uses
+`TextInputAction.next`, and the last one uses `TextInputAction.done`. A
+single-field form uses `done` — or `search` / `send` when that is the real
+action.
+
+Flutter moves focus to the next focusable field automatically for
+`TextInputAction.next`; explicit `FocusNode` handoffs are only needed when the
+default focus traversal order is not the intended order. Do not add
+`onEditingComplete` casually: providing it suppresses Flutter's default
+`nextFocus()` behavior, so the callback must preserve the intended traversal.
+Let the last field's `done` submit through `onSubmitted` /
+`onFieldSubmitted`.
+
+**A multiline field is not part of that chain.** Its return key has to insert
+a line break, so set `keyboardType: TextInputType.multiline`,
+`textInputAction: TextInputAction.newline`, and a deliberate `maxLines` greater
+than one (or `null`). Never give it `next`, and never give it `done`: both
+replace the return key and cost the user the ability to type a second line. So
+in a form that contains one:
+
+- The single-line field *above* it still uses `next` — focus lands in the
+  multiline field and stops there. That is the intended end of the chain.
+- Fields *after* it start a fresh chain.
+- If the multiline field is last, **no field carries `done`**, and the form is
+  submitted by its button. That is correct — do not force `done` onto the
+  multiline field to complete the pattern.
+
+Name (`next`) → bio (`newline`) → website (`done`) is the shape to aim for.
+
+**When adding a field to an existing screen, re-check the field above it** —
+a form that was correct with one field is wrong the moment it has two.
+
+**Good — a chained credential form:**
+```dart
+AutofillGroup(
+  child: Column(
+    children: [
+      DivineAuthTextField(
+        controller: _emailController,
+        label: context.l10n.authEmailLabel,
+        keyboardType: .emailAddress,
+        textCapitalization: .none,
+        textInputAction: .next,
+        autocorrect: false,
+        autofillHints: const [AutofillHints.email],
+      ),
+      DivineAuthTextField(
+        controller: _passwordController,
+        label: context.l10n.authPasswordLabel,
+        obscureText: true,
+        keyboardType: .text,
+        textCapitalization: .none,
+        textInputAction: .done,
+        autocorrect: false,
+        autofillHints: const [AutofillHints.password],
+        onSubmitted: (_) => _submit(),
+      ),
+    ],
+  ),
+)
+
+Future<void> _submit() async {
+  final succeeded = await _saveCredential();
+  if (succeeded) {
+    TextInput.finishAutofillContext();
+  }
+}
+```
+
+**Bad — defaults everywhere:**
+```dart
+// Capitalizes and autocorrects the email, and the keyboard offers
+// no way to reach the password field or submit the form.
+DivineAuthTextField(controller: _emailController),
+DivineAuthTextField(controller: _passwordController, obscureText: true),
+```
+
+### `keyboardType` and `textCapitalization`
+
+Pick both from what the field holds:
+
+| Field | `keyboardType` | `textCapitalization` |
+|---|---|---|
+| Email | `.emailAddress` | `.none` |
+| Username, handle, npub, hex key, NIP-05 | `.text` | `.none` |
+| URL, relay address | `.url` | `.none` |
+| Password, invite code | `.text` (+ `obscureText`) | `.none` |
+| One-time code, integer amount, sat count | `.number` | `.none` |
+| Decimal amount | `.numberWithOptions(decimal: true)` | `.none` |
+| Display name, list title, badge name | `.text` | `.words` |
+| Bio, comment, message, report reason | `.multiline` + `maxLines > 1` | `.sentences` |
+
+The `.multiline` row is also the one that keeps `textInputAction: newline` — see
+above.
+
+Turn `autocorrect` off for identifiers — email, username, npub, URL, code.
+Autocorrect on a hex key or a relay URL silently corrupts what the user typed.
+
+### Saving credentials needs a completed `AutofillGroup`
+
+Add `autofillHints` wherever the platform can help — email, password, username,
+one-time code. On its own, though, the hint only feeds *suggestions*. Fields
+that make up one credential belong under the same `AutofillGroup`. After the
+credential is created, changed, or reset successfully, call
+`TextInput.finishAutofillContext()` before leaving the flow so the platform can
+offer to save it. A Flutter `Form` may sit inside the group when the screen uses
+form validation, but it is not part of the autofill contract.
+
+For a save to **update** an existing entry rather than duplicate it, the
+identifier field must sit in the same group next to the password. These are
+shipped fixes rather than theory: #3154 added explicit context completion, and
+#3156 addressed password reset creating a second Keychain entry because the
+group held only the new password. `login_options_screen.dart` and
+`reset_password.dart` are complete worked examples; the latter also shows the
+read-only identifier field that exists purely so the OS can match the
+credential. A lone field the platform only suggests into — a one-time code or
+a search box — does not need the wrapper or context completion.
 
 ---
 
