@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
 import 'package:divine_video_player/src/loop_seam_probe.dart';
+import 'package:divine_video_player/src/prototype_loop_player.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -61,7 +62,17 @@ class DivineVideoPlayer extends StatelessWidget {
     final ctrl = controller!;
 
     final Widget surface;
-    if (ctrl.usesWebBackend) {
+    if (LoopSeamProbe.usesPrototypePlayer) {
+      // Their player, our app. See PrototypeLoopPlayer.
+      surface = const PrototypeLoopPlayer(
+        assetPath:
+            'packages/divine_video_player/assets/loop_seam_probe/'
+            'loop_editfix_a0.mp4',
+        pcmAssetPath:
+            'packages/divine_video_player/assets/loop_seam_probe/'
+            'loop_editfix_a0_xf.pcm',
+      );
+    } else if (ctrl.usesWebBackend) {
       surface = ctrl.buildWebView();
     } else if (ctrl.usesLinuxBackend) {
       surface = ctrl.buildLinuxView();
@@ -94,7 +105,8 @@ class DivineVideoPlayer extends StatelessWidget {
       };
     }
 
-    if (placeholder == null ||
+    if (LoopSeamProbe.usesPrototypePlayer ||
+        placeholder == null ||
         (!crossFadePlaceholder && ctrl.state.isFirstFrameRendered)) {
       return _withProbeBanner(ctrl, surface);
     }

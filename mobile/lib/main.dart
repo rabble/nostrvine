@@ -10,7 +10,11 @@ import 'package:audio_session/audio_session.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
-    show DivineVideoPlayerController;
+    show
+        BareLoopPlayer,
+        DivineVideoPlayerController,
+        LoopSeamProbe,
+        PrototypeLoopPlayer;
 import 'package:dm_repository/dm_repository.dart' show DmSyncState;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -2772,6 +2776,50 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // The BlocBuilder is used because the cubit is provided further down
     // in the widget tree by MultiBlocProvider.
     Widget buildApp(Locale? locale, AppearanceMode appearanceMode) {
+      // EXPERIMENT (nicht committen): der Player des perfect_loop-Prototyps auf
+      // einem nackten Screen, eine einzige Instanz, nichts darueber. Im Feed
+      // ging das nicht: er baut pro Item eine View und haelt drei Items am
+      // Leben, also liefen drei Player gleichzeitig, mit Thumbnail und
+      // Ladeindikator obendrauf.
+      if (LoopSeamProbe.usesBarePlayer) {
+        return const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: ColoredBox(
+            color: Color(0xFF000000),
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: BareLoopPlayer(
+                  assetPath:
+                      'packages/divine_video_player/assets/loop_seam_probe/'
+                      'loop_editfix_a0.mp4',
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      if (LoopSeamProbe.usesPrototypePlayer) {
+        return const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: ColoredBox(
+            color: Color(0xFF000000),
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: PrototypeLoopPlayer(
+                  assetPath:
+                      'packages/divine_video_player/assets/loop_seam_probe/'
+                      'loop_editfix_a0.mp4',
+                  pcmAssetPath:
+                      'packages/divine_video_player/assets/loop_seam_probe/'
+                      'loop_editfix_a0_xf.pcm',
+                ),
+              ),
+            ),
+          ),
+        );
+      }
       if (locale != null) {
         Intl.defaultLocale = locale.toLanguageTag();
       }

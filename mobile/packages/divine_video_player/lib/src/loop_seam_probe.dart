@@ -39,6 +39,19 @@ enum LoopSeamProbeVariant {
   /// decoded and would show it on its side.
   rotated('rotated'),
 
+  /// The reference clip with its audio track removed.
+  ///
+  /// Isolates ExoPlayer's audio path: as long as a media item carries audio,
+  /// media3 drains and re-anchors its audio sink at every loop discontinuity,
+  /// on the same thread that releases video frames.
+  vineNoAudio('vinenoaudio'),
+
+  /// Show the perfect_loop prototype's own player instead of ours.
+  prototype('prototype'),
+
+  /// Show our own player alone on the same bare screen.
+  bare('bare'),
+
   /// Play the real source, but still label it.
   observe('observe'),
 
@@ -61,13 +74,13 @@ enum LoopSeamProbeVariant {
 /// Substitutes a bundled fixture for the clips the app is about to play.
 abstract final class LoopSeamProbe {
   /// Bumped per test build so the banner names the run on screen.
-  static const testNumber = 24;
+  static const testNumber = 27;
 
   static const _assetRoot =
       'packages/divine_video_player/assets/loop_seam_probe';
 
   /// Selected by `--dart-define=LOOP_SEAM_PROBE=`
-  /// `vine|fixed|rotated|observe|off`. Defaults to off.
+  /// `vine|vinenoaudio|fixed|rotated|prototype|bare|observe|off`.
   static final LoopSeamProbeVariant variant = LoopSeamProbeVariant._parse(
     const String.fromEnvironment('LOOP_SEAM_PROBE', defaultValue: 'off'),
   );
@@ -76,6 +89,14 @@ abstract final class LoopSeamProbe {
   static const substituteEveryVideo = true;
 
   static final Map<String, Future<String>> _extracted = {};
+
+  /// Whether the picture comes from the prototype's player instead of ours.
+  static bool get usesPrototypePlayer =>
+      kDebugMode && variant == LoopSeamProbeVariant.prototype;
+
+  /// Whether to show our own player alone on a bare screen.
+  static bool get usesBarePlayer =>
+      kDebugMode && variant == LoopSeamProbeVariant.bare;
 
   /// Whether the probe swaps the source.
   static bool get substitutes =>
@@ -109,6 +130,9 @@ abstract final class LoopSeamProbe {
       LoopSeamProbeVariant.vine => 'loop_editfix_a0.mp4',
       LoopSeamProbeVariant.fixed => 'divine_cdn_fixed.mp4',
       LoopSeamProbeVariant.rotated => 'loop_rotated.mp4',
+      LoopSeamProbeVariant.vineNoAudio => 'loop_vine_noaudio.mp4',
+      LoopSeamProbeVariant.prototype => 'loop_editfix_a0.mp4',
+      LoopSeamProbeVariant.bare => 'loop_editfix_a0.mp4',
       LoopSeamProbeVariant.observe => null,
       LoopSeamProbeVariant.off => null,
     };

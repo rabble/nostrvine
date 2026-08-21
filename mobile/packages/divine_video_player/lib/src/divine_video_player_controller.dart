@@ -445,6 +445,25 @@ class DivineVideoPlayerController {
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
+    if (LoopSeamProbe.usesPrototypePlayer) {
+      // The prototype's platform view draws the picture in this mode. Starting
+      // our own player as well would decode the same clip a second time and
+      // make the comparison worthless, so it is left unbuilt -- and the feed
+      // is told the first frame arrived, or it waits behind a placeholder.
+      // The feed also gates on a known video size, so report the fixture's:
+      // 480x480, the clip the prototype view is about to play.
+      _state = _state.copyWith(
+        isFirstFrameRendered: true,
+        status: PlaybackStatus.playing,
+        videoWidth: 480,
+        videoHeight: 480,
+      );
+      _stateController.add(_state);
+      if (!_firstFrameCompleter.isCompleted) {
+        _firstFrameCompleter.complete(true);
+      }
+      return;
+    }
     if (_isWebBackend) {
       await _webBackend!.setClips(clips, startPosition: startPosition);
       return;

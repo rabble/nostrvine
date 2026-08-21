@@ -83,6 +83,13 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
             "divine_video_player_view",
             DivineVideoPlayerViewFactory(flutterPluginBinding),
         )
+        // EXPERIMENT (nicht committen): der Player des perfect_loop-Prototyps,
+        // woertlich uebernommen, um zu trennen ob die Naht an unserem Player
+        // haengt oder an der App drumherum.
+        flutterPluginBinding.platformViewRegistry.registerViewFactory(
+            VIEW_TYPE,
+            PrototypeLoopPlayerViewFactory(flutterPluginBinding.binaryMessenger),
+        )
     }
 
     override fun onDetachedFromEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
