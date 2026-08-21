@@ -205,7 +205,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get settingsShareDivine => 'شارك Divine مع أصدقائك';
+  String get settingsShareDivine => 'مشاركة Divine مع الأصدقاء';
 
   @override
   String get settingsSwitchAccount => 'تبديل الحساب';
