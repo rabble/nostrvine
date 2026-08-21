@@ -6426,6 +6426,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
 
   @override
+  String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

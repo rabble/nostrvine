@@ -6758,6 +6758,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Padam Semua Kandungan';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

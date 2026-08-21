@@ -6812,6 +6812,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Eliminar todo el contenido';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'No pudimos terminar de eliminar tu cuenta. Probá de nuevo.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

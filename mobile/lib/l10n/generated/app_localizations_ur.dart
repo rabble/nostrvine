@@ -6745,6 +6745,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'تمام مواد حذف کریں';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

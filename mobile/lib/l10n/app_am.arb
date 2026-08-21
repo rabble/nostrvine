@@ -4514,6 +4514,8 @@
     "deleteAccountContentDeletionFailed": "ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም",
     "deleteAccountRelayConfirmationFailed": "የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።",
     "deleteAccountDeleteAllContentButton": "ሁሉንም ይዘት ሰርዝ",
+    "deleteAccountDeletionIncomplete": "መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ የመጨረሻ ማረጋገጫ",
     "deleteAccountKeyDeletionWarning": "የመሰረዝ ጥያቄዎች ተልከዋል፣ ግን ቁልፎችዎ ከዚህ መሣሪያ ሙሉ በሙሉ ላይወገዱ ይችላሉ። እንደገና ለመሞከር ወደ ቅንብሮች → Nostr ቁልፎች → ቁልፎችን አስወግድ ይሂዱ።",
     "deleteAccountPreparingDeletion": "ስረዛን በማዘጋጀት ላይ...",

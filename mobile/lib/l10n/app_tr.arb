@@ -4389,6 +4389,8 @@
     "deleteAccountContentDeletionFailed": "İçerik rölelerden silinemedi",
     "deleteAccountRelayConfirmationFailed": "Hesap silmeyi hiçbir röleyle doğrulayamadık. Bağlantını kontrol edip tekrar dene.",
     "deleteAccountDeleteAllContentButton": "Tüm İçeriği Sil",
+    "deleteAccountDeletionIncomplete": "Hesabını silme işlemini tamamlayamadık. Tekrar dene.",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ Son Onay",
     "deleteAccountKeyDeletionWarning": "Silme istekleri gönderildi ama anahtarların bu cihazdan tamamen kaldırılmamış olabilir. Tekrar denemek için Ayarlar → Nostr Anahtarları → Anahtarları Kaldır'a git.",
     "deleteAccountPreparingDeletion": "Silme hazırlanıyor...",

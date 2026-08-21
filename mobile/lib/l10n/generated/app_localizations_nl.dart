@@ -6774,6 +6774,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Alle inhoud verwijderen';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

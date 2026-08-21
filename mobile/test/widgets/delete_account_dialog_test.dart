@@ -39,6 +39,12 @@ const _completedAttempt = AccountDeletionAttempt(
   username: 'alice',
 );
 
+/// What the coordinator returns for a deletion that releases no handle.
+const _recoverableAttemptWithoutUsername = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.recoverable,
+);
+
 const _pubkeyHex =
     '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
 
@@ -1050,6 +1056,102 @@ void main() {
             ).accountDeletionRecoveryBody,
           ),
           findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'a deletion that releases no handle never offers to restore one',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+        when(
+          () => recoveryRepository.prepare(username: any(named: 'username')),
+        ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+            diagnosticError: 'relay down',
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: recoveryRepository,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.accountDeletionRestoreUsername), findsNothing);
+        expect(find.text(l10n.accountDeletionRecoveryBody), findsNothing);
+        expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+        expect(find.text(l10n.commonCancel), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a failed prepare without a handle does not blame the username',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+        when(
+          () => recoveryRepository.prepare(username: any(named: 'username')),
+        ).thenThrow(const AccountDeletionRecoveryException('connection lost'));
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: recoveryRepository,
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
+        expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
+        verifyNever(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
         );
       },
     );

@@ -6721,6 +6721,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

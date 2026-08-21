@@ -4389,6 +4389,8 @@
     "deleteAccountContentDeletionFailed": "Impossibile eliminare i contenuti dai relay",
     "deleteAccountRelayConfirmationFailed": "Non siamo riusciti a confermare l'eliminazione dell'account con nessun relay. Controlla la connessione e riprova.",
     "deleteAccountDeleteAllContentButton": "Elimina tutti i contenuti",
+    "deleteAccountDeletionIncomplete": "Non siamo riusciti a completare l'eliminazione del tuo account. Riprova.",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ Conferma finale",
     "deleteAccountKeyDeletionWarning": "Richieste di eliminazione inviate, ma le tue chiavi potrebbero non essere state rimosse completamente da questo dispositivo. Vai su Impostazioni → Chiavi Nostr → Rimuovi chiavi per riprovare.",
     "deleteAccountPreparingDeletion": "Preparazione dell'eliminazione...",

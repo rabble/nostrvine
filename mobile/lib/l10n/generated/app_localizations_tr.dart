@@ -6674,6 +6674,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

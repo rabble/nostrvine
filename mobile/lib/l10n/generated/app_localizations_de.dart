@@ -6831,6 +6831,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Alle Inhalte löschen';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Wir konnten das Löschen deines Kontos nicht abschließen. Versuch es erneut.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

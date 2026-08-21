@@ -4389,6 +4389,8 @@
     "deleteAccountContentDeletionFailed": "فشل حذف المحتوى من المحوّلات",
     "deleteAccountRelayConfirmationFailed": "تعذّر علينا تأكيد حذف الحساب مع أي ريلاي. تحقق من اتصالك وحاول مرة أخرى.",
     "deleteAccountDeleteAllContentButton": "حذف كل المحتوى",
+    "deleteAccountDeletionIncomplete": "تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ التأكيد النهائي",
     "deleteAccountKeyDeletionWarning": "تم إرسال طلبات الحذف، لكن قد لا تكون مفاتيحك أُزيلت بالكامل من هذا الجهاز. اذهب إلى الإعدادات ← مفاتيح Nostr ← إزالة المفاتيح لإعادة المحاولة.",
     "deleteAccountPreparingDeletion": "جارٍ التحضير للحذف...",

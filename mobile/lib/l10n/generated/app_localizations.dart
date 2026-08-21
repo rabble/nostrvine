@@ -11594,6 +11594,12 @@ abstract class AppLocalizations {
   /// **'Delete All Content'**
   String get deleteAccountDeleteAllContentButton;
 
+  /// Neutral error when account deletion could not even start. Makes no claim about a username, so it also covers accounts that never had one; retrying resolves it.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish deleting your account. Try again.'**
+  String get deleteAccountDeletionIncomplete;
+
   /// Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared.
   ///
   /// In en, this message translates to:

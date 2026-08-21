@@ -6816,6 +6816,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

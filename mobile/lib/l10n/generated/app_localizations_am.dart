@@ -6599,6 +6599,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

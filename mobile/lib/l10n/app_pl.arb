@@ -4389,6 +4389,8 @@
     "deleteAccountContentDeletionFailed": "Nie udało się usunąć treści z przekaźników",
     "deleteAccountRelayConfirmationFailed": "Nie udało nam się potwierdzić usunięcia konta u żadnego przekaźnika. Sprawdź połączenie i spróbuj ponownie.",
     "deleteAccountDeleteAllContentButton": "Usuń wszystkie treści",
+    "deleteAccountDeletionIncomplete": "Nie udało się dokończyć usuwania konta. Spróbuj ponownie.",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ Ostateczne potwierdzenie",
     "deleteAccountKeyDeletionWarning": "Żądania usunięcia wysłane, ale twoje klucze mogły nie zostać w pełni usunięte z tego urządzenia. Przejdź do Ustawienia → Klucze Nostr → Usuń klucze, aby spróbować ponownie.",
     "deleteAccountPreparingDeletion": "Przygotowywanie usuwania...",

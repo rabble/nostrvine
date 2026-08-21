@@ -516,6 +516,18 @@ Future<void> executeAccountDeletion({
   final usernameRestoredText = context.l10n.accountDeletionUsernameRestored;
   final recoveryFailedText = context.l10n.accountDeletionRecoveryFailed;
   final finishingDeletionText = context.l10n.accountDeletionFinishingBody;
+  final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
+
+  // Every deletion now opens a coordinator attempt, so these outcomes are also
+  // reached by accounts that never had a handle. Only a run that opted into the
+  // release has a username to talk about; the rest get the same plain cancel
+  // the recovery screen already offers for a username-less attempt.
+  final durableOutcomeBody = burnUsername
+      ? recoveryBodyText
+      : finishingDeletionText;
+  final durableOutcomeActionLabel = burnUsername
+      ? restoreUsernameText
+      : context.l10n.commonCancel;
 
   AccountDeletionAttempt? deletionAttempt;
   var releasePrepared = false;
@@ -529,7 +541,7 @@ Future<void> executeAccountDeletion({
         message,
         error: true,
         duration: const Duration(seconds: 12),
-        actionLabel: offerRestore ? restoreUsernameText : null,
+        actionLabel: offerRestore ? durableOutcomeActionLabel : null,
         onActionPressed: offerRestore
             ? () {
                 unawaited(
@@ -541,7 +553,9 @@ Future<void> executeAccountDeletion({
                             restored.status ==
                             AccountDeletionAttemptStatus.cancelled;
                         final text = succeeded
-                            ? usernameRestoredText
+                            ? (burnUsername
+                                  ? usernameRestoredText
+                                  : deletionIncompleteText)
                             : recoveryFailedText;
                         ScaffoldMessenger.of(context).showSnackBar(
                           DivineSnackbarContainer.snackBar(
@@ -583,7 +597,7 @@ Future<void> executeAccountDeletion({
     dismissProgressSheet();
     if (context.mounted) {
       if (releasePrepared) {
-        showDurableDeletionOutcome(recoveryBodyText);
+        showDurableDeletionOutcome(durableOutcomeBody);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
@@ -684,13 +698,13 @@ Future<void> executeAccountDeletion({
         );
         dismissProgressSheet();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              burnUsernameFailedText,
-              error: true,
-            ),
-          );
-          announceOutcome(burnUsernameFailedText);
+          final text = burnUsername
+              ? burnUsernameFailedText
+              : deletionIncompleteText;
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+          announceOutcome(text);
         }
         return;
       }
@@ -707,7 +721,7 @@ Future<void> executeAccountDeletion({
       dismissProgressSheet();
       if (context.mounted) {
         if (releasePrepared) {
-          showDurableDeletionOutcome(recoveryBodyText);
+          showDurableDeletionOutcome(durableOutcomeBody);
         } else {
           final text = context.l10n.deleteAccountReauthRequired;
           ScaffoldMessenger.of(
@@ -739,7 +753,7 @@ Future<void> executeAccountDeletion({
             eventId == null ||
             deletionRecoveryRepository == null) {
           dismissProgressSheet();
-          showDurableDeletionOutcome(recoveryBodyText);
+          showDurableDeletionOutcome(durableOutcomeBody);
           return;
         }
         try {
@@ -877,7 +891,7 @@ Future<void> executeAccountDeletion({
       dismissProgressSheet();
       if (context.mounted) {
         if (releasePrepared) {
-          showDurableDeletionOutcome(recoveryBodyText);
+          showDurableDeletionOutcome(durableOutcomeBody);
           return;
         }
         final text = _deleteAccountFailureText(

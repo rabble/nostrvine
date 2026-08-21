@@ -6379,6 +6379,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
 
   @override
+  String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

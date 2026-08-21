@@ -4423,6 +4423,8 @@
     "description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."
   },
   "deleteAccountDeleteAllContentButton": "Delete All Content",
+  "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
+  "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not even start. Makes no claim about a username, so it also covers accounts that never had one; retrying resolves it."},
   "accountDeletionRecoveryTitle": "Finish deleting your account",
   "@accountDeletionRecoveryTitle": {
     "description": "Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared."

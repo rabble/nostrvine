@@ -6697,6 +6697,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

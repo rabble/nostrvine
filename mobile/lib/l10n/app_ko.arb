@@ -3850,6 +3850,8 @@
     "deleteAccountContentDeletionFailed": "릴레이에서 콘텐츠를 삭제하지 못했어요",
     "deleteAccountRelayConfirmationFailed": "어떤 릴레이에서도 계정 삭제를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.",
     "deleteAccountDeleteAllContentButton": "모든 콘텐츠 삭제",
+    "deleteAccountDeletionIncomplete": "계정 삭제를 완료하지 못했어요. 다시 시도해주세요.",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ 최종 확인",
     "deleteAccountKeyDeletionWarning": "삭제 요청을 보냈지만, 키가 이 기기에서 완전히 제거되지 않았을 수 있어요. 설정 → Nostr 키 → 키 제거로 가서 다시 시도하세요.",
     "deleteAccountPreparingDeletion": "삭제 준비 중...",

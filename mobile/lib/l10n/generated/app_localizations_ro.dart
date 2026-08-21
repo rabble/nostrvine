@@ -6917,6 +6917,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

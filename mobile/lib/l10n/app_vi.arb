@@ -3805,6 +3805,10 @@
   "deleteAccountContentDeletionFailed": "Không xóa được nội dung khỏi các relay",
   "deleteAccountRelayConfirmationFailed": "Chúng tôi không xác nhận được việc xóa tài khoản với relay nào. Kiểm tra kết nối và thử lại.",
   "deleteAccountDeleteAllContentButton": "Xóa tất cả nội dung",
+  "deleteAccountDeletionIncomplete": "Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.",
+  "@deleteAccountDeletionIncomplete": {
+    "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
+  },
   "deleteAccountFinalConfirmationTitle": "⚠️ Xác nhận lần cuối",
   "deleteAccountKeyDeletionWarning": "Đã gửi yêu cầu xóa, nhưng khóa của bạn có thể chưa được gỡ hết khỏi thiết bị này. Vào Cài đặt → Khóa Nostr → Xóa khóa để thử lại.",
   "deleteAccountLocalDataDeletionFailed": "Đã gửi yêu cầu xóa và bạn đã đăng xuất, nhưng một số dữ liệu cục bộ không gỡ được khỏi thiết bị này.",

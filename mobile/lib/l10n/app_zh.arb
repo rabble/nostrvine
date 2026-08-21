@@ -3805,6 +3805,10 @@
   "deleteAccountContentDeletionFailed": "从中继删除内容失败",
   "deleteAccountRelayConfirmationFailed": "我们无法通过中继确认账号删除。请检查网络连接后重试。",
   "deleteAccountDeleteAllContentButton": "删除所有内容",
+  "deleteAccountDeletionIncomplete": "我们没能完成账号删除，请重试。",
+  "@deleteAccountDeletionIncomplete": {
+    "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
+  },
   "deleteAccountFinalConfirmationTitle": "⚠️ 最终确认",
   "deleteAccountKeyDeletionWarning": "删除请求已发送，但你的密钥可能未从此设备完全移除。前往“设置 → Nostr 密钥 → 移除密钥”重试。",
   "deleteAccountLocalDataDeletionFailed": "删除请求已发送且你已退出登录，但部分本地数据无法从此设备移除。",

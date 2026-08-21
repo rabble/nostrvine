@@ -3805,6 +3805,10 @@
   "deleteAccountContentDeletionFailed": "ریلے سے مواد حذف نہیں ہو سکا",
   "deleteAccountRelayConfirmationFailed": "ہم کسی ریلے سے اکاؤنٹ کے حذف ہونے کی تصدیق نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "deleteAccountDeleteAllContentButton": "تمام مواد حذف کریں",
+  "deleteAccountDeletionIncomplete": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔",
+  "@deleteAccountDeletionIncomplete": {
+    "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
+  },
   "deleteAccountFinalConfirmationTitle": "⚠️ آخری تصدیق",
   "deleteAccountKeyDeletionWarning": "حذف کی درخواستیں بھیج دی گئیں، لیکن ممکن ہے آپ کی کلیدیں اس ڈیوائس سے مکمل نہ ہٹائی گئی ہوں۔ دوبارہ کوشش کے لیے ترتیبات → Nostr کلیدیں → کلیدیں ہٹائیں پر جائیں۔",
   "deleteAccountLocalDataDeletionFailed": "حذف کی درخواستیں بھیج دی گئیں اور آپ سائن آؤٹ ہو گئے، لیکن کچھ مقامی ڈیٹا اس ڈیوائس سے نہیں ہٹایا جا سکا۔",

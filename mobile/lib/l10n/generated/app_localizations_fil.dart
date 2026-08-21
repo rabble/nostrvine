@@ -6794,6 +6794,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => 'Burahin Lahat ng Content';
 
   @override
+  String get deleteAccountDeletionIncomplete =>
+      'Hindi namin natapos ang pag-delete ng account mo. Subukan ulit.';
+
+  @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
 
   @override

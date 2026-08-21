@@ -4389,6 +4389,8 @@
     "deleteAccountContentDeletionFailed": "Kunde inte ta bort innehåll från relerna",
     "deleteAccountRelayConfirmationFailed": "Vi kunde inte bekräfta kontoraderingen med något relä. Kontrollera anslutningen och försök igen.",
     "deleteAccountDeleteAllContentButton": "Ta bort allt innehåll",
+    "deleteAccountDeletionIncomplete": "Vi kunde inte slutföra raderingen av ditt konto. Försök igen.",
+    "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "deleteAccountFinalConfirmationTitle": "⚠️ Slutgiltig bekräftelse",
     "deleteAccountKeyDeletionWarning": "Raderingsförfrågningar skickade, men dina nycklar kan finnas kvar på den här enheten. Gå till Inställningar → Nostr-nycklar → Ta bort nycklar för att försöka igen.",
     "deleteAccountPreparingDeletion": "Förbereder borttagning...",
