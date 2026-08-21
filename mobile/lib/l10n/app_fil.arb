@@ -2896,6 +2896,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Tanggalin ang mga napiling clip",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Tanggalin ang mga napiling frame",
     "videoEditorReverseSelectedFramesSemanticLabel": "Baligtarin ang mga napiling frame",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "I-duplicate ang mga napiling frame",
     "videoEditorStopMotionTooShortSnackbar": "Kailangang hindi bababa sa {seconds} segundo ang video mo — kumuha pa ng ilang frame.",
     "videoEditorMergeProgressLabel": "Sandali lang, pinagsasama namin ang iyong mga clip",
     "videoEditorMergeFailed": "Hindi mapagsama ang mga clip. Pakisubukang muli.",

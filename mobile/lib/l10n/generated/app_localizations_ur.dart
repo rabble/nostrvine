@@ -9101,6 +9101,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'منتخب فریم الٹائیں';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'منتخب فریم کی نقل کریں';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'آپ کی ویڈیو کو کم از کم ${seconds}s چاہیے — کچھ اور فریم پکڑیں۔';
   }

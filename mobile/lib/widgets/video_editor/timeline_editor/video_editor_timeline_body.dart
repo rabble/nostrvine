@@ -291,7 +291,12 @@ class _StopMotionFrameStrip extends StatelessWidget {
         // No-op moves return the same instance; skip commit and selection
         // shuffle so the history stays clean.
         if (identical(moved, frames)) return;
-        commitStopMotionFrames(context, clipId: clip.id, frames: moved);
+        final committed = commitStopMotionFrames(
+          context,
+          clipId: clip.id,
+          frames: moved,
+        );
+        if (!committed) return;
         // The block now occupies slot..slot+n-1 — keep it selected.
         bloc.add(
           ClipEditorFrameMultiSelectionSet({

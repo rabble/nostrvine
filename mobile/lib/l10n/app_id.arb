@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Hapus klip yang dipilih",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Hapus bingkai yang dipilih",
     "videoEditorReverseSelectedFramesSemanticLabel": "Balikkan bingkai yang dipilih",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplikat bingkai yang dipilih",
     "videoEditorStopMotionTooShortSnackbar": "Videomu harus minimal {seconds} detik — ambil beberapa bingkai lagi.",
     "videoEditorMergeProgressLabel": "Sebentar, kami sedang menggabungkan klipmu",
     "videoEditorMergeFailed": "Tidak dapat menggabungkan klip. Silakan coba lagi.",

@@ -8896,6 +8896,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የተመረጡ ፍሬሞችን አገላብጥ';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'የተመረጡ ፍሬሞችን ያባዛ';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'ቪዲዮው ቢያንስ $seconds ሰከንድ መሆን አለበት — ጥቂት ተጨማሪ ፍሬሞችን ያንሱ።';
   }

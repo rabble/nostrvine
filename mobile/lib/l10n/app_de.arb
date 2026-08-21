@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Ausgewählte Clips löschen",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Ausgewählte Frames löschen",
     "videoEditorReverseSelectedFramesSemanticLabel": "Ausgewählte Frames umkehren",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Ausgewählte Frames duplizieren",
     "videoEditorStopMotionTooShortSnackbar": "Dein Video braucht mindestens {seconds}s – nimm noch ein paar Frames auf.",
     "videoEditorMergeProgressLabel": "Einen Moment, wir führen deine Clips zusammen",
     "videoEditorMergeFailed": "Clips konnten nicht zusammengeführt werden. Bitte versuche es erneut.",

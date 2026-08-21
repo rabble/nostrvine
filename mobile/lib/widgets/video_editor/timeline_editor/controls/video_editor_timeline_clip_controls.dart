@@ -300,10 +300,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     bloc.add(
       // Bind the request to this clip so the render still targets the intended
       // clip even if the selection changes while it runs.
-      ClipEditorSaveClipToLibraryRequested(
-        clipId: clipId,
-        overlays: overlays,
-      ),
+      ClipEditorSaveClipToLibraryRequested(clipId: clipId, overlays: overlays),
     );
   }
 
@@ -468,11 +465,7 @@ class _StopMotionClipControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ({
-      String clipId,
-      List<StopMotionClipFrame> frames,
-      int? selected,
-    })?
+    final ({String clipId, List<StopMotionClipFrame> frames, int? selected})?
     data = context.select((ClipEditorBloc b) {
       final state = b.state;
       final index = state.currentClipIndex;
@@ -506,11 +499,7 @@ class _StopMotionClipControls extends StatelessWidget {
           ? () => commitStopMotionFrames(
               context,
               clipId: data.clipId,
-              frames: [
-                ...frames.sublist(0, selected + 1),
-                frames[selected],
-                ...frames.sublist(selected + 1),
-              ],
+              frames: StopMotionFrameOps.duplicateFrames(frames, {selected}),
             )
           : null,
       // Crop / rotate / flip the selected still. A stop-motion still is an

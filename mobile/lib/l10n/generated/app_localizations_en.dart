@@ -9214,6 +9214,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reverse selected frames';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplicate selected frames';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Your video needs at least ${seconds}s — capture a few more frames.';
   }

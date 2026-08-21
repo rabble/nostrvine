@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "حذف المقاطع المحددة",
     "videoEditorDeleteSelectedFramesSemanticLabel": "حذف الإطارات المحددة",
     "videoEditorReverseSelectedFramesSemanticLabel": "عكس الإطارات المحددة",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "تكرار الإطارات المحددة",
     "videoEditorStopMotionTooShortSnackbar": "يجب أن يكون الفيديو {seconds} ثانية على الأقل — التقط بضعة إطارات إضافية.",
     "videoEditorMergeProgressLabel": "لحظة من فضلك، نقوم بدمج مقاطعك",
     "videoEditorMergeFailed": "تعذّر دمج المقاطع. يُرجى المحاولة مرة أخرى.",

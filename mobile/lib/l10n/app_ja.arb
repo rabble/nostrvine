@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "選択したクリップを削除",
     "videoEditorDeleteSelectedFramesSemanticLabel": "選択したフレームを削除",
     "videoEditorReverseSelectedFramesSemanticLabel": "選択したフレームを逆順にする",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "選択したフレームを複製",
     "videoEditorStopMotionTooShortSnackbar": "動画は{seconds}秒以上必要です。もう少しフレームを撮影してください。",
     "videoEditorMergeProgressLabel": "少々お待ちください。クリップを結合しています",
     "videoEditorMergeFailed": "クリップを結合できませんでした。もう一度お試しください。",

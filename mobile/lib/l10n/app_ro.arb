@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Șterge clipurile selectate",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Șterge cadrele selectate",
     "videoEditorReverseSelectedFramesSemanticLabel": "Inversează cadrele selectate",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplichează cadrele selectate",
     "videoEditorStopMotionTooShortSnackbar": "Videoclipul tău trebuie să dureze cel puțin {seconds}s — capturează încă câteva cadre.",
     "videoEditorMergeProgressLabel": "Un moment, îți îmbinăm clipurile",
     "videoEditorMergeFailed": "Clipurile nu au putut fi îmbinate. Încearcă din nou.",

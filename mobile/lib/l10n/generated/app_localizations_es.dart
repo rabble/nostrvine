@@ -9193,6 +9193,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Invertir fotogramas seleccionados';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplicar fotogramas seleccionados';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Tu video necesita al menos ${seconds}s: captura algunos fotogramas más.';
   }

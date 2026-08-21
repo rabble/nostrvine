@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Eliminar clips seleccionados",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Eliminar fotogramas seleccionados",
     "videoEditorReverseSelectedFramesSemanticLabel": "Invertir fotogramas seleccionados",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplicar fotogramas seleccionados",
     "videoEditorStopMotionTooShortSnackbar": "Tu video necesita al menos {seconds}s: captura algunos fotogramas más.",
     "videoEditorMergeProgressLabel": "Un momento, estamos combinando tus clips",
     "videoEditorMergeFailed": "No se pudieron combinar los clips. Inténtalo de nuevo.",

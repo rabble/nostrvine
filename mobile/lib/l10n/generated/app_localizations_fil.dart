@@ -9179,6 +9179,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Baligtarin ang mga napiling frame';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'I-duplicate ang mga napiling frame';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Kailangang hindi bababa sa $seconds segundo ang video mo — kumuha pa ng ilang frame.';
   }

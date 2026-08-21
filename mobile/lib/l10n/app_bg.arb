@@ -4231,6 +4231,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Изтриване на избраните клипове",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Изтриване на избраните кадри",
     "videoEditorReverseSelectedFramesSemanticLabel": "Обръщане на избраните кадри",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Дублиране на избраните кадри",
     "videoEditorStopMotionTooShortSnackbar": "Видеото трябва да е поне {seconds}с — заснеми още няколко кадъра.",
     "videoEditorMergeProgressLabel": "Един момент, обединяваме клиповете ти",
     "videoEditorMergeFailed": "Клиповете не могат да бъдат обединени. Опитай отново.",

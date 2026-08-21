@@ -4225,6 +4225,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "የተመረጡ ቅንጥቦችን ሰርዝ",
     "videoEditorDeleteSelectedFramesSemanticLabel": "የተመረጡ ፍሬሞችን ሰርዝ",
     "videoEditorReverseSelectedFramesSemanticLabel": "የተመረጡ ፍሬሞችን አገላብጥ",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "የተመረጡ ፍሬሞችን ያባዛ",
     "videoEditorStopMotionTooShortSnackbar": "ቪዲዮው ቢያንስ {seconds} ሰከንድ መሆን አለበት — ጥቂት ተጨማሪ ፍሬሞችን ያንሱ።",
     "videoEditorMergeProgressLabel": "ትንሽ ይቆዩ፣ ቅንጥቦችዎን እያዋሃድን ነው",
     "videoEditorMergeFailed": "ቅንጥቦችን ማዋሃድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",

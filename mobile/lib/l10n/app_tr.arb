@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Seçili klipleri sil",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Seçili kareleri sil",
     "videoEditorReverseSelectedFramesSemanticLabel": "Seçili kareleri ters çevir",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Seçili kareleri çoğalt",
     "videoEditorStopMotionTooShortSnackbar": "Videon en az {seconds}sn olmalı — birkaç kare daha çek.",
     "videoEditorMergeProgressLabel": "Bir saniye, kliplerini birleştiriyoruz",
     "videoEditorMergeFailed": "Klipler birleştirilemedi. Lütfen tekrar dene.",

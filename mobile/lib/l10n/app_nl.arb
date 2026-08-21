@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Geselecteerde clips verwijderen",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Geselecteerde frames verwijderen",
     "videoEditorReverseSelectedFramesSemanticLabel": "Geselecteerde frames omkeren",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Geselecteerde frames dupliceren",
     "videoEditorStopMotionTooShortSnackbar": "Je video moet minstens {seconds}s duren – leg nog een paar frames vast.",
     "videoEditorMergeProgressLabel": "Een moment, we voegen je clips samen",
     "videoEditorMergeFailed": "Kan clips niet samenvoegen. Probeer het opnieuw.",

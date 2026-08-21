@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Usuń zaznaczone klipy",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Usuń zaznaczone klatki",
     "videoEditorReverseSelectedFramesSemanticLabel": "Odwróć zaznaczone klatki",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplikuj zaznaczone klatki",
     "videoEditorStopMotionTooShortSnackbar": "Twój film musi trwać co najmniej {seconds}s – dodaj jeszcze kilka klatek.",
     "videoEditorMergeProgressLabel": "Chwila, scalamy Twoje klipy",
     "videoEditorMergeFailed": "Nie udało się scalić klipów. Spróbuj ponownie.",
