@@ -729,11 +729,20 @@ class _ShortenedLocalCollector extends RecursiveAstVisitor<void> {
 
   @override
   void visitVariableDeclaration(VariableDeclaration node) {
-    if (!_isVisible(node)) return;
+    // Every path falls through to super: a visitor that conditionally skips it
+    // stops descending into the initializer, so anything nested there — a
+    // closure with its own declarations — silently stops being collected. That
+    // is invisible from outside, because a detector that looks at less just
+    // reports fewer sites.
+    if (_isVisible(node)) _record(node);
+    super.visitVariableDeclaration(node);
+  }
+
+  void _record(VariableDeclaration node) {
     final initializer = node.initializer;
     // A secret aliased to a differently-named local and then logged —
     // `final backup = nsec;` — otherwise launders past the secret rule, which
-    // only ever sees the local's own name.
+    // only ever sees the local's own name. One hop only; see the header.
     final aliased = _rootIdentifierName(initializer);
     if (aliased != null && isSecretName(aliased)) {
       locals[node.name.lexeme] = _Hit(
@@ -765,7 +774,6 @@ class _ShortenedLocalCollector extends RecursiveAstVisitor<void> {
     } else {
       locals.remove(node.name.lexeme);
     }
-    super.visitVariableDeclaration(node);
   }
 }
 
