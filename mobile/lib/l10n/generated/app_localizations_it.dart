@@ -2017,47 +2017,75 @@ class AppLocalizationsIt extends AppLocalizations {
       'Modalità sviluppatore disattivata';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Patch Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Patch attiva';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Nessuna patch installata';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable =>
+      'Non disponibile in questa build';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Le patch funzionano solo in una build creata con shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Lettura dello stato della patch…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Canale di staging non ancora controllato.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Controlla il canale di staging';
+
+  @override
+  String get devOptionsShorebirdApply => 'Applica la patch di staging';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Torna agli aggiornamenti stabili';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Controllo del canale di staging…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Una patch di staging è pronta per essere applicata.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Nessuna patch di staging per questa versione.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Scaricata. Riavvia l’app per caricarla.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'È pronto un rollback. Riavvia per tornare alla versione base.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Download e installazione…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Installata. Riavvia l’app per caricarla.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Non è stato installato nulla. Controlla il canale di staging e riprova.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Aggiornamenti stabili ripristinati.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Non ha funzionato. Controlla i log per i dettagli.';
 
   @override
   String get devOptionsPageLoadTimes => 'Tempi di caricamento pagina';

@@ -1,69 +1,58 @@
 import 'package:equatable/equatable.dart';
 
-/// What the staging-patch section is currently doing or reporting.
-enum ShorebirdPatchStatus {
-  /// Nothing requested yet.
-  initial,
-
-  /// The updater is absent from this build — debug, simulator, or any binary
-  /// not produced by `shorebird release`.
+/// What the staging-patch validation flow is doing or reporting.
+enum ShorebirdPatchValidationStatus {
+  loading,
+  notChecked,
   unavailable,
-
-  /// A staging-track check is in flight.
   checking,
-
-  /// A staged patch is available to download and apply.
   updateAvailable,
-
-  /// The staging track holds nothing newer than what is already installed.
   upToDate,
-
-  /// A staged patch is downloading and installing.
+  restartRequired,
+  rollbackRequired,
   applying,
-
-  /// A staged patch was installed. It takes effect on the next launch.
   applied,
-
-  /// The check or apply failed. The reason goes to `addError`, never here.
+  unchanged,
+  stableRestored,
   failure,
 }
 
 /// State for the developer-options staging-patch section.
 class ShorebirdPatchState extends Equatable {
   const ShorebirdPatchState({
-    this.status = ShorebirdPatchStatus.initial,
+    this.status = ShorebirdPatchValidationStatus.loading,
     this.currentPatchNumber,
+    this.usesStagingTrack = false,
   });
 
-  final ShorebirdPatchStatus status;
-
-  /// Patch number currently running, or `null` when the release build is
-  /// running unpatched. Reported so a tester can name exactly what they
-  /// validated.
+  final ShorebirdPatchValidationStatus status;
   final int? currentPatchNumber;
+  final bool usesStagingTrack;
 
-  /// Whether a check or apply is in flight, so the UI can disable both
-  /// actions rather than letting them overlap.
   bool get isBusy =>
-      status == ShorebirdPatchStatus.checking ||
-      status == ShorebirdPatchStatus.applying;
+      status == ShorebirdPatchValidationStatus.loading ||
+      status == ShorebirdPatchValidationStatus.checking ||
+      status == ShorebirdPatchValidationStatus.applying;
 
-  /// Whether this build can talk to the updater at all.
-  bool get isAvailable => status != ShorebirdPatchStatus.unavailable;
+  bool get isAvailable => status != ShorebirdPatchValidationStatus.unavailable;
+
+  bool get canApply => status == ShorebirdPatchValidationStatus.updateAvailable;
 
   ShorebirdPatchState copyWith({
-    ShorebirdPatchStatus? status,
+    ShorebirdPatchValidationStatus? status,
     int? currentPatchNumber,
     bool clearCurrentPatchNumber = false,
+    bool? usesStagingTrack,
   }) {
     return ShorebirdPatchState(
       status: status ?? this.status,
       currentPatchNumber: clearCurrentPatchNumber
           ? null
           : currentPatchNumber ?? this.currentPatchNumber,
+      usesStagingTrack: usesStagingTrack ?? this.usesStagingTrack,
     );
   }
 
   @override
-  List<Object?> get props => [status, currentPatchNumber];
+  List<Object?> get props => [status, currentPatchNumber, usesStagingTrack];
 }

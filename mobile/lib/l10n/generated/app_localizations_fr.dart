@@ -2023,47 +2023,75 @@ class AppLocalizationsFr extends AppLocalizations {
       'Mode développeur désactivé';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Correctifs Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Correctif actif';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Aucun correctif installé';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable =>
+      'Indisponible dans cette version';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Les correctifs fonctionnent uniquement dans une version créée avec shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Lecture de l’état du correctif…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Canal de test pas encore vérifié.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Vérifier le canal de test';
+
+  @override
+  String get devOptionsShorebirdApply => 'Appliquer le correctif de test';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Revenir aux mises à jour stables';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Vérification du canal de test…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Un correctif de test est prêt à être appliqué.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Aucun correctif de test pour cette version.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Téléchargé. Redémarrez l’app pour le charger.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Un retour arrière est prêt. Redémarrez pour revenir à la version de base.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Téléchargement et installation…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Installé. Redémarrez l’app pour le charger.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Rien n’a été installé. Vérifiez le canal de test et réessayez.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Mises à jour stables rétablies.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Ça n’a pas fonctionné. Consultez les journaux pour plus de détails.';
 
   @override
   String get devOptionsPageLoadTimes => 'Temps de chargement';

@@ -1950,47 +1950,68 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'የገንቢ ሁነታ ተሰናክሏል';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'የShorebird ማስተካከያዎች';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'እየሰራ ያለ ማስተካከያ';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'ምንም ማስተካከያ አልተጫነም';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'በዚህ ግንባታ ውስጥ አይገኝም';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'ማስተካከያዎች በshorebird release በተፈጠረ ግንባታ ውስጥ ብቻ ይሰራሉ።';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'የማስተካከያ ሁኔታ እየተነበበ ነው…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked => 'የሙከራ ትራኩ ገና አልተፈተሸም።';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'የሙከራ ትራኩን ፈትሽ';
 
   @override
-  String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+  String get devOptionsShorebirdApply => 'የሙከራ ማስተካከያውን ተግብር';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUseStable => 'ወደ የተረጋጋ ዝማኔዎች ተመለስ';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdChecking => 'የሙከራ ትራኩ እየተፈተሸ ነው…';
 
   @override
-  String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+  String get devOptionsShorebirdUpdateAvailable => 'የሙከራ ማስተካከያ ለመተግበር ዝግጁ ነው።';
 
   @override
-  String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+  String get devOptionsShorebirdUpToDate => 'ለዚህ ልቀት የሙከራ ማስተካከያ የለም።';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'ወርዷል። ለመጫን መተግበሪያውን እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'መመለሻ ዝግጁ ነው። ወደ መሰረታዊ ልቀት ለመመለስ እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdApplying => 'እየወረደ እና እየተጫነ ነው…';
+
+  @override
+  String get devOptionsShorebirdApplied => 'ተጭኗል። ለመጫን መተግበሪያውን እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'ምንም አልተጫነም። የሙከራ ትራኩን ፈትሸው እንደገና ይሞክሩ።';
+
+  @override
+  String get devOptionsShorebirdStableRestored => 'የተረጋጉ ዝማኔዎች ተመልሰዋል።';
+
+  @override
+  String get devOptionsShorebirdFailure => 'አልተሳካም። ለዝርዝሮች ምዝግቦቹን ይመልከቱ።';
 
   @override
   String get devOptionsPageLoadTimes => 'የገጽ ጭነት ጊዜያት';

@@ -1982,47 +1982,76 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Utvecklarläge inaktiverat';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebird-korrigeringar';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Aktiv korrigering';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Ingen korrigering installerad';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable =>
+      'Inte tillgängligt i den här versionen';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Korrigeringar fungerar bara i en version skapad med shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Läser korrigeringsstatus…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Testspåret har inte kontrollerats än.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Kontrollera testspåret';
+
+  @override
+  String get devOptionsShorebirdApply => 'Tillämpa testkorrigering';
+
+  @override
+  String get devOptionsShorebirdUseStable =>
+      'Återgå till stabila uppdateringar';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Kontrollerar testspåret…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'En testkorrigering är redo att tillämpas.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Ingen testkorrigering för den här versionen.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Hämtad. Starta om appen för att läsa in den.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'En återställning är redo. Starta om för att återgå till basversionen.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Hämtar och installerar…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Installerad. Starta om appen för att läsa in den.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Inget installerades. Kontrollera testspåret och försök igen.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Stabila uppdateringar återställda.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Det fungerade inte. Kontrollera loggarna för mer information.';
 
   @override
   String get devOptionsPageLoadTimes => 'Sidladdningstider';

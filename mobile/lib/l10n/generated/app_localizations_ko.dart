@@ -1848,47 +1848,68 @@ class AppLocalizationsKo extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '개발자 모드가 비활성화됨';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebird 패치';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => '실행 중인 패치';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => '설치된 패치 없음';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => '이 빌드에서는 사용할 수 없음';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      '패치는 shorebird release로 만든 빌드에서만 작동합니다.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => '패치 상태를 읽는 중…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked => '스테이징 트랙을 아직 확인하지 않았습니다.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => '스테이징 트랙 확인';
 
   @override
-  String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+  String get devOptionsShorebirdApply => '스테이징 패치 적용';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUseStable => '안정 업데이트로 돌아가기';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdChecking => '스테이징 트랙 확인 중…';
 
   @override
-  String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+  String get devOptionsShorebirdUpdateAvailable => '적용할 수 있는 스테이징 패치가 있습니다.';
 
   @override
-  String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+  String get devOptionsShorebirdUpToDate => '이 릴리스용 스테이징 패치가 없습니다.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      '다운로드했습니다. 불러오려면 앱을 다시 시작하세요.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      '롤백이 준비되었습니다. 기본 릴리스로 돌아가려면 다시 시작하세요.';
+
+  @override
+  String get devOptionsShorebirdApplying => '다운로드 및 설치 중…';
+
+  @override
+  String get devOptionsShorebirdApplied => '설치했습니다. 불러오려면 앱을 다시 시작하세요.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      '설치된 항목이 없습니다. 스테이징 트랙을 확인하고 다시 시도하세요.';
+
+  @override
+  String get devOptionsShorebirdStableRestored => '안정 업데이트를 복원했습니다.';
+
+  @override
+  String get devOptionsShorebirdFailure => '작동하지 않았습니다. 자세한 내용은 로그를 확인하세요.';
 
   @override
   String get devOptionsPageLoadTimes => '페이지 로딩 시간';

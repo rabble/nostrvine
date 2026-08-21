@@ -2021,47 +2021,76 @@ class AppLocalizationsBg extends AppLocalizations {
       'Режимът за разработчици е изключен';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Корекции на Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Активна корекция';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Няма инсталирана корекция';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'Не е налично в тази компилация';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Корекциите работят само в компилация, създадена с shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading =>
+      'Четене на състоянието на корекцията…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Тестовият канал още не е проверен.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Провери тестовия канал';
+
+  @override
+  String get devOptionsShorebirdApply => 'Приложи тестовата корекция';
+
+  @override
+  String get devOptionsShorebirdUseStable =>
+      'Върни се към стабилни актуализации';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Проверка на тестовия канал…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Има готова тестова корекция.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Няма тестова корекция за тази версия.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Изтеглено. Рестартирайте приложението, за да го заредите.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Готово е връщане назад. Рестартирайте, за да се върнете към базовата версия.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Изтегляне и инсталиране…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Инсталирано. Рестартирайте приложението, за да го заредите.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Нищо не е инсталирано. Проверете тестовия канал и опитайте отново.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Стабилните актуализации са възстановени.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Не се получи. Проверете журналите за подробности.';
 
   @override
   String get devOptionsPageLoadTimes => 'Време за зареждане на страницата';

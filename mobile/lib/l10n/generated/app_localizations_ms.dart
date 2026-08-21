@@ -1972,47 +1972,75 @@ class AppLocalizationsMs extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Mod pembangun dilumpuhkan';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Tampalan Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Tampalan aktif';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Tiada tampalan dipasang';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable =>
+      'Tidak tersedia dalam binaan ini';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Tampalan hanya berfungsi dalam binaan yang dibuat dengan shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Membaca status tampalan…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Trek pementasan belum diperiksa.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Periksa trek pementasan';
+
+  @override
+  String get devOptionsShorebirdApply => 'Gunakan tampalan pementasan';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Kembali kepada kemas kini stabil';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Memeriksa trek pementasan…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Tampalan pementasan sedia untuk digunakan.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Tiada tampalan pementasan untuk keluaran ini.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Dimuat turun. Mulakan semula aplikasi untuk memuatkannya.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Pengunduran sedia. Mulakan semula untuk kembali kepada keluaran asas.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Memuat turun dan memasang…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Dipasang. Mulakan semula aplikasi untuk memuatkannya.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Tiada apa-apa dipasang. Periksa trek pementasan dan cuba lagi.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Kemas kini stabil dipulihkan.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Tidak berjaya. Periksa log untuk butiran.';
 
   @override
   String get devOptionsPageLoadTimes => 'Masa Muat Halaman';

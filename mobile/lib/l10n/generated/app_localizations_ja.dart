@@ -1838,47 +1838,68 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '開発者モードを無効にしました';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebirdパッチ';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => '実行中のパッチ';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'パッチはインストールされていません';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'このビルドでは利用できません';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'パッチはshorebird releaseで作成したビルドでのみ動作します。';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'パッチの状態を読み込み中…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked => 'ステージングトラックはまだ確認されていません。';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'ステージングトラックを確認';
 
   @override
-  String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+  String get devOptionsShorebirdApply => 'ステージングパッチを適用';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUseStable => '安定版アップデートに戻す';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdChecking => 'ステージングトラックを確認中…';
 
   @override
-  String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+  String get devOptionsShorebirdUpdateAvailable => '適用できるステージングパッチがあります。';
 
   @override
-  String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+  String get devOptionsShorebirdUpToDate => 'このリリース用のステージングパッチはありません。';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'ダウンロード済みです。読み込むにはアプリを再起動してください。';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'ロールバックの準備ができました。ベースリリースに戻すには再起動してください。';
+
+  @override
+  String get devOptionsShorebirdApplying => 'ダウンロードしてインストール中…';
+
+  @override
+  String get devOptionsShorebirdApplied => 'インストール済みです。読み込むにはアプリを再起動してください。';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      '何もインストールされませんでした。ステージングトラックを確認して再試行してください。';
+
+  @override
+  String get devOptionsShorebirdStableRestored => '安定版アップデートに戻しました。';
+
+  @override
+  String get devOptionsShorebirdFailure => '処理に失敗しました。詳細はログを確認してください。';
 
   @override
   String get devOptionsPageLoadTimes => 'ページ読み込み時間';

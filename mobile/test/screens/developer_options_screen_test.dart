@@ -15,6 +15,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/services/environment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 import '../helpers/invite_availability_harness.dart';
 import '../helpers/scroll.dart';
@@ -28,6 +29,7 @@ Future<InviteAvailabilityCubit> pumpScreen(
   WidgetTester tester,
   SharedPreferences prefs, {
   InviteAvailabilityCubit? availabilityCubit,
+  ShorebirdUpdater Function()? shorebirdUpdaterFactory,
 }) async {
   final cubit = availabilityCubit ?? seededInviteAvailabilityCubit();
   if (availabilityCubit == null) {
@@ -42,7 +44,9 @@ Future<InviteAvailabilityCubit> pumpScreen(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
-          home: const DeveloperOptionsScreen(),
+          home: DeveloperOptionsScreen(
+            shorebirdUpdaterFactory: shorebirdUpdaterFactory,
+          ),
         ),
         cubit: cubit,
       ),
@@ -50,6 +54,24 @@ Future<InviteAvailabilityCubit> pumpScreen(
   );
   await tester.pumpAndSettle();
   return cubit;
+}
+
+class _AvailableShorebirdUpdater implements ShorebirdUpdater {
+  @override
+  bool get isAvailable => true;
+
+  @override
+  Future<UpdateStatus> checkForUpdate({UpdateTrack? track}) async =>
+      UpdateStatus.upToDate;
+
+  @override
+  Future<Patch?> readCurrentPatch() async => const Patch(number: 7);
+
+  @override
+  Future<Patch?> readNextPatch() async => const Patch(number: 7);
+
+  @override
+  Future<void> update({UpdateTrack? track}) async {}
 }
 
 Future<void> tapTile(WidgetTester tester, String title) async {
@@ -64,6 +86,20 @@ Future<void> tapTile(WidgetTester tester, String title) async {
 }
 
 void main() {
+  testWidgets('renders the available Shorebird section through screen wiring', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      await mockPrefs(),
+      shorebirdUpdaterFactory: _AvailableShorebirdUpdater.new,
+    );
+
+    expect(find.text('Shorebird Patches'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Staging track not checked yet.'), findsOneWidget);
+  });
+
   testWidgets(
     'DeveloperOptionsScreen constrains menu content width on wide screens',
     (

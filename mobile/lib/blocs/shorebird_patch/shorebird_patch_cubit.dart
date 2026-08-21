@@ -1,33 +1,25 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/shorebird_patch/shorebird_patch_state.dart';
+import 'package:openvine/repositories/shorebird_patch_repository.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Drives the developer-options staging-patch section.
-///
-/// Exists because a staged patch is otherwise invisible on iOS: release
-/// artifacts are signed for App Store distribution, so `shorebird preview`
-/// cannot install them, and an installed build only ever polls
-/// [UpdateTrack.stable]. Without a way to pull [UpdateTrack.staging] on the
-/// exact store binary, the only way to see a patch is to promote it to
-/// production. See #7979.
+/// Drives the developer-options staging-patch validation flow.
 class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
     with CloseGuardedEmit<ShorebirdPatchState> {
-  ShorebirdPatchCubit({required ShorebirdUpdater updater})
-    : _updater = updater,
+  ShorebirdPatchCubit({required ShorebirdPatchRepository repository})
+    : _repository = repository,
       super(const ShorebirdPatchState());
 
-  final ShorebirdUpdater _updater;
-
+  final ShorebirdPatchRepository _repository;
   static const _logName = 'ShorebirdPatchCubit';
 
-  /// Reads updater availability and the running patch number.
   Future<void> load() async {
-    if (!_updater.isAvailable) {
+    if (!_repository.isAvailable) {
       emitIfOpen(
         state.copyWith(
-          status: ShorebirdPatchStatus.unavailable,
+          status: ShorebirdPatchValidationStatus.unavailable,
           clearCurrentPatchNumber: true,
         ),
       );
@@ -35,87 +27,115 @@ class ShorebirdPatchCubit extends Cubit<ShorebirdPatchState>
     }
 
     try {
-      final patch = await _updater.readCurrentPatch();
+      final snapshot = await _repository.readSnapshot();
       emitIfOpen(
         state.copyWith(
-          status: ShorebirdPatchStatus.initial,
-          currentPatchNumber: patch?.number,
-          clearCurrentPatchNumber: patch == null,
+          status: ShorebirdPatchValidationStatus.notChecked,
+          currentPatchNumber: snapshot.current?.number,
+          clearCurrentPatchNumber: snapshot.current == null,
+          usesStagingTrack:
+              _repository.subscribedTrack == ShorebirdSubscribedTrack.staging,
         ),
       );
     } catch (error, stackTrace) {
-      Log.error(
-        'Failed to read the current patch',
-        name: _logName,
-        category: LogCategory.system,
-        error: error,
-        stackTrace: stackTrace,
-      );
-      addError(error, stackTrace);
-      emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.failure));
+      _reportFailure('Failed to read Shorebird patch state', error, stackTrace);
     }
   }
 
-  /// Asks the staging track whether a patch is waiting.
   Future<void> checkStagingTrack() async {
-    if (!_updater.isAvailable) {
-      emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.unavailable));
+    if (!_repository.isAvailable) {
+      emitIfOpen(
+        state.copyWith(status: ShorebirdPatchValidationStatus.unavailable),
+      );
       return;
     }
     if (state.isBusy) return;
 
-    emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.checking));
-
+    emitIfOpen(state.copyWith(status: ShorebirdPatchValidationStatus.checking));
     try {
-      final status = await _updater.checkForUpdate(track: UpdateTrack.staging);
-      emitIfOpen(state.copyWith(status: _statusFor(status)));
-    } catch (error, stackTrace) {
-      Log.error(
-        'Staging-track check failed',
-        name: _logName,
-        category: LogCategory.system,
-        error: error,
-        stackTrace: stackTrace,
+      final check = await _repository.checkStagingTrack();
+      emitIfOpen(
+        state.copyWith(
+          status: _statusFor(check),
+          currentPatchNumber: check.snapshot.current?.number,
+          clearCurrentPatchNumber: check.snapshot.current == null,
+          usesStagingTrack:
+              _repository.subscribedTrack == ShorebirdSubscribedTrack.staging,
+        ),
       );
-      addError(error, stackTrace);
-      emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.failure));
+    } catch (error, stackTrace) {
+      _reportFailure('Staging-track check failed', error, stackTrace);
     }
   }
 
-  /// Downloads and installs the staged patch. It applies on the next launch.
   Future<void> applyStagedPatch() async {
-    if (!_updater.isAvailable) {
-      emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.unavailable));
+    if (!_repository.isAvailable) {
+      emitIfOpen(
+        state.copyWith(status: ShorebirdPatchValidationStatus.unavailable),
+      );
       return;
     }
-    if (state.isBusy) return;
+    if (!state.canApply) return;
 
-    emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.applying));
-
+    emitIfOpen(state.copyWith(status: ShorebirdPatchValidationStatus.applying));
     try {
-      await _updater.update(track: UpdateTrack.staging);
-      emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.applied));
-    } catch (error, stackTrace) {
-      Log.error(
-        'Applying the staged patch failed',
-        name: _logName,
-        category: LogCategory.system,
-        error: error,
-        stackTrace: stackTrace,
+      final result = await _repository.applyStagingPatch();
+      final snapshot = await _repository.readSnapshot();
+      emitIfOpen(
+        state.copyWith(
+          status: switch (result) {
+            ShorebirdPatchApplyResult.installed =>
+              ShorebirdPatchValidationStatus.applied,
+            ShorebirdPatchApplyResult.unchanged =>
+              ShorebirdPatchValidationStatus.unchanged,
+          },
+          currentPatchNumber: snapshot.current?.number,
+          clearCurrentPatchNumber: snapshot.current == null,
+          usesStagingTrack:
+              _repository.subscribedTrack == ShorebirdSubscribedTrack.staging,
+        ),
       );
-      addError(error, stackTrace);
-      emitIfOpen(state.copyWith(status: ShorebirdPatchStatus.failure));
+    } catch (error, stackTrace) {
+      _reportFailure('Applying the staged patch failed', error, stackTrace);
     }
   }
 
-  ShorebirdPatchStatus _statusFor(UpdateStatus status) {
-    return switch (status) {
-      UpdateStatus.outdated => ShorebirdPatchStatus.updateAvailable,
-      // A downloaded-but-unapplied patch is still something the tester has to
-      // relaunch for, so it reports as applied rather than up to date.
-      UpdateStatus.restartRequired => ShorebirdPatchStatus.applied,
-      UpdateStatus.upToDate => ShorebirdPatchStatus.upToDate,
-      UpdateStatus.unavailable => ShorebirdPatchStatus.unavailable,
+  Future<void> useStableTrack() async {
+    if (state.isBusy) return;
+    try {
+      await _repository.useStableTrack();
+      emitIfOpen(
+        state.copyWith(
+          status: ShorebirdPatchValidationStatus.stableRestored,
+          usesStagingTrack: false,
+        ),
+      );
+    } catch (error, stackTrace) {
+      _reportFailure('Restoring the stable track failed', error, stackTrace);
+    }
+  }
+
+  ShorebirdPatchValidationStatus _statusFor(ShorebirdPatchCheck check) {
+    return switch (check.status) {
+      UpdateStatus.outdated => ShorebirdPatchValidationStatus.updateAvailable,
+      UpdateStatus.restartRequired when check.isRollback =>
+        ShorebirdPatchValidationStatus.rollbackRequired,
+      UpdateStatus.restartRequired =>
+        ShorebirdPatchValidationStatus.restartRequired,
+      UpdateStatus.upToDate => ShorebirdPatchValidationStatus.upToDate,
+      UpdateStatus.unavailable => ShorebirdPatchValidationStatus.unavailable,
     };
+  }
+
+  void _reportFailure(String message, Object error, StackTrace stackTrace) {
+    Log.error(
+      message,
+      name: _logName,
+      category: LogCategory.system,
+      error: error,
+      stackTrace: stackTrace,
+    );
+    addError(error, stackTrace);
+    emitIfOpen(state.copyWith(status: ShorebirdPatchValidationStatus.failure));
   }
 }

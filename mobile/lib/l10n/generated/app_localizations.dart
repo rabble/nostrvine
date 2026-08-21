@@ -3427,6 +3427,18 @@ abstract class AppLocalizations {
   /// **'Patches only run in a build made by shorebird release.'**
   String get devOptionsShorebirdUnavailableSubtitle;
 
+  /// No description provided for @devOptionsShorebirdLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading patch state…'**
+  String get devOptionsShorebirdLoading;
+
+  /// No description provided for @devOptionsShorebirdNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Staging track not checked yet.'**
+  String get devOptionsShorebirdNotChecked;
+
   /// No description provided for @devOptionsShorebirdCheck.
   ///
   /// In en, this message translates to:
@@ -3438,6 +3450,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply staged patch'**
   String get devOptionsShorebirdApply;
+
+  /// No description provided for @devOptionsShorebirdUseStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to stable updates'**
+  String get devOptionsShorebirdUseStable;
 
   /// No description provided for @devOptionsShorebirdChecking.
   ///
@@ -3457,6 +3475,18 @@ abstract class AppLocalizations {
   /// **'No staged patch for this release.'**
   String get devOptionsShorebirdUpToDate;
 
+  /// No description provided for @devOptionsShorebirdRestartRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded. Restart the app to load it.'**
+  String get devOptionsShorebirdRestartRequired;
+
+  /// No description provided for @devOptionsShorebirdRollbackRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A rollback is ready. Restart to return to the base release.'**
+  String get devOptionsShorebirdRollbackRequired;
+
   /// No description provided for @devOptionsShorebirdApplying.
   ///
   /// In en, this message translates to:
@@ -3468,6 +3498,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Installed. Restart the app to load it.'**
   String get devOptionsShorebirdApplied;
+
+  /// No description provided for @devOptionsShorebirdUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was installed. Check the staging track and try again.'**
+  String get devOptionsShorebirdUnchanged;
+
+  /// No description provided for @devOptionsShorebirdStableRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable updates restored.'**
+  String get devOptionsShorebirdStableRestored;
 
   /// No description provided for @devOptionsShorebirdFailure.
   ///

@@ -79,6 +79,7 @@ import 'package:openvine/providers/post_publish_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/repositories/shorebird_patch_repository.dart';
 import 'package:openvine/router/providers/deep_link_listeners.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
@@ -1472,11 +1473,19 @@ Future<void> _startOpenVineApp() async {
   // config lock — not something to run before runApp.
   final environment = container.read(currentEnvironmentProvider).environment;
   WidgetsBinding.instance.addPostFrameCallback((_) {
+    final shorebirdUpdater = ShorebirdUpdater();
     unawaited(
       _recordBuildProvenance(
         packageInfo: packageInfo,
         installSource: installSource,
         environment: environment,
+        shorebirdUpdater: shorebirdUpdater,
+      ),
+    );
+    unawaited(
+      _updateShorebirdFromSubscribedTrack(
+        updater: shorebirdUpdater,
+        preferences: sharedPreferences,
       ),
     );
   });
@@ -1497,9 +1506,9 @@ Future<void> _recordBuildProvenance({
   required PackageInfo packageInfo,
   required InstallSource installSource,
   required AppEnvironment environment,
+  required ShorebirdUpdater shorebirdUpdater,
 }) async {
   try {
-    final shorebirdUpdater = ShorebirdUpdater();
     final provenance = await BuildProvenanceService(
       packageInfo: packageInfo,
       installSource: installSource,
@@ -1554,6 +1563,31 @@ Future<void> _recordBuildProvenance({
         stack,
         reason: 'Build provenance logging failed',
       ),
+    );
+  }
+}
+
+Future<void> _updateShorebirdFromSubscribedTrack({
+  required ShorebirdUpdater updater,
+  required SharedPreferences preferences,
+}) async {
+  try {
+    await ShorebirdPatchRepository(
+      updater: updater,
+      preferences: preferences,
+    ).updateSubscribedTrackAtStartup();
+  } catch (error, stackTrace) {
+    Log.error(
+      'Automatic Shorebird update failed',
+      name: 'Main',
+      category: LogCategory.system,
+      error: error,
+      stackTrace: stackTrace,
+    );
+    await CrashReportingService.instance.recordError(
+      error,
+      stackTrace,
+      reason: 'Automatic Shorebird update failed',
     );
   }
 }

@@ -2013,10 +2013,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Patches only run in a build made by shorebird release.';
 
   @override
+  String get devOptionsShorebirdLoading => 'Reading patch state…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'Staging track not checked yet.';
+
+  @override
   String get devOptionsShorebirdCheck => 'Check staging track';
 
   @override
   String get devOptionsShorebirdApply => 'Apply staged patch';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Return to stable updates';
 
   @override
   String get devOptionsShorebirdChecking => 'Checking the staging track…';
@@ -2029,11 +2038,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
 
   @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Downloaded. Restart the app to load it.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'A rollback is ready. Restart to return to the base release.';
+
+  @override
   String get devOptionsShorebirdApplying => 'Downloading and installing…';
 
   @override
   String get devOptionsShorebirdApplied =>
       'Installed. Restart the app to load it.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nothing was installed. Check the staging track and try again.';
+
+  @override
+  String get devOptionsShorebirdStableRestored => 'Stable updates restored.';
 
   @override
   String get devOptionsShorebirdFailure =>

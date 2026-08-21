@@ -1990,47 +1990,75 @@ class AppLocalizationsFil extends AppLocalizations {
       'Na-disable ang developer mode';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Mga patch ng Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Kasalukuyang patch';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Walang naka-install na patch';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable =>
+      'Hindi available sa build na ito';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Gumagana lang ang mga patch sa build na ginawa gamit ang shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Binabasa ang status ng patch…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Hindi pa nasusuri ang staging track.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Suriin ang staging track';
+
+  @override
+  String get devOptionsShorebirdApply => 'Ilapat ang staging patch';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Bumalik sa stable na mga update';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Sinusuri ang staging track…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'May staging patch na handang ilapat.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Walang staging patch para sa release na ito.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Na-download na. I-restart ang app para i-load ito.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Handa na ang rollback. I-restart para bumalik sa base release.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Nagda-download at nag-i-install…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Naka-install na. I-restart ang app para i-load ito.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Walang na-install. Suriin ang staging track at subukan ulit.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Naibalik ang stable na mga update.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Hindi gumana. Tingnan ang mga log para sa detalye.';
 
   @override
   String get devOptionsPageLoadTimes => 'Mga Oras ng Page Load';

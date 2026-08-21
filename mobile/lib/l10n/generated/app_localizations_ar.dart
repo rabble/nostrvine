@@ -1970,47 +1970,74 @@ class AppLocalizationsAr extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'تم تعطيل وضع المطوّر';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'تصحيحات Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'التصحيح قيد التشغيل';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'لا يوجد تصحيح مثبّت';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'غير متاح في هذا الإصدار';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'تعمل التصحيحات فقط في إصدار تم إنشاؤه باستخدام shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'جارٍ قراءة حالة التصحيح…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'لم يتم التحقق من مسار الاختبار بعد.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'التحقق من مسار الاختبار';
+
+  @override
+  String get devOptionsShorebirdApply => 'تطبيق تصحيح الاختبار';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'العودة إلى التحديثات المستقرة';
+
+  @override
+  String get devOptionsShorebirdChecking => 'جارٍ التحقق من مسار الاختبار…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'يوجد تصحيح اختبار جاهز للتطبيق.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'لا يوجد تصحيح اختبار لهذا الإصدار.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'تم التنزيل. أعد تشغيل التطبيق لتحميله.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'التراجع جاهز. أعد التشغيل للعودة إلى الإصدار الأساسي.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'جارٍ التنزيل والتثبيت…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'تم التثبيت. أعد تشغيل التطبيق لتحميله.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'لم يتم تثبيت أي شيء. تحقق من مسار الاختبار وحاول مرة أخرى.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'تمت استعادة التحديثات المستقرة.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'لم تنجح العملية. تحقق من السجلات للحصول على التفاصيل.';
 
   @override
   String get devOptionsPageLoadTimes => 'أوقات تحميل الصفحات';

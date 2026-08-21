@@ -79,11 +79,14 @@ Codemagic run. Their build numbers can differ too: the APK uses
 `PROJECT_BUILD_NUMBER`, while the AAB uses the higher of that value and the next
 available Play build number.
 
-`auto_update` is left at its default (on), so patches apply in the background
-on launch. `shorebird_code_push` is a runtime dependency. There is no in-app UI
-for controlling patch state, but startup records patch availability and the
-current patch number in logs and Crashlytics custom keys. Use those values when
-triaging crashes that may be specific to a code-push patch.
+Shorebird's native `auto_update` is disabled because it always checks `stable`
+and would race the staged-patch validation relaunch. The app replaces it after
+the first frame: ordinary installations check `stable`, while a tester who has
+downloaded a staged patch stays subscribed to `staging` until they explicitly
+return to stable updates in Developer Options.
+`shorebird_code_push` is a runtime dependency. Startup also records patch availability and the current
+patch number in logs and Crashlytics custom keys. Use those values when
+triaging crashes that may be patch-specific.
 
 ### Flutter version
 
@@ -284,7 +287,7 @@ test-backed.
    or Android platform owner must approve promotion.
 1. The workflow publishes to `staging`, never directly to `stable`. Validate
    the exact release plus staged patch on the affected platform using the
-   **Shorebird patch** section in Settings → Developer Options (see
+   **Shorebird Patches** section in Settings → Developer Options (see
    [Validating a staged patch](#validating-a-staged-patch) below). Verify the
    regression, adjacent behavior, startup, and the current patch number.
 1. Record the incident owner, mobile reviewer, platform owner, release version,
@@ -297,7 +300,10 @@ test-backed.
 
    `shorebird patches promote --release-version <version> --patch-number <n>`
    is the deprecated legacy shorthand in the pinned CLI. Do not use it in new
-   automation.
+   automation. After promotion, tap **Return to stable updates** in Settings →
+   Developer Options → **Shorebird Patches**. Do not switch the validation
+   device back before promotion: its next launch would check `stable` and could
+   roll back the staged patch.
 1. Monitor patch installation/failure diagnostics and the original production
    signal after promotion. If the patch regresses behavior, roll it back first
    and investigate second; rollback is emergency recovery, not validation.
@@ -324,10 +330,9 @@ cannot be established from source control.
 
 ### Validating a staged patch
 
-An installed build only ever polls `stable`. Nothing in a store binary asks
-for `staging`, so a patch published there is invisible to it — and the only
-way to make it visible would be to promote it to production, which is the
-deploy that validation is supposed to gate.
+An ordinary installed build polls `stable`. A patch published to `staging` is
+invisible until a tester explicitly subscribes the installation through
+Developer Options; promoting first would defeat the validation gate.
 
 `shorebird preview` cannot close that gap on iOS. It downloads the release
 artifact and tries to install it, but our IPA is signed for App Store
@@ -338,16 +343,18 @@ misconfiguration — an installable preview would need a development- or
 ad-hoc-signed build, which is a different binary from the one under test.
 
 So the affordance lives in the app. Settings → Developer Options →
-**Shorebird patch** shows the running patch number and offers two actions
+**Shorebird Patches** shows the running patch number and offers actions
 that call `ShorebirdUpdater` with `UpdateTrack.staging` explicitly:
 
 - **Check staging track** — reports whether a staged patch is waiting.
 - **Apply staged patch** — downloads and installs it; relaunch to run it.
+- **Return to stable updates** — appears after a staged patch is downloaded;
+  use it only after that exact patch is promoted to `stable`.
 
 Install the TestFlight build of the exact release under test, run the patch
 workflow, then pull the patch through this section. The build number shown in
 Settings must match the release version you patched. The section reports
-"Shorebird not available in this build" on a plain `flutter run` — the updater
+"Not available in this build" on a plain `flutter run` — the updater
 is only linked by `shorebird release`, so a debug build can never validate a
 patch.
 

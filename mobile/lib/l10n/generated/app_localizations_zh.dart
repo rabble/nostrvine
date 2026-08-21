@@ -1864,47 +1864,65 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '开发者模式已关闭';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebird 补丁';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => '当前补丁';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => '未安装补丁';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => '此构建版本不可用';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      '补丁仅适用于通过 shorebird release 创建的构建版本。';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => '正在读取补丁状态…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked => '尚未检查预发布通道。';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => '检查预发布通道';
 
   @override
-  String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+  String get devOptionsShorebirdApply => '应用预发布补丁';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUseStable => '恢复稳定版更新';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdChecking => '正在检查预发布通道…';
 
   @override
-  String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+  String get devOptionsShorebirdUpdateAvailable => '有预发布补丁可供应用。';
 
   @override
-  String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+  String get devOptionsShorebirdUpToDate => '此版本没有预发布补丁。';
+
+  @override
+  String get devOptionsShorebirdRestartRequired => '已下载。请重启应用以加载补丁。';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired => '回滚已准备就绪。请重启以返回基础版本。';
+
+  @override
+  String get devOptionsShorebirdApplying => '正在下载并安装…';
+
+  @override
+  String get devOptionsShorebirdApplied => '已安装。请重启应用以加载补丁。';
+
+  @override
+  String get devOptionsShorebirdUnchanged => '未安装任何内容。请检查预发布通道后重试。';
+
+  @override
+  String get devOptionsShorebirdStableRestored => '已恢复稳定版更新。';
+
+  @override
+  String get devOptionsShorebirdFailure => '操作失败。请查看日志了解详情。';
 
   @override
   String get devOptionsPageLoadTimes => '页面加载时间';

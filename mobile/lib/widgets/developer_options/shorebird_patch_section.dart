@@ -1,5 +1,5 @@
 // ABOUTME: Developer-options section for validating a staged Shorebird patch
-// ABOUTME: Checks and applies the staging track on the installed store binary
+// ABOUTME: Keeps a test device on staging across the validation relaunch
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -7,23 +7,60 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/shorebird_patch/shorebird_patch_cubit.dart';
 import 'package:openvine/blocs/shorebird_patch/shorebird_patch_state.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/repositories/shorebird_patch_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 
-/// Lets a tester pull the `staging` track on the binary they are running.
-///
-/// iOS release artifacts are signed for App Store distribution, so
-/// `shorebird preview` cannot install them, and an installed build only polls
-/// `stable`. Without this, the only way to see a staged patch is to promote it
-/// to production — which is the deploy that is supposed to follow validation.
-class ShorebirdPatchSection extends StatelessWidget {
-  const ShorebirdPatchSection({super.key});
+/// Lets a tester pull the `staging` track on the store binary they are running.
+class ShorebirdPatchSection extends StatefulWidget {
+  const ShorebirdPatchSection({
+    required this.preferences,
+    this.updaterFactory,
+    super.key,
+  });
+
+  final SharedPreferences preferences;
+
+  /// Injection seam that also keeps the updater's synchronous FFI probe out of
+  /// the build pass.
+  @visibleForTesting
+  final ShorebirdUpdater Function()? updaterFactory;
+
+  @override
+  State<ShorebirdPatchSection> createState() => _ShorebirdPatchSectionState();
+}
+
+class _ShorebirdPatchSectionState extends State<ShorebirdPatchSection> {
+  ShorebirdPatchCubit? _cubit;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final updater = widget.updaterFactory?.call() ?? ShorebirdUpdater();
+      final cubit = ShorebirdPatchCubit(
+        repository: ShorebirdPatchRepository(
+          updater: updater,
+          preferences: widget.preferences,
+        ),
+      )..load();
+      setState(() => _cubit = cubit);
+    });
+  }
+
+  @override
+  void dispose() {
+    _cubit?.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ShorebirdPatchCubit>(
-      // ShorebirdUpdater is a plain factory with no auth or account coupling,
-      // so it cannot flip identity and needs no ValueKey guard.
-      create: (_) => ShorebirdPatchCubit(updater: ShorebirdUpdater())..load(),
+    final cubit = _cubit;
+    if (cubit == null) return const SizedBox.shrink();
+    return BlocProvider<ShorebirdPatchCubit>.value(
+      value: cubit,
       child: const ShorebirdPatchView(),
     );
   }
@@ -36,13 +73,17 @@ class ShorebirdPatchView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final usesStagingTrack = context.select(
+      (ShorebirdPatchCubit cubit) => cubit.state.usesStagingTrack,
+    );
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionHeader(),
-        _CurrentPatchTile(),
-        _CheckTile(),
-        _ApplyTile(),
+        const _SectionHeader(),
+        const _CurrentPatchTile(),
+        const _CheckTile(),
+        const _ApplyTile(),
+        if (usesStagingTrack) const _UseStableTrackTile(),
       ],
     );
   }
@@ -72,11 +113,9 @@ class _CurrentPatchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<ShorebirdPatchCubit>().state;
     final l10n = context.l10n;
-    final unavailable = state.status == ShorebirdPatchStatus.unavailable;
+    final unavailable =
+        state.status == ShorebirdPatchValidationStatus.unavailable;
 
-    // The patch number renders as the row's value rather than inside a
-    // sentence: it names which patch is running, so interpolating it into
-    // localized copy would invite translators to inflect it as a quantity.
     return ListTile(
       title: Text(
         unavailable
@@ -106,16 +145,29 @@ class _CurrentPatchTile extends StatelessWidget {
 
   String _subtitleFor(ShorebirdPatchState state, AppLocalizations l10n) {
     return switch (state.status) {
-      ShorebirdPatchStatus.unavailable =>
+      ShorebirdPatchValidationStatus.loading => l10n.devOptionsShorebirdLoading,
+      ShorebirdPatchValidationStatus.notChecked =>
+        l10n.devOptionsShorebirdNotChecked,
+      ShorebirdPatchValidationStatus.unavailable =>
         l10n.devOptionsShorebirdUnavailableSubtitle,
-      ShorebirdPatchStatus.checking => l10n.devOptionsShorebirdChecking,
-      ShorebirdPatchStatus.updateAvailable =>
+      ShorebirdPatchValidationStatus.checking =>
+        l10n.devOptionsShorebirdChecking,
+      ShorebirdPatchValidationStatus.updateAvailable =>
         l10n.devOptionsShorebirdUpdateAvailable,
-      ShorebirdPatchStatus.upToDate => l10n.devOptionsShorebirdUpToDate,
-      ShorebirdPatchStatus.applying => l10n.devOptionsShorebirdApplying,
-      ShorebirdPatchStatus.applied => l10n.devOptionsShorebirdApplied,
-      ShorebirdPatchStatus.failure => l10n.devOptionsShorebirdFailure,
-      ShorebirdPatchStatus.initial => l10n.devOptionsShorebirdUpToDate,
+      ShorebirdPatchValidationStatus.upToDate =>
+        l10n.devOptionsShorebirdUpToDate,
+      ShorebirdPatchValidationStatus.restartRequired =>
+        l10n.devOptionsShorebirdRestartRequired,
+      ShorebirdPatchValidationStatus.rollbackRequired =>
+        l10n.devOptionsShorebirdRollbackRequired,
+      ShorebirdPatchValidationStatus.applying =>
+        l10n.devOptionsShorebirdApplying,
+      ShorebirdPatchValidationStatus.applied => l10n.devOptionsShorebirdApplied,
+      ShorebirdPatchValidationStatus.unchanged =>
+        l10n.devOptionsShorebirdUnchanged,
+      ShorebirdPatchValidationStatus.stableRestored =>
+        l10n.devOptionsShorebirdStableRestored,
+      ShorebirdPatchValidationStatus.failure => l10n.devOptionsShorebirdFailure,
     };
   }
 }
@@ -127,26 +179,11 @@ class _CheckTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<ShorebirdPatchCubit>().state;
     final enabled = state.isAvailable && !state.isBusy;
-
-    return ListTile(
+    return _ActionTile(
       enabled: enabled,
-      leading: DivineIcon(
-        icon: DivineIconName.arrowClockwise,
-        color: enabled
-            ? context.vineColors.primaryText
-            : context.vineColors.secondaryText,
-      ),
-      title: Text(
-        context.l10n.devOptionsShorebirdCheck,
-        style: VineTheme.titleMediumFont(
-          color: enabled
-              ? context.vineColors.primaryText
-              : context.vineColors.secondaryText,
-        ),
-      ),
-      onTap: enabled
-          ? () => context.read<ShorebirdPatchCubit>().checkStagingTrack()
-          : null,
+      icon: DivineIconName.arrowClockwise,
+      title: context.l10n.devOptionsShorebirdCheck,
+      onTap: () => context.read<ShorebirdPatchCubit>().checkStagingTrack(),
     );
   }
 }
@@ -157,27 +194,53 @@ class _ApplyTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ShorebirdPatchCubit>().state;
-    final enabled = state.isAvailable && !state.isBusy;
+    return _ActionTile(
+      enabled: state.isAvailable && state.canApply && !state.isBusy,
+      icon: DivineIconName.arrowDown,
+      title: context.l10n.devOptionsShorebirdApply,
+      onTap: () => context.read<ShorebirdPatchCubit>().applyStagedPatch(),
+    );
+  }
+}
 
+class _UseStableTrackTile extends StatelessWidget {
+  const _UseStableTrackTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<ShorebirdPatchCubit>().state;
+    return _ActionTile(
+      enabled: !state.isBusy,
+      icon: DivineIconName.arrowCounterClockwise,
+      title: context.l10n.devOptionsShorebirdUseStable,
+      onTap: () => context.read<ShorebirdPatchCubit>().useStableTrack(),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.enabled,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final DivineIconName icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = enabled
+        ? context.vineColors.primaryText
+        : context.vineColors.secondaryText;
     return ListTile(
       enabled: enabled,
-      leading: DivineIcon(
-        icon: DivineIconName.arrowDown,
-        color: enabled
-            ? context.vineColors.primaryText
-            : context.vineColors.secondaryText,
-      ),
-      title: Text(
-        context.l10n.devOptionsShorebirdApply,
-        style: VineTheme.titleMediumFont(
-          color: enabled
-              ? context.vineColors.primaryText
-              : context.vineColors.secondaryText,
-        ),
-      ),
-      onTap: enabled
-          ? () => context.read<ShorebirdPatchCubit>().applyStagedPatch()
-          : null,
+      leading: DivineIcon(icon: icon, color: color),
+      title: Text(title, style: VineTheme.titleMediumFont(color: color)),
+      onTap: enabled ? onTap : null,
     );
   }
 }

@@ -1997,47 +1997,73 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ontwikkelaarsmodus uitgeschakeld';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebird-patches';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Actieve patch';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Geen patch geïnstalleerd';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'Niet beschikbaar in deze build';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Patches werken alleen in een build die met shorebird release is gemaakt.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Patchstatus lezen…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Stagingtrack nog niet gecontroleerd.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Stagingtrack controleren';
+
+  @override
+  String get devOptionsShorebirdApply => 'Stagingpatch toepassen';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Terug naar stabiele updates';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Stagingtrack controleren…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Er staat een stagingpatch klaar.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Geen stagingpatch voor deze versie.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Gedownload. Start de app opnieuw om hem te laden.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Er staat een terugdraaiing klaar. Start opnieuw om terug te gaan naar de basisversie.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Downloaden en installeren…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Geïnstalleerd. Start de app opnieuw om hem te laden.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Er is niets geïnstalleerd. Controleer de stagingtrack en probeer opnieuw.';
+
+  @override
+  String get devOptionsShorebirdStableRestored => 'Stabiele updates hersteld.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Dat werkte niet. Bekijk de logs voor details.';
 
   @override
   String get devOptionsPageLoadTimes => 'Laadtijden per pagina';

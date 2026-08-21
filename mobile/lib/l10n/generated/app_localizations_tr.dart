@@ -1924,47 +1924,75 @@ class AppLocalizationsTr extends AppLocalizations {
       'Geliştirici modu devre dışı bırakıldı';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebird yamaları';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Çalışan yama';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Yüklü yama yok';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'Bu derlemede kullanılamıyor';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Yamalar yalnızca shorebird release ile oluşturulan derlemelerde çalışır.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Yama durumu okunuyor…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Hazırlama kanalı henüz kontrol edilmedi.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Hazırlama kanalını kontrol et';
+
+  @override
+  String get devOptionsShorebirdApply => 'Hazırlama yamasını uygula';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Kararlı güncellemelere dön';
+
+  @override
+  String get devOptionsShorebirdChecking =>
+      'Hazırlama kanalı kontrol ediliyor…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Uygulanmaya hazır bir hazırlama yaması var.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Bu sürüm için hazırlama yaması yok.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'İndirildi. Yüklemek için uygulamayı yeniden başlatın.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Bir geri alma hazır. Temel sürüme dönmek için yeniden başlatın.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'İndiriliyor ve yükleniyor…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Yüklendi. Çalıştırmak için uygulamayı yeniden başlatın.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Hiçbir şey yüklenmedi. Hazırlama kanalını kontrol edip tekrar deneyin.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Kararlı güncellemeler geri yüklendi.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'İşlem başarısız oldu. Ayrıntılar için günlükleri kontrol edin.';
 
   @override
   String get devOptionsPageLoadTimes => 'Sayfa Yükleme Süreleri';

@@ -1990,47 +1990,74 @@ class AppLocalizationsUr extends AppLocalizations {
       'ڈویلپر موڈ غیر فعال ہو گیا';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Shorebird پیچز';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'چلتا ہوا پیچ';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'کوئی پیچ انسٹال نہیں';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable => 'اس بلڈ میں دستیاب نہیں';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'پیچ صرف shorebird release سے بنائی گئی بلڈ میں کام کرتے ہیں۔';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'پیچ کی حالت پڑھی جا رہی ہے…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'اسٹیجنگ ٹریک ابھی چیک نہیں کیا گیا۔';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'اسٹیجنگ ٹریک چیک کریں';
+
+  @override
+  String get devOptionsShorebirdApply => 'اسٹیجنگ پیچ لگائیں';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'مستحکم اپ ڈیٹس پر واپس جائیں';
+
+  @override
+  String get devOptionsShorebirdChecking => 'اسٹیجنگ ٹریک چیک ہو رہا ہے…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'اسٹیجنگ پیچ لگانے کے لیے تیار ہے۔';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'اس ریلیز کے لیے کوئی اسٹیجنگ پیچ نہیں۔';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'ڈاؤن لوڈ ہو گیا۔ اسے لوڈ کرنے کے لیے ایپ دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'رول بیک تیار ہے۔ بنیادی ریلیز پر واپس جانے کے لیے دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdApplying => 'ڈاؤن لوڈ اور انسٹال ہو رہا ہے…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'انسٹال ہو گیا۔ اسے لوڈ کرنے کے لیے ایپ دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'کچھ انسٹال نہیں ہوا۔ اسٹیجنگ ٹریک چیک کریں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'مستحکم اپ ڈیٹس بحال ہو گئیں۔';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'یہ کام نہیں ہوا۔ تفصیلات کے لیے لاگز دیکھیں۔';
 
   @override
   String get devOptionsPageLoadTimes => 'صفحہ لوڈ اوقات';

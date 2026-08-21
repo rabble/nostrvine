@@ -2036,47 +2036,75 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modul dezvoltator a fost dezactivat';
 
   @override
-  String get devOptionsShorebirdTitle => 'Shorebird Patches';
+  String get devOptionsShorebirdTitle => 'Patch-uri Shorebird';
 
   @override
-  String get devOptionsShorebirdPatchLabel => 'Running patch';
+  String get devOptionsShorebirdPatchLabel => 'Patch activ';
 
   @override
-  String get devOptionsShorebirdNoPatch => 'No patch installed';
+  String get devOptionsShorebirdNoPatch => 'Niciun patch instalat';
 
   @override
-  String get devOptionsShorebirdUnavailable => 'Not available in this build';
+  String get devOptionsShorebirdUnavailable =>
+      'Indisponibil în această versiune';
 
   @override
   String get devOptionsShorebirdUnavailableSubtitle =>
-      'Patches only run in a build made by shorebird release.';
+      'Patch-urile funcționează doar într-o versiune creată cu shorebird release.';
 
   @override
-  String get devOptionsShorebirdCheck => 'Check staging track';
+  String get devOptionsShorebirdLoading => 'Se citește starea patch-ului…';
 
   @override
-  String get devOptionsShorebirdApply => 'Apply staged patch';
+  String get devOptionsShorebirdNotChecked =>
+      'Canalul de testare nu a fost verificat încă.';
 
   @override
-  String get devOptionsShorebirdChecking => 'Checking the staging track…';
+  String get devOptionsShorebirdCheck => 'Verifică canalul de testare';
+
+  @override
+  String get devOptionsShorebirdApply => 'Aplică patch-ul de testare';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Revino la actualizările stabile';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Se verifică canalul de testare…';
 
   @override
   String get devOptionsShorebirdUpdateAvailable =>
-      'A staged patch is ready to apply.';
+      'Un patch de testare este gata de aplicat.';
 
   @override
-  String get devOptionsShorebirdUpToDate => 'No staged patch for this release.';
+  String get devOptionsShorebirdUpToDate =>
+      'Niciun patch de testare pentru această versiune.';
 
   @override
-  String get devOptionsShorebirdApplying => 'Downloading and installing…';
+  String get devOptionsShorebirdRestartRequired =>
+      'Descărcat. Repornește aplicația pentru a-l încărca.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'O revenire este pregătită. Repornește pentru a reveni la versiunea de bază.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Se descarcă și se instalează…';
 
   @override
   String get devOptionsShorebirdApplied =>
-      'Installed. Restart the app to load it.';
+      'Instalat. Repornește aplicația pentru a-l încărca.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nu s-a instalat nimic. Verifică canalul de testare și încearcă din nou.';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Actualizările stabile au fost restabilite.';
 
   @override
   String get devOptionsShorebirdFailure =>
-      'That didn\'t work. Check the logs for details.';
+      'Nu a funcționat. Verifică jurnalele pentru detalii.';
 
   @override
   String get devOptionsPageLoadTimes => 'Timpi de încărcare a paginilor';
