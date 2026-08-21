@@ -171,7 +171,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => '초대장';
+  String get settingsShareDivine => '친구들과 Divine을 공유해요';
 
   @override
   String get settingsSwitchAccount => '계정 전환';

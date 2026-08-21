@@ -208,7 +208,7 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'دعوت نامے';
+  String get settingsShareDivine => 'Divine کو اپنے دوستوں کے ساتھ شیئر کریں';
 
   @override
   String get settingsSwitchAccount => 'اکاؤنٹ تبدیل کریں';

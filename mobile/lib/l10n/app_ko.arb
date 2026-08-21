@@ -79,7 +79,7 @@
     "settingsDeveloperModeAlreadyEnabled": "개발자 모드가 이미 켜져 있어요",
     "settingsDeveloperModeEnabled": "개발자 모드가 켜졌어요!",
     "settingsDeveloperModeTapsRemaining": "개발자 모드를 켜려면 {count}번 더 탭해주세요",
-    "settingsInvites": "초대장",
+  "settingsShareDivine": "친구들과 Divine을 공유해요",
     "settingsSwitchAccount": "계정 전환",
     "settingsAddAnotherAccount": "다른 계정 추가",
   "settingsAccountSwitchFailed": "계정을 전환할 수 없었어요. 다시 시도해 주세요.",

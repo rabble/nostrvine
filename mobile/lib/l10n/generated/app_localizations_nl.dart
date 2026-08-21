@@ -207,7 +207,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Uitnodigingen';
+  String get settingsShareDivine => 'Deel Divine met je vrienden';
 
   @override
   String get settingsSwitchAccount => 'Wissel van account';

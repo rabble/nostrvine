@@ -68,7 +68,7 @@ void main() {
       router.go(SettingsScreen.path);
       await pumpUntilSettled(tester, maxSeconds: 10);
 
-      expect(find.text(_en.settingsInvites), findsNothing);
+      expect(find.text(_en.settingsShareDivine), findsOneWidget);
       expect(
         inviteState(tester).status,
         InviteStatusLoadingStatus.initial,
@@ -140,11 +140,11 @@ void main() {
       router.go(SettingsScreen.path);
       await pumpUntilSettled(tester, maxSeconds: 10);
 
-      expect(find.text(_en.settingsInvites), findsOneWidget);
+      expect(find.text(_en.settingsShareDivine), findsOneWidget);
 
       final granted = await waitForLoadedInviteStatus(tester);
       expect(granted.inviteStatus, isNotNull);
-      await tester.tap(find.text(_en.settingsInvites));
+      router.go(InvitesScreen.path);
       await pumpUntilSettled(tester, maxSeconds: 10);
       expect(find.byType(InvitesView), findsOneWidget);
 

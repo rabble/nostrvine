@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Invitații",
+  "settingsShareDivine": "Distribuie Divine prietenilor tăi",
     "settingsSwitchAccount": "Schimbă contul",
     "settingsAddAnotherAccount": "Adaugă alt cont",
   "settingsAccountSwitchFailed": "Nu s-a putut schimba contul. Încearcă din nou.",

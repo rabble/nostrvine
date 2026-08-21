@@ -177,7 +177,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Lời mời';
+  String get settingsShareDivine => 'Chia sẻ Divine với bạn bè';
 
   @override
   String get settingsSwitchAccount => 'Chuyển tài khoản';

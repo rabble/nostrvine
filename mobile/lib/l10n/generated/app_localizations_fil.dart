@@ -176,7 +176,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Mga Invite';
+  String get settingsShareDivine => 'I-share ang Divine sa mga kaibigan mo';
 
   @override
   String get settingsSwitchAccount => 'Magpalit ng account';

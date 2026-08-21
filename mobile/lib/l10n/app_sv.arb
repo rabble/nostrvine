@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Inbjudningar",
+  "settingsShareDivine": "Dela Divine med dina vänner",
     "settingsSwitchAccount": "Byt konto",
     "settingsAddAnotherAccount": "Lägg till ett till konto",
   "settingsAccountSwitchFailed": "Det gick inte att byta konto. Försök igen.",

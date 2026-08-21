@@ -170,7 +170,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => '招待';
+  String get settingsShareDivine => 'Divineを友だちと共有';
 
   @override
   String get settingsSwitchAccount => 'アカウントを切り替え';

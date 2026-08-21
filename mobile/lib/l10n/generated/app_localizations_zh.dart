@@ -170,7 +170,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => '邀请';
+  String get settingsShareDivine => '与朋友分享 Divine';
 
   @override
   String get settingsSwitchAccount => '切换账号';

@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Покани",
+  "settingsShareDivine": "Сподели Divine с приятелите си",
     "settingsSwitchAccount": "Смени акаунта",
     "settingsAddAnotherAccount": "Добави друг акаунт",
   "settingsAccountSwitchFailed": "Не можахме да превключим акаунтите. Опитайте отново.",

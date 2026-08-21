@@ -220,7 +220,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Invitații';
+  String get settingsShareDivine => 'Distribuie Divine prietenilor tăi';
 
   @override
   String get settingsSwitchAccount => 'Schimbă contul';

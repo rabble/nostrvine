@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "ግብዣዎች",
+  "settingsShareDivine": "Divineን ከጓደኞችዎ ጋር ያጋሩ",
     "settingsSwitchAccount": "መለያ ቀይር",
     "settingsAddAnotherAccount": "ሌላ መለያ ያክሉ",
   "settingsAccountSwitchFailed": "መለያዎችን መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።",

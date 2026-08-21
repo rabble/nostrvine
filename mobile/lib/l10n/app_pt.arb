@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Convites",
+  "settingsShareDivine": "Compartilhe Divine com seus amigos",
     "settingsSwitchAccount": "Trocar de conta",
     "settingsAddAnotherAccount": "Adicionar outra conta",
   "settingsAccountSwitchFailed": "Não foi possível trocar de conta. Tente novamente.",

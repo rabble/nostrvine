@@ -177,7 +177,7 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Undangan';
+  String get settingsShareDivine => 'Bagikan Divine dengan teman-temanmu';
 
   @override
   String get settingsSwitchAccount => 'Ganti akun';

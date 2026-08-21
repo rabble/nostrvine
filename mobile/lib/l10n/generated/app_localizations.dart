@@ -426,11 +426,11 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{count} more tap to enable developer mode} other{{count} more taps to enable developer mode}}'**
   String settingsDeveloperModeTapsRemaining(int count);
 
-  /// No description provided for @settingsInvites.
+  /// Button that opens the share sheet with Divine's download link
   ///
   /// In en, this message translates to:
-  /// **'Invites'**
-  String get settingsInvites;
+  /// **'Share Divine with your friends'**
+  String get settingsShareDivine;
 
   /// No description provided for @settingsSwitchAccount.
   ///
