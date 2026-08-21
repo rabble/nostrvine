@@ -1924,6 +1924,81 @@ class AppLocalizationsTr extends AppLocalizations {
       'Geliştirici modu devre dışı bırakıldı';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird yamaları';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Çalışan yama';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Yüklü yama yok';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Bu derlemede kullanılamıyor';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Yamalar yalnızca shorebird release ile oluşturulan derlemelerde çalışır.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Yama durumu okunuyor…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Hazırlama kanalı henüz kontrol edilmedi.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Hazırlama kanalını kontrol et';
+
+  @override
+  String get devOptionsShorebirdApply => 'Hazırlama yamasını uygula';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Kararlı güncellemelere dön';
+
+  @override
+  String get devOptionsShorebirdChecking =>
+      'Hazırlama kanalı kontrol ediliyor…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Uygulanmaya hazır bir hazırlama yaması var.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Bu sürüm için hazırlama yaması yok.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'İndirildi. Yüklemek için uygulamayı yeniden başlatın.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Bir geri alma hazır. Temel sürüme dönmek için yeniden başlatın.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'İndiriliyor ve yükleniyor…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Yüklendi. Çalıştırmak için uygulamayı yeniden başlatın.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Hiçbir şey yüklenmedi. Hazırlama kanalını kontrol edip tekrar deneyin.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Kararlı kanal seçiliyor…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Kararlı kanal seçildi. Kararlı bir yamayı kontrol etmek için uygulamayı yeniden başlat.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'İşlem başarısız oldu. Ayrıntılar için günlükleri kontrol edin.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Sayfa Yükleme Süreleri';
 
   @override

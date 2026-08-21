@@ -1964,6 +1964,79 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã tắt chế độ nhà phát triển';
 
   @override
+  String get devOptionsShorebirdTitle => 'Bản vá Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Bản vá đang chạy';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Chưa cài bản vá';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Không có trong bản dựng này';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Bản vá chỉ hoạt động trong bản dựng được tạo bằng shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Đang đọc trạng thái bản vá…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'Chưa kiểm tra kênh thử nghiệm.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Kiểm tra kênh thử nghiệm';
+
+  @override
+  String get devOptionsShorebirdApply => 'Áp dụng bản vá thử nghiệm';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Quay lại cập nhật ổn định';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Đang kiểm tra kênh thử nghiệm…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Có bản vá thử nghiệm sẵn sàng áp dụng.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Không có bản vá thử nghiệm cho bản phát hành này.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Đã tải xuống. Khởi động lại ứng dụng để tải bản vá.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Đã sẵn sàng hoàn tác. Khởi động lại để trở về bản phát hành gốc.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Đang tải xuống và cài đặt…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Đã cài đặt. Khởi động lại ứng dụng để tải bản vá.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Không có gì được cài đặt. Hãy kiểm tra kênh thử nghiệm và thử lại.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Đang chọn kênh ổn định…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Đã chọn kênh ổn định. Khởi động lại ứng dụng để kiểm tra bản vá ổn định.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Không thành công. Hãy xem nhật ký để biết chi tiết.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Thời gian tải trang';
 
   @override

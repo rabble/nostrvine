@@ -1838,6 +1838,74 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '開発者モードを無効にしました';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebirdパッチ';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => '実行中のパッチ';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'パッチはインストールされていません';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'このビルドでは利用できません';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'パッチはshorebird releaseで作成したビルドでのみ動作します。';
+
+  @override
+  String get devOptionsShorebirdLoading => 'パッチの状態を読み込み中…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'ステージングトラックはまだ確認されていません。';
+
+  @override
+  String get devOptionsShorebirdCheck => 'ステージングトラックを確認';
+
+  @override
+  String get devOptionsShorebirdApply => 'ステージングパッチを適用';
+
+  @override
+  String get devOptionsShorebirdUseStable => '安定版アップデートに戻す';
+
+  @override
+  String get devOptionsShorebirdChecking => 'ステージングトラックを確認中…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable => '適用できるステージングパッチがあります。';
+
+  @override
+  String get devOptionsShorebirdUpToDate => 'このリリース用のステージングパッチはありません。';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'ダウンロード済みです。読み込むにはアプリを再起動してください。';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'ロールバックの準備ができました。ベースリリースに戻すには再起動してください。';
+
+  @override
+  String get devOptionsShorebirdApplying => 'ダウンロードしてインストール中…';
+
+  @override
+  String get devOptionsShorebirdApplied => 'インストール済みです。読み込むにはアプリを再起動してください。';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      '何もインストールされませんでした。ステージングトラックを確認して再試行してください。';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack => '安定版トラックを選択中…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      '安定版トラックを選択しました。再起動して安定版パッチを確認してください。';
+
+  @override
+  String get devOptionsShorebirdFailure => '処理に失敗しました。詳細はログを確認してください。';
+
+  @override
   String get devOptionsPageLoadTimes => 'ページ読み込み時間';
 
   @override

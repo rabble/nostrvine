@@ -2021,6 +2021,82 @@ class AppLocalizationsBg extends AppLocalizations {
       'Режимът за разработчици е изключен';
 
   @override
+  String get devOptionsShorebirdTitle => 'Корекции на Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Активна корекция';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Няма инсталирана корекция';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Не е налично в тази компилация';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Корекциите работят само в компилация, създадена с shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading =>
+      'Четене на състоянието на корекцията…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Тестовият канал още не е проверен.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Провери тестовия канал';
+
+  @override
+  String get devOptionsShorebirdApply => 'Приложи тестовата корекция';
+
+  @override
+  String get devOptionsShorebirdUseStable =>
+      'Върни се към стабилни актуализации';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Проверка на тестовия канал…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Има готова тестова корекция.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Няма тестова корекция за тази версия.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Изтеглено. Рестартирайте приложението, за да го заредите.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Готово е връщане назад. Рестартирайте, за да се върнете към базовата версия.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Изтегляне и инсталиране…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Инсталирано. Рестартирайте приложението, за да го заредите.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Нищо не е инсталирано. Проверете тестовия канал и опитайте отново.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Избиране на стабилния канал…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Стабилният канал е избран. Рестартирайте, за да проверите за стабилна корекция.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Не се получи. Проверете журналите за подробности.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Време за зареждане на страницата';
 
   @override

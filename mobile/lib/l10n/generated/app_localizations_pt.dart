@@ -2004,6 +2004,80 @@ class AppLocalizationsPt extends AppLocalizations {
       'Modo de desenvolvedor desativado';
 
   @override
+  String get devOptionsShorebirdTitle => 'Patches do Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Patch em execução';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Nenhum patch instalado';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Indisponível nesta compilação';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Os patches só funcionam em uma compilação criada com shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Lendo o estado do patch…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Canal de testes ainda não verificado.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Verificar canal de testes';
+
+  @override
+  String get devOptionsShorebirdApply => 'Aplicar patch de testes';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Voltar às atualizações estáveis';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Verificando o canal de testes…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Há um patch de testes pronto para aplicar.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Nenhum patch de testes para esta versão.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Baixado. Reinicie o app para carregá-lo.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Há uma reversão pronta. Reinicie para voltar à versão base.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Baixando e instalando…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Instalado. Reinicie o app para carregá-lo.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nada foi instalado. Verifique o canal de testes e tente novamente.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Selecionando o canal estável…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Canal estável selecionado. Reinicie o app para verificar se há um patch estável.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Não funcionou. Verifique os registros para mais detalhes.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Tempos de carregamento de página';
 
   @override

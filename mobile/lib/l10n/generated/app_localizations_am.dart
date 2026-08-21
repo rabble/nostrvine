@@ -1950,6 +1950,74 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'የገንቢ ሁነታ ተሰናክሏል';
 
   @override
+  String get devOptionsShorebirdTitle => 'የShorebird ማስተካከያዎች';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'እየሰራ ያለ ማስተካከያ';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'ምንም ማስተካከያ አልተጫነም';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'በዚህ ግንባታ ውስጥ አይገኝም';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'ማስተካከያዎች በshorebird release በተፈጠረ ግንባታ ውስጥ ብቻ ይሰራሉ።';
+
+  @override
+  String get devOptionsShorebirdLoading => 'የማስተካከያ ሁኔታ እየተነበበ ነው…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'የሙከራ ትራኩ ገና አልተፈተሸም።';
+
+  @override
+  String get devOptionsShorebirdCheck => 'የሙከራ ትራኩን ፈትሽ';
+
+  @override
+  String get devOptionsShorebirdApply => 'የሙከራ ማስተካከያውን ተግብር';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'ወደ የተረጋጋ ዝማኔዎች ተመለስ';
+
+  @override
+  String get devOptionsShorebirdChecking => 'የሙከራ ትራኩ እየተፈተሸ ነው…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable => 'የሙከራ ማስተካከያ ለመተግበር ዝግጁ ነው።';
+
+  @override
+  String get devOptionsShorebirdUpToDate => 'ለዚህ ልቀት የሙከራ ማስተካከያ የለም።';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'ወርዷል። ለመጫን መተግበሪያውን እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'መመለሻ ዝግጁ ነው። ወደ መሰረታዊ ልቀት ለመመለስ እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdApplying => 'እየወረደ እና እየተጫነ ነው…';
+
+  @override
+  String get devOptionsShorebirdApplied => 'ተጭኗል። ለመጫን መተግበሪያውን እንደገና ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'ምንም አልተጫነም። የሙከራ ትራኩን ፈትሸው እንደገና ይሞክሩ።';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack => 'የተረጋጋ ትራክ በመምረጥ ላይ…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'የተረጋጋ ትራክ ተመርጧል። የተረጋጋ ፓች ለመፈተሽ መተግበሪያውን ዳግም ያስጀምሩ።';
+
+  @override
+  String get devOptionsShorebirdFailure => 'አልተሳካም። ለዝርዝሮች ምዝግቦቹን ይመልከቱ።';
+
+  @override
   String get devOptionsPageLoadTimes => 'የገጽ ጭነት ጊዜያት';
 
   @override

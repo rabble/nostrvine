@@ -22,11 +22,14 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/clip_recovery_screen.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/widgets/developer/storage_footprint_section.dart';
+import 'package:openvine/widgets/developer_options/shorebird_patch_section.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Returns a color indicating speed: green (<1s), orange (1-3s), red (>3s).
@@ -122,7 +125,10 @@ class DeveloperOptionsScreen extends ConsumerStatefulWidget {
   /// Path for this route.
   static const String path = RoutePaths.developerOptions;
 
-  const DeveloperOptionsScreen({super.key});
+  const DeveloperOptionsScreen({this.shorebirdUpdaterFactory, super.key});
+
+  @visibleForTesting
+  final ShorebirdUpdater Function()? shorebirdUpdaterFactory;
 
   @override
   ConsumerState<DeveloperOptionsScreen> createState() =>
@@ -197,7 +203,15 @@ class _DeveloperOptionsScreenState
                 );
               }),
 
-              // Divider between environments and page load times
+              // Divider between environments and Shorebird patches
+              Divider(color: context.vineColors.outline, height: 32),
+
+              ShorebirdPatchSection(
+                preferences: ref.watch(sharedPreferencesProvider),
+                updaterFactory: widget.shorebirdUpdaterFactory,
+              ),
+
+              // Divider between Shorebird patches and page load times
               Divider(color: context.vineColors.outline, height: 32),
 
               // Page Load Times section header

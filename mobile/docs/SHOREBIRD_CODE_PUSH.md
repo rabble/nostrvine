@@ -79,11 +79,15 @@ Codemagic run. Their build numbers can differ too: the APK uses
 `PROJECT_BUILD_NUMBER`, while the AAB uses the higher of that value and the next
 available Play build number.
 
-`auto_update` is left at its default (on), so patches apply in the background
-on launch. `shorebird_code_push` is a runtime dependency. There is no in-app UI
-for controlling patch state, but startup records patch availability and the
-current patch number in logs and Crashlytics custom keys. Use those values when
-triaging crashes that may be specific to a code-push patch.
+Shorebird's native `auto_update` is disabled because it always checks `stable`
+and would race the staged-patch validation relaunch. The app replaces it during
+startup, before `runApp`, so a Dart-side failure mid-launch does not strand the
+check: ordinary installations check `stable`, while a tester who has
+downloaded a staged patch stays subscribed to `staging` until they explicitly
+return to stable updates in Developer Options.
+`shorebird_code_push` is a runtime dependency. Startup also records patch availability and the current
+patch number in logs and Crashlytics custom keys. Use those values when
+triaging crashes that may be patch-specific.
 
 ### Flutter version
 
@@ -283,10 +287,10 @@ test-backed.
    reviewer must read that complete output before proceeding; the relevant iOS
    or Android platform owner must approve promotion.
 1. The workflow publishes to `staging`, never directly to `stable`. Validate
-   the exact release plus staged patch on the affected platform with
-   `shorebird preview --track staging --release-version <version>` or an
-   equivalent installed build. Verify the regression, adjacent behavior,
-   startup, and the current patch number in logs or Crashlytics.
+   the exact release plus staged patch on the affected platform using the
+   **Shorebird Patches** section in Settings → Developer Options (see
+   [Validating a staged patch](#validating-a-staged-patch) below). Verify the
+   regression, adjacent behavior, startup, and the current patch number.
 1. Record the incident owner, mobile reviewer, platform owner, release version,
    patch number, validation evidence, and rollback decision in the incident or
    patch issue. Then promote the exact approved patch:
@@ -297,7 +301,10 @@ test-backed.
 
    `shorebird patches promote --release-version <version> --patch-number <n>`
    is the deprecated legacy shorthand in the pinned CLI. Do not use it in new
-   automation.
+   automation. After promotion, tap **Return to stable updates** in Settings →
+   Developer Options → **Shorebird Patches**. Do not switch the validation
+   device back before promotion: its next launch would check `stable` and could
+   roll back the staged patch.
 1. Monitor patch installation/failure diagnostics and the original production
    signal after promotion. If the patch regresses behavior, roll it back first
    and investigate second; rollback is emergency recovery, not validation.
@@ -321,6 +328,40 @@ commit is `a46851e924b183fa0cb2ce6c6cfaae7ed02cc189`; the equivalent reachable
 `a17e0660a782e439c5d405c2d06dd49e5b7fbc81`, which CI verifies. Its private
 record is deliberately marked unpatchable because the historical dart-defines
 cannot be established from source control.
+
+### Validating a staged patch
+
+An ordinary installed build polls `stable`. A patch published to `staging` is
+invisible until a tester explicitly subscribes the installation through
+Developer Options; promoting first would defeat the validation gate.
+
+`shorebird preview` cannot close that gap on iOS. It downloads the release
+artifact and tries to install it, but our IPA is signed for App Store
+distribution: `get-task-allow` is false, `beta-reports-active` is true, and
+the profile carries no `ProvisionedDevices`. `ideviceinstaller` rejects it
+with `0xe800801f`. That is a property of the artifact we ship, not a
+misconfiguration — an installable preview would need a development- or
+ad-hoc-signed build, which is a different binary from the one under test.
+
+So the affordance lives in the app. Settings → Developer Options →
+**Shorebird Patches** shows the running patch number. Its check and apply
+actions call `ShorebirdUpdater` with `UpdateTrack.staging` explicitly:
+
+- **Check staging track** — reports whether a staged patch is waiting.
+- **Apply staged patch** — downloads and installs it; relaunch to run it.
+- **Return to stable updates** — selects `stable` for the next launch; it does
+  not immediately remove the downloaded or running staging patch. Use it only
+  after that exact patch is promoted to `stable`, then relaunch so the app can
+  check the stable track and reconcile the installed patch.
+
+Install the TestFlight build of the exact release under test, run the patch
+workflow, then pull the patch through this section. The build number shown in
+Settings must match the release version you patched. The section reports
+"Not available in this build" on a plain `flutter run` — the updater
+is only linked by `shorebird release`, so a debug build can never validate a
+patch.
+
+Promotion to `stable` happens only after this validation succeeds.
 
 ### A patch targets a release version, not a channel
 
@@ -434,6 +475,15 @@ on every cache hit.
 To upgrade Shorebird, review a tagged CLI revision, update the 40-character CLI
 SHA and expected version together, then run the CI configuration tests. Never
 replace the revision pin with a branch or tag.
+
+**Upgrading strands every release recorded under the old pin.** Provenance
+records `shorebird_cli_version` and `shorebird_cli_revision`, and the patch
+workflow refuses to patch a release whose recorded CLI does not match the
+pinned one. Moving the pin therefore makes every existing release permanently
+unpatchable — the record is create-only and must not be rewritten to match.
+Sequence an upgrade as: merge the pin bump, cut a **new** store release under
+the new pin, and patch only releases recorded under it. Never upgrade while a
+shipped release is the only thing standing between production and a hot fix.
 
 Then `shorebird login`. You need access to the Divine organization; membership
 is managed in the Shorebird console.

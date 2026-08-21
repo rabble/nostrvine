@@ -1990,6 +1990,80 @@ class AppLocalizationsUr extends AppLocalizations {
       'ڈویلپر موڈ غیر فعال ہو گیا';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird پیچز';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'چلتا ہوا پیچ';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'کوئی پیچ انسٹال نہیں';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'اس بلڈ میں دستیاب نہیں';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'پیچ صرف shorebird release سے بنائی گئی بلڈ میں کام کرتے ہیں۔';
+
+  @override
+  String get devOptionsShorebirdLoading => 'پیچ کی حالت پڑھی جا رہی ہے…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'اسٹیجنگ ٹریک ابھی چیک نہیں کیا گیا۔';
+
+  @override
+  String get devOptionsShorebirdCheck => 'اسٹیجنگ ٹریک چیک کریں';
+
+  @override
+  String get devOptionsShorebirdApply => 'اسٹیجنگ پیچ لگائیں';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'مستحکم اپ ڈیٹس پر واپس جائیں';
+
+  @override
+  String get devOptionsShorebirdChecking => 'اسٹیجنگ ٹریک چیک ہو رہا ہے…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'اسٹیجنگ پیچ لگانے کے لیے تیار ہے۔';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'اس ریلیز کے لیے کوئی اسٹیجنگ پیچ نہیں۔';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'ڈاؤن لوڈ ہو گیا۔ اسے لوڈ کرنے کے لیے ایپ دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'رول بیک تیار ہے۔ بنیادی ریلیز پر واپس جانے کے لیے دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdApplying => 'ڈاؤن لوڈ اور انسٹال ہو رہا ہے…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'انسٹال ہو گیا۔ اسے لوڈ کرنے کے لیے ایپ دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'کچھ انسٹال نہیں ہوا۔ اسٹیجنگ ٹریک چیک کریں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'مستحکم ٹریک منتخب کیا جا رہا ہے…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'مستحکم ٹریک منتخب ہو گیا۔ مستحکم پیچ چیک کرنے کے لیے ایپ دوبارہ شروع کریں۔';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'یہ کام نہیں ہوا۔ تفصیلات کے لیے لاگز دیکھیں۔';
+
+  @override
   String get devOptionsPageLoadTimes => 'صفحہ لوڈ اوقات';
 
   @override

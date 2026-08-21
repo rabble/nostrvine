@@ -1997,6 +1997,80 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ontwikkelaarsmodus uitgeschakeld';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird-patches';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Actieve patch';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Geen patch geïnstalleerd';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Niet beschikbaar in deze build';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Patches werken alleen in een build die met shorebird release is gemaakt.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Patchstatus lezen…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Stagingtrack nog niet gecontroleerd.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Stagingtrack controleren';
+
+  @override
+  String get devOptionsShorebirdApply => 'Stagingpatch toepassen';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Terug naar stabiele updates';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Stagingtrack controleren…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Er staat een stagingpatch klaar.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Geen stagingpatch voor deze versie.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Gedownload. Start de app opnieuw om hem te laden.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Er staat een terugdraaiing klaar. Start opnieuw om terug te gaan naar de basisversie.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Downloaden en installeren…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Geïnstalleerd. Start de app opnieuw om hem te laden.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Er is niets geïnstalleerd. Controleer de stagingtrack en probeer opnieuw.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Stabiel kanaal selecteren…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Stabiel kanaal geselecteerd. Start de app opnieuw om op een stabiele patch te controleren.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Dat werkte niet. Bekijk de logs voor details.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Laadtijden per pagina';
 
   @override

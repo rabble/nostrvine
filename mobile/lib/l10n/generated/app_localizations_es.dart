@@ -2009,6 +2009,82 @@ class AppLocalizationsEs extends AppLocalizations {
       'Modo de desarrollador desactivado';
 
   @override
+  String get devOptionsShorebirdTitle => 'Parches de Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Parche activo';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'No hay ningún parche instalado';
+
+  @override
+  String get devOptionsShorebirdUnavailable =>
+      'No disponible en esta compilación';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Los parches solo funcionan en una compilación creada con shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Leyendo el estado del parche…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Aún no se comprobó el canal de pruebas.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Comprobar el canal de pruebas';
+
+  @override
+  String get devOptionsShorebirdApply => 'Aplicar parche de pruebas';
+
+  @override
+  String get devOptionsShorebirdUseStable =>
+      'Volver a las actualizaciones estables';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Comprobando el canal de pruebas…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Hay un parche de pruebas listo para aplicar.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'No hay ningún parche de pruebas para esta versión.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Descargado. Reinicia la app para cargarlo.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Hay una reversión lista. Reinicia para volver a la versión base.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Descargando e instalando…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Instalado. Reinicia la app para cargarlo.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'No se instaló nada. Comprueba el canal de pruebas e inténtalo de nuevo.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Seleccionando el canal estable…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Canal estable seleccionado. Reinicia la app para buscar un parche estable.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'No funcionó. Consulta los registros para ver los detalles.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Tiempos de carga de pantallas';
 
   @override

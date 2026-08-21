@@ -10,5 +10,7 @@ app_id: 73254661-21d7-4df0-90f3-265c044d7c9a
 # auto_update controls if Shorebird should automatically update in the background on launch.
 # If auto_update: false, you will need to use package:shorebird_code_push to trigger updates.
 # https://pub.dev/packages/shorebird_code_push
-# Uncomment the following line to disable automatic updates.
-# auto_update: false
+# Divine selects the stable or staging track at runtime. The app reproduces
+# automatic stable updates during startup, before runApp, while allowing a test
+# device to stay on staging across the validation relaunch.
+auto_update: false

@@ -1982,6 +1982,82 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Utvecklarläge inaktiverat';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird-korrigeringar';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Aktiv korrigering';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Ingen korrigering installerad';
+
+  @override
+  String get devOptionsShorebirdUnavailable =>
+      'Inte tillgängligt i den här versionen';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Korrigeringar fungerar bara i en version skapad med shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Läser korrigeringsstatus…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Testspåret har inte kontrollerats än.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Kontrollera testspåret';
+
+  @override
+  String get devOptionsShorebirdApply => 'Tillämpa testkorrigering';
+
+  @override
+  String get devOptionsShorebirdUseStable =>
+      'Återgå till stabila uppdateringar';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Kontrollerar testspåret…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'En testkorrigering är redo att tillämpas.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Ingen testkorrigering för den här versionen.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Hämtad. Starta om appen för att läsa in den.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'En återställning är redo. Starta om för att återgå till basversionen.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Hämtar och installerar…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Installerad. Starta om appen för att läsa in den.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Inget installerades. Kontrollera testspåret och försök igen.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Väljer den stabila kanalen…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Den stabila kanalen har valts. Starta om appen för att söka efter en stabil patch.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Det fungerade inte. Kontrollera loggarna för mer information.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Sidladdningstider';
 
   @override

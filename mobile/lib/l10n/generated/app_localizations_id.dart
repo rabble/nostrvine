@@ -1919,6 +1919,78 @@ class AppLocalizationsId extends AppLocalizations {
       'Mode pengembang dinonaktifkan';
 
   @override
+  String get devOptionsShorebirdTitle => 'Patch Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Patch aktif';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Tidak ada patch terpasang';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Tidak tersedia di build ini';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Patch hanya berfungsi di build yang dibuat dengan shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Membaca status patch…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => 'Track staging belum diperiksa.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Periksa track staging';
+
+  @override
+  String get devOptionsShorebirdApply => 'Terapkan patch staging';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Kembali ke pembaruan stabil';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Memeriksa track staging…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Patch staging siap diterapkan.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Tidak ada patch staging untuk rilis ini.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Sudah diunduh. Mulai ulang aplikasi untuk memuatnya.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Rollback siap. Mulai ulang untuk kembali ke rilis dasar.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Mengunduh dan memasang…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Terpasang. Mulai ulang aplikasi untuk memuatnya.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Tidak ada yang terpasang. Periksa track staging dan coba lagi.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack => 'Memilih jalur stabil…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Jalur stabil dipilih. Mulai ulang aplikasi untuk memeriksa patch stabil.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Tidak berhasil. Periksa log untuk detailnya.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Waktu Muat Halaman';
 
   @override

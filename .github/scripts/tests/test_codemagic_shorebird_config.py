@@ -14,6 +14,9 @@ WORKFLOWS_PATH = Path(__file__).resolve().parents[2] / "workflows"
 SHOREBIRD_DOC_PATH = (
     Path(__file__).resolve().parents[3] / "mobile" / "docs" / "SHOREBIRD_CODE_PUSH.md"
 )
+SHOREBIRD_CONFIG_PATH = (
+    Path(__file__).resolve().parents[3] / "mobile" / "shorebird.yaml"
+)
 PROVENANCE_STORE_PATH = (
     Path(__file__).resolve().parents[3]
     / "mobile"
@@ -42,6 +45,7 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.mobile_ci_contents = MOBILE_CI_PATH.read_text()
         self.mise_contents = MISE_PATH.read_text()
         self.shorebird_doc_contents = SHOREBIRD_DOC_PATH.read_text()
+        self.shorebird_config_contents = SHOREBIRD_CONFIG_PATH.read_text()
         self.provenance_store_contents = PROVENANCE_STORE_PATH.read_text()
         self.patch_source_contents = PATCH_SOURCE_PATH.read_text()
         self.caption_generator_gradle_contents = CAPTION_GENERATOR_GRADLE_PATH.read_text()
@@ -87,6 +91,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("SUPPORTERS_API_BASE_URL", self.contents)
         self.assertIn("FF_DIVINE_SUPPORTERS", self.contents)
         self.assertIn("defines[name] = ENV.fetch(name, '')", self.contents)
+
+    def test_runtime_track_selection_disables_native_auto_update(self) -> None:
+        self.assertRegex(
+            self.shorebird_config_contents,
+            r"(?m)^auto_update:\s*false\s*$",
+        )
 
     def test_shorebird_required_defines_reject_empty_values(self) -> None:
         self.assertIn(

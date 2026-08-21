@@ -1970,6 +1970,80 @@ class AppLocalizationsAr extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'تم تعطيل وضع المطوّر';
 
   @override
+  String get devOptionsShorebirdTitle => 'تصحيحات Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'التصحيح قيد التشغيل';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'لا يوجد تصحيح مثبّت';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'غير متاح في هذا الإصدار';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'تعمل التصحيحات فقط في إصدار تم إنشاؤه باستخدام shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'جارٍ قراءة حالة التصحيح…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'لم يتم التحقق من مسار الاختبار بعد.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'التحقق من مسار الاختبار';
+
+  @override
+  String get devOptionsShorebirdApply => 'تطبيق تصحيح الاختبار';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'العودة إلى التحديثات المستقرة';
+
+  @override
+  String get devOptionsShorebirdChecking => 'جارٍ التحقق من مسار الاختبار…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'يوجد تصحيح اختبار جاهز للتطبيق.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'لا يوجد تصحيح اختبار لهذا الإصدار.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'تم التنزيل. أعد تشغيل التطبيق لتحميله.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'التراجع جاهز. أعد التشغيل للعودة إلى الإصدار الأساسي.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'جارٍ التنزيل والتثبيت…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'تم التثبيت. أعد تشغيل التطبيق لتحميله.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'لم يتم تثبيت أي شيء. تحقق من مسار الاختبار وحاول مرة أخرى.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'جارٍ اختيار المسار المستقر…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'تم اختيار المسار المستقر. أعد تشغيل التطبيق للتحقق من وجود تصحيح مستقر.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'لم تنجح العملية. تحقق من السجلات للحصول على التفاصيل.';
+
+  @override
   String get devOptionsPageLoadTimes => 'أوقات تحميل الصفحات';
 
   @override

@@ -1972,6 +1972,80 @@ class AppLocalizationsMs extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Mod pembangun dilumpuhkan';
 
   @override
+  String get devOptionsShorebirdTitle => 'Tampalan Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Tampalan aktif';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Tiada tampalan dipasang';
+
+  @override
+  String get devOptionsShorebirdUnavailable =>
+      'Tidak tersedia dalam binaan ini';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Tampalan hanya berfungsi dalam binaan yang dibuat dengan shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Membaca status tampalan…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Trek pementasan belum diperiksa.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Periksa trek pementasan';
+
+  @override
+  String get devOptionsShorebirdApply => 'Gunakan tampalan pementasan';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Kembali kepada kemas kini stabil';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Memeriksa trek pementasan…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Tampalan pementasan sedia untuk digunakan.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Tiada tampalan pementasan untuk keluaran ini.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Dimuat turun. Mulakan semula aplikasi untuk memuatkannya.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Pengunduran sedia. Mulakan semula untuk kembali kepada keluaran asas.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Memuat turun dan memasang…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Dipasang. Mulakan semula aplikasi untuk memuatkannya.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Tiada apa-apa dipasang. Periksa trek pementasan dan cuba lagi.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack => 'Memilih trek stabil…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Trek stabil dipilih. Mulakan semula aplikasi untuk menyemak tampalan stabil.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Tidak berjaya. Periksa log untuk butiran.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Masa Muat Halaman';
 
   @override

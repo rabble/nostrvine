@@ -2013,6 +2013,82 @@ class AppLocalizationsDe extends AppLocalizations {
       'Entwicklermodus deaktiviert';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird-Patches';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Aktiver Patch';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Kein Patch installiert';
+
+  @override
+  String get devOptionsShorebirdUnavailable =>
+      'In diesem Build nicht verfügbar';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Patches funktionieren nur in einem mit shorebird release erstellten Build.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Patch-Status wird gelesen…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Staging-Track noch nicht geprüft.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Staging-Track prüfen';
+
+  @override
+  String get devOptionsShorebirdApply => 'Staging-Patch anwenden';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Zu stabilen Updates zurückkehren';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Staging-Track wird geprüft…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Ein Staging-Patch kann angewendet werden.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Kein Staging-Patch für diese Version.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Heruntergeladen. App neu starten, um ihn zu laden.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Ein Rollback ist bereit. Neu starten, um zur Basisversion zurückzukehren.';
+
+  @override
+  String get devOptionsShorebirdApplying =>
+      'Wird heruntergeladen und installiert…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Installiert. App neu starten, um ihn zu laden.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nichts wurde installiert. Staging-Track prüfen und erneut versuchen.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Stabiler Kanal wird ausgewählt…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Stabiler Kanal ausgewählt. Starte die App neu, um nach einem stabilen Patch zu suchen.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Das hat nicht funktioniert. Details stehen in den Logs.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Seiten-Ladezeiten';
 
   @override

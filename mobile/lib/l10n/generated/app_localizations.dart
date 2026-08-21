@@ -3397,6 +3397,132 @@ abstract class AppLocalizations {
   /// **'Developer mode disabled'**
   String get devOptionsDisableDeveloperModeToast;
 
+  /// No description provided for @devOptionsShorebirdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shorebird Patches'**
+  String get devOptionsShorebirdTitle;
+
+  /// Row label for the Shorebird patch number currently running. The number itself renders as the row's value, so a tester can report exactly what they validated.
+  ///
+  /// In en, this message translates to:
+  /// **'Running patch'**
+  String get devOptionsShorebirdPatchLabel;
+
+  /// No description provided for @devOptionsShorebirdNoPatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No patch installed'**
+  String get devOptionsShorebirdNoPatch;
+
+  /// No description provided for @devOptionsShorebirdUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available in this build'**
+  String get devOptionsShorebirdUnavailable;
+
+  /// No description provided for @devOptionsShorebirdUnavailableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Patches only run in a build made by shorebird release.'**
+  String get devOptionsShorebirdUnavailableSubtitle;
+
+  /// No description provided for @devOptionsShorebirdLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading patch state…'**
+  String get devOptionsShorebirdLoading;
+
+  /// No description provided for @devOptionsShorebirdNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Staging track not checked yet.'**
+  String get devOptionsShorebirdNotChecked;
+
+  /// No description provided for @devOptionsShorebirdCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check staging track'**
+  String get devOptionsShorebirdCheck;
+
+  /// No description provided for @devOptionsShorebirdApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply staged patch'**
+  String get devOptionsShorebirdApply;
+
+  /// No description provided for @devOptionsShorebirdUseStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to stable updates'**
+  String get devOptionsShorebirdUseStable;
+
+  /// No description provided for @devOptionsShorebirdChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the staging track…'**
+  String get devOptionsShorebirdChecking;
+
+  /// No description provided for @devOptionsShorebirdUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A staged patch is ready to apply.'**
+  String get devOptionsShorebirdUpdateAvailable;
+
+  /// No description provided for @devOptionsShorebirdUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No staged patch for this release.'**
+  String get devOptionsShorebirdUpToDate;
+
+  /// No description provided for @devOptionsShorebirdRestartRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded. Restart the app to load it.'**
+  String get devOptionsShorebirdRestartRequired;
+
+  /// No description provided for @devOptionsShorebirdRollbackRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A rollback is ready. Restart to return to the base release.'**
+  String get devOptionsShorebirdRollbackRequired;
+
+  /// No description provided for @devOptionsShorebirdApplying.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading and installing…'**
+  String get devOptionsShorebirdApplying;
+
+  /// No description provided for @devOptionsShorebirdApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed. Restart the app to load it.'**
+  String get devOptionsShorebirdApplied;
+
+  /// No description provided for @devOptionsShorebirdUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was installed. Check the staging track and try again.'**
+  String get devOptionsShorebirdUnchanged;
+
+  /// No description provided for @devOptionsShorebirdSelectingStableTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Selecting stable track…'**
+  String get devOptionsShorebirdSelectingStableTrack;
+
+  /// No description provided for @devOptionsShorebirdStableRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable track selected. Restart to check for a stable patch.'**
+  String get devOptionsShorebirdStableRestored;
+
+  /// No description provided for @devOptionsShorebirdFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work. Check the logs for details.'**
+  String get devOptionsShorebirdFailure;
+
   /// No description provided for @devOptionsPageLoadTimes.
   ///
   /// In en, this message translates to:

@@ -2027,6 +2027,80 @@ class AppLocalizationsPl extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Tryb dewelopera wyłączony';
 
   @override
+  String get devOptionsShorebirdTitle => 'Poprawki Shorebird';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => 'Aktywna poprawka';
+
+  @override
+  String get devOptionsShorebirdNoPatch => 'Brak zainstalowanej poprawki';
+
+  @override
+  String get devOptionsShorebirdUnavailable => 'Niedostępne w tej kompilacji';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      'Poprawki działają tylko w kompilacji utworzonej przez shorebird release.';
+
+  @override
+  String get devOptionsShorebirdLoading => 'Odczytywanie stanu poprawki…';
+
+  @override
+  String get devOptionsShorebirdNotChecked =>
+      'Kanał testowy nie został jeszcze sprawdzony.';
+
+  @override
+  String get devOptionsShorebirdCheck => 'Sprawdź kanał testowy';
+
+  @override
+  String get devOptionsShorebirdApply => 'Zastosuj poprawkę testową';
+
+  @override
+  String get devOptionsShorebirdUseStable => 'Wróć do stabilnych aktualizacji';
+
+  @override
+  String get devOptionsShorebirdChecking => 'Sprawdzanie kanału testowego…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable =>
+      'Poprawka testowa jest gotowa do zastosowania.';
+
+  @override
+  String get devOptionsShorebirdUpToDate =>
+      'Brak poprawki testowej dla tej wersji.';
+
+  @override
+  String get devOptionsShorebirdRestartRequired =>
+      'Pobrano. Uruchom aplikację ponownie, aby ją wczytać.';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired =>
+      'Wycofanie jest gotowe. Uruchom ponownie, aby wrócić do wersji bazowej.';
+
+  @override
+  String get devOptionsShorebirdApplying => 'Pobieranie i instalowanie…';
+
+  @override
+  String get devOptionsShorebirdApplied =>
+      'Zainstalowano. Uruchom aplikację ponownie, aby ją wczytać.';
+
+  @override
+  String get devOptionsShorebirdUnchanged =>
+      'Nic nie zainstalowano. Sprawdź kanał testowy i spróbuj ponownie.';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack =>
+      'Wybieranie stabilnego kanału…';
+
+  @override
+  String get devOptionsShorebirdStableRestored =>
+      'Wybrano stabilny kanał. Uruchom aplikację ponownie, aby sprawdzić stabilną poprawkę.';
+
+  @override
+  String get devOptionsShorebirdFailure =>
+      'Nie udało się. Szczegóły znajdziesz w dziennikach.';
+
+  @override
   String get devOptionsPageLoadTimes => 'Czasy ładowania stron';
 
   @override

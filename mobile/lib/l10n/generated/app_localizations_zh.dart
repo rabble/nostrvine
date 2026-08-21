@@ -1864,6 +1864,70 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '开发者模式已关闭';
 
   @override
+  String get devOptionsShorebirdTitle => 'Shorebird 补丁';
+
+  @override
+  String get devOptionsShorebirdPatchLabel => '当前补丁';
+
+  @override
+  String get devOptionsShorebirdNoPatch => '未安装补丁';
+
+  @override
+  String get devOptionsShorebirdUnavailable => '此构建版本不可用';
+
+  @override
+  String get devOptionsShorebirdUnavailableSubtitle =>
+      '补丁仅适用于通过 shorebird release 创建的构建版本。';
+
+  @override
+  String get devOptionsShorebirdLoading => '正在读取补丁状态…';
+
+  @override
+  String get devOptionsShorebirdNotChecked => '尚未检查预发布通道。';
+
+  @override
+  String get devOptionsShorebirdCheck => '检查预发布通道';
+
+  @override
+  String get devOptionsShorebirdApply => '应用预发布补丁';
+
+  @override
+  String get devOptionsShorebirdUseStable => '恢复稳定版更新';
+
+  @override
+  String get devOptionsShorebirdChecking => '正在检查预发布通道…';
+
+  @override
+  String get devOptionsShorebirdUpdateAvailable => '有预发布补丁可供应用。';
+
+  @override
+  String get devOptionsShorebirdUpToDate => '此版本没有预发布补丁。';
+
+  @override
+  String get devOptionsShorebirdRestartRequired => '已下载。请重启应用以加载补丁。';
+
+  @override
+  String get devOptionsShorebirdRollbackRequired => '回滚已准备就绪。请重启以返回基础版本。';
+
+  @override
+  String get devOptionsShorebirdApplying => '正在下载并安装…';
+
+  @override
+  String get devOptionsShorebirdApplied => '已安装。请重启应用以加载补丁。';
+
+  @override
+  String get devOptionsShorebirdUnchanged => '未安装任何内容。请检查预发布通道后重试。';
+
+  @override
+  String get devOptionsShorebirdSelectingStableTrack => '正在选择稳定版通道…';
+
+  @override
+  String get devOptionsShorebirdStableRestored => '已选择稳定版通道。请重启应用以检查稳定版补丁。';
+
+  @override
+  String get devOptionsShorebirdFailure => '操作失败。请查看日志了解详情。';
+
+  @override
   String get devOptionsPageLoadTimes => '页面加载时间';
 
   @override
