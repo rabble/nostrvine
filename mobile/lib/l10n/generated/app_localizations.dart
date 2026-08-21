@@ -11540,12 +11540,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.'**
   String get deleteAccountBurnUsernameFailed;
 
-  /// Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.
-  ///
-  /// In en, this message translates to:
-  /// **'Your username {username} has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.'**
-  String deleteAccountBurnUsernameReleased(String username);
-
   /// Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.
   ///
   /// In en, this message translates to:
@@ -11599,12 +11593,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete All Content'**
   String get deleteAccountDeleteAllContentButton;
-
-  /// Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it.
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn\'t finish deleting your account. Try again.'**
-  String get deleteAccountDeletionIncomplete;
 
   /// Title of the full-screen recovery gate shown when account deletion was interrupted after a username release was prepared.
   ///

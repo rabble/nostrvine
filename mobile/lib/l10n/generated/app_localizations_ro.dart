@@ -6883,11 +6883,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Numele tău de utilizator $username a fost eliberat definitiv, dar nu am putut finaliza ștergerea contului. Apasă Șterge din nou pentru a finaliza.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Renunță definitiv și la $username';
   }
@@ -6920,10 +6915,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

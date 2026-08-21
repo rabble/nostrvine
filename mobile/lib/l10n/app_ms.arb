@@ -3780,15 +3780,6 @@
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
   },
-  "deleteAccountBurnUsernameReleased": "Nama pengguna anda {username} telah dilepaskan secara kekal, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Ketik Padam sekali lagi untuk melengkapkannya.",
-  "@deleteAccountBurnUsernameReleased": {
-    "description": "Shown when the opt-in @divine.video username burn committed but the account could not be fully deleted (a later step failed). The burn is never rolled back. {username} is like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountBurnUsernameToggle": "Juga serahkan {username} secara kekal",
   "@deleteAccountBurnUsernameToggle": {
     "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
@@ -3814,10 +3805,6 @@
   "deleteAccountContentDeletionFailed": "Gagal memadam kandungan daripada relay",
   "deleteAccountRelayConfirmationFailed": "Kami tidak dapat mengesahkan pemadaman akaun dengan mana-mana relay. Semak sambungan anda dan cuba lagi.",
   "deleteAccountDeleteAllContentButton": "Padam Semua Kandungan",
-  "deleteAccountDeletionIncomplete": "Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.",
-  "@deleteAccountDeletionIncomplete": {
-    "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
-  },
   "deleteAccountFinalConfirmationTitle": "⚠️ Pengesahan Akhir",
   "deleteAccountKeyDeletionWarning": "Permintaan pemadaman dihantar, tetapi kunci anda mungkin tidak dialih keluar sepenuhnya daripada peranti ini. Pergi ke Tetapan → Kunci Nostr → Alih Keluar Kunci untuk cuba semula.",
   "deleteAccountLocalDataDeletionFailed": "Permintaan pemadaman dihantar dan anda telah dilog keluar, tetapi sesetengah data setempat tidak dapat dialih keluar daripada peranti ini.",

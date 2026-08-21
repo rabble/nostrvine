@@ -6348,11 +6348,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return '你的用户名 $username 已被永久释放，但我们没能完成账号删除。再次点删除以完成。';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '同时永久放弃 $username';
   }
@@ -6382,9 +6377,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
-
-  @override
-  String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

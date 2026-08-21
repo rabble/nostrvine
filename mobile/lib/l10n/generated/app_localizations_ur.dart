@@ -6712,11 +6712,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کا صارف نام نہیں چھوڑا جا سکا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔ دوبارہ کوشش کریں، یا آپشن ان چیک کریں۔';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'آپ کا صارف نام $username مستقل طور پر چھوڑ دیا گیا ہے، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ مکمل کرنے کے لیے حذف کریں پر دوبارہ ٹیپ کریں۔';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '$username بھی مستقل طور پر چھوڑ دیں';
   }
@@ -6748,10 +6743,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'تمام مواد حذف کریں';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

@@ -6687,11 +6687,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Tên người dùng $username của bạn đã được nhả vĩnh viễn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Chạm Xóa lần nữa để hoàn tất.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Cũng từ bỏ vĩnh viễn $username';
   }
@@ -6724,10 +6719,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

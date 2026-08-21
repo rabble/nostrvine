@@ -6761,11 +6761,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ma-release ang username mo. Hindi na-delete ang account mo. Subukan ulit, o alisin ang check sa option.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Permanenteng na-release ang username mong $username, pero hindi namin natapos ang pag-delete ng account mo. I-tap ulit ang Burahin para matapos.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Isuko na rin nang permanente ang $username';
   }
@@ -6797,10 +6792,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Burahin Lahat ng Content';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Hindi namin natapos ang pag-delete ng account mo. Subukan ulit.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

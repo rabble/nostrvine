@@ -6663,11 +6663,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'تم تحرير اسم المستخدم $username نهائيًا، لكن تعذّر علينا إكمال حذف حسابك. اضغط «حذف» مرّة أخرى للإنهاء.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'تخلَّ نهائيًا أيضًا عن $username';
   }
@@ -6700,10 +6695,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

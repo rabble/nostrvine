@@ -6706,11 +6706,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte frigöra ditt användarnamn. Ditt konto raderades inte. Försök igen eller avmarkera alternativet.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Ditt användarnamn $username har frigetts permanent, men vi kunde inte slutföra raderingen av ditt konto. Tryck på Radera igen för att slutföra.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Ge även permanent upp $username';
   }
@@ -6742,10 +6737,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Ta bort allt innehåll';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Vi kunde inte slutföra raderingen av ditt konto. Försök igen.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

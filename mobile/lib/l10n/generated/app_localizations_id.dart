@@ -6642,11 +6642,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak bisa melepaskan username-mu. Akunmu tidak jadi dihapus. Coba lagi, atau hapus centang pada opsinya.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Username-mu $username sudah dilepaskan permanen, tapi kami tidak bisa menyelesaikan penghapusan akunmu. Ketuk Hapus lagi untuk menyelesaikan.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Lepaskan juga $username secara permanen';
   }
@@ -6678,10 +6673,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Hapus Semua Konten';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Kami tidak bisa menyelesaikan penghapusan akunmu. Coba lagi.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

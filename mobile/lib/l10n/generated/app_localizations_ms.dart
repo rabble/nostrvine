@@ -6725,11 +6725,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat melepaskan nama pengguna anda. Akaun anda tidak dipadam. Cuba lagi, atau nyah tanda pilihan itu.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Nama pengguna anda $username telah dilepaskan secara kekal, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Ketik Padam sekali lagi untuk melengkapkannya.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Juga serahkan $username secara kekal';
   }
@@ -6761,10 +6756,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Padam Semua Kandungan';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

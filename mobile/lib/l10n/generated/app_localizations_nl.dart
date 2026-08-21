@@ -6741,11 +6741,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je gebruikersnaam kon niet worden vrijgegeven. Je account is niet verwijderd. Probeer het opnieuw of vink de optie uit.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Je gebruikersnaam $username is definitief vrijgegeven, maar we konden je account niet volledig verwijderen. Tik nogmaals op Verwijderen om af te ronden.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Geef $username ook definitief op';
   }
@@ -6777,10 +6772,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Alle inhoud verwijderen';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

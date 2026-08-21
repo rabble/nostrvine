@@ -6777,11 +6777,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo liberar tu nombre de usuario. Tu cuenta no fue eliminada. Probá de nuevo o desmarcá la opción.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Tu nombre de usuario $username quedó liberado permanentemente, pero no pudimos terminar de eliminar tu cuenta. Tocá Eliminar de nuevo para terminar.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'También renunciar a $username para siempre';
   }
@@ -6815,10 +6810,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deleteAccountDeleteAllContentButton =>
       'Eliminar todo el contenido';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'No pudimos terminar de eliminar tu cuenta. Probá de nuevo.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

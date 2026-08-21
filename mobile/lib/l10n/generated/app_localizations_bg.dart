@@ -6782,11 +6782,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да освободим потребителското ти име. Акаунтът ти не беше изтрит. Опитай пак или махни отметката от опцията.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Потребителското ти име $username е окончателно освободено, но не успяхме да довършим изтриването на акаунта ти. Натисни Изтрий отново, за да завършиш.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Също окончателно се откажи от $username';
   }
@@ -6819,10 +6814,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

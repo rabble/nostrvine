@@ -6872,11 +6872,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się zwolnić twojej nazwy użytkownika. Twoje konto nie zostało usunięte. Spróbuj ponownie albo odznacz tę opcję.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'Twoja nazwa użytkownika $username została trwale zwolniona, ale nie udało się dokończyć usuwania konta. Dotknij Usuń ponownie, aby dokończyć.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return 'Zrezygnuj też trwale z $username';
   }
@@ -6909,10 +6904,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Usuń wszystkie treści';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Nie udało się dokończyć usuwania konta. Spróbuj ponownie.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

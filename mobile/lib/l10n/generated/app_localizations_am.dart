@@ -6567,11 +6567,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'የተጠቃሚ ስምዎን ማስለቀቅ አልተቻለም። መለያዎ አልተሰረዘም። እንደገና ይሞክሩ፣ ወይም አማራጩን ያስወግዱ።';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'የተጠቃሚ ስምዎ $username በቋሚነት ተለቋል፣ ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ ሰርዝ የሚለውን እንደገና ይንኩ።';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '$usernameንም እንዲሁ በቋሚነት ይተው';
   }
@@ -6602,10 +6597,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

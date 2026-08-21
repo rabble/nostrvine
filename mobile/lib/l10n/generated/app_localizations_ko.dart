@@ -6395,11 +6395,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '사용자명을 해제하지 못했어요. 계정은 삭제되지 않았어요. 다시 시도하거나 옵션 선택을 해제해주세요.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return '사용자명 $username는 영구적으로 해제됐지만, 계정 삭제를 완료하지 못했어요. 삭제를 다시 탭해서 마무리해주세요.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '$username도 영구적으로 포기하기';
   }
@@ -6429,9 +6424,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
-
-  @override
-  String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

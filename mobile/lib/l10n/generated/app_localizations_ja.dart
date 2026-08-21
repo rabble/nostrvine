@@ -6376,11 +6376,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'ユーザー名を解放できなかったよ。アカウントは削除されていないよ。もう一回試すか、オプションのチェックを外してね。';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return 'ユーザー名 $username は完全に解放されたよ。でもアカウントの削除を完了できなかった。もう一回「削除」をタップして完了してね。';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '$username も完全に手放す';
   }
@@ -6410,9 +6405,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'すべてのコンテンツを削除';
-
-  @override
-  String get deleteAccountDeletionIncomplete => 'アカウントの削除を完了できなかったよ。もう一回試してね。';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';

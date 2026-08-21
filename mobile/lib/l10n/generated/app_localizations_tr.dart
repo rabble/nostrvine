@@ -6641,11 +6641,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kullanıcı adın serbest bırakılamadı. Hesabın silinmedi. Tekrar dene ya da seçeneğin işaretini kaldır.';
 
   @override
-  String deleteAccountBurnUsernameReleased(String username) {
-    return '$username kullanıcı adın kalıcı olarak serbest bırakıldı ama hesabının silinmesi tamamlanamadı. Bitirmek için tekrar Sil\'e dokun.';
-  }
-
-  @override
   String deleteAccountBurnUsernameToggle(String username) {
     return '$username adından da kalıcı olarak vazgeç';
   }
@@ -6677,10 +6672,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';
-
-  @override
-  String get deleteAccountDeletionIncomplete =>
-      'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
 
   @override
   String get accountDeletionRecoveryTitle => 'Finish deleting your account';
