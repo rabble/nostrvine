@@ -16,7 +16,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart' show FrameCallback;
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -912,25 +911,27 @@ StartupCoordinator createStartupCoordinatorForTesting(
   return _createStartupCoordinator(container);
 }
 
-/// Registers the Dart updater before startup can render either the normal app
-/// or the database-bootstrap failure app.
+/// Starts the Dart updater before startup can render either the normal app or
+/// the database-bootstrap failure app.
 ///
-/// The updater's synchronous FFI availability probe remains off the startup
-/// path: construction and all update work begin only after the first frame.
+/// The work begins here rather than on the first frame, so a Dart-side startup
+/// failure anywhere between this call and `runApp` still gets its patch — which
+/// is the launch a patch most often exists to repair. The cost is the updater's
+/// synchronous FFI availability probe: upstream defers it because a concurrent
+/// caller can block on the Rust config lock, and the only such caller is
+/// Shorebird's native auto-update thread, which `shorebird.yaml` disables.
+///
+/// A crash before this line, or a native crash before Dart runs, is still
+/// uncovered; nothing in Dart can reach those.
 @visibleForTesting
-void registerShorebirdStartupUpdate({
+void startShorebirdStartupUpdate({
   required SharedPreferences preferences,
-  required void Function(FrameCallback callback) addPostFrameCallback,
   ShorebirdUpdater Function() updaterFactory = ShorebirdUpdater.new,
   ShorebirdTrackUpdate updateSubscribedTrack =
       updateShorebirdFromSubscribedTrack,
 }) {
-  addPostFrameCallback((_) {
-    final updater = updaterFactory();
-    unawaited(
-      updateSubscribedTrack(updater: updater, preferences: preferences),
-    );
-  });
+  final updater = updaterFactory();
+  unawaited(updateSubscribedTrack(updater: updater, preferences: preferences));
 }
 
 Future<void> _startOpenVineApp() async {
@@ -1276,13 +1277,12 @@ Future<void> _startOpenVineApp() async {
   // Load package info for version checking (non-blocking, fast).
   final packageInfo = await PackageInfo.fromPlatform();
 
-  // This registration must precede database bootstrap. That bootstrap can
-  // render its own failure app and return early; the failure app still needs
-  // the updater so a broken patch can receive a rollback or replacement.
+  // This must precede database bootstrap. That bootstrap can render its own
+  // failure app and return early; the failure app still needs the updater so a
+  // broken patch can receive a rollback or replacement.
   ShorebirdUpdater? startupShorebirdUpdater;
-  registerShorebirdStartupUpdate(
+  startShorebirdStartupUpdate(
     preferences: sharedPreferences,
-    addPostFrameCallback: WidgetsBinding.instance.addPostFrameCallback,
     updaterFactory: () => startupShorebirdUpdater ??= ShorebirdUpdater(),
   );
 

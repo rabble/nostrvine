@@ -1,4 +1,3 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
@@ -32,17 +31,15 @@ class _FakeUpdater implements ShorebirdUpdater {
 
 void main() {
   test(
-    'registers the Shorebird track update for the first rendered app',
+    'starts the Shorebird track update without waiting for a frame',
     () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();
-      FrameCallback? callback;
       var updaterCreations = 0;
       var updateCalls = 0;
 
-      app.registerShorebirdStartupUpdate(
+      app.startShorebirdStartupUpdate(
         preferences: preferences,
-        addPostFrameCallback: (value) => callback = value,
         updaterFactory: () {
           updaterCreations++;
           return _FakeUpdater();
@@ -53,17 +50,39 @@ void main() {
             },
       );
 
-      expect(callback, isNotNull);
-      expect(updaterCreations, 0);
-      expect(updateCalls, 0);
-
-      callback!(Duration.zero);
+      // No frame is rendered anywhere in this test. Startup calls this ~236
+      // lines before `runApp`, so anything that only ran on the first frame
+      // was stranded by a Dart-side failure in between — the launch a patch
+      // most often exists to repair.
       await Future<void>.delayed(Duration.zero);
 
       expect(updaterCreations, 1);
       expect(updateCalls, 1);
     },
   );
+
+  test('constructs the updater exactly once for the whole startup', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    ShorebirdUpdater? shared;
+    var updaterCreations = 0;
+
+    app.startShorebirdStartupUpdate(
+      preferences: preferences,
+      updaterFactory: () {
+        updaterCreations++;
+        return shared ??= _FakeUpdater();
+      },
+      updateSubscribedTrack:
+          ({required updater, required preferences}) async {},
+    );
+
+    // The synchronous FFI probe in the real constructor is the cost of moving
+    // this off the first frame, so build provenance must reuse this instance
+    // rather than pay it twice.
+    expect(updaterCreations, 1);
+    expect(shared, isNotNull);
+  });
 
   test('does not report expected Shorebird update failures', () async {
     SharedPreferences.setMockInitialValues({});

@@ -80,8 +80,9 @@ Codemagic run. Their build numbers can differ too: the APK uses
 available Play build number.
 
 Shorebird's native `auto_update` is disabled because it always checks `stable`
-and would race the staged-patch validation relaunch. The app replaces it after
-the first frame: ordinary installations check `stable`, while a tester who has
+and would race the staged-patch validation relaunch. The app replaces it during
+startup, before `runApp`, so a Dart-side failure mid-launch does not strand the
+check: ordinary installations check `stable`, while a tester who has
 downloaded a staged patch stays subscribed to `staging` until they explicitly
 return to stable updates in Developer Options.
 `shorebird_code_push` is a runtime dependency. Startup also records patch availability and the current
