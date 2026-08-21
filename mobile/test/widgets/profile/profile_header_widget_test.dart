@@ -636,6 +636,33 @@ void main() {
       expect(find.text(l10n.commonClose), findsOneWidget);
     });
 
+    testWidgets('hides the OG Beta Tester chit behind the team checkmark', (
+      tester,
+    ) async {
+      // 15 of the 18 checkmark-bearing pubkeys are also on the beta roster,
+      // so this is the default state for Divine team accounts rather than an
+      // edge case. Without the guard the header renders two explainer
+      // buttons side by side.
+      final dualPubkey = kDivineTeamPubkeys.firstWhere(
+        isOgBetaTesterPubkey,
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: dualPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Team Member',
+            pubkey: dualPubkey,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpecialProfileCheckmark), findsOneWidget);
+      expect(find.byType(OgBetaBadge), findsNothing);
+    });
+
     testWidgets('hides the OG Beta Tester chit on a vanished account', (
       tester,
     ) async {
