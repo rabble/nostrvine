@@ -45,6 +45,11 @@ const _recoverableAttemptWithoutUsername = AccountDeletionAttempt(
   status: AccountDeletionAttemptStatus.recoverable,
 );
 
+const _completedAttemptWithoutUsername = AccountDeletionAttempt(
+  id: 'attempt-id',
+  status: AccountDeletionAttemptStatus.completed,
+);
+
 const _pubkeyHex =
     '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
 
@@ -931,6 +936,16 @@ void main() {
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenAnswer((_) async => _recoverableAttemptWithoutUsername);
+      when(
+        () => recoveryRepository.submit(
+          attemptId: any(named: 'attemptId'),
+          vanishEventId: any(named: 'vanishEventId'),
+        ),
+      ).thenAnswer((_) async => _completedAttemptWithoutUsername);
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -948,9 +963,15 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
+
+      // The attempt is still opened — it is what makes the deletion
+      // resumable — but it must not name the handle the user kept.
+      verify(() => recoveryRepository.prepare(username: null)).called(1);
+      verifyNever(() => recoveryRepository.prepare(username: 'alice'));
     });
 
     testWidgets('opted-in burn aborts when recovery repository is null', (
