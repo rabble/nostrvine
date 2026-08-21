@@ -15,6 +15,7 @@ import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -2160,6 +2161,121 @@ void main() {
           reason: 'a corrupt sibling draft must not block audio cleanup',
         );
       });
+
+      test('keeps audio a saved sound still points at', () async {
+        // Importing audio from the Library still writes it under whichever
+        // draft was open (`draft_audio_imports/<draftId>/`), so deleting that
+        // draft would otherwise reclaim a file My Sounds depends on. Unlike a
+        // stale path, a deleted file cannot be healed on load (#7977).
+        final audio = writeAudio(
+          p.join('draft_audio_imports', 'draft_autosave', 'imported.m4a'),
+        );
+        SavedSoundsService.resetLegacyMigrationClaimForTesting();
+        SharedPreferences.setMockInitialValues({});
+        final preferences = await SharedPreferences.getInstance();
+        await SavedSoundsService(
+          preferences,
+          documentsPath: documentsPath,
+        ).saveSound(
+          AudioEvent.fromLocalImport(
+            id: 'local_import_saved',
+            filePath: audio.path,
+            createdAt: 1700000000,
+            title: 'Saved sound',
+            mimeType: 'audio/mp4',
+          ),
+        );
+        final guardedService = DraftStorageService(
+          draftsDao: database.draftsDao,
+          clipsDao: database.clipsDao,
+          preferences: preferences,
+        );
+        final draft = draftWithAudio(
+          id: 'draft_autosave',
+          audioPath: audio.path,
+          audioId: 'local_import_saved',
+        );
+        await guardedService.saveDraft(draft);
+
+        await guardedService.deleteDraft(draft.id);
+
+        expect(
+          audio.existsSync(),
+          isTrue,
+          reason: 'a file My Sounds still references must survive the delete',
+        );
+      });
+
+      test('deletes audio no saved sound points at', () async {
+        final audio = writeAudio(
+          p.join('draft_audio_imports', 'draft_unsaved', 'imported.m4a'),
+        );
+        SavedSoundsService.resetLegacyMigrationClaimForTesting();
+        SharedPreferences.setMockInitialValues({});
+        final guardedService = DraftStorageService(
+          draftsDao: database.draftsDao,
+          clipsDao: database.clipsDao,
+          preferences: await SharedPreferences.getInstance(),
+        );
+        final draft = draftWithAudio(
+          id: 'draft_unsaved',
+          audioPath: audio.path,
+          audioId: 'local_import_unsaved',
+        );
+        await guardedService.saveDraft(draft);
+
+        await guardedService.deleteDraft(draft.id);
+
+        expect(
+          audio.existsSync(),
+          isFalse,
+          reason: 'the saved-sound guard must not keep every audio file alive',
+        );
+      });
+
+      test(
+        'keeps audio a saved sound points at when all drafts are cleared',
+        () async {
+          final audio = writeAudio(
+            p.join('draft_audio_imports', 'draft_cleared', 'imported.m4a'),
+          );
+          SavedSoundsService.resetLegacyMigrationClaimForTesting();
+          SharedPreferences.setMockInitialValues({});
+          final preferences = await SharedPreferences.getInstance();
+          await SavedSoundsService(
+            preferences,
+            documentsPath: documentsPath,
+          ).saveSound(
+            AudioEvent.fromLocalImport(
+              id: 'local_import_saved_clear',
+              filePath: audio.path,
+              createdAt: 1700000000,
+              title: 'Saved sound',
+              mimeType: 'audio/mp4',
+            ),
+          );
+          final guardedService = DraftStorageService(
+            draftsDao: database.draftsDao,
+            clipsDao: database.clipsDao,
+            preferences: preferences,
+          );
+          await guardedService.saveDraft(
+            draftWithAudio(
+              id: 'draft_cleared',
+              audioPath: audio.path,
+              audioId: 'local_import_saved_clear',
+            ),
+          );
+
+          await guardedService.clearAllDrafts();
+
+          expect(
+            audio.existsSync(),
+            isTrue,
+            reason: 'My Sounds survives a clear-all, so its audio must too',
+          );
+        },
+      );
 
       test('deletes audio files when all drafts are cleared', () async {
         final audio = writeAudio(

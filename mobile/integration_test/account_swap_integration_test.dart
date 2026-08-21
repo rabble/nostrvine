@@ -73,6 +73,7 @@ void main() {
       sharedPreferences: prefs,
       switchController: controller,
       appVersion: 'test',
+      documentsPath: '/documents',
     );
 
     // Create two real local-key identities in a setup container. Guarded

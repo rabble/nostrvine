@@ -139,6 +139,7 @@ import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/expected_network_error.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
@@ -1394,6 +1395,11 @@ Future<void> _startOpenVineApp() async {
   // in-app review gate reads. Both are best-effort and fall back to safe
   // defaults on web/desktop/unsupported native shells (#6296).
   final installSource = await const InstallSourceService().resolve();
+
+  // Resolved once here so synchronous readers can rebase persisted absolute
+  // paths without awaiting: iOS rewrites the container path on every app
+  // update, and the plugin lookup behind it is a Future.
+  final documentsPath = await getDocumentsPath();
   await AppEngagementStore(
     sharedPreferences: sharedPreferences,
   ).recordSession();
@@ -1403,6 +1409,7 @@ Future<void> _startOpenVineApp() async {
     sharedPreferences: sharedPreferences,
     switchController: accountSwitchController,
     appVersion: packageInfo.version,
+    documentsPath: documentsPath,
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,

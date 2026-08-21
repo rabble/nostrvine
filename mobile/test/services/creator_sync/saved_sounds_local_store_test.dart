@@ -3,6 +3,7 @@
 
 import 'package:creator_sync/creator_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/services/creator_sync/saved_sounds_local_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,6 +34,37 @@ void main() {
     test('readAll is empty for a fresh account', () async {
       expect(await store.readAll(), isEmpty);
     });
+
+    test(
+      'readAll publishes the stored audio path, not the resolved one',
+      () async {
+        const container = '/var/mobile/Containers/Data/Application/OLD';
+        const relativePath = 'draft_audio_imports/draft_autosave/imported.m4a';
+        final imported = SavedSoundsService(
+          await SharedPreferences.getInstance(),
+          pubkeyHex: pubkey,
+          documentsPath: container,
+        );
+        await imported.saveSound(
+          AudioEvent.fromLocalImport(
+            id: 'local_import_1',
+            filePath: '$container/$relativePath',
+            createdAt: 1700000000,
+            title: 'Imported sound',
+            mimeType: 'audio/mp4',
+          ),
+        );
+
+        final body = (await SavedSoundsLocalStore(imported).readAll().then(
+          (all) => all['local_import_1'],
+        ))!;
+
+        // The reconciler hashes this body to decide whether to republish. iOS
+        // rewrites the container path on every app update, so a resolved path
+        // here would republish the sound after every update for no user edit.
+        expect((body['audio']! as Map)['url'], relativePath);
+      },
+    );
 
     test('readAll keys sounds by their full untruncated id', () async {
       final sound = buildSavedSound(id: 'c' * 64);

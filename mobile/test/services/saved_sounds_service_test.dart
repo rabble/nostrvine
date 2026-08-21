@@ -35,6 +35,17 @@ AudioEvent _sound({
   );
 }
 
+AudioEvent _importedSound({
+  required String id,
+  required String filePath,
+}) => AudioEvent.fromLocalImport(
+  id: id,
+  filePath: filePath,
+  createdAt: 1700000000,
+  title: 'Imported sound',
+  mimeType: 'audio/mp4',
+);
+
 void main() {
   group(SavedSoundsService, () {
     late SharedPreferences sharedPreferences;
@@ -464,6 +475,235 @@ void main() {
           );
         },
       );
+    });
+
+    group('draft-local audio paths', () {
+      // The container UUID iOS rewrites on every app update.
+      const oldContainer = '/var/mobile/Containers/Data/Application/OLD';
+      const newContainer = '/var/mobile/Containers/Data/Application/NEW';
+      const relativePath = 'draft_audio_imports/draft_autosave/imported.m4a';
+
+      test(
+        'persists an imported sound relative to the documents directory',
+        () async {
+          final service = SavedSoundsService(
+            sharedPreferences,
+            documentsPath: oldContainer,
+          );
+
+          await service.saveSound(
+            _importedSound(
+              id: 'local_import_1',
+              filePath: '$oldContainer/$relativePath',
+            ),
+          );
+
+          expect(
+            sharedPreferences.getString('saved_reusable_sounds_anon'),
+            contains(relativePath),
+            reason: 'the stored path must survive a container rewrite',
+          );
+          expect(
+            sharedPreferences.getString('saved_reusable_sounds_anon'),
+            isNot(contains(oldContainer)),
+          );
+        },
+      );
+
+      test(
+        'plays back from the current container after an app update',
+        () async {
+          await SavedSoundsService(
+            sharedPreferences,
+            documentsPath: oldContainer,
+          ).saveSound(
+            _importedSound(
+              id: 'local_import_1',
+              filePath: '$oldContainer/$relativePath',
+            ),
+          );
+
+          // The next launch resolves a different documents directory.
+          final afterUpdate = SavedSoundsService(
+            sharedPreferences,
+            documentsPath: newContainer,
+          );
+
+          expect(
+            afterUpdate.loadSounds().single.url,
+            '$newContainer/$relativePath',
+          );
+        },
+      );
+
+      test('heals a sound saved before paths were stored portably', () async {
+        // Written by a build that persisted the absolute path verbatim.
+        sharedPreferences.setString(
+          'saved_reusable_sounds_anon',
+          jsonEncode([
+            _importedSound(
+              id: 'local_import_1',
+              filePath: '$oldContainer/$relativePath',
+            ).toJson(),
+          ]),
+        );
+
+        final service = SavedSoundsService(
+          sharedPreferences,
+          documentsPath: newContainer,
+        );
+
+        expect(service.loadSounds().single.url, '$newContainer/$relativePath');
+      });
+
+      test('leaves a published sound url alone', () async {
+        // A remote url that happens to carry an audio-root segment: without
+        // the draft-local gate it would be truncated on save and rebased
+        // under the documents directory on load, turning a playable url into
+        // a dangling path.
+        const remoteUrl =
+            'https://cdn.example.com/voice_over_recordings/take.m4a';
+        final published = _sound(id: 'published').copyWith(url: remoteUrl);
+
+        final service = SavedSoundsService(
+          sharedPreferences,
+          documentsPath: newContainer,
+        );
+        await service.saveSound(published);
+
+        expect(service.loadSounds().single.url, remoteUrl);
+        expect(
+          sharedPreferences.getString('saved_reusable_sounds_anon'),
+          contains(remoteUrl),
+        );
+      });
+
+      test(
+        'hands the stored path to callers that opt out of resolving',
+        () async {
+          final service = SavedSoundsService(
+            sharedPreferences,
+            documentsPath: oldContainer,
+          );
+          await service.saveSound(
+            _importedSound(
+              id: 'local_import_1',
+              filePath: '$oldContainer/$relativePath',
+            ),
+          );
+
+          expect(
+            service.loadSavedSounds(resolveLocalPaths: false).single.audio.url,
+            relativePath,
+          );
+        },
+      );
+
+      test('keeps the stored path stable across a container rewrite', () async {
+        await SavedSoundsService(
+          sharedPreferences,
+          documentsPath: oldContainer,
+        ).saveSound(
+          _importedSound(
+            id: 'local_import_1',
+            filePath: '$oldContainer/$relativePath',
+          ),
+        );
+        final before = sharedPreferences.getString(
+          'saved_reusable_sounds_anon',
+        );
+
+        // Loading and rewriting on a later launch must not bake the new
+        // container into storage — cross-device sync hashes this body, and a
+        // path that moves every app update republishes itself forever.
+        final afterUpdate = SavedSoundsService(
+          sharedPreferences,
+          documentsPath: newContainer,
+        );
+        await afterUpdate.saveSound(_sound(id: 'other'));
+
+        expect(
+          sharedPreferences.getString('saved_reusable_sounds_anon'),
+          contains(relativePath),
+        );
+        expect(
+          sharedPreferences.getString('saved_reusable_sounds_anon'),
+          isNot(contains(newContainer)),
+        );
+        expect(before, isNot(contains(newContainer)));
+      });
+    });
+
+    group('referencedLocalAudioFilenames', () {
+      final pubkey = 'f' * 64;
+
+      test(
+        'collects local audio basenames from every account bucket',
+        () async {
+          await SavedSoundsService(
+            sharedPreferences,
+            documentsPath: '/documents',
+          ).saveSound(
+            _importedSound(
+              id: 'local_import_anon',
+              filePath: '/documents/draft_audio_imports/d1/anon.m4a',
+            ),
+          );
+          await SavedSoundsService(
+            sharedPreferences,
+            pubkeyHex: pubkey,
+            documentsPath: '/documents',
+          ).saveSound(
+            _importedSound(
+              id: 'local_import_account',
+              filePath: '/documents/draft_audio_imports/d2/account.m4a',
+            ),
+          );
+
+          expect(
+            SavedSoundsService.referencedLocalAudioFilenames(sharedPreferences),
+            {'anon.m4a', 'account.m4a'},
+          );
+        },
+      );
+
+      test('reads the pre-namespacing legacy bucket too', () {
+        sharedPreferences.setString(
+          'saved_reusable_sounds',
+          jsonEncode([
+            _importedSound(
+              id: 'local_import_legacy',
+              filePath: 'draft_audio_imports/d3/legacy.m4a',
+            ).toJson(),
+          ]),
+        );
+
+        expect(
+          SavedSoundsService.referencedLocalAudioFilenames(sharedPreferences),
+          {'legacy.m4a'},
+        );
+      });
+
+      test('ignores published sounds and unrelated keys', () async {
+        await SavedSoundsService(sharedPreferences).saveSound(
+          _sound(id: 'published'),
+        );
+        await sharedPreferences.setString('vine_drafts', 'not a sound bucket');
+
+        expect(
+          SavedSoundsService.referencedLocalAudioFilenames(sharedPreferences),
+          isEmpty,
+        );
+      });
+
+      test('skips a bucket this build cannot decode', () {
+        sharedPreferences.setString('saved_reusable_sounds_anon', 'not json');
+
+        expect(
+          SavedSoundsService.referencedLocalAudioFilenames(sharedPreferences),
+          isEmpty,
+        );
+      });
     });
   });
 }

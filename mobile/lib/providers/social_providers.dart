@@ -684,6 +684,9 @@ DraftStorageService draftStorageService(Ref ref) {
     draftsDao: db.draftsDao,
     clipsDao: db.clipsDao,
     ownerPubkey: ownerPubkey,
+    // Deleting a draft reclaims its audio files; My Sounds can point at one of
+    // them, so cleanup has to be able to see the saved sound buckets.
+    preferences: ref.watch(sharedPreferencesProvider),
   );
 }
 
