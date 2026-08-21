@@ -13,7 +13,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOBILE_DIR="$(cd "${SCRIPT_DIR}/../mobile" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
-ANDROID_PACKAGE_ID="co.openvine.app"
 
 # shellcheck source=android_sdk.sh
 source "${SCRIPT_DIR}/android_sdk.sh"
@@ -30,6 +29,12 @@ case "$BUILD_MODE" in
         exit 2
         ;;
 esac
+
+if [[ "$BUILD_MODE" == "debug" ]]; then
+    ANDROID_PACKAGE_ID="co.openvine.app.staging"
+else
+    ANDROID_PACKAGE_ID="co.openvine.app"
+fi
 
 if ! local_stack_has_running_container "$COMPOSE_FILE"; then
     echo "ERROR: Docker stack is not running. Start with: mise run local_up" >&2

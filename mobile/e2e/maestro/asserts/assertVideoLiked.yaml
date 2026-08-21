@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # Like state is only observable through the button's label -- the identifier
 # is constant across both states by design, so there is no id to key on.

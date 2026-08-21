@@ -8,7 +8,7 @@ set -euo pipefail
 # Behavior:
 #  - Boots the requested iOS simulator (override with IOS_SIM_DEVICE)
 #  - Installs mobile/build/ios/iphonesimulator/Runner.app onto it
-#  - Verifies installation using BUNDLE_ID (co.openvine.app)
+#  - Verifies the Debug installation using BUNDLE_ID (co.openvine.app.staging)
 #  - Runs Maestro suite: e2e/maestro/suites/smoke.yaml
 #
 # Build the app first, against STAGING — a PRODUCTION run signs in and writes
@@ -49,7 +49,7 @@ APP_INFO_PLIST="${APP_PATH}/Info.plist"
 # -----------------------------
 IOS_SIM_DEVICE="${IOS_SIM_DEVICE:-iPhone 16 Pro}"
 MAESTRO_CLI="maestro"
-BUNDLE_ID="co.openvine.app"
+BUNDLE_ID="co.openvine.app.staging"
 
 # The official installer drops the binary here and it is not on a
 # non-interactive PATH.

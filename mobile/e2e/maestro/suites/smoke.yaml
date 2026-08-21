@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 name: Divine Smoke regression test
 ---
 # Every social flow is back in, so a dispatched run exercises the whole

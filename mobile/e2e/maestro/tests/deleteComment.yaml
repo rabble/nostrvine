@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # Known limitation: this proves the comment leaves the poster's screen, not
 # that it leaves the relay. Measured against STAGING on 2026-08-10: the app

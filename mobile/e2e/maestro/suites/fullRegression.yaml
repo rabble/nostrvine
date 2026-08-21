@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 name: Divine regression test
 # Account credentials and content fixtures are NOT committed. Supply them at
 # run time. If full-regression CI is restored, it should read them from the

@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # Lip-sync mode, idle: the viewfinder chrome and sound picker are up, and no
 # clip is recorded yet.

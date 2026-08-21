@@ -4,6 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('staging app identity', () {
+    test('shipping extension signing ignores debug-only bundle IDs', () async {
+      final result = await Process.run(
+        'bash',
+        ['scripts/check_ios_extension_signing_contract.sh'],
+        environment: {
+          ...Platform.environment,
+          'IOS_EXTENSION_BUNDLE_IDS': [
+            'co.openvine.app.NotificationServiceExtension',
+            'co.openvine.app.CameraQuickActionWidget',
+          ].join(' '),
+        },
+      );
+
+      expect(result.stderr, isEmpty);
+      expect(result.exitCode, 0, reason: result.stdout as String);
+    });
+
     test('iOS debug build cannot replace the production app', () {
       final project = File(
         'ios/Runner.xcodeproj/project.pbxproj',
@@ -27,10 +44,7 @@ void main() {
           'co.openvine.app.staging.CameraQuickActionWidget;',
         ),
       );
-      expect(
-        project,
-        contains('APP_DISPLAY_NAME = "Divine Staging";'),
-      );
+      expect(project, contains('APP_DISPLAY_NAME = "Divine Staging";'));
       expect(
         File('ios/Runner/Info.plist').readAsStringSync(),
         contains(r'<string>$(APP_DISPLAY_NAME)</string>'),
@@ -96,6 +110,23 @@ void main() {
         contains('kDebugMode ? androidStaging : android'),
       );
       expect(firebaseOptions, contains('kDebugMode ? iosStaging : ios'));
+    });
+
+    test('Maestro debug flows target the staging app identity', () {
+      final flowFiles = Directory('e2e/maestro')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.yaml'));
+
+      expect(flowFiles, isNotEmpty);
+      for (final file in flowFiles) {
+        final appIdLines = file.readAsLinesSync().where(
+          (line) => line.startsWith('appId:'),
+        );
+        for (final line in appIdLines) {
+          expect(line, 'appId: co.openvine.app.staging', reason: file.path);
+        }
+      }
     });
   });
 }

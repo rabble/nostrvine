@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #- assertVisible: ⚠️ Final Confirmation
 #- assertVisible: "To confirm permanent deletion of ALL your content from Nostr relays, type:"

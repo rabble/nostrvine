@@ -411,7 +411,7 @@ awkward, because the per-app override does not survive the suite:
 
 ```bash
 # Android 13+, per app, without touching the system language:
-adb shell cmd locale set-app-locales co.openvine.app --locales en-US
+adb shell cmd locale set-app-locales co.openvine.app.staging --locales en-US
 ```
 
 **`launchApp: clearState` wipes that again.** It runs `pm clear`, which drops
