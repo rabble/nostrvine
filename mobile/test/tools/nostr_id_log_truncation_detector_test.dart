@@ -424,6 +424,45 @@ void report(String privateKey) {
         );
       });
 
+      test('a secret aliased through a local is still caught', () {
+        // `final backup = nsec;` renames the value, and the rule only ever
+        // sees the local's own name — so without alias tracking a one-line
+        // assignment launders the secret straight past a security guard.
+        final sites = scan(r'''
+void report(String nsec) {
+  final backup = nsec;
+  Log.info('leaked $backup');
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.identifier, 'nsec');
+        expect(sites.single.how, 'secret-in-log');
+      });
+
+      test('predicate-named booleans are allowed, values are not', () {
+        // `canExportLocalNsec` and `hasPrivateKey` are real booleans in this
+        // repo (auth_service.dart), and logging one is the same non-value
+        // status expression as `account.nsec != null`. Matching on a trailing
+        // secret word alone failed CI on both. `clientNsec` has no predicate
+        // prefix and is a value, so it must still fail.
+        expect(
+          scan(r'''
+void report(bool canExportLocalNsec, bool hasPrivateKey, bool usesSigningKey) {
+  Log.info('$canExportLocalNsec $hasPrivateKey $usesSigningKey');
+}
+'''),
+          isEmpty,
+        );
+
+        final sites = scan(r'''
+void report(String clientNsec, String privateKey) {
+  Log.info('$clientNsec $privateKey');
+}
+''');
+        expect(sites.map((s) => s.identifier), ['clientNsec', 'privateKey']);
+      });
+
       test('a boolean secret-presence check is allowed', () {
         expect(
           scan(r'''

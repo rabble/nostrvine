@@ -57,8 +57,14 @@
 // -----------
 // Names such as nsec, ncryptsec, privateKey and signingKey are checked
 // separately from public identifiers. Direct interpolation and shortening are
-// rejected; non-value status expressions such as `account.nsec != null` stay
-// allowed because they disclose no key material.
+// rejected, as is a one-hop alias (`final backup = nsec;`), which otherwise
+// launders the value past a rule that only sees the local's own name.
+//
+// What stays allowed is anything that discloses no key material: a status
+// expression such as `account.nsec != null`, and equally a variable spelling
+// of one — `canExportLocalNsec` and `hasPrivateKey` are both booleans in this
+// repo. Matching is by SUFFIX, so compound secrets (`rawPrivateKey`) are
+// caught, with a predicate-prefix exclusion keeping the booleans out.
 //
 // Limits, stated plainly
 // ----------------------
@@ -429,7 +435,8 @@ bool isIdentifierName(String name) {
   final bare = name.startsWith('_') ? name.substring(1) : name;
   if (bare.isEmpty) return false;
   if (_identifierLexicon.contains(bare.toLowerCase())) return true;
-  // Last camelCase segment: index of the final uppercase run start.
+  // Last camelCase segment: index of the final uppercase run start. This is
+  // what reaches `eventId` and `giftWrapId` without enumerating them.
   var cut = -1;
   for (var i = bare.length - 1; i > 0; i--) {
     final c = bare.codeUnitAt(i);
@@ -442,11 +449,57 @@ bool isIdentifierName(String name) {
   return _identifierLexicon.contains(bare.substring(cut).toLowerCase());
 }
 
+/// Prefixes that make a name a PREDICATE rather than a value.
+///
+/// `canExportLocalNsec` and `hasPrivateKey` are both real booleans in this repo
+/// (auth_service.dart:396 and its caller), and logging one is the "non-value
+/// status expression" the secret rule explicitly means to allow — the same
+/// thing `account.nsec != null` is, spelled as a variable. Without this, both
+/// fail CI on correct code.
+const _predicatePrefixes = {
+  'allow',
+  'allows',
+  'can',
+  'contains',
+  'does',
+  'has',
+  'is',
+  'must',
+  'needs',
+  'requires',
+  'should',
+  'supports',
+  'use',
+  'uses',
+  'was',
+  'will',
+};
+
+/// True when [name] names a credential rather than a public identifier.
+///
+/// Suffix matching, not the whole-or-last-segment rule used for public ids:
+/// a secret is routinely carried in a compound name (`rawPrivateKey`,
+/// `ephemeralPrivateKey`), and both of those end in the generic segment `Key`,
+/// so last-segment matching would miss every one of them.
 bool isSecretName(String name) {
+  if (_hasPredicatePrefix(name)) return false;
   final bare = name.startsWith('_') ? name.substring(1) : name;
   if (bare.isEmpty) return false;
   final lower = bare.toLowerCase();
   return _secretLexicon.any(lower.endsWith);
+}
+
+/// True when [name] starts with a [_predicatePrefixes] word followed by an
+/// uppercase letter — `hasPrivateKey` yes, `hashOfKey` no.
+bool _hasPredicatePrefix(String name) {
+  final bare = name.startsWith('_') ? name.substring(1) : name;
+  for (final prefix in _predicatePrefixes) {
+    if (bare.length <= prefix.length) continue;
+    if (!bare.toLowerCase().startsWith(prefix)) continue;
+    final next = bare.codeUnitAt(prefix.length);
+    if (next >= 0x41 && next <= 0x5A) return true;
+  }
+  return false;
 }
 
 /// The identifier name an expression ultimately reads, or null.
@@ -662,6 +715,18 @@ class _ShortenedLocalCollector extends RecursiveAstVisitor<void> {
   void visitVariableDeclaration(VariableDeclaration node) {
     if (!_isVisible(node)) return;
     final initializer = node.initializer;
+    // A secret aliased to a differently-named local and then logged —
+    // `final backup = nsec;` — otherwise launders past the secret rule, which
+    // only ever sees the local's own name.
+    final aliased = _rootIdentifierName(initializer);
+    if (aliased != null && isSecretName(aliased)) {
+      locals[node.name.lexeme] = _Hit(
+        offset: node.offset,
+        identifier: aliased,
+        how: 'secret-in-log',
+      );
+      return;
+    }
     if (initializer != null) {
       // Probe the whole initializer: the shortening is often inside a
       // conditional guard, e.g. `x.length > 8 ? x.substring(0, 8) : x`.
