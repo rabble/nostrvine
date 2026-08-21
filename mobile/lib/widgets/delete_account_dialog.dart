@@ -470,6 +470,10 @@ Future<void> executeAccountDeletion({
   // The sheet's own route, captured so dismissal can target exactly this
   // sheet: `VineBottomSheet.show` hands back the result future, not the route.
   ModalRoute<void>? progressSheetRoute;
+  // Set once the sheet has left the navigator, whoever took it down. Before
+  // the sheet's first build there is no route to target, and this is then the
+  // only way to tell "not shown yet" from "already gone".
+  var progressSheetClosed = false;
 
   unawaited(
     VineBottomSheet.show<void>(
@@ -491,7 +495,7 @@ Future<void> executeAccountDeletion({
         progressSheetRoute = ModalRoute.of<void>(sheetContext);
         return BlocProvider.value(value: cubit, child: child);
       },
-    ),
+    ).whenComplete(() => progressSheetClosed = true),
   );
 
   // Track if the progress sheet was dismissed to avoid double-popping.
@@ -503,8 +507,11 @@ Future<void> executeAccountDeletion({
     final route = progressSheetRoute;
     if (route == null) {
       // The sheet has not had its first build yet, so no frame has run since
-      // it was pushed and nothing can have moved it: it is still on top.
-      rootNavigator.pop();
+      // it was pushed and nothing can have moved it: it is still on top —
+      // unless it never made it onto the navigator, or left again before it
+      // could build. Popping blindly then removes someone else's route, which
+      // is the failure this whole function exists to avoid.
+      if (!progressSheetClosed) rootNavigator.pop();
       return;
     }
     // Once built, dismiss by identity rather than popping whatever sits on
