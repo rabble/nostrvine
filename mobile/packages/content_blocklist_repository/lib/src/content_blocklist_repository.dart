@@ -1187,8 +1187,19 @@ class ContentBlocklistRepository {
       _mutualMuteSubscriptionId =
           'mutual-mute-${DateTime.now().millisecondsSinceEpoch}';
 
-      // Listen to the stream
-      subscription.listen(_handleMuteListEvent);
+      // Listen to the stream. A relay that refuses the REQ surfaces a stream
+      // error; without onError it would escape to the zone as an uncaught
+      // async error, because the try/catch here only covers the setup.
+      subscription.listen(
+        _handleMuteListEvent,
+        onError: (Object error) {
+          Log.warning(
+            'Mutual mute subscription ended: $error',
+            name: 'ContentBlocklistRepository',
+            category: LogCategory.system,
+          );
+        },
+      );
 
       Log.info(
         'Mutual mute subscription created: $_mutualMuteSubscriptionId',
@@ -1262,7 +1273,18 @@ class ContentBlocklistRepository {
       // Others' block lists that include our pubkey.
       final othersFilter = Filter(kinds: const [30000])..p = [ourPubkey];
 
-      nostrService.subscribe([othersFilter]).listen(_handleBlockListEvent);
+      nostrService
+          .subscribe([othersFilter])
+          .listen(
+            _handleBlockListEvent,
+            onError: (Object error) {
+              Log.warning(
+                'Block list subscription ended: $error',
+                name: 'ContentBlocklistRepository',
+                category: LogCategory.system,
+              );
+            },
+          );
 
       _blockListSyncStarted = true;
       _blockListSyncClient = nostrService;

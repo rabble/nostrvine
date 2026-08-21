@@ -318,6 +318,16 @@ class SubscribedListVideoCache extends ChangeNotifier {
         name: 'SubscribedListVideoCache',
         category: LogCategory.video,
       );
+    } on RelaySubscriptionRefusedException catch (e) {
+      // Every relay refused the REQ. Keep whatever arrived before that; the
+      // caller runs from an unawaited microtask, so rethrowing here would
+      // reach the zone as an uncaught async error.
+      Log.warning(
+        'Relay refused list video fetch (${e.reason}) - '
+        'processed ${seenIds.length} events',
+        name: 'SubscribedListVideoCache',
+        category: LogCategory.video,
+      );
     }
   }
 }

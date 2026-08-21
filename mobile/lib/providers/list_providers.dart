@@ -4,7 +4,8 @@
 import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_client/nostr_client.dart' show NostrClient;
+import 'package:nostr_client/nostr_client.dart'
+    show NostrClient, RelaySubscriptionRefusedException;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -246,9 +247,18 @@ Stream<List<CuratedList>> publicListsContainingVideo(
   // Yield an initial value to avoid hanging if the stream is empty
   yield const <CuratedList>[];
 
-  // Stream events from Nostr relays, accumulating as they arrive
+  // Stream events from Nostr relays, accumulating as they arrive. A refusal
+  // from every relay ends the read; keep what already arrived.
   await for (final CuratedList list
-      in curatedListStream ?? const Stream.empty()) {
+      in curatedListStream?.handleError(
+            (Object error) => Log.warning(
+              '📋 Relay refused public list stream: $error',
+              name: 'PublicListsContainingVideo',
+              category: LogCategory.video,
+            ),
+            test: (error) => error is RelaySubscriptionRefusedException,
+          ) ??
+          const Stream.empty()) {
     if (!seenIds.contains(list.id)) {
       seenIds.add(list.id);
       accumulated.add(list);
@@ -481,7 +491,18 @@ Stream<List<VideoEvent>> _curatedListVideoEvents({
     if (nostrClient == null) return;
 
     if (filters.isNotEmpty) {
-      final eventStream = nostrClient.subscribe(filters, closeOnEose: true);
+      // A refusal from every relay closes the read early. Log it and keep the
+      // videos already resolved rather than failing the whole provider.
+      final eventStream = nostrClient
+          .subscribe(filters, closeOnEose: true)
+          .handleError(
+            (Object error) => Log.warning(
+              '📋 Relay refused video fetch: $error',
+              name: 'CuratedListVideoEvents',
+              category: LogCategory.video,
+            ),
+            test: (error) => error is RelaySubscriptionRefusedException,
+          );
       final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {
@@ -704,7 +725,18 @@ Stream<List<VideoEvent>> _videoEventsByIds({
     if (nostrClient == null) return;
 
     if (filters.isNotEmpty) {
-      final eventStream = nostrClient.subscribe(filters, closeOnEose: true);
+      // A refusal from every relay closes the read early. Log it and keep the
+      // videos already resolved rather than failing the whole provider.
+      final eventStream = nostrClient
+          .subscribe(filters, closeOnEose: true)
+          .handleError(
+            (Object error) => Log.warning(
+              '📋 Relay refused video fetch: $error',
+              name: 'VideoEventsByIds',
+              category: LogCategory.video,
+            ),
+            test: (error) => error is RelaySubscriptionRefusedException,
+          );
       final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {

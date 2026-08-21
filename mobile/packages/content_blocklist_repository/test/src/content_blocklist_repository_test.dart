@@ -2154,6 +2154,37 @@ void main() {
       expect(service.blockedPubkeysForAccount(ourPubkey), isEmpty);
     });
 
+    test(
+      'a refused relay subscription does not become an uncaught error',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final service = ContentBlocklistRepository(prefs: prefs);
+        final mockClient = _MockNostrClient();
+        when(() => mockClient.subscribe(any())).thenAnswer(
+          (_) => Stream<Event>.error(
+            const RelaySubscriptionRefusedException(
+              'error: too many subscriptions',
+            ),
+          ),
+        );
+
+        // Both syncs listen without awaiting. Without an onError handler the
+        // stream error reaches the zone and is reported as a crash.
+        await service.syncMuteListsInBackground(mockClient, ourPubkey);
+        final mockSigner = _MockBlockListSigner();
+        when(() => mockSigner.isAuthenticated).thenReturn(false);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(service.blockedPubkeysForAccount(ourPubkey), isEmpty);
+      },
+    );
+
     test('is empty for the empty pubkey', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final prefs = await SharedPreferences.getInstance();

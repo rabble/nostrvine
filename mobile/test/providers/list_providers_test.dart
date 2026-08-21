@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -330,6 +331,59 @@ void main() {
       verify(
         () => nostrClient.subscribe(any(), closeOnEose: true),
       ).called(1);
+    });
+
+    test('keeps cached videos when every relay refuses the read', () async {
+      final cachedVideo = _video(id: _allowedVideoId, pubkey: _ownerA);
+      final videoEventService = _MockVideoEventService();
+      final nostrClient = _MockNostrClient();
+      when(() => videoEventService.discoveryVideos).thenReturn(const []);
+      when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+      when(() => videoEventService.profileVideos).thenReturn(const []);
+      when(
+        () => videoEventService.getVideoById(_allowedVideoId),
+      ).thenReturn(cachedVideo);
+      when(
+        () => videoEventService.getVideoById(_blockedVideoId),
+      ).thenReturn(null);
+      when(
+        () => videoEventService.shouldHideVideo(cachedVideo),
+      ).thenReturn(false);
+      when(() => nostrClient.subscribe(any(), closeOnEose: true)).thenAnswer(
+        (_) => Stream<Event>.error(
+          const RelaySubscriptionRefusedException(
+            'error: too many subscriptions',
+          ),
+        ),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          nostrServiceProvider.overrideWithValue(nostrClient),
+        ],
+      );
+      addTearDown(container.dispose);
+      final provider = videoEventsByIdsProvider([
+        _allowedVideoId,
+        _blockedVideoId,
+      ]);
+      final states = <AsyncValue<List<VideoEvent>>>[];
+      final subscription = container.listen(
+        provider,
+        (_, next) => states.add(next),
+      );
+      addTearDown(subscription.close);
+
+      await container.read(provider.future);
+      await pumpEventQueue();
+
+      expect(
+        states.where((state) => state.hasError),
+        isEmpty,
+        reason: 'a refused relay read must not fail the provider',
+      );
+      expect(states.last.value?.map((v) => v.id), [_allowedVideoId]);
     });
 
     test(

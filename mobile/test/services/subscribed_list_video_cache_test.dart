@@ -218,6 +218,29 @@ void main() {
         ).called(1);
       });
 
+      test('a refused relay read does not escape syncList', () async {
+        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+        when(
+          () => mockNostrService.subscribe(any(), closeOnEose: true),
+        ).thenAnswer(
+          (_) => Stream<Event>.error(
+            const RelaySubscriptionRefusedException(
+              'error: too many subscriptions',
+            ),
+          ),
+        );
+
+        const missingVideoId =
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+        // syncAllSubscribedLists runs from an unawaited microtask, so an
+        // escaping error would land in the zone as an uncaught async error.
+        await expectLater(
+          cache.syncList('list1', [missingVideoId]),
+          completes,
+        );
+      });
+
       test('separates event IDs from addressable coordinates', () async {
         when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
