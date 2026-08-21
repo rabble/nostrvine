@@ -413,6 +413,32 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     ///
     /// Rotation is decided later, against the loaded asset, in
     /// [directItemSuitsRotation] -- it cannot be read from the URL.
+    /// Whether a clip may skip the composition once its asset is loaded.
+    ///
+    /// The composition rights a rotated track with a layer instruction.
+    /// `AVPlayerItemVideoOutput` hands the pixel buffer over as decoded and
+    /// applies no `preferredTransform`, and the Apple side -- unlike Android --
+    /// sends Dart no rotation to compensate with. HLS is exempt: its renditions
+    /// are upright, and an HLS asset exposes no tracks to inspect anyway.
+    private static func directItemSuitsRotation(
+        _ asset: AVURLAsset,
+        isHls: Bool
+    ) async -> Bool {
+        if isHls { return true }
+        do {
+            guard
+                let track = try await asset.loadTracks(withMediaType: .video).first
+            else { return false }
+            let (naturalSize, transform) = try await track.load(
+                .naturalSize, .preferredTransform
+            )
+            return transform.standardized(for: naturalSize).isEffectivelyIdentity
+        } catch {
+            // Unreadable is not upright; let the composition handle it.
+            return false
+        }
+    }
+
     private static func takesDirectItemPath(_ uri: String) -> Bool {
         if URL(string: uri)?.pathExtension.lowercased() == "m3u8" { return true }
         return !uri.hasPrefix("http")
@@ -464,6 +490,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             [Self.avURLAssetHTTPHeaderFieldsKey: $0]
         }
         let asset = AVURLAsset(url: url, options: assetOptions)
+        let isHls = url.pathExtension.lowercased() == "m3u8"
+        guard await Self.directItemSuitsRotation(asset, isHls: isHls) else {
+            throw CompositionError.directItemNotApplicable
+        }
         let assetDuration = try await asset.load(.duration)
 
         // soleHlsClip guarantees startMs == 0, so the item's timeline is

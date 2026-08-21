@@ -39,7 +39,10 @@ enum LoopSeamProbeVariant {
   /// decoded and would show it on its side.
   rotated('rotated'),
 
-  /// Leave every source alone.
+  /// Play the real source, but still label it.
+  observe('observe'),
+
+  /// Leave every source alone, and show nothing.
   off('off');
 
   const LoopSeamProbeVariant(this.flag);
@@ -63,10 +66,10 @@ abstract final class LoopSeamProbe {
   static const _assetRoot =
       'packages/divine_video_player/assets/loop_seam_probe';
 
-  /// Selected by
-  /// `--dart-define=LOOP_SEAM_PROBE=vine|fixed|rotated|off`.
+  /// Selected by `--dart-define=LOOP_SEAM_PROBE=`
+  /// `vine|fixed|rotated|observe|off`. Defaults to off.
   static final LoopSeamProbeVariant variant = LoopSeamProbeVariant._parse(
-    const String.fromEnvironment('LOOP_SEAM_PROBE', defaultValue: 'vine'),
+    const String.fromEnvironment('LOOP_SEAM_PROBE', defaultValue: 'off'),
   );
 
   /// Replace every clip, not just one known video. See the class docs.
@@ -78,10 +81,14 @@ abstract final class LoopSeamProbe {
   static bool get substitutes =>
       kDebugMode && variant != LoopSeamProbeVariant.off;
 
-  /// Whether the overlay is shown. Deliberately independent of [substitutes]:
-  /// the overlay has to be present in every debug build, or its absence is
-  /// ambiguous between "not substituted" and "overlay broken".
-  static bool get isActive => kDebugMode;
+  /// Whether the overlay is shown.
+  ///
+  /// Independent of [substitutes] so that `observe` labels the real source:
+  /// without that, a missing overlay is ambiguous between "not substituted"
+  /// and "overlay broken", and both happened during this investigation. Off by
+  /// default, because a debug default that rewrites every video is a trap, and
+  /// because widget tests pin the player's tree.
+  static bool get isActive => kDebugMode && variant != LoopSeamProbeVariant.off;
 
   /// Rewrites the clips to the selected fixture.
   ///
@@ -102,6 +109,7 @@ abstract final class LoopSeamProbe {
       LoopSeamProbeVariant.vine => 'loop_editfix_a0.mp4',
       LoopSeamProbeVariant.fixed => 'divine_cdn_fixed.mp4',
       LoopSeamProbeVariant.rotated => 'loop_rotated.mp4',
+      LoopSeamProbeVariant.observe => null,
       LoopSeamProbeVariant.off => null,
     };
     if (asset == null) return (clips: clips, label: real());

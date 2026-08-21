@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
+import 'package:divine_video_player/src/loop_seam_probe.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -113,6 +114,8 @@ class DivineVideoPlayer extends StatelessWidget {
   /// Puts the source that is really playing on screen, so a test run does not
   /// depend on trusting whoever set it up.
   Widget _withProbeBanner(DivineVideoPlayerController ctrl, Widget child) {
+    // Off by default, so the player's tree is exactly what it was.
+    if (!LoopSeamProbe.isActive) return child;
     return Stack(
       fit: StackFit.expand,
       children: [
