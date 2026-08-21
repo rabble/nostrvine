@@ -6429,30 +6429,29 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => '계정 삭제 마무리하기';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      '계정 삭제를 완료하지 못했어요. 사용자명은 그대로 예약돼 있어서 아직 되돌릴 수 있어요.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => '사용자명 되돌리기';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      '삭제 요청을 아직 처리하고 있어요. 이 화면을 나가기 전에 다시 확인해 주세요.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      '사용자명을 아직 되돌리지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
 
   @override
-  String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+  String get accountDeletionUsernameRestored => '사용자명을 되돌렸어요. 계정은 삭제되지 않았어요.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      '삭제 상태를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 최종 확인';

@@ -6678,30 +6678,30 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Hesap silme işlemini tamamla';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Hesabını silme işlemini tamamlayamadık. Kullanıcı adın senin için ayrılmış durumda ve hâlâ geri alınabilir.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Kullanıcı adımı geri al';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Silme isteğin hâlâ işleniyor. Bu ekrandan çıkmadan önce tekrar kontrol et.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Kullanıcı adını henüz geri alamadık. Bağlantını kontrol edip tekrar dene.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Kullanıcı adın geri alındı. Hesabın silinmedi.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Silme durumunu kontrol edemedik. Bağlantını kontrol edip tekrar dene.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';

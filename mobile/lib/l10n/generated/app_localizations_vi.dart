@@ -6725,30 +6725,31 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Hoàn tất xóa tài khoản của bạn';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Bọn mình chưa xóa xong tài khoản của bạn. Tên người dùng vẫn được giữ cho bạn và vẫn có thể lấy lại.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername =>
+      'Lấy lại tên người dùng của mình';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Bọn mình chưa lấy lại được tên người dùng của bạn. Kiểm tra kết nối và thử lại.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Tên người dùng của bạn đã được lấy lại. Tài khoản của bạn chưa bị xóa.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Bọn mình không kiểm tra được trạng thái xóa của bạn. Kiểm tra kết nối và thử lại.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Xác nhận lần cuối';

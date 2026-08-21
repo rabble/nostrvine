@@ -6410,30 +6410,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deleteAccountDeletionIncomplete => 'アカウントの削除を完了できなかったよ。もう一回試してね。';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'アカウントの削除を完了する';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'アカウントの削除を完了できませんでした。ユーザー名はあなたのために確保されていて、まだ元に戻せます。';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'ユーザー名を元に戻す';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      '削除リクエストはまだ処理中です。この画面を離れる前にもう一度確認してください。';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'ユーザー名をまだ元に戻せませんでした。接続を確認してもう一度お試しください。';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'ユーザー名を元に戻しました。アカウントは削除されていません。';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      '削除の状況を確認できませんでした。接続を確認してもう一度お試しください。';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最終確認';

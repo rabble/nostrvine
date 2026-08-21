@@ -6778,30 +6778,32 @@ class AppLocalizationsNl extends AppLocalizations {
       'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle =>
+      'Verwijderen van je account afronden';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'We konden je account niet volledig verwijderen. Je gebruikersnaam is voor je gereserveerd en kan nog worden teruggezet.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername =>
+      'Mijn gebruikersnaam terugzetten';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Je verwijderverzoek wordt nog verwerkt. Controleer het opnieuw voordat je dit scherm verlaat.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'We konden je gebruikersnaam nog niet terugzetten. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Je gebruikersnaam is teruggezet. Je account is niet verwijderd.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'We konden de status van je verwijdering niet controleren. Controleer je verbinding en probeer het opnieuw.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Laatste bevestiging';

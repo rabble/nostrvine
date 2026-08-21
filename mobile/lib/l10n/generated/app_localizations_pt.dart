@@ -6800,30 +6800,30 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não conseguimos concluir a exclusão da sua conta. Tente novamente.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Concluir a exclusão da sua conta';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Não conseguimos concluir a exclusão da sua conta. Seu nome de usuário está reservado para você e ainda pode ser recuperado.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Recuperar meu nome de usuário';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Seu pedido de exclusão ainda está sendo processado. Confira de novo antes de sair desta tela.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Ainda não conseguimos recuperar seu nome de usuário. Verifique sua conexão e tente de novo.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Seu nome de usuário foi recuperado. Sua conta não foi excluída.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Não conseguimos verificar o status da sua exclusão. Verifique sua conexão e tente de novo.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmação final';

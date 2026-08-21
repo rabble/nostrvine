@@ -6798,30 +6798,31 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi namin natapos ang pag-delete ng account mo. Subukan ulit.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle =>
+      'Tapusin ang pag-delete ng account mo';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Hindi namin natapos ang pag-delete ng account mo. Naka-reserve pa rin sa iyo ang username mo at puwede pang maibalik.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Ibalik ang username ko';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Pinoproseso pa ang delete request mo. Tingnan ulit bago ka umalis sa screen na ito.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Hindi pa namin naibabalik ang username mo. Tingnan ang koneksyon mo at subukan ulit.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Naibalik na ang username mo. Hindi na-delete ang account mo.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Hindi namin ma-check ang status ng pag-delete mo. Tingnan ang koneksyon mo at subukan ulit.';
 
   @override
   String get deleteAccountFinalConfirmationTitle =>

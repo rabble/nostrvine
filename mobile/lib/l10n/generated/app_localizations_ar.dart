@@ -6701,30 +6701,30 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'إكمال حذف حسابك';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'تعذّر علينا إكمال حذف حسابك. اسم المستخدم الخاص بك محجوز لك ولا يزال من الممكن استعادته.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'استعادة اسم المستخدم';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'لا يزال طلب الحذف قيد المعالجة. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'تعذّرت استعادة اسم المستخدم حتى الآن. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'تمّت استعادة اسم المستخدم. لم يُحذف حسابك.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'تعذّر التحقق من حالة الحذف. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ التأكيد النهائي';

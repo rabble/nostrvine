@@ -160,6 +160,41 @@ void main() {
       }
     });
 
+    test('deletion recovery copy is localized for every locale', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        for (final key in _deletionRecoveryKeys) {
+          final value = arb[key];
+
+          expect(
+            value,
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define a non-empty $key message',
+          );
+          expect(
+            value,
+            isNot(template[key]),
+            reason:
+                '${file.path} must not fall back to English for the '
+                'account-deletion recovery gate',
+          );
+        }
+      }
+    });
+
     test('CSAM report reason does not collapse into child safety copy', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
@@ -497,14 +532,6 @@ const _knownUntranslatedDebt = <String>{
   // Restricted-account deletion guidance tracked in #7879.
   'shareMenuDeleteFailedAccountRestricted',
   'deleteAccountAccountRestricted',
-  // Cross-repo deletion recovery copy tracked in #7813.
-  'accountDeletionFinishingBody',
-  'accountDeletionRecoveryBody',
-  'accountDeletionRecoveryFailed',
-  'accountDeletionRecoveryStatusFailed',
-  'accountDeletionRecoveryTitle',
-  'accountDeletionRestoreUsername',
-  'accountDeletionUsernameRestored',
   // Translation pass tracked in #7632.
   'analyticsConnectionIssue',
   'analyticsDiagnosticsFailedSources',
@@ -542,6 +569,19 @@ const _profileBadgeFallbackSemanticLabelEnglishLocales = <String>{
   'app_fr.arb',
   'app_it.arb',
   'app_nl.arb',
+};
+
+/// Copy on the full-screen gate a user lands on when a deletion was
+/// interrupted. An English fallback here strands a non-English reader on the
+/// one screen they cannot navigate away from.
+const _deletionRecoveryKeys = <String>{
+  'accountDeletionRecoveryTitle',
+  'accountDeletionRecoveryBody',
+  'accountDeletionRestoreUsername',
+  'accountDeletionFinishingBody',
+  'accountDeletionRecoveryFailed',
+  'accountDeletionUsernameRestored',
+  'accountDeletionRecoveryStatusFailed',
 };
 
 const _signatureVerificationKeys = <String>{

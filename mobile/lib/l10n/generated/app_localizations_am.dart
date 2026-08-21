@@ -6603,30 +6603,30 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'የመለያዎን መሰረዝ ያጠናቅቁ';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። የተጠቃሚ ስምዎ ለእርስዎ ተይዞልዎታል፣ አሁንም መመለስ ይቻላል።';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'የተጠቃሚ ስሜን ይመልሱ';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'የመሰረዝ ጥያቄዎ አሁንም እየተሰራ ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'የተጠቃሚ ስምዎን ገና መመለስ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'የተጠቃሚ ስምዎ ተመልሷል። መለያዎ አልተሰረዘም።';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'የመሰረዙን ሁኔታ ማረጋገጥ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ የመጨረሻ ማረጋገጫ';

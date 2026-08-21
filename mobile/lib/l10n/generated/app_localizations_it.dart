@@ -6820,30 +6820,31 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non siamo riusciti a completare l\'eliminazione del tuo account. Riprova.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle =>
+      'Completa l\'eliminazione del tuo account';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Non siamo riusciti a completare l\'eliminazione del tuo account. Il tuo nome utente è riservato a te e può ancora essere ripristinato.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Ripristina il mio nome utente';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'La tua richiesta di eliminazione è ancora in corso. Controlla di nuovo prima di uscire da questa schermata.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Non siamo ancora riusciti a ripristinare il tuo nome utente. Controlla la connessione e riprova.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Il tuo nome utente è stato ripristinato. Il tuo account non è stato eliminato.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Non siamo riusciti a controllare lo stato dell\'eliminazione. Controlla la connessione e riprova.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Conferma finale';

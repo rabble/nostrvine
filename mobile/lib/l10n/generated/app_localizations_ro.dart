@@ -6921,30 +6921,31 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Finalizează ștergerea contului';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Nu am putut finaliza ștergerea contului tău. Numele tău de utilizator îți este rezervat și încă poate fi recuperat.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername =>
+      'Recuperează-mi numele de utilizator';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Cererea ta de ștergere este încă în curs. Verifică din nou înainte să părăsești acest ecran.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Nu am putut încă recupera numele tău de utilizator. Verifică conexiunea și încearcă din nou.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Numele tău de utilizator a fost recuperat. Contul tău nu a fost șters.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Nu am putut verifica starea ștergerii. Verifică conexiunea și încearcă din nou.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmare finală';

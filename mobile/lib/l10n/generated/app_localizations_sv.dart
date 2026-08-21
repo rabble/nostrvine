@@ -6743,30 +6743,30 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vi kunde inte slutföra raderingen av ditt konto. Försök igen.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Slutför raderingen av ditt konto';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Vi kunde inte slutföra raderingen av ditt konto. Ditt användarnamn är reserverat åt dig och kan fortfarande återställas.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Återställ mitt användarnamn';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Din raderingsbegäran behandlas fortfarande. Kolla igen innan du lämnar den här skärmen.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Vi kunde inte återställa ditt användarnamn än. Kontrollera anslutningen och försök igen.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Ditt användarnamn är återställt. Ditt konto raderades inte.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Vi kunde inte kontrollera status för raderingen. Kontrollera anslutningen och försök igen.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Slutgiltig bekräftelse';

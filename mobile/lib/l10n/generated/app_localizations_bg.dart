@@ -6820,30 +6820,30 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Довърши изтриването на акаунта';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Не успяхме да довършим изтриването на акаунта ти. Потребителското ти име е запазено за теб и още може да бъде върнато.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Върни потребителското ми име';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Заявката ти за изтриване още се обработва. Провери пак, преди да напуснеш този екран.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Още не успяхме да върнем потребителското ти име. Провери връзката си и опитай пак.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Потребителското ти име е върнато. Акаунтът ти не беше изтрит.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Не успяхме да проверим състоянието на изтриването. Провери връзката си и опитай пак.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Последно потвърждение';

@@ -6679,30 +6679,30 @@ class AppLocalizationsId extends AppLocalizations {
       'Kami tidak bisa menyelesaikan penghapusan akunmu. Coba lagi.';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => 'Selesaikan penghapusan akunmu';
 
   @override
   String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+      'Kami tidak bisa menyelesaikan penghapusan akunmu. Username-mu masih dipesan untukmu dan masih bisa dikembalikan.';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => 'Kembalikan username saya';
 
   @override
   String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+      'Permintaan penghapusanmu masih diproses. Cek lagi sebelum kamu meninggalkan layar ini.';
 
   @override
   String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+      'Kami belum bisa mengembalikan username-mu. Periksa koneksimu dan coba lagi.';
 
   @override
   String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+      'Username-mu sudah dikembalikan. Akunmu tidak jadi dihapus.';
 
   @override
   String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+      'Kami tidak bisa memeriksa status penghapusanmu. Periksa koneksimu dan coba lagi.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Konfirmasi Terakhir';

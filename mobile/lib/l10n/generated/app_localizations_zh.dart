@@ -6382,30 +6382,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
 
   @override
-  String get accountDeletionRecoveryTitle => 'Finish deleting your account';
+  String get accountDeletionRecoveryTitle => '完成账号删除';
 
   @override
-  String get accountDeletionRecoveryBody =>
-      'We couldn\'t finish deleting your account. Your username is reserved for you and can still be restored.';
+  String get accountDeletionRecoveryBody => '我们没能完成账号删除。你的用户名仍为你保留，还可以找回。';
 
   @override
-  String get accountDeletionRestoreUsername => 'Restore my username';
+  String get accountDeletionRestoreUsername => '找回我的用户名';
 
   @override
-  String get accountDeletionFinishingBody =>
-      'Your deletion request is still being processed. Check again before leaving this screen.';
+  String get accountDeletionFinishingBody => '你的删除请求仍在处理中。离开此页面前请再确认一次。';
 
   @override
-  String get accountDeletionRecoveryFailed =>
-      'We couldn\'t restore your username yet. Check your connection and try again.';
+  String get accountDeletionRecoveryFailed => '我们还没能找回你的用户名。请检查网络连接后重试。';
 
   @override
-  String get accountDeletionUsernameRestored =>
-      'Your username is restored. Your account was not deleted.';
+  String get accountDeletionUsernameRestored => '你的用户名已找回，你的账号未被删除。';
 
   @override
-  String get accountDeletionRecoveryStatusFailed =>
-      'We couldn\'t check your deletion status. Check your connection and try again.';
+  String get accountDeletionRecoveryStatusFailed => '我们无法查询你的删除状态。请检查网络连接后重试。';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最终确认';
