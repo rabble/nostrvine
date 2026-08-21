@@ -6723,8 +6723,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get accountDeletionStartFailed =>
-      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
+  String get deleteAccountDeletionIncomplete =>
+      'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';

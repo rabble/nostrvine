@@ -506,7 +506,7 @@ Future<void> executeAccountDeletion({
   final accountChangedAfterDeletionText =
       context.l10n.deleteAccountAccountChangedAfterDeletion;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
-  final startDeletionFailedText = context.l10n.accountDeletionStartFailed;
+  final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final relayConfirmationFailedText =
       context.l10n.deleteAccountRelayConfirmationFailed;
   final handleLabel = ownedUsername != null
@@ -551,7 +551,9 @@ Future<void> executeAccountDeletion({
                             ? (usernamePrepared
                                   ? usernameRestoredText
                                   : attemptCancelledText)
-                            : recoveryFailedText;
+                            : (usernamePrepared
+                                  ? recoveryFailedText
+                                  : deletionIncompleteText);
                         ScaffoldMessenger.of(context).showSnackBar(
                           DivineSnackbarContainer.snackBar(
                             text,
@@ -564,11 +566,17 @@ Future<void> executeAccountDeletion({
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           DivineSnackbarContainer.snackBar(
-                            recoveryFailedText,
+                            usernamePrepared
+                                ? recoveryFailedText
+                                : deletionIncompleteText,
                             error: true,
                           ),
                         );
-                        announceOutcome(recoveryFailedText);
+                        announceOutcome(
+                          usernamePrepared
+                              ? recoveryFailedText
+                              : deletionIncompleteText,
+                        );
                       }),
                 );
               }
@@ -698,12 +706,12 @@ Future<void> executeAccountDeletion({
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              burnUsername ? burnUsernameFailedText : startDeletionFailedText,
+              burnUsername ? burnUsernameFailedText : deletionIncompleteText,
               error: true,
             ),
           );
           announceOutcome(
-            burnUsername ? burnUsernameFailedText : startDeletionFailedText,
+            burnUsername ? burnUsernameFailedText : deletionIncompleteText,
           );
         }
         return;

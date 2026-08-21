@@ -6648,8 +6648,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get accountDeletionStartFailed =>
-      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
+  String get deleteAccountDeletionIncomplete =>
+      'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ የመጨረሻ ማረጋገጫ';

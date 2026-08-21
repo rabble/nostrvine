@@ -6967,8 +6967,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get accountDeletionStartFailed =>
-      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
+  String get deleteAccountDeletionIncomplete =>
+      'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmare finală';

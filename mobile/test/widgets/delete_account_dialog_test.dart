@@ -1495,7 +1495,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = _englishL10n();
-      expect(find.text(l10n.accountDeletionStartFailed), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
       expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(

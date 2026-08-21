@@ -11672,11 +11672,11 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get accountDeletionSignOut;
 
-  /// Shown when the durable deletion coordinator is unavailable before any destructive work begins, without falsely referring to a username.
+  /// Neutral error when account deletion could not complete and no claim about username state is safe.
   ///
   /// In en, this message translates to:
-  /// **'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.'**
-  String get accountDeletionStartFailed;
+  /// **'We couldn\'t finish deleting your account. Try again.'**
+  String get deleteAccountDeletionIncomplete;
 
   /// No description provided for @deleteAccountFinalConfirmationTitle.
   ///

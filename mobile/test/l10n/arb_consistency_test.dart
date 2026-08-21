@@ -503,7 +503,6 @@ const _knownUntranslatedDebt = <String>{
   'accountDeletionCancelAttemptBody',
   'accountDeletionRecoveryBodyWithExpiry',
   'accountDeletionSignOut',
-  'accountDeletionStartFailed',
   'accountDeletionTerminalFailureBody',
   // Translation pass tracked in #7632.
   'analyticsConnectionIssue',

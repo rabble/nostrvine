@@ -6771,8 +6771,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get accountDeletionStartFailed =>
-      'We couldn\'t start account deletion. Your account was not deleted. Check your connection and try again.';
+  String get deleteAccountDeletionIncomplete =>
+      'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Xác nhận lần cuối';
