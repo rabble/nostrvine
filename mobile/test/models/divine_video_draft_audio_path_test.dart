@@ -13,6 +13,7 @@ const _newDocs = '/var/mobile/Containers/Data/Application/NEW-UUID/Documents';
 
 const _importedPath = '$_oldDocs/draft_audio_imports/draft_1/song.m4a';
 const _voiceOverPath = '$_oldDocs/voice_over_recordings/take_1.m4a';
+const _extractedPath = '$_oldDocs/extracted_clip_audio/extracted_audio_1.wav';
 
 AudioEvent _localAudio(String id, String path) => AudioEvent.fromLocalImport(
   id: id,
@@ -20,6 +21,18 @@ AudioEvent _localAudio(String id, String path) => AudioEvent.fromLocalImport(
   createdAt: 1700000000,
   title: 'Local audio',
   mimeType: 'audio/mp4',
+  duration: 4,
+);
+
+/// Audio the editor pulled off one of the draft's own clips. Not a local
+/// import: the id marker differs, which is what keeps it out of the reuse and
+/// attribution paths.
+AudioEvent _extractedAudio() => AudioEvent(
+  id: 'local_extracted_1',
+  pubkey: '',
+  createdAt: 1700000000,
+  url: _extractedPath,
+  mimeType: 'audio/wav',
   duration: 4,
 );
 
@@ -52,6 +65,7 @@ DivineVideoDraft _draft() => DivineVideoDraft(
           'audio': [
             _localAudio('local_import_1', _importedPath).toJson(),
             _localAudio('local_import_2', _voiceOverPath).toJson(),
+            _extractedAudio().toJson(),
           ],
         },
       },
@@ -90,6 +104,7 @@ void main() {
         [
           'draft_audio_imports/draft_1/song.m4a',
           'voice_over_recordings/take_1.m4a',
+          'extracted_clip_audio/extracted_audio_1.wav',
         ],
       );
       expect(
@@ -104,6 +119,7 @@ void main() {
       expect(_historyAudioUrls(restored), [
         '$_newDocs/draft_audio_imports/draft_1/song.m4a',
         '$_newDocs/voice_over_recordings/take_1.m4a',
+        '$_newDocs/extracted_clip_audio/extracted_audio_1.wav',
       ]);
       expect(
         _parametersAudioUrl(restored),
@@ -149,6 +165,7 @@ void main() {
       expect(_historyAudioUrls(restored), [
         'draft_audio_imports/draft_1/song.m4a',
         'voice_over_recordings/take_1.m4a',
+        'extracted_clip_audio/extracted_audio_1.wav',
       ]);
       expect(
         _parametersAudioUrl(restored),
@@ -166,6 +183,7 @@ void main() {
       expect(restored.localAudioFilePaths, {
         '$_newDocs/draft_audio_imports/draft_1/song.m4a',
         '$_newDocs/voice_over_recordings/take_1.m4a',
+        '$_newDocs/extracted_clip_audio/extracted_audio_1.wav',
       });
     });
 

@@ -40,6 +40,13 @@ void main() {
       );
     });
 
+    test('strips the container prefix from extracted clip audio', () {
+      expect(
+        toPortableAudioPath('$_oldDocs/extracted_clip_audio/take.wav'),
+        'extracted_clip_audio/take.wav',
+      );
+    });
+
     test('leaves a path outside a known audio directory untouched', () {
       expect(toPortableAudioPath('$_oldDocs/clip.mp4'), '$_oldDocs/clip.mp4');
       expect(toPortableAudioPath(''), '');
@@ -169,6 +176,33 @@ void main() {
 
       expect(_singleAudioUrl(toPortableAudioPaths(json)), remoteUrl);
       expect(_singleAudioUrl(resolveAudioPaths(json, _newDocs)), remoteUrl);
+    });
+
+    test("rewrites audio extracted from one of the draft's own clips", () {
+      // Extracted audio carries its own id marker rather than the import one,
+      // so it is only reached if the gate covers both. Its file used to live
+      // in the temporary directory, where an app update or an iOS purge takes
+      // it regardless of how the path is stored.
+      final json = <String, dynamic>{
+        'meta': {
+          'audio': [
+            _audioJson(
+              '$_oldDocs/extracted_clip_audio/extracted_audio_1.wav',
+              id: 'local_extracted_1',
+            ),
+          ],
+        },
+      };
+
+      final portable = toPortableAudioPaths(json);
+      expect(
+        _singleAudioUrl(portable),
+        'extracted_clip_audio/extracted_audio_1.wav',
+      );
+      expect(
+        _singleAudioUrl(resolveAudioPaths(portable, _newDocs)),
+        '$_newDocs/extracted_clip_audio/extracted_audio_1.wav',
+      );
     });
 
     test('returns the same instance when nothing needs rewriting', () {

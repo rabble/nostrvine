@@ -10,9 +10,24 @@ const String draftAudioImportsDirName = 'draft_audio_imports';
 /// Documents-relative directory holding committed voice-over recordings.
 const String voiceOverRecordingsDirName = 'voice_over_recordings';
 
+/// Documents-relative directory holding audio extracted from a draft's clips.
+///
+/// Extraction writes to the temporary directory for one-shot consumers such as
+/// caption generation, but a track the user drops on the timeline is persisted
+/// into the draft — and the temporary directory is both container-scoped and
+/// purgeable by iOS at any moment, so that copy has to live here instead.
+const String extractedClipAudioDirName = 'extracted_clip_audio';
+
 const Set<String> _audioRootDirNames = {
   draftAudioImportsDirName,
   voiceOverRecordingsDirName,
+  extractedClipAudioDirName,
+};
+
+/// Id prefixes of audio backed by a file this device wrote for a draft.
+const Set<String> _draftLocalMarkers = {
+  AudioEvent.localImportMarker,
+  AudioEvent.localExtractedMarker,
 };
 
 /// Documents-relative form of an absolute draft-local audio [path].
@@ -20,10 +35,10 @@ const Set<String> _audioRootDirNames = {
 /// iOS rewrites the app container path on every app update, so an absolute
 /// audio path baked into a saved draft dangles from then on: the video still
 /// plays — clip paths are persisted as basenames and rejoined on load — while
-/// every sound goes silent. Audio lives in per-draft subdirectories, so unlike
-/// a clip it keeps the whole subpath below the documents directory instead of
-/// just the basename. Paths outside a known audio directory are returned
-/// unchanged.
+/// every sound goes silent. Imported audio lives in per-draft subdirectories,
+/// so unlike a clip it keeps the whole subpath below the documents directory
+/// instead of just the basename. Paths outside a known audio directory are
+/// returned unchanged.
 String toPortableAudioPath(String path) => _belowAudioRoot(path) ?? path;
 
 /// Absolute path for a persisted audio [path], rooted at [documentsPath].
@@ -62,7 +77,7 @@ Map<String, dynamic> resolveAudioPaths(
 /// Matches on the segment name alone, not on whether [path] sits under the
 /// documents directory, so a file placed in a `voice_over_recordings/` folder
 /// anywhere else would also be rebased onto documents on load. Nothing writes
-/// those two names outside the documents directory today.
+/// any of the three names outside the documents directory today.
 String? _belowAudioRoot(String path) {
   if (path.isEmpty) return null;
   final segments = p.split(path);
@@ -97,7 +112,7 @@ Object? _rewriteAudioUrls(
   }
   if (node is! Map) return node;
 
-  final url = _localImportAudioUrl(node);
+  final url = _draftLocalAudioUrl(node);
   if (url != null) {
     final rewritten = transform(url);
     if (rewritten == url) return node;
@@ -120,12 +135,13 @@ Object? _rewriteAudioUrls(
 
 /// The on-disk url of [node] when it is a draft-local audio event, else `null`.
 ///
-/// Mirrors [AudioEvent.isLocalImport] and [AudioEvent.localFilePath] against a
-/// raw map: the persisted tree is walked without deserializing, so a malformed
-/// audio entry is skipped rather than throwing. Keep the predicate in step.
-String? _localImportAudioUrl(Map<Object?, Object?> node) {
+/// Mirrors [AudioEvent.isDraftLocalAudio] and [AudioEvent.localFilePath]
+/// against a raw map: the persisted tree is walked without deserializing, so a
+/// malformed audio entry is skipped rather than throwing. Keep the predicate in
+/// step.
+String? _draftLocalAudioUrl(Map<Object?, Object?> node) {
   final id = node['id'];
-  if (id is! String || !id.startsWith('${AudioEvent.localImportMarker}_')) {
+  if (id is! String || !_draftLocalMarkers.any((m) => id.startsWith('${m}_'))) {
     return null;
   }
   final url = node['url'];
