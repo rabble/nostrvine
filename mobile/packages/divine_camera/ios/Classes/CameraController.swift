@@ -119,12 +119,23 @@ class CameraController: NSObject {
     /// leading silence is the point of measuring both.
     private var recordRequestTime: Date?
     private var lastAudioAttachMs: Double = 0
-    /// Which branch of `attachAudioToSessionIfNeeded()` this recording took,
-    /// and what the shared session looked like on entry. A drifted category
-    /// forces the slow deactivate/reconfigure/activate cycle inline on the
-    /// record tap, which delays the whole recording rather than just audio.
+    /// Which branch the most recent `attachAudioToSessionIfNeeded()` took, and
+    /// what the shared session looked like on entry. A drifted category forces
+    /// the slow deactivate/reconfigure/activate cycle inline on the record tap,
+    /// which delays the whole recording rather than just audio.
+    ///
+    /// Process-wide, not per recording: the deferred pre-warm, the
+    /// interruption-ended handler and `resumePreview()` all attach again and
+    /// can land mid-recording.
     private var lastAudioAttachPath = "unknown"
     private var lastAudioEntryRoute = "unknown"
+    /// The pair above as it stood for *this* recording, snapshotted at the
+    /// record tap next to `lastAudioAttachMs`. Reading the live values at
+    /// stop time would print one attach's path beside another attach's
+    /// duration — a fast record tap on a cold camera is enough, because the
+    /// 1s pre-warm fires while the tap's own attach is still blocking.
+    private var recordingAudioAttachPath = "unknown"
+    private var recordingAudioEntryRoute = "unknown"
     /// Wall clock at which the writer session was anchored, i.e. when capture
     /// actually began. Against `recordRequestTime` this is the tap-to-capture
     /// delay the user experiences as lost leading content.
@@ -2253,6 +2264,8 @@ class CameraController: NSObject {
             let attachStart = Date()
             let audioAttached = self.attachAudioToSessionIfNeeded()
             self.lastAudioAttachMs = Date().timeIntervalSince(attachStart) * 1000
+            self.recordingAudioAttachPath = self.lastAudioAttachPath
+            self.recordingAudioEntryRoute = self.lastAudioEntryRoute
             if audioAttached && self.audioInterrupted {
                 self.audioInterrupted = false
                 DivineCameraLog.shared.info(
@@ -2787,8 +2800,8 @@ class CameraController: NSObject {
                 + "audioTrackStartMs=\(trackStartMs), "
                 + "tapToCaptureMs=\(startDelayMs), "
                 + "attachMs=\(String(format: "%.0f", self.lastAudioAttachMs)), "
-                + "attachPath=\(self.lastAudioAttachPath), "
-                + "entry=[\(self.lastAudioEntryRoute)], "
+                + "attachPath=\(self.recordingAudioAttachPath), "
+                + "entry=[\(self.recordingAudioEntryRoute)], "
                 + "stabilization=\(Self.stabilizationString(from: self.requestedStabilizationMode))",
             name: "DivineCamera.Recording"
         )

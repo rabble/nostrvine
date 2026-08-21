@@ -159,5 +159,31 @@ void main() {
         greaterThan(start.indexOf('self.attachAudioToSessionIfNeeded()')),
       );
     });
+
+    test("pairs attachMs with this recording's own attach path", () {
+      // attachAudioToSessionIfNeeded() also runs from the deferred 1s
+      // pre-warm, the interruption-ended handler and resumePreview(), and
+      // none of the three is gated on isRecording. Reading the process-wide
+      // lastAudio* pair at stop time would print one attach's path beside
+      // another attach's duration -- a record tap on a cold camera is enough,
+      // because the pre-warm fires while the tap's own attach still blocks.
+      final start = _declarationAt(source, 'func startRecording(');
+      final snapshot = start.indexOf(
+        'self.recordingAudioAttachPath = self.lastAudioAttachPath',
+      );
+      final measured = start.indexOf(
+        'lastAudioAttachMs = Date().timeIntervalSince',
+      );
+      expect(snapshot, greaterThan(-1));
+      expect(snapshot, greaterThan(measured));
+      expect(
+        diagnostics,
+        contains(r'attachPath=\(self.recordingAudioAttachPath)'),
+      );
+      expect(
+        diagnostics,
+        contains(r'entry=[\(self.recordingAudioEntryRoute)]'),
+      );
+    });
   });
 }
