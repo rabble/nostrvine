@@ -970,8 +970,12 @@ void main() {
 
       // The attempt is still opened — it is what makes the deletion
       // resumable — but it must not name the handle the user kept.
-      verify(() => recoveryRepository.prepare(username: null)).called(1);
-      verifyNever(() => recoveryRepository.prepare(username: 'alice'));
+      final prepared = verify(
+        () => recoveryRepository.prepare(
+          username: captureAny(named: 'username'),
+        ),
+      ).captured;
+      expect(prepared, equals([null]));
     });
 
     testWidgets('opted-in burn aborts when recovery repository is null', (
