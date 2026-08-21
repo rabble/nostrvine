@@ -113,14 +113,12 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
   /// active rather than the account that produced the event.
   Future<List<PendingProductEvent>> getRetryable({
     required DateTime now,
-    required int maxAttempts,
     required int limit,
     String? ownerPubkey,
   }) async {
     final query = select(pendingProductEvents)
       ..where(
         (table) =>
-            table.attemptCount.isSmallerThanValue(maxAttempts) &
             (table.status.equals(PendingProductEventStatus.pending.name) |
                 table.status.equals(PendingProductEventStatus.failed.name)) &
             (table.nextAttemptAt.isNull() |

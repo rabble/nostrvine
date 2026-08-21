@@ -34,7 +34,6 @@ void main() {
         dao: dao,
         ingestClient: client,
         retryConfig: const ProductEventRetryConfig(
-          maxAttempts: 3,
           initialDelay: Duration(seconds: 1),
         ),
         now: () => DateTime.utc(2026, 8, 20),
@@ -101,7 +100,6 @@ void main() {
       verifyNever(
         () => dao.getRetryable(
           now: any(named: 'now'),
-          maxAttempts: any(named: 'maxAttempts'),
           limit: any(named: 'limit'),
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
@@ -141,14 +139,12 @@ void main() {
         when(
           () => dao.getRetryable(
             now: any(named: 'now'),
-            maxAttempts: any(named: 'maxAttempts'),
             limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => [_row('anonymous')]);
         when(
           () => dao.getRetryable(
             now: any(named: 'now'),
-            maxAttempts: any(named: 'maxAttempts'),
             limit: any(named: 'limit'),
             ownerPubkey: owner,
           ),
@@ -188,7 +184,6 @@ void main() {
         when(
           () => dao.getRetryable(
             now: any(named: 'now'),
-            maxAttempts: any(named: 'maxAttempts'),
             limit: any(named: 'limit'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
@@ -228,11 +223,53 @@ void main() {
       },
     );
 
+    test('a temporary failure remains retryable after many attempts', () async {
+      final row = _row(
+        'event-a',
+        ownerPubkey: owner,
+        attemptCount: 2,
+        status: PendingProductEventStatus.failed,
+      );
+      when(
+        () => dao.getRetryable(
+          now: any(named: 'now'),
+          limit: any(named: 'limit'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((invocation) async {
+        final selected = invocation.namedArguments[#ownerPubkey];
+        return selected == owner ? [row] : <PendingProductEvent>[];
+      });
+      when(() => dao.markPublishing('event-a')).thenAnswer((_) async => true);
+      when(
+        () => client.publishBatch(any(), subjectPubkey: owner),
+      ).thenAnswer(
+        (_) async => const AnalyticsIngestTransientFailure('network_error'),
+      );
+      when(
+        () => dao.markFailed(
+          'event-a',
+          'network_error',
+          nextAttemptAt: any(named: 'nextAttemptAt'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await queue.flush();
+
+      verify(
+        () => dao.markFailed(
+          'event-a',
+          'network_error',
+          nextAttemptAt: DateTime.utc(2026, 8, 20, 0, 0, 4),
+        ),
+      ).called(1);
+      verifyNever(() => dao.markDeadLetter('event-a', any()));
+    });
+
     test('permanent rejection dead-letters the batch', () async {
       when(
         () => dao.getRetryable(
           now: any(named: 'now'),
-          maxAttempts: any(named: 'maxAttempts'),
           limit: any(named: 'limit'),
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
@@ -294,12 +331,18 @@ ProductAnalyticsV2Event _event(String id) {
   );
 }
 
-PendingProductEvent _row(String id, {String? ownerPubkey}) {
+PendingProductEvent _row(
+  String id, {
+  String? ownerPubkey,
+  int attemptCount = 0,
+  PendingProductEventStatus status = PendingProductEventStatus.pending,
+}) {
   return PendingProductEvent(
     id: id,
     eventName: 'content_impression_recorded',
     payloadJson: jsonEncode(_event(id).toJson()),
-    status: PendingProductEventStatus.pending,
+    status: status,
+    attemptCount: attemptCount,
     createdAt: DateTime.utc(2026, 8, 20),
     ownerPubkey: ownerPubkey,
   );

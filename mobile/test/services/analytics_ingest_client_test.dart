@@ -133,7 +133,7 @@ void main() {
     );
   });
 
-  for (final status in [400, 401, 403, 404, 422]) {
+  for (final status in [400, 401, 403, 422]) {
     test('drops permanent HTTP $status responses', () async {
       stubToken(buildToken());
       final client = buildClient(
@@ -148,6 +148,20 @@ void main() {
       expect(result, isA<AnalyticsIngestRejected>());
     });
   }
+
+  test('retries HTTP 404 while the ingest endpoint is unavailable', () async {
+    stubToken(buildToken());
+    final client = buildClient(
+      MockClient((_) async => http.Response('not found', 404)),
+    );
+
+    final result = await client.publishBatch(
+      [event],
+      subjectPubkey: testPubkey,
+    );
+
+    expect(result, isA<AnalyticsIngestTransientFailure>());
+  });
 
   for (final status in [408, 429, 500, 503]) {
     test('retries temporary HTTP $status responses', () async {

@@ -128,7 +128,7 @@ void main() {
       );
       await dao.enqueue(
         makeEvent(
-          id: 'exhausted',
+          id: 'many-attempts',
           status: PendingProductEventStatus.failed,
           attemptCount: 5,
           createdAt: DateTime.utc(2026, 7, 1, 0, 0, 4),
@@ -137,12 +137,36 @@ void main() {
 
       final retryable = await dao.getRetryable(
         now: DateTime.utc(2026, 7, 1, 0, 0, 10),
-        maxAttempts: 5,
         limit: 10,
       );
 
-      expect(retryable.map((event) => event.id), ['failed-old', 'pending-new']);
+      expect(retryable.map((event) => event.id), [
+        'failed-old',
+        'pending-new',
+        'many-attempts',
+      ]);
     });
+
+    test(
+      'temporary failures remain retryable regardless of attempt count',
+      () async {
+        await dao.enqueue(
+          makeEvent(
+            id: 'many-failures',
+            status: PendingProductEventStatus.failed,
+            attemptCount: 100,
+            nextAttemptAt: DateTime.utc(2026, 7),
+          ),
+        );
+
+        final retryable = await dao.getRetryable(
+          now: DateTime.utc(2026, 7, 2),
+          limit: 10,
+        );
+
+        expect(retryable.map((event) => event.id), ['many-failures']);
+      },
+    );
 
     group('owner scoping', () {
       const ownerA =
@@ -162,7 +186,6 @@ void main() {
 
         final retryable = await dao.getRetryable(
           now: DateTime.utc(2026, 7, 2),
-          maxAttempts: 5,
           limit: 10,
           ownerPubkey: ownerA,
         );
@@ -179,7 +202,6 @@ void main() {
 
           final retryable = await dao.getRetryable(
             now: DateTime.utc(2026, 7, 2),
-            maxAttempts: 5,
             limit: 10,
           );
 

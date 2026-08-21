@@ -140,7 +140,7 @@ class AnalyticsIngestClient {
       }
     }
 
-    if (status < 500 && status != 408 && status != 429) {
+    if (status < 500 && status != 404 && status != 408 && status != 429) {
       Log.error(
         'Product analytics ingest rejected ($status)',
         name: _logName,

@@ -9,7 +9,6 @@ import 'package:openvine/services/analytics_ingest_client.dart';
 
 class ProductEventRetryConfig {
   const ProductEventRetryConfig({
-    this.maxAttempts = 5,
     this.batchSize = 25,
     this.initialDelay = const Duration(seconds: 2),
     this.maxDelay = const Duration(minutes: 5),
@@ -18,7 +17,6 @@ class ProductEventRetryConfig {
     this.maxAge = const Duration(days: 7),
   });
 
-  final int maxAttempts;
   final int batchSize;
   final Duration initialDelay;
   final Duration maxDelay;
@@ -128,7 +126,6 @@ class ProductEventQueue {
   Future<void> _flushOwner(String? ownerPubkey) async {
     final rows = await _dao.getRetryable(
       now: _now(),
-      maxAttempts: _retryConfig.maxAttempts,
       limit: _retryConfig.batchSize,
       ownerPubkey: ownerPubkey,
     );
@@ -180,17 +177,13 @@ class ProductEventQueue {
         }
       case AnalyticsIngestTransientFailure(:final reason):
         for (final row in rows) {
-          if (row.attemptCount + 1 >= _retryConfig.maxAttempts) {
-            await _dao.markDeadLetter(row.id, reason);
-          } else {
-            await _dao.markFailed(
-              row.id,
-              reason,
-              nextAttemptAt: _now().add(
-                _retryConfig.backoffFor(row.attemptCount + 1),
-              ),
-            );
-          }
+          await _dao.markFailed(
+            row.id,
+            reason,
+            nextAttemptAt: _now().add(
+              _retryConfig.backoffFor(row.attemptCount + 1),
+            ),
+          );
         }
     }
   }
