@@ -1,22 +1,11 @@
-// ABOUTME: String utility functions for safe operations and formatting
-// ABOUTME: Provides safe substring, compact-number and UTF-16 helpers
+// ABOUTME: String utility functions for formatting and sanitization
+// ABOUTME: Provides compact-number formatting and UTF-16 sanitization
 
 import 'package:count_formatter/count_formatter.dart';
 import 'package:text_sanitizer/text_sanitizer.dart' as text_sanitizer;
 
-/// Utility functions for safe string operations
+/// Utility functions for string formatting and sanitization.
 class StringUtils {
-  /// Safe substring operation that won't throw RangeError
-  /// Returns substring from [start] to [end], handling bounds automatically
-  static String safeSubstring(String str, int start, [int? end]) {
-    if (str.isEmpty) return '';
-
-    final clampedStart = start.clamp(0, str.length);
-    final clampedEnd = (end ?? str.length).clamp(clampedStart, str.length);
-
-    return str.substring(clampedStart, clampedEnd);
-  }
-
   /// Format a number to a compact, locale-aware string.
   ///
   /// Delegates to [CountFormatter.formatCompact] for consistent,
