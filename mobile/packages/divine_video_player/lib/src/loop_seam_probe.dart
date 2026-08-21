@@ -51,7 +51,7 @@ enum LoopSeamProbeVariant {
 /// Substitutes a bundled fixture for the clips the app is about to play.
 abstract final class LoopSeamProbe {
   /// Bumped per test build so the banner names the run on screen.
-  static const testNumber = 18;
+  static const testNumber = 22;
 
   static const _assetRoot =
       'packages/divine_video_player/assets/loop_seam_probe';
@@ -64,23 +64,31 @@ abstract final class LoopSeamProbe {
   /// Replace every clip, not just one known video. See the class docs.
   static const substituteEveryVideo = true;
 
-  /// What the player actually received. Drives the on-screen banner.
-  static final ValueNotifier<String?> banner = ValueNotifier<String?>(null);
-
   static final Map<String, Future<String>> _extracted = {};
 
   /// Whether the probe would rewrite anything at all.
   static bool get isActive => kDebugMode && variant != LoopSeamProbeVariant.off;
 
   /// Rewrites the clips to the selected fixture.
-  static Future<List<VideoClip>> apply(List<VideoClip> clips) async {
-    if (!isActive) return clips;
+  ///
+  /// The label names what this player really got -- the fixture or the real
+  /// source. It is per call, so the overlay marks the individual player rather
+  /// than every player on screen, and it is never null while the probe is on:
+  /// a missing overlay then means the overlay itself is broken, which is a
+  /// different problem from "the fixture did not help".
+  static Future<({List<VideoClip> clips, String? label})> apply(
+    List<VideoClip> clips,
+  ) async {
+    if (!isActive) return (clips: clips, label: null);
+    // Ein fehlendes Overlay waere mehrdeutig -- nicht ersetzt, oder Overlay
+    // kaputt. Deshalb meldet der Probe auch die *echte* Quelle.
+    String real() => 'T$testNumber  ·  ECHT  ·  ${_name(clips)}';
     final asset = switch (variant) {
       LoopSeamProbeVariant.vine => 'loop_editfix_a0.mp4',
       LoopSeamProbeVariant.fixed => 'divine_cdn_fixed.mp4',
       LoopSeamProbeVariant.off => null,
     };
-    if (asset == null) return clips;
+    if (asset == null) return (clips: clips, label: real());
 
     final String path;
     try {
@@ -95,10 +103,20 @@ abstract final class LoopSeamProbe {
         name: 'LoopSeamProbe',
         category: LogCategory.video,
       );
-      return clips;
+      return (clips: clips, label: real());
     }
 
-    return [for (final clip in clips) _substitute(clip, path)];
+    return (
+      clips: [for (final clip in clips) _substitute(clip, path)],
+      label: 'T$testNumber  ·  FIXTURE  ·  $asset',
+    );
+  }
+
+  static String _name(List<VideoClip> clips) {
+    final uri = clips.isEmpty ? '' : clips.first.uri;
+    return uri.startsWith('http')
+        ? Uri.tryParse(uri)?.host ?? uri
+        : uri.split('/').last;
   }
 
   static VideoClip _substitute(VideoClip clip, String path) {
@@ -116,21 +134,6 @@ abstract final class LoopSeamProbe {
       playbackSpeed: clip.playbackSpeed,
       trimToCommonTrackEnd: clip.trimToCommonTrackEnd,
     );
-  }
-
-  /// Keeps [banner] on the clips that are actually being handed over.
-  ///
-  /// Deliberately read from the clip list *after* substitution rather than
-  /// from the intent, so the banner shows the source that really plays even
-  /// when the probe did not fire.
-  static void report(List<VideoClip> clips) {
-    if (!kDebugMode) return;
-    final uri = clips.isEmpty ? null : clips.first.uri;
-    if (uri == null) return;
-    final source = uri.startsWith('http')
-        ? 'CDN ${Uri.tryParse(uri)?.host ?? ''}'
-        : 'LOKAL ${uri.split('/').last}';
-    banner.value = 'T$testNumber  ·  ${variant.flag}  ·  $source';
   }
 
   /// Copies a bundled fixture to a real file, because the native players

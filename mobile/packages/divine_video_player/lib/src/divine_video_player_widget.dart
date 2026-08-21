@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
-import 'package:divine_video_player/src/loop_seam_probe.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -96,10 +95,11 @@ class DivineVideoPlayer extends StatelessWidget {
 
     if (placeholder == null ||
         (!crossFadePlaceholder && ctrl.state.isFirstFrameRendered)) {
-      return _withProbeBanner(surface);
+      return _withProbeBanner(ctrl, surface);
     }
 
     return _withProbeBanner(
+      ctrl,
       Stack(
         fit: .expand,
         children: [
@@ -112,8 +112,7 @@ class DivineVideoPlayer extends StatelessWidget {
 
   /// Puts the source that is really playing on screen, so a test run does not
   /// depend on trusting whoever set it up.
-  Widget _withProbeBanner(Widget child) {
-    if (!LoopSeamProbe.isActive) return child;
+  Widget _withProbeBanner(DivineVideoPlayerController ctrl, Widget child) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -124,11 +123,14 @@ class DivineVideoPlayer extends StatelessWidget {
           right: 0,
           child: IgnorePointer(
             child: ValueListenableBuilder<String?>(
-              valueListenable: LoopSeamProbe.banner,
+              valueListenable: ctrl.loopSeamProbeLabel,
               builder: (context, label, _) {
                 if (label == null) return const SizedBox.shrink();
+                final isFixture = label.contains('FIXTURE');
                 return ColoredBox(
-                  color: const Color(0xCC000000),
+                  color: isFixture
+                      ? const Color(0xE6004D1A)
+                      : const Color(0xE6660000),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -137,10 +139,12 @@ class DivineVideoPlayer extends StatelessWidget {
                     child: Text(
                       label,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF7CFF7C),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        color: isFixture
+                            ? const Color(0xFF7CFF7C)
+                            : const Color(0xFFFFB0B0),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

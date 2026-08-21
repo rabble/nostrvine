@@ -17,6 +17,17 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private var player: AVQueuePlayer?
     private var playerLooper: AVPlayerLooper?
+
+    /// Bereich, den [AVPlayerLooper] wiederholen soll, wenn er kuerzer ist als
+    /// das Item.
+    ///
+    /// Der Direktpfad spielt das Asset unveraendert, kann den gemeinsamen
+    /// Spurenschluss also nicht wie die Composition in eine Zeitspanne
+    /// schneiden. Ohne diesen Bereich laeuft der Loop bis zum Container-Ende
+    /// weiter, und ueber die Strecke, auf der die kuerzere Spur schon
+    /// ausgelaufen ist, steht das Bild -- auf dem Simulator gemessen als 86ms
+    /// Standbild je Runde.
+    private var loopTimeRange: CMTimeRange?
     private var templateItem: AVPlayerItem?
     private var eventSink: FlutterEventSink?
     private var timeObserver: Any?
@@ -457,11 +468,48 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             throw CompositionError.noPlayableVideoTracks
         }
 
+        // Denselben Schnitt wie die Composition: die Wiedergabe endet dort, wo
+        // die kuerzere der beiden Spuren ausgeht, nicht am Container-Ende.
+        // Hier kann er nicht in eine Zeitspanne geschnitten werden -- das Asset
+        // bleibt unveraendert -- also bekommt ihn der Looper als Bereich.
+        var loopEnd = endTime
+        let trimToCommonTrackEnd =
+            (clipMap["trimToCommonTrackEnd"] as? NSNumber)?.boolValue ?? false
+        if trimToCommonTrackEnd {
+            let videoTracks = try await asset.loadTracks(withMediaType: .video)
+            let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+            if let videoTrack = videoTracks.first, let audioTrack = audioTracks.first {
+                do {
+                    let videoRange = try await videoTrack.load(.timeRange)
+                    let audioRange = try await audioTrack.load(.timeRange)
+                    if let commonEnd = boundedCommonTrackEnd(
+                        startTime: .zero,
+                        requestedEnd: endTime,
+                        videoEnd: videoRange.end,
+                        audioEnd: audioRange.end
+                    ) {
+                        loopEnd = CMTimeMinimum(loopEnd, commonEnd)
+                    }
+                } catch {
+                    DivineVideoPlayerLog.shared.warning(
+                        "Player \(playerId) could not read track durations: "
+                            + "\(error.localizedDescription)",
+                        name: "DivineVideoPlayer.Load"
+                    )
+                }
+            }
+        }
+
         let playerItem = AVPlayerItem(asset: asset)
-        if CMTimeCompare(endTime, assetDuration) < 0 {
+        // forwardPlaybackEndTime und der Looper beschreiben dieselbe Grenze auf
+        // zwei Wegen; nur der Looper-Bereich wird beim Wiederholen beachtet.
+        loopTimeRange = CMTimeCompare(loopEnd, assetDuration) < 0
+            ? CMTimeRange(start: .zero, end: loopEnd)
+            : nil
+        if loopTimeRange == nil, CMTimeCompare(endTime, assetDuration) < 0 {
             playerItem.forwardPlaybackEndTime = endTime
         }
-        return (playerItem, [0], [endTime.seconds])
+        return (playerItem, [0], [loopEnd.seconds])
     }
 
     /// Builds a player item backed by an AVMutableComposition of every clip.
@@ -471,6 +519,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         let (composition, videoComposition, offsets, durations, audioMix) =
             try await buildComposition(from: clipsRaw)
 
+        loopTimeRange = nil
         let playerItem = AVPlayerItem(asset: composition)
         // Validate BEFORE assigning. -[AVPlayerItem setVideoComposition:]
         // throws an Objective-C NSInvalidArgumentException on an invalid
@@ -982,7 +1031,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         playerLooper = nil
         player.removeAllItems()
         if isLooping {
-            playerLooper = AVPlayerLooper(player: player, templateItem: item)
+            if let range = loopTimeRange {
+                playerLooper = AVPlayerLooper(
+                    player: player,
+                    templateItem: item,
+                    timeRange: range
+                )
+            } else {
+                playerLooper = AVPlayerLooper(player: player, templateItem: item)
+            }
         } else {
             player.insert(item, after: nil)
         }

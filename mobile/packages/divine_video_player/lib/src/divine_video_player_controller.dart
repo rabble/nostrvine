@@ -409,6 +409,12 @@ class DivineVideoPlayerController {
     _liveControllers.add(this);
   }
 
+  /// Names the bundled fixture this player was handed, or null when it plays
+  /// the real source. Debug-only; see [LoopSeamProbe].
+  final ValueNotifier<String?> loopSeamProbeLabel = ValueNotifier<String?>(
+    null,
+  );
+
   /// Sets a single video source.
   ///
   /// Convenience wrapper around [setClips] for the common single-video
@@ -431,9 +437,11 @@ class DivineVideoPlayerController {
     if (rawClips.isEmpty) {
       throw ArgumentError.value(rawClips, 'clips', 'must not be empty');
     }
-    // Debug-only; a no-op in release and when the probe is off.
-    final clips = await LoopSeamProbe.apply(rawClips);
-    LoopSeamProbe.report(clips);
+    // Debug-only; a no-op in release and when the probe is off. The label is
+    // per player, so the overlay marks exactly the one that got the fixture.
+    final probed = await LoopSeamProbe.apply(rawClips);
+    final clips = probed.clips;
+    loopSeamProbeLabel.value = probed.label;
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
