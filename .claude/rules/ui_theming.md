@@ -296,6 +296,101 @@ Text('Secondary info', style: const TextStyle(color: VineTheme.secondaryText, fo
 
 ---
 
+## Text Fields
+
+Every `TextField` / `TextFormField` / `DivineAuthTextField` sets its input
+traits explicitly. Flutter's defaults — `TextInputType.text`,
+`TextCapitalization.none`, and a blanket `TextInputAction.done` — are rarely
+what the field actually wants, and the damage only shows up on a real device: a
+keyboard with no `@` key, an auto-capitalized email address, a "done" key that
+dead-ends in the middle of a form. No widget test catches any of it, so this
+has to be part of writing the field rather than a later polish pass.
+
+### `textInputAction`: chain the single-line fields, skip the multiline ones
+
+**Single-line fields** form a chain: each one except the last uses
+`TextInputAction.next`, and the last one uses `TextInputAction.done`. A
+single-field form uses `done` — or `search` / `send` when that is the real
+action.
+
+`next` is a promise that focus moves, so wire it up: give each field a
+`FocusNode` and move focus in `onSubmitted` / `onFieldSubmitted`, and let the
+last field's `done` submit. A `next` key that goes nowhere is worse than no
+configuration at all.
+
+**A multiline field is not part of that chain.** Its return key has to insert
+a line break, so it keeps `TextInputAction.newline` — which `EditableText`
+already picks by itself once `keyboardType` is `.multiline`. Never give it
+`next`, and never give it `done`: both replace the return key and cost the user
+the ability to type a second line. So in a form that contains one:
+
+- The single-line field *above* it still uses `next` — focus lands in the
+  multiline field and stops there. That is the intended end of the chain.
+- Fields *after* it start a fresh chain.
+- If the multiline field is last, **no field carries `done`**, and the form is
+  submitted by its button. That is correct — do not force `done` onto the
+  multiline field to complete the pattern.
+
+Name (`next`) → bio (`newline`) → website (`done`) is the shape to aim for.
+
+**When adding a field to an existing screen, re-check the field above it** —
+a form that was correct with one field is wrong the moment it has two.
+
+**Good — two fields, chained:**
+```dart
+DivineAuthTextField(
+  controller: _emailController,
+  focusNode: _emailFocus,
+  keyboardType: .emailAddress,
+  textCapitalization: .none,
+  textInputAction: .next,
+  autocorrect: false,
+  autofillHints: const [AutofillHints.email],
+  onSubmitted: (_) => _passwordFocus.requestFocus(),
+),
+DivineAuthTextField(
+  controller: _passwordController,
+  focusNode: _passwordFocus,
+  obscureText: true,
+  textInputAction: .done,
+  autofillHints: const [AutofillHints.password],
+  onSubmitted: (_) => _submit(),
+),
+```
+
+**Bad — defaults everywhere:**
+```dart
+// Capitalizes and autocorrects the email, and the keyboard offers
+// no way to reach the password field or submit the form.
+DivineAuthTextField(controller: _emailController),
+DivineAuthTextField(controller: _passwordController, obscureText: true),
+```
+
+### `keyboardType` and `textCapitalization`
+
+Pick both from what the field holds:
+
+| Field | `keyboardType` | `textCapitalization` |
+|---|---|---|
+| Email | `.emailAddress` | `.none` |
+| Username, handle, npub, hex key, NIP-05 | `.text` | `.none` |
+| URL, relay address | `.url` | `.none` |
+| Password, invite code | `.text` (+ `obscureText`) | `.none` |
+| One-time code, amount, sat count | `.number` | `.none` |
+| Display name, list title, badge name | `.text` | `.words` |
+| Bio, comment, message, report reason | `.multiline` | `.sentences` |
+
+The `.multiline` row is also the one that keeps `textInputAction: newline` — see
+above.
+
+Turn `autocorrect` off for identifiers — email, username, npub, URL, code.
+Autocorrect on a hex key or a relay URL silently corrupts what the user typed.
+
+Add `autofillHints` wherever the platform can help (email, password, username,
+one-time code). It is one line and removes a whole typing step.
+
+---
+
 ## Widget Structure
 
 ### Page/View Pattern

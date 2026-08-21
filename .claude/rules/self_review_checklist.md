@@ -110,6 +110,14 @@ Design system (check `divine_ui` first — most review nits map here):
 - [ ] Interactive tap targets (`GestureDetector`, `InkWell`, custom) are
   wrapped in `Semantics(button: true, label: ...)`. Decorative images
   use `ExcludeSemantics`. See [`accessibility.md`](accessibility.md).
+- [ ] Every text field sets `keyboardType`, `textCapitalization` and
+  `textInputAction` deliberately. Single-line fields chain: the last one
+  is `.done`, every earlier one `.next` **with a `FocusNode` handoff in
+  `onSubmitted`**. A multiline field is not in the chain — it keeps
+  `newline`, so a form ending in one has no `done` field at all. Plus
+  `autocorrect: false` on identifiers and `autofillHints` where the
+  platform can help. Adding a field means re-checking the one above it.
+  See [`ui_theming.md`](ui_theming.md#text-fields).
 
 Composition and style:
 
