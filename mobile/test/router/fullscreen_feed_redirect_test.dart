@@ -22,15 +22,23 @@ VideoEvent _video(String id) => VideoEvent(
 
 class _RestoredPooledFeedState extends Fake implements GoRouterState {
   _RestoredPooledFeedState(String videoId)
-    : uri = Uri.parse(
-        PooledFullscreenVideoFeedScreen.pathForVideoId(videoId),
-      );
+    : uri = Uri.parse(PooledFullscreenVideoFeedScreen.pathForVideoId(videoId));
 
   @override
   final Uri uri;
 
   @override
   Object? get extra => null;
+}
+
+class _PooledFeedState extends Fake implements GoRouterState {
+  _PooledFeedState(this.extra);
+
+  @override
+  final Object? extra;
+
+  @override
+  Uri get uri => Uri.parse(PooledFullscreenVideoFeedScreen.path);
 }
 
 void main() {
@@ -87,11 +95,38 @@ void main() {
       );
     });
 
+    testWidgets('builder forwards the sponsor disclosure', (tester) async {
+      late Widget built;
+      final args = PooledFullscreenVideoFeedArgs(
+        source: SingleVideoViewSource(_video('1')),
+        feedRepository: StaticFeedRepository(),
+        initialIndex: 0,
+        sponsorName: 'Acme Bikes',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              built = buildPooledFullscreenFeed(
+                context,
+                _PooledFeedState(args),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(built, isA<PooledFullscreenVideoFeedScreen>());
+      expect(
+        (built as PooledFullscreenVideoFeedScreen).sponsorName,
+        'Acme Bikes',
+      );
+    });
+
     testWidgets(
       'builder recovers directly if extra disappears after redirect',
-      (
-        tester,
-      ) async {
+      (tester) async {
         late Widget recovered;
         await tester.pumpWidget(
           MaterialApp(

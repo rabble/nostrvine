@@ -41,6 +41,7 @@ import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
+import 'package:openvine/widgets/video_feed_item/fullscreen_sponsor_disclosure.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
 import 'package:openvine/widgets/video_feed_item/reaction_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
@@ -73,6 +74,7 @@ class PooledFullscreenVideoFeedArgs {
     this.initialVideoId,
     this.initialStableId,
     this.contextTitle,
+    this.sponsorName,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     this.autoOpenComments = false,
@@ -98,6 +100,9 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Optional title for context display.
   final String? contextTitle;
+
+  /// Already sanitized and clamped sponsor; null for non-sponsored feeds.
+  final String? sponsorName;
 
   /// Traffic source for view event analytics.
   final ViewTrafficSource trafficSource;
@@ -176,6 +181,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     this.initialVideoId,
     this.initialStableId,
     this.contextTitle,
+    this.sponsorName,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     this.autoOpenComments = false,
@@ -194,6 +200,9 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final String? initialVideoId;
   final String? initialStableId;
   final String? contextTitle;
+
+  /// Already sanitized and clamped sponsor; null for non-sponsored feeds.
+  final String? sponsorName;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
 
@@ -338,6 +347,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
       ],
       child: FullscreenFeedContent(
         contextTitle: contextTitle,
+        sponsorName: sponsorName,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         autoOpenComments: autoOpenComments,
@@ -359,6 +369,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   @visibleForTesting
   const FullscreenFeedContent({
     this.contextTitle,
+    this.sponsorName,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
     this.autoOpenComments = false,
@@ -370,6 +381,9 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
 
   /// Optional title for context display.
   final String? contextTitle;
+
+  /// Already sanitized and clamped sponsor; null for non-sponsored feeds.
+  final String? sponsorName;
 
   /// Traffic source for view event analytics.
   final ViewTrafficSource trafficSource;
@@ -1013,6 +1027,22 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           ),
                       ],
                     ),
+                    if (widget.sponsorName case final sponsorName?)
+                      PositionedDirectional(
+                        top:
+                            MediaQuery.paddingOf(context).top +
+                            appBar.preferredSize.height +
+                            8,
+                        start: 16,
+                        end: 16,
+                        child: FeedImmersiveChrome(
+                          child: TextFieldTapRegion(
+                            child: FullscreenSponsorDisclosure(
+                              sponsorName: sponsorName,
+                            ),
+                          ),
+                        ),
+                      ),
                     // Full-screen TikTok/IG-style reaction pop, centered over
                     // the reel.
                     if (_reactionEmoji != null)

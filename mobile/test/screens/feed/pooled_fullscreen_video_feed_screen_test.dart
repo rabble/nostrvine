@@ -33,6 +33,7 @@ import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_immersive_cubit.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -40,6 +41,7 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
+import 'package:openvine/widgets/video_feed_item/fullscreen_sponsor_disclosure.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 
@@ -253,6 +255,7 @@ void main() {
 
     Widget buildContent({
       String? contextTitle,
+      String? sponsorName,
       ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
       String? sourceDetail,
       VoidCallback? onBack,
@@ -267,6 +270,7 @@ void main() {
         ],
         child: FullscreenFeedContent(
           contextTitle: contextTitle,
+          sponsorName: sponsorName,
           trafficSource: trafficSource,
           sourceDetail: sourceDetail,
           onBack: onBack,
@@ -279,6 +283,7 @@ void main() {
       List<dynamic>? additionalOverrides,
       MockAuthService? mockAuthService,
       String? contextTitle,
+      String? sponsorName,
       ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
       String? sourceDetail,
       VoidCallback? onBack,
@@ -293,6 +298,7 @@ void main() {
         mockNip05VerificationService: mockNip05VerificationService,
         home: buildContent(
           contextTitle: contextTitle,
+          sponsorName: sponsorName,
           trafficSource: trafficSource,
           sourceDetail: sourceDetail,
           onBack: onBack,
@@ -331,6 +337,62 @@ void main() {
     });
 
     group('state rendering', () {
+      testWidgets('shows a sponsored collection disclosure', (tester) async {
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+        final expected = lookupAppLocalizations(
+          const Locale('en'),
+        ).exploreFeaturedSponsoredBy('Acme Bikes');
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: createTestVideos(count: 1),
+            ),
+            sponsorName: 'Acme Bikes',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(expected), findsOneWidget);
+        expect(find.byType(FullscreenSponsorDisclosure), findsOneWidget);
+
+        final disclosureContext = tester.element(
+          find.byType(FullscreenSponsorDisclosure),
+        );
+        disclosureContext.read<FeedImmersiveCubit>().enter();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 180));
+
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.ancestor(
+            of: find.byType(FullscreenSponsorDisclosure),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        );
+        expect(opacity.opacity, 0);
+      });
+
+      testWidgets('omits the disclosure for an unsponsored feed', (
+        tester,
+      ) async {
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: createTestVideos(count: 1),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(FullscreenSponsorDisclosure), findsNothing);
+      });
+
       testWidgets('shows loading indicator when status is initial', (
         tester,
       ) async {
