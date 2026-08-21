@@ -1783,7 +1783,19 @@ class _AuthorListWatch {
           .subscribe([
             Filter(authors: _authors.toList(), kinds: [_kind]),
           ], subscriptionId: id)
-          .listen(onEvent);
+          .listen(
+            onEvent,
+            // A relay that refuses this REQ surfaces a stream error, and the
+            // try/catch here only covers the setup. Without onError it would
+            // escape to the zone as an uncaught async error.
+            onError: (Object error) {
+              Log.warning(
+                '$_label author watch ended: $error',
+                name: 'ContentBlocklistRepository',
+                category: LogCategory.system,
+              );
+            },
+          );
 
       Log.info(
         'Watching ${_authors.length} $_label author(s) by author id',

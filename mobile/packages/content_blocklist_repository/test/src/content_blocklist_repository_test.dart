@@ -3760,6 +3760,52 @@ void main() {
       ..sig = 'signature';
 
     test(
+      'a refused by-author watch does not become an uncaught error',
+      () async {
+        // The by-author watch is a long-lived REQ. A relay that runs out of
+        // subscription slots ends it with CLOSED, which reaches the stream as
+        // an error; without an onError handler it escapes to the zone.
+        when(
+          () => mockNostrService.subscribe(
+            any(),
+            subscriptionId: any(
+              named: 'subscriptionId',
+              that: contains('author-watch'),
+            ),
+          ),
+        ).thenAnswer(
+          (_) => Stream<Event>.error(
+            const RelaySubscriptionRefusedException(
+              'error: too many subscriptions',
+            ),
+          ),
+        );
+
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: 'block-event',
+          ),
+        );
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+      },
+    );
+
+    test(
       'hasBlockedUs clears when the blocker republishes a kind-30000 list '
       'that no longer tags us',
       () async {
