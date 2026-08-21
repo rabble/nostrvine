@@ -269,6 +269,42 @@ void main() {
       expect(eoseCount, 1);
     });
 
+    test(
+      'EOSE then CLOSED from one relay does not complete the rest',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(signer, [], dummyTempRelay);
+        final earlyRelay = _ControlledQueryRelay('wss://early.example');
+        final slowRelay = _ControlledQueryRelay('wss://slow.example');
+        expect(await nostr.relayPool.add(earlyRelay), isTrue);
+        expect(await nostr.relayPool.add(slowRelay), isTrue);
+
+        var eoseCount = 0;
+        nostr.subscribe(
+          [
+            {
+              'kinds': [1],
+            },
+          ],
+          (_) {},
+          onEose: () => eoseCount++,
+        );
+
+        final subId = await earlyRelay.awaitPendingSubscription();
+        expect(await slowRelay.awaitPendingSubscription(), subId);
+
+        await earlyRelay.deliver(['EOSE', subId]);
+        await earlyRelay.deliver(['CLOSED', subId, 'error: refused']);
+
+        expect(eoseCount, 0, reason: 'slow.example has not reported EOSE yet');
+
+        await slowRelay.deliver(['EOSE', subId]);
+        expect(eoseCount, 1);
+      },
+    );
+
     test('auth-required CLOSED keeps a live subscription for replay', () async {
       final signer = LocalNostrSigner(
         '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',

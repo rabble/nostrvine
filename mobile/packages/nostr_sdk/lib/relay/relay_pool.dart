@@ -1777,6 +1777,11 @@ class RelayPool {
           subscription.onClosed?.call(reason);
         } else if (subscription != null && subscription.onEose != null) {
           final eoseRelays = _subscriptionEoseRelays[subscriptionId];
+          // A relay that reported EOSE and then refused the REQ leaves the
+          // tally with it. Left in, its EOSE would stand in for a relay that
+          // is still streaming stored events, and a bounded read would close
+          // on a partial result.
+          eoseRelays?.remove(relay.url);
           if (eoseRelays != null && eoseRelays.length >= activeRelays.length) {
             subscription.onEose!();
             _subscriptionEoseRelays.remove(subscriptionId);
