@@ -125,7 +125,7 @@ class _FeaturedPartnershipLine extends StatelessWidget {
       child: Align(
         alignment: AlignmentDirectional.centerStart,
         child: Text(
-          l10n.exploreFeaturedPaidPartnership(sponsor),
+          l10n.exploreFeaturedSponsoredBy(sponsor),
           // Wraps with no line ceiling: a clipped disclosure has stopped
           // disclosing, and the grid below yields whatever the line needs.
           style: VineTheme.labelMediumFont(

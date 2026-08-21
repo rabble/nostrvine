@@ -38,6 +38,16 @@ void main() {
       }
     });
 
+    test('known untranslated debt only names template messages', () {
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+
+      expect(
+        _knownUntranslatedDebt.difference(_messageKeys(template)),
+        isEmpty,
+        reason: 'stale untranslated-debt entries must be removed',
+      );
+    });
+
     test('owner delete copy keeps Divine and Nostr disclosure', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
@@ -485,10 +495,10 @@ const _knownUntranslatedDebt = <String>{
   'authAccountRestoreFailed',
   'settingsAccountRestoreFailed',
   'settingsAccountRestoreFailedSwitchMessage',
-  // Commercial disclosure copy, deliberately not machine-translated: "paid"
-  // is load-bearing and a softened rendering discloses nothing. Translation
-  // pass tracked in #7673, and required before any non-English campaign.
-  'exploreFeaturedPaidPartnership',
+  // Commercial disclosure copy, deliberately not machine-translated: a
+  // softened rendering discloses nothing. Translation pass tracked in #7673,
+  // and required before any non-English campaign.
+  'exploreFeaturedSponsoredBy',
   'exploreFeaturedSponsoredPillSemanticLabel',
   // Secure-account key-conflict recovery copy is new; translation pass
   // tracked in #7984.

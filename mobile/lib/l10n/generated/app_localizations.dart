@@ -2124,11 +2124,11 @@ abstract class AppLocalizations {
   /// **'Integrated Apps'**
   String get exploreTabIntegratedApps;
 
-  /// Commercial disclosure pinned above a sponsored featured collection's grid. The wording is a legal disclosure, not marketing copy: translate it as the closest local equivalent of a paid commercial partnership, and keep the word for 'paid'. {sponsor} is a brand name supplied by the server and must not be translated.
+  /// Commercial disclosure pinned above a sponsored featured collection's grid. This is a disclosure, not marketing copy: translate it so it clearly communicates commercial sponsorship rather than an editorial credit. Many languages may render this more naturally as a noun label than a prepositional phrase, or may need the brand name to lead. {sponsor} is a brand name supplied by the server and must not be translated.
   ///
   /// In en, this message translates to:
-  /// **'In paid partnership with {sponsor}'**
-  String exploreFeaturedPaidPartnership(String sponsor);
+  /// **'Sponsored by {sponsor}'**
+  String exploreFeaturedSponsoredBy(String sponsor);
 
   /// Spoken label for the featured tab's collection pill when the collection is sponsored. The pill's pink colour conveys this visually; this carries the same state to screen readers. {name} is the collection name supplied by the server.
   ///
