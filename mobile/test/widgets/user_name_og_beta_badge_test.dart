@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -69,7 +70,35 @@ void main() {
     expect(find.text('Alice'), findsOneWidget);
     expect(find.text('OG'), findsOneWidget);
     expect(data.label, l10n.ogBetaTesterBadgeLabel);
-    expect(data.hasAction(ui.SemanticsAction.tap), isFalse);
+    // The chit announces itself as a button, so it has to carry the action
+    // that makes one activatable. Declaring the flag without the action
+    // leaves a screen reader saying "button" over something it cannot open.
+    expect(data.flagsCollection.isButton, isTrue);
+    expect(data.hasAction(ui.SemanticsAction.tap), isTrue);
+    handle.dispose();
+  });
+
+  testWidgets('a screen reader can open the explainer, not just a finger', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(await buildSubject(pubkey: rosterPubkey));
+    await tester.pump();
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    // `tester.tap` sends a pointer, which reaches the GestureDetector through
+    // hit testing whether or not the semantics tree exposes it. Activating
+    // through the semantics owner is what VoiceOver and TalkBack actually do,
+    // and it is the path `ExcludeSemantics` around the detector removes.
+    final node = tester.getSemantics(find.byType(OgBetaBadge));
+    SemanticsOwner? owner;
+    tester.binding.rootPipelineOwner.visitChildren((child) {
+      owner ??= child.semanticsOwner;
+    });
+    owner!.performAction(node.id, ui.SemanticsAction.tap);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.profileBadgeOgBetaTesterBody), findsOneWidget);
     handle.dispose();
   });
 

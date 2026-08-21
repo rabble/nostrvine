@@ -29,6 +29,7 @@ class OgBetaBadge extends StatelessWidget {
     return Semantics(
       label: context.l10n.ogBetaTesterBadgeLabel,
       button: onTap != null,
+      onTap: onTap,
       container: true,
       child: ExcludeSemantics(
         child: GestureDetector(
