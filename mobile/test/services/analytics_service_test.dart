@@ -355,7 +355,57 @@ void main() {
     });
 
     test(
-      'consent withdrawal clears queued events and acquisition data',
+      'consent withdrawal rotates identifiers and clears queued data',
+      () async {
+        final queue = _MockProductEventQueue();
+        final recordedEvents = <ProductAnalyticsV2Event>[];
+        when(
+          () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((invocation) async {
+          recordedEvents.add(
+            invocation.positionalArguments.single as ProductAnalyticsV2Event,
+          );
+        });
+        when(() => queue.enqueue(any())).thenAnswer((invocation) async {
+          recordedEvents.add(
+            invocation.positionalArguments.single as ProductAnalyticsV2Event,
+          );
+        });
+        when(queue.clear).thenAnswer((_) async {});
+        when(queue.flush).thenAnswer((_) async {});
+        when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
+        analyticsService.dispose();
+        analyticsService = AnalyticsService(
+          productEventQueue: queue,
+          productAnalyticsEnabled: true,
+        );
+        await analyticsService.initialize();
+        analyticsService.captureProductAnalyticsUtm({
+          'utm_source': 'newsletter',
+        });
+        await analyticsService.recordRegistrationStarted(
+          entryPoint: ProductAnalyticsV2RegistrationEntryPoint.landing,
+        );
+
+        await analyticsService.setAnalyticsEnabled(false);
+        await analyticsService.setAnalyticsEnabled(true);
+        await analyticsService.recordRegistrationStarted(
+          entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
+        );
+
+        verify(queue.clear).called(1);
+        expect(analyticsService.productAnalyticsUtm, isEmpty);
+        final envelopes = recordedEvents
+            .map((event) => event.envelope)
+            .toList();
+        expect(envelopes, hasLength(2));
+        expect(envelopes[1].anonymousId, isNot(envelopes[0].anonymousId));
+        expect(envelopes[1].sessionId, isNot(envelopes[0].sessionId));
+      },
+    );
+
+    test(
+      'account changes purge every queued row and acquisition data',
       () async {
         final queue = _MockProductEventQueue();
         when(queue.clear).thenAnswer((_) async {});
@@ -369,31 +419,9 @@ void main() {
           'utm_source': 'newsletter',
         });
 
-        await analyticsService.setAnalyticsEnabled(false);
+        await analyticsService.handleIdentityChange();
 
         verify(queue.clear).called(1);
-        expect(analyticsService.productAnalyticsUtm, isEmpty);
-      },
-    );
-
-    test(
-      'account changes purge the previous owner and acquisition data',
-      () async {
-        final queue = _MockProductEventQueue();
-        when(() => queue.clearOwner(any())).thenAnswer((_) async {});
-        analyticsService.dispose();
-        analyticsService = AnalyticsService(
-          productEventQueue: queue,
-          productAnalyticsEnabled: true,
-        );
-        await analyticsService.initialize();
-        analyticsService.captureProductAnalyticsUtm({
-          'utm_source': 'newsletter',
-        });
-
-        await analyticsService.handleIdentityChange('a' * 64);
-
-        verify(() => queue.clearOwner('a' * 64)).called(1);
         expect(analyticsService.productAnalyticsUtm, isEmpty);
       },
     );
@@ -467,7 +495,7 @@ void main() {
           () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
         ).thenAnswer((_) async {});
         when(queue.flush).thenAnswer((_) async {});
-        when(() => queue.clearOwner(any())).thenAnswer((_) async {});
+        when(queue.clear).thenAnswer((_) async {});
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
@@ -483,7 +511,7 @@ void main() {
           position: 0,
           visibleMs: 1000,
         );
-        await analyticsService.handleIdentityChange('a' * 64);
+        await analyticsService.handleIdentityChange();
         await analyticsService.recordContentImpression(
           contentId: 'c' * 64,
           surface: ProductAnalyticsV2Surface.feed,
@@ -508,12 +536,13 @@ void main() {
     );
 
     test(
-      'keeps identifiers across the anonymous-to-first-login boundary',
+      'rotates identifiers across the anonymous-to-first-login boundary',
       () async {
         final queue = _MockProductEventQueue();
         when(
           () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
         ).thenAnswer((_) async {});
+        when(queue.clear).thenAnswer((_) async {});
         when(queue.flush).thenAnswer((_) async {});
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
@@ -527,9 +556,9 @@ void main() {
         await analyticsService.recordRegistrationStarted(
           entryPoint: ProductAnalyticsV2RegistrationEntryPoint.landing,
         );
-        // First login has no outgoing account: the acquisition funnel join
-        // must survive.
-        await analyticsService.handleIdentityChange(null);
+        // First login is still an identity boundary. Pre-login activity must
+        // not be joinable to the newly authenticated account.
+        await analyticsService.handleIdentityChange();
         await analyticsService.recordRegistrationStarted(
           entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
         );
@@ -545,8 +574,9 @@ void main() {
                 .map((event) => event.envelope)
                 .toList();
         expect(envelopes, hasLength(2));
-        expect(envelopes[1].anonymousId, envelopes[0].anonymousId);
-        expect(envelopes[1].sessionId, envelopes[0].sessionId);
+        expect(envelopes[1].anonymousId, isNot(envelopes[0].anonymousId));
+        expect(envelopes[1].sessionId, isNot(envelopes[0].sessionId));
+        verify(queue.clear).called(1);
       },
     );
 

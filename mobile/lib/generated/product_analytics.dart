@@ -1,11 +1,22 @@
 // @generated from analytics/event-contract.yaml.
-// Source contract commit: 27e21a7a1ea3c6cb998186eda50807e63806efc9
+// Source contract commit: 58ec2aa4090d2f17ca0ef1e30d3602f5bd24f9d6
 // DO NOT EDIT. Update the contract and run analytics/codegen/generate.py.
 const String productAnalyticsV2ContractCommit =
-    '27e21a7a1ea3c6cb998186eda50807e63806efc9';
+    '58ec2aa4090d2f17ca0ef1e30d3602f5bd24f9d6';
 const int productAnalyticsV2SchemaVersion = 2;
 const String productAnalyticsV2EventIdAlgorithm = 'sha256-rfc8785-v1';
 const bool? productAnalyticsV2ConsentDefaultEnabled = null;
+
+const int productAnalyticsV2ContentImpressionRecordedPositionMinimum = 0;
+const int productAnalyticsV2ContentImpressionRecordedPositionMaximum = 10000;
+const int productAnalyticsV2ContentImpressionRecordedVisibleMsMinimum = 1000;
+const int productAnalyticsV2ContentImpressionRecordedVisibleMsMaximum = 3600000;
+const int productAnalyticsV2PlaybackSessionRecordedDurationMsMinimum = 0;
+const int productAnalyticsV2PlaybackSessionRecordedDurationMsMaximum = 86400000;
+const int productAnalyticsV2PlaybackSessionRecordedWatchedMsMinimum = 0;
+const int productAnalyticsV2PlaybackSessionRecordedWatchedMsMaximum = 86400000;
+const int productAnalyticsV2PlaybackSessionRecordedLoopCountMinimum = 0;
+const int productAnalyticsV2PlaybackSessionRecordedLoopCountMaximum = 1000;
 
 enum ProductAnalyticsV2Source {
   mobile('mobile'),

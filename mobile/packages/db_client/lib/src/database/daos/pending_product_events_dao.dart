@@ -207,12 +207,6 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
     )..where((table) => table.id.equals(id))).go();
   }
 
-  Future<int> deleteForOwner(String ownerPubkey) {
-    return (delete(
-      pendingProductEvents,
-    )..where((table) => table.ownerPubkey.equals(ownerPubkey))).go();
-  }
-
   Future<int> deleteAll() => delete(pendingProductEvents).go();
 
   /// Removes expired rows, then trims the oldest survivors to [maxRecords].

@@ -86,8 +86,8 @@ class AnalyticsService implements BackgroundAwareService {
 
   bool _analyticsEnabled = true; // Default to enabled
   bool _isInitialized = false;
-  // Not final: rotated when an account session is torn down so a later
-  // account's events cannot be joined to the previous account's rows.
+  // Not final: rotated at every identity or consent boundary so activity from
+  // separate privacy contexts cannot be joined.
   late String _anonymousId = _uuid.v4();
   late String _sessionId = _uuid.v4();
   final Map<String, String> _productAnalyticsUtm = {};
@@ -192,6 +192,7 @@ class AnalyticsService implements BackgroundAwareService {
 
     if (!enabled) {
       _productAnalyticsUtm.clear();
+      _rotateProductAnalyticsIdentity();
       try {
         await _productEventQueue?.clear();
       } catch (error) {
@@ -255,18 +256,19 @@ class AnalyticsService implements BackgroundAwareService {
     }
   }
 
-  /// Clears queued events owned by the outgoing account before logout/switch.
+  /// Clears queued events before any login, logout, or account switch.
   ///
-  /// Also rotates the anonymous and session identifiers: the queue purge
-  /// establishes that data must not cross an account boundary, and keeping the
-  /// old identifiers would let the backend join the next account's batches to
-  /// the outgoing account's rows. The anonymous-to-first-login boundary
-  /// (null previous pubkey) deliberately keeps the identifiers so acquisition
-  /// events stay attributable to the signup they produced.
-  Future<void> handleIdentityChange(String? previousPubkey) async {
+  /// The first login is an identity boundary too. Rotating both identifiers
+  /// prevents pre-login activity from being joined to the authenticated
+  /// account, while clearing the whole queue prevents older anonymous or
+  /// account-owned rows from crossing the boundary later.
+  Future<void> handleIdentityChange() async {
     _productAnalyticsUtm.clear();
-    if (previousPubkey == null || previousPubkey.isEmpty) return;
-    await _productEventQueue?.clearOwner(previousPubkey);
+    _rotateProductAnalyticsIdentity();
+    await _productEventQueue?.clear();
+  }
+
+  void _rotateProductAnalyticsIdentity() {
     if (_anonymousIdOverride == null) _anonymousId = _uuid.v4();
     if (_sessionIdOverride == null) _sessionId = _uuid.v4();
   }

@@ -621,16 +621,23 @@ AnalyticsService analyticsService(Ref ref) {
   var lastPubkey = authService.currentPublicKeyHex;
   final unregisterBeforeTeardown = authService
       .registerBeforeSessionTeardownCallback(() async {
-        final outgoingPubkey = authService.currentPublicKeyHex ?? lastPubkey;
-        await service.handleIdentityChange(outgoingPubkey);
+        await service.handleIdentityChange();
         lastPubkey = null;
       });
   final authStateSubscription = authService.authStateStream.listen((_) {
     final nextPubkey = authService.currentPublicKeyHex;
     final previousPubkey = lastPubkey;
     lastPubkey = nextPubkey;
-    if (previousPubkey != null && previousPubkey != nextPubkey) {
-      unawaited(service.handleIdentityChange(previousPubkey));
+    if (previousPubkey != nextPubkey) {
+      unawaited(
+        service.handleIdentityChange().catchError((Object error) {
+          Log.warning(
+            'Failed to apply product analytics identity boundary: $error',
+            name: 'SocialProviders',
+            category: LogCategory.system,
+          );
+        }),
+      );
     }
   });
 
