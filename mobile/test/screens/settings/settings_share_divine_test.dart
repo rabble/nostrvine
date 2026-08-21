@@ -238,68 +238,72 @@ void main() {
     );
   }
 
-  for (final onboardingMode in OnboardingMode.values) {
-    testWidgets('shares Divine when onboarding mode is $onboardingMode', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(wrap(onboardingMode: onboardingMode));
-      await tester.pumpAndSettle();
-
-      final label = lookupAppLocalizations(
-        const Locale('en'),
-      ).settingsShareDivine;
-      expect(find.text(label), findsOneWidget);
-      final shareAction = find.ancestor(
-        of: find.text(label),
-        matching: find.byType(InkWell),
-      );
-      expect(tester.getSize(shareAction).height, greaterThanOrEqualTo(48));
-
-      await tester.tap(find.text(label));
-      await tester.pumpAndSettle();
-
-      expect(shareCalls, hasLength(1));
-      expect(shareCalls.single['text'], AppConstants.downloadUrl);
-      expect(shareCalls.single['originWidth'], isNotNull);
-      expect(shareCalls.single['originHeight'], isNotNull);
-    });
-  }
-
-  // The slot used to hold one word ("Invites"); the label is now a sentence,
-  // so the pill has to survive a narrow phone, the longest translation, and
-  // an accessibility text scale. Every case below overflowed before the
-  // label was allowed to wrap.
-  const layoutProbes = <({double width, Locale locale, double textScale})>[
-    (width: 320, locale: Locale('fil'), textScale: 1),
-    (width: 360, locale: Locale('fil'), textScale: 1),
-    (width: 360, locale: Locale('en'), textScale: 1.3),
-    (width: 412, locale: Locale('en'), textScale: 2),
-  ];
-
-  for (final probe in layoutProbes) {
-    testWidgets(
-      'share action fits ${probe.width}dp in ${probe.locale.languageCode} '
-      'at text scale ${probe.textScale}',
-      (tester) async {
-        await tester.binding.setSurfaceSize(Size(probe.width, 1600));
+  group('interactions', () {
+    for (final onboardingMode in OnboardingMode.values) {
+      testWidgets('shares Divine when onboarding mode is $onboardingMode', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        await tester.pumpWidget(
-          wrap(
-            onboardingMode: OnboardingMode.open,
-            locale: probe.locale,
-            textScaleFactor: probe.textScale,
-          ),
-        );
+        await tester.pumpWidget(wrap(onboardingMode: onboardingMode));
         await tester.pumpAndSettle();
 
-        expect(
-          find.text(lookupAppLocalizations(probe.locale).settingsShareDivine),
-          findsOneWidget,
+        final label = lookupAppLocalizations(
+          const Locale('en'),
+        ).settingsShareDivine;
+        expect(find.text(label), findsOneWidget);
+        final shareAction = find.ancestor(
+          of: find.text(label),
+          matching: find.byType(InkWell),
         );
-      },
-    );
-  }
+        expect(tester.getSize(shareAction).height, greaterThanOrEqualTo(48));
+
+        await tester.tap(find.text(label));
+        await tester.pumpAndSettle();
+
+        expect(shareCalls, hasLength(1));
+        expect(shareCalls.single['text'], AppConstants.downloadUrl);
+        expect(shareCalls.single['originWidth'], isNotNull);
+        expect(shareCalls.single['originHeight'], isNotNull);
+      });
+    }
+  });
+
+  group('renders', () {
+    // The slot used to hold one word ("Invites"); the label is now a sentence,
+    // so the pill has to survive a narrow phone, the longest translation, and
+    // an accessibility text scale. Every case below overflowed before the
+    // label was allowed to wrap.
+    const layoutProbes = <({double width, Locale locale, double textScale})>[
+      (width: 320, locale: Locale('fil'), textScale: 1),
+      (width: 360, locale: Locale('fil'), textScale: 1),
+      (width: 360, locale: Locale('en'), textScale: 1.3),
+      (width: 412, locale: Locale('en'), textScale: 2),
+    ];
+
+    for (final probe in layoutProbes) {
+      testWidgets(
+        'share action fits ${probe.width}dp in ${probe.locale.languageCode} '
+        'at text scale ${probe.textScale}',
+        (tester) async {
+          await tester.binding.setSurfaceSize(Size(probe.width, 1600));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+
+          await tester.pumpWidget(
+            wrap(
+              onboardingMode: OnboardingMode.open,
+              locale: probe.locale,
+              textScaleFactor: probe.textScale,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(lookupAppLocalizations(probe.locale).settingsShareDivine),
+            findsOneWidget,
+          );
+        },
+      );
+    }
+  });
 }

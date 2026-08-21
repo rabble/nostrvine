@@ -46,51 +46,53 @@ void main() {
     );
   }
 
-  test('off switch forces the post-publish experiment into control', () {
-    final container = ProviderContainer(
-      overrides: [
-        analyticsEventSinkProvider.overrideWithValue(_NoopAnalytics()),
-        isFeatureEnabledProvider(
-          FeatureFlag.postPublishConfirmationExperiment,
-        ).overrideWithValue(false),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    final configured = container.read(postPublishExperimentProvider);
-
-    expect(
-      configured.variantForUser(treatmentUser()),
-      PostPublishVariant.control,
-    );
-  });
-
-  test(
-    'A/A switch keeps assignments but suppresses treatment behavior',
-    () async {
+  group('postPublishExperimentProvider', () {
+    test('off switch forces the post-publish experiment into control', () {
       final container = ProviderContainer(
         overrides: [
           analyticsEventSinkProvider.overrideWithValue(_NoopAnalytics()),
           isFeatureEnabledProvider(
             FeatureFlag.postPublishConfirmationExperiment,
-          ).overrideWithValue(true),
-          isFeatureEnabledProvider(
-            FeatureFlag.postPublishConfirmationTreatment,
           ).overrideWithValue(false),
         ],
       );
       addTearDown(container.dispose);
+
       final configured = container.read(postPublishExperimentProvider);
-      final variant = configured.variantForUser(treatmentUser());
 
-      await configured.screenShown(
-        publishId: 'publish-1',
-        destination: 'profile',
-        variant: variant,
+      expect(
+        configured.variantForUser(treatmentUser()),
+        PostPublishVariant.control,
       );
+    });
 
-      expect(variant, PostPublishVariant.viewShare);
-      expect(configured.completed({'publish-1'}), isNull);
-    },
-  );
+    test(
+      'A/A switch keeps assignments but suppresses treatment behavior',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            analyticsEventSinkProvider.overrideWithValue(_NoopAnalytics()),
+            isFeatureEnabledProvider(
+              FeatureFlag.postPublishConfirmationExperiment,
+            ).overrideWithValue(true),
+            isFeatureEnabledProvider(
+              FeatureFlag.postPublishConfirmationTreatment,
+            ).overrideWithValue(false),
+          ],
+        );
+        addTearDown(container.dispose);
+        final configured = container.read(postPublishExperimentProvider);
+        final variant = configured.variantForUser(treatmentUser());
+
+        await configured.screenShown(
+          publishId: 'publish-1',
+          destination: 'profile',
+          variant: variant,
+        );
+
+        expect(variant, PostPublishVariant.viewShare);
+        expect(configured.completed({'publish-1'}), isNull);
+      },
+    );
+  });
 }
