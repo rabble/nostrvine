@@ -45,9 +45,9 @@ FeaturedTabConfig _config({Map<String, String> disclosureLabel = const {}}) {
 FeaturedTabConfig _sponsoredConfig() =>
     _config(disclosureLabel: const {'default': 'Acme Bikes'});
 
-String _partnershipLine(String sponsor) => lookupAppLocalizations(
+String _sponsoredLine(String sponsor) => lookupAppLocalizations(
   const Locale('en'),
-).exploreFeaturedPaidPartnership(sponsor);
+).exploreFeaturedSponsoredBy(sponsor);
 
 VideoEvent _video(String id) {
   return VideoEvent(
@@ -227,7 +227,7 @@ void main() {
       await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
       await tester.pumpAndSettle();
 
-      final line = find.text(_partnershipLine('Acme Bikes'));
+      final line = find.text(_sponsoredLine('Acme Bikes'));
       expect(line, findsOneWidget);
       // Pinned above the grid rather than scrolled into it.
       expect(
@@ -242,7 +242,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('paid partnership'), findsNothing);
+      expect(find.text(_sponsoredLine('Acme Bikes')), findsNothing);
     });
 
     testWidgets(
@@ -259,7 +259,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('paid partnership'), findsNothing);
+        expect(find.text(_sponsoredLine('Acme Bicicletas')), findsNothing);
       },
     );
 
@@ -276,7 +276,7 @@ void main() {
       await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
       await tester.pumpAndSettle();
 
-      expect(find.text(_partnershipLine('Acme Bikes')), findsOneWidget);
+      expect(find.text(_sponsoredLine('Acme Bikes')), findsOneWidget);
     });
 
     testWidgets('keeps the disclosure when the videos request fails', (
@@ -292,7 +292,7 @@ void main() {
       await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
       await tester.pumpAndSettle();
       // It describes the tab's commercial arrangement, not its contents.
-      expect(find.text(_partnershipLine('Acme Bikes')), findsOneWidget);
+      expect(find.text(_sponsoredLine('Acme Bikes')), findsOneWidget);
     });
   });
 }

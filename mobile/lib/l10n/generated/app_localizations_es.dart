@@ -1240,8 +1240,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Apps integradas';
 
   @override
-  String exploreFeaturedPaidPartnership(String sponsor) {
-    return 'In paid partnership with $sponsor';
+  String exploreFeaturedSponsoredBy(String sponsor) {
+    return 'Sponsored by $sponsor';
   }
 
   @override

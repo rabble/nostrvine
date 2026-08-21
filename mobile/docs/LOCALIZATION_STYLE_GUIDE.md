@@ -338,9 +338,10 @@ affected locales is tracked in
 **Never soften a load-bearing word.** Safety, consent, money, deletion and age
 copy carry meaning that a friendlier synonym destroys. The repo already treats
 this as a first-class reason to *defer* rather than approximate — see the
-comment on `exploreFeaturedPaidPartnership` in
+comment on `exploreFeaturedSponsoredBy` in
 `mobile/test/l10n/arb_consistency_test.dart`, held out of machine translation
-because "paid" is load-bearing and a softened rendering discloses nothing.
+because it must remain an unmistakable commercial disclosure rather than
+soften into an editorial credit.
 
 **Match the source's energy, not its punctuation.** Exclamation marks and
 ALL CAPS are one language's way of spelling emphasis, and copying the marks
