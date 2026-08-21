@@ -10,6 +10,7 @@ import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
 import 'package:openvine/screens/account_deletion_recovery_screen.dart';
@@ -34,7 +35,42 @@ class _NotReadyNostrSession extends NostrSession {
       const NostrSessionReadiness.identityKnown(pubkey: 'user-pubkey');
 }
 
+class _MockDeletionRepository extends Mock
+    implements AccountDeletionRecoveryRepository {}
+
 void main() {
+  group('Account deletion recovery gate', () {
+    test('fails closed while the attempt is loading', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncLoading<AccountDeletionAttempt?>(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('fails closed when the coordinator lookup errors', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          AsyncError<AccountDeletionAttempt?>(
+            StateError('coordinator unavailable'),
+            StackTrace.empty,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('opens only after a ready lookup definitively finds no attempt', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(null),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('Minor account review router gating', () {
     late MockAuthService mockAuthService;
 
@@ -53,6 +89,7 @@ void main() {
       WidgetTester tester,
       ProviderContainer container, {
       bool activateRouteNormalizer = false,
+      bool settle = true,
     }) async {
       if (activateRouteNormalizer) {
         container.read(routeNormalizationProvider);
@@ -67,7 +104,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        await tester.pump();
+      }
     }
 
     void registerContainerTearDown(
@@ -158,16 +199,19 @@ void main() {
                 ),
               ),
             ),
+            accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+              _MockDeletionRepository(),
+            ),
           ],
         );
         registerContainerTearDown(tester, container);
         await container.read(currentMinorAccountReviewStatusProvider.future);
         await container.read(currentAccountDeletionAttemptProvider.future);
-        await pumpRouter(tester, container);
+        await pumpRouter(tester, container, settle: false);
 
         final router = container.read(goRouterProvider);
         router.go(VideoFeedPage.pathForIndex(0));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(
           router.routeInformationProvider.value.uri.toString(),
@@ -200,12 +244,15 @@ void main() {
               ),
             ),
           ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            _MockDeletionRepository(),
+          ),
         ],
       );
       registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await container.read(currentAccountDeletionAttemptProvider.future);
-      await pumpRouter(tester, container);
+      await pumpRouter(tester, container, settle: false);
 
       final router = container.read(goRouterProvider);
       router.go(SupportCenterScreen.path);

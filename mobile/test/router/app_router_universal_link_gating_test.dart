@@ -62,6 +62,7 @@ void main() {
         // navigation; the empty-following bounce is not what these tests are
         // about.
         hasFollowingInCacheProvider.overrideWithValue(true),
+        currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
         currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
           if (reviewStatusPending) {
             // Never completes, so the redirect sees AsyncLoading with no value
@@ -85,6 +86,7 @@ void main() {
       // AsyncLoading, which has its own loading-screen bounce.
       await container.read(currentMinorAccountReviewStatusProvider.future);
     }
+    await container.read(currentAccountDeletionAttemptProvider.future);
 
     final ref = container.read(_refProvider);
     final router = GoRouter(

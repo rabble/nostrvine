@@ -64,6 +64,7 @@ void main() {
         // navigation; the empty-following bounce is not what these tests are
         // about.
         hasFollowingInCacheProvider.overrideWithValue(true),
+        currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
         currentMinorAccountReviewStatusProvider.overrideWith(
           (ref) async => restricted
               ? const MinorAccountReviewStatus(
@@ -77,6 +78,7 @@ void main() {
     addTearDown(container.dispose);
     // Settle the status so the redirect sees a value rather than AsyncLoading,
     // which has its own loading-screen bounce.
+    await container.read(currentAccountDeletionAttemptProvider.future);
     await container.read(currentMinorAccountReviewStatusProvider.future);
 
     final ref = container.read(_refProvider);
