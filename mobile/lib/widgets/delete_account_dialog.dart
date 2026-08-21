@@ -958,7 +958,6 @@ Future<void> executeAccountDeletion({
         final showSupportAction =
             result.failureReason ==
             DeleteAccountFailureReason.accountRestricted;
-        final messenger = ScaffoldMessenger.of(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
             text,
