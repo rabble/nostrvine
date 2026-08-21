@@ -78,6 +78,10 @@ Widget _wrapWithRouter(Widget child) {
       ),
     ],
   );
+  // Same reason the sign-out redirect router is disposed below: an
+  // undisposed GoRouter keeps listening past the end of the test inside the
+  // merged VGV isolate. Most tests in this file go through this helper.
+  addTearDown(router.dispose);
   return MaterialApp.router(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
