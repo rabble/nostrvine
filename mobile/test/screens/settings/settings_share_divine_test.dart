@@ -251,6 +251,11 @@ void main() {
         const Locale('en'),
       ).settingsShareDivine;
       expect(find.text(label), findsOneWidget);
+      final shareAction = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(InkWell),
+      );
+      expect(tester.getSize(shareAction).height, greaterThanOrEqualTo(48));
 
       await tester.tap(find.text(label));
       await tester.pumpAndSettle();

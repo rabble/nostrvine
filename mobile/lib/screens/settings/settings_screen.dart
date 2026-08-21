@@ -589,36 +589,39 @@ class _ShareDivineButton extends StatelessWidget {
           ShareParams(text: AppConstants.downloadUrl),
         ),
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: context.vineColors.surfaceContainer,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: context.vineColors.outlineMuted,
-              width: 2,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 8,
-            children: [
-              DivineIcon(
-                icon: DivineIconName.shareNetwork,
-                color: context.vineColors.accentPositive,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: context.vineColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: context.vineColors.outlineMuted,
+                width: 2,
               ),
-              // A sentence-length label, unlike the single word this slot
-              // used to hold: it has to wrap rather than overflow the pill
-              // on a narrow phone or at a large text scale.
-              Flexible(
-                child: Text(
-                  label,
-                  style: VineTheme.titleMediumFont(
-                    color: context.vineColors.accentPositive,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                DivineIcon(
+                  icon: DivineIconName.shareNetwork,
+                  color: context.vineColors.accentPositive,
+                ),
+                // A sentence-length label, unlike the single word this slot
+                // used to hold: it has to wrap rather than overflow the pill
+                // on a narrow phone or at a large text scale.
+                Flexible(
+                  child: Text(
+                    label,
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.accentPositive,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -21,7 +22,6 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/invite_availability.dart';
-import 'package:openvine/models/invite_models.dart' show OnboardingMode;
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -365,14 +365,21 @@ void main() {
       ) async {
         final mockInviteCubit = _MockInviteStatusCubit();
         when(() => mockInviteCubit.state).thenReturn(
-          const InviteStatusState(status: InviteStatusLoadingStatus.error),
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 5,
+              total: 5,
+              codes: [],
+            ),
+          ),
         );
 
         await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.settingsShareDivine), findsOneWidget);
-        expect(find.text('1'), findsNothing);
         expect(find.text('5'), findsNothing);
 
         await tester.pumpWidget(const SizedBox());
