@@ -171,7 +171,11 @@ void main() {
         .setMockMethodCallHandler(_shareChannel, null);
   });
 
-  Widget wrap({required OnboardingMode onboardingMode}) {
+  Widget wrap({
+    required OnboardingMode onboardingMode,
+    Locale locale = const Locale('en'),
+    double textScaleFactor = 1,
+  }) {
     final divineHostFilterService = DivineHostFilterService(sharedPreferences);
     final availabilityCubit = seededInviteAvailabilityCubit(
       serverMode: onboardingMode,
@@ -216,7 +220,13 @@ void main() {
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
         theme: VineTheme.theme,
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: textScaleFactor,
+          maxScaleFactor: textScaleFactor,
+          child: child!,
+        ),
         home: MultiBlocProvider(
           providers: [
             BlocProvider<LocaleCubit>.value(value: localeCubit),
@@ -250,5 +260,41 @@ void main() {
       expect(shareCalls.single['originWidth'], isNotNull);
       expect(shareCalls.single['originHeight'], isNotNull);
     });
+  }
+
+  // The slot used to hold one word ("Invites"); the label is now a sentence,
+  // so the pill has to survive a narrow phone, the longest translation, and
+  // an accessibility text scale. Every case below overflowed before the
+  // label was allowed to wrap.
+  const layoutProbes = <({double width, Locale locale, double textScale})>[
+    (width: 320, locale: Locale('fil'), textScale: 1),
+    (width: 360, locale: Locale('fil'), textScale: 1),
+    (width: 360, locale: Locale('en'), textScale: 1.3),
+    (width: 412, locale: Locale('en'), textScale: 2),
+  ];
+
+  for (final probe in layoutProbes) {
+    testWidgets(
+      'share action fits ${probe.width}dp in ${probe.locale.languageCode} '
+      'at text scale ${probe.textScale}',
+      (tester) async {
+        await tester.binding.setSurfaceSize(Size(probe.width, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          wrap(
+            onboardingMode: OnboardingMode.open,
+            locale: probe.locale,
+            textScaleFactor: probe.textScale,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(lookupAppLocalizations(probe.locale).settingsShareDivine),
+          findsOneWidget,
+        );
+      },
+    );
   }
 }

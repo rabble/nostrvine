@@ -607,10 +607,15 @@ class _ShareDivineButton extends StatelessWidget {
                 icon: DivineIconName.shareNetwork,
                 color: context.vineColors.accentPositive,
               ),
-              Text(
-                label,
-                style: VineTheme.titleMediumFont(
-                  color: context.vineColors.accentPositive,
+              // A sentence-length label, unlike the single word this slot
+              // used to hold: it has to wrap rather than overflow the pill
+              // on a narrow phone or at a large text scale.
+              Flexible(
+                child: Text(
+                  label,
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.accentPositive,
+                  ),
                 ),
               ),
             ],
