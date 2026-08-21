@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Davetler",
+  "settingsShareDivine": "Divine'ı arkadaşlarınla paylaş",
     "settingsSwitchAccount": "Hesap değiştir",
     "settingsAddAnotherAccount": "Başka hesap ekle",
   "settingsAccountSwitchFailed": "Hesaplar değiştirilemedi. Lütfen tekrar dene.",

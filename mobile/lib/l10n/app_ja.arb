@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "招待",
+  "settingsShareDivine": "Divineを友だちと共有",
     "settingsSwitchAccount": "アカウントを切り替え",
     "settingsAddAnotherAccount": "別のアカウントを追加",
   "settingsAccountSwitchFailed": "アカウントを切り替えられませんでした。もう一度お試しください。",

@@ -112,42 +112,33 @@ void main() {
           'codes=${grantedStatus.codes.length}',
         );
 
-        // ── Settings shows the Invites entry ──
+        // ── Settings shows the share action independently of invites ──
         // The router comes from the provider container: InheritedGoRouter
         // lives below MaterialApp, so GoRouter.of cannot see it from here.
         final router = container.read(goRouterProvider);
         router.go(SettingsScreen.path);
         await pumpUntilSettled(tester, maxSeconds: 10);
 
-        final invitesEntry = find.ancestor(
-          of: find.text(_en.settingsInvites),
+        final shareEntry = find.ancestor(
+          of: find.text(_en.settingsShareDivine),
           matching: find.byWidgetPredicate(
             (widget) =>
                 widget is Semantics &&
-                widget.properties.label == _en.settingsInvites,
+                widget.properties.label == _en.settingsShareDivine,
           ),
         );
         expect(
-          invitesEntry,
+          shareEntry,
           findsOneWidget,
           reason:
-              'Settings should offer the Invites entry for an identity that '
-              'holds ${grantedStatus.remaining} invites and zero codes',
-        );
-        // The badge count is whatever the server returned, not a literal the
-        // app carries around.
-        expect(
-          find.descendant(
-            of: invitesEntry,
-            matching: find.text('${grantedStatus.remaining}'),
-          ),
-          findsOneWidget,
+              'Settings should offer the Divine share action independently '
+              'of invite allocation',
         );
 
-        logPhase('Phase 1b: Settings shows the Invites entry');
+        logPhase('Phase 1b: Settings shows the Divine share action');
 
         // ── The invites screen reports the server's allocation ──
-        await tester.tap(find.text(_en.settingsInvites));
+        router.go(InvitesScreen.path);
         await pumpUntilSettled(tester, maxSeconds: 10);
 
         expect(find.byType(InvitesView), findsOneWidget);

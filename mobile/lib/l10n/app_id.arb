@@ -103,7 +103,7 @@
             }
         }
     },
-    "settingsInvites": "Undangan",
+  "settingsShareDivine": "Bagikan Divine dengan teman-temanmu",
     "settingsSwitchAccount": "Ganti akun",
     "settingsAddAnotherAccount": "Tambah akun lain",
   "settingsAccountSwitchFailed": "Tidak dapat beralih akun. Coba lagi.",

@@ -177,7 +177,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Davetler';
+  String get settingsShareDivine => 'Divine\'ı arkadaşlarınla paylaş';
 
   @override
   String get settingsSwitchAccount => 'Hesap değiştir';

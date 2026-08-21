@@ -208,7 +208,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Invitaciones';
+  String get settingsShareDivine => 'Compartí Divine con tus amigos';
 
   @override
   String get settingsSwitchAccount => 'Cambiar de cuenta';

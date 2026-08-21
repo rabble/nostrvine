@@ -44,6 +44,9 @@ class AppConstants {
   /// Divine-hosted account portability flow.
   static const String accountPortabilityUrl = 'https://divine.video/exit';
 
+  /// Divine download page that selects stores for the visitor's platform.
+  static const String downloadUrl = 'https://divine.video/download';
+
   // ============================================================================
   // FEED CONFIGURATION
   // ============================================================================

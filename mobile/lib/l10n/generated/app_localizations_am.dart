@@ -203,7 +203,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'ግብዣዎች';
+  String get settingsShareDivine => 'Divineን ከጓደኞችዎ ጋር ያጋሩ';
 
   @override
   String get settingsSwitchAccount => 'መለያ ቀይር';

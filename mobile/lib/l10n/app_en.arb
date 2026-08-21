@@ -181,7 +181,10 @@
       }
     }
   },
-  "settingsInvites": "Invites",
+  "settingsShareDivine": "Share Divine with your friends",
+  "@settingsShareDivine": {
+    "description": "Button that opens the share sheet with Divine's download link"
+  },
   "settingsSwitchAccount": "Switch account",
   "settingsAddAnotherAccount": "Add another account",
   "settingsAccountSwitchFailed": "Couldn't switch accounts. Please try again.",

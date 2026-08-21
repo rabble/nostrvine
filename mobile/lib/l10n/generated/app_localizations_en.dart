@@ -213,7 +213,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsInvites => 'Invites';
+  String get settingsShareDivine => 'Share Divine with your friends';
 
   @override
   String get settingsSwitchAccount => 'Switch account';
