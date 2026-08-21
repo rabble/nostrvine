@@ -1,9 +1,12 @@
 -- ABOUTME: The ClickHouse query that produced og_beta_testers.dart.
 -- ABOUTME: Kept for review; the roster is frozen and will not be re-run.
 --
--- Produced 2,947 pubkeys. The committed roster holds 2,942: five QA accounts
--- (handles `_@testaccount`, `_@testprofile`, `_@testsanti`, `_@tester`, and
--- `teste556@divine.video`) were removed in review.
+-- Produced 2,947 pubkeys. The committed roster holds 2,941: six QA accounts
+-- (handles `_@testaccount`, `_@testprofile`, `_@testsanti`, `_@tester`,
+-- `_@testuserhere`, and `teste556@divine.video`) were removed in review.
+-- Note the handles are not a single pattern: `teste556@divine.video` does
+-- not match `_@test*`, so neither a handle sweep nor a display-name sweep
+-- finds all six on its own.
 --
 -- This is NOT re-derivable. NIP-05 is mutable, so membership drifts after the
 -- fact: 3 members no longer hold a Divine handle, and 154 have no kind-0

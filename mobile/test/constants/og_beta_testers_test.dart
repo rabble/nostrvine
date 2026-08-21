@@ -11,9 +11,10 @@ void main() {
       // truncated or paginated regeneration still satisfies every shape
       // check below and ships silently.
       //
-      // 2,947 from the derivation query, less 5 QA accounts (all holding
-      // `_@test*.divine.video` handles) removed in review.
-      expect(ogBetaTesterPubkeys, hasLength(2942));
+      // 2,947 from the derivation query, less 6 QA accounts removed in
+      // review. Five hold `_@test*.divine.video` handles; the sixth is
+      // `teste556@divine.video`, which the handle pattern does not match.
+      expect(ogBetaTesterPubkeys, hasLength(2941));
     });
 
     test('contains only lowercase 64-character hex pubkeys', () {

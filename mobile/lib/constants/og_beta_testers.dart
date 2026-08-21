@@ -7,7 +7,7 @@
 /// 2026-08-17 and cannot change. A pubkey qualifies by having published a
 /// non-archive video (kind 34236) from a Divine handle (`@openvine.co` or a
 /// `divine.video` host) between 2025-01-01 and that cutoff. The derivation
-/// query is committed beside this file as `og_beta_testers.sql`; five QA
+/// query is committed beside this file as `og_beta_testers.sql`; six QA
 /// accounts were removed from its output in review.
 ///
 /// Frozen rather than re-derived at runtime because Nostr has no
@@ -1402,7 +1402,6 @@ const ogBetaTesterPubkeys = <String>[
   '78ccbd894c3e69e8b7a096969b9eea2af2874f156785292045c8ccf52c6de58a',
   '78e02093488c72f77abd089a3b9ceb0b500dd4cf9f2c5f03fb65a8fb72297a0c',
   '78e1ca7f91e9d3d781c0df40fc15340607d2a32506260019f5ee749ae577ac91',
-  '78f4948cabb21a7a6ebdfcee8a9892064ba154a731a671a9d43adb8895d9b9ee',
   '78fa5a021636df1d6416887968765f2e884b11cd0fb1f1d2aefea269b22c9d9b',
   '794b5b20c29cc8eadd03c15c9249ac60a8474c0d6b03c600bd2c0c5306e0d1ac',
   '79597704aa124b6f1933b88ee11caf0945e7f239d2809fb883df0cd696588350',
