@@ -1043,6 +1043,66 @@ void main() {
       },
     );
 
+    testWidgets(
+      'keeps the caller screen when the sheet is closed by system back',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        final deletionGate = Completer<DeleteAccountResult>();
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer((_) => deletionGate.future);
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: Text(_callerScreenMarker));
+              },
+            ),
+          ),
+        );
+
+        final deletion = executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(VineBottomSheet), findsOneWidget);
+
+        // Nothing stops an Android back press from closing the progress
+        // sheet: it carries no PopScope, and isDismissible/enableDrag only
+        // govern the barrier and the drag.
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(VineBottomSheet), findsNothing);
+
+        deletionGate.complete(
+          DeleteAccountResult.failure(
+            DeleteAccountFailureReason.vanishNotConfirmed,
+          ),
+        );
+        await deletion;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The sheet is already gone, so there is nothing left to dismiss.
+        expect(find.text(_callerScreenMarker), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('opted-in burn aborts when recovery is unavailable', (
       tester,
     ) async {
