@@ -421,6 +421,42 @@ class CameraController: NSObject {
         }
     }
 
+    /// Forces the output route to re-settle immediately before capture.
+    ///
+    /// While audio plays out of the speaker on a `.playAndRecord` session,
+    /// iOS lowers the microphone input level to keep the speaker out of the
+    /// recording, and it restores that level only slowly afterwards. The
+    /// countdown beeps hit exactly that window: capture starts on a damped
+    /// input and the level climbs back over the following seconds, which is
+    /// the progressive volume ramp reported in #4539. Re-asserting the
+    /// output override makes iOS re-establish the route now instead of
+    /// letting the recording ride out the recovery.
+    ///
+    /// Only runs when the built-in speaker is the sole output. With
+    /// headphones or Bluetooth connected the override would drag playback
+    /// off them, and no speaker output reached the microphone in the first
+    /// place.
+    ///
+    /// Must run on `sessionQueue`.
+    private func resettleSpeakerRouteBeforeCapture() {
+        let session = AVAudioSession.sharedInstance()
+        let outputs = session.currentRoute.outputs
+        guard outputs.count == 1, outputs[0].portType == .builtInSpeaker else {
+            return
+        }
+        do {
+            try session.overrideOutputAudioPort(.speaker)
+        } catch {
+            // Non-fatal: the recording still runs, it may just start on the
+            // damped input level the beeps left behind.
+            DivineCameraLog.shared.warning(
+                "Speaker route re-settle before capture failed "
+                    + "(error=\(error.localizedDescription))",
+                name: "DivineCamera.AudioSession"
+            )
+        }
+    }
+
     /// Observe AVAudioSession interruptions (Spotify, phone calls, Siri,
     /// alarms). On `.began` we mark audio as interrupted so any in-flight
     /// recording stops trying to append audio buffers. On `.ended` with
@@ -2214,6 +2250,8 @@ class CameraController: NSObject {
                         + "WITHOUT audio track",
                     name: "DivineCamera.Recording"
                 )
+            } else {
+                self.resettleSpeakerRouteBeforeCapture()
             }
 
             // One state line per recording so a silent clip can be traced
