@@ -2802,7 +2802,7 @@ class CameraController: NSObject {
                 + "attachMs=\(String(format: "%.0f", self.lastAudioAttachMs)), "
                 + "attachPath=\(self.recordingAudioAttachPath), "
                 + "entry=[\(self.recordingAudioEntryRoute)], "
-                + "stabilization=\(Self.stabilizationString(from: self.requestedStabilizationMode))",
+                + "stabilization=\(self.reportedStabilizationString())",
             name: "DivineCamera.Recording"
         )
     }

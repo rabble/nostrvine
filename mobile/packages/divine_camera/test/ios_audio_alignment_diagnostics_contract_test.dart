@@ -185,5 +185,19 @@ void main() {
         contains(r'entry=[\(self.recordingAudioEntryRoute)]'),
       );
     });
+
+    test('reports the stabilization the recorder actually used', () {
+      // requestedStabilizationMode is reverted only when the mode is rejected
+      // at set time. A camera switch re-applies it, discards the result and
+      // leaves the stored value naming a mode the recording never had. Since
+      // a look-ahead mode is the one thing in the capture path that can move
+      // the writer anchor by hundreds of ms, this field has to be the mode
+      // the connection carried, not the one that was asked for.
+      expect(diagnostics, contains('self.reportedStabilizationString()'));
+      expect(
+        diagnostics,
+        isNot(contains('from: self.requestedStabilizationMode')),
+      );
+    });
   });
 }
