@@ -115,8 +115,9 @@ Design system (check `divine_ui` first — most review nits map here):
   is `.done`, every earlier one `.next` **with a `FocusNode` handoff in
   `onSubmitted`**. A multiline field is not in the chain — it keeps
   `newline`, so a form ending in one has no `done` field at all. Plus
-  `autocorrect: false` on identifiers and `autofillHints` where the
-  platform can help. Adding a field means re-checking the one above it.
+  `autocorrect: false` on identifiers, and `autofillHints` inside an
+  `AutofillGroup` — the hint on its own never saves a credential.
+  Adding a field means re-checking the one above it.
   See [`ui_theming.md`](ui_theming.md#text-fields).
 
 Composition and style:

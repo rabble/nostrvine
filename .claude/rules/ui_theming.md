@@ -338,7 +338,7 @@ Name (`next`) → bio (`newline`) → website (`done`) is the shape to aim for.
 **When adding a field to an existing screen, re-check the field above it** —
 a form that was correct with one field is wrong the moment it has two.
 
-**Good — two fields, chained:**
+**Good — a chained credential form:**
 ```dart
 AutofillGroup(
   child: Form(
