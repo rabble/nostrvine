@@ -21,7 +21,7 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/invite_availability.dart';
-import 'package:openvine/models/invite_models.dart';
+import 'package:openvine/models/invite_models.dart' show OnboardingMode;
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -297,7 +297,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('loads invite status so profile can show invite access', (
+    testWidgets('does not load invite status for the share action', (
       tester,
     ) async {
       final mockInviteCubit = _createMockInviteCubit();
@@ -305,28 +305,16 @@ void main() {
       await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
       await tester.pumpAndSettle();
 
-      verify(mockInviteCubit.load).called(1);
+      verifyNever(mockInviteCubit.load);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('hides invite shortcut when signup invites are disabled', (
+    testWidgets('shows share action when signup invites are disabled', (
       tester,
     ) async {
-      final mockInviteCubit = _MockInviteStatusCubit();
-      when(mockInviteCubit.load).thenAnswer((_) async {});
-      when(() => mockInviteCubit.state).thenReturn(
-        const InviteStatusState(
-          status: InviteStatusLoadingStatus.loaded,
-          inviteStatus: InviteStatus(
-            canInvite: true,
-            remaining: 5,
-            total: 5,
-            codes: [],
-          ),
-        ),
-      );
       final availabilityCubit = seededInviteAvailabilityCubit(
         serverMode: OnboardingMode.open,
       );
@@ -334,145 +322,58 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
-          inviteCubit: mockInviteCubit,
           availabilityCubit: availabilityCubit,
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Invites'), findsNothing);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
     testWidgets(
-      'hides invite shortcut immediately when override forces disabled',
+      'keeps share action when invite override forces disabled',
       (tester) async {
-        final mockInviteCubit = _MockInviteStatusCubit();
-        when(mockInviteCubit.load).thenAnswer((_) async {});
-        when(() => mockInviteCubit.state).thenReturn(
-          const InviteStatusState(
-            status: InviteStatusLoadingStatus.loaded,
-            inviteStatus: InviteStatus(
-              canInvite: true,
-              remaining: 5,
-              total: 5,
-              codes: [],
-            ),
-          ),
-        );
         final availabilityCubit = seededInviteAvailabilityCubit();
         addTearDown(availabilityCubit.close);
 
         await tester.pumpWidget(
           buildSubject(
-            inviteCubit: mockInviteCubit,
             availabilityCubit: availabilityCubit,
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Invites'), findsOneWidget);
+        expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
         availabilityCubit.setOverride(InviteAvailabilityOverride.forceDisabled);
         expect(availabilityCubit.state.isEnabled, isFalse);
         await tester.pumpAndSettle();
 
-        expect(find.text('Invites'), findsNothing);
+        expect(find.text(l10n.settingsShareDivine), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
       },
     );
 
-    testWidgets('renders invite shortcut when unclaimed invites exist', (
-      tester,
-    ) async {
-      final mockInviteCubit = _MockInviteStatusCubit();
-      when(mockInviteCubit.load).thenAnswer((_) async {});
-      when(() => mockInviteCubit.state).thenReturn(
-        const InviteStatusState(
-          status: InviteStatusLoadingStatus.loaded,
-          inviteStatus: InviteStatus(
-            canInvite: true,
-            remaining: 0,
-            total: 1,
-            codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
-          ),
-        ),
-      );
-
-      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Invites'), findsOneWidget);
-      expect(find.text('1'), findsNothing);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
-
-    testWidgets('renders invite shortcut when invite capacity exists', (
-      tester,
-    ) async {
-      final mockInviteCubit = _MockInviteStatusCubit();
-      when(mockInviteCubit.load).thenAnswer((_) async {});
-      when(() => mockInviteCubit.state).thenReturn(
-        const InviteStatusState(
-          status: InviteStatusLoadingStatus.loaded,
-          inviteStatus: InviteStatus(
-            canInvite: true,
-            remaining: 5,
-            total: 5,
-            codes: [],
-          ),
-        ),
-      );
-
-      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Invites'), findsOneWidget);
-      expect(find.text('5'), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
-
     testWidgets(
-      'reveals invite shortcut immediately when lazy allocation arrives',
-      (tester) async {
+      'share action does not show an invite activity badge',
+      (
+        tester,
+      ) async {
         final mockInviteCubit = _MockInviteStatusCubit();
-        when(mockInviteCubit.load).thenAnswer((_) async {});
-        final states = StreamController<InviteStatusState>();
-        addTearDown(states.close);
-        whenListen(
-          mockInviteCubit,
-          states.stream,
-          initialState: const InviteStatusState(
-            status: InviteStatusLoadingStatus.loading,
-          ),
+        when(() => mockInviteCubit.state).thenReturn(
+          const InviteStatusState(status: InviteStatusLoadingStatus.error),
         );
 
         await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
         await tester.pumpAndSettle();
-        expect(find.text('Invites'), findsNothing);
 
-        states.add(
-          const InviteStatusState(
-            status: InviteStatusLoadingStatus.loaded,
-            inviteStatus: InviteStatus(
-              canInvite: true,
-              remaining: 5,
-              total: 5,
-              codes: [],
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Invites'), findsOneWidget);
-        expect(find.text('5'), findsOneWidget);
+        expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+        expect(find.text('1'), findsNothing);
+        expect(find.text('5'), findsNothing);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
