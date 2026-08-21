@@ -299,12 +299,14 @@ Text('Secondary info', style: const TextStyle(color: VineTheme.secondaryText, fo
 ## Text Fields
 
 Every `TextField` / `TextFormField` / `DivineAuthTextField` sets its input
-traits explicitly. Flutter's defaults — `TextInputType.text`,
-`TextCapitalization.none`, and a blanket `TextInputAction.done` — are rarely
-what the field actually wants, and the damage only shows up on a real device: a
-keyboard with no `@` key, an auto-capitalized email address, a "done" key that
-dead-ends in the middle of a form. No widget test catches any of it, so this
-has to be part of writing the field rather than a later polish pass.
+traits explicitly. Left alone, a single-line field gets `TextInputType.text`,
+`TextCapitalization.none` and `TextInputAction.done` — rarely what the field
+actually wants, and the damage only shows up on a real device: a keyboard with
+no `@` key, an auto-capitalized email address, a "done" key that dead-ends in
+the middle of a form. Multiline is the one shape Flutter derives correctly on
+its own, and the section below says why that matters. No widget test catches
+any of it, so this has to be part of writing the field rather than a later
+polish pass.
 
 ### `textInputAction`: chain the single-line fields, skip the multiline ones
 
