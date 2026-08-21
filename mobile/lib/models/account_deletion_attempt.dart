@@ -53,10 +53,15 @@ class AccountDeletionAttempt {
   final String? failureCode;
   final String? failureMessage;
 
+  /// Whether this state must hold the user on the full-screen recovery gate.
+  ///
+  /// [AccountDeletionAttemptStatus.terminalFailure] is deliberately excluded.
+  /// The gate redirects away from every other route and its only affordance
+  /// re-reads the same status, so a state the server never leaves would shut
+  /// the user out of the app permanently.
   bool get requiresRecoveryScreen =>
       status == AccountDeletionAttemptStatus.preparing ||
       status == AccountDeletionAttemptStatus.recoverable ||
       status == AccountDeletionAttemptStatus.processing ||
-      status == AccountDeletionAttemptStatus.completed ||
-      status == AccountDeletionAttemptStatus.terminalFailure;
+      status == AccountDeletionAttemptStatus.completed;
 }

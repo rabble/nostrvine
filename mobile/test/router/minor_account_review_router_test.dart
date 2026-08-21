@@ -169,6 +169,45 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a terminal deletion failure does not strand the user on the gate',
+      (
+        tester,
+      ) async {
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+            currentMinorAccountReviewStatusProvider.overrideWith(
+              (_) async => MinorAccountReviewStatus.active(),
+            ),
+            bugReportServiceProvider.overrideWith((ref) => BugReportService()),
+            currentAccountDeletionAttemptProvider.overrideWith(
+              (_) async => const AccountDeletionAttempt(
+                id: 'attempt-id',
+                status: AccountDeletionAttemptStatus.terminalFailure,
+                username: 'alice',
+                failureCode: 'name_server_unavailable',
+              ),
+            ),
+          ],
+        );
+        registerContainerTearDown(tester, container);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+        await container.read(currentAccountDeletionAttemptProvider.future);
+        await pumpRouter(tester, container);
+
+        final router = container.read(goRouterProvider);
+        router.go(SupportCenterScreen.path);
+        await tester.pumpAndSettle();
+
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          SupportCenterScreen.path,
+        );
+      },
+    );
+
     testWidgets('allows parent contact route while restricted', (tester) async {
       final container = ProviderContainer(
         overrides: [
