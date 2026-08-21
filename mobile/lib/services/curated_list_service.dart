@@ -753,16 +753,13 @@ class CuratedListService extends ChangeNotifier {
         }
       }
 
-      await _removeListAndSubscription(listId);
       // Recorded whatever the local event id says. A null id does not mean no
       // relay holds this coordinate — another device can have published the
       // same stable d-tag independently, which is the case the unpublished
-      // merge in [_processListEvent] exists to handle.
-      final ownerPubkey =
-          list.pubkey ?? _relayGateway.currentAuthenticatedPubkey();
-      if (ownerPubkey != null) {
-        await _recordListDeletion(ownerPubkey, listId);
-      }
+      // merge in [_processListEvent] exists to handle. Record before removing
+      // the local list so relay sync never sees an unprotected absence.
+      await _recordListDeletion(list.pubkey!, listId);
+      await _removeListAndSubscription(listId);
       if (listId == defaultListId) {
         await _prefs.setBool(defaultListDeletedStorageKey, true);
       }

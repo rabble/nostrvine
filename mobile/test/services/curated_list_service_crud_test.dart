@@ -36,7 +36,6 @@ const _ownerPubkey =
 const _otherPubkey =
     'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
-/// An outcome one relay accepted — what [PublishOutcome.acceptedByAny] gates on.
 /// A kind 30005 curated-list event as a relay would replay it.
 Event _listEvent(String listId, String title, [String pubkey = _ownerPubkey]) =>
     Event.fromJson({
@@ -52,6 +51,7 @@ Event _listEvent(String listId, String title, [String pubkey = _ownerPubkey]) =>
       'sig': 'test_signature',
     });
 
+/// An outcome one relay accepted — what [PublishOutcome.acceptedByAny] gates on.
 PublishOutcome _accepted(Event event) => PublishOutcome(
   eventId: event.id,
   acceptedBy: const ['wss://relay.test'],
@@ -2099,6 +2099,30 @@ void main() {
           expect(service.getListById(listId), isNull);
         },
       );
+
+      test('records the tombstone before exposing local removal', () async {
+        final list = await service.createList(name: 'Doomed List');
+        final listId = list!.id;
+        reset(mockNostr);
+        when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer(
+          (invocation) async =>
+              _accepted(invocation.positionalArguments[0] as Event),
+        );
+
+        var removalWasProtected = false;
+        service.setOnListUnsubscribed((removedListId) {
+          final tombstones = prefs.getStringList(
+            CuratedListService.deletedListCoordinatesStorageKey,
+          );
+          removalWasProtected =
+              service.getListById(removedListId) == null &&
+              (tombstones?.contains('$_ownerPubkey:$removedListId') ?? false);
+        });
+
+        expect(await service.deleteOwnedList(listId), isTrue);
+
+        expect(removalWasProtected, isTrue);
+      });
 
       test(
         'the deletion survives a new service over the same storage',
