@@ -51,6 +51,7 @@ class _ExhaustiveReader implements ProfileReader {
     required String pubkey,
     bool requireRawKind0 = false,
     List<Duration> rawKind0RetryDelays = const [],
+    bool ignoreBlockFilter = false,
   }) async => null;
 
   @override

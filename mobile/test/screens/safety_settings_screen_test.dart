@@ -205,6 +205,9 @@ void main() {
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(profiles[pubkey]),
           ),
+          blockedUserProfileProvider.overrideWith(
+            (ref, pubkey) => Stream.value(profiles[pubkey]),
+          ),
         ],
       );
 
@@ -258,6 +261,37 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(npub), findsOneWidget);
+    });
+
+    testWidgets('blocked users show their real name and nip05', (
+      tester,
+    ) async {
+      await mockBlocklistRepository.blockUser(blockedPubkey);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          profiles: {
+            blockedPubkey: UserProfile(
+              pubkey: blockedPubkey,
+              displayName: 'Loud Neighbour',
+              nip05: '_@loud.divine.video',
+              rawData: const {},
+              createdAt: DateTime.utc(2026),
+              eventId: 'blocked-profile-event',
+            ),
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Loud Neighbour'), 200);
+
+      expect(find.text('Loud Neighbour'), findsOneWidget);
+      expect(find.text('@loud'), findsOneWidget);
+      expect(
+        find.text(UserProfile.defaultDisplayNameFor(blockedPubkey)),
+        findsNothing,
+      );
     });
 
     testWidgets(

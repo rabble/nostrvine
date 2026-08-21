@@ -635,6 +635,42 @@ void main() {
         },
       );
 
+      test('fetches a blocked pubkey when ignoreBlockFilter is set', () async {
+        final blockingRepository = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          blockFilter: (pubkey) => pubkey == testPubkey,
+        );
+
+        final result = await blockingRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+          ignoreBlockFilter: true,
+        );
+
+        expect(result?.displayName, equals('Test User'));
+      });
+
+      test('bypassing fetch does not dedupe onto a filtered one', () async {
+        final blockingRepository = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          blockFilter: (pubkey) => pubkey == testPubkey,
+        );
+
+        final results = await Future.wait([
+          blockingRepository.fetchFreshProfile(pubkey: testPubkey),
+          blockingRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+            ignoreBlockFilter: true,
+          ),
+        ]);
+
+        expect(results.first, isNull);
+        expect(results.last?.displayName, equals('Test User'));
+      });
+
       test('deduplicates concurrent calls for the same pubkey', () async {
         final results = await Future.wait([
           profileRepository.fetchFreshProfile(pubkey: testPubkey),
@@ -5728,34 +5764,31 @@ void main() {
       // timeout does, on a fully keyed account. Nothing between here and the
       // signer catches, and this method's own handler is `on Exception`, so
       // without local containment the throw left claimUsername entirely.
-      test(
-        'returns UsernameClaimError when the signer throws',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenThrow(StateError('no signer'));
+      test('returns UsernameClaimError when the signer throws', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenThrow(StateError('no signer'));
 
-          final usernameClaimResult = await profileRepository.claimUsername(
-            username: 'username',
-          );
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
 
-          expect(
-            usernameClaimResult,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Signing failed',
-            ),
-          );
+        expect(
+          usernameClaimResult,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Signing failed',
+          ),
+        );
 
-          // The request never left the device, so no name was claimed.
-          verifyNever(() => mockHttpClient.post(any()));
-        },
-      );
+        // The request never left the device, so no name was claimed.
+        verifyNever(() => mockHttpClient.post(any()));
+      });
 
       test(
         'sends lowercase username in payload for mixed-case input',
@@ -5952,9 +5985,7 @@ void main() {
       }) {
         when(
           () => mockHttpClient.get(
-            Uri.parse(
-              '$_testNameServer/api/username/check/$username',
-            ),
+            Uri.parse('$_testNameServer/api/username/check/$username'),
           ),
         ).thenAnswer(
           (_) async => Response(
@@ -6353,9 +6384,7 @@ void main() {
         fakeAsync((async) {
           when(
             () => mockHttpClient.get(
-              Uri.parse(
-                '$_testNameServer/api/username/check/testuser',
-              ),
+              Uri.parse('$_testNameServer/api/username/check/testuser'),
             ),
           ).thenAnswer((_) async {
             // Simulates an unresponsive name server: never resolves within

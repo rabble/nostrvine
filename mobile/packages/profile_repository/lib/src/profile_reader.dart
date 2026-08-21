@@ -47,9 +47,7 @@ abstract interface class ProfileReader {
   /// guards. Pubkeys without a cached profile, or profiles filtered by the
   /// repository's block policy, are absent from the result, which is not
   /// order-aligned with [pubkeys].
-  Future<List<UserProfile>> getCachedProfiles({
-    required List<String> pubkeys,
-  });
+  Future<List<UserProfile>> getCachedProfiles({required List<String> pubkeys});
 
   /// Watches the cached profile for [pubkey], emitting on every cache write.
   Stream<UserProfile?> watchProfile({required String pubkey});
@@ -64,10 +62,15 @@ abstract interface class ProfileReader {
   ///
   /// Reads only — the relay query and the funnelcake REST fallback are both
   /// unauthenticated. Returns `null` when no profile exists anywhere.
+  ///
+  /// Set [ignoreBlockFilter] when the caller is *about* the blocked account
+  /// rather than showing its content — the blocked-users list in Safety
+  /// Settings needs a name and avatar to be reviewable at all.
   Future<UserProfile?> fetchFreshProfile({
     required String pubkey,
     bool requireRawKind0,
     List<Duration> rawKind0RetryDelays,
+    bool ignoreBlockFilter,
   });
 
   /// Resolves many profiles at once, preferring the Drift cache.

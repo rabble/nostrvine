@@ -470,7 +470,7 @@ class _BlockedUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
+    final profileAsync = ref.watch(blockedUserProfileProvider(pubkey));
     final profile = profileAsync.value;
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);

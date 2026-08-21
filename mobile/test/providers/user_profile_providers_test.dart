@@ -219,6 +219,91 @@ void main() {
     );
   });
 
+  group('blockedUserProfileProvider', () {
+    late _MockProfileRepository profileRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      profileRepository = _MockProfileRepository();
+      container = ProviderContainer(
+        overrides: [
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test('fetches a blocked pubkey with the block filter bypassed', () async {
+      final liveController = StreamController<UserProfile?>();
+      addTearDown(liveController.close);
+
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.fetchFreshProfile(
+          pubkey: pubkey,
+          ignoreBlockFilter: true,
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => liveController.stream);
+
+      final sub = container.listen(
+        blockedUserProfileProvider(pubkey),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+
+      await Future<void>.delayed(Duration.zero);
+
+      verify(
+        () => profileRepository.fetchFreshProfile(
+          pubkey: pubkey,
+          ignoreBlockFilter: true,
+        ),
+      ).called(1);
+    });
+
+    test('emits the cached profile without fetching', () async {
+      final liveController = StreamController<UserProfile?>();
+      addTearDown(liveController.close);
+      final cachedProfile = _profile(pubkey, name: 'blocked');
+
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => cachedProfile);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => liveController.stream);
+
+      final emitted = <AsyncValue<UserProfile?>>[];
+      final sub = container.listen(
+        blockedUserProfileProvider(pubkey),
+        (_, next) => emitted.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+
+      await untilCalled(() => profileRepository.watchProfile(pubkey: pubkey));
+      liveController.add(cachedProfile);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        emitted.where((value) => value.hasValue).map((v) => v.value),
+        [cachedProfile],
+      );
+      verifyNever(
+        () => profileRepository.fetchFreshProfile(
+          pubkey: pubkey,
+          ignoreBlockFilter: true,
+        ),
+      );
+    });
+  });
+
   group('fetchUserProfileProvider', () {
     late _MockProfileRepository profileRepository;
     late ProviderContainer container;

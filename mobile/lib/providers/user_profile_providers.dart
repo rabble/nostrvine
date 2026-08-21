@@ -94,6 +94,36 @@ Stream<UserProfile?> _watchUserProfile(
   yield* repo.watchProfile(pubkey: pubkey);
 }
 
+/// Reactive profile provider for a pubkey the viewer has blocked.
+///
+/// [userProfileReactive] cannot serve this: the repository's block filter
+/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
+/// account the viewer never saw in a feed has nothing cached and renders as a
+/// generated fallback name forever. Reviewing a block needs the real name and
+/// avatar, so this path fetches with the filter bypassed. It is *about* the
+/// account rather than a surface for its content.
+@riverpod
+Stream<UserProfile?> blockedUserProfile(Ref ref, String pubkey) {
+  final repo = ref.watch(profileReadRepositoryProvider);
+  if (repo == null) return Stream<UserProfile?>.value(null);
+
+  return _watchBlockedUserProfile(repo, pubkey);
+}
+
+Stream<UserProfile?> _watchBlockedUserProfile(
+  ProfileReader repo,
+  String pubkey,
+) async* {
+  final cached = await repo.getCachedProfile(pubkey: pubkey);
+  if (cached == null) {
+    unawaited(
+      repo.fetchFreshProfile(pubkey: pubkey, ignoreBlockFilter: true),
+    );
+  }
+
+  yield* repo.watchProfile(pubkey: pubkey);
+}
+
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)

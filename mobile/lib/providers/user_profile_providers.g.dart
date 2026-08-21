@@ -158,6 +158,126 @@ final class UserProfileReactiveFamily extends $Family
   String toString() => r'userProfileReactiveProvider';
 }
 
+/// Reactive profile provider for a pubkey the viewer has blocked.
+///
+/// [userProfileReactive] cannot serve this: the repository's block filter
+/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
+/// account the viewer never saw in a feed has nothing cached and renders as a
+/// generated fallback name forever. Reviewing a block needs the real name and
+/// avatar, so this path fetches with the filter bypassed. It is *about* the
+/// account rather than a surface for its content.
+
+@ProviderFor(blockedUserProfile)
+final blockedUserProfileProvider = BlockedUserProfileFamily._();
+
+/// Reactive profile provider for a pubkey the viewer has blocked.
+///
+/// [userProfileReactive] cannot serve this: the repository's block filter
+/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
+/// account the viewer never saw in a feed has nothing cached and renders as a
+/// generated fallback name forever. Reviewing a block needs the real name and
+/// avatar, so this path fetches with the filter bypassed. It is *about* the
+/// account rather than a surface for its content.
+
+final class BlockedUserProfileProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<UserProfile?>,
+          UserProfile?,
+          Stream<UserProfile?>
+        >
+    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
+  /// Reactive profile provider for a pubkey the viewer has blocked.
+  ///
+  /// [userProfileReactive] cannot serve this: the repository's block filter
+  /// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
+  /// account the viewer never saw in a feed has nothing cached and renders as a
+  /// generated fallback name forever. Reviewing a block needs the real name and
+  /// avatar, so this path fetches with the filter bypassed. It is *about* the
+  /// account rather than a surface for its content.
+  BlockedUserProfileProvider._({
+    required BlockedUserProfileFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'blockedUserProfileProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$blockedUserProfileHash();
+
+  @override
+  String toString() {
+    return r'blockedUserProfileProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<UserProfile?> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<UserProfile?> create(Ref ref) {
+    final argument = this.argument as String;
+    return blockedUserProfile(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BlockedUserProfileProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$blockedUserProfileHash() =>
+    r'99591a8116981c4015ffdae9d6f3dce3db3b6bd7';
+
+/// Reactive profile provider for a pubkey the viewer has blocked.
+///
+/// [userProfileReactive] cannot serve this: the repository's block filter
+/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
+/// account the viewer never saw in a feed has nothing cached and renders as a
+/// generated fallback name forever. Reviewing a block needs the real name and
+/// avatar, so this path fetches with the filter bypassed. It is *about* the
+/// account rather than a surface for its content.
+
+final class BlockedUserProfileFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
+  BlockedUserProfileFamily._()
+    : super(
+        retry: null,
+        name: r'blockedUserProfileProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Reactive profile provider for a pubkey the viewer has blocked.
+  ///
+  /// [userProfileReactive] cannot serve this: the repository's block filter
+  /// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
+  /// account the viewer never saw in a feed has nothing cached and renders as a
+  /// generated fallback name forever. Reviewing a block needs the real name and
+  /// avatar, so this path fetches with the filter bypassed. It is *about* the
+  /// account rather than a surface for its content.
+
+  BlockedUserProfileProvider call(String pubkey) =>
+      BlockedUserProfileProvider._(argument: pubkey, from: this);
+
+  @override
+  String toString() => r'blockedUserProfileProvider';
+}
+
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
