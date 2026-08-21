@@ -447,11 +447,11 @@ Future<void> executeAccountDeletion({
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) async {
-  // Create cubit for tracking progress
-  final cubit = AccountDeletionProgressCubit();
-
-  // Show progress sheet with BlocProvider
   if (!context.mounted) return;
+
+  // Created after the mounted gate: returning above it would leave this cubit
+  // open, since only the `finally` below ever closes one.
+  final cubit = AccountDeletionProgressCubit();
 
   // Signing out flips auth state to unauthenticated, which makes the global
   // redirect replace the whole stack with /welcome — tearing down the route
