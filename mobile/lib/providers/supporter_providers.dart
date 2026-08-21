@@ -2,11 +2,16 @@
 // ABOUTME: Selects the store-backed EntitlementValidator on iOS/Android and a
 // ABOUTME: stub elsewhere, owned by an account-scoped SupporterRepository.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iap_repository/iap_repository.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/supporter_api_client.dart';
 import 'package:openvine/services/supporter_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -82,3 +87,21 @@ SupporterRepository supporterRepository(Ref ref) {
   ref.onDispose(repository.dispose);
   return repository;
 }
+
+/// Repairs store purchases automatically after a signed-in app enters the
+/// foreground.
+///
+/// This deliberately does not depend on the Supporter screen or the feature
+/// flag: anyone whose store purchase succeeded before the Worker was wired
+/// must be able to claim it as soon as an authenticated build with the Worker
+/// URL opens. The repository coalesces overlapping calls and retains failed
+/// store proofs for a later foreground retry.
+final supporterRecoveryProvider = Provider<void>((ref) {
+  final authState = ref.watch(currentAuthStateProvider);
+  final isForeground = ref.watch(appForegroundProvider);
+  if (authState != AuthState.authenticated || !isForeground) return;
+
+  final repository = ref.watch(supporterRepositoryProvider);
+  if (!repository.hasServerClient) return;
+  unawaited(repository.recoverPurchases());
+});

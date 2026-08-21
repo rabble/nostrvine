@@ -9,6 +9,7 @@ import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/supporter_providers.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
 
 /// App-wide side effects that must run for the whole life of the process.
@@ -50,6 +51,11 @@ class AppRootSideEffects extends ConsumerWidget {
     // branch.
     ref.watch(zendeskIdentitySyncProvider);
     ref.watch(analyticsIdentitySyncProvider);
+
+    // Reclaims store purchases made before canonical entitlement recording was
+    // available. It runs only for an authenticated account with the Worker
+    // configured, and retries when the app returns to the foreground.
+    ref.watch(supporterRecoveryProvider);
 
     // Durable-queue drivers. Each owns a foreground (and, for profile saves,
     // connectivity) subscription that re-drives a Drift-backed queue, and none

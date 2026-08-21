@@ -59,6 +59,7 @@ class SupporterRepository {
   late SupporterEntitlement _current;
   StreamSubscription<SupporterEntitlement>? _subscription;
   StreamSubscription<SupporterPurchaseProof>? _proofSubscription;
+  Future<void>? _recoveryInFlight;
   final StreamController<SupporterEntitlement> _controller =
       StreamController<SupporterEntitlement>.broadcast();
 
@@ -93,6 +94,39 @@ class SupporterRepository {
       capturedPubkey: _pubkey,
       attemptId: 'supporter-restore-${DateTime.now().microsecondsSinceEpoch}',
     );
+  }
+
+  /// Starts a non-blocking restore for purchases that predate the canonical
+  /// entitlement service.
+  ///
+  /// The store redelivers the resulting proofs through [purchaseProofChanges],
+  /// where they are claimed with this account's NIP-98 identity. Calls made
+  /// while a restore is already underway share the same work; a later
+  /// foreground activation can retry after a store or network failure.
+  Future<void> recoverPurchases() {
+    if (!hasServerClient) return Future<void>.value();
+
+    final inFlight = _recoveryInFlight;
+    if (inFlight != null) return inFlight;
+
+    late final Future<void> recovery;
+    recovery = _recoverPurchases().whenComplete(() {
+      if (identical(_recoveryInFlight, recovery)) {
+        _recoveryInFlight = null;
+      }
+    });
+    _recoveryInFlight = recovery;
+    return recovery;
+  }
+
+  Future<void> _recoverPurchases() async {
+    try {
+      await restorePurchases();
+    } on Object catch (error, stackTrace) {
+      // Recovery is a background repair. Do not make app startup depend on a
+      // reachable store; retain the unacknowledged purchase for the next retry.
+      _handleValidatorError(error, stackTrace);
+    }
   }
 
   /// Whether canonical Worker requests are configured for this build.

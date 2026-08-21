@@ -16,6 +16,7 @@ import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/supporter_providers.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/product_event_queue.dart';
@@ -105,6 +106,7 @@ void main() {
     productEventQueueProvider.overrideWithValue(_MockProductEventQueue()),
     profileSaveRetryServiceProvider.overrideWithValue(null),
     zendeskIdentitySyncProvider.overrideWithValue(null),
+    supporterRecoveryProvider.overrideWithValue(null),
     // Shell tier. The three that construct real services record instead.
     relayStatisticsBridgeProvider.overrideWith(
       (ref) => onRelayStatisticsBuilt?.call(),
@@ -276,6 +278,7 @@ void main() {
       'profileSaveRetryServiceProvider',
       'zendeskIdentitySyncProvider',
       'analyticsIdentitySyncProvider',
+      'supporterRecoveryProvider',
       'relayStatisticsBridgeProvider',
       'relaySetChangeBridgeProvider',
       'relayListDirtyPublishBridgeProvider',

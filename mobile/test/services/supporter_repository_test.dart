@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iap_repository/iap_repository.dart';
 import 'package:models/models.dart';
+import 'package:openvine/services/supporter_api_client.dart';
 import 'package:openvine/services/supporter_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +20,9 @@ class _FakeValidator implements EntitlementValidator {
       StreamController<SupporterPurchaseProof>.broadcast();
   List<SupporterTier> products = const [];
   SupporterEntitlement purchaseResult = SupporterEntitlement.inactive;
+  int restoreCallCount = 0;
+  String? restoredPubkey;
+  Completer<void>? restoreCompleter;
 
   @override
   void startListening() {}
@@ -40,7 +44,12 @@ class _FakeValidator implements EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
-  }) async => purchaseResult;
+  }) async {
+    restoreCallCount++;
+    restoredPubkey = capturedPubkey;
+    await restoreCompleter?.future;
+    return purchaseResult;
+  }
 
   @override
   Stream<SupporterEntitlement> get entitlementChanges => _controller.stream;
@@ -258,6 +267,58 @@ void main() {
       addTearDown(repo.dispose);
 
       expect(repo.isSupporter, isFalse);
+    });
+
+    test(
+      'silently restores configured purchases for the signed-in account',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final apiClient = SupporterApiClient(
+          baseUri: Uri.parse('https://supporters.test'),
+          authHeaderProvider:
+              ({required url, required method, payload}) async =>
+                  'Nostr test-token',
+        );
+        final repo = SupporterRepository(
+          pubkey: pubkeyA,
+          validator: validator,
+          prefs: prefs,
+          apiClient: apiClient,
+        );
+        addTearDown(repo.dispose);
+        addTearDown(apiClient.dispose);
+
+        await repo.recoverPurchases();
+
+        expect(validator.restoreCallCount, 1);
+        expect(validator.restoredPubkey, pubkeyA);
+      },
+    );
+
+    test('coalesces concurrent automatic recovery attempts', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final apiClient = SupporterApiClient(
+        baseUri: Uri.parse('https://supporters.test'),
+        authHeaderProvider: ({required url, required method, payload}) async =>
+            'Nostr test-token',
+      );
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+        apiClient: apiClient,
+      );
+      addTearDown(repo.dispose);
+      addTearDown(apiClient.dispose);
+      validator.restoreCompleter = Completer<void>();
+
+      final first = repo.recoverPurchases();
+      final second = repo.recoverPurchases();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(validator.restoreCallCount, 1);
+      validator.restoreCompleter!.complete();
+      await Future.wait([first, second]);
     });
   });
 }
