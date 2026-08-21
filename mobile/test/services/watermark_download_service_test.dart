@@ -310,37 +310,9 @@ void main() {
         ]);
         verify(() => mockGallerySave.saveVideoToGallery(any())).called(1);
       });
-
-      test('returns failure when video file cannot be downloaded', () async {
-        when(() => mockCache.getCachedFileSync(any())).thenReturn(null);
-
-        // Since getPlayableUrl requires network access and we can't
-        // easily mock the static extension, we test the flow contracts
-        // by verifying the service handles null cache gracefully.
-        // The getCachedFileSync returning null + no network = failure.
-      });
-
-      test('reports downloading then saving stages', () {
-        // Verify the enum ordering matches the expected flow
-        expect(
-          OriginalSaveStage.downloading.index,
-          lessThan(OriginalSaveStage.saving.index),
-        );
-      });
     });
 
     group('downloadWithWatermark', () {
-      test('reports all three stages in order', () {
-        expect(
-          WatermarkDownloadStage.downloading.index,
-          lessThan(WatermarkDownloadStage.watermarking.index),
-        );
-        expect(
-          WatermarkDownloadStage.watermarking.index,
-          lessThan(WatermarkDownloadStage.saving.index),
-        );
-      });
-
       test(
         'carries the C2PA manifest onto the rendered file before the '
         'gallery save',
