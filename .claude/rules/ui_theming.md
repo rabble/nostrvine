@@ -338,27 +338,35 @@ a form that was correct with one field is wrong the moment it has two.
 
 **Good — two fields, chained:**
 ```dart
-DivineAuthTextField(
-  controller: _emailController,
-  focusNode: _emailFocus,
-  keyboardType: .emailAddress,
-  textCapitalization: .none,
-  textInputAction: .next,
-  autocorrect: false,
-  autofillHints: const [AutofillHints.email],
-  onSubmitted: (_) => _passwordFocus.requestFocus(),
-),
-DivineAuthTextField(
-  controller: _passwordController,
-  focusNode: _passwordFocus,
-  obscureText: true,
-  keyboardType: .text,
-  textCapitalization: .none,
-  textInputAction: .done,
-  autocorrect: false,
-  autofillHints: const [AutofillHints.password],
-  onSubmitted: (_) => _submit(),
-),
+AutofillGroup(
+  child: Form(
+    child: Column(
+      children: [
+        DivineAuthTextField(
+          controller: _emailController,
+          focusNode: _emailFocus,
+          keyboardType: .emailAddress,
+          textCapitalization: .none,
+          textInputAction: .next,
+          autocorrect: false,
+          autofillHints: const [AutofillHints.email],
+          onSubmitted: (_) => _passwordFocus.requestFocus(),
+        ),
+        DivineAuthTextField(
+          controller: _passwordController,
+          focusNode: _passwordFocus,
+          obscureText: true,
+          keyboardType: .text,
+          textCapitalization: .none,
+          textInputAction: .done,
+          autocorrect: false,
+          autofillHints: const [AutofillHints.password],
+          onSubmitted: (_) => _submit(),
+        ),
+      ],
+    ),
+  ),
+)
 ```
 
 **Bad — defaults everywhere:**
@@ -389,8 +397,25 @@ above.
 Turn `autocorrect` off for identifiers — email, username, npub, URL, code.
 Autocorrect on a hex key or a relay URL silently corrupts what the user typed.
 
-Add `autofillHints` wherever the platform can help (email, password, username,
-one-time code). It is one line and removes a whole typing step.
+### `autofillHints` needs an `AutofillGroup` around it
+
+Add `autofillHints` wherever the platform can help — email, password, username,
+one-time code. On its own, though, the hint only feeds *suggestions*. For a
+password manager to **save** a credential the fields also need an
+`AutofillGroup` (with the `Form` inside it) as a common ancestor, and for that
+save to **update** an existing entry rather than duplicate it, the identifier
+field has to sit in the same group next to the password. Both halves are
+shipped fixes rather than theory: #3154 added the group, and #3156 was a
+password reset that wrote a *second* Keychain entry because its group held only
+the new password — users then autofilled the stale one on their next sign-in.
+
+So a credential form is `AutofillGroup` → `Form` → identifier field + password
+field, as in the example above. `reset_password.dart`,
+`change_password_screen.dart` and `change_email_screen.dart` are the worked
+examples; `reset_password.dart` also shows the read-only identifier field that
+exists purely so the OS can match the credential. A lone field the platform
+only suggests into — a one-time code, a search box — does not need the
+wrapper.
 
 ---
 
