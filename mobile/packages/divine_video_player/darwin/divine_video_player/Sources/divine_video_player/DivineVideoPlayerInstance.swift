@@ -258,9 +258,24 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 let playerItem: AVPlayerItem
                 let offsets: [Double]
                 let durations: [Double]
-                if let hlsClip = Self.soleHlsClip(in: clipsRaw) {
-                    (playerItem, offsets, durations) =
-                        try await self.makeHlsPlayerItem(from: hlsClip)
+                // Der Direktpfad ist die bessere Wahl, kann aber nicht jeden
+                // Clip darstellen -- ein gedrehtes Video braucht die
+                // Layer-Instruction der Composition. Er meldet das selbst.
+                var direct: (AVPlayerItem, [Double], [Double])?
+                if let clip = Self.soleHlsClip(in: clipsRaw) {
+                    do {
+                        direct = try await self.makeHlsPlayerItem(from: clip)
+                    } catch CompositionError.directItemNotApplicable {
+                        direct = nil
+                        DivineVideoPlayerLog.shared.warning(
+                            "Player \(self.playerId) uses the composition: "
+                                + "clip needs rotation",
+                            name: "DivineVideoPlayer.Load"
+                        )
+                    }
+                }
+                if let direct {
+                    (playerItem, offsets, durations) = direct
                 } else {
                     (playerItem, offsets, durations) =
                         try await self.makeCompositionPlayerItem(from: clipsRaw)
@@ -389,26 +404,19 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// do today rather than playing something subtly wrong. Multi-clip
     /// timelines likewise still need a composition to stitch — the editor's
     /// multi-clip sources are local files, never HLS.
-    /// EXPERIMENT (nicht committen): auch eine einzelne gewoehnliche Datei
-    /// direkt spielen, statt sie in eine Composition zu kopieren.
+    /// Whether [uri] may skip the composition and be played from the asset.
     ///
-    /// Der perfect-loop-Prototyp loopt `AVPlayerItem(asset:)` ueber die Datei
-    /// selbst und ist an der Naht sauber; divine-mobile loopt eine
-    /// `AVMutableComposition` derselben Datei und ist es nicht. Damit ist das
-    /// Umkopieren der Spuren der naechste zu pruefende Unterschied.
+    /// A single unchanged clip has nothing to compose, and `AVPlayerLooper`
+    /// only closes the seam over the asset itself -- over a composition of the
+    /// same file it does not. Remote URLs stay on the composition path, which
+    /// owns the buffering and header handling for them.
     ///
-    /// Rotation ist der Vorbehalt: die Composition richtet ueber eine
-    /// Layer-Instruction auf, der Direktpfad verlaesst sich auf die
-    /// `preferredTransform` des Assets. Fuer den Test ist das gleichgueltig --
-    /// die Fixture ist 480x480 ohne Transform -- fuer den Dauerbetrieb nicht.
+    /// Rotation is decided later, against the loaded asset, in
+    /// [directItemSuitsRotation] -- it cannot be read from the URL.
     private static func takesDirectItemPath(_ uri: String) -> Bool {
-        let ext = URL(string: uri)?.pathExtension.lowercased()
-        if ext == "m3u8" { return true }
-        return directItemForPlainFiles && !uri.hasPrefix("http")
+        if URL(string: uri)?.pathExtension.lowercased() == "m3u8" { return true }
+        return !uri.hasPrefix("http")
     }
-
-    /// EXPERIMENT (nicht committen): Schalter fuer [takesDirectItemPath].
-    private static let directItemForPlainFiles = true
 
     private static func soleHlsClip(
         in clipsRaw: [[String: Any]]
@@ -1673,6 +1681,7 @@ private enum CompositionError: Error, LocalizedError {
     case noPlayableVideoTracks
     case invalidRenderSize
     case invalidFrameDuration
+    case directItemNotApplicable
 
     var errorDescription: String? {
         switch self {
@@ -1684,6 +1693,8 @@ private enum CompositionError: Error, LocalizedError {
             return "Video composition has an invalid render size."
         case .invalidFrameDuration:
             return "Video composition has an invalid frame duration."
+        case .directItemNotApplicable:
+            return "Clip needs the composition path."
         }
     }
 }

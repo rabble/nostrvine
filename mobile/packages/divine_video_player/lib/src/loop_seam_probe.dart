@@ -32,6 +32,13 @@ enum LoopSeamProbeVariant {
   /// Divine's CDN clip, container corrected.
   fixed('fixed'),
 
+  /// The same clip with a 90-degree display matrix.
+  ///
+  /// Proves the rotation guard: a rotated track must fall back to the
+  /// composition, because the direct path hands the pixel buffer over as
+  /// decoded and would show it on its side.
+  rotated('rotated'),
+
   /// Leave every source alone.
   off('off');
 
@@ -51,12 +58,13 @@ enum LoopSeamProbeVariant {
 /// Substitutes a bundled fixture for the clips the app is about to play.
 abstract final class LoopSeamProbe {
   /// Bumped per test build so the banner names the run on screen.
-  static const testNumber = 22;
+  static const testNumber = 23;
 
   static const _assetRoot =
       'packages/divine_video_player/assets/loop_seam_probe';
 
-  /// Selected by `--dart-define=LOOP_SEAM_PROBE=vine|fixed|off`.
+  /// Selected by
+  /// `--dart-define=LOOP_SEAM_PROBE=vine|fixed|rotated|off`.
   static final LoopSeamProbeVariant variant = LoopSeamProbeVariant._parse(
     const String.fromEnvironment('LOOP_SEAM_PROBE', defaultValue: 'vine'),
   );
@@ -86,6 +94,7 @@ abstract final class LoopSeamProbe {
     final asset = switch (variant) {
       LoopSeamProbeVariant.vine => 'loop_editfix_a0.mp4',
       LoopSeamProbeVariant.fixed => 'divine_cdn_fixed.mp4',
+      LoopSeamProbeVariant.rotated => 'loop_rotated.mp4',
       LoopSeamProbeVariant.off => null,
     };
     if (asset == null) return (clips: clips, label: real());

@@ -127,24 +127,35 @@ class DivineVideoPlayer extends StatelessWidget {
               builder: (context, label, _) {
                 if (label == null) return const SizedBox.shrink();
                 final isFixture = label.contains('FIXTURE');
-                return ColoredBox(
-                  color: isFixture
-                      ? const Color(0xE6004D1A)
-                      : const Color(0xE6660000),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: isFixture
-                            ? const Color(0xFF7CFF7C)
-                            : const Color(0xFFFFB0B0),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                // The surface is laid out at the video's own size and scaled by
+                // an ancestor, so a fixed point size lands anywhere between
+                // unreadable and covering the picture. Deriving it from the
+                // widget's own width keeps it the same on screen either way.
+                return LayoutBuilder(
+                  builder: (context, constraints) => ColoredBox(
+                    color: isFixture
+                        ? const Color(0xE6004D1A)
+                        : const Color(0xE6660000),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isFixture
+                              ? const Color(0xFF7CFF7C)
+                              : const Color(0xFFFFB0B0),
+                          fontSize: (constraints.maxWidth / 34).clamp(
+                            6.0,
+                            13.0,
+                          ),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
