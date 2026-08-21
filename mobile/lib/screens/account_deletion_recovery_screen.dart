@@ -13,7 +13,6 @@ import 'package:openvine/providers/account_deletion_recovery_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/route_paths.dart';
-import 'package:openvine/services/user_data_cleanup_service.dart';
 
 class AccountDeletionRecoveryScreen extends ConsumerStatefulWidget {
   const AccountDeletionRecoveryScreen({super.key});
@@ -44,12 +43,6 @@ class _AccountDeletionRecoveryScreenState
       setState(() {
         _isSigningOut = false;
         _error = context.l10n.deleteAccountKeyDeletionWarning;
-      });
-    } on UserDataCleanupException {
-      if (!mounted) return;
-      setState(() {
-        _isSigningOut = false;
-        _error = context.l10n.deleteAccountLocalDataDeletionFailed;
       });
     } on Object {
       if (!mounted) return;
