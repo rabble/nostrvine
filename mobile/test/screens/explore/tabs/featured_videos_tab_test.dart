@@ -49,6 +49,14 @@ String _sponsoredLine(String sponsor) => lookupAppLocalizations(
   const Locale('en'),
 ).exploreFeaturedSponsoredBy(sponsor);
 
+/// The disclosure's own wording, with the brand taken out.
+///
+/// Negative assertions match on this rather than on one brand string. A line
+/// that renders with the wrong sponsor — or with none at all — is still a
+/// commercial disclosure on a collection that has no sponsor, and a matcher
+/// naming a brand the widget was never given cannot fail on either.
+String _disclosureWording() => _sponsoredLine('').trim();
+
 VideoEvent _video(String id) {
   return VideoEvent(
     id: id,
@@ -242,7 +250,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text(_sponsoredLine('Acme Bikes')), findsNothing);
+      expect(find.textContaining(_disclosureWording()), findsNothing);
     });
 
     testWidgets(
@@ -259,7 +267,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text(_sponsoredLine('Acme Bicicletas')), findsNothing);
+        expect(find.textContaining(_disclosureWording()), findsNothing);
       },
     );
 
