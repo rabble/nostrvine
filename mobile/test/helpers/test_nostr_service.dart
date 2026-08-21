@@ -145,6 +145,7 @@ class TestNostrService implements NostrClient {
     List<int> relayTypes = const [],
     bool sendAfterAuth = false,
     void Function()? onEose,
+    bool closeOnEose = false,
   }) {
     final subId =
         subscriptionId ?? 'test_sub_${DateTime.now().millisecondsSinceEpoch}';

@@ -160,9 +160,6 @@ class AppConstants {
   /// Connection timeout for relay connections
   static const Duration relayConnectionTimeout = Duration(seconds: 30);
 
-  /// Maximum subscription limit per relay
-  static const int maxSubscriptionsPerRelay = 100;
-
   // ============================================================================
   // UI CONFIGURATION
   // ============================================================================

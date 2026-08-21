@@ -36,6 +36,7 @@ class MockNostrService implements NostrClient {
     List<int> relayTypes = const [],
     bool sendAfterAuth = false,
     void Function()? onEose,
+    bool closeOnEose = false,
   }) {
     _subscriptionFilters.addAll(filters);
 

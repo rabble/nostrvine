@@ -1765,15 +1765,22 @@ class RelayPool {
       // immediately so reconnect cannot replay a subscription the relay has
       // already refused. Other relays may still be serving the same logical
       // subscription; only fail that subscription once none remain.
-      if (relay.discardSubscription(subscriptionId)) {
+      if (!_shouldReplayQueryAfterAuth(relay, reason) &&
+          relay.discardSubscription(subscriptionId)) {
         final subscription = _subscriptions[subscriptionId];
-        if (subscription != null &&
-            _getRelaysWithSubscription(subscriptionId).isEmpty) {
+        final activeRelays = _getRelaysWithSubscription(subscriptionId);
+        if (subscription != null && activeRelays.isEmpty) {
           _subscriptionSilenceProbes.remove(subscriptionId)?.cancel();
           _subscriptions.remove(subscriptionId);
           _subscriptionEoseRelays.remove(subscriptionId);
           _subscriptionSentAt.remove(subscriptionId);
           subscription.onClosed?.call(reason);
+        } else if (subscription != null && subscription.onEose != null) {
+          final eoseRelays = _subscriptionEoseRelays[subscriptionId];
+          if (eoseRelays != null && eoseRelays.length >= activeRelays.length) {
+            subscription.onEose!();
+            _subscriptionEoseRelays.remove(subscriptionId);
+          }
         }
         return;
       }

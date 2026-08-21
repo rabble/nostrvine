@@ -238,6 +238,64 @@ void main() {
       },
     );
 
+    test('CLOSED lets EOSE from every remaining relay complete', () async {
+      final signer = LocalNostrSigner(
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+      );
+      final nostr = Nostr(signer, [], dummyTempRelay);
+      final completedRelay = _ControlledQueryRelay('wss://completed.example');
+      final refusedRelay = _ControlledQueryRelay('wss://refused-after.example');
+      expect(await nostr.relayPool.add(completedRelay), isTrue);
+      expect(await nostr.relayPool.add(refusedRelay), isTrue);
+
+      var eoseCount = 0;
+      nostr.subscribe(
+        [
+          {
+            'kinds': [1],
+          },
+        ],
+        (_) {},
+        onEose: () => eoseCount++,
+      );
+
+      final subId = await completedRelay.awaitPendingSubscription();
+      expect(await refusedRelay.awaitPendingSubscription(), subId);
+      await completedRelay.deliver(['EOSE', subId]);
+      expect(eoseCount, 0);
+
+      await refusedRelay.deliver(['CLOSED', subId, 'error: refused']);
+
+      expect(eoseCount, 1);
+    });
+
+    test('auth-required CLOSED keeps a live subscription for replay', () async {
+      final signer = LocalNostrSigner(
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+      );
+      final nostr = Nostr(signer, [], dummyTempRelay);
+      final relay = _ControlledQueryRelay('wss://auth-live.example');
+      expect(await nostr.relayPool.add(relay), isTrue);
+
+      var closed = false;
+      nostr.subscribe(
+        [
+          {
+            'kinds': [1],
+          },
+        ],
+        (_) {},
+        sendAfterAuth: true,
+        onClosed: (_) => closed = true,
+      );
+
+      final subId = await relay.awaitPendingSubscription();
+      await relay.deliver(['CLOSED', subId, 'auth-required: sign in']);
+
+      expect(closed, isFalse);
+      expect(relay.hasSubscriptionById(subId), isTrue);
+    });
+
     test('auth-required CLOSED keeps the query for post-AUTH replay', () async {
       final signer = LocalNostrSigner(
         '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
