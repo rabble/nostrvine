@@ -174,6 +174,12 @@ Future<BuildContext> _pumpSignOutRedirectApp(
       ),
     ],
   );
+  // Ordered so the router drops its refreshListenable subscription before the
+  // notifier it listens to is torn down: addTearDown runs last-registered
+  // first. Without this the router outlives the test inside the merged VGV
+  // isolate, still listening.
+  addTearDown(redirect.dispose);
+  addTearDown(router.dispose);
   await tester.pumpWidget(
     MaterialApp.router(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
