@@ -316,6 +316,40 @@ void main() {
     expect(movedToSlot, 2);
   });
 
+  // The slot the finger is over is expressed in the full N-tile layout, but
+  // `moveFrames` counts insertion slots among the *unselected* stills only. A
+  // drag that stays inside the block therefore has to translate back to the
+  // block's own home — otherwise the raw full-layout slot (4 here) is clamped
+  // to the end of the remaining list and a nudge silently reorders the strip.
+  testWidgets('a drag that stays inside the block reports its home slot', (
+    tester,
+  ) async {
+    int? movedToSlot;
+    frames = makeFrames(5);
+    await pump(
+      tester,
+      onFrameTapped: (_) {},
+      isMultiSelectMode: true,
+      selectedFrameIndexes: {1, 2, 3},
+      onBlockMove: (slot) => movedToSlot = slot,
+    );
+
+    // Pick up the block's last still (centre x=175) and nudge it 15px right —
+    // far enough to count as a drag, still over the block's own stills.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(Image).at(3)),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+    await gesture.moveBy(const Offset(15, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    // Home = one unselected still (f0) sits left of the block.
+    expect(movedToSlot, 1);
+  });
+
   testWidgets('insertion marker follows the finger during a block drag', (
     tester,
   ) async {
