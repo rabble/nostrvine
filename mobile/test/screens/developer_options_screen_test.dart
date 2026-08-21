@@ -56,9 +56,9 @@ Future<InviteAvailabilityCubit> pumpScreen(
   return cubit;
 }
 
-class _AvailableShorebirdUpdater implements ShorebirdUpdater {
+class _UnavailableShorebirdUpdater implements ShorebirdUpdater {
   @override
-  bool get isAvailable => true;
+  bool get isAvailable => false;
 
   @override
   Future<UpdateStatus> checkForUpdate({UpdateTrack? track}) async =>
@@ -96,7 +96,7 @@ void main() {
       await mockPrefs(),
       shorebirdUpdaterFactory: () {
         factoryCalls++;
-        return _AvailableShorebirdUpdater();
+        return _UnavailableShorebirdUpdater();
       },
     );
 
