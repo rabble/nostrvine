@@ -108,9 +108,12 @@ class CameraController: NSObject {
     /// same loose cross-queue convention as `lastVideoFrameEndPTS`.
     private var writerAnchorPTS: CMTime?
     private var firstAppendedAudioPTS: CMTime?
-    /// PTS of the first audio buffer seen by the delegate for this recording,
-    /// including ones dropped before the writer session existed. Separates
-    /// "mic delivered nothing" from "the writer gate dropped it".
+    /// PTS of the first audio buffer the delegate saw for this recording,
+    /// recorded before every gate that can drop it — the writer session not
+    /// being open yet, an interruption in progress, or no audio writer input
+    /// at all. Inside those gates a clip whose mic never delivered and a clip
+    /// whose buffers were all discarded report the same nothing, which is the
+    /// one distinction this field exists to make.
     private var firstSeenAudioPTS: CMTime?
     /// Wall-clock instant the record request entered the native layer, and how
     /// long `attachAudioToSessionIfNeeded()` blocked. A slow attach delays the
@@ -132,8 +135,10 @@ class CameraController: NSObject {
     /// The pair above as it stood for *this* recording, snapshotted at the
     /// record tap next to `lastAudioAttachMs`. Reading the live values at
     /// stop time would print one attach's path beside another attach's
-    /// duration — a fast record tap on a cold camera is enough, because the
-    /// 1s pre-warm fires while the tap's own attach is still blocking.
+    /// duration: `sessionQueue` is serial, so the deferred pre-warm cannot
+    /// overlap the tap's attach — it becomes ready at its deadline and runs
+    /// straight after it, mid-recording, overwriting the pair while
+    /// `lastAudioAttachMs` still holds the tap's own cost.
     private var recordingAudioAttachPath = "unknown"
     private var recordingAudioEntryRoute = "unknown"
     /// Wall clock at which the writer session was anchored, i.e. when capture
@@ -1178,8 +1183,9 @@ class CameraController: NSObject {
         // the new `audioReady` contract honest — the recording proceeds
         // without an audio track instead of producing a silent AAC track.
         let entrySession = AVAudioSession.sharedInstance()
+        let entryRunning = self.audioCaptureSession?.isRunning ?? false
         self.lastAudioEntryRoute = "category=\(entrySession.category.rawValue)"
-            + ",mode=\(entrySession.mode.rawValue),running=false"
+            + ",mode=\(entrySession.mode.rawValue),running=\(entryRunning)"
         self.lastAudioAttachPath = "build"
         if !configureAudioSessionForRecording() {
             return false
@@ -3004,13 +3010,18 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         // Handle audio output
         else if output == audioOutput {
+            // Note the mic's first buffer ahead of every gate below. Inside
+            // them a recording that never got an audio writer input, one
+            // dropped by an interruption, and one whose mic delivered nothing
+            // all log micLeadInMs=n/a — and telling those apart is the whole
+            // point of the field.
+            if isRecording, firstSeenAudioPTS == nil {
+                firstSeenAudioPTS = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            }
             // Skip appending while interrupted — iOS keeps delivering
             // (silent) buffers after the session is deactivated, which
             // would produce a valid AAC track with no sound.
             if isRecording, !audioInterrupted, let writer = assetWriter, let audioInput = audioWriterInput {
-                if firstSeenAudioPTS == nil {
-                    firstSeenAudioPTS = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                }
                 // Only append audio after session has started
                 if isWriterSessionStarted && writer.status == .writing && audioInput.isReadyForMoreMediaData {
                     audioInput.append(sampleBuffer)

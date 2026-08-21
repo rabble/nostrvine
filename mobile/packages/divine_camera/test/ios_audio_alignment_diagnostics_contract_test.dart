@@ -105,19 +105,27 @@ void main() {
       );
     });
 
-    test('records the first mic buffer before the writer gate', () {
+    test('records the first mic buffer before every gate that drops it', () {
       // firstSeenAudioPTS exists to answer "did the mic deliver anything at
-      // all". Assigned inside the isWriterSessionStarted branch it would only
-      // ever equal firstAppendedAudioPTS and answer nothing.
+      // all". Three gates sit between the buffer and the writer: no audio
+      // writer input (attach failed), an interruption in progress, and the
+      // writer session not being open yet. Behind any of them a clip whose
+      // mic never delivered and a clip whose buffers were all discarded both
+      // report n/a -- the one distinction the field is here to make.
       final audioBranch = _declarationAt(
         source,
-        'if isRecording, !audioInterrupted, let writer = assetWriter,',
+        'else if output == audioOutput {',
       );
       final seen = audioBranch.indexOf('firstSeenAudioPTS =');
-      final gate = audioBranch.indexOf('if isWriterSessionStarted &&');
+      final appendGate = audioBranch.indexOf(
+        'if isRecording, !audioInterrupted, let writer = assetWriter,',
+      );
+      final sessionGate = audioBranch.indexOf('if isWriterSessionStarted &&');
       expect(seen, greaterThan(-1));
-      expect(gate, greaterThan(-1));
-      expect(seen, lessThan(gate));
+      expect(appendGate, greaterThan(-1));
+      expect(sessionGate, greaterThan(-1));
+      expect(seen, lessThan(appendGate));
+      expect(seen, lessThan(sessionGate));
     });
 
     test('samples the audio session state before it is repaired', () {
@@ -165,8 +173,9 @@ void main() {
       // pre-warm, the interruption-ended handler and resumePreview(), and
       // none of the three is gated on isRecording. Reading the process-wide
       // lastAudio* pair at stop time would print one attach's path beside
-      // another attach's duration -- a record tap on a cold camera is enough,
-      // because the pre-warm fires while the tap's own attach still blocks.
+      // another attach's duration -- sessionQueue is serial, so the pre-warm
+      // cannot overlap the tap's attach, but it becomes ready at its deadline
+      // and runs straight after it, mid-recording.
       final start = _declarationAt(source, 'func startRecording(');
       final snapshot = start.indexOf(
         'self.recordingAudioAttachPath = self.lastAudioAttachPath',
