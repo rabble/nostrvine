@@ -144,7 +144,7 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
     final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
     // The beta chit yields to both the checkmark and the OG Viner chit, so a
     // name never carries two of them. The Viner rosters are disjoint by
-    // construction; the checkmark is an independent list that 14 of its 17
+    // construction; the checkmark is an independent list that 15 of its 18
     // pubkeys share with the beta roster, so that one has to be checked here.
     // A vanished account renders profileDeletedAccountName, so a chit beside
     // it is incoherent. The roster is compiled in and cannot drop anyone who
