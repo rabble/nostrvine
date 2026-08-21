@@ -15460,6 +15460,12 @@ abstract class AppLocalizations {
   /// **'Reverse selected frames'**
   String get videoEditorReverseSelectedFramesSemanticLabel;
 
+  /// Semantic label for the duplicate button while stop-motion stills are multi-selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate selected frames'**
+  String get videoEditorDuplicateSelectedFramesSemanticLabel;
+
   /// Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.
   ///
   /// In en, this message translates to:

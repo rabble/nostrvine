@@ -8976,6 +8976,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Balikkan bingkai yang dipilih';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplikat bingkai yang dipilih';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Videomu harus minimal $seconds detik — ambil beberapa bingkai lagi.';
   }

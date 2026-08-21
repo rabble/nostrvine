@@ -8555,6 +8555,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorReverseSelectedFramesSemanticLabel => '倒放选中帧';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel => '复制选中帧';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return '视频至少需要 $seconds 秒——再多拍几帧吧。';
   }

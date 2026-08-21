@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Ta bort markerade klipp",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Ta bort markerade bildrutor",
     "videoEditorReverseSelectedFramesSemanticLabel": "Vänd markerade bildrutor",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplicera markerade bildrutor",
     "videoEditorStopMotionTooShortSnackbar": "Din video måste vara minst {seconds}s – ta några bildrutor till.",
     "videoEditorMergeProgressLabel": "Ett ögonblick, vi slår samman dina klipp",
     "videoEditorMergeFailed": "Det gick inte att slå samman klippen. Försök igen.",

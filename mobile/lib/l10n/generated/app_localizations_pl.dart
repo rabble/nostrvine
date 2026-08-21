@@ -9238,6 +9238,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Odwróć zaznaczone klatki';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplikuj zaznaczone klatki';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Twój film musi trwać co najmniej ${seconds}s – dodaj jeszcze kilka klatek.';
   }

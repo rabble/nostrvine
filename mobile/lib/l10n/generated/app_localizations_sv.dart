@@ -9053,6 +9053,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vänd markerade bildrutor';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplicera markerade bildrutor';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Din video måste vara minst ${seconds}s – ta några bildrutor till.';
   }

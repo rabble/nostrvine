@@ -5355,6 +5355,10 @@
   "@videoEditorReverseSelectedFramesSemanticLabel": {
     "description": "Semantic label for the reverse button while stop-motion stills are multi-selected."
   },
+  "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplikasi bingkai dipilih",
+  "@videoEditorDuplicateSelectedFramesSemanticLabel": {
+    "description": "Semantic label for the duplicate button while stop-motion stills are multi-selected."
+  },
   "videoEditorStopMotionTooShortSnackbar": "Video anda memerlukan sekurang-kurangnya {seconds}s — rakam beberapa bingkai lagi.",
   "@videoEditorStopMotionTooShortSnackbar": {
     "description": "Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.",

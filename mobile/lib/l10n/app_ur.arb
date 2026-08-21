@@ -5355,6 +5355,10 @@
   "@videoEditorReverseSelectedFramesSemanticLabel": {
     "description": "Semantic label for the reverse button while stop-motion stills are multi-selected."
   },
+  "videoEditorDuplicateSelectedFramesSemanticLabel": "منتخب فریم کی نقل کریں",
+  "@videoEditorDuplicateSelectedFramesSemanticLabel": {
+    "description": "Semantic label for the duplicate button while stop-motion stills are multi-selected."
+  },
   "videoEditorStopMotionTooShortSnackbar": "آپ کی ویڈیو کو کم از کم {seconds}s چاہیے — کچھ اور فریم پکڑیں۔",
   "@videoEditorStopMotionTooShortSnackbar": {
     "description": "Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.",

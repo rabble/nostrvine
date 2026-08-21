@@ -6089,6 +6089,10 @@
   "@videoEditorReverseSelectedFramesSemanticLabel": {
     "description": "Semantic label for the reverse button while stop-motion stills are multi-selected."
   },
+  "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplicate selected frames",
+  "@videoEditorDuplicateSelectedFramesSemanticLabel": {
+    "description": "Semantic label for the duplicate button while stop-motion stills are multi-selected."
+  },
   "videoEditorStopMotionTooShortSnackbar": "Your video needs at least {seconds}s — capture a few more frames.",
   "@videoEditorStopMotionTooShortSnackbar": {
     "description": "Snackbar shown when Done is pressed on a stop-motion composition shorter than the minimum output duration.",

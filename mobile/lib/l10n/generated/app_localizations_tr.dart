@@ -8973,6 +8973,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Seçili kareleri ters çevir';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Seçili kareleri çoğalt';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Videon en az ${seconds}sn olmalı — birkaç kare daha çek.';
   }

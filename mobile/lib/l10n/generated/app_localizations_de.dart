@@ -9167,6 +9167,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausgewählte Frames umkehren';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Ausgewählte Frames duplizieren';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Dein Video braucht mindestens ${seconds}s – nimm noch ein paar Frames auf.';
   }

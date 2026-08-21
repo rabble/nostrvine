@@ -4100,6 +4100,7 @@
     "videoEditorDeleteSelectedClipsSemanticLabel": "Excluir clipes selecionados",
     "videoEditorDeleteSelectedFramesSemanticLabel": "Excluir quadros selecionados",
     "videoEditorReverseSelectedFramesSemanticLabel": "Inverter quadros selecionados",
+    "videoEditorDuplicateSelectedFramesSemanticLabel": "Duplicar quadros selecionados",
     "videoEditorStopMotionTooShortSnackbar": "Seu vídeo precisa de pelo menos {seconds}s — capture mais alguns quadros.",
     "videoEditorMergeProgressLabel": "Um momento, estamos mesclando seus clipes",
     "videoEditorMergeFailed": "Não foi possível mesclar os clipes. Tente novamente.",

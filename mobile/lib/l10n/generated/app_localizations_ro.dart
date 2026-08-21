@@ -9259,6 +9259,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Inversează cadrele selectate';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Duplichează cadrele selectate';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Videoclipul tău trebuie să dureze cel puțin ${seconds}s — capturează încă câteva cadre.';
   }

@@ -9095,6 +9095,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde frames omkeren';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Geselecteerde frames dupliceren';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Je video moet minstens ${seconds}s duren – leg nog een paar frames vast.';
   }

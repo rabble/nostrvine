@@ -9017,6 +9017,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đảo ngược các khung hình đã chọn';
 
   @override
+  String get videoEditorDuplicateSelectedFramesSemanticLabel =>
+      'Nhân bản các khung hình đã chọn';
+
+  @override
   String videoEditorStopMotionTooShortSnackbar(int seconds) {
     return 'Video của bạn cần ít nhất ${seconds}s — hãy chụp thêm vài khung hình.';
   }
