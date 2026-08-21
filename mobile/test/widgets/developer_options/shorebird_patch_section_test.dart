@@ -80,10 +80,8 @@ void main() {
     ) async {
       await pumpWith(tester, const ShorebirdPatchState(currentPatchNumber: 4));
 
-      expect(
-        find.text(l10n.devOptionsShorebirdCurrentPatch(4)),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.devOptionsShorebirdPatchLabel), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
     });
 
     testWidgets('shows no-patch when the release is running unpatched', (

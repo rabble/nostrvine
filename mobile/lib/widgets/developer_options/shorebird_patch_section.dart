@@ -72,18 +72,16 @@ class _CurrentPatchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<ShorebirdPatchCubit>().state;
     final l10n = context.l10n;
+    final unavailable = state.status == ShorebirdPatchStatus.unavailable;
 
-    final title = switch (state) {
-      ShorebirdPatchState(status: ShorebirdPatchStatus.unavailable) =>
-        l10n.devOptionsShorebirdUnavailable,
-      ShorebirdPatchState(currentPatchNumber: final number?) =>
-        l10n.devOptionsShorebirdCurrentPatch(number),
-      _ => l10n.devOptionsShorebirdNoPatch,
-    };
-
+    // The patch number renders as the row's value rather than inside a
+    // sentence: it names which patch is running, so interpolating it into
+    // localized copy would invite translators to inflect it as a quantity.
     return ListTile(
       title: Text(
-        title,
+        unavailable
+            ? l10n.devOptionsShorebirdUnavailable
+            : l10n.devOptionsShorebirdPatchLabel,
         style: VineTheme.titleMediumFont(
           color: context.vineColors.primaryText,
         ),
@@ -94,6 +92,15 @@ class _CurrentPatchTile extends StatelessWidget {
           color: context.vineColors.secondaryText,
         ),
       ),
+      trailing: unavailable
+          ? null
+          : Text(
+              state.currentPatchNumber?.toString() ??
+                  l10n.devOptionsShorebirdNoPatch,
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
+            ),
     );
   }
 

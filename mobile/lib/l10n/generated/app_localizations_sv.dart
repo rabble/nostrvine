@@ -1985,9 +1985,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsShorebirdTitle => 'Shorebird Patches';
 
   @override
-  String devOptionsShorebirdCurrentPatch(int number) {
-    return 'Patch $number';
-  }
+  String get devOptionsShorebirdPatchLabel => 'Running patch';
 
   @override
   String get devOptionsShorebirdNoPatch => 'No patch installed';

@@ -3403,11 +3403,11 @@ abstract class AppLocalizations {
   /// **'Shorebird Patches'**
   String get devOptionsShorebirdTitle;
 
-  /// Shows which Shorebird patch number is currently running, so a tester can report exactly what they validated.
+  /// Row label for the Shorebird patch number currently running. The number itself renders as the row's value, so a tester can report exactly what they validated.
   ///
   /// In en, this message translates to:
-  /// **'Patch {number}'**
-  String devOptionsShorebirdCurrentPatch(int number);
+  /// **'Running patch'**
+  String get devOptionsShorebirdPatchLabel;
 
   /// No description provided for @devOptionsShorebirdNoPatch.
   ///
