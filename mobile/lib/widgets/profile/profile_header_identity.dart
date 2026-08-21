@@ -146,8 +146,14 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
     // name never carries two of them. The Viner rosters are disjoint by
     // construction; the checkmark is an independent list that 15 of its 19
     // pubkeys share with the beta roster, so that one has to be checked here.
+    // A vanished account renders profileDeletedAccountName, so a chit beside
+    // it is incoherent. The roster is compiled in and cannot drop anyone who
+    // vanishes after release, so the gate has to live here.
     final isOgBetaTester =
-        !isOgViner && !showCheckmark && isOgBetaTesterPubkey(userIdHex);
+        !isVanished &&
+        !isOgViner &&
+        !showCheckmark &&
+        isOgBetaTesterPubkey(userIdHex);
     final name = isVanished
         // Deliberately not a UserName: that widget re-resolves the profile
         // through its own provider and falls back to a generated handle, which

@@ -21,6 +21,7 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -39,6 +40,7 @@ import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
@@ -349,6 +351,7 @@ void main() {
       TextScaler? textScaler,
       bool renderHeader = true,
       MockAuthService? authService,
+      bool isVanished = false,
     }) {
       // Pass authService when the test needs the same instance across pumps —
       // e.g. to read tryRefreshCallCount after the header has been unmounted.
@@ -443,6 +446,9 @@ void main() {
             mockNip05VerificationService: createMockNip05VerificationService(),
             mockFollowRepository: mockFollowRepository,
           ),
+          profileVanishedProvider(
+            userIdHex,
+          ).overrideWith((ref) => Stream.value(isVanished)),
           fetchUserProfileProvider(userIdHex).overrideWith(
             profileIsLoading
                 ? (ref) => Completer<UserProfile?>().future
@@ -594,6 +600,64 @@ void main() {
       expect(find.text(l10n.ogVinerBadgeLabel), findsWidgets);
       expect(find.text(l10n.profileBadgeOgVinerBody), findsOneWidget);
       expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('opens OG Beta Tester explainer from profile header target', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final rosterPubkey = ogBetaTesterPubkeys.first;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: rosterPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: rosterPubkey,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.byTooltip(l10n.ogBetaTesterBadgeLabel);
+      expect(button, findsOneWidget);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+      // The header is the 48dp-compliant affordance; the inline chit takes a
+      // documented exception, so the floor has to hold here.
+      final buttonSize = tester.getSize(button);
+      expect(buttonSize.width, greaterThanOrEqualTo(48));
+      expect(buttonSize.height, greaterThanOrEqualTo(48));
+
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.profileBadgeOgBetaTesterBody), findsOneWidget);
+      expect(find.text(l10n.commonClose), findsOneWidget);
+    });
+
+    testWidgets('hides the OG Beta Tester chit on a vanished account', (
+      tester,
+    ) async {
+      final rosterPubkey = ogBetaTesterPubkeys.first;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: rosterPubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: rosterPubkey,
+          ),
+          isVanished: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A vanished account renders profileDeletedAccountName; a chit beside
+      // that is incoherent, and the compiled-in roster cannot drop someone
+      // who vanishes after release.
+      expect(find.byType(OgBetaBadge), findsNothing);
     });
 
     testWidgets('opens checkmark explainer from profile header target', (
