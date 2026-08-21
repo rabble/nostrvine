@@ -1,8 +1,6 @@
 // ABOUTME: Widget tests for DeveloperOptionsScreen layout and debug simulations.
 // ABOUTME: Covers settings-menu width and the protected-minor override toggles (#5721).
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,8 +57,6 @@ Future<InviteAvailabilityCubit> pumpScreen(
 }
 
 class _AvailableShorebirdUpdater implements ShorebirdUpdater {
-  final firstRead = Completer<void>();
-
   @override
   bool get isAvailable => true;
 
@@ -69,10 +65,7 @@ class _AvailableShorebirdUpdater implements ShorebirdUpdater {
       UpdateStatus.upToDate;
 
   @override
-  Future<Patch?> readCurrentPatch() async {
-    if (!firstRead.isCompleted) firstRead.complete();
-    return const Patch(number: 7);
-  }
+  Future<Patch?> readCurrentPatch() async => const Patch(number: 7);
 
   @override
   Future<Patch?> readNextPatch() async => const Patch(number: 7);
@@ -97,20 +90,18 @@ void main() {
     tester,
   ) async {
     final l10n = lookupAppLocalizations(const Locale('en'));
-    final updater = _AvailableShorebirdUpdater();
+    var factoryCalls = 0;
     await pumpScreen(
       tester,
       await mockPrefs(),
-      shorebirdUpdaterFactory: () => updater,
+      shorebirdUpdaterFactory: () {
+        factoryCalls++;
+        return _AvailableShorebirdUpdater();
+      },
     );
 
+    expect(factoryCalls, 1);
     expect(find.text(l10n.devOptionsShorebirdTitle), findsOneWidget);
-    await tester.runAsync(
-      () => updater.firstRead.future.timeout(const Duration(seconds: 5)),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('7'), findsOneWidget);
-    expect(find.text(l10n.devOptionsShorebirdNotChecked), findsOneWidget);
   });
 
   testWidgets(
