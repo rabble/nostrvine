@@ -1,10 +1,10 @@
 {
   "artifact": "mobile/lib/generated/product_analytics.dart",
-  "artifact_commit": "470a150d767b0c23bea66c37158cdefec6ae9743",
-  "artifact_sha256": "70a236ec0822f272de572669ccb55c5baba905f23df3adc2d572dcbd08b8a778",
-  "contract_commit": "27e21a7a1ea3c6cb998186eda50807e63806efc9",
+  "artifact_commit": "f11951855bc7f83634ff9d70f1d6135b1c4ea2ee",
+  "artifact_sha256": "a17733d368e32ee715952915d5bcf08ce96e1ef1e7ded8cef81639a0eb40af66",
+  "contract_commit": "58ec2aa4090d2f17ca0ef1e30d3602f5bd24f9d6",
   "manifest": "analytics-contract.manifest.json",
-  "manifest_sha256": "027e85ab7098adc866b0b3cd8e827fd48c9645471b13e5a014212c4652765ec5",
+  "manifest_sha256": "6c99268e331c49500f4cb71df153bedd570208b965979bf25fa6b848d578f77f",
   "schema_version": 2,
   "source_artifact": "analytics/generated/product_analytics.dart",
   "source_manifest": "analytics/generated/manifest.json"

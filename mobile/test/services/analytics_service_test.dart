@@ -377,10 +377,10 @@ void main() {
     );
 
     test(
-      'account changes purge the previous owner and acquisition data',
+      'account changes purge every queued row and acquisition data',
       () async {
         final queue = _MockProductEventQueue();
-        when(() => queue.clearOwner(any())).thenAnswer((_) async {});
+        when(queue.clear).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
           productEventQueue: queue,
@@ -393,7 +393,7 @@ void main() {
 
         await analyticsService.handleIdentityChange('a' * 64);
 
-        verify(() => queue.clearOwner('a' * 64)).called(1);
+        verify(queue.clear).called(1);
         expect(analyticsService.productAnalyticsUtm, isEmpty);
       },
     );
@@ -467,7 +467,7 @@ void main() {
           () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
         ).thenAnswer((_) async {});
         when(queue.flush).thenAnswer((_) async {});
-        when(() => queue.clearOwner(any())).thenAnswer((_) async {});
+        when(queue.clear).thenAnswer((_) async {});
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
         analyticsService = AnalyticsService(
@@ -508,12 +508,13 @@ void main() {
     );
 
     test(
-      'keeps identifiers across the anonymous-to-first-login boundary',
+      'rotates identifiers across the anonymous-to-first-login boundary',
       () async {
         final queue = _MockProductEventQueue();
         when(
           () => queue.enqueue(any(), ownerPubkey: any(named: 'ownerPubkey')),
         ).thenAnswer((_) async {});
+        when(queue.clear).thenAnswer((_) async {});
         when(queue.flush).thenAnswer((_) async {});
         when(queue.recoverPublishingAndFlush).thenAnswer((_) async {});
         analyticsService.dispose();
@@ -527,8 +528,8 @@ void main() {
         await analyticsService.recordRegistrationStarted(
           entryPoint: ProductAnalyticsV2RegistrationEntryPoint.landing,
         );
-        // First login has no outgoing account: the acquisition funnel join
-        // must survive.
+        // First login is still an identity boundary. Pre-login activity must
+        // not be joinable to the newly authenticated account.
         await analyticsService.handleIdentityChange(null);
         await analyticsService.recordRegistrationStarted(
           entryPoint: ProductAnalyticsV2RegistrationEntryPoint.invite,
@@ -545,8 +546,9 @@ void main() {
                 .map((event) => event.envelope)
                 .toList();
         expect(envelopes, hasLength(2));
-        expect(envelopes[1].anonymousId, envelopes[0].anonymousId);
-        expect(envelopes[1].sessionId, envelopes[0].sessionId);
+        expect(envelopes[1].anonymousId, isNot(envelopes[0].anonymousId));
+        expect(envelopes[1].sessionId, isNot(envelopes[0].sessionId));
+        verify(queue.clear).called(1);
       },
     );
 
