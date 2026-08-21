@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -56,6 +57,14 @@ class ShorebirdPatchRepository {
   // calls from overlapping. The upstream calls have no timeout; if one hangs,
   // later operations intentionally remain queued until the app is relaunched.
   static Future<void>? _operationTail;
+
+  /// Clears the process-wide operation queue between merged-isolate tests.
+  ///
+  /// Production callers must never bypass an in-flight Shorebird operation.
+  /// Tests can deliberately leave a fake updater pending, though, and that
+  /// must not strand unrelated suites that share the same Dart isolate.
+  @visibleForTesting
+  static void resetOperationQueueForTesting() => _operationTail = null;
 
   final ShorebirdUpdater _updater;
   final SharedPreferences _preferences;

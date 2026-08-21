@@ -52,6 +52,8 @@ void main() {
     preferences = await SharedPreferences.getInstance();
   });
 
+  tearDown(ShorebirdPatchRepository.resetOperationQueueForTesting);
+
   test('startup defaults to stable and downloads an outdated patch', () async {
     final updater = _FakeUpdater(status: UpdateStatus.outdated);
     final repository = ShorebirdPatchRepository(
@@ -159,9 +161,7 @@ void main() {
   test('startup and Developer Options updates cannot race', () async {
     final stableCheck = Completer<UpdateStatus>();
     final startupUpdater = _FakeUpdater(checkCompleter: stableCheck);
-    final stagingUpdater = _FakeUpdater(
-      current: const Patch(number: 3),
-    );
+    final stagingUpdater = _FakeUpdater(current: const Patch(number: 3));
     stagingUpdater.onUpdate = () =>
         stagingUpdater.next = const Patch(number: 4);
     final startupRepository = ShorebirdPatchRepository(
@@ -183,5 +183,30 @@ void main() {
     await startup;
     expect(await staging, ShorebirdPatchApplyResult.installed);
     expect(stagingUpdater.updateCalls, 1);
+  });
+
+  test('test reset releases later operations from a pending fake', () async {
+    final pendingCheck = Completer<UpdateStatus>();
+    final pendingRepository = ShorebirdPatchRepository(
+      updater: _FakeUpdater(checkCompleter: pendingCheck),
+      preferences: preferences,
+    );
+
+    final pendingOperation = pendingRepository.updateSubscribedTrackAtStartup();
+    await Future<void>.delayed(Duration.zero);
+
+    ShorebirdPatchRepository.resetOperationQueueForTesting();
+
+    final laterRepository = ShorebirdPatchRepository(
+      updater: _FakeUpdater(current: const Patch(number: 7)),
+      preferences: preferences,
+    );
+    final snapshot = await laterRepository.readSnapshot().timeout(
+      const Duration(seconds: 1),
+    );
+
+    expect(snapshot.current?.number, 7);
+    pendingCheck.complete(UpdateStatus.upToDate);
+    await pendingOperation;
   });
 }
