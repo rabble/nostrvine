@@ -378,12 +378,33 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// do today rather than playing something subtly wrong. Multi-clip
     /// timelines likewise still need a composition to stitch — the editor's
     /// multi-clip sources are local files, never HLS.
+    /// EXPERIMENT (nicht committen): auch eine einzelne gewoehnliche Datei
+    /// direkt spielen, statt sie in eine Composition zu kopieren.
+    ///
+    /// Der perfect-loop-Prototyp loopt `AVPlayerItem(asset:)` ueber die Datei
+    /// selbst und ist an der Naht sauber; divine-mobile loopt eine
+    /// `AVMutableComposition` derselben Datei und ist es nicht. Damit ist das
+    /// Umkopieren der Spuren der naechste zu pruefende Unterschied.
+    ///
+    /// Rotation ist der Vorbehalt: die Composition richtet ueber eine
+    /// Layer-Instruction auf, der Direktpfad verlaesst sich auf die
+    /// `preferredTransform` des Assets. Fuer den Test ist das gleichgueltig --
+    /// die Fixture ist 480x480 ohne Transform -- fuer den Dauerbetrieb nicht.
+    private static func takesDirectItemPath(_ uri: String) -> Bool {
+        let ext = URL(string: uri)?.pathExtension.lowercased()
+        if ext == "m3u8" { return true }
+        return directItemForPlainFiles && !uri.hasPrefix("http")
+    }
+
+    /// EXPERIMENT (nicht committen): Schalter fuer [takesDirectItemPath].
+    private static let directItemForPlainFiles = true
+
     private static func soleHlsClip(
         in clipsRaw: [[String: Any]]
     ) -> [String: Any]? {
         guard clipsRaw.count == 1, let clip = clipsRaw.first,
             let uri = clip["uri"] as? String,
-            URL(string: uri)?.pathExtension.lowercased() == "m3u8",
+            Self.takesDirectItemPath(uri),
             (clip["startMs"] as? NSNumber)?.int64Value ?? 0 == 0,
             (clip["volume"] as? NSNumber)?.doubleValue ?? 1.0 == 1.0,
             (clip["playbackSpeed"] as? NSNumber)?.doubleValue ?? 1.0 == 1.0
@@ -404,7 +425,19 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private func makeHlsPlayerItem(
         from clipMap: [String: Any]
     ) async throws -> (AVPlayerItem, [Double], [Double]) {
-        guard let uri = clipMap["uri"] as? String, let url = URL(string: uri) else {
+        guard let uri = clipMap["uri"] as? String else {
+            throw CompositionError.noPlayableVideoTracks
+        }
+        // Ein blosser Dateipfad ist keine URL mit Schema; URL(string:) liefert
+        // dafuer etwas, das AVURLAsset nicht laden kann. Der Composition-Pfad
+        // unterscheidet hier schon, dieser hat es nie gebraucht, weil er bis
+        // jetzt nur HLS-URLs sah.
+        let url: URL
+        if uri.hasPrefix("/") {
+            url = URL(fileURLWithPath: uri)
+        } else if let parsed = URL(string: uri) {
+            url = parsed
+        } else {
             throw CompositionError.noPlayableVideoTracks
         }
         let httpHeaders = clipMap["httpHeaders"] as? [String: String]

@@ -1,0 +1,148 @@
+import 'dart:io';
+
+import 'package:divine_video_player/src/video_clip.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+/// Debug-only source swap that makes the feed play a known clip, so a loop
+/// seam can be compared against the `perfect_loop` prototype instead of
+/// against whatever the feed happened to scroll to.
+///
+/// Two fixtures are bundled:
+///
+///  * [LoopSeamProbeVariant.vine] is the exact video of the prototype's
+///    `editfix + audio xfade` variant -- the one that loops flawlessly there.
+///    It is the file-or-app test: if it stutters here, the file is exonerated.
+///  * [LoopSeamProbeVariant.fixed] is divine's own CDN clip with its container
+///    corrected (empty video edit dropped, `mvhd` and the audio edit clamped to
+///    where the picture ends). Its `mdat` is byte-identical to what the CDN
+///    serves.
+///
+/// The app never hands the player a CDN URL -- it downloads into
+/// `openvine_video_cache` and plays a file path -- so matching on the URL alone
+/// missed most plays. The probe therefore replaces every clip, and puts the
+/// resolved source on screen, because a test that depends on trusting the
+/// tester is not a test.
+enum LoopSeamProbeVariant {
+  /// The prototype's flawless clip.
+  vine('vine'),
+
+  /// Divine's CDN clip, container corrected.
+  fixed('fixed'),
+
+  /// Leave every source alone.
+  off('off');
+
+  const LoopSeamProbeVariant(this.flag);
+
+  /// Value accepted by the `LOOP_SEAM_PROBE` define.
+  final String flag;
+
+  static LoopSeamProbeVariant _parse(String value) {
+    for (final variant in LoopSeamProbeVariant.values) {
+      if (variant.flag == value) return variant;
+    }
+    return LoopSeamProbeVariant.off;
+  }
+}
+
+/// Substitutes a bundled fixture for the clips the app is about to play.
+abstract final class LoopSeamProbe {
+  /// Bumped per test build so the banner names the run on screen.
+  static const testNumber = 18;
+
+  static const _assetRoot =
+      'packages/divine_video_player/assets/loop_seam_probe';
+
+  /// Selected by `--dart-define=LOOP_SEAM_PROBE=vine|fixed|off`.
+  static final LoopSeamProbeVariant variant = LoopSeamProbeVariant._parse(
+    const String.fromEnvironment('LOOP_SEAM_PROBE', defaultValue: 'vine'),
+  );
+
+  /// Replace every clip, not just one known video. See the class docs.
+  static const substituteEveryVideo = true;
+
+  /// What the player actually received. Drives the on-screen banner.
+  static final ValueNotifier<String?> banner = ValueNotifier<String?>(null);
+
+  static final Map<String, Future<String>> _extracted = {};
+
+  /// Whether the probe would rewrite anything at all.
+  static bool get isActive => kDebugMode && variant != LoopSeamProbeVariant.off;
+
+  /// Rewrites the clips to the selected fixture.
+  static Future<List<VideoClip>> apply(List<VideoClip> clips) async {
+    if (!isActive) return clips;
+    final asset = switch (variant) {
+      LoopSeamProbeVariant.vine => 'loop_editfix_a0.mp4',
+      LoopSeamProbeVariant.fixed => 'divine_cdn_fixed.mp4',
+      LoopSeamProbeVariant.off => null,
+    };
+    if (asset == null) return clips;
+
+    final String path;
+    try {
+      final pending = _extracted[asset] ?? _extract(asset);
+      _extracted[asset] = pending;
+      path = await pending;
+    } on Object catch (error) {
+      // Drop the failed attempt so a later clip can retry the extraction.
+      _extracted.removeWhere((key, _) => key == asset);
+      Log.error(
+        'Loop-seam probe could not extract $asset: $error',
+        name: 'LoopSeamProbe',
+        category: LogCategory.video,
+      );
+      return clips;
+    }
+
+    return [for (final clip in clips) _substitute(clip, path)];
+  }
+
+  static VideoClip _substitute(VideoClip clip, String path) {
+    Log.warning(
+      'Loop-seam probe active: serving ${variant.flag} fixture instead of '
+      '${clip.uri}',
+      name: 'LoopSeamProbe',
+      category: LogCategory.video,
+    );
+    return VideoClip.file(
+      path,
+      start: clip.start,
+      end: clip.end,
+      volume: clip.volume,
+      playbackSpeed: clip.playbackSpeed,
+      trimToCommonTrackEnd: clip.trimToCommonTrackEnd,
+    );
+  }
+
+  /// Keeps [banner] on the clips that are actually being handed over.
+  ///
+  /// Deliberately read from the clip list *after* substitution rather than
+  /// from the intent, so the banner shows the source that really plays even
+  /// when the probe did not fire.
+  static void report(List<VideoClip> clips) {
+    if (!kDebugMode) return;
+    final uri = clips.isEmpty ? null : clips.first.uri;
+    if (uri == null) return;
+    final source = uri.startsWith('http')
+        ? 'CDN ${Uri.tryParse(uri)?.host ?? ''}'
+        : 'LOKAL ${uri.split('/').last}';
+    banner.value = 'T$testNumber  ·  ${variant.flag}  ·  $source';
+  }
+
+  /// Copies a bundled fixture to a real file, because the native players
+  /// cannot read out of the Flutter asset bundle.
+  static Future<String> _extract(String asset) async {
+    final (data, dir) = await (
+      rootBundle.load('$_assetRoot/$asset'),
+      getTemporaryDirectory(),
+    ).wait;
+    final file = File('${dir.path}/loop_seam_probe/$asset');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+    return file.path;
+  }
+}

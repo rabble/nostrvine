@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
+import 'package:divine_video_player/src/loop_seam_probe.dart';
 import 'package:divine_video_player/src/video_buffer_profile.dart';
 import 'package:divine_video_player/src/video_clip.dart';
 import 'package:divine_video_player/src/video_player_state.dart';
@@ -423,13 +424,16 @@ class DivineVideoPlayerController {
   /// global timeline. ExoPlayer will start buffering at the matching
   /// clip and local offset directly — no extra seekTo needed.
   Future<void> setClips(
-    List<VideoClip> clips, {
+    List<VideoClip> rawClips, {
     Duration? startPosition,
   }) async {
     _ensureInitialized();
-    if (clips.isEmpty) {
-      throw ArgumentError.value(clips, 'clips', 'must not be empty');
+    if (rawClips.isEmpty) {
+      throw ArgumentError.value(rawClips, 'clips', 'must not be empty');
     }
+    // Debug-only; a no-op in release and when the probe is off.
+    final clips = await LoopSeamProbe.apply(rawClips);
+    LoopSeamProbe.report(clips);
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }

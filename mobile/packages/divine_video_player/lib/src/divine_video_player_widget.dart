@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
+import 'package:divine_video_player/src/loop_seam_probe.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -95,14 +96,59 @@ class DivineVideoPlayer extends StatelessWidget {
 
     if (placeholder == null ||
         (!crossFadePlaceholder && ctrl.state.isFirstFrameRendered)) {
-      return surface;
+      return _withProbeBanner(surface);
     }
 
+    return _withProbeBanner(
+      Stack(
+        fit: .expand,
+        children: [
+          surface,
+          _PlaceholderOverlay(controller: ctrl, placeholder: placeholder!),
+        ],
+      ),
+    );
+  }
+
+  /// Puts the source that is really playing on screen, so a test run does not
+  /// depend on trusting whoever set it up.
+  Widget _withProbeBanner(Widget child) {
+    if (!LoopSeamProbe.isActive) return child;
     return Stack(
-      fit: .expand,
+      fit: StackFit.expand,
       children: [
-        surface,
-        _PlaceholderOverlay(controller: ctrl, placeholder: placeholder!),
+        child,
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: ValueListenableBuilder<String?>(
+              valueListenable: LoopSeamProbe.banner,
+              builder: (context, label, _) {
+                if (label == null) return const SizedBox.shrink();
+                return ColoredBox(
+                  color: const Color(0xCC000000),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF7CFF7C),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ],
     );
   }

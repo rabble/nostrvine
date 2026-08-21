@@ -33,6 +33,9 @@ dev_dependencies:
   very_good_analysis: ^10.0.0
 
 flutter:
+  # Fixtures fuer den Loop-Naht-Test.
+  assets:
+    - assets/loop_seam_probe/
   plugin:
     platforms:
       android:
