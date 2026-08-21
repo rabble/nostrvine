@@ -97,6 +97,12 @@ void main() {
     );
 
     expect(find.text(l10n.devOptionsShorebirdTitle), findsOneWidget);
+    for (var attempt = 0; attempt < 20; attempt++) {
+      if (find.text(l10n.devOptionsShorebirdNotChecked).evaluate().isNotEmpty) {
+        break;
+      }
+      await tester.pump();
+    }
     expect(find.text('7'), findsOneWidget);
     expect(find.text(l10n.devOptionsShorebirdNotChecked), findsOneWidget);
   });
