@@ -162,10 +162,15 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+    expect(find.text(l10n.accountDeletionCancellingBody), findsOneWidget);
+    expect(find.text(l10n.accountDeletionFinishingBody), findsNothing);
     expect(
       find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
       findsNothing,
+    );
+    expect(
+      find.widgetWithText(DivineButton, l10n.commonRetry),
+      findsOneWidget,
     );
     verifyNever(() => repository.resumePreparation(any()));
   });

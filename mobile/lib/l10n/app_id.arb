@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Kami tidak bisa menyelesaikan penghapusan akunmu. Username-mu masih dipesan untukmu dan masih bisa dikembalikan.",
     "accountDeletionRestoreUsername": "Kembalikan username saya",
     "accountDeletionFinishingBody": "Permintaan penghapusanmu masih diproses. Cek lagi sebelum kamu meninggalkan layar ini.",
+    "accountDeletionCancellingBody": "Kami sedang membatalkan penghapusanmu. Cek lagi sebelum kamu meninggalkan layar ini.",
     "accountDeletionRecoveryFailed": "Kami belum bisa mengembalikan username-mu. Periksa koneksimu dan coba lagi.",
     "accountDeletionUsernameRestored": "Username-mu sudah dikembalikan. Akunmu tidak jadi dihapus.",
     "accountDeletionRecoveryStatusFailed": "Kami tidak bisa memeriksa status penghapusanmu. Periksa koneksimu dan coba lagi.",

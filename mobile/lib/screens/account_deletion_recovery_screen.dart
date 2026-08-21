@@ -210,10 +210,18 @@ class _AccountDeletionRecoveryScreenState
                   showProgress: _isCancelling,
                 );
               }
+              // A cancelling attempt and a processing one are both waiting on
+              // the coordinator, but they are waiting on opposite outcomes:
+              // saying deletion is still running while the server is putting
+              // the account back reads as the cancel having failed.
               return _RecoveryContent(
-                body: error ?? context.l10n.accountDeletionFinishingBody,
-                actionLabel: context.l10n.supportContactSupport,
-                onPressed: () => context.push(RoutePaths.supportCenter),
+                body:
+                    error ??
+                    (value.isCancellationInFlight
+                        ? context.l10n.accountDeletionCancellingBody
+                        : context.l10n.accountDeletionFinishingBody),
+                actionLabel: context.l10n.commonRetry,
+                onPressed: _refresh,
               );
             },
           ),

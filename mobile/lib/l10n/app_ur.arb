@@ -3813,6 +3813,7 @@
   "accountDeletionRecoveryBody": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ آپ کا صارف نام آپ کے لیے محفوظ ہے اور اب بھی بحال کیا جا سکتا ہے۔",
   "accountDeletionRestoreUsername": "میرا صارف نام بحال کریں",
   "accountDeletionFinishingBody": "آپ کی حذف کی درخواست پر ابھی کام ہو رہا ہے۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔",
+  "accountDeletionCancellingBody": "ہم آپ کی حذف کی درخواست منسوخ کر رہے ہیں۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔",
   "accountDeletionRecoveryFailed": "ہم ابھی آپ کا صارف نام بحال نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "accountDeletionUsernameRestored": "آپ کا صارف نام بحال ہو گیا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔",
   "accountDeletionRecoveryStatusFailed": "ہم آپ کے حذف کی صورتحال چیک نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",

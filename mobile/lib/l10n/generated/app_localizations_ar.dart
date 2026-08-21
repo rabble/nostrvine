@@ -6716,6 +6716,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يزال طلب الحذف قيد المعالجة. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'نُلغي طلب الحذف الآن. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'تعذّرت استعادة اسم المستخدم حتى الآن. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.';
 

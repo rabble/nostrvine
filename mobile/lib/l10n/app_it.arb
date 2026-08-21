@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Non siamo riusciti a completare l'eliminazione del tuo account. Il tuo nome utente è riservato a te e può ancora essere ripristinato.",
     "accountDeletionRestoreUsername": "Ripristina il mio nome utente",
     "accountDeletionFinishingBody": "La tua richiesta di eliminazione è ancora in corso. Controlla di nuovo prima di uscire da questa schermata.",
+    "accountDeletionCancellingBody": "Stiamo annullando la tua eliminazione. Controlla di nuovo prima di uscire da questa schermata.",
     "accountDeletionRecoveryFailed": "Non siamo ancora riusciti a ripristinare il tuo nome utente. Controlla la connessione e riprova.",
     "accountDeletionUsernameRestored": "Il tuo nome utente è stato ripristinato. Il tuo account non è stato eliminato.",
     "accountDeletionRecoveryStatusFailed": "Non siamo riusciti a controllare lo stato dell'eliminazione. Controlla la connessione e riprova.",

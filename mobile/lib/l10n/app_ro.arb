@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Nu am putut finaliza ștergerea contului tău. Numele tău de utilizator îți este rezervat și încă poate fi recuperat.",
     "accountDeletionRestoreUsername": "Recuperează-mi numele de utilizator",
     "accountDeletionFinishingBody": "Cererea ta de ștergere este încă în curs. Verifică din nou înainte să părăsești acest ecran.",
+    "accountDeletionCancellingBody": "Anulăm ștergerea ta. Verifică din nou înainte să părăsești acest ecran.",
     "accountDeletionRecoveryFailed": "Nu am putut încă recupera numele tău de utilizator. Verifică conexiunea și încearcă din nou.",
     "accountDeletionUsernameRestored": "Numele tău de utilizator a fost recuperat. Contul tău nu a fost șters.",
     "accountDeletionRecoveryStatusFailed": "Nu am putut verifica starea ștergerii. Verifică conexiunea și încearcă din nou.",

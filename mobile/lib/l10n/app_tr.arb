@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Hesabını silme işlemini tamamlayamadık. Kullanıcı adın senin için ayrılmış durumda ve hâlâ geri alınabilir.",
     "accountDeletionRestoreUsername": "Kullanıcı adımı geri al",
     "accountDeletionFinishingBody": "Silme isteğin hâlâ işleniyor. Bu ekrandan çıkmadan önce tekrar kontrol et.",
+    "accountDeletionCancellingBody": "Silme işlemini iptal ediyoruz. Bu ekrandan çıkmadan önce tekrar kontrol et.",
     "accountDeletionRecoveryFailed": "Kullanıcı adını henüz geri alamadık. Bağlantını kontrol edip tekrar dene.",
     "accountDeletionUsernameRestored": "Kullanıcı adın geri alındı. Hesabın silinmedi.",
     "accountDeletionRecoveryStatusFailed": "Silme durumunu kontrol edemedik. Bağlantını kontrol edip tekrar dene.",

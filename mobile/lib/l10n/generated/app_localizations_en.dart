@@ -6873,6 +6873,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your deletion request is still being processed. Check again before leaving this screen.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'We\'re cancelling your deletion. Check again before leaving this screen.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'We couldn\'t restore your username yet. Check your connection and try again.';
 

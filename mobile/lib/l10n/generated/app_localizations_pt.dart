@@ -6815,6 +6815,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Seu pedido de exclusão ainda está sendo processado. Confira de novo antes de sair desta tela.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Estamos cancelando sua exclusão. Confira de novo antes de sair desta tela.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Ainda não conseguimos recuperar seu nome de usuário. Verifique sua conexão e tente de novo.';
 

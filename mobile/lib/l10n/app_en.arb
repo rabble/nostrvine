@@ -4436,6 +4436,8 @@
   "@accountDeletionRestoreUsername": {"description": "Button that cancels an interrupted account deletion and restores its pending username."},
   "accountDeletionFinishingBody": "Your deletion request is still being processed. Check again before leaving this screen.",
   "@accountDeletionFinishingBody": {"description": "Shown while the server is durably completing an immediate account deletion."},
+  "accountDeletionCancellingBody": "We're cancelling your deletion. Check again before leaving this screen.",
+  "@accountDeletionCancellingBody": {"description": "Shown while the server is rolling back an account-deletion attempt the user asked to cancel."},
   "accountDeletionRecoveryFailed": "We couldn't restore your username yet. Check your connection and try again.",
   "@accountDeletionRecoveryFailed": {"description": "Shown when rollback of a pending username release was not confirmed."},
   "accountDeletionUsernameRestored": "Your username is restored. Your account was not deleted.",

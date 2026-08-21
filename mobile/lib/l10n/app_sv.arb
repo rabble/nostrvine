@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Vi kunde inte slutföra raderingen av ditt konto. Ditt användarnamn är reserverat åt dig och kan fortfarande återställas.",
     "accountDeletionRestoreUsername": "Återställ mitt användarnamn",
     "accountDeletionFinishingBody": "Din raderingsbegäran behandlas fortfarande. Kolla igen innan du lämnar den här skärmen.",
+    "accountDeletionCancellingBody": "Vi avbryter din radering. Kolla igen innan du lämnar den här skärmen.",
     "accountDeletionRecoveryFailed": "Vi kunde inte återställa ditt användarnamn än. Kontrollera anslutningen och försök igen.",
     "accountDeletionUsernameRestored": "Ditt användarnamn är återställt. Ditt konto raderades inte.",
     "accountDeletionRecoveryStatusFailed": "Vi kunde inte kontrollera status för raderingen. Kontrollera anslutningen och försök igen.",

@@ -6764,6 +6764,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کی حذف کی درخواست پر ابھی کام ہو رہا ہے۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'ہم آپ کی حذف کی درخواست منسوخ کر رہے ہیں۔ یہ اسکرین چھوڑنے سے پہلے دوبارہ دیکھ لیں۔';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'ہم ابھی آپ کا صارف نام بحال نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔';
 

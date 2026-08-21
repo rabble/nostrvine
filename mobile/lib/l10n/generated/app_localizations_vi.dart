@@ -6741,6 +6741,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Chúng tôi đang hủy yêu cầu xóa của bạn. Kiểm tra lại trước khi rời màn hình này nhé.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Bọn mình chưa lấy lại được tên người dùng của bạn. Kiểm tra kết nối và thử lại.';
 

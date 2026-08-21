@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "アカウントの削除を完了できませんでした。ユーザー名はあなたのために確保されていて、まだ元に戻せます。",
     "accountDeletionRestoreUsername": "ユーザー名を元に戻す",
     "accountDeletionFinishingBody": "削除リクエストはまだ処理中です。この画面を離れる前にもう一度確認してください。",
+    "accountDeletionCancellingBody": "削除をキャンセルしています。この画面を離れる前にもう一度確認してください。",
     "accountDeletionRecoveryFailed": "ユーザー名をまだ元に戻せませんでした。接続を確認してもう一度お試しください。",
     "accountDeletionUsernameRestored": "ユーザー名を元に戻しました。アカウントは削除されていません。",
     "accountDeletionRecoveryStatusFailed": "削除の状況を確認できませんでした。接続を確認してもう一度お試しください。",

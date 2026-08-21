@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "تعذّر علينا إكمال حذف حسابك. اسم المستخدم الخاص بك محجوز لك ولا يزال من الممكن استعادته.",
     "accountDeletionRestoreUsername": "استعادة اسم المستخدم",
     "accountDeletionFinishingBody": "لا يزال طلب الحذف قيد المعالجة. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.",
+    "accountDeletionCancellingBody": "نُلغي طلب الحذف الآن. يُرجى التحقق مرّة أخرى قبل مغادرة هذه الشاشة.",
     "accountDeletionRecoveryFailed": "تعذّرت استعادة اسم المستخدم حتى الآن. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.",
     "accountDeletionUsernameRestored": "تمّت استعادة اسم المستخدم. لم يُحذف حسابك.",
     "accountDeletionRecoveryStatusFailed": "تعذّر التحقق من حالة الحذف. يُرجى التحقق من الاتصال والمحاولة مرّة أخرى.",

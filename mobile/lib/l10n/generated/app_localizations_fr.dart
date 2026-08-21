@@ -6857,6 +6857,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ta demande de suppression est encore en cours. Vérifie à nouveau avant de quitter cet écran.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'On annule ta suppression. Vérifie à nouveau avant de quitter cet écran.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'On n\'a pas encore pu récupérer ton nom d\'utilisateur. Vérifie ta connexion et réessaie.';
 

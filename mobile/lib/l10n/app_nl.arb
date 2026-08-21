@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "We konden je account niet volledig verwijderen. Je gebruikersnaam is voor je gereserveerd en kan nog worden teruggezet.",
     "accountDeletionRestoreUsername": "Mijn gebruikersnaam terugzetten",
     "accountDeletionFinishingBody": "Je verwijderverzoek wordt nog verwerkt. Controleer het opnieuw voordat je dit scherm verlaat.",
+    "accountDeletionCancellingBody": "We annuleren je verwijderverzoek. Controleer het opnieuw voordat je dit scherm verlaat.",
     "accountDeletionRecoveryFailed": "We konden je gebruikersnaam nog niet terugzetten. Controleer je verbinding en probeer het opnieuw.",
     "accountDeletionUsernameRestored": "Je gebruikersnaam is teruggezet. Je account is niet verwijderd.",
     "accountDeletionRecoveryStatusFailed": "We konden de status van je verwijdering niet controleren. Controleer je verbinding en probeer het opnieuw.",

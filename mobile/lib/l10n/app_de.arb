@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Wir konnten das Löschen deines Kontos nicht abschließen. Dein Benutzername ist für dich reserviert und kann noch zurückgeholt werden.",
     "accountDeletionRestoreUsername": "Benutzernamen zurückholen",
     "accountDeletionFinishingBody": "Deine Löschanfrage wird noch bearbeitet. Schau nochmal nach, bevor du diesen Bildschirm verlässt.",
+    "accountDeletionCancellingBody": "Wir brechen deine Löschung gerade ab. Schau nochmal nach, bevor du diesen Bildschirm verlässt.",
     "accountDeletionRecoveryFailed": "Wir konnten deinen Benutzernamen noch nicht zurückholen. Prüfe deine Verbindung und versuch es erneut.",
     "accountDeletionUsernameRestored": "Dein Benutzername ist zurück. Dein Konto wurde nicht gelöscht.",
     "accountDeletionRecoveryStatusFailed": "Wir konnten den Status deiner Löschung nicht prüfen. Prüfe deine Verbindung und versuch es erneut.",

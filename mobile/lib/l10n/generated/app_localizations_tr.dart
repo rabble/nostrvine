@@ -6693,6 +6693,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Silme isteğin hâlâ işleniyor. Bu ekrandan çıkmadan önce tekrar kontrol et.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Silme işlemini iptal ediyoruz. Bu ekrandan çıkmadan önce tekrar kontrol et.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Kullanıcı adını henüz geri alamadık. Bağlantını kontrol edip tekrar dene.';
 

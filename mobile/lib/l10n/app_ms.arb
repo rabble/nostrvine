@@ -3813,6 +3813,7 @@
   "accountDeletionRecoveryBody": "Kami tidak dapat melengkapkan pemadaman akaun anda. Nama pengguna anda masih ditempah untuk anda dan masih boleh dipulihkan.",
   "accountDeletionRestoreUsername": "Pulihkan nama pengguna saya",
   "accountDeletionFinishingBody": "Permintaan pemadaman anda masih diproses. Semak semula sebelum anda meninggalkan skrin ini.",
+  "accountDeletionCancellingBody": "Kami sedang membatalkan pemadaman anda. Semak semula sebelum anda meninggalkan skrin ini.",
   "accountDeletionRecoveryFailed": "Kami belum dapat memulihkan nama pengguna anda. Semak sambungan anda dan cuba lagi.",
   "accountDeletionUsernameRestored": "Nama pengguna anda telah dipulihkan. Akaun anda tidak dipadam.",
   "accountDeletionRecoveryStatusFailed": "Kami tidak dapat menyemak status pemadaman anda. Semak sambungan anda dan cuba lagi.",

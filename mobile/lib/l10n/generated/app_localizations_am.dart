@@ -6618,6 +6618,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የመሰረዝ ጥያቄዎ አሁንም እየተሰራ ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'የመሰረዝ ጥያቄዎን እየሰረዝን ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'የተጠቃሚ ስምዎን ገና መመለስ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።';
 

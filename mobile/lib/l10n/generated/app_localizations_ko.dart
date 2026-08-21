@@ -6445,6 +6445,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '삭제 요청을 아직 처리하고 있어요. 이 화면을 나가기 전에 다시 확인해 주세요.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      '삭제를 취소하고 있어요. 이 화면을 나가기 전에 다시 확인해 주세요.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       '사용자명을 아직 되돌리지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
 

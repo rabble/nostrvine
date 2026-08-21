@@ -6937,6 +6937,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cererea ta de ștergere este încă în curs. Verifică din nou înainte să părăsești acest ecran.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Anulăm ștergerea ta. Verifică din nou înainte să părăsești acest ecran.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Nu am putut încă recupera numele tău de utilizator. Verifică conexiunea și încearcă din nou.';
 
