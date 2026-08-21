@@ -1,102 +1,291 @@
 // ABOUTME: Tests for router-driven ProfileScreen implementation
-// ABOUTME: Verifies URL ↔ PageView synchronization for profile feeds
+// ABOUTME: Verifies URL ↔ playback synchronization for profile feeds
 
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
+class _MockVideosRepository extends Mock implements VideosRepository {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockBackgroundPublishBloc
+    extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
+    implements BackgroundPublishBloc {}
+
+class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
+    implements PeopleListsBloc {}
+
+class _FakeVideoEvent extends Fake implements VideoEvent {}
+
+class _FakeSystemVolumeListener implements SystemVolumeListener {
+  @override
+  void hideSystemUI() {}
+
+  @override
+  StreamSubscription<double> listen(void Function(double volume) onData) {
+    return const Stream<double>.empty().listen(onData);
+  }
+}
+
+/// In-memory [CacheDao] so the [ProfileFeedCubit]'s [CacheSync] reads/writes
+/// stay isolated per test under the merged `--optimization` isolate.
+class _InMemoryCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
+const _npub = 'npub1424242424242424242424242424242424242424242424242424qamrcaj';
+
+/// The hex [_npub] decodes to. The profile route carries the npub while the
+/// feed carries hex, and [ProfileFeedCubit] drops live updates whose pubkey
+/// does not match the profile's, so the two must describe one identity.
+const _authorPubkeyHex =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
 void main() {
-  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
-    container: c,
-    child: MaterialApp.router(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      routerConfig: c.read(goRouterProvider),
-    ),
+  final now = DateTime.now();
+  final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+
+  VideoEvent video(String id) => VideoEvent(
+    id: id,
+    pubkey: _authorPubkeyHex,
+    createdAt: nowUnix,
+    content: 'Profile video $id',
+    timestamp: now,
+    title: id,
+    videoUrl: 'https://example.com/$id.mp4',
   );
 
-  // The three skipped tests below used to seed the profile feed by overriding
-  // videosForProfileRouteProvider. #7680 deleted that provider — the profile
-  // feed is the REST-backed ProfileFeedCubit — so whoever re-enables them
-  // seeds through ProfileFeedScope instead.
-  testWidgets('PROFILE: URL ↔ PageView sync', (tester) async {
-    final c = ProviderContainer();
-    addTearDown(c.dispose);
+  final mockVideos = [
+    video('profile-video-0'),
+    video('profile-video-1'),
+    video('profile-video-2'),
+  ];
 
-    await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
-    await tester.pumpAndSettle();
+  // The URL is the source of truth for which profile video plays, through
+  // URL -> ProfileScreenRouter -> ProfileViewSwitcher -> ProfileVideoFeedView
+  // -> PooledFullscreenVideoFeedScreen. Assert the video the fullscreen feed
+  // actually shows, so a dropped index anywhere in that chain fails (#7160).
+  group('profile feed URL opens the matching page', () {
+    late _MockVideosRepository videosRepository;
+    late _MockVideoEventService videoEventService;
+    late _MockContentBlocklistRepository blocklistRepository;
+    late _MockBackgroundPublishBloc backgroundPublishBloc;
+    late _MockPeopleListsBloc peopleListsBloc;
 
-    expect(find.byType(ProfileScreenRouter), findsOneWidget);
+    setUpAll(() {
+      registerFallbackValue(_FakeVideoEvent());
+    });
 
-    // Verify first video shown
-    expect(find.text('Profile 0/3'), findsOneWidget);
+    setUp(() async {
+      await CacheSync.init(dao: _InMemoryCacheDao());
 
-    // Navigate to index 1
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
-    await tester.pumpAndSettle();
+      videosRepository = _MockVideosRepository();
+      videoEventService = _MockVideoEventService();
+      blocklistRepository = _MockContentBlocklistRepository();
+      backgroundPublishBloc = _MockBackgroundPublishBloc();
+      peopleListsBloc = _MockPeopleListsBloc();
 
-    // Verify second video shown
-    expect(find.text('Profile 1/3'), findsOneWidget);
-    // TODO(#7160): Fix and re-enable this test.
-  }, skip: true);
+      whenListen(
+        backgroundPublishBloc,
+        const Stream<BackgroundPublishState>.empty(),
+        initialState: const BackgroundPublishState(),
+      );
+      whenListen(
+        peopleListsBloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: const PeopleListsState(),
+      );
 
-  testWidgets('PROFILE: Empty state shows when no videos', (tester) async {
-    final c = ProviderContainer();
-    addTearDown(c.dispose);
+      when(
+        () => videosRepository.getAuthorFeed(
+          authorPubkey: any(named: 'authorPubkey'),
+          offset: any(named: 'offset'),
+          relaySeed: any(named: 'relaySeed'),
+          skipCache: any(named: 'skipCache'),
+        ),
+      ).thenAnswer(
+        (_) async => AuthorFeedResult(
+          authorPubkey: _authorPubkeyHex,
+          videos: mockVideos,
+          hasMore: false,
+        ),
+      );
 
-    await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
-    await tester.pumpAndSettle();
+      when(
+        () => videosRepository.removedVideoIds,
+      ).thenAnswer((_) => const Stream<String>.empty());
 
-    expect(find.textContaining('No posts yet'), findsOneWidget);
-    // TODO(#7160): Fix and re-enable this test.
-  }, skip: true);
+      when(
+        () => videoEventService.authorVideos(any()),
+      ).thenReturn(const <VideoEvent>[]);
+      when(
+        () => videoEventService.filterVideoList(any()),
+      ).thenAnswer((i) => i.positionalArguments.first as List<VideoEvent>);
+      when(() => videoEventService.shouldHideVideo(any())).thenReturn(false);
+      when(
+        () => videoEventService.isVideoEventKnownDeleted(any()),
+      ).thenReturn(false);
+      when(
+        () => videoEventService.subscribeToUserVideos(any()),
+      ).thenAnswer((_) async {});
+      when(() => videoEventService.addListener(any())).thenReturn(null);
+      when(() => videoEventService.removeListener(any())).thenReturn(null);
+      when(
+        () => videoEventService.addVideoUpdateListener(any()),
+      ).thenReturn(() {});
+      when(
+        () => videoEventService.removedVideoIds,
+      ).thenAnswer((_) => const Stream<String>.empty());
+      when(
+        () => blocklistRepository.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
+      when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
+      when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
+      when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
+      when(
+        () => blocklistRepository.currentState,
+      ).thenReturn(ContentPolicyState.empty());
+      when(
+        () => blocklistRepository.stateStream,
+      ).thenAnswer((_) => const Stream<ContentPolicyState>.empty());
+    });
 
-  testWidgets('PROFILE: Lifecycle pause → activeVideoId becomes null', (
-    tester,
-  ) async {
-    final c = ProviderContainer(
-      overrides: [
-        appForegroundProvider.overrideWithValue(const AsyncValue.data(false)),
-      ],
-    );
-    addTearDown(c.dispose);
+    Future<FullscreenFeedBloc> pumpProfileAt(
+      WidgetTester tester,
+      int index,
+    ) async {
+      final location = ProfileScreenRouter.pathForIndex(_npub, index);
+      final router = GoRouter(
+        initialLocation: location,
+        routes: [
+          GoRoute(
+            path: ProfileScreenRouter.pathWithIndex,
+            builder: (_, _) => const ProfileScreenRouter(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
 
-    await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+            routerLocationStreamProvider.overrideWithValue(
+              Stream.value(location),
+            ),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+            builder: (context, child) => MultiBlocProvider(
+              providers: [
+                BlocProvider<BackgroundPublishBloc>.value(
+                  value: backgroundPublishBloc,
+                ),
+                BlocProvider<PeopleListsBloc>.value(value: peopleListsBloc),
+                BlocProvider<VideoVolumeCubit>(
+                  create: (_) => VideoVolumeCubit(
+                    sharedPreferences: createMockSharedPreferences(),
+                    systemVolumeListener: _FakeSystemVolumeListener(),
+                  ),
+                ),
+              ],
+              // The app shell supplies the Scaffold for in-shell profile
+              // routes; this stand-in does the same.
+              child: Scaffold(body: child ?? const SizedBox.shrink()),
+            ),
+          ),
+        ),
+      );
 
-    // When backgrounded, active video should be null
-    expect(c.read(activeVideoIdProvider), isNull);
-    // TODO(#7160): Fix and re-enable this test.
-  }, skip: true);
+      await tester.runAsync(() async {
+        await Future<void>.delayed(Duration.zero);
+      });
+      await tester.pump();
+      await tester.pump();
+
+      final content = tester.element(find.byType(FullscreenFeedContent));
+      return content.read<FullscreenFeedBloc>();
+    }
+
+    testWidgets('index 0 in the URL opens the first video', (tester) async {
+      final bloc = await pumpProfileAt(tester, 0);
+
+      expect(bloc.state.currentVideo?.id, mockVideos[0].id);
+    });
+
+    testWidgets('index 1 in the URL opens the second video', (tester) async {
+      final bloc = await pumpProfileAt(tester, 1);
+
+      expect(bloc.state.currentVideo?.id, mockVideos[1].id);
+    });
+  });
 
   // A divine:///profile/<npub> or https://divine.video/profile/<npub> deep
   // link lands on this route with a one-entry stack. When that account has
   // blocked or muted the viewer the screen swaps to BlockedUserScreen, whose
   // app-bar back used to be a raw context.pop — GoError, dead caret.
   group('$BlockedUserScreen back affordance', () {
-    const npub =
-        'npub1424242424242424242424242424242424242424242424242424qamrcaj';
-
     testWidgets('back lands on the feed when there is nothing to pop', (
       tester,
     ) async {
@@ -104,7 +293,7 @@ void main() {
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(true);
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
 
-      final profilePath = ProfileScreenRouter.pathForNpub(npub);
+      final profilePath = ProfileScreenRouter.pathForNpub(_npub);
       final router = GoRouter(
         initialLocation: profilePath,
         routes: [
