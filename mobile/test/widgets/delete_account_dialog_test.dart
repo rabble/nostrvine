@@ -132,6 +132,98 @@ Finder _deleteAllContentButton() => find.widgetWithText(
 Finder _deleteSheetCancelButton() =>
     find.widgetWithText(DivineButton, _englishL10n().commonCancel);
 
+/// Mirrors production's global auth redirect: once the account is signed out
+/// every route resolves to /welcome, so the route deletion was started from —
+/// and its context — is torn down while the flow is still running.
+class _SignOutRedirectNotifier extends ChangeNotifier {
+  bool signedOut = false;
+
+  void signOut() {
+    signedOut = true;
+    notifyListeners();
+  }
+}
+
+const _welcomeLocation = '/welcome';
+const _welcomeMarker = 'Welcome destination';
+
+Future<BuildContext> _pumpSignOutRedirectApp(
+  WidgetTester tester,
+  _SignOutRedirectNotifier redirect,
+) async {
+  late BuildContext capturedContext;
+  final router = GoRouter(
+    refreshListenable: redirect,
+    redirect: (_, state) =>
+        redirect.signedOut && state.matchedLocation != _welcomeLocation
+        ? _welcomeLocation
+        : null,
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, _) => Builder(
+          builder: (context) {
+            capturedContext = context;
+            return const Scaffold(body: SizedBox.shrink());
+          },
+        ),
+      ),
+      GoRoute(
+        path: _welcomeLocation,
+        builder: (_, _) => const Scaffold(body: Text(_welcomeMarker)),
+      ),
+    ],
+  );
+  await tester.pumpWidget(
+    MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
+  );
+  return capturedContext;
+}
+
+void _stubSuccessfulDeletion(
+  _MockAccountDeletionService deletionService,
+  _MockAuthService authService,
+) {
+  when(
+    authService.checkAccountDeletionReadiness,
+  ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+  when(
+    () => deletionService.deleteAccount(
+      onProgress: any(named: 'onProgress'),
+      expectedPubkey: any(named: 'expectedPubkey'),
+    ),
+  ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
+  when(authService.deleteKeycastAccount).thenAnswer(
+    (_) async => (success: true, error: null, requiresReauthentication: false),
+  );
+}
+
+/// Collects what the deletion flow hands to screen readers.
+List<Object?> _captureAnnouncements(WidgetTester tester) {
+  final announced = <Object?>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (message) async {
+      if (message is Map && message['type'] == 'announce') {
+        announced.add((message['data'] as Map?)?['message']);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announced;
+}
+
 Future<void> _tapBurnUsernameCheckbox(WidgetTester tester) async {
   final tile = find.byType(DivineRowCheckbox);
   await tester.ensureVisible(tile);
@@ -794,6 +886,95 @@ void main() {
       );
       expect(find.text(l10n.deleteAccountSuccess), findsNothing);
     });
+
+    testWidgets(
+      'confirms a successful deletion on the screen the redirect lands on',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final redirect = _SignOutRedirectNotifier();
+        _stubSuccessfulDeletion(deletionService, authService);
+        // Holds sign-out open while the redirect runs, so the route deletion
+        // was started from is gone before signOut returns — the device
+        // timeline in #6450.
+        final signOutGate = Completer<void>();
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {
+          redirect.signOut();
+          await signOutGate.future;
+        });
+        final announced = _captureAnnouncements(tester);
+
+        final capturedContext = await _pumpSignOutRedirectApp(tester, redirect);
+        final deletion = executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(_welcomeMarker), findsOneWidget);
+
+        signOutGate.complete();
+        await deletion;
+        await tester.pumpAndSettle();
+
+        final l10n = _englishL10n();
+        expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
+        expect(announced, contains(l10n.deleteAccountSuccess));
+      },
+    );
+
+    testWidgets(
+      'leaves the redirect destination standing when the sheet is already gone',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final redirect = _SignOutRedirectNotifier();
+        _stubSuccessfulDeletion(deletionService, authService);
+        final signOutGate = Completer<void>();
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {
+          redirect.signOut();
+          await signOutGate.future;
+        });
+
+        final capturedContext = await _pumpSignOutRedirectApp(tester, redirect);
+        final deletion = executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        // Stop one frame past the redirect, with the outgoing route still
+        // animating away: the caller context is then still mounted when
+        // sign-out returns, which is what a device reaches whenever the
+        // sign-out work blocks frames. Dismissing the progress sheet by
+        // popping the navigator took the freshly installed /welcome page
+        // with it, leaving the app with no page at all.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(
+          capturedContext.mounted,
+          isTrue,
+          reason:
+              'the scenario needs the caller still mounted after the '
+              'redirect',
+        );
+
+        signOutGate.complete();
+        await deletion;
+        await tester.pumpAndSettle();
+
+        expect(find.text(_welcomeMarker), findsOneWidget);
+        expect(
+          find.text(_englishL10n().deleteAccountSuccess),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('opted-in burn aborts when recovery is unavailable', (
       tester,

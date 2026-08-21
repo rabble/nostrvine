@@ -452,6 +452,25 @@ Future<void> executeAccountDeletion({
 
   // Show progress sheet with BlocProvider
   if (!context.mounted) return;
+
+  // Signing out flips auth state to unauthenticated, which makes the global
+  // redirect replace the whole stack with /welcome — tearing down the route
+  // this was called from. Everything needed to report the outcome afterwards
+  // is therefore captured here: the messenger and the view sit above the
+  // Navigator and outlive the redirect, so the confirmation lands on the
+  // destination instead of vanishing with the caller (#6450).
+  final messenger = ScaffoldMessenger.of(context);
+  final view = View.of(context);
+  final textDirection = Directionality.of(context);
+  // The navigator the sheet is pushed onto, resolved while the caller is
+  // still mounted. `context.pop()` would resolve to the innermost navigator
+  // instead, which for a shell-nested caller is not the one holding it.
+  final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+  // The sheet's own route, captured so dismissal can target exactly this
+  // sheet: `VineBottomSheet.show` hands back the result future, not the route.
+  ModalRoute<void>? progressSheetRoute;
+
   unawaited(
     VineBottomSheet.show<void>(
       context: context,
@@ -468,8 +487,10 @@ Future<void> executeAccountDeletion({
       // leaving the bottom nav tappable mid-deletion.
       useRootNavigator: true,
       body: const _DeletionProgressSheetContent(),
-      contentWrapper: (_, child) =>
-          BlocProvider.value(value: cubit, child: child),
+      contentWrapper: (sheetContext, child) {
+        progressSheetRoute = ModalRoute.of<void>(sheetContext);
+        return BlocProvider.value(value: cubit, child: child);
+      },
     ),
   );
 
@@ -477,24 +498,32 @@ Future<void> executeAccountDeletion({
   var progressSheetDismissed = false;
 
   void dismissProgressSheet() {
-    if (!progressSheetDismissed && context.mounted) {
-      progressSheetDismissed = true;
-      // Targets the navigator the sheet was pushed onto. `context.pop()` would
-      // resolve to the innermost navigator instead, which for a shell-nested
-      // caller is not the one holding this sheet.
-      Navigator.of(context, rootNavigator: true).pop();
+    if (progressSheetDismissed || !rootNavigator.mounted) return;
+    progressSheetDismissed = true;
+    final route = progressSheetRoute;
+    if (route == null) {
+      // The sheet has not had its first build yet, so no frame has run since
+      // it was pushed and nothing can have moved it: it is still on top.
+      rootNavigator.pop();
+      return;
+    }
+    // Once built, dismiss by identity rather than popping whatever sits on
+    // top. The sign-out redirect takes this sheet down together with the
+    // route it was pushed over, and a blind pop then removes the page the
+    // redirect just installed — for /welcome, the last one on the stack, so
+    // the app is left with no page at all (#6450).
+    if (!route.isActive) return;
+    if (route.isCurrent) {
+      rootNavigator.pop();
+    } else {
+      rootNavigator.removeRoute(route);
     }
   }
 
   // Speak each delete outcome so screen-reader users hear the result the
   // snackbar shows visually. Mirrors the snackbar text at every outcome site.
   void announceOutcome(String message) {
-    if (!context.mounted) return;
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      message,
-      Directionality.of(context),
-    );
+    SemanticsService.sendAnnouncement(view, message, textDirection);
   }
 
   // Captured before the first await so the post-sign-out catch can localize
@@ -520,6 +549,9 @@ Future<void> executeAccountDeletion({
   final attemptCancelledText = context.l10n.accountDeletionAttemptCancelled;
   final recoveryFailedText = context.l10n.accountDeletionRecoveryFailed;
   final finishingDeletionText = context.l10n.accountDeletionFinishingBody;
+  final deletionSuccessText = context.l10n.deleteAccountSuccess;
+  final deletionSuccessUnverifiedText =
+      context.l10n.deleteAccountSuccessContentUnverified;
 
   AccountDeletionAttempt? deletionAttempt;
   var attemptPrepared = false;
@@ -864,30 +896,32 @@ Future<void> executeAccountDeletion({
         localDataDeletionFailure = localDataDeletionFailedText;
       }
 
-      // Close loading indicator and show result snackbar
-      // Router will automatically redirect to /welcome after sign out
+      // Close loading indicator and show result snackbar. Sign-out has already
+      // redirected to /welcome and taken the calling route with it, so the
+      // outcome is reported through the messenger captured up front — gating
+      // this on `context.mounted` left a completed deletion silent (#6450).
       dismissProgressSheet();
-      if (context.mounted) {
-        // When the relay query that enumerates existing content failed, no
-        // per-item deletion request was sent for anything the user had already
-        // posted. When a kind-5 batch was not confirmed, some per-item requests
-        // also did not land. Saying "deletion requests sent" would overstate
-        // either outcome.
-        final snackbarText =
-            keyDeletionWarning ??
-            localDataDeletionFailure ??
-            (result.contentQueryFailed || result.contentDeletionIncomplete
-                ? context.l10n.deleteAccountSuccessContentUnverified
-                : context.l10n.deleteAccountSuccess);
-        ScaffoldMessenger.of(context).showSnackBar(
+      // When the relay query that enumerates existing content failed, no
+      // per-item deletion request was sent for anything the user had already
+      // posted. When a kind-5 batch was not confirmed, some per-item requests
+      // also did not land. Saying "deletion requests sent" would overstate
+      // either outcome.
+      final snackbarText =
+          keyDeletionWarning ??
+          localDataDeletionFailure ??
+          (result.contentQueryFailed || result.contentDeletionIncomplete
+              ? deletionSuccessUnverifiedText
+              : deletionSuccessText);
+      if (messenger.mounted) {
+        messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
             snackbarText,
             error:
                 keyDeletionWarning != null || localDataDeletionFailure != null,
           ),
         );
-        announceOutcome(snackbarText);
       }
+      announceOutcome(snackbarText);
     } else {
       // Content deletion (NIP-62) failed.
       if (attemptPrepared) {
