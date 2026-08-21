@@ -65,11 +65,6 @@ class BlossomAuthService {
     }
 
     try {
-      // Create preview of hash for logging (handle short test hashes)
-      final hashPreview = sha256Hash.length > 8
-          ? '${sha256Hash.substring(0, 8)}...'
-          : sha256Hash;
-
       // Create cache key
       final cacheKey = _createCacheKey(sha256Hash, serverUrl);
 
@@ -77,7 +72,7 @@ class BlossomAuthService {
       final cached = _cache[cacheKey];
       if (cached != null && !cached.isExpired) {
         Log.debug(
-          'Using cached Blossom auth header for hash: $hashPreview',
+          'Using cached Blossom auth header for hash: $sha256Hash',
           name: 'BlossomAuthService',
           category: LogCategory.system,
         );
@@ -85,7 +80,7 @@ class BlossomAuthService {
       }
 
       Log.debug(
-        'Creating Blossom auth header for blob: $hashPreview',
+        'Creating Blossom auth header for blob: $sha256Hash',
         name: 'BlossomAuthService',
         category: LogCategory.system,
       );
@@ -137,7 +132,7 @@ class BlossomAuthService {
       final expiresAt = _cache[cacheKey]!.expiresAt;
       Log.info(
         'Created Blossom auth header for '
-        '$hashPreview (expires: $expiresAt)',
+        '$sha256Hash (expires: $expiresAt)',
         name: 'BlossomAuthService',
         category: LogCategory.system,
       );

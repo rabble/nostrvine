@@ -1,20 +1,11 @@
 // ABOUTME: String utility functions for safe operations and formatting
-// ABOUTME: Provides safe substring operations and string truncation for logging
+// ABOUTME: Provides safe substring, compact-number and UTF-16 helpers
 
 import 'package:count_formatter/count_formatter.dart';
 import 'package:text_sanitizer/text_sanitizer.dart' as text_sanitizer;
 
 /// Utility functions for safe string operations
 class StringUtils {
-  /// Safely truncate a string to a maximum length for logging purposes
-  /// Returns the string truncated to [maxLength] characters, or the full string if shorter
-  static String safeTruncate(String str, int maxLength) {
-    if (str.length <= maxLength) {
-      return str;
-    }
-    return str.substring(0, maxLength);
-  }
-
   /// Safe substring operation that won't throw RangeError
   /// Returns substring from [start] to [end], handling bounds automatically
   static String safeSubstring(String str, int start, [int? end]) {
@@ -25,10 +16,6 @@ class StringUtils {
 
     return str.substring(clampedStart, clampedEnd);
   }
-
-  /// Format an ID for logging - safely truncates to 8 characters
-  /// Commonly used pattern throughout the codebase for logging video/event IDs
-  static String formatIdForLogging(String id) => safeTruncate(id, 8);
 
   /// Format a number to a compact, locale-aware string.
   ///

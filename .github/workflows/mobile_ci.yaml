@@ -286,6 +286,17 @@ jobs:
           # can only shrink. Fix with emitIfOpen / addIfOpen from
           # lib/blocs/close_guard.dart.
           bash scripts/check_post_close_emit_ceiling.sh
+      - name: 🔑 Verify no Nostr ID is shortened into a log (full-identifier ratchet)
+        run: |
+          # Issue #3372. Freezes at ZERO the per-file count of Nostr identifiers
+          # shortened on the way into a log/debug sink, across mobile/lib,
+          # mobile/packages, mobile/test and mobile/integration_test. A truncated
+          # id looks correlatable and is not: `npub1abc...wxyz` cannot be grepped
+          # against relay logs or matched to a funnelcake row, and 8 hex of an
+          # event id is 32 bits. UI shortening is NOT counted (display sink), and
+          # secrets are redacted whole rather than shortened — see the script
+          # header. AGENTS.md -> Nostr And Async Rules.
+          bash scripts/check_nostr_id_log_truncation.sh
       - name: 🌍 Verify delegate-less MaterialApp count does not increase (l10n ratchet)
         run: |
           # Issue #3613. Freezes the per-file count of MaterialApp /

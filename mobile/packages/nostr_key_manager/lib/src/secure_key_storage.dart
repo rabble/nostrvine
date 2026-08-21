@@ -202,7 +202,7 @@ class SecureKeyStorage {
       // Generate new secure key container (runs in isolate to avoid ANR)
       final keyContainer = await SecureKeyContainer.generate();
 
-      _log.fine('📱 Generated key for: ${_maskKey(keyContainer.npub)}');
+      _log.fine('📱 Generated key for: ${keyContainer.npub}');
 
       // Store in platform-specific secure storage
       final result = await _platformStorage.storeKey(
@@ -255,7 +255,7 @@ class SecureKeyStorage {
       // Create secure container from nsec
       final keyContainer = SecureKeyContainer.fromNsec(nsec);
 
-      _log.fine('📱 Imported key for: ${_maskKey(keyContainer.npub)}');
+      _log.fine('📱 Imported key for: ${keyContainer.npub}');
 
       // Save current identity before overwriting PRIMARY (prevents data
       // loss). Same pattern as switchToIdentity — archives the current
@@ -270,7 +270,7 @@ class SecureKeyStorage {
           );
           _log.fine(
             '📱 Archived previous identity: '
-            '${_maskKey(currentContainer.npub)}',
+            '${currentContainer.npub}',
           );
         }
       } on Exception catch (e) {
@@ -368,7 +368,7 @@ class SecureKeyStorage {
       // Create secure container from hex
       final keyContainer = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
 
-      _log.fine('📱 Imported key for: ${_maskKey(keyContainer.npub)}');
+      _log.fine('📱 Imported key for: ${keyContainer.npub}');
 
       // Save current identity before overwriting PRIMARY (prevents data loss)
       try {
@@ -381,7 +381,7 @@ class SecureKeyStorage {
           );
           _log.fine(
             '📱 Archived previous identity: '
-            '${_maskKey(currentContainer.npub)}',
+            '${currentContainer.npub}',
           );
         }
       } on Exception catch (e) {
@@ -540,7 +540,7 @@ class SecureKeyStorage {
     }
 
     _updateCache(keyContainer);
-    _log.info('Restored PRIMARY identity: ${_maskKey(keyContainer.npub)}');
+    _log.info('Restored PRIMARY identity: ${keyContainer.npub}');
   }
 
   // =========================================================================
@@ -673,7 +673,7 @@ class SecureKeyStorage {
     }
 
     try {
-      _log.fine('📱 Storing identity key container for ${_maskKey(npub)}');
+      _log.fine('📱 Storing identity key container for $npub');
 
       final identityKeyId = '$_savedKeysPrefix$npub';
 
@@ -690,7 +690,7 @@ class SecureKeyStorage {
         );
       }
 
-      _log.info('Stored identity for ${_maskKey(npub)}');
+      _log.info('Stored identity for $npub');
     } catch (e) {
       if (e is SecureKeyStorageException) rethrow;
       throw SecureKeyStorageException('Failed to store identity: $e');
@@ -730,7 +730,7 @@ class SecureKeyStorage {
     await _ensureInitialized();
 
     final identityKeyId = '$_savedKeysPrefix$npub';
-    _log.fine('📱️ Deleting identity key container for ${_maskKey(npub)}');
+    _log.fine('📱️ Deleting identity key container for $npub');
 
     final success = await _platformStorage.deleteKey(
       keyId: identityKeyId,
@@ -744,7 +744,7 @@ class SecureKeyStorage {
       );
     }
 
-    _log.info('Deleted identity for ${_maskKey(npub)}');
+    _log.info('Deleted identity for $npub');
   }
 
   /// Switch to a different identity
@@ -787,7 +787,7 @@ class SecureKeyStorage {
       // Update cache
       _updateCache(targetContainer);
 
-      _log.info('Switched to identity: ${_maskKey(npub)}');
+      _log.info('Switched to identity: $npub');
 
       return true;
     } on Exception catch (e) {
@@ -1003,13 +1003,5 @@ class SecureKeyStorage {
       _usingBunker = false;
       _clearCache();
     }
-  }
-
-  /// Mask a key for display purposes (show first 8 and last 4 characters)
-  static String _maskKey(String key) {
-    if (key.length < 12) return key;
-    final start = key.substring(0, 8);
-    final end = key.substring(key.length - 4);
-    return '$start...$end';
   }
 }

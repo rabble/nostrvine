@@ -1754,7 +1754,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         // Try to switch to saved identity keys
         final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
         Log.info(
-          'signInForAccount: loading identity keys for npub=$npub...',
+          'signInForAccount: loading identity keys for npub=$npub',
           name: 'AuthService',
           category: LogCategory.auth,
         );
