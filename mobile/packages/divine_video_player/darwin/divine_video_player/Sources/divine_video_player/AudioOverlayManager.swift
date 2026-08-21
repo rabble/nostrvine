@@ -94,6 +94,10 @@ final class AudioOverlayManager {
     func pauseAndDeactivateAll() {
         for entry in overlays {
             entry.player.pause()
+            // Report the deactivation, not the call: pause arrives on every
+            // stop and every pause tap, and re-logging already-idle tracks
+            // spends bug-report capacity on a non-event.
+            guard entry.isActive else { continue }
             entry.isActive = false
             log.info(
                 "Audio overlay track \(entry.trackIndex): paused and deactivated",
