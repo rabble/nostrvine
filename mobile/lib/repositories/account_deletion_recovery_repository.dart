@@ -54,6 +54,8 @@ class AccountDeletionRecoveryRepository {
   final Future<void> Function(Duration) _delay;
 
   static const _maxAttempts = 3;
+  static const _pollInterval = Duration(seconds: 2);
+  static const _cancellationTimeout = Duration(minutes: 2);
 
   Uri get _attemptsUri => Uri.parse('$_baseUrl$_attemptsPath');
   Uri get _currentAttemptUri => Uri.parse('$_baseUrl$_attemptsPath/current');
@@ -174,7 +176,7 @@ class AccountDeletionRecoveryRepository {
   }
 
   Stream<AccountDeletionAttempt?> watchCurrent({
-    Duration pollInterval = const Duration(seconds: 2),
+    Duration pollInterval = _pollInterval,
   }) async* {
     var attempt = await fetchCurrent();
     yield attempt;
@@ -204,36 +206,44 @@ class AccountDeletionRecoveryRepository {
     );
   }
 
+  /// Cancels [attemptId] and waits for the coordinator's terminal answer.
+  ///
+  /// The coordinator answers `202` while another request is still rolling the
+  /// username back, so the cancellation is only known once the attempt reports
+  /// `cancelled`. The wait is bounded: an attempt the coordinator never moves
+  /// out of `cancelling` sits there until its own 24-hour deadline, and an
+  /// unbounded wait would keep the caller polling — and the caller's spinner
+  /// spinning — for that entire day.
   Future<AccountDeletionAttempt> cancelAndWait({
     required String attemptId,
+    Duration timeout = _cancellationTimeout,
   }) async {
-    final cancellation = await cancel(attemptId: attemptId);
-    if (cancellation.status == AccountDeletionAttemptStatus.cancelled) {
-      return cancellation;
-    }
-    if (!cancellation.isCancellationInFlight) {
-      throw const AccountDeletionRecoveryException(
-        'Server did not start account deletion cancellation',
-      );
-    }
-    await for (final current in watchCurrent()) {
+    var attempt = await cancel(attemptId: attemptId);
+    var waited = Duration.zero;
+    while (true) {
+      if (attempt.status == AccountDeletionAttemptStatus.cancelled) {
+        return attempt;
+      }
+      if (!attempt.isCancellationInFlight) {
+        throw const AccountDeletionRecoveryException(
+          'Account deletion cancellation ended in an invalid state',
+        );
+      }
+      if (waited >= timeout) {
+        throw const AccountDeletionRecoveryException(
+          'Account deletion cancellation did not finish in time',
+        );
+      }
+      await _delay(_pollInterval);
+      waited += _pollInterval;
+      final current = await fetchCurrent();
       if (current == null || current.id != attemptId) {
         throw const AccountDeletionRecoveryException(
           'Cancellation status did not match the account deletion attempt',
         );
       }
-      if (current.status == AccountDeletionAttemptStatus.cancelled) {
-        return current;
-      }
-      if (!current.isCancellationInFlight) {
-        throw const AccountDeletionRecoveryException(
-          'Account deletion cancellation ended in an invalid state',
-        );
-      }
+      attempt = current;
     }
-    throw const AccountDeletionRecoveryException(
-      'Account deletion cancellation ended without a terminal state',
-    );
   }
 
   Future<AccountDeletionAttempt> _post({

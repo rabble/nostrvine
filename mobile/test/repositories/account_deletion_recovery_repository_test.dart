@@ -329,6 +329,35 @@ void main() {
     expect(calls, 3);
   });
 
+  test('cancelAndWait gives up on a coordinator stuck in cancelling', () async {
+    var calls = 0;
+    final delays = <Duration>[];
+    await expectLater(
+      repository(
+        MockClient((_) async {
+          calls++;
+          return http.Response(
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': 'preparing',
+              'operation': 'cancelling',
+              'username': 'alice',
+            }),
+            calls == 1 ? 202 : 200,
+          );
+        }),
+        delay: (duration) async => delays.add(duration),
+      ).cancelAndWait(
+        attemptId: 'attempt-1',
+        timeout: const Duration(seconds: 6),
+      ),
+      throwsA(isA<AccountDeletionRecoveryException>()),
+    );
+
+    expect(delays, hasLength(3));
+    expect(calls, 4);
+  });
+
   test('coded error responses expose only the stable machine code', () async {
     expect(
       () => repository(
