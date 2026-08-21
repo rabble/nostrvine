@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
+import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +30,7 @@ void main() {
       sharedPreferences: prefs,
       switchController: AccountSwitchController(),
       appVersion: '1.2.3',
+      documentsPath: '/documents',
       installSource: InstallSource.playStore,
     );
   });
@@ -65,6 +67,16 @@ void main() {
 
     expect(a.read(installSourceProvider), InstallSource.playStore);
     expect(b.read(installSourceProvider), InstallSource.playStore);
+  });
+
+  test('every container reads the same documents path override', () {
+    final a = buildAccountContainer(deviceScope);
+    addTearDown(a.dispose);
+    final b = buildAccountContainer(deviceScope);
+    addTearDown(b.dispose);
+
+    expect(a.read(documentsPathProvider), '/documents');
+    expect(b.read(documentsPathProvider), '/documents');
   });
 
   test('every container reads the same app version override', () {

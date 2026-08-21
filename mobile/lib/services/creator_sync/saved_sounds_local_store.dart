@@ -17,7 +17,10 @@ class SavedSoundsLocalStore implements LocalSoundStore {
     // loadSavedSounds() first: it is what kicks off the legacy-bucket
     // migration, and an account whose bucket that migration has not written
     // yet reads as absent rather than unreadable.
-    final sounds = _service.loadSavedSounds();
+    // Stored paths, not resolved ones: a body carrying this device's current
+    // container path would hash differently after every iOS app update and
+    // republish itself to the relay for no change the user made.
+    final sounds = _service.loadSavedSounds(resolveLocalPaths: false);
     if (_service.isLibraryUnreadable) {
       throw LocalStoreUnreadableException(
         'saved sound library is present but not decodable by this build',

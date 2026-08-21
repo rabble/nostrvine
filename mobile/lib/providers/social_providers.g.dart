@@ -506,7 +506,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'49c37c22a23ecd1ba90b4a51b782abebf40fb1dd';
+    r'0c8954ff051734798a78c463aa2b6c1a311f94d8';
 
 /// Clip library service for persisting individual video clips
 

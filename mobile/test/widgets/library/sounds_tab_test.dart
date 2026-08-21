@@ -18,6 +18,7 @@ import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/creator_sync_provider.dart';
+import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
@@ -143,6 +144,7 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            documentsPathProvider.overrideWithValue('/documents'),
             if (audioService != null)
               audioPlaybackServiceProvider.overrideWithValue(audioService),
           ],
@@ -544,6 +546,7 @@ void main() {
           ProviderScope(
             overrides: [
               sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              documentsPathProvider.overrideWithValue('/documents'),
               soundSyncAvailabilityProvider.overrideWith(
                 (ref) async => SoundSyncAvailable(syncRepository),
               ),
@@ -663,6 +666,7 @@ void main() {
                 sharedPreferencesProvider.overrideWithValue(
                   sharedPreferences,
                 ),
+                documentsPathProvider.overrideWithValue('/documents'),
                 nostrSessionProvider.overrideWith(
                   () => _TestNostrSession(
                     NostrSessionReadiness.nostrReady(

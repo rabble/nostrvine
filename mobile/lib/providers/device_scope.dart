@@ -9,6 +9,7 @@ import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/db_cipher_key_provider.dart';
+import 'package:openvine/providers/documents_path_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/database_corruption_service.dart';
@@ -47,6 +48,7 @@ class DeviceScope {
     required this.sharedPreferences,
     required this.switchController,
     required this.appVersion,
+    required this.documentsPath,
     this.dbCipherKey,
     this.databaseCorruptionService,
     this.installSource = InstallSource.sideload,
@@ -66,6 +68,14 @@ class DeviceScope {
 
   /// App version resolved once from `PackageInfo` during bootstrap.
   final String appVersion;
+
+  /// Application documents directory, resolved once during bootstrap.
+  ///
+  /// iOS rewrites the container path on every app update, so persisted
+  /// absolute paths are rebased against this on read. It lives here rather
+  /// than behind an async lookup because synchronous readers — saved sounds
+  /// load straight out of SharedPreferences — cannot await one. Empty on web.
+  final String documentsPath;
 
   /// The app-lifetime handle the UI calls to switch accounts. Device-scoped so
   /// it outlives — and drives — every container swap.
@@ -97,6 +107,7 @@ class DeviceScope {
     databaseProvider.overrideWithValue(database),
     sharedPreferencesProvider.overrideWithValue(sharedPreferences),
     appVersionProvider.overrideWithValue(appVersion),
+    documentsPathProvider.overrideWithValue(documentsPath),
     dbCipherKeyProvider.overrideWithValue(dbCipherKey),
     databaseCorruptionServiceProvider.overrideWithValue(
       databaseCorruptionService,

@@ -83,6 +83,7 @@ void main() {
       sharedPreferences: prefs,
       switchController: controller,
       appVersion: 'test',
+      documentsPath: '/documents',
       accountOverrides: [
         secureKeyStorageProvider.overrideWithValue(keyStorage),
       ],
