@@ -20,10 +20,25 @@ enum AccountDeletionAttemptStatus {
   };
 }
 
+enum AccountDeletionAttemptOperation {
+  none,
+  cancelling;
+
+  static AccountDeletionAttemptOperation fromJson(String value) =>
+      switch (value) {
+        'none' => none,
+        'cancelling' => cancelling,
+        _ => throw FormatException(
+          'Unknown deletion attempt operation: $value',
+        ),
+      };
+}
+
 class AccountDeletionAttempt {
   const AccountDeletionAttempt({
     required this.id,
     required this.status,
+    this.operation = AccountDeletionAttemptOperation.none,
     this.username,
     this.usernameExpiresAt,
     this.failureCode,
@@ -33,12 +48,14 @@ class AccountDeletionAttempt {
   factory AccountDeletionAttempt.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String?;
     final status = json['status'] as String?;
-    if (id == null || id.isEmpty || status == null) {
+    final operation = json['operation'] as String?;
+    if (id == null || id.isEmpty || status == null || operation == null) {
       throw const FormatException('Invalid deletion attempt response');
     }
     return AccountDeletionAttempt(
       id: id,
       status: AccountDeletionAttemptStatus.fromJson(status),
+      operation: AccountDeletionAttemptOperation.fromJson(operation),
       username: json['username'] as String?,
       usernameExpiresAt: (json['username_expires_at'] as num?)?.toInt(),
       failureCode: json['failure_code'] as String?,
@@ -48,10 +65,19 @@ class AccountDeletionAttempt {
 
   final String id;
   final AccountDeletionAttemptStatus status;
+  final AccountDeletionAttemptOperation operation;
   final String? username;
   final int? usernameExpiresAt;
   final String? failureCode;
   final String? failureMessage;
+
+  bool get isCancellationInFlight =>
+      status == AccountDeletionAttemptStatus.preparing &&
+      operation == AccountDeletionAttemptOperation.cancelling;
+
+  bool get needsPolling =>
+      status == AccountDeletionAttemptStatus.processing ||
+      isCancellationInFlight;
 
   /// Whether this state must hold the user on the full-screen recovery gate.
   ///

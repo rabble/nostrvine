@@ -149,6 +149,15 @@ void main() {
                 username: 'alice',
               ),
             ),
+            pollingAccountDeletionAttemptProvider.overrideWith(
+              (_) => Stream.value(
+                const AccountDeletionAttempt(
+                  id: 'attempt-id',
+                  status: AccountDeletionAttemptStatus.recoverable,
+                  username: 'alice',
+                ),
+              ),
+            ),
           ],
         );
         registerContainerTearDown(tester, container);
@@ -181,6 +190,14 @@ void main() {
             (_) async => const AccountDeletionAttempt(
               id: 'attempt-id',
               status: AccountDeletionAttemptStatus.terminalFailure,
+            ),
+          ),
+          pollingAccountDeletionAttemptProvider.overrideWith(
+            (_) => Stream.value(
+              const AccountDeletionAttempt(
+                id: 'attempt-id',
+                status: AccountDeletionAttemptStatus.terminalFailure,
+              ),
             ),
           ),
         ],

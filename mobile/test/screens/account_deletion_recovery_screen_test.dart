@@ -34,6 +34,8 @@ Widget _app({
   required AccountDeletionAttempt attempt,
   required AccountDeletionRecoveryRepository repository,
   AuthService? authService,
+  Stream<AccountDeletionAttempt?>? attempts,
+  Stream<AccountDeletionAttempt?> Function()? attemptsBuilder,
 }) {
   final router = GoRouter(
     initialLocation: AccountDeletionRecoveryScreen.path,
@@ -50,7 +52,9 @@ Widget _app({
   );
   return ProviderScope(
     overrides: [
-      currentAccountDeletionAttemptProvider.overrideWith((_) async => attempt),
+      pollingAccountDeletionAttemptProvider.overrideWith(
+        (_) => attemptsBuilder?.call() ?? attempts ?? Stream.value(attempt),
+      ),
       accountDeletionRecoveryRepositoryProvider.overrideWithValue(repository),
       if (authService != null)
         authServiceProvider.overrideWithValue(authService),
@@ -72,7 +76,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockRecoveryRepository();
-    when(() => repository.cancel(attemptId: 'attempt-id')).thenAnswer(
+    when(() => repository.cancelAndWait(attemptId: 'attempt-id')).thenAnswer(
       (_) async => const AccountDeletionAttempt(
         id: 'attempt-id',
         status: AccountDeletionAttemptStatus.cancelled,
@@ -91,7 +95,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    verify(() => repository.cancel(attemptId: 'attempt-id')).called(1);
+    verify(() => repository.cancelAndWait(attemptId: 'attempt-id')).called(1);
     expect(find.text('Home'), findsOneWidget);
   });
 
@@ -102,7 +106,7 @@ void main() {
     when(
       () => repository.resumePreparation(any()),
     ).thenAnswer((_) async => _recoverable);
-    when(() => repository.cancel(attemptId: 'attempt-id')).thenAnswer(
+    when(() => repository.cancelAndWait(attemptId: 'attempt-id')).thenAnswer(
       (_) async => const AccountDeletionAttempt(
         id: 'attempt-id',
         status: AccountDeletionAttemptStatus.cancelled,
@@ -136,8 +140,77 @@ void main() {
         ),
       ),
     ).called(1);
-    verify(() => repository.cancel(attemptId: 'attempt-id')).called(1);
+    verify(() => repository.cancelAndWait(attemptId: 'attempt-id')).called(1);
     expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets('cancelling attempt polls without re-preparing username', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    await tester.pumpWidget(
+      _app(
+        attempt: const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.preparing,
+          operation: AccountDeletionAttemptOperation.cancelling,
+          username: 'alice',
+        ),
+        repository: repository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+    expect(
+      find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
+      findsNothing,
+    );
+    verifyNever(() => repository.resumePreparation(any()));
+  });
+
+  testWidgets('cancellation-after-commit refreshes into processing', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    when(
+      () => repository.cancelAndWait(attemptId: 'attempt-id'),
+    ).thenThrow(
+      const AccountDeletionRecoveryException(
+        'server text',
+        code: 'cancellation_after_commit',
+      ),
+    );
+    var providerBuilds = 0;
+    await tester.pumpWidget(
+      _app(
+        attempt: _recoverable,
+        attemptsBuilder: () {
+          providerBuilds++;
+          return Stream.value(
+            providerBuilds == 1
+                ? _recoverable
+                : const AccountDeletionAttempt(
+                    id: 'attempt-id',
+                    status: AccountDeletionAttemptStatus.processing,
+                  ),
+          );
+        },
+        repository: repository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(
+      find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+    expect(find.textContaining('server text'), findsNothing);
   });
 
   testWidgets('processing attempt cannot be rolled back from the screen', (
@@ -163,16 +236,49 @@ void main() {
     );
   });
 
+  testWidgets('processing attempt auto-advances to completed cleanup', (
+    tester,
+  ) async {
+    final repository = _MockRecoveryRepository();
+    final authService = _MockAuthService();
+    when(
+      () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+    ).thenAnswer((_) async {});
+    await tester.pumpWidget(
+      _app(
+        attempt: const AccountDeletionAttempt(
+          id: 'attempt-id',
+          status: AccountDeletionAttemptStatus.processing,
+        ),
+        attempts: Stream.fromIterable(const [
+          AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.processing,
+          ),
+          AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.completed,
+          ),
+        ]),
+        repository: repository,
+        authService: authService,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    verify(
+      () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+    ).called(1);
+  });
+
   testWidgets(
     'failed local cleanup after a completed deletion says what actually failed',
     (tester) async {
       final repository = _MockRecoveryRepository();
       final authService = _MockAuthService();
       when(
-        () => authService.signOut(
-          deleteKeys: true,
-          deleteLocalUserData: true,
-        ),
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenThrow(const SecureKeyStorageException('keychain locked'));
       await tester.pumpWidget(
         _app(
@@ -225,7 +331,7 @@ void main() {
     tester,
   ) async {
     final repository = _MockRecoveryRepository();
-    when(() => repository.cancel(attemptId: 'attempt-id')).thenAnswer(
+    when(() => repository.cancelAndWait(attemptId: 'attempt-id')).thenAnswer(
       (_) async => const AccountDeletionAttempt(
         id: 'attempt-id',
         status: AccountDeletionAttemptStatus.cancelled,
@@ -251,7 +357,7 @@ void main() {
 
     verifyNever(() => repository.prepare(username: any(named: 'username')));
     verifyNever(() => repository.resumePreparation(any()));
-    verify(() => repository.cancel(attemptId: 'attempt-id')).called(1);
+    verify(() => repository.cancelAndWait(attemptId: 'attempt-id')).called(1);
     expect(find.text('Home'), findsOneWidget);
   });
 
@@ -278,9 +384,10 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(
       find.textContaining('Deletion could not be completed safely.'),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.textContaining('coordinator_failed'), findsOneWidget);
+    expect(find.textContaining('coordinator_failed'), findsNothing);
+    expect(find.text(l10n.accountDeletionTerminalFailureBody), findsOneWidget);
     expect(
       find.widgetWithText(DivineButton, l10n.supportContactSupport),
       findsOneWidget,

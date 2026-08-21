@@ -76,6 +76,7 @@ class _AccountDeletionRecoveryScreenState
       final repository = ref.read(accountDeletionRecoveryRepositoryProvider);
       final ready =
           attempt.status == AccountDeletionAttemptStatus.preparing &&
+              !attempt.isCancellationInFlight &&
               attempt.username != null
           ? await repository.resumePreparation(attempt)
           : attempt;
@@ -88,7 +89,7 @@ class _AccountDeletionRecoveryScreenState
           'Username preparation did not become recoverable',
         );
       }
-      final restored = await repository.cancel(attemptId: ready.id);
+      final restored = await repository.cancelAndWait(attemptId: ready.id);
       if (!mounted) return;
       if (restored.status != AccountDeletionAttemptStatus.cancelled) {
         throw const AccountDeletionRecoveryException(
@@ -96,7 +97,24 @@ class _AccountDeletionRecoveryScreenState
         );
       }
       ref.invalidate(currentAccountDeletionAttemptProvider);
+      ref.invalidate(pollingAccountDeletionAttemptProvider);
       context.go(RoutePaths.videoFeedForIndex(0));
+    } on AccountDeletionRecoveryException catch (error) {
+      if (!mounted) return;
+      if (const {
+        'cancellation_after_commit',
+        'illegal_transition',
+        'attempt_not_found',
+      }.contains(error.code)) {
+        ref.invalidate(currentAccountDeletionAttemptProvider);
+        ref.invalidate(pollingAccountDeletionAttemptProvider);
+      } else {
+        setState(
+          () => _error = attempt.username == null
+              ? context.l10n.accountDeletionRecoveryStatusFailed
+              : context.l10n.accountDeletionRecoveryFailed,
+        );
+      }
     } on Object {
       if (!mounted) return;
       setState(
@@ -112,11 +130,12 @@ class _AccountDeletionRecoveryScreenState
   void _refresh() {
     setState(() => _error = null);
     ref.invalidate(currentAccountDeletionAttemptProvider);
+    ref.invalidate(pollingAccountDeletionAttemptProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    final attempt = ref.watch(currentAccountDeletionAttemptProvider);
+    final attempt = ref.watch(pollingAccountDeletionAttemptProvider);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -157,18 +176,8 @@ class _AccountDeletionRecoveryScreenState
               }
               if (value.status ==
                   AccountDeletionAttemptStatus.terminalFailure) {
-                final failureMessage = value.failureMessage?.trim();
-                final failureCode = value.failureCode?.trim();
-                final terminalBody =
-                    failureMessage == null || failureMessage.isEmpty
-                    ? context.l10n.accountDeletionTerminalFailureBody
-                    : failureMessage;
                 return _RecoveryContent(
-                  body:
-                      error ??
-                      (failureCode == null || failureCode.isEmpty
-                          ? terminalBody
-                          : '$terminalBody\n\n$failureCode'),
+                  body: error ?? _failureBody(context, value.failureCode),
                   actionLabel: context.l10n.supportContactSupport,
                   onPressed: () => context.push(RoutePaths.supportCenter),
                   secondaryActionLabel: context.l10n.accountDeletionSignOut,
@@ -176,7 +185,8 @@ class _AccountDeletionRecoveryScreenState
                 );
               }
               if (value.status == AccountDeletionAttemptStatus.recoverable ||
-                  value.status == AccountDeletionAttemptStatus.preparing) {
+                  (value.status == AccountDeletionAttemptStatus.preparing &&
+                      !value.isCancellationInFlight)) {
                 final expiresAt = value.usernameExpiresAt;
                 final usernameRecoveryBody = expiresAt == null
                     ? context.l10n.accountDeletionRecoveryBody
@@ -202,8 +212,8 @@ class _AccountDeletionRecoveryScreenState
               }
               return _RecoveryContent(
                 body: error ?? context.l10n.accountDeletionFinishingBody,
-                actionLabel: context.l10n.commonRetry,
-                onPressed: _refresh,
+                actionLabel: context.l10n.supportContactSupport,
+                onPressed: () => context.push(RoutePaths.supportCenter),
               );
             },
           ),
@@ -212,6 +222,22 @@ class _AccountDeletionRecoveryScreenState
     );
   }
 }
+
+String _failureBody(
+  BuildContext context,
+  String? failureCode,
+) => switch (failureCode) {
+  'username_attempt_expired' => context.l10n.deleteAccountDeletionIncomplete,
+  'keycast_deletion_failed' => context.l10n.deleteAccountServerDeletionFailed,
+  'relay_erasure_unconfirmed' =>
+    context.l10n.accountDeletionTerminalFailureBody,
+  'deletion_deadline_exceeded' =>
+    context.l10n.accountDeletionTerminalFailureBody,
+  'cancellation_after_commit' ||
+  'illegal_transition' ||
+  'attempt_not_found' => context.l10n.accountDeletionTerminalFailureBody,
+  _ => context.l10n.accountDeletionTerminalFailureBody,
+};
 
 class _RecoveryContent extends StatelessWidget {
   const _RecoveryContent({

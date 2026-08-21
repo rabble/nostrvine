@@ -37,20 +37,28 @@ void main() {
   AccountDeletionRecoveryRepository repository(
     http.Client client, {
     Duration timeout = const Duration(seconds: 15),
+    Duration retryBaseDelay = const Duration(milliseconds: 500),
+    Future<void> Function(Duration) delay = Future<void>.delayed,
+    String? Function()? currentPubkey,
   }) => AccountDeletionRecoveryRepository(
     baseUrl: 'https://api.divine.video/',
     nameServerBaseUrl: 'https://names.divine.video/',
     httpClient: client,
     nip98AuthService: nip98,
-    currentPubkey: () =>
-        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
+    currentPubkey:
+        currentPubkey ??
+        () =>
+            '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
     timeout: timeout,
+    retryBaseDelay: retryBaseDelay,
+    delay: delay,
   );
 
   http.Response coordinatorPreparing(http.Request request) => http.Response(
     jsonEncode({
       'id': 'attempt-1',
       'status': 'preparing',
+      'operation': 'none',
       'username': 'alice',
     }),
     201,
@@ -65,6 +73,7 @@ void main() {
           jsonEncode({
             'id': 'attempt-1',
             'status': 'recoverable',
+            'operation': 'none',
             'username': 'alice',
           }),
           201,
@@ -107,6 +116,7 @@ void main() {
               jsonEncode({
                 'id': 'attempt-00000001',
                 'status': 'preparing',
+                'operation': 'none',
                 'username': 'alice',
               }),
               201,
@@ -126,6 +136,7 @@ void main() {
             jsonEncode({
               'id': 'attempt-00000001',
               'status': 'recoverable',
+              'operation': 'none',
               'username': 'alice',
               'username_expires_at': 1787450400,
             }),
@@ -166,6 +177,7 @@ void main() {
                 jsonEncode({
                   'id': 'existing-attempt',
                   'status': 'recoverable',
+                  'operation': 'none',
                   'username': 'alice',
                 }),
                 200,
@@ -193,7 +205,11 @@ void main() {
       MockClient((request) async {
         captured = request;
         return http.Response(
-          jsonEncode({'id': 'attempt/1', 'status': 'processing'}),
+          jsonEncode({
+            'id': 'attempt/1',
+            'status': 'processing',
+            'operation': 'none',
+          }),
           202,
         );
       }),
@@ -212,7 +228,11 @@ void main() {
     final result = await repository(
       MockClient(
         (_) async => http.Response(
-          jsonEncode({'id': 'attempt-1', 'status': 'cancelled'}),
+          jsonEncode({
+            'id': 'attempt-1',
+            'status': 'cancelled',
+            'operation': 'none',
+          }),
           200,
         ),
       ),
@@ -227,12 +247,192 @@ void main() {
       () => repository(
         MockClient(
           (_) async => http.Response(
-            jsonEncode({'id': 'attempt-1', 'status': 'mystery'}),
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': 'mystery',
+              'operation': 'none',
+            }),
             200,
           ),
         ),
       ).fetchCurrent(),
       throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('unknown operation fails closed instead of re-preparing', () async {
+    expect(
+      () => repository(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': 'preparing',
+              'operation': 'rolling_back_somehow',
+            }),
+            200,
+          ),
+        ),
+      ).fetchCurrent(),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('202 cancel returns a cancellation-in-flight attempt', () async {
+    final result = await repository(
+      MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'id': 'attempt-1',
+            'status': 'preparing',
+            'operation': 'cancelling',
+            'username': 'alice',
+          }),
+          202,
+        ),
+      ),
+    ).cancel(attemptId: 'attempt-1');
+
+    expect(result.isCancellationInFlight, isTrue);
+  });
+
+  test('cancelAndWait polls a 202 cancellation through cancelled', () async {
+    var calls = 0;
+    final result = await repository(
+      MockClient((_) async {
+        calls++;
+        return switch (calls) {
+          1 || 2 => http.Response(
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': 'preparing',
+              'operation': 'cancelling',
+              'username': 'alice',
+            }),
+            calls == 1 ? 202 : 200,
+          ),
+          _ => http.Response(
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': 'cancelled',
+              'operation': 'none',
+              'username': 'alice',
+            }),
+            200,
+          ),
+        };
+      }),
+      delay: (_) async {},
+    ).cancelAndWait(attemptId: 'attempt-1');
+
+    expect(result.status, AccountDeletionAttemptStatus.cancelled);
+    expect(calls, 3);
+  });
+
+  test('coded error responses expose only the stable machine code', () async {
+    expect(
+      () => repository(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'failure_code': 'cancellation_after_commit',
+              'failure_message': 'server English must not reach the UI',
+            }),
+            409,
+          ),
+        ),
+      ).cancel(attemptId: 'attempt-1'),
+      throwsA(
+        isA<AccountDeletionRecoveryException>()
+            .having((error) => error.code, 'code', 'cancellation_after_commit')
+            .having(
+              (error) => error.message,
+              'message',
+              isNot(contains('server English')),
+            ),
+      ),
+    );
+  });
+
+  test('429 and retryable 5xx use bounded exponential backoff', () async {
+    var calls = 0;
+    final delays = <Duration>[];
+    final result = await repository(
+      MockClient((_) async {
+        calls++;
+        if (calls == 1) return http.Response('{}', 429);
+        if (calls == 2) return http.Response('{}', 503);
+        return http.Response(
+          jsonEncode({
+            'id': 'attempt-1',
+            'status': 'recoverable',
+            'operation': 'none',
+          }),
+          200,
+        );
+      }),
+      retryBaseDelay: const Duration(milliseconds: 10),
+      delay: (duration) async => delays.add(duration),
+    ).fetchCurrent();
+
+    expect(result?.status, AccountDeletionAttemptStatus.recoverable);
+    expect(calls, 3);
+    expect(delays, const [
+      Duration(milliseconds: 10),
+      Duration(milliseconds: 20),
+    ]);
+  });
+
+  test(
+    'watchCurrent polls processing until the attempt is completed',
+    () async {
+      var calls = 0;
+      final states = await repository(
+        MockClient((_) async {
+          calls++;
+          return http.Response(
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': calls == 1 ? 'processing' : 'completed',
+              'operation': 'none',
+            }),
+            200,
+          );
+        }),
+        delay: (_) async {},
+      ).watchCurrent().toList();
+
+      expect(states.map((attempt) => attempt?.status), [
+        AccountDeletionAttemptStatus.processing,
+        AccountDeletionAttemptStatus.completed,
+      ]);
+    },
+  );
+
+  test('watchCurrent stops when the active account changes', () async {
+    var pubkey =
+        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+    final stream = repository(
+      MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'id': 'attempt-1',
+            'status': 'processing',
+            'operation': 'none',
+          }),
+          200,
+        ),
+      ),
+      currentPubkey: () => pubkey,
+      delay: (_) async => pubkey = _otherPubkey,
+    ).watchCurrent();
+
+    await expectLater(
+      stream,
+      emitsInOrder([
+        isA<AccountDeletionAttempt>(),
+        emitsError(isA<AccountDeletionRecoveryException>()),
+      ]),
     );
   });
 
