@@ -2126,6 +2126,62 @@ void main() {
         );
       });
 
+      test(
+        'keeps audio held only in a surviving completed-editor snapshot',
+        () async {
+          final audio = writeAudio(
+            p.join('voice_over_recordings', 'completed_shared.m4a'),
+          );
+          final track = AudioEvent.fromLocalImport(
+            id: 'local_import_completed_shared',
+            filePath: audio.path,
+            createdAt: 1700000000,
+            title: 'Local audio',
+            mimeType: 'audio/mp4',
+          );
+          final owner = draftWithAudio(
+            id: 'draft_snapshot_owner',
+            audioPath: audio.path,
+            audioId: track.id,
+          );
+          final survivor = DivineVideoDraft.create(
+            id: 'draft_snapshot_survivor',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_snapshot_survivor',
+                video: EditorVideo.file('/path/to/video.mp4'),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                targetAspectRatio: AspectRatio.square,
+                originalAspectRatio: 9 / 16,
+              ),
+            ],
+            title: 'Snapshot survivor',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'video',
+            editorEditingParameters: {
+              'meta': {
+                VideoEditorConstants.audioStateHistoryKey: [track.toJson()],
+              },
+            },
+          );
+
+          await service.saveDraft(owner);
+          await service.saveDraft(survivor);
+
+          await service.deleteDraft(owner.id);
+
+          expect(
+            audio.existsSync(),
+            isTrue,
+            reason:
+                'audio in a surviving completed-editor snapshot must outlive '
+                'the deleted draft that shared it',
+          );
+        },
+      );
+
       test('still deletes the target audio when a sibling draft has a corrupt '
           'data blob', () async {
         final audio = writeAudio(
