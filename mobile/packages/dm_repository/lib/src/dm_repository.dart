@@ -15,6 +15,7 @@ import 'package:dm_repository/src/build_mode.dart';
 import 'package:dm_repository/src/collaborator_invite_recovery.dart';
 import 'package:dm_repository/src/compute.dart';
 import 'package:dm_repository/src/dm_batch_send_budget.dart';
+import 'package:dm_repository/src/dm_clock.dart';
 import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
@@ -1804,15 +1805,14 @@ class DmRepository {
       // sender. Keep the message, but clamp the timestamp used for local
       // ordering/cursors so a bad clock cannot blackhole future subscriptions
       // or pin the thread above honest messages forever.
-      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final persistedCreatedAt = rumor.createdAt > nowSec
-          ? nowSec
-          : rumor.createdAt;
-      if (rumor.createdAt > nowSec + DmSyncState.maxFutureSkewSeconds) {
+      final clock = DmClock.now();
+      final persistedCreatedAt = clock.atMostNow(rumor.createdAt);
+      if (rumor.createdAt >
+          clock.nowSeconds + DmSyncState.maxFutureSkewSeconds) {
         Log.warning(
           'Clamped DM (kind ${rumor.kind}) from ${rumor.pubkey}: rumor '
           'created_at ${rumor.createdAt} is beyond the expected skew of '
-          '${DmSyncState.maxFutureSkewSeconds}s (now $nowSec)',
+          '${DmSyncState.maxFutureSkewSeconds}s (now ${clock.nowSeconds})',
           category: LogCategory.system,
         );
       }
@@ -5632,12 +5632,12 @@ class DmRepository {
     // undone: one marker published by a device with a corrupt clock would pin
     // every conversation read for good. Clamp to the local clock, the same way
     // an incoming rumor's own created_at is clamped for ordering. #7343.
-    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final clock = DmClock.now();
     for (final entry in read.entries) {
       final tupleKey = entry.key;
       final ts = entry.value;
       if (tupleKey is! String || ts is! int) continue;
-      final cursor = ts > nowSec ? nowSec : ts;
+      final cursor = clock.atMostNow(ts);
       final pubkeys = tupleKey.split(',');
       if (pubkeys.length < 2) continue;
       final conversationId = computeConversationId(pubkeys);
