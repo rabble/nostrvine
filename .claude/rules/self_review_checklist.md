@@ -112,12 +112,13 @@ Design system (check `divine_ui` first — most review nits map here):
   use `ExcludeSemantics`. See [`accessibility.md`](accessibility.md).
 - [ ] Every text field sets `keyboardType`, `textCapitalization` and
   `textInputAction` deliberately. Single-line fields chain: the last one
-  is `.done`, every earlier one `.next` **with a `FocusNode` handoff in
-  `onSubmitted`**. A multiline field is not in the chain — it keeps
-  `newline`, so a form ending in one has no `done` field at all. Plus
-  `autocorrect: false` on identifiers, and `autofillHints` inside an
-  `AutofillGroup` — the hint on its own never saves a credential.
-  Adding a field means re-checking the one above it.
+  is `.done`, every earlier one `.next`; Flutter traverses focus unless
+  `onEditingComplete` overrides that default. A multiline field is not in
+  the chain — it sets `.multiline`, `newline`, and `maxLines > 1`, so a
+  form ending in one has no `done` field. Plus `autocorrect: false` on
+  identifiers. Credential fields share an `AutofillGroup`, and successful
+  submission calls `TextInput.finishAutofillContext()`. Adding a field
+  means re-checking the one above it.
   See [`ui_theming.md`](ui_theming.md#text-fields).
 
 Composition and style:
