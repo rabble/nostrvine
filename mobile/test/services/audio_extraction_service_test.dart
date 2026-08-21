@@ -326,6 +326,58 @@ void main() {
       }
     });
 
+    test('extractAudio writes into a caller-owned directory', () async {
+      final directory = await Directory.systemTemp.createTemp('draft_audio');
+      addTearDown(() => directory.delete(recursive: true));
+
+      final result = await service.extractAudio(
+        videoPath: fakeVideoFile.path,
+        outputDirectory: directory,
+      );
+
+      expect(result.audioFilePath, startsWith(directory.path));
+      expect(File(result.audioFilePath).existsSync(), isTrue);
+    });
+
+    test('extractAudio leaves a caller-owned file out of the sweep', () async {
+      // A draft-owned track lives for as long as the draft does. If it were
+      // tracked as temporary, the no-argument sweep would delete a file the
+      // draft still points at.
+      final directory = await Directory.systemTemp.createTemp('draft_audio');
+      addTearDown(() => directory.delete(recursive: true));
+
+      final result = await service.extractAudio(
+        videoPath: fakeVideoFile.path,
+        outputDirectory: directory,
+      );
+      await service.cleanupTemporaryFiles();
+
+      expect(File(result.audioFilePath).existsSync(), isTrue);
+    });
+
+    test('cleanupAudioFile deletes a caller-owned file', () async {
+      // The discard path is the only thing reclaiming a draft-owned track the
+      // editor decided not to attach. Untracked no longer means undeletable.
+      final directory = await Directory.systemTemp.createTemp('draft_audio');
+      addTearDown(() => directory.delete(recursive: true));
+
+      final result = await service.extractAudio(
+        videoPath: fakeVideoFile.path,
+        outputDirectory: directory,
+      );
+      await service.cleanupAudioFile(result.audioFilePath);
+
+      expect(File(result.audioFilePath).existsSync(), isFalse);
+    });
+
+    test('extractAudio still sweeps its own temporary output', () async {
+      final result = await service.extractAudio(videoPath: fakeVideoFile.path);
+
+      await service.cleanupTemporaryFiles();
+
+      expect(File(result.audioFilePath).existsSync(), isFalse);
+    });
+
     test('extractAudio throws when video has no audio track', () async {
       mockEditor.hasAudio = false;
 

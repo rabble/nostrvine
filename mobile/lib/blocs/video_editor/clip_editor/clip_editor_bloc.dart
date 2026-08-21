@@ -1889,7 +1889,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     try {
-      final result = await _audioExtractionService.extractAudio(
+      // Draft-owned rather than temporary: this track is written into the
+      // editor history the draft persists, so it has to outlive both the
+      // session and the next app update.
+      final result = await _audioExtractionService.extractAudioForDraft(
         videoPath: videoPath,
         speed: extractionSpeed,
       );
@@ -1952,7 +1955,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       }
 
       final audioEvent = AudioEvent(
-        id: 'local_extracted_${DateTime.now().microsecondsSinceEpoch}',
+        id:
+            '${AudioEvent.localExtractedMarker}_'
+            '${DateTime.now().microsecondsSinceEpoch}',
         pubkey: '',
         createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         url: result.audioFilePath,

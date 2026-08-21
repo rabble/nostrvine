@@ -336,6 +336,15 @@ class AudioEvent {
   /// Marker for draft-local imported audio.
   static const localImportMarker = 'local_import';
 
+  /// Marker for audio the editor extracted from one of a draft's own clips.
+  ///
+  /// Deliberately not [localImportMarker]: an extracted track is the video's
+  /// own sound rather than material the user brought in, so it must stay out
+  /// of the reuse-consent and attribution paths that key on
+  /// [isLocalImport]. It is still a draft-local file, which [localFilePath]
+  /// and [isDraftLocalAudio] cover.
+  static const localExtractedMarker = 'local_extracted';
+
   /// Marker for sounds resolved from server-side external provider search.
   static const externalProviderMarker = 'external_provider';
 
@@ -388,11 +397,22 @@ class AudioEvent {
   /// Whether this audio is a draft-local imported file.
   bool get isLocalImport => id.startsWith('${localImportMarker}_');
 
-  /// Local file path for imported audio.
+  /// Whether this audio was extracted from one of the draft's own clips.
+  bool get isLocalExtracted => id.startsWith('${localExtractedMarker}_');
+
+  /// Whether this audio is backed by a file this device wrote for a draft.
+  ///
+  /// Covers imported audio, voice-over takes (both [isLocalImport]) and
+  /// extracted clip audio. Distinct from [isLocalImport], which additionally
+  /// means "material the user brought in" and so gates reuse consent and
+  /// attribution.
+  bool get isDraftLocalAudio => isLocalImport || isLocalExtracted;
+
+  /// Local file path for draft-local audio.
   ///
   /// Returns null for bundled and published Nostr audio.
   String? get localFilePath {
-    if (!isLocalImport || url == null || url!.isEmpty) return null;
+    if (!isDraftLocalAudio || url == null || url!.isEmpty) return null;
     return url;
   }
 

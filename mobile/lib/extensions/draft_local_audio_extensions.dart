@@ -7,18 +7,19 @@ extension DraftLocalAudioPaths on DivineVideoDraft {
   /// Absolute file paths of draft-local audio referenced by this draft.
   ///
   /// Covers imported audio created by `LocalAudioImportService` (stored under
-  /// `draft_audio_imports/<draftId>`) and committed voice-over recordings, both
-  /// persisted as draft-local [AudioEvent]s. Sweeps every history entry's audio
-  /// metadata in [DivineVideoDraft.editorStateHistory] plus the legacy
+  /// `draft_audio_imports/<draftId>`), committed voice-over recordings, and
+  /// audio extracted from the draft's own clips — all persisted as draft-local
+  /// [AudioEvent]s. Sweeps every history entry's audio metadata in
+  /// [DivineVideoDraft.editorStateHistory] plus the legacy
   /// [DivineVideoDraft.selectedSound], collecting [AudioEvent.localFilePath] for
-  /// each [AudioEvent.isLocalImport] track. Used by draft deletion to remove
+  /// each [AudioEvent.isDraftLocalAudio] track. Used by draft deletion to remove
   /// audio files that would otherwise persist after the draft is gone.
   Set<String> get localAudioFilePaths {
     final paths = <String>{};
 
     void addIfLocal(AudioEvent event) {
-      // localFilePath is non-null only for a local import with a non-empty
-      // url, so the null check alone covers the import and emptiness guards.
+      // localFilePath is non-null only for draft-local audio with a non-empty
+      // url, so the null check alone covers the locality and emptiness guards.
       final path = event.localFilePath;
       if (path != null) {
         paths.add(path);
