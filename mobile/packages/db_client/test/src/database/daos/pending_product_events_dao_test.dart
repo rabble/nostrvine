@@ -128,7 +128,7 @@ void main() {
       );
       await dao.enqueue(
         makeEvent(
-          id: 'exhausted',
+          id: 'many-attempts',
           status: PendingProductEventStatus.failed,
           attemptCount: 5,
           createdAt: DateTime.utc(2026, 7, 1, 0, 0, 4),
@@ -137,12 +137,36 @@ void main() {
 
       final retryable = await dao.getRetryable(
         now: DateTime.utc(2026, 7, 1, 0, 0, 10),
-        maxAttempts: 5,
         limit: 10,
       );
 
-      expect(retryable.map((event) => event.id), ['failed-old', 'pending-new']);
+      expect(retryable.map((event) => event.id), [
+        'failed-old',
+        'pending-new',
+        'many-attempts',
+      ]);
     });
+
+    test(
+      'temporary failures remain retryable regardless of attempt count',
+      () async {
+        await dao.enqueue(
+          makeEvent(
+            id: 'many-failures',
+            status: PendingProductEventStatus.failed,
+            attemptCount: 100,
+            nextAttemptAt: DateTime.utc(2026, 7),
+          ),
+        );
+
+        final retryable = await dao.getRetryable(
+          now: DateTime.utc(2026, 7, 2),
+          limit: 10,
+        );
+
+        expect(retryable.map((event) => event.id), ['many-failures']);
+      },
+    );
 
     group('owner scoping', () {
       const ownerA =
@@ -162,7 +186,6 @@ void main() {
 
         final retryable = await dao.getRetryable(
           now: DateTime.utc(2026, 7, 2),
-          maxAttempts: 5,
           limit: 10,
           ownerPubkey: ownerA,
         );
@@ -179,13 +202,58 @@ void main() {
 
           final retryable = await dao.getRetryable(
             now: DateTime.utc(2026, 7, 2),
-            maxAttempts: 5,
             limit: 10,
           );
 
           expect(retryable.map((event) => event.id).toSet(), {'legacy'});
         },
       );
+
+      test('deleteForOwner removes only that account', () async {
+        await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
+        await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
+        await dao.enqueue(makeEvent(id: 'anonymous'));
+
+        expect(await dao.deleteForOwner(ownerA), 1);
+
+        expect(await dao.getById('for-a'), isNull);
+        expect(await dao.getById('for-b'), isNotNull);
+        expect(await dao.getById('anonymous'), isNotNull);
+      });
+    });
+
+    test('deleteAll removes signed and anonymous rows', () async {
+      await dao.enqueue(makeEvent(id: 'signed', ownerPubkey: 'a' * 64));
+      await dao.enqueue(makeEvent(id: 'anonymous'));
+
+      expect(await dao.deleteAll(), 2);
+
+      expect(await dao.getById('signed'), isNull);
+      expect(await dao.getById('anonymous'), isNull);
+    });
+
+    test('prune removes expired rows then caps the oldest survivors', () async {
+      await dao.enqueue(
+        makeEvent(id: 'expired'),
+      );
+      await dao.enqueue(
+        makeEvent(id: 'oldest-live', createdAt: DateTime.utc(2026, 7, 8)),
+      );
+      await dao.enqueue(
+        makeEvent(id: 'newest-live', createdAt: DateTime.utc(2026, 7, 9)),
+      );
+
+      expect(
+        await dao.prune(
+          cutoff: DateTime.utc(2026, 7, 7),
+          maxRecords: 1,
+        ),
+        2,
+      );
+
+      expect(await dao.getById('expired'), isNull);
+      expect(await dao.getById('oldest-live'), isNull);
+      expect(await dao.getById('newest-live'), isNotNull);
     });
 
     test('markDeadLetter stops exhausted events from retrying', () async {

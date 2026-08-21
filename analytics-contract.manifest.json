@@ -1,0 +1,19 @@
+{
+  "artifacts": {
+    "productAnalytics.ts": {
+      "path": "analytics/generated/productAnalytics.ts",
+      "sha256": "1b99c8425e8d7087910debbb5af62c05ba85df545c704d80c7f0c703914595c3"
+    },
+    "product_analytics.dart": {
+      "path": "analytics/generated/product_analytics.dart",
+      "sha256": "70a236ec0822f272de572669ccb55c5baba905f23df3adc2d572dcbd08b8a778"
+    },
+    "product_analytics.rs": {
+      "path": "analytics/generated/product_analytics.rs",
+      "sha256": "83ad6c09c6b8331891b71dc88259cdb878ff56fd96911e83b0603c22008cbe1f"
+    }
+  },
+  "contract_commit": "27e21a7a1ea3c6cb998186eda50807e63806efc9",
+  "event_id_algorithm": "sha256-rfc8785-v1",
+  "schema_version": 2
+}

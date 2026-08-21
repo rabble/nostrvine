@@ -354,18 +354,10 @@ final class ProductEventQueueProvider
   }
 }
 
-String _$productEventQueueHash() => r'036ae0aac74a5bcb7613c56f074fbbe020b20002';
-
-/// Analytics service with opt-out support.
-///
-/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
+String _$productEventQueueHash() => r'8c22586a5a80dc049f1ff4726288fd754bfcaaf8';
 
 @ProviderFor(analyticsService)
 final analyticsServiceProvider = AnalyticsServiceProvider._();
-
-/// Analytics service with opt-out support.
-///
-/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 final class AnalyticsServiceProvider
     extends
@@ -375,9 +367,6 @@ final class AnalyticsServiceProvider
           AnalyticsService
         >
     with $Provider<AnalyticsService> {
-  /// Analytics service with opt-out support.
-  ///
-  /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
   AnalyticsServiceProvider._()
     : super(
         from: null,
@@ -411,7 +400,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'd86ad0633e379e991437845121e14ac3820c96ce';
+String _$analyticsServiceHash() => r'4de91a3c8ab9880b5f3c042d73ff5caa16092bd9';
 
 /// Hashtag cache service for persistent hashtag storage
 

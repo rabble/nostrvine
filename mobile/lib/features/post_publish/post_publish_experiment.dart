@@ -16,6 +16,9 @@ enum PostPublishVariant {
   final String analyticsName;
 }
 
+typedef RecordPostPublishExposure =
+    Future<void> Function(PostPublishVariant variant);
+
 /// Marks a publish that should get the full confirmation — a sheet offering
 /// View and Share — rather than the bare snackbar the control arm sees.
 ///
@@ -31,11 +34,20 @@ class PostPublishConfirmationOffer {
 class PostPublishExperiment {
   PostPublishExperiment({
     required AnalyticsEventSink analytics,
+    bool Function()? isEnabled,
+    bool Function()? isTreatmentEnabled,
+    RecordPostPublishExposure? recordExposure,
     DateTime Function()? now,
   }) : _analytics = analytics,
+       _isEnabled = isEnabled ?? _alwaysEnabled,
+       _isTreatmentEnabled = isTreatmentEnabled ?? _alwaysEnabled,
+       _recordExposure = recordExposure,
        _now = now ?? DateTime.now;
 
   final AnalyticsEventSink _analytics;
+  final bool Function() _isEnabled;
+  final bool Function() _isTreatmentEnabled;
+  final RecordPostPublishExposure? _recordExposure;
   final DateTime Function() _now;
 
   /// Pending assignments, oldest first. A publish that neither succeeds nor
@@ -46,9 +58,10 @@ class PostPublishExperiment {
   final Map<String, PostPublishVariant> _publishVariants = {};
 
   static const _maxPendingVariants = 32;
+  static bool _alwaysEnabled() => true;
 
   PostPublishVariant variantForUser(String? pubkeyHex) {
-    if (pubkeyHex == null) return PostPublishVariant.control;
+    if (!_isEnabled() || pubkeyHex == null) return PostPublishVariant.control;
     // Lowercased so a signer that returns uppercase hex cannot move the same
     // account between buckets.
     final assignmentByte = sha256
@@ -64,29 +77,48 @@ class PostPublishExperiment {
     required String publishId,
     required String destination,
     required PostPublishVariant variant,
+    bool isExperimentExposure = false,
   }) async {
+    final enabled = _isEnabled();
+    final activeVariant = enabled ? variant : PostPublishVariant.control;
     _publishVariants
       ..remove(publishId)
-      ..[publishId] = variant;
+      ..[publishId] = activeVariant;
     while (_publishVariants.length > _maxPendingVariants) {
       _publishVariants.remove(_publishVariants.keys.first);
+    }
+    if (enabled && isExperimentExposure && _recordExposure != null) {
+      try {
+        await _recordExposure(activeVariant);
+      } catch (error) {
+        Log.warning(
+          'Post-publish experiment exposure failed: $error',
+          name: 'PostPublishExperiment',
+          category: LogCategory.system,
+        );
+      }
     }
     await _logEvent(
       name: 'post_publish_screen_shown',
       parameters: {
         'destination': destination,
-        'variant': variant.analyticsName,
+        'variant': activeVariant.analyticsName,
       },
     );
   }
 
   PostPublishConfirmationOffer? completed(Set<String> publishIds) {
-    var showConfirmation = false;
+    var assignedToTreatment = false;
     for (final publishId in publishIds) {
-      showConfirmation =
-          _publishVariants.remove(publishId) == PostPublishVariant.viewShare ||
-          showConfirmation;
+      final assignedVariant = _publishVariants.remove(publishId);
+      assignedToTreatment =
+          assignedVariant == PostPublishVariant.viewShare ||
+          assignedToTreatment;
     }
+    // The master switch is re-read here, not just at assignment time, so
+    // flipping it off also drops a publish that was already in flight.
+    final showConfirmation =
+        assignedToTreatment && _isEnabled() && _isTreatmentEnabled();
     return showConfirmation
         ? PostPublishConfirmationOffer(publishedAt: _now())
         : null;

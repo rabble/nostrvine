@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
 import 'package:openvine/router/routes/router_guards.dart';
@@ -22,10 +23,13 @@ List<RouteBase> authRoutes(Ref ref) {
     GoRoute(
       path: WelcomeScreen.path,
       name: WelcomeScreen.routeName,
-      builder: (_, state) => WelcomeScreen(
-        initialSelectedPubkeyHex:
-            state.uri.queryParameters[WelcomeScreen.selectedPubkeyParam],
-      ),
+      builder: (_, state) {
+        _captureProductAnalyticsUtm(ref, state);
+        return WelcomeScreen(
+          initialSelectedPubkeyHex:
+              state.uri.queryParameters[WelcomeScreen.selectedPubkeyParam],
+        );
+      },
       routes: [
         GoRoute(
           path: 'invite',
@@ -34,16 +38,22 @@ List<RouteBase> authRoutes(Ref ref) {
             ref.read(inviteAvailabilityCubitProvider),
             state,
           ),
-          builder: (_, state) => InviteGateScreen(
-            initialCode: state.uri.queryParameters['code'],
-            initialError: state.uri.queryParameters['error'],
-            initialSourceSlug: state.uri.queryParameters['sourceSlug'],
-          ),
+          builder: (_, state) {
+            _captureProductAnalyticsUtm(ref, state);
+            return InviteGateScreen(
+              initialCode: state.uri.queryParameters['code'],
+              initialError: state.uri.queryParameters['error'],
+              initialSourceSlug: state.uri.queryParameters['sourceSlug'],
+            );
+          },
         ),
         GoRoute(
           path: 'create-account',
           name: CreateAccountScreen.routeName,
-          builder: (_, _) => const InviteProtectedCreateAccountScreen(),
+          builder: (_, state) {
+            _captureProductAnalyticsUtm(ref, state);
+            return const InviteProtectedCreateAccountScreen();
+          },
         ),
         GoRoute(
           path: 'login-options',
@@ -105,4 +115,10 @@ List<RouteBase> authRoutes(Ref ref) {
       },
     ),
   ];
+}
+
+void _captureProductAnalyticsUtm(Ref ref, GoRouterState state) {
+  ref
+      .read(analyticsServiceProvider)
+      .captureProductAnalyticsUtm(state.uri.queryParameters);
 }

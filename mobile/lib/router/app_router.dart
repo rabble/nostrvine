@@ -17,6 +17,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/navigator_keys.dart';
+import 'package:openvine/router/product_analytics_navigation_observer.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
 import 'package:openvine/router/route_error_screen.dart';
 import 'package:openvine/router/router_refresh_listenable.dart';
@@ -170,6 +171,9 @@ List<NavigatorObserver> _buildRouterObservers(Ref ref) {
   final observers = <NavigatorObserver>[
     routeObserver,
     PageLoadObserver(analytics: ref.read(screenAnalyticsServiceProvider)),
+    ProductAnalyticsNavigationObserver(
+      analytics: () => ref.read(analyticsServiceProvider),
+    ),
   ];
 
   return observers;

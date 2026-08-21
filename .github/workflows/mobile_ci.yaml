@@ -120,6 +120,8 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
+      - name: 📊 Verify pinned product analytics contract
+        run: dart run tools/check_product_analytics_contract.dart
       - name: 🔒 Verify native transport security
         # Skipped when no native config changed. The guard's only inputs are
         # mobile/android/**, mobile/ios/**, mobile/macos/** and its own

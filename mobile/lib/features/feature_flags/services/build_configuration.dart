@@ -60,6 +60,16 @@ class BuildConfiguration {
           'FF_CLIENT_SEEN_FILTERING',
           defaultValue: true,
         );
+      case FeatureFlag.postPublishConfirmationExperiment:
+        return const bool.fromEnvironment(
+          'FF_POST_PUBLISH_CONFIRMATION_EXPERIMENT',
+          defaultValue: true,
+        );
+      case FeatureFlag.postPublishConfirmationTreatment:
+        return const bool.fromEnvironment(
+          'FF_POST_PUBLISH_CONFIRMATION_TREATMENT',
+          defaultValue: true,
+        );
     }
   }
 
@@ -104,6 +114,10 @@ class BuildConfiguration {
         return 'FF_NEW_POST_NOTIFICATIONS';
       case FeatureFlag.clientSeenFiltering:
         return 'FF_CLIENT_SEEN_FILTERING';
+      case FeatureFlag.postPublishConfirmationExperiment:
+        return 'FF_POST_PUBLISH_CONFIRMATION_EXPERIMENT';
+      case FeatureFlag.postPublishConfirmationTreatment:
+        return 'FF_POST_PUBLISH_CONFIRMATION_TREATMENT';
     }
   }
 }

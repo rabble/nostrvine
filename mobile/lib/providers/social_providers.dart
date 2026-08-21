@@ -9,8 +9,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
-import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -560,15 +560,10 @@ ProductEventQueue productEventQueue(Ref ref) {
     // Read fresh at flush so a logout/login as a different account only
     // publishes that account's own queued events under its own signature.
     currentOwnerPubkey: () => ref.read(authServiceProvider).currentPublicKeyHex,
+    // AnalyticsService enables delivery only after it has loaded consent and
+    // confirmed this is an explicitly enabled build (the queue defaults to
+    // sending disabled).
   );
-
-  queue.recoverPublishingAndFlush().catchError((Object e) {
-    Log.debug(
-      'Initial ProductEventQueue recovery/flush failed: $e',
-      name: 'AppProviders',
-      category: LogCategory.system,
-    );
-  });
 
   ref.listen<bool>(appForegroundProvider, (_, next) {
     if (next) {
@@ -588,6 +583,18 @@ ProductEventQueue productEventQueue(Ref ref) {
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
+String resolveProductAnalyticsRelease({
+  required String runtimeVersion,
+  required String environment,
+  required String stagingOverride,
+}) {
+  final isStaging = environment.toUpperCase() == 'STAGING';
+  final isSmokeMarker = RegExp(
+    r'^staging-smoke-[0-9a-f]{32}$',
+  ).hasMatch(stagingOverride);
+  return isStaging && isSmokeMarker ? stagingOverride : runtimeVersion;
+}
+
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
   final db = ref.watch(databaseProvider);
@@ -595,17 +602,44 @@ AnalyticsService analyticsService(Ref ref) {
   final viewPublisher = ref.watch(viewEventPublisherProvider);
   final retryService = ref.watch(viewEventRetryServiceProvider);
   final productQueue = ref.watch(productEventQueueProvider);
+  final appVersion = resolveProductAnalyticsRelease(
+    runtimeVersion: ref.watch(appVersionProvider),
+    environment: const String.fromEnvironment('DEFAULT_ENV'),
+    stagingOverride: const String.fromEnvironment(
+      'PRODUCT_ANALYTICS_RELEASE',
+    ),
+  );
   final service = AnalyticsService(
     viewEventPublisher: viewPublisher,
     pendingViewEventsDao: db.pendingViewEventsDao,
     flushPendingViewEvents: retryService?.sweep,
     productEventQueue: productQueue,
     currentUserPubkey: () => authService.currentPublicKeyHex,
-    appVersion: () => AppConfig.appVersion,
+    appVersion: () => appVersion,
   );
 
+  var lastPubkey = authService.currentPublicKeyHex;
+  final unregisterBeforeTeardown = authService
+      .registerBeforeSessionTeardownCallback(() async {
+        final outgoingPubkey = authService.currentPublicKeyHex ?? lastPubkey;
+        await service.handleIdentityChange(outgoingPubkey);
+        lastPubkey = null;
+      });
+  final authStateSubscription = authService.authStateStream.listen((_) {
+    final nextPubkey = authService.currentPublicKeyHex;
+    final previousPubkey = lastPubkey;
+    lastPubkey = nextPubkey;
+    if (previousPubkey != null && previousPubkey != nextPubkey) {
+      unawaited(service.handleIdentityChange(previousPubkey));
+    }
+  });
+
   // Ensure cleanup on disposal
-  ref.onDispose(service.dispose);
+  ref.onDispose(() {
+    unregisterBeforeTeardown();
+    unawaited(authStateSubscription.cancel());
+    service.dispose();
+  });
 
   // Initialize asynchronously but don't block the provider
   Future.microtask(service.initialize);
