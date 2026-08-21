@@ -97,8 +97,12 @@ typedef RecordingStartedCallback = void Function(VideoRecorderMode mode);
 /// AVAudioSession — the camera already owns it in `.playAndRecord`
 /// mode. Interference would trigger `attachAudioToSessionIfNeeded()`
 /// on the native camera controller, restarting the audio capture
-/// pipeline and resetting VPIO/AGC. That manifested as the progressive
-/// mic-volume ramp-up reported in #4539.
+/// pipeline and resetting VPIO/AGC.
+///
+/// #4548 shipped this as a fix for the progressive mic-volume ramp-up in
+/// #4539, but the reports continued: that closed one real interference
+/// path, not the bug. #4539 is still open, and the remaining suspect is
+/// the output route rather than the session category.
 CountdownSoundService defaultCountdownSoundServiceFactory() =>
     CountdownSoundService(
       audioPlayerFactory: () =>
