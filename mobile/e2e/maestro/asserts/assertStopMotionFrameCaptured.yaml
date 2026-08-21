@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # The stop-motion session holds at least one still: the top bar reveals its
 # assemble-and-continue button and the shutter row reveals undo-last-still.

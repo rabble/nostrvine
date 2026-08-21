@@ -64,6 +64,7 @@ android {
 
     buildTypes {
         debug {
+            applicationIdSuffix = ".staging"
             // Disable Crashlytics symbol uploads for debug builds
             configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
                 mappingFileUploadEnabled = false

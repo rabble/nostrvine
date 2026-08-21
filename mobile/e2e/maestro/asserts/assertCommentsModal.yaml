@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # The sheet still renders a pluralized count ("0 Comments" / "1 Comment"),
 # so the count regex is kept -- it is the only assertion here that proves

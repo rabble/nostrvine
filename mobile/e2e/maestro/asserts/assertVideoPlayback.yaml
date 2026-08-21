@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # Wait for the fullscreen feed to resolve before asserting its chrome.
 #

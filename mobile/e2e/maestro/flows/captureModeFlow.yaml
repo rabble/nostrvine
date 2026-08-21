@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #Capture-mode journey: create an account, open the recorder, record a clip,
 #delete it again, and sign the device back out.

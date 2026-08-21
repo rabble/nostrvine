@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 - assertVisible: Complete Your Profile
 - assertVisible: Add your name, bio, and picture to get started

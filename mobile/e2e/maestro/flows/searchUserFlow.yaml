@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 # The account searched for is NOT committed. Supply it at run time. If
 # full-suite CI is restored, it should read it from the
 # `maestro_e2e_credentials` Codemagic group:

@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #TC to edit the user profile to an existing username,
 # given the user is logged in in the app with existing keys, on the Edit Profile screen,

@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 # The capture session holds at least one clip: the top bar reveals its
 # continue-to-editor button and the shutter row reveals delete-last-clip.

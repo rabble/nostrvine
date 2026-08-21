@@ -15,4 +15,4 @@ export 'package:openvine/models/environment_config.dart'
 const pgPort = 15432;
 
 /// Android app package name for adb commands
-const appPackage = 'co.openvine.app';
+const appPackage = 'co.openvine.app.staging';

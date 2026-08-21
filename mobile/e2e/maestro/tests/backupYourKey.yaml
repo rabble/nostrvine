@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #TC to follow a user,
 # given the user is logged in in the app,

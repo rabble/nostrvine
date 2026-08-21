@@ -1,4 +1,4 @@
-appId: co.openvine.app
+appId: co.openvine.app.staging
 ---
 #Utility: toggle the grid overlay off and back on, leaving it on its default.
 #Rendered by every mode that declares `supportGridLines` — stop-motion on the
