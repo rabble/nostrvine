@@ -484,6 +484,16 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // #7892: safety-filter explanation on the video detail screen. Translation
+  // deferred to the next l10n pass.
+  'videoDetailHiddenBySettingsTitle',
+  'videoDetailHiddenByHostFilterBody',
+  'videoDetailHiddenByContentFilterBody',
+  'videoDetailHiddenShowAnyway',
+  'videoDetailHiddenOpenSettings',
+  'videoDetailHiddenByProvenanceFilterBody',
+  'safetySettingsShowVerifiedOnly',
+  'safetySettingsShowVerifiedOnlySubtitle',
   // Restricted-account deletion guidance tracked in #7879.
   'shareMenuDeleteFailedAccountRestricted',
   'deleteAccountAccountRestricted',

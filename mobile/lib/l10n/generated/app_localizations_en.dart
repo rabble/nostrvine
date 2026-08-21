@@ -11643,4 +11643,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String supporterTierMonthlyLabel(String title, String price) {
     return '$title — $price / month';
   }
+
+  @override
+  String get videoDetailHiddenBySettingsTitle => 'Hidden by your settings';
+
+  @override
+  String videoDetailHiddenByHostFilterBody(String host) {
+    return 'This one\'s hosted on $host, and you\'re set to only show Divine-hosted videos.';
+  }
+
+  @override
+  String get videoDetailHiddenByContentFilterBody =>
+      'Your content filters are hiding this one.';
+
+  @override
+  String get videoDetailHiddenByProvenanceFilterBody =>
+      'This one has no capture chain back to a camera, and you\'re set to only show camera-verified videos.';
+
+  @override
+  String get videoDetailHiddenShowAnyway => 'Show it anyway';
+
+  @override
+  String get videoDetailHiddenOpenSettings => 'Change setting';
+
+  @override
+  String get safetySettingsShowVerifiedOnly =>
+      'Only show camera-verified videos';
+
+  @override
+  String get safetySettingsShowVerifiedOnlySubtitle =>
+      'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
 }

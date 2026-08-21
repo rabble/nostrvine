@@ -2,11 +2,9 @@
 // ABOUTME: VideoEventService keystone + filters, publishers, repositories, sharing
 
 import 'dart:async';
-
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:likes_repository/likes_repository.dart';
-import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
@@ -52,6 +50,7 @@ import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
+import 'package:openvine/services/video_source_visibility_policy.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -166,6 +165,9 @@ VideoEventService videoEventService(Ref ref) {
   final likesRepository = ref.watch(likesRepositoryProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+  final provenanceFilterService = ref.read(
+    videoProvenanceFilterServiceProvider,
+  );
   final feedAspectRatioPreference = ref.watch(
     feedAspectRatioPreferenceServiceProvider,
   );
@@ -210,6 +212,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
+  service.setProvenanceFilterService(provenanceFilterService);
   service.setFeedAspectRatioPreferenceService(feedAspectRatioPreference);
 
   // Attach the scoped broken-video tracker so videos confirmed unavailable stay
@@ -553,6 +556,9 @@ VideosRepository videosRepository(Ref ref) {
     }
   }();
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+  final provenanceFilterService = ref.read(
+    videoProvenanceFilterServiceProvider,
+  );
   final feedAspectRatioPreference = ref.watch(
     feedAspectRatioPreferenceServiceProvider,
   );
@@ -571,8 +577,11 @@ VideosRepository videosRepository(Ref ref) {
     removedVideoIds: videoEventService.removedVideoIds,
     contentFilter: (video) =>
         nsfwFilter(video) ||
-        (divineHostFilterService.showDivineHostedOnly &&
-            !video.isFromDivineServer) ||
+        VideoSourceVisibilityPolicy.isHiddenBySourcePreferences(
+          video,
+          divineHostedOnly: divineHostFilterService.showDivineHostedOnly,
+          verifiedOnly: provenanceFilterService.showVerifiedOnly,
+        ) ||
         feedAspectRatioPreference.shouldHideVideo(video),
     warningLabelsResolver: createNsfwWarnLabels(
       contentFilterService,

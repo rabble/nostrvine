@@ -19497,6 +19497,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title} — {price} / month'**
   String supporterTierMonthlyLabel(String title, String price);
+
+  /// No description provided for @videoDetailHiddenBySettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden by your settings'**
+  String get videoDetailHiddenBySettingsTitle;
+
+  /// Shown when a video is hidden because its media host is not a Divine host and the 'only show Divine-hosted videos' safety setting is on.
+  ///
+  /// In en, this message translates to:
+  /// **'This one\'s hosted on {host}, and you\'re set to only show Divine-hosted videos.'**
+  String videoDetailHiddenByHostFilterBody(String host);
+
+  /// No description provided for @videoDetailHiddenByContentFilterBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your content filters are hiding this one.'**
+  String get videoDetailHiddenByContentFilterBody;
+
+  /// No description provided for @videoDetailHiddenByProvenanceFilterBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This one has no capture chain back to a camera, and you\'re set to only show camera-verified videos.'**
+  String get videoDetailHiddenByProvenanceFilterBody;
+
+  /// No description provided for @videoDetailHiddenShowAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Show it anyway'**
+  String get videoDetailHiddenShowAnyway;
+
+  /// No description provided for @videoDetailHiddenOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Change setting'**
+  String get videoDetailHiddenOpenSettings;
+
+  /// No description provided for @safetySettingsShowVerifiedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only show camera-verified videos'**
+  String get safetySettingsShowVerifiedOnly;
+
+  /// No description provided for @safetySettingsShowVerifiedOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.'**
+  String get safetySettingsShowVerifiedOnlySubtitle;
 }
 
 class _AppLocalizationsDelegate

@@ -2,7 +2,6 @@
 // ABOUTME: Policy engine, host/age/content filters, NIP-32 labels, blocklist + sync bridge
 
 import 'dart:async';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +17,7 @@ import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/open_vine_image_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -68,6 +68,37 @@ class DivineHostFilterVersion extends Notifier<int> {
   @override
   int build() {
     final service = ref.watch(divineHostFilterServiceProvider);
+    service.addListener(increment);
+    ref.onDispose(() => service.removeListener(increment));
+    return 0;
+  }
+
+  void increment() => state++;
+}
+
+/// Capture-verified-only filter preference service.
+///
+/// Separate axis from [divineHostFilterServiceProvider]: hosting says who
+/// can moderate the media, provenance says whether it traces to a camera.
+final videoProvenanceFilterServiceProvider =
+    Provider<VideoProvenanceFilterService>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final service = VideoProvenanceFilterService(prefs);
+      ref.onDispose(service.dispose);
+      return service;
+    });
+
+/// Rebuild trigger for consumers that need to react to provenance-filter
+/// preference changes.
+final videoProvenanceFilterVersionProvider =
+    NotifierProvider<VideoProvenanceFilterVersion, int>(
+      VideoProvenanceFilterVersion.new,
+    );
+
+class VideoProvenanceFilterVersion extends Notifier<int> {
+  @override
+  int build() {
+    final service = ref.watch(videoProvenanceFilterServiceProvider);
     service.addListener(increment);
     ref.onDispose(() => service.removeListener(increment));
     return 0;

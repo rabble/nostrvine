@@ -18,7 +18,6 @@
 library;
 
 import 'dart:async';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -29,7 +28,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/author_video_buckets.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
@@ -48,6 +46,8 @@ import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_block_policy.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:openvine/services/video_provenance_filter_service.dart';
+import 'package:openvine/services/video_source_visibility_policy.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -284,6 +284,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
+  VideoProvenanceFilterService? _provenanceFilterService;
   FeedAspectRatioPreferenceService? _feedAspectRatioPreferenceService;
   BrokenVideoTracker? _brokenVideoTracker;
   final SubscriptionManager _subscriptionManager;
@@ -507,6 +508,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
+  /// Set the capture-verified-only filter service.
+  void setProvenanceFilterService(VideoProvenanceFilterService service) {
+    _provenanceFilterService = service;
+  }
+
   /// Set the feed aspect-ratio preference service.
   void setFeedAspectRatioPreferenceService(
     FeedAspectRatioPreferenceService service,
@@ -535,12 +541,19 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool get shouldFilterNonDivineVideos =>
       _divineHostFilterService?.showDivineHostedOnly ?? false;
 
+  bool get _shouldFilterUnverifiedVideos =>
+      _provenanceFilterService?.showVerifiedOnly ?? false;
+
   /// Returns true when shared feed policy hides this video.
   bool shouldHideVideo(VideoEvent video) {
     if (VideoBlockPolicy.isHiddenByBlocklist(video, _blocklistRepository)) {
       return true;
     }
-    if (shouldFilterNonDivineVideos && !video.isFromDivineServer) {
+    if (VideoSourceVisibilityPolicy.isHiddenBySourcePreferences(
+      video,
+      divineHostedOnly: shouldFilterNonDivineVideos,
+      verifiedOnly: _shouldFilterUnverifiedVideos,
+    )) {
       return true;
     }
     return false;
