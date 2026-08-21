@@ -237,9 +237,12 @@ void main() {
       await tester.pumpWidget(wrap(onboardingMode: onboardingMode));
       await tester.pumpAndSettle();
 
-      expect(find.text('Share Divine with your friends'), findsOneWidget);
+      final label = lookupAppLocalizations(
+        const Locale('en'),
+      ).settingsShareDivine;
+      expect(find.text(label), findsOneWidget);
 
-      await tester.tap(find.text('Share Divine with your friends'));
+      await tester.tap(find.text(label));
       await tester.pumpAndSettle();
 
       expect(shareCalls, hasLength(1));
