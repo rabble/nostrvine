@@ -69,9 +69,7 @@ class TimelineMultiSelectControls extends StatelessWidget {
   void _delete(BuildContext context) {
     // The bloc owns the clip-list mutation; the scaffold's removed-result
     // listener rebases markers and commits the new list to editor history.
-    context.read<ClipEditorBloc>().add(
-      const ClipEditorSelectedClipsRemoved(),
-    );
+    context.read<ClipEditorBloc>().add(const ClipEditorSelectedClipsRemoved());
   }
 }
 
@@ -238,7 +236,12 @@ class TimelineFrameMultiSelectControls extends StatelessWidget {
     final duplicated = StopMotionFrameOps.duplicateFrames(frames, selection);
     if (identical(duplicated, frames)) return;
 
-    commitStopMotionFrames(context, clipId: clip.id, frames: duplicated);
+    final committed = commitStopMotionFrames(
+      context,
+      clipId: clip.id,
+      frames: duplicated,
+    );
+    if (!committed) return;
 
     final firstCopy = StopMotionFrameOps.duplicateInsertIndex(selection);
     bloc.add(

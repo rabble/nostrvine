@@ -383,6 +383,35 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('selected stills stay in place and dim during block drag', (
+    tester,
+  ) async {
+    frames = makeFrames(5);
+    await pump(
+      tester,
+      onFrameTapped: (_) {},
+      isMultiSelectMode: true,
+      selectedFrameIndexes: {1, 2, 3},
+      onBlockMove: (_) {},
+    );
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(Image).at(2)),
+    );
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await tester.pump();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Opacity && widget.opacity == 0.35,
+      ),
+      findsNWidgets(3),
+    );
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('block drag does not start on an unselected tile', (
     tester,
   ) async {

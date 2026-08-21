@@ -221,9 +221,7 @@ void main() {
       );
       await tester.pump();
 
-      verify(
-        () => bloc.add(const ClipEditorMultiSelectCancelled()),
-      ).called(1);
+      verify(() => bloc.add(const ClipEditorMultiSelectCancelled())).called(1);
     });
 
     testWidgets('Delete dispatches a remove event when enabled', (
@@ -244,9 +242,7 @@ void main() {
       );
       await tester.pump();
 
-      verify(
-        () => bloc.add(const ClipEditorSelectedClipsRemoved()),
-      ).called(1);
+      verify(() => bloc.add(const ClipEditorSelectedClipsRemoved())).called(1);
     });
   });
 
@@ -362,6 +358,7 @@ void main() {
         WidgetTester tester, {
         required Set<int> selected,
         int frameCount = 4,
+        bool hasEditor = true,
       }) async {
         when(() => bloc.state).thenReturn(
           ClipEditorState(
@@ -378,7 +375,7 @@ void main() {
             home: Scaffold(
               body: VideoEditorScope(
                 editorKey: GlobalKey<ProImageEditorState>(),
-                editorOverride: editor,
+                editorOverride: hasEditor ? editor : null,
                 removeAreaKey: GlobalKey(),
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: ValueNotifier(const Size(400, 600)),
@@ -418,9 +415,7 @@ void main() {
                       bloc.add(captureAny(that: isA<ClipEditorClipUpdated>())),
                 ).captured.single
                 as ClipEditorClipUpdated;
-        return [
-          for (final frame in updated.clip.stopMotionFrames!) frame.path,
-        ];
+        return [for (final frame in updated.clip.stopMotionFrames!) frame.path];
       }
 
       Set<int> reselected() {
@@ -488,6 +483,17 @@ void main() {
           '/tmp/a-3.png',
         ]);
         expect(reselected(), {3, 4});
+      });
+
+      testWidgets('does not move the selection when the editor is gone', (
+        tester,
+      ) async {
+        await pressDuplicate(tester, selected: const {0}, hasEditor: false);
+
+        verifyNever(() => bloc.add(any(that: isA<ClipEditorClipUpdated>())));
+        verifyNever(
+          () => bloc.add(any(that: isA<ClipEditorFrameMultiSelectionSet>())),
+        );
       });
     });
   });
