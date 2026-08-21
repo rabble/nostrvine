@@ -58,7 +58,7 @@ enum LoopSeamProbeVariant {
 /// Substitutes a bundled fixture for the clips the app is about to play.
 abstract final class LoopSeamProbe {
   /// Bumped per test build so the banner names the run on screen.
-  static const testNumber = 23;
+  static const testNumber = 24;
 
   static const _assetRoot =
       'packages/divine_video_player/assets/loop_seam_probe';
@@ -74,8 +74,14 @@ abstract final class LoopSeamProbe {
 
   static final Map<String, Future<String>> _extracted = {};
 
-  /// Whether the probe would rewrite anything at all.
-  static bool get isActive => kDebugMode && variant != LoopSeamProbeVariant.off;
+  /// Whether the probe swaps the source.
+  static bool get substitutes =>
+      kDebugMode && variant != LoopSeamProbeVariant.off;
+
+  /// Whether the overlay is shown. Deliberately independent of [substitutes]:
+  /// the overlay has to be present in every debug build, or its absence is
+  /// ambiguous between "not substituted" and "overlay broken".
+  static bool get isActive => kDebugMode;
 
   /// Rewrites the clips to the selected fixture.
   ///
@@ -91,6 +97,7 @@ abstract final class LoopSeamProbe {
     // Ein fehlendes Overlay waere mehrdeutig -- nicht ersetzt, oder Overlay
     // kaputt. Deshalb meldet der Probe auch die *echte* Quelle.
     String real() => 'T$testNumber  ·  ECHT  ·  ${_name(clips)}';
+    if (!substitutes) return (clips: clips, label: real());
     final asset = switch (variant) {
       LoopSeamProbeVariant.vine => 'loop_editfix_a0.mp4',
       LoopSeamProbeVariant.fixed => 'divine_cdn_fixed.mp4',
