@@ -4005,6 +4005,7 @@
     }
   },
   "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.",
   "profileBadgeCheckmarkTitle": "Tanda semak profil",
   "profileBadgeCheckmarkBody": "Divine memberikan tanda semak ini kepada akaun pasukan dan sebilangan kecil profil yang diluluskan secara manual. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",

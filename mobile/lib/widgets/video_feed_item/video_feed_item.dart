@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -24,7 +25,9 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
+import 'package:openvine/widgets/profile_badge_explanation_sheet.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -300,6 +303,18 @@ class VideoOverlayActions extends ConsumerWidget {
                         (service) => service.isOgViner(authorPubkey),
                       ),
                     );
+                    final showCheckmark = shouldShowSpecialProfileCheckmark(
+                      authorPubkey,
+                    );
+                    // The beta chit yields to both the checkmark and the OG
+                    // Viner chit, so a name never carries two of them. The
+                    // Viner rosters are disjoint by construction; the
+                    // checkmark is an independent list that 15 of its 18
+                    // pubkeys share with the beta roster.
+                    final isOgBetaTester =
+                        !isOgViner &&
+                        !showCheckmark &&
+                        isOgBetaTesterPubkey(authorPubkey);
 
                     void navigateToProfile() {
                       onInteracted?.call();
@@ -374,11 +389,18 @@ class VideoOverlayActions extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    if (shouldShowSpecialProfileCheckmark(
-                                      authorPubkey,
-                                    ))
+                                    if (showCheckmark)
                                       const SpecialProfileCheckmark(),
                                     if (isOgViner) const OgVinerBadge(),
+                                    if (isOgBetaTester)
+                                      OgBetaBadge(
+                                        onTap: () =>
+                                            showProfileBadgeExplanationSheet(
+                                              context,
+                                              ProfileBadgeExplanationType
+                                                  .ogBetaTester,
+                                            ),
+                                      ),
                                   ],
                                 ),
                                 _VideoCardMetaLine(

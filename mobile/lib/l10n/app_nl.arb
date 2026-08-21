@@ -4453,6 +4453,7 @@
     "originalSoundByCreator": "Origineel geluid - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Deze persoon plaatste een originele Vine die Divine in het archief vond. Dit is geen verificatiebadge voor het account.",
     "profileBadgeCheckmarkTitle": "Profielvinkje",
     "profileBadgeCheckmarkBody": "Divine geeft dit vinkje aan teamaccounts en aan een klein aantal handmatig goedgekeurde profielen. Dat staat los van NIP-05, geverifieerde accountlinks en de OG Viner-status.",

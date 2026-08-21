@@ -142,6 +142,18 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
       ),
     );
     final showCheckmark = shouldShowSpecialProfileCheckmark(userIdHex);
+    // The beta chit yields to both the checkmark and the OG Viner chit, so a
+    // name never carries two of them. The Viner rosters are disjoint by
+    // construction; the checkmark is an independent list that 15 of its 18
+    // pubkeys share with the beta roster, so that one has to be checked here.
+    // A vanished account renders profileDeletedAccountName, so a chit beside
+    // it is incoherent. The roster is compiled in and cannot drop anyone who
+    // vanishes after release, so the gate has to live here.
+    final isOgBetaTester =
+        !isVanished &&
+        !isOgViner &&
+        !showCheckmark &&
+        isOgBetaTesterPubkey(userIdHex);
     final name = isVanished
         // Deliberately not a UserName: that widget re-resolves the profile
         // through its own provider and falls back to a generated handle, which
@@ -179,7 +191,7 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
             showProfileBadges: false,
           );
 
-    if (!isOgViner && !showCheckmark) return name;
+    if (!isOgViner && !isOgBetaTester && !showCheckmark) return name;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -193,6 +205,10 @@ class _ProfileHeaderNameRow extends ConsumerWidget {
         if (isOgViner)
           const _ProfileHeaderBadgeExplanationButton(
             type: ProfileBadgeExplanationType.ogViner,
+          ),
+        if (isOgBetaTester)
+          const _ProfileHeaderBadgeExplanationButton(
+            type: ProfileBadgeExplanationType.ogBetaTester,
           ),
       ],
     );
@@ -248,6 +264,7 @@ extension on ProfileBadgeExplanationType {
   String title(AppLocalizations l10n) {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => l10n.ogVinerBadgeLabel,
+      ProfileBadgeExplanationType.ogBetaTester => l10n.ogBetaTesterBadgeLabel,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkTitle,
     };
@@ -256,6 +273,8 @@ extension on ProfileBadgeExplanationType {
   String body(AppLocalizations l10n) {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => l10n.profileBadgeOgVinerBody,
+      ProfileBadgeExplanationType.ogBetaTester =>
+        l10n.profileBadgeOgBetaTesterBody,
       ProfileBadgeExplanationType.profileCheckmark =>
         l10n.profileBadgeCheckmarkBody,
     };
@@ -264,6 +283,10 @@ extension on ProfileBadgeExplanationType {
   Widget get badge {
     return switch (this) {
       ProfileBadgeExplanationType.ogViner => const OgVinerBadge(
+        size: _profileHeaderBadgeDiameter,
+        leadingGap: 0,
+      ),
+      ProfileBadgeExplanationType.ogBetaTester => const OgBetaBadge(
         size: _profileHeaderBadgeDiameter,
         leadingGap: 0,
       ),

@@ -520,6 +520,14 @@ const _knownUntranslatedDebt = <String>{
   // Secure-account key-conflict recovery copy is new; translation pass
   // tracked in #7984.
   'authSecureAccountAlreadyRegistered',
+  // OG Beta Tester explainer copy is new; translation pass tracked in #7947.
+  // Only the body is deferred — the label ships mirrored verbatim. Note that
+  // is not a precedent the "OG Viner" family actually sets: app_pt.arb has
+  // "Viner OG" and app_de.arb has "OG Viner" for classicVinersTitle, so
+  // translators do adapt these. #7947 should add both this key and
+  // profileBadgeOgVinerBody to _profileBadgeSheetKeys below, which already
+  // guards the sheet against English fallback and covers neither today.
+  'profileBadgeOgBetaTesterBody',
   // The four social-proof keys and searchUserVideoCount left this list when
   // this branch translated them into every locale.
 };

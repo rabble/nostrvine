@@ -4453,6 +4453,7 @@
     "originalSoundByCreator": "オリジナルサウンド - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "この人はオリジナルの Vine を投稿していて、Divine がアーカイブで見つけたよ。アカウントの認証バッジではないので注意。",
     "profileBadgeCheckmarkTitle": "プロフィールのチェックマーク",
     "profileBadgeCheckmarkBody": "Divine はこのチェックマークをチームのアカウントと、手動で承認したごく少数のプロフィールに付けてるよ。 NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。",

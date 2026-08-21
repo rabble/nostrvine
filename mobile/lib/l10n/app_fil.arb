@@ -3249,6 +3249,7 @@
     "originalSoundByCreator": "Orihinal na sound - {creatorName}",
     "@originalSoundByCreator": {"placeholders": {"creatorName": {"type": "String"}}},
     "ogVinerBadgeLabel": "OG Viner",
+    "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Nag-post ang taong ito ng orihinal na Vine na nakita ng Divine sa archive. Hindi ito badge ng verification ng account.",
     "profileBadgeCheckmarkTitle": "Tsek sa profile",
     "profileBadgeCheckmarkBody": "Ibinibigay ng Divine ang tsek na ito sa mga account ng team at sa iilang profile na manu-manong inaprubahan. Hiwalay ito sa NIP-05, sa mga verified na link ng account, at sa OG Viner status.",
