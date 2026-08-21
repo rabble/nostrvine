@@ -6835,6 +6835,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Заявката ти за изтриване още се обработва. Провери пак, преди да напуснеш този екран.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Отменяме изтриването ти. Провери пак, преди да напуснеш този екран.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Още не успяхме да върнем потребителското ти име. Провери връзката си и опитай пак.';
 

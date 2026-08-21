@@ -3192,6 +3192,7 @@
     "accountDeletionRecoveryBody": "Hindi namin natapos ang pag-delete ng account mo. Naka-reserve pa rin sa iyo ang username mo at puwede pang maibalik.",
     "accountDeletionRestoreUsername": "Ibalik ang username ko",
     "accountDeletionFinishingBody": "Pinoproseso pa ang delete request mo. Tingnan ulit bago ka umalis sa screen na ito.",
+    "accountDeletionCancellingBody": "Kina-cancel na namin ang delete mo. Tingnan ulit bago ka umalis sa screen na ito.",
     "accountDeletionRecoveryFailed": "Hindi pa namin naibabalik ang username mo. Tingnan ang koneksyon mo at subukan ulit.",
     "accountDeletionUsernameRestored": "Naibalik na ang username mo. Hindi na-delete ang account mo.",
     "accountDeletionRecoveryStatusFailed": "Hindi namin ma-check ang status ng pag-delete mo. Tingnan ang koneksyon mo at subukan ulit.",

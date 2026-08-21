@@ -6777,6 +6777,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Permintaan pemadaman anda masih diproses. Semak semula sebelum anda meninggalkan skrin ini.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Kami sedang membatalkan pemadaman anda. Semak semula sebelum anda meninggalkan skrin ini.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Kami belum dapat memulihkan nama pengguna anda. Semak sambungan anda dan cuba lagi.';
 

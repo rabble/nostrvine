@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "On n'a pas pu terminer la suppression de ton compte. Ton nom d'utilisateur t'est réservé et peut encore être récupéré.",
     "accountDeletionRestoreUsername": "Récupérer mon nom d'utilisateur",
     "accountDeletionFinishingBody": "Ta demande de suppression est encore en cours. Vérifie à nouveau avant de quitter cet écran.",
+    "accountDeletionCancellingBody": "On annule ta suppression. Vérifie à nouveau avant de quitter cet écran.",
     "accountDeletionRecoveryFailed": "On n'a pas encore pu récupérer ton nom d'utilisateur. Vérifie ta connexion et réessaie.",
     "accountDeletionUsernameRestored": "Ton nom d'utilisateur est récupéré. Ton compte n'a pas été supprimé.",
     "accountDeletionRecoveryStatusFailed": "On n'a pas pu vérifier l'état de ta suppression. Vérifie ta connexion et réessaie.",

@@ -4521,6 +4521,7 @@
     "accountDeletionRecoveryBody": "መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። የተጠቃሚ ስምዎ ለእርስዎ ተይዞልዎታል፣ አሁንም መመለስ ይቻላል።",
     "accountDeletionRestoreUsername": "የተጠቃሚ ስሜን ይመልሱ",
     "accountDeletionFinishingBody": "የመሰረዝ ጥያቄዎ አሁንም እየተሰራ ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።",
+    "accountDeletionCancellingBody": "የመሰረዝ ጥያቄዎን እየሰረዝን ነው። ይህን ማያ ገጽ ከመልቀቅዎ በፊት እንደገና ያረጋግጡ።",
     "accountDeletionRecoveryFailed": "የተጠቃሚ ስምዎን ገና መመለስ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።",
     "accountDeletionUsernameRestored": "የተጠቃሚ ስምዎ ተመልሷል። መለያዎ አልተሰረዘም።",
     "accountDeletionRecoveryStatusFailed": "የመሰረዙን ሁኔታ ማረጋገጥ አልቻልንም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።",

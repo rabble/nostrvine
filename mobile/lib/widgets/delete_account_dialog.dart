@@ -580,7 +580,7 @@ Future<void> executeAccountDeletion({
             ? () {
                 unawaited(
                   repository
-                      .cancel(attemptId: attempt.id)
+                      .cancelAndWait(attemptId: attempt.id)
                       .then((restored) {
                         if (!context.mounted) return;
                         final succeeded =
@@ -813,13 +813,18 @@ Future<void> executeAccountDeletion({
             vanishEventId: eventId,
           );
           deletionAttempt = submitted;
-          if (submitted.status != AccountDeletionAttemptStatus.completed) {
+          if (submitted.status == AccountDeletionAttemptStatus.processing) {
             dismissProgressSheet();
             showDurableDeletionOutcome(
               finishingDeletionText,
               offerCancel: false,
             );
             return;
+          }
+          if (submitted.status != AccountDeletionAttemptStatus.completed) {
+            throw AccountDeletionRecoveryException(
+              'Submit returned ${submitted.status.name}',
+            );
           }
         } on Object catch (error) {
           Log.error(

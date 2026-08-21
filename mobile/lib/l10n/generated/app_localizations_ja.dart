@@ -6426,6 +6426,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '削除リクエストはまだ処理中です。この画面を離れる前にもう一度確認してください。';
 
   @override
+  String get accountDeletionCancellingBody =>
+      '削除をキャンセルしています。この画面を離れる前にもう一度確認してください。';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'ユーザー名をまだ元に戻せませんでした。接続を確認してもう一度お試しください。';
 

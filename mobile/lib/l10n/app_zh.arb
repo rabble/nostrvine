@@ -3813,6 +3813,7 @@
   "accountDeletionRecoveryBody": "我们没能完成账号删除。你的用户名仍为你保留，还可以找回。",
   "accountDeletionRestoreUsername": "找回我的用户名",
   "accountDeletionFinishingBody": "你的删除请求仍在处理中。离开此页面前请再确认一次。",
+  "accountDeletionCancellingBody": "我们正在取消你的删除请求。离开此页面前请再确认一次。",
   "accountDeletionRecoveryFailed": "我们还没能找回你的用户名。请检查网络连接后重试。",
   "accountDeletionUsernameRestored": "你的用户名已找回，你的账号未被删除。",
   "accountDeletionRecoveryStatusFailed": "我们无法查询你的删除状态。请检查网络连接后重试。",

@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "No pudimos terminar de eliminar tu cuenta. Tu nombre de usuario está reservado para vos y todavía se puede recuperar.",
     "accountDeletionRestoreUsername": "Recuperar mi nombre de usuario",
     "accountDeletionFinishingBody": "Tu pedido de eliminación todavía se está procesando. Revisá de nuevo antes de salir de esta pantalla.",
+    "accountDeletionCancellingBody": "Estamos cancelando tu eliminación. Revisá de nuevo antes de salir de esta pantalla.",
     "accountDeletionRecoveryFailed": "Todavía no pudimos recuperar tu nombre de usuario. Revisá tu conexión y probá de nuevo.",
     "accountDeletionUsernameRestored": "Tu nombre de usuario está recuperado. Tu cuenta no fue eliminada.",
     "accountDeletionRecoveryStatusFailed": "No pudimos consultar el estado de tu eliminación. Revisá tu conexión y probá de nuevo.",

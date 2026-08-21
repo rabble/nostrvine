@@ -6758,6 +6758,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Din raderingsbegäran behandlas fortfarande. Kolla igen innan du lämnar den här skärmen.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Vi avbryter din radering. Kolla igen innan du lämnar den här skärmen.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Vi kunde inte återställa ditt användarnamn än. Kontrollera anslutningen och försök igen.';
 

@@ -9,12 +9,14 @@ import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 
 class AccountDeletionRecoveryException implements Exception {
-  const AccountDeletionRecoveryException(this.message);
+  const AccountDeletionRecoveryException(this.message, {this.code});
 
   final String message;
+  final String? code;
 
   @override
-  String toString() => 'AccountDeletionRecoveryException($message)';
+  String toString() =>
+      'AccountDeletionRecoveryException($message, code: $code)';
 }
 
 class AccountDeletionRecoveryRepository {
@@ -25,6 +27,8 @@ class AccountDeletionRecoveryRepository {
     required Nip98AuthService nip98AuthService,
     required String? Function() currentPubkey,
     Duration timeout = const Duration(seconds: 15),
+    Duration retryBaseDelay = const Duration(milliseconds: 500),
+    Future<void> Function(Duration) delay = Future<void>.delayed,
   }) : _baseUrl = baseUrl.endsWith('/')
            ? baseUrl.substring(0, baseUrl.length - 1)
            : baseUrl,
@@ -34,7 +38,9 @@ class AccountDeletionRecoveryRepository {
            : nameServerBaseUrl,
        _nip98AuthService = nip98AuthService,
        _currentPubkey = currentPubkey,
-       _timeout = timeout;
+       _timeout = timeout,
+       _retryBaseDelay = retryBaseDelay,
+       _delay = delay;
 
   static const _attemptsPath = '/api/account-deletion/attempts';
 
@@ -44,6 +50,12 @@ class AccountDeletionRecoveryRepository {
   final Nip98AuthService _nip98AuthService;
   final String? Function() _currentPubkey;
   final Duration _timeout;
+  final Duration _retryBaseDelay;
+  final Future<void> Function(Duration) _delay;
+
+  static const _maxAttempts = 3;
+  static const _pollInterval = Duration(seconds: 2);
+  static const _cancellationTimeout = Duration(minutes: 2);
 
   Uri get _attemptsUri => Uri.parse('$_baseUrl$_attemptsPath');
   Uri get _currentAttemptUri => Uri.parse('$_baseUrl$_attemptsPath/current');
@@ -84,6 +96,12 @@ class AccountDeletionRecoveryRepository {
     if (attempt.status == AccountDeletionAttemptStatus.recoverable) {
       return attempt;
     }
+    if (attempt.isCancellationInFlight) {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation cannot resume during cancellation',
+        code: 'illegal_transition',
+      );
+    }
     if (attempt.status != AccountDeletionAttemptStatus.preparing) {
       throw AccountDeletionRecoveryException(
         'Coordinator prepare returned ${attempt.status.name}',
@@ -98,17 +116,20 @@ class AccountDeletionRecoveryRepository {
     );
     final http.Response nameResponse;
     try {
-      nameResponse = await _httpClient
-          .post(_namePrepareUri, headers: nameHeaders, body: nameBody)
-          .timeout(_timeout);
+      nameResponse = await _sendWithRetry(
+        () => _httpClient
+            .post(_namePrepareUri, headers: nameHeaders, body: nameBody)
+            .timeout(_timeout),
+      );
     } on TimeoutException {
       throw const AccountDeletionRecoveryException(
         'Username preparation timed out',
       );
     }
     if (nameResponse.statusCode != 200) {
-      throw AccountDeletionRecoveryException(
-        'Username preparation failed (${nameResponse.statusCode})',
+      throw _exceptionFromResponse(
+        nameResponse,
+        'Username preparation failed',
       );
     }
     final Map<String, dynamic> nameJson;
@@ -141,18 +162,28 @@ class AccountDeletionRecoveryRepository {
     final uri = _currentAttemptUri;
     final headers = await _authHeaders(uri: uri, method: HttpMethod.get);
     try {
-      final response = await _httpClient
-          .get(uri, headers: headers)
-          .timeout(_timeout);
+      final response = await _sendWithRetry(
+        () => _httpClient.get(uri, headers: headers).timeout(_timeout),
+      );
       if (response.statusCode == 404) return null;
       if (response.statusCode != 200) {
-        throw AccountDeletionRecoveryException(
-          'Status lookup failed (${response.statusCode})',
-        );
+        throw _exceptionFromResponse(response, 'Status lookup failed');
       }
       return _decodeAttempt(response.body);
     } on TimeoutException {
       throw const AccountDeletionRecoveryException('Status lookup timed out');
+    }
+  }
+
+  Stream<AccountDeletionAttempt?> watchCurrent({
+    Duration pollInterval = _pollInterval,
+  }) async* {
+    var attempt = await fetchCurrent();
+    yield attempt;
+    while (attempt?.needsPolling ?? false) {
+      await _delay(pollInterval);
+      attempt = await fetchCurrent();
+      yield attempt;
     }
   }
 
@@ -171,8 +202,48 @@ class AccountDeletionRecoveryRepository {
     return _post(
       uri: _cancelUri(attemptId),
       body: '{}',
-      acceptedStatusCodes: const {200},
+      acceptedStatusCodes: const {200, 202},
     );
+  }
+
+  /// Cancels [attemptId] and waits for the coordinator's terminal answer.
+  ///
+  /// The coordinator answers `202` while another request is still rolling the
+  /// username back, so the cancellation is only known once the attempt reports
+  /// `cancelled`. The wait is bounded: an attempt the coordinator never moves
+  /// out of `cancelling` sits there until its own 24-hour deadline, and an
+  /// unbounded wait would keep the caller polling — and the caller's spinner
+  /// spinning — for that entire day.
+  Future<AccountDeletionAttempt> cancelAndWait({
+    required String attemptId,
+    Duration timeout = _cancellationTimeout,
+  }) async {
+    var attempt = await cancel(attemptId: attemptId);
+    var waited = Duration.zero;
+    while (true) {
+      if (attempt.status == AccountDeletionAttemptStatus.cancelled) {
+        return attempt;
+      }
+      if (!attempt.isCancellationInFlight) {
+        throw const AccountDeletionRecoveryException(
+          'Account deletion cancellation ended in an invalid state',
+        );
+      }
+      if (waited >= timeout) {
+        throw const AccountDeletionRecoveryException(
+          'Account deletion cancellation did not finish in time',
+        );
+      }
+      await _delay(_pollInterval);
+      waited += _pollInterval;
+      final current = await fetchCurrent();
+      if (current == null || current.id != attemptId) {
+        throw const AccountDeletionRecoveryException(
+          'Cancellation status did not match the account deletion attempt',
+        );
+      }
+      attempt = current;
+    }
   }
 
   Future<AccountDeletionAttempt> _post({
@@ -186,12 +257,15 @@ class AccountDeletionRecoveryRepository {
       payload: body,
     );
     try {
-      final response = await _httpClient
-          .post(uri, headers: headers, body: body)
-          .timeout(_timeout);
+      final response = await _sendWithRetry(
+        () => _httpClient
+            .post(uri, headers: headers, body: body)
+            .timeout(_timeout),
+      );
       if (!acceptedStatusCodes.contains(response.statusCode)) {
-        throw AccountDeletionRecoveryException(
-          'Deletion attempt request failed (${response.statusCode})',
+        throw _exceptionFromResponse(
+          response,
+          'Deletion attempt request failed',
         );
       }
       return _decodeAttempt(response.body);
@@ -200,6 +274,39 @@ class AccountDeletionRecoveryRepository {
         'Deletion attempt request timed out',
       );
     }
+  }
+
+  Future<http.Response> _sendWithRetry(
+    Future<http.Response> Function() send,
+  ) async {
+    for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
+      final response = await send();
+      if (!_isRetryable(response.statusCode) || attempt == _maxAttempts) {
+        return response;
+      }
+      await _delay(_retryBaseDelay * (1 << (attempt - 1)));
+    }
+    throw StateError('Retry loop completed without a response');
+  }
+
+  bool _isRetryable(int statusCode) =>
+      statusCode == 429 || (statusCode >= 500 && statusCode <= 599);
+
+  AccountDeletionRecoveryException _exceptionFromResponse(
+    http.Response response,
+    String fallback,
+  ) {
+    String? code;
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      code = (json['failure_code'] ?? json['code']) as String?;
+    } on Object {
+      // The status code and localized client fallback remain authoritative.
+    }
+    return AccountDeletionRecoveryException(
+      '$fallback (${response.statusCode})',
+      code: code,
+    );
   }
 
   Future<Map<String, String>> _authHeaders({

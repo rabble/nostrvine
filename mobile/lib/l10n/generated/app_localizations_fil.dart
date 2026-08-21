@@ -6814,6 +6814,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Pinoproseso pa ang delete request mo. Tingnan ulit bago ka umalis sa screen na ito.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Kina-cancel na namin ang delete mo. Tingnan ulit bago ka umalis sa screen na ito.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Hindi pa namin naibabalik ang username mo. Tingnan ang koneksyon mo at subukan ulit.';
 

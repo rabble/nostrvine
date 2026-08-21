@@ -6831,6 +6831,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu pedido de eliminación todavía se está procesando. Revisá de nuevo antes de salir de esta pantalla.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Estamos cancelando tu eliminación. Revisá de nuevo antes de salir de esta pantalla.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Todavía no pudimos recuperar tu nombre de usuario. Revisá tu conexión y probá de nuevo.';
 

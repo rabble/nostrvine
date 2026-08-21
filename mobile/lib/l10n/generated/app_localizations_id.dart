@@ -6694,6 +6694,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Permintaan penghapusanmu masih diproses. Cek lagi sebelum kamu meninggalkan layar ini.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Kami sedang membatalkan penghapusanmu. Cek lagi sebelum kamu meninggalkan layar ini.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Kami belum bisa mengembalikan username-mu. Periksa koneksimu dan coba lagi.';
 

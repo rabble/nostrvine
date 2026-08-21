@@ -11624,6 +11624,12 @@ abstract class AppLocalizations {
   /// **'Your deletion request is still being processed. Check again before leaving this screen.'**
   String get accountDeletionFinishingBody;
 
+  /// Shown while the server is rolling back an account-deletion attempt the user asked to cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re cancelling your deletion. Check again before leaving this screen.'**
+  String get accountDeletionCancellingBody;
+
   /// Shown when rollback of a pending username release was not confirmed.
   ///
   /// In en, this message translates to:

@@ -6795,6 +6795,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je verwijderverzoek wordt nog verwerkt. Controleer het opnieuw voordat je dit scherm verlaat.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'We annuleren je verwijderverzoek. Controleer het opnieuw voordat je dit scherm verlaat.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'We konden je gebruikersnaam nog niet terugzetten. Controleer je verbinding en probeer het opnieuw.';
 

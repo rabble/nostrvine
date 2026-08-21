@@ -3813,6 +3813,7 @@
   "accountDeletionRecoveryBody": "Bọn mình chưa xóa xong tài khoản của bạn. Tên người dùng vẫn được giữ cho bạn và vẫn có thể lấy lại.",
   "accountDeletionRestoreUsername": "Lấy lại tên người dùng của mình",
   "accountDeletionFinishingBody": "Yêu cầu xóa của bạn vẫn đang được xử lý. Kiểm tra lại trước khi rời màn hình này nhé.",
+  "accountDeletionCancellingBody": "Chúng tôi đang hủy yêu cầu xóa của bạn. Kiểm tra lại trước khi rời màn hình này nhé.",
   "accountDeletionRecoveryFailed": "Bọn mình chưa lấy lại được tên người dùng của bạn. Kiểm tra kết nối và thử lại.",
   "accountDeletionUsernameRestored": "Tên người dùng của bạn đã được lấy lại. Tài khoản của bạn chưa bị xóa.",
   "accountDeletionRecoveryStatusFailed": "Bọn mình không kiểm tra được trạng thái xóa của bạn. Kiểm tra kết nối và thử lại.",

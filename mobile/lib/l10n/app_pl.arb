@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Nie udało się dokończyć usuwania konta. Twoja nazwa użytkownika jest dla ciebie zarezerwowana i wciąż można ją odzyskać.",
     "accountDeletionRestoreUsername": "Odzyskaj moją nazwę użytkownika",
     "accountDeletionFinishingBody": "Twoje żądanie usunięcia jest wciąż przetwarzane. Sprawdź ponownie, zanim opuścisz ten ekran.",
+    "accountDeletionCancellingBody": "Anulujemy usuwanie twojego konta. Sprawdź ponownie, zanim opuścisz ten ekran.",
     "accountDeletionRecoveryFailed": "Nie udało się jeszcze odzyskać twojej nazwy użytkownika. Sprawdź połączenie i spróbuj ponownie.",
     "accountDeletionUsernameRestored": "Twoja nazwa użytkownika została odzyskana. Twoje konto nie zostało usunięte.",
     "accountDeletionRecoveryStatusFailed": "Nie udało się sprawdzić stanu usuwania. Sprawdź połączenie i spróbuj ponownie.",

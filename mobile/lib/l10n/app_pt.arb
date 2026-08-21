@@ -4396,6 +4396,7 @@
     "accountDeletionRecoveryBody": "Não conseguimos concluir a exclusão da sua conta. Seu nome de usuário está reservado para você e ainda pode ser recuperado.",
     "accountDeletionRestoreUsername": "Recuperar meu nome de usuário",
     "accountDeletionFinishingBody": "Seu pedido de exclusão ainda está sendo processado. Confira de novo antes de sair desta tela.",
+    "accountDeletionCancellingBody": "Estamos cancelando sua exclusão. Confira de novo antes de sair desta tela.",
     "accountDeletionRecoveryFailed": "Ainda não conseguimos recuperar seu nome de usuário. Verifique sua conexão e tente de novo.",
     "accountDeletionUsernameRestored": "Seu nome de usuário foi recuperado. Sua conta não foi excluída.",
     "accountDeletionRecoveryStatusFailed": "Não conseguimos verificar o status da sua exclusão. Verifique sua conexão e tente de novo.",

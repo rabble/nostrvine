@@ -6850,6 +6850,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Deine Löschanfrage wird noch bearbeitet. Schau nochmal nach, bevor du diesen Bildschirm verlässt.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Wir brechen deine Löschung gerade ab. Schau nochmal nach, bevor du diesen Bildschirm verlässt.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Wir konnten deinen Benutzernamen noch nicht zurückholen. Prüfe deine Verbindung und versuch es erneut.';
 

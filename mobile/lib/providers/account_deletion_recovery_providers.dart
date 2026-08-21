@@ -30,8 +30,23 @@ final currentAccountDeletionAttemptProvider =
       if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
         return null;
       }
-      if (!ref.watch(nostrSessionProvider).isReadyForActiveClient) return null;
+      if (!ref.watch(nostrSessionProvider).isReadyForActiveClient) {
+        return null;
+      }
       return ref
           .watch(accountDeletionRecoveryRepositoryProvider)
           .fetchCurrent();
+    });
+
+final pollingAccountDeletionAttemptProvider =
+    StreamProvider<AccountDeletionAttempt?>((ref) {
+      if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
+        return Stream.value(null);
+      }
+      if (!ref.watch(nostrSessionProvider).isReadyForActiveClient) {
+        return Stream.value(null);
+      }
+      return ref
+          .watch(accountDeletionRecoveryRepositoryProvider)
+          .watchCurrent();
     });

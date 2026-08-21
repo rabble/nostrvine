@@ -6396,6 +6396,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDeletionFinishingBody => '你的删除请求仍在处理中。离开此页面前请再确认一次。';
 
   @override
+  String get accountDeletionCancellingBody => '我们正在取消你的删除请求。离开此页面前请再确认一次。';
+
+  @override
   String get accountDeletionRecoveryFailed => '我们还没能找回你的用户名。请检查网络连接后重试。';
 
   @override

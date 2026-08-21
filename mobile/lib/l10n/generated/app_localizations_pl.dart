@@ -6926,6 +6926,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Twoje żądanie usunięcia jest wciąż przetwarzane. Sprawdź ponownie, zanim opuścisz ten ekran.';
 
   @override
+  String get accountDeletionCancellingBody =>
+      'Anulujemy usuwanie twojego konta. Sprawdź ponownie, zanim opuścisz ten ekran.';
+
+  @override
   String get accountDeletionRecoveryFailed =>
       'Nie udało się jeszcze odzyskać twojej nazwy użytkownika. Sprawdź połączenie i spróbuj ponownie.';
 
