@@ -404,6 +404,24 @@ void main() {
       final frames = framesOf([1, 1]);
       expect(StopMotionFrameOps.duplicateFrames(frames, {0, 5}), same(frames));
     });
+
+    // The action bar moves the selection onto the copies using
+    // `duplicateInsertIndex`; if it ever stopped agreeing with where
+    // `duplicateFrames` actually puts them, the highlight would silently land
+    // on the wrong stills and every follow-up edit would act on them.
+    test('duplicateInsertIndex points at the block the copies land in', () {
+      const selection = {1, 2};
+      final result = StopMotionFrameOps.duplicateFrames(
+        framesOf([1, 1, 1, 1]),
+        selection,
+      );
+      final at = StopMotionFrameOps.duplicateInsertIndex(selection);
+
+      expect(
+        result.sublist(at, at + selection.length).map((f) => f.path),
+        ['f1.jpg', 'f2.jpg'],
+      );
+    });
   });
 
   group('moveFrames', () {

@@ -240,7 +240,7 @@ class TimelineFrameMultiSelectControls extends StatelessWidget {
 
     commitStopMotionFrames(context, clipId: clip.id, frames: duplicated);
 
-    final firstCopy = selection.reduce((a, b) => a > b ? a : b) + 1;
+    final firstCopy = StopMotionFrameOps.duplicateInsertIndex(selection);
     bloc.add(
       ClipEditorFrameMultiSelectionSet({
         for (var i = 0; i < selection.length; i++) firstCopy + i,

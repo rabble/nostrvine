@@ -363,7 +363,7 @@ abstract class StopMotionFrameOps {
         indexes.any((index) => index < 0 || index >= frames.length)) {
       return frames;
     }
-    final at = indexes.reduce((a, b) => a > b ? a : b) + 1;
+    final at = duplicateInsertIndex(indexes);
     return [
       ...frames.sublist(0, at),
       for (var i = 0; i < frames.length; i++)
@@ -371,6 +371,12 @@ abstract class StopMotionFrameOps {
       ...frames.sublist(at),
     ];
   }
+
+  /// Index the block of copies [duplicateFrames] inserts at, so the caller can
+  /// move the selection onto them (`at .. at + indexes.length - 1`) without
+  /// re-deriving where they landed. [indexes] must not be empty.
+  static int duplicateInsertIndex(Set<int> indexes) =>
+      indexes.reduce((a, b) => a > b ? a : b) + 1;
 
   /// [frames] with every still at [indexes] held for [framesPerImage] output
   /// frames, each marked as an individual override (see [setFrameHold]).
