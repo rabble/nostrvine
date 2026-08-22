@@ -493,7 +493,7 @@ void main() {
     final pushCoordinator = _MockPushNotificationSessionCoordinator();
     when(
       pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
-    ).thenThrow(Exception('relay unavailable'));
+    ).thenAnswer((_) async => throw Exception('relay unavailable'));
     final initial = await pumpHost(
       tester,
       accountOverrides: [
@@ -516,6 +516,42 @@ void main() {
     expect(_isDisposed(signedInto!), isFalse);
     expect(_isDisposed(initial), isTrue);
     expect(currentAuthService.calls, equals(['archive']));
+  });
+
+  testWidgets('keeps outgoing push registration when target swap fails', (
+    tester,
+  ) async {
+    final pushCoordinator = _MockPushNotificationSessionCoordinator();
+    when(
+      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+    ).thenAnswer((_) async {});
+    final initial = await pumpHost(
+      tester,
+      accountOverrides: [
+        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+      ],
+    );
+    initial.read(pushNotificationSyncProvider);
+    ProviderContainer? attempted;
+
+    await expectLater(
+      swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (container, _) async {
+          attempted = container;
+          await tester.pumpWidget(const SizedBox());
+        },
+      ),
+      throwsStateError,
+    );
+
+    expect(attempted, isNotNull);
+    expect(_isDisposed(attempted!), isTrue);
+    expect(currentAuthService.calls, equals(['archive', 'restore']));
+    verifyNever(pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch);
   });
 
   testWidgets('keeps the target account live when legacy claiming fails', (
