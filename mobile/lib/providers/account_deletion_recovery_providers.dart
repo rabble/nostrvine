@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -32,7 +31,9 @@ final currentAccountDeletionAttemptProvider =
       if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
         return null;
       }
-      if (!ref.watch(nostrSessionProvider).isReadyForActiveClient) {
+      final authService = ref.watch(authServiceProvider);
+      ref.watch(currentAuthRpcCapabilityProvider);
+      if (!authService.canPublishNostrWritesNow) {
         final waitingForReadiness = Completer<AccountDeletionAttempt?>();
         ref.onDispose(waitingForReadiness.complete);
         return waitingForReadiness.future;
