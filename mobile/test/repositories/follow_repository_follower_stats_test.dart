@@ -36,6 +36,10 @@ FollowRepository _createRepository({
 }) {
   final nostrClient = _MockNostrClient();
 
+  // These cases fetch another profile. Keep the signed-in account distinct so
+  // repository-owned persistence remains part of the scenario under test.
+  when(() => nostrClient.publicKey).thenReturn('current-user');
+
   // Mock NostrClient.subscribe to return an empty stream (no WS data).
   when(
     () => nostrClient.subscribe(any()),
