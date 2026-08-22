@@ -251,6 +251,10 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
 
   final authService = ref.watch(authServiceProvider);
   ref.watch(notificationPreferencesDirtySyncBridgeProvider);
+  final nostrClientFactory = ref.read(nostrClientFactoryProvider);
+  final relayStatisticsService = ref.read(relayStatisticsServiceProvider);
+  final environmentConfig = ref.read(currentEnvironmentProvider);
+  final dbClient = ref.read(appDbClientProvider);
 
   final coordinator = PushNotificationSessionCoordinator(
     authService: authService,
@@ -258,12 +262,11 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
     readReadiness: () => ref.read(nostrSessionProvider),
     readPushService: () => ref.read(pushNotificationServiceProvider),
     createCleanupClient: (identity) {
-      final factory = ref.read(nostrClientFactoryProvider);
-      return factory(
+      return nostrClientFactory(
         signer: identity,
-        statisticsService: ref.read(relayStatisticsServiceProvider),
-        environmentConfig: ref.read(currentEnvironmentProvider),
-        dbClient: ref.read(appDbClientProvider),
+        statisticsService: relayStatisticsService,
+        environmentConfig: environmentConfig,
+        dbClient: dbClient,
       );
     },
   );

@@ -1,6 +1,8 @@
 // ABOUTME: Orchestrates an in-place account switch — build a container, sign it
 // ABOUTME: in as the target account, then swap; roll back on failure.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
@@ -181,17 +183,21 @@ Future<void> swapAccount({
       await signIn(container, account);
       await controller.swapTo(container);
       if (outgoingPushCoordinator != null) {
-        try {
-          await outgoingPushCoordinator
-              .deregisterLastReadyPubkeyAfterAccountSwitch();
-        } catch (error) {
-          // The target account is already live. Push cleanup is best-effort and
-          // must not turn a committed switch into a broken rollback attempt.
-          Log.warning(
-            'Outgoing account push deregistration failed: $error',
-            name: 'swapAccount',
-          );
-        }
+        unawaited(
+          (() async {
+            try {
+              await outgoingPushCoordinator
+                  .deregisterLastReadyPubkeyAfterAccountSwitch();
+            } catch (error) {
+              // The target account is already live. Push cleanup is best-effort
+              // and must not turn a committed switch into a rollback attempt.
+              Log.warning(
+                'Outgoing account push deregistration failed: $error',
+                name: 'swapAccount',
+              );
+            }
+          })(),
+        );
       }
       await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
     } catch (_) {

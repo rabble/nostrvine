@@ -1570,7 +1570,10 @@ void main() {
         when(
           () => signer.nip44Encrypt(any(), any()),
         ).thenAnswer((_) async => 'encrypted-dereg-token');
-        when(() => messaging.getToken()).thenAnswer((_) async => 'fcm-token');
+        final tokenCompleter = Completer<String?>();
+        when(
+          () => messaging.getToken(),
+        ).thenAnswer((_) => tokenCompleter.future);
         when(
           () => cleanupClient.publishEventAwaitOk(
             event,
@@ -1625,8 +1628,8 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
-        verify(() => signer.signEvent(any())).called(1);
-        verify(cleanupClient.initialize).called(1);
+        verify(() => messaging.getToken()).called(1);
+        verifyNever(cleanupClient.initialize);
         verifyNever(
           () => cleanupClient.publishEventAwaitOk(
             event,
@@ -1636,6 +1639,13 @@ void main() {
         );
 
         container.dispose();
+        tokenCompleter.complete('fcm-token');
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(() => signer.signEvent(any())).called(1);
+        verify(cleanupClient.initialize).called(1);
+
         initializeCompleter.complete();
         await teardownFuture;
 
