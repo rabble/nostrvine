@@ -18,6 +18,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_relay_gateway.dart';
+import 'package:openvine/utils/curated_list_privacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -327,7 +328,7 @@ class CuratedListService extends ChangeNotifier {
     PlayOrder playOrder = PlayOrder.chronological,
   }) async {
     try {
-      if (!isPublic && isCollaborative) {
+      if (!hasValidCuratedListVisibility(isPublic, isCollaborative)) {
         Log.warning(
           'Cannot create a private collaborative list - private items are '
           'encrypted to the owner only',
@@ -635,7 +636,10 @@ class CuratedListService extends ChangeNotifier {
         playOrder: playOrder ?? list.playOrder,
         updatedAt: DateTime.now(),
       );
-      if (!updatedList.isPublic && updatedList.isCollaborative) {
+      if (!hasValidCuratedListVisibility(
+        updatedList.isPublic,
+        updatedList.isCollaborative,
+      )) {
         Log.warning(
           'Cannot make a collaborative list private - private items are '
           'encrypted to the owner only',
@@ -1727,17 +1731,28 @@ class CuratedListService extends ChangeNotifier {
             ...existingList.allowedCollaborators,
             ...curatedList.allowedCollaborators,
           }.toList(growable: false);
+          final isPublic = existingList.isPublic && curatedList.isPublic;
+          final hasPrivacyConflict = !hasValidCuratedListVisibility(
+            isPublic,
+            isCollaborative,
+          );
+          if (hasPrivacyConflict) {
+            Log.warning(
+              'Keeping list $dTag private and dropping collaboration during '
+              'relay merge',
+              name: 'CuratedListService',
+              category: LogCategory.system,
+            );
+          }
 
           _lists[existingListIndex] = preferred.copyWith(
             pubkey: event.pubkey,
             videoEventIds: mergedVideoIds,
             createdAt: existingList.createdAt,
             updatedAt: DateTime.now(),
-            isCollaborative: isCollaborative,
-            allowedCollaborators: collaborators,
-            isPublic:
-                (existingList.isPublic && curatedList.isPublic) ||
-                isCollaborative,
+            isCollaborative: isCollaborative && !hasPrivacyConflict,
+            allowedCollaborators: hasPrivacyConflict ? const [] : collaborators,
+            isPublic: isPublic,
             clearNostrEventId: true,
             pendingRepublish: false,
           );
