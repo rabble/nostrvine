@@ -487,107 +487,109 @@ void main() {
     expect(events, ['sign in target', 'deregister outgoing']);
   });
 
-  testWidgets('keeps the target account live when push cleanup fails', (
-    tester,
-  ) async {
-    final pushCoordinator = _MockPushNotificationSessionCoordinator();
-    when(
-      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
-    ).thenAnswer((_) async => throw Exception('relay unavailable'));
-    final initial = await pumpHost(
+  group('account swap failure boundaries', () {
+    testWidgets('keeps the target account live when push cleanup fails', (
       tester,
-      accountOverrides: [
-        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-      ],
-    );
-    initial.read(pushNotificationSyncProvider);
-    ProviderContainer? signedInto;
+    ) async {
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((_) async => throw Exception('relay unavailable'));
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+        ],
+      );
+      initial.read(pushNotificationSyncProvider);
+      ProviderContainer? signedInto;
 
-    await swapAccount(
-      deviceScope: deviceScope,
-      controller: controller,
-      currentAuthService: currentAuthService,
-      account: account,
-      signIn: (container, _) async => signedInto = container,
-    );
-    await tester.pump();
-
-    expect(controller.currentContainer, same(signedInto));
-    expect(_isDisposed(signedInto!), isFalse);
-    expect(_isDisposed(initial), isTrue);
-    expect(currentAuthService.calls, equals(['archive']));
-  });
-
-  testWidgets('keeps outgoing push registration when target swap fails', (
-    tester,
-  ) async {
-    final pushCoordinator = _MockPushNotificationSessionCoordinator();
-    when(
-      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
-    ).thenAnswer((_) async {});
-    final initial = await pumpHost(
-      tester,
-      accountOverrides: [
-        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
-      ],
-    );
-    initial.read(pushNotificationSyncProvider);
-    ProviderContainer? attempted;
-
-    await expectLater(
-      swapAccount(
+      await swapAccount(
         deviceScope: deviceScope,
         controller: controller,
         currentAuthService: currentAuthService,
         account: account,
-        signIn: (container, _) async {
-          attempted = container;
-          await tester.pumpWidget(const SizedBox());
-        },
-      ),
-      throwsStateError,
-    );
+        signIn: (container, _) async => signedInto = container,
+      );
+      await tester.pump();
 
-    expect(attempted, isNotNull);
-    expect(_isDisposed(attempted!), isTrue);
-    expect(currentAuthService.calls, equals(['archive', 'restore']));
-    verifyNever(pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch);
-  });
+      expect(controller.currentContainer, same(signedInto));
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isTrue);
+      expect(currentAuthService.calls, equals(['archive']));
+    });
 
-  testWidgets('keeps the target account live when legacy claiming fails', (
-    tester,
-  ) async {
-    final targetAuthService = _MockAuthService();
-    when(
-      targetAuthService.claimLegacyRowsForCurrentUser,
-    ).thenThrow(Exception('database unavailable'));
-    deviceScope = DeviceScope(
-      database: database,
-      sharedPreferences: deviceScope.sharedPreferences,
-      switchController: controller,
-      appVersion: 'test',
-      documentsPath: '/documents',
-      accountOverrides: [
-        secureKeyStorageProvider.overrideWithValue(keyStorage),
-        authServiceProvider.overrideWithValue(targetAuthService),
-      ],
-    );
-    final initial = await pumpHost(tester);
-    ProviderContainer? signedInto;
+    testWidgets('keeps outgoing push registration when target swap fails', (
+      tester,
+    ) async {
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((_) async {});
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+        ],
+      );
+      initial.read(pushNotificationSyncProvider);
+      ProviderContainer? attempted;
 
-    await swapAccount(
-      deviceScope: deviceScope,
-      controller: controller,
-      currentAuthService: currentAuthService,
-      account: account,
-      signIn: (container, _) async => signedInto = container,
-    );
-    await tester.pump();
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (container, _) async {
+            attempted = container;
+            await tester.pumpWidget(const SizedBox());
+          },
+        ),
+        throwsStateError,
+      );
 
-    expect(controller.currentContainer, same(signedInto));
-    expect(_isDisposed(signedInto!), isFalse);
-    expect(_isDisposed(initial), isTrue);
-    expect(currentAuthService.calls, equals(['archive']));
+      expect(attempted, isNotNull);
+      expect(_isDisposed(attempted!), isTrue);
+      expect(currentAuthService.calls, equals(['archive', 'restore']));
+      verifyNever(pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch);
+    });
+
+    testWidgets('keeps the target account live when legacy claiming fails', (
+      tester,
+    ) async {
+      final targetAuthService = _MockAuthService();
+      when(
+        targetAuthService.claimLegacyRowsForCurrentUser,
+      ).thenThrow(Exception('database unavailable'));
+      deviceScope = DeviceScope(
+        database: database,
+        sharedPreferences: deviceScope.sharedPreferences,
+        switchController: controller,
+        appVersion: 'test',
+        documentsPath: '/documents',
+        accountOverrides: [
+          secureKeyStorageProvider.overrideWithValue(keyStorage),
+          authServiceProvider.overrideWithValue(targetAuthService),
+        ],
+      );
+      final initial = await pumpHost(tester);
+      ProviderContainer? signedInto;
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (container, _) async => signedInto = container,
+      );
+      await tester.pump();
+
+      expect(controller.currentContainer, same(signedInto));
+      expect(_isDisposed(signedInto!), isFalse);
+      expect(_isDisposed(initial), isTrue);
+      expect(currentAuthService.calls, equals(['archive']));
+    });
   });
 
   testWidgets('keeps outgoing push registration when target sign-in fails', (
