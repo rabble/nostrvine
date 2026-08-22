@@ -144,9 +144,9 @@ void main() {
             return null;
           });
 
-      expect(
-        () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
-        returnsNormally,
+      await expectLater(
+        SeedMediaPreloadService.loadSeedMediaIfNeeded(),
+        completes,
         reason: 'Missing manifest should be non-critical',
       );
     });
@@ -161,9 +161,9 @@ void main() {
               return ByteData.sublistView(bytes);
             });
 
-        expect(
-          () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
-          returnsNormally,
+        await expectLater(
+          SeedMediaPreloadService.loadSeedMediaIfNeeded(),
+          completes,
           reason: 'Corrupted manifest should be non-critical',
         );
       },
