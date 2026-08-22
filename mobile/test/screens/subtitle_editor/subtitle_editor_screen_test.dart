@@ -36,15 +36,18 @@ class _FakeVideoEventResolver implements VideoEventResolver {
   final VideoEvent? video;
   final resolvedIds = <String>[];
   final allowOwnContentBypassValues = <bool>[];
+  final requireRawTagsValues = <bool>[];
 
   @override
   Future<VideoEvent?> resolveById(
     String eventId, {
     bool allowOwnContentBypass = false,
+    bool requireRawTags = false,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     resolvedIds.add(eventId);
     allowOwnContentBypassValues.add(allowOwnContentBypass);
+    requireRawTagsValues.add(requireRawTags);
     return video;
   }
 }
@@ -653,6 +656,7 @@ void main() {
 
       expect(resolver.resolvedIds, [video.id]);
       expect(resolver.allowOwnContentBypassValues, [isTrue]);
+      expect(resolver.requireRawTagsValues, [isTrue]);
       expect(cueTextInList('hello'), findsOneWidget);
       verify(() => repository.loadCues(video)).called(1);
     });

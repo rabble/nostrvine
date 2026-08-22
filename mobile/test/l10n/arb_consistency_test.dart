@@ -489,6 +489,9 @@ const _knownUntranslatedDebt = <String>{
   'notificationsTabBadges',
   'notificationsPendingBadges',
   'notificationsBadgesEmpty',
+  // Critical metadata-loss prevention copy added in #8014. Translation is
+  // deferred to the next l10n pass.
+  'shareMenuOriginalVideoUnavailable',
   // #7892: safety-filter explanation on the video detail screen. Translation
   // deferred to the next l10n pass.
   'videoDetailHiddenBySettingsTitle',

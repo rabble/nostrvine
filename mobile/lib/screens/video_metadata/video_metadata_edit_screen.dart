@@ -15,8 +15,9 @@ import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_s
 ///
 /// The screen is keyed on a [videoId] so the route is deep-linkable. When a
 /// [prefetched] [VideoEvent] is available (e.g. from a feed-side tap), it is
-/// used immediately as a fast path; otherwise the screen resolves the id via
-/// the [videoEventResolverProvider] (in-memory → personal cache → relay).
+/// used immediately only when it carries the complete raw tag array required
+/// for safe republishing; otherwise the screen resolves the id via the
+/// [videoEventResolverProvider] (in-memory → personal cache → relay).
 ///
 /// Navigate to this screen with [pathFor]:
 /// ```dart
@@ -55,7 +56,9 @@ class _VideoMetadataEditScreenState
   @override
   void initState() {
     super.initState();
-    if (widget.prefetched != null && widget.prefetched!.id == widget.videoId) {
+    if (widget.prefetched != null &&
+        widget.prefetched!.id == widget.videoId &&
+        widget.prefetched!.nostrEventTags.isNotEmpty) {
       _resolved = widget.prefetched;
     } else {
       _resolve();
@@ -67,6 +70,7 @@ class _VideoMetadataEditScreenState
     final video = await resolver.resolveById(
       widget.videoId,
       allowOwnContentBypass: true,
+      requireRawTags: true,
     );
     if (!mounted) return;
     setState(() {

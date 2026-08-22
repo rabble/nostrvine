@@ -1,13 +1,12 @@
 // ABOUTME: Nostr-enrichment merge policy for the profile/author feed (#3705).
-// ABOUTME: Fills missing fields on the current videos from their enriched Nostr
-// ABOUTME: copies without clobbering relay updates that arrived meanwhile.
+// ABOUTME: Merges REST and Nostr metadata without clobbering newer relay events.
 
 import 'package:models/models.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-/// Merges enriched copies over [sourceKeys] against [current], filling missing
-/// fields without clobbering relay updates that arrived during the enrichment
-/// window (#3705).
+/// Merges enriched copies over [sourceKeys] against [current]. A strictly newer
+/// raw Nostr event supplies edit-sensitive metadata; otherwise current state
+/// remains primary so relay updates that arrived during enrichment survive.
 ///
 /// [removeTombstones] drops NIP-09-deleted events; it is injected because
 /// tombstone state is a session-scoped, `VideoEventService`-owned concern that
@@ -47,71 +46,93 @@ VideoEvent _mergeEnrichmentIntoCurrent(
   VideoEvent current,
   VideoEvent enriched,
 ) {
-  return current.copyWith(
+  final enrichedIsNewer =
+      current.eventCreatedAt != null &&
+      enriched.eventCreatedAt != null &&
+      enriched.eventCreatedAt! > current.eventCreatedAt!;
+  final primary = enrichedIsNewer ? enriched : current;
+  final secondary = enrichedIsNewer ? current : enriched;
+
+  return primary.copyWith(
     publishedAt:
-        (current.publishedAt != null && current.publishedAt!.isNotEmpty)
-        ? current.publishedAt
-        : enriched.publishedAt,
-    rawTags: mergeVideoRawTagsPrimaryWins(current.rawTags, enriched.rawTags),
-    contentWarningLabels: current.contentWarningLabels.isNotEmpty
-        ? current.contentWarningLabels
-        : enriched.contentWarningLabels,
-    title: current.title ?? enriched.title,
-    videoUrl: current.videoUrl ?? enriched.videoUrl,
-    thumbnailUrl: current.thumbnailUrl ?? enriched.thumbnailUrl,
-    duration: current.duration ?? enriched.duration,
-    dimensions: current.dimensions ?? enriched.dimensions,
-    mimeType: current.mimeType ?? enriched.mimeType,
-    sha256: current.sha256 ?? enriched.sha256,
-    fileSize: current.fileSize ?? enriched.fileSize,
-    hashtags: current.hashtags.isNotEmpty
-        ? current.hashtags
-        : enriched.hashtags,
-    vineId: current.vineId ?? enriched.vineId,
-    addressableDTag: current.addressableDTag ?? enriched.addressableDTag,
-    group: current.group ?? enriched.group,
-    altText: current.altText ?? enriched.altText,
-    blurhash: current.blurhash ?? enriched.blurhash,
+        (primary.publishedAt != null && primary.publishedAt!.isNotEmpty)
+        ? primary.publishedAt
+        : secondary.publishedAt,
+    rawTags: mergeVideoRawTagsPrimaryWins(primary.rawTags, secondary.rawTags),
+    contentWarningLabels: primary.contentWarningLabels.isNotEmpty
+        ? primary.contentWarningLabels
+        : secondary.contentWarningLabels,
+    categories: primary.categories.isNotEmpty
+        ? primary.categories
+        : secondary.categories,
+    moderationLabels: primary.moderationLabels.isNotEmpty
+        ? primary.moderationLabels
+        : secondary.moderationLabels,
+    proofSummary: primary.proofSummary ?? secondary.proofSummary,
+    title: primary.title ?? secondary.title,
+    videoUrl: primary.videoUrl ?? secondary.videoUrl,
+    thumbnailUrl: primary.thumbnailUrl ?? secondary.thumbnailUrl,
+    duration: primary.duration ?? secondary.duration,
+    dimensions: primary.dimensions ?? secondary.dimensions,
+    mimeType: primary.mimeType ?? secondary.mimeType,
+    sha256: primary.sha256 ?? secondary.sha256,
+    fileSize: primary.fileSize ?? secondary.fileSize,
+    hashtags: primary.hashtags.isNotEmpty
+        ? primary.hashtags
+        : secondary.hashtags,
+    vineId: primary.vineId ?? secondary.vineId,
+    addressableDTag: primary.addressableDTag ?? secondary.addressableDTag,
+    group: primary.group ?? secondary.group,
+    altText: primary.altText ?? secondary.altText,
+    blurhash: primary.blurhash ?? secondary.blurhash,
     originalLoops: mergeNullableEngagementMax(
-      current.originalLoops,
-      enriched.originalLoops,
+      primary.originalLoops,
+      secondary.originalLoops,
     ),
     originalLikes: mergeNullableEngagementMax(
-      current.originalLikes,
-      enriched.originalLikes,
+      primary.originalLikes,
+      secondary.originalLikes,
     ),
     originalComments: mergeNullableEngagementMax(
-      current.originalComments,
-      enriched.originalComments,
+      primary.originalComments,
+      secondary.originalComments,
     ),
     originalReposts: mergeNullableEngagementMax(
-      current.originalReposts,
-      enriched.originalReposts,
+      primary.originalReposts,
+      secondary.originalReposts,
     ),
-    audioEventId: current.audioEventId ?? enriched.audioEventId,
-    audioEventRelay: current.audioEventRelay ?? enriched.audioEventRelay,
-    collaboratorPubkeys: current.collaboratorPubkeys.isNotEmpty
-        ? current.collaboratorPubkeys
-        : enriched.collaboratorPubkeys,
-    inspiredByVideo: current.inspiredByVideo ?? enriched.inspiredByVideo,
-    textTrackRef: current.textTrackRef ?? enriched.textTrackRef,
-    textTrackRefs: current.textTrackRefs.isNotEmpty
-        ? current.textTrackRefs
-        : enriched.textTrackRefs,
+    audioEventId: primary.audioEventId ?? secondary.audioEventId,
+    audioEventRelay: primary.audioEventRelay ?? secondary.audioEventRelay,
+    collaboratorPubkeys: primary.collaboratorPubkeys.isNotEmpty
+        ? primary.collaboratorPubkeys
+        : secondary.collaboratorPubkeys,
+    inspiredByVideo: primary.inspiredByVideo ?? secondary.inspiredByVideo,
+    textTrackRef: primary.textTrackRef ?? secondary.textTrackRef,
+    textTrackRefs: primary.textTrackRefs.isNotEmpty
+        ? primary.textTrackRefs
+        : secondary.textTrackRefs,
     textTrackContent:
-        current.textTrackContent ??
-        ((current.textTrackRef?.isNotEmpty ?? false) ||
-                current.textTrackRefs.isNotEmpty
+        primary.textTrackContent ??
+        ((primary.textTrackRef?.isNotEmpty ?? false) ||
+                primary.textTrackRefs.isNotEmpty
             ? null
-            : enriched.textTrackContent),
-    nostrEventTags: current.nostrEventTags.isNotEmpty
-        ? current.nostrEventTags
-        : enriched.nostrEventTags,
-    authorName: current.authorName ?? enriched.authorName,
-    authorAvatar: current.authorAvatar ?? enriched.authorAvatar,
+            : secondary.textTrackContent),
+    nostrEventTags: primary.nostrEventTags.isNotEmpty
+        ? primary.nostrEventTags
+        : secondary.nostrEventTags,
+    authorName: primary.authorName ?? secondary.authorName,
+    authorAvatar: primary.authorAvatar ?? secondary.authorAvatar,
     nostrLikeCount: mergeNullableEngagementMax(
-      current.nostrLikeCount,
-      enriched.nostrLikeCount,
+      primary.nostrLikeCount,
+      secondary.nostrLikeCount,
+    ),
+    nostrCommentCount: mergeNullableEngagementMax(
+      primary.nostrCommentCount,
+      secondary.nostrCommentCount,
+    ),
+    nostrRepostCount: mergeNullableEngagementMax(
+      primary.nostrRepostCount,
+      secondary.nostrRepostCount,
     ),
   );
 }

@@ -89,12 +89,25 @@ class _VideoMetadataEditBottomBarState
           context.pop();
           messenger.showSnackBar(snackBar);
         }
+      } else if (result is VideoUpdateOriginalUnavailable) {
+        _reportOriginalVideoUnavailable();
       } else if (result is VideoUpdateFailure) {
         _reportUpdateFailure(result.error);
       }
     } catch (e) {
       _reportUpdateFailure(e);
     }
+  }
+
+  void _reportOriginalVideoUnavailable() {
+    if (!mounted) return;
+    setState(() => _isUpdating = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        context.l10n.shareMenuOriginalVideoUnavailable,
+        error: true,
+      ),
+    );
   }
 
   void _reportUpdateFailure(Object error) {

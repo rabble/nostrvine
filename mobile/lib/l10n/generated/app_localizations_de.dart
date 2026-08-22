@@ -3978,6 +3978,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get shareMenuOriginalVideoUnavailable =>
+      'Couldn\'t load the original video. Try again in a moment.';
+
+  @override
   String get shareMenuDeleteVideoQuestion => 'Video löschen?';
 
   @override

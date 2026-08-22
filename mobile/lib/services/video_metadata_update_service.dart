@@ -43,6 +43,12 @@ class VideoUpdateFailure extends VideoUpdateResult {
   final Object error;
 }
 
+/// The original event could not be loaded with the raw tags required for a
+/// lossless addressable-event replacement.
+class VideoUpdateOriginalUnavailable extends VideoUpdateResult {
+  const VideoUpdateOriginalUnavailable();
+}
+
 /// Tag names the metadata-edit flow always rebuilds from the editor state
 /// or re-derives from the original event's parsed fields.
 const _editRebuiltTagNames = {
@@ -62,8 +68,8 @@ const _editRebuiltTagNames = {
 /// Every other tag on the original event — audio-attribution `e` tags,
 /// engagement counts, expiration, client, relay hints, ProofMode/C2PA
 /// provenance, reply threading, subtitle text-tracks, … — is preserved
-/// unchanged so a metadata edit does not drop data it does not own,
-/// provided the raw tags are available (see [_sourceOriginalTags]).
+/// unchanged so a metadata edit does not drop data it does not own. Publishing
+/// is refused unless the raw tags are available (see [_sourceOriginalTags]).
 ///
 /// [isVideoReply] gates the inspired-by a-tag: the edit flow only rebuilds
 /// that tag for non-reply videos (see the rebuild block in `updateVideo`),
@@ -242,6 +248,11 @@ class VideoMetadataUpdateService {
         throw Exception('User not authenticated');
       }
 
+      final originalTags = _sourceOriginalTags(originalVideo);
+      if (originalTags.isEmpty) {
+        return const VideoUpdateOriginalUnavailable();
+      }
+
       // A pubkey promoted from a plain mention to a collaborator in this
       // edit changes role: drop its stale 'mention' p-tag so it is not
       // double-listed alongside the rebuilt 'collaborator' p-tag.
@@ -257,7 +268,7 @@ class VideoMetadataUpdateService {
       // Preserve every tag the edit flow does not own; the owned ones are
       // rebuilt from the editor state below.
       final isVideoReply = originalVideo.isVideoReply;
-      final preservedTags = _sourceOriginalTags(originalVideo)
+      final preservedTags = originalTags
           .where(
             (tag) =>
                 !_isEditRebuiltTag(tag, isVideoReply: isVideoReply) &&
@@ -458,7 +469,7 @@ class VideoMetadataUpdateService {
   /// rehydrated from a JSON cache that omits raw tags (the own-profile grid
   /// and cold-start feed do this). In that case, recover the raw event from
   /// the personal cache so preservation is not silently defeated; if it is
-  /// not cached, fall back to an empty list (the pre-existing behavior).
+  /// not cached, return an empty list so [updateVideo] can refuse to publish.
   List<List<String>> _sourceOriginalTags(VideoEvent video) {
     return sourceOriginalVideoTags(
       video: video,

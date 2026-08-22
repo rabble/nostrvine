@@ -6713,6 +6713,12 @@ abstract class AppLocalizations {
   /// **'Failed to update video: {error}'**
   String shareMenuFailedToUpdateVideo(String error);
 
+  /// Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the original video. Try again in a moment.'**
+  String get shareMenuOriginalVideoUnavailable;
+
   /// No description provided for @shareMenuDeleteVideoQuestion.
   ///
   /// In en, this message translates to:
