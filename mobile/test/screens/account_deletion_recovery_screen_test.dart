@@ -73,6 +73,7 @@ void main() {
       await tester.pumpWidget(_app(cubit));
 
       final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionRecoveryTitle), findsOneWidget);
       expect(find.textContaining('reserved for you until'), findsOneWidget);
       await tester.tap(
         find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
@@ -208,6 +209,15 @@ void main() {
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(
+        find.text(l10n.minorAccountReviewCheckingStatusTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(RegExp('delet', caseSensitive: false)),
+        findsNothing,
+      );
+      expect(find.text(l10n.authUnexpectedError), findsOneWidget);
+      expect(
         find.widgetWithText(DivineButton, l10n.commonRetry),
         findsOneWidget,
       );
@@ -219,9 +229,7 @@ void main() {
 
     testWidgets(
       'sign-out failure offers one sign-out retry with generic copy',
-      (
-        tester,
-      ) async {
+      (tester) async {
         when(() => cubit.state).thenReturn(
           const AccountDeletionRecoveryState(
             status: AccountDeletionRecoveryStatus.signOutFailed,
@@ -255,6 +263,14 @@ void main() {
       await tester.pumpWidget(_app(cubit));
 
       final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.text(l10n.minorAccountReviewCheckingStatusTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(RegExp('delet', caseSensitive: false)),
+        findsNothing,
+      );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       await tester.tap(
         find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),

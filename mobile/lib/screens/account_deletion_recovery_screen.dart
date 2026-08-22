@@ -50,6 +50,9 @@ class AccountDeletionRecoveryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasConfirmedDeletionAttempt = context.select(
+      (AccountDeletionRecoveryCubit cubit) => cubit.state.attempt != null,
+    );
     return BlocListener<
       AccountDeletionRecoveryCubit,
       AccountDeletionRecoveryState
@@ -61,7 +64,11 @@ class AccountDeletionRecoveryView extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: Text(context.l10n.accountDeletionRecoveryTitle),
+          title: Text(
+            hasConfirmedDeletionAttempt
+                ? context.l10n.accountDeletionRecoveryTitle
+                : context.l10n.minorAccountReviewCheckingStatusTitle,
+          ),
         ),
         body: const SafeArea(
           child: Padding(
@@ -92,7 +99,7 @@ class _RecoveryStateContent extends StatelessWidget {
         child: CircularProgressIndicator(),
       ),
       AccountDeletionRecoveryStatus.loadFailed => _RecoveryContent(
-        body: context.l10n.accountDeletionRecoveryStatusFailed,
+        body: context.l10n.authUnexpectedError,
         actionLabel: context.l10n.commonRetry,
         onPressed: cubit.retry,
         secondaryActionLabel: context.l10n.accountDeletionSignOut,
