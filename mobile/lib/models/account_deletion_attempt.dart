@@ -47,15 +47,24 @@ class AccountDeletionAttempt {
 
   factory AccountDeletionAttempt.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String?;
-    final status = json['status'] as String?;
-    final operation = json['operation'] as String?;
-    if (id == null || id.isEmpty || status == null || operation == null) {
+    final statusValue = json['status'] as String?;
+    final operationValue = json['operation'] as String?;
+    if (id == null ||
+        id.isEmpty ||
+        statusValue == null ||
+        operationValue == null) {
       throw const FormatException('Invalid deletion attempt response');
+    }
+    final status = AccountDeletionAttemptStatus.fromJson(statusValue);
+    final operation = AccountDeletionAttemptOperation.fromJson(operationValue);
+    if (operation == AccountDeletionAttemptOperation.cancelling &&
+        status != AccountDeletionAttemptStatus.preparing) {
+      throw const FormatException('Invalid deletion attempt state');
     }
     return AccountDeletionAttempt(
       id: id,
-      status: AccountDeletionAttemptStatus.fromJson(status),
-      operation: AccountDeletionAttemptOperation.fromJson(operation),
+      status: status,
+      operation: operation,
       username: json['username'] as String?,
       usernameExpiresAt: (json['username_expires_at'] as num?)?.toInt(),
       failureCode: json['failure_code'] as String?,

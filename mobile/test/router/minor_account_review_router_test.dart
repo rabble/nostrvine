@@ -81,9 +81,6 @@ void main() {
       currentAccountDeletionAttemptProvider.overrideWith(
         (_) async => deletionAttempt,
       ),
-      pollingAccountDeletionAttemptProvider.overrideWith(
-        (_) => Stream.value(deletionAttempt),
-      ),
     ];
 
     setUp(() {

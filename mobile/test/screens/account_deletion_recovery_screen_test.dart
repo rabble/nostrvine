@@ -216,6 +216,32 @@ void main() {
     );
   });
 
+  testWidgets('sign-out failure offers one sign-out retry with generic copy', (
+    tester,
+  ) async {
+    when(() => cubit.state).thenReturn(
+      const AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.signOutFailed,
+      ),
+    );
+    await tester.pumpWidget(_app(cubit));
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.authUnexpectedError), findsOneWidget);
+    expect(
+      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(DivineButton, l10n.commonRetry),
+      findsNothing,
+    );
+    await tester.tap(
+      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+    );
+    verify(cubit.signOut).called(1);
+  });
+
   testWidgets('fail-closed loading keeps sign out reachable', (tester) async {
     when(() => cubit.state).thenReturn(
       const AccountDeletionRecoveryState(

@@ -175,18 +175,6 @@ class AccountDeletionRecoveryRepository {
     }
   }
 
-  Stream<AccountDeletionAttempt?> watchCurrent({
-    Duration pollInterval = _pollInterval,
-  }) async* {
-    var attempt = await fetchCurrent();
-    yield attempt;
-    while (attempt?.needsPolling ?? false) {
-      await _delay(pollInterval);
-      attempt = await fetchCurrent();
-      yield attempt;
-    }
-  }
-
   Future<AccountDeletionAttempt> submit({
     required String attemptId,
     required String vanishEventId,

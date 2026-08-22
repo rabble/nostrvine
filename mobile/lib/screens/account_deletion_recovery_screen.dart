@@ -34,7 +34,6 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
           authService: authService,
           onAttemptResolved: () {
             ref.invalidate(currentAccountDeletionAttemptProvider);
-            ref.invalidate(pollingAccountDeletionAttemptProvider);
           },
         );
         if (isReady) cubit.load();
@@ -92,15 +91,17 @@ class _RecoveryStateContent extends StatelessWidget {
       AccountDeletionRecoveryStatus.resolved => const Center(
         child: CircularProgressIndicator(),
       ),
-      AccountDeletionRecoveryStatus.loadFailed ||
-      AccountDeletionRecoveryStatus.signOutFailed => _RecoveryContent(
+      AccountDeletionRecoveryStatus.loadFailed => _RecoveryContent(
         body: context.l10n.accountDeletionRecoveryStatusFailed,
         actionLabel: context.l10n.commonRetry,
-        onPressed: state.status == AccountDeletionRecoveryStatus.signOutFailed
-            ? cubit.signOut
-            : cubit.retry,
+        onPressed: cubit.retry,
         secondaryActionLabel: context.l10n.accountDeletionSignOut,
         onSecondaryPressed: cubit.signOut,
+      ),
+      AccountDeletionRecoveryStatus.signOutFailed => _RecoveryContent(
+        body: context.l10n.authUnexpectedError,
+        actionLabel: context.l10n.accountDeletionSignOut,
+        onPressed: cubit.signOut,
       ),
       AccountDeletionRecoveryStatus.restorable => _RestorableContent(
         state: state,
