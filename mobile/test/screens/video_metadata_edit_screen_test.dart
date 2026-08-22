@@ -13,57 +13,62 @@ import 'package:openvine/services/video_event_resolver.dart';
 class _MockVideoEventResolver extends Mock implements VideoEventResolver {}
 
 void main() {
-  testWidgets('raw-tagless prefetch resolves a complete event before editing', (
-    tester,
-  ) async {
-    final resolver = _MockVideoEventResolver();
-    final pending = Completer<VideoEvent?>();
-    when(
-      () => resolver.resolveById(
-        'event-id',
-        allowOwnContentBypass: true,
-        requireRawTags: true,
-      ),
-    ).thenAnswer((_) => pending.future);
-
-    final incomplete = VideoEvent(
-      id: 'event-id',
-      pubkey: 'author-pubkey',
-      createdAt: 1700000000,
-      content: 'Description',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(
-        1700000000 * 1000,
-        isUtc: true,
-      ),
-      videoUrl: 'https://example.com/video.mp4',
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          videoEventResolverProvider.overrideWithValue(resolver),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: VideoMetadataEditScreen(
-            videoId: incomplete.id,
-            prefetched: incomplete,
+  group(VideoMetadataEditScreen, () {
+    testWidgets(
+      'raw-tagless prefetch resolves a complete event before editing',
+      (
+        tester,
+      ) async {
+        final resolver = _MockVideoEventResolver();
+        final pending = Completer<VideoEvent?>();
+        when(
+          () => resolver.resolveById(
+            'event-id',
+            allowOwnContentBypass: true,
+            requireRawTags: true,
           ),
-        ),
-      ),
+        ).thenAnswer((_) => pending.future);
+
+        final incomplete = VideoEvent(
+          id: 'event-id',
+          pubkey: 'author-pubkey',
+          createdAt: 1700000000,
+          content: 'Description',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(
+            1700000000 * 1000,
+            isUtc: true,
+          ),
+          videoUrl: 'https://example.com/video.mp4',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoEventResolverProvider.overrideWithValue(resolver),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataEditScreen(
+                videoId: incomplete.id,
+                prefetched: incomplete,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        verify(
+          () => resolver.resolveById(
+            'event-id',
+            allowOwnContentBypass: true,
+            requireRawTags: true,
+          ),
+        ).called(1);
+
+        pending.complete();
+        await tester.pump();
+      },
     );
-
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    verify(
-      () => resolver.resolveById(
-        'event-id',
-        allowOwnContentBypass: true,
-        requireRawTags: true,
-      ),
-    ).called(1);
-
-    pending.complete();
-    await tester.pump();
   });
 }
