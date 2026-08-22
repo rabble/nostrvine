@@ -708,10 +708,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     final result = baseVideos
         .map((video) {
-          final labels = resolveEffectiveContentLabels(
+          final sources = resolveEffectiveContentLabelSources(
             video,
             moderationLabelService: _moderationLabelService,
           );
+          final labels = {...sources.creator, ...sources.trusted}.toList();
           if (labels.isEmpty) {
             return video.warnLabels.isEmpty
                 ? video
@@ -719,13 +720,20 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           }
 
           final pref = service.getPreferenceForLabels(labels);
-          if (pref == ContentFilterPreference.warn) {
+          final isOwner = video.pubkey == _nostrService.publicKey;
+          if (pref == ContentFilterPreference.warn || isOwner) {
             final matchedWarnLabels = labels.where((value) {
               final label = ContentLabel.fromValue(value);
-              return label != null &&
-                  service.getPreference(label) == ContentFilterPreference.warn;
+              if (label == null) return false;
+              final labelPreference = service.getPreference(label);
+              return labelPreference == ContentFilterPreference.warn ||
+                  (isOwner &&
+                      sources.creator.contains(value) &&
+                      labelPreference == ContentFilterPreference.hide);
             }).toList();
-            return video.copyWith(warnLabels: matchedWarnLabels);
+            if (matchedWarnLabels.isNotEmpty) {
+              return video.copyWith(warnLabels: matchedWarnLabels);
+            }
           }
 
           return pref == ContentFilterPreference.show &&
@@ -735,16 +743,27 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         })
         .where((video) {
           // Hide check considers effective warning labels plus moderation labels.
-          final selfLabels = resolveEffectiveContentLabels(
+          final sources = resolveEffectiveContentLabelSources(
             video,
             moderationLabelService: _moderationLabelService,
           );
           final modLabels = video.moderationLabels;
-          if (selfLabels.isEmpty && modLabels.isEmpty) return true;
+          if (sources.creator.isEmpty &&
+              sources.trusted.isEmpty &&
+              modLabels.isEmpty) {
+            return true;
+          }
 
-          // Check self-labels
-          if (selfLabels.isNotEmpty) {
-            final pref = service.getPreferenceForLabels(selfLabels);
+          // Creators can still see their own self-labels behind a warning.
+          if (sources.creator.isNotEmpty &&
+              video.pubkey != _nostrService.publicKey) {
+            final pref = service.getPreferenceForLabels(sources.creator);
+            if (pref == ContentFilterPreference.hide) return false;
+          }
+
+          // Trusted NIP-32 moderation remains hide-capable for the creator.
+          if (sources.trusted.isNotEmpty) {
+            final pref = service.getPreferenceForLabels(sources.trusted);
             if (pref == ContentFilterPreference.hide) return false;
           }
 
