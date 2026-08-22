@@ -1,16 +1,46 @@
 # Profile Pinning and Ordering Implementation Plan
 
+> **STATUS: PAUSED — DO NOT EXECUTE.** The
+> [evidence audit](../specs/2026-08-23-profile-pinning-order-evidence-audit.md)
+> found unresolved edge cases and correctness errors in this plan. This file is
+> retained as audit input and must be rewritten after those decisions;
+> individual tasks below are not safe implementation instructions.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let creators pin up to 12 owned addressable videos to the start of their profile while every viewer, the grid, and fullscreen playback observe one identical ordered sequence.
 
-**Architecture:** Add a focused `profile_pins_repository` package that owns the lossless kind-10001 event, owner-scoped cache, relay subscription, serialized read-modify-write, and pin mutations. `ProfileFeedCubit` remains the composition boundary: it combines cached/resolved pin coordinates with the existing newest-first profile feed through one pure exact-coordinate ordering function. The grid only renders the cubit's ordered sequence, prefixes transient uploads, and dispatches owner actions back through the bloc.
+**Architecture (proposed):** Add a focused `profile_pins_repository` package
+that preserves the selected kind-10001 base event's unrelated tags and opaque
+content, owns an owner-scoped cache, consumes relay reads/subscriptions, and
+serializes local pin mutations. `ProfileFeedCubit` remains the composition
+boundary between pin coordinates and the existing newest-first profile feed.
+This architecture is not executable until the plan is rewritten against the
+audit.
 
-**Tech Stack:** Flutter/Dart, BLoC, Riverpod dependency injection, Nostr NIP-51 kind 10001, NIP-71 kind 34236 addressable coordinates, SharedPreferences, `nostr_client`, `videos_repository`, `divine_ui`, Flutter l10n.
+**Tech Stack (proposed):** Flutter/Dart, BLoC, Riverpod dependency injection,
+the existing Divine kind-10001/kind-34236-`a`-tag extension, NIP-01, NIP-51,
+NIP-71, SharedPreferences, `nostr_client`, `videos_repository`, `divine_ui`, and
+Flutter l10n.
 
 ---
 
-## Decisions made explicit before implementation
+## Provisional assumptions that require correction or approval
+
+The approved spec and direct user decisions remain authoritative for product
+behavior. Mobile prepends, caps creator-managed pins at 12, and displays only
+owner-authored pins while preserving unrelated data. The evidence audit is
+authoritative for its cited protocol and current-code facts. Mixed-client order,
+cap counting/imported oversize lists, loading-state actions, and legacy-video
+actions remain unresolved.
+
+The audit invalidates this plan's limited kind-10001 query, base-feed filtering,
+pagination inputs, addressable-video winner selection, fullscreen takeover,
+snackbar-only accessibility handling, package file map, and analyzer command.
+
+The bullets below record what the original plan assumed. Some repeat approved
+behavior and some are unapproved implementation choices; the corrected plan
+must classify each one rather than executing this list as written.
 
 - A managed identity is the exact, case-preserving `34236:<owner-pubkey>:<d-tag>` coordinate. Never use `stableId`, a lowercased feed key, or event ID as the stored pin identity.
 - Kind 10001 `a` tags are Divine's NIP-71 extension to the NIP-51 pinned-list event. Only valid kind-34236 coordinates authored by the event owner are managed. Every other tag and `content` is preserved byte-for-byte.

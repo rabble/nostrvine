@@ -2,7 +2,13 @@
 
 **Date:** 2026-08-23
 
-**Status:** Approved UX direction; spec scoped down to a minimal first ship
+**Status:** UX and mobile product policy approved; implementation blocked on
+the accompanying [evidence audit](2026-08-23-profile-pinning-order-evidence-audit.md)
+
+Implementation must not proceed until the four remaining edge-case decisions
+and the technical corrections in that audit are resolved. This spec remains
+authoritative for approved product behavior; the audit is authoritative for its
+cited protocol and current-code facts.
 
 ## Goal
 
@@ -17,13 +23,17 @@ The spec below is deliberately the smallest thing that serves that goal.
 
 Three choices remove most of the original design's surface area:
 
-1. **Pin order is the pinning order — newest pin first.** Pinning is the
-   reorder gesture. Want a video at the top? Pin it. Want it lower? Unpin the
-   ones above it, or unpin and re-pin. No arranger screen, no drag handles, no
-   draft/dirty/discard flow, no multi-select picker, no second cubit.
+1. **Pin order is the pinning order — newest pin first.** This is the approved
+   product intent. A mobile pin action places that video first. Web-written and
+   mixed-client chronology is an unresolved representation edge case because
+   list items have no individual timestamps. Want a video at the top? Pin it.
+   Want it lower? Unpin the ones above it, or unpin and re-pin. No arranger
+   screen, no drag handles, no draft/dirty/discard flow, no multi-select picker,
+   no second cubit.
 2. **Hard cap of 12 pins.** A showcase is a handful, not a catalog. The cap
-   removes the oversize-event failure path, virtualization, and paginated
-   reference resolution. 12 `a` tags is a small event.
+   keeps creator-managed resolution within one current mobile relay batch and
+   avoids pagination for conforming lists. Imported open-Nostr lists can still
+   exceed 12; their edge-case policy is unresolved in the evidence audit.
 3. **One grid, no section headers.** Pinned tiles carry a pin badge and are
    simply first. No second grid, no partial-row / new-row rules, no section
    labels to localize.
@@ -52,6 +62,11 @@ owner-only in-progress uploads (unchanged)
 Pinned tiles show a pin badge. No section labels, no layout break between
 pinned and unpinned.
 
+Newest-first is the approved target and is guaranteed when a mobile pin action
+moves that video to the front. Whether a Web-written or mixed-client stored
+sequence is treated as chronological or simply authoritative remains blocked on
+the evidence audit's cross-client ordering decision.
+
 The same order applies to fullscreen playback. Tapping any tile opens that one
 sequence with the tapped video as the initial item, so pagination and
 prefetching continue from the sequence the grid displayed.
@@ -60,14 +75,16 @@ prefetching continue from the sequence the grid displayed.
 
 The existing long-press sheet for an owned video gains one action:
 
-- `Pin to profile` when not pinned — prepends the video to the pin list.
+- `Pin to profile` when not pinned — prepends the video to Divine's managed
+  pin sequence.
 - `Unpin from profile` when pinned — removes it, leaving the rest in order.
 
 Feedback is a plain snackbar. At the cap, `Pin to profile` is disabled with a
 message naming the limit ("You can pin up to 12 videos"), so the pin never
 silently evicts another video.
 
-A failed pin or unpin leaves the visible order unchanged and offers retry.
+A failed pin or unpin leaves the local visible order unchanged and offers
+retry. If no relay acknowledgement arrives, the remote outcome may be unknown.
 
 That is the entire owner surface. No profile-options entry point, no
 `Arrange profile` screen.
@@ -75,12 +92,13 @@ That is the entire owner surface. No profile-options entry point, no
 ## Loading and Failure Behavior
 
 - The cached pin list renders immediately when available, then revalidates.
-- With at most 12 references, resolve them in a single batch. Nothing waits on
-  profile pagination.
+- For lists at or below the creator cap, resolve the references in one current
+  mobile relay batch. Nothing waits on profile pagination.
 - An unavailable, deleted, blocked, or no-longer-owned reference is omitted
   from display without leaving an empty cell. The reference stays in the
   stored list — a temporary fetch failure must not delete pins.
-- A failed publish leaves the previously saved order live and shows a retry.
+- A failed or unconfirmed publish leaves the local visible order unchanged and
+  shows a retry. It cannot prove what every remote relay stored.
 
 ## Ordering Rules
 
@@ -120,17 +138,31 @@ pin and unpin publish immediately.
 
 ### Nostr Representation
 
-Kind `10001` (NIP-51 pin list), one replaceable event per profile. Divine's
-addressable kind `34236` videos are stored as ordered NIP-71 `a` references
-using `34236:<author-pubkey>:<d-tag>`, so a metadata edit never loses a pin.
+Divine Web already stores video pins in a kind-`10001` replaceable event as
+kind-`34236` `a` coordinates. This is an existing Divine convention, not the
+standard kind-10001 item type: NIP-51 calls kind `10001` **Pinned notes** and
+expects kind-1 `e` references. Other NIP-51 clients may ignore Divine's video
+`a` tags.
 
-Divine manages only valid kind `34236` `a` tags authored by the list owner. On
-save it preserves every unrelated public tag and the `content` field
-byte-for-byte, so using Divine never destroys pins another Nostr client keeps
-in the same list.
+The full coordinate is `34236:<author-pubkey>:<d-tag>`. It remains stable across
+a video replacement only while the author and `d` value remain unchanged.
 
-References: [NIP-51](https://github.com/nostr-protocol/nips/blob/master/51.md),
-[NIP-71](https://github.com/nostr-protocol/nips/blob/master/71.md)
+NIP-51 recommends appending new list items chronologically. The approved mobile
+behavior deliberately prepends instead, a SHOULD-level interoperability
+deviation. Divine Web currently appends. Both clients render stored tag order,
+but render different coordinate subsets and pin actions insert at opposite
+ends; a mixed list has no recoverable global pin chronology.
+
+On save, Divine must preserve every unrelated public tag and the opaque
+`content` value byte-for-byte. It can guarantee that preservation only for the
+selected base event returned by the configured relay read; it cannot guarantee
+preservation of divergent data held only by an unqueried or nonresponsive
+relay.
+
+References:
+[NIP-01](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md),
+[NIP-51](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md),
+[NIP-71](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/71.md)
 
 ## Accessibility
 
@@ -175,7 +207,8 @@ Written in this order, test before implementation at each step.
 - Manual reordering of pins (an arranger screen), and therefore drag handles,
   semantic move actions, drafts, and a multi-select add picker.
 - Section headers or a separate pinned grid.
-- Unlimited pins, and the oversize-event handling it would require.
+- Unlimited creator-managed pins. Imported lists over 12 require the explicit
+  edge-case decision called out by the evidence audit.
 - Reordering unpinned videos.
 - Pinning another account's videos.
 - Multiple named pin sets.
