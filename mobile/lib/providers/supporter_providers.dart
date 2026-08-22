@@ -94,8 +94,8 @@ SupporterRepository supporterRepository(Ref ref) {
 /// This deliberately does not depend on the Supporter screen or the feature
 /// flag: anyone whose store purchase succeeded before the Worker was wired
 /// must be able to claim it as soon as an authenticated build with the Worker
-/// URL opens. The repository coalesces overlapping calls and retains failed
-/// store proofs for a later foreground retry.
+/// URL opens. The repository first checks canonical state, coalesces overlapping
+/// calls, and retries failures on a later foreground edge.
 final supporterRecoveryProvider = Provider<Future<void>?>((ref) {
   final authService = ref.watch(authServiceProvider);
   final authState = ref.watch(currentAuthStateProvider);

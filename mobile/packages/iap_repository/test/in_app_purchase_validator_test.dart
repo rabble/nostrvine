@@ -366,18 +366,19 @@ void main() {
       test(
         'restored delivery after restore uses the restore context',
         () async {
-          when(() => store.restorePurchases()).thenAnswer((_) async {});
+          when(() => store.restorePurchases()).thenAnswer((_) async {
+            streamController.add([
+              _purchase(
+                'divine.supporter.monthly',
+                status: PurchaseStatus.restored,
+              ),
+            ]);
+          });
           final proofFuture = validator.purchaseProofChanges.first;
           await validator.restorePurchases(
             capturedPubkey: 'captured-pubkey',
             attemptId: 'restore-1',
           );
-          streamController.add([
-            _purchase(
-              'divine.supporter.monthly',
-              status: PurchaseStatus.restored,
-            ),
-          ]);
           final proof = await proofFuture.timeout(
             const Duration(seconds: 1),
           );
@@ -420,22 +421,41 @@ void main() {
       test(
         'silent restore does not emit interactive lifecycle state',
         () async {
-          when(() => store.restorePurchases()).thenAnswer((_) async {});
+          when(() => store.restorePurchases()).thenAnswer((_) async {
+            streamController.add([
+              _purchase(
+                'divine.supporter.monthly',
+                status: PurchaseStatus.restored,
+              ),
+            ]);
+          });
           final lifecycle = <EntitlementLifecycle>[];
           validator.lifecycleChanges.listen(lifecycle.add);
 
-          await validator.restorePurchases(silent: true);
           final proofFuture = validator.purchaseProofChanges.first;
-          streamController.add([
-            _purchase(
-              'divine.supporter.monthly',
-              status: PurchaseStatus.restored,
-            ),
-          ]);
+          await validator.restorePurchases(silent: true);
           final proof = await proofFuture;
 
           expect(proof.silent, isTrue);
           expect(lifecycle, isEmpty);
+        },
+      );
+
+      test(
+        'silent restore context does not affect later store errors',
+        () async {
+          when(() => store.restorePurchases()).thenAnswer((_) async {});
+          await validator.restorePurchases(silent: true);
+          final errorFuture = expectLater(
+            validator.entitlementChanges,
+            emitsError(isA<PurchaseFailedException>()),
+          );
+
+          streamController.add([
+            _purchase('divine.supporter.monthly', status: PurchaseStatus.error),
+          ]);
+
+          await errorFuture;
         },
       );
 

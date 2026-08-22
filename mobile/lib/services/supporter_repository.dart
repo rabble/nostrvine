@@ -260,11 +260,17 @@ class SupporterRepository {
       _handleChange(snapshot.entitlement);
       await _validator.completePurchase(proof);
     } on Object catch (error, stackTrace) {
-      _recoveryCompleted = false;
+      _recoveryCompleted = _isTerminalClaimFailure(error);
       if (!proof.silent) _handleValidatorError(error, stackTrace);
       // Keep the purchase unacknowledged so the store can redeliver it after
       // the Worker or signer becomes available.
     }
+  }
+
+  bool _isTerminalClaimFailure(Object error) {
+    return error is SupporterApiException &&
+        (error.kind == SupporterApiFailureKind.ownershipConflict ||
+            error.statusCode == 400);
   }
 
   /// Mark the entitlement inactive locally (e.g. after a confirmed expiry or

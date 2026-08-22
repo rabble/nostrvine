@@ -244,7 +244,11 @@ class InAppPurchaseValidator implements EntitlementValidator {
           attemptId ?? 'restore-${DateTime.now().microsecondsSinceEpoch}',
       silent: silent,
     );
-    await _store.restorePurchases();
+    try {
+      await _store.restorePurchases();
+    } finally {
+      _restoreContext = null;
+    }
 
     // Restored purchases are delivered on the purchase stream. We resolve to
     // inactive synchronously and rely on the stream + repository cache to

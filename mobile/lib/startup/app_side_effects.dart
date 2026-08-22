@@ -54,7 +54,8 @@ class AppRootSideEffects extends ConsumerWidget {
 
     // Reclaims store purchases made before canonical entitlement recording was
     // available. It runs only for an authenticated account with the Worker
-    // configured, and retries when the app returns to the foreground.
+    // configured. Canonical state avoids repeated work after success; failures
+    // retry when the app returns to the foreground.
     ref.watch(supporterRecoveryProvider);
 
     // Durable-queue drivers. Each owns a foreground (and, for profile saves,

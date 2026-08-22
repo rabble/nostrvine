@@ -332,10 +332,20 @@ class SupporterApiClient {
   }
 
   SupporterApiException _exceptionForStatus(int statusCode, String body) {
-    final kind = switch (statusCode) {
-      401 || 403 => SupporterApiFailureKind.unauthorized,
-      409 => SupporterApiFailureKind.ownershipConflict,
-      408 || 429 || >= 500 => SupporterApiFailureKind.unavailable,
+    String? errorCode;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final error = decoded['error'];
+        if (error is Map<String, dynamic>) errorCode = error['code'] as String?;
+      }
+    } on FormatException {
+      // Error classification still falls back to the HTTP status.
+    }
+    final kind = switch ((statusCode, errorCode)) {
+      (_, 'ownership_conflict') => SupporterApiFailureKind.ownershipConflict,
+      (401 || 403, _) => SupporterApiFailureKind.unauthorized,
+      (408 || 409 || 429 || >= 500, _) => SupporterApiFailureKind.unavailable,
       _ => SupporterApiFailureKind.requestFailed,
     };
     final message = switch (kind) {

@@ -88,10 +88,24 @@ void main() {
   const pubkeyB =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-  SupporterApiClient buildApiClient({bool active = false}) {
+  SupporterApiClient buildApiClient({
+    bool active = false,
+    int? claimStatus,
+    String? claimErrorCode,
+    Completer<void>? claimObserved,
+  }) {
     return SupporterApiClient(
       baseUri: Uri.parse('https://supporters.test'),
       httpClient: MockClient((request) async {
+        if (request.method == 'POST' && claimStatus != null) {
+          claimObserved?.complete();
+          return http.Response(
+            jsonEncode({
+              'error': {'code': claimErrorCode},
+            }),
+            claimStatus,
+          );
+        }
         return http.Response(
           jsonEncode({
             'status': active ? 'active' : 'inactive',
@@ -420,5 +434,41 @@ void main() {
         expect(errors, isEmpty);
       },
     );
+
+    test('does not retry a purchase owned by another account', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final claimObserved = Completer<void>();
+      final apiClient = buildApiClient(
+        claimStatus: 409,
+        claimErrorCode: 'ownership_conflict',
+        claimObserved: claimObserved,
+      );
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+        apiClient: apiClient,
+      );
+      addTearDown(repo.dispose);
+      addTearDown(apiClient.dispose);
+
+      await repo.recoverPurchases();
+      validator.proofController.add(
+        const SupporterPurchaseProof(
+          attemptId: 'stable-attempt-1234',
+          store: 'apple',
+          productId: 'divine.supporter.monthly',
+          serverVerificationData: 'opaque-proof',
+          localVerificationData: '',
+          capturedPubkey: pubkeyA,
+          silent: true,
+        ),
+      );
+      await claimObserved.future;
+      await Future<void>.delayed(Duration.zero);
+      await repo.recoverPurchases();
+
+      expect(validator.restoreCallCount, 1);
+    });
   });
 }

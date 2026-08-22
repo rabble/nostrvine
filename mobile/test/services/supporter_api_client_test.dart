@@ -214,7 +214,14 @@ void main() {
         headers: any(named: 'headers'),
         body: any(named: 'body'),
       ),
-    ).thenAnswer((_) async => http.Response('{}', 409));
+    ).thenAnswer(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'ownership_conflict'},
+        }),
+        409,
+      ),
+    );
 
     await expectLater(
       buildClient().claimPurchase(
@@ -232,6 +239,43 @@ void main() {
           (error) => error.kind,
           'kind',
           SupporterApiFailureKind.ownershipConflict,
+        ),
+      ),
+    );
+  });
+
+  test('treats a claim already in progress as retryable', () async {
+    when(
+      () => httpClient.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'claim_in_progress'},
+        }),
+        409,
+      ),
+    );
+
+    await expectLater(
+      buildClient().claimPurchase(
+        const SupporterPurchaseClaim(
+          store: 'apple',
+          productId: 'divine.supporter.monthly',
+          idempotencyKey: 'attempt-1234567890',
+          proof: {'signed_payload': 'opaque-proof-material'},
+        ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ),
+      throwsA(
+        isA<SupporterApiException>().having(
+          (error) => error.kind,
+          'kind',
+          SupporterApiFailureKind.unavailable,
         ),
       ),
     );
