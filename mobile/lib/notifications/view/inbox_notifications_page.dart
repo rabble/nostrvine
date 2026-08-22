@@ -105,9 +105,14 @@ class _InboxNotificationsScaffoldState
     super.didUpdateWidget(oldWidget);
     if (widget.badgeRepository == oldWidget.badgeRepository) return;
     // A new repository is bound to a different signer, so in-flight accepts
-    // belong to the previous one and are dropped with the cubit.
-    _badgesCubit.close();
-    _badgesCubit = BadgesCubit(repository: widget.badgeRepository)..load();
+    // belong to the previous one and are dropped with the cubit. The old one
+    // is closed after the frame: descendants are still subscribed to it until
+    // this rebuild swaps them onto the new instance.
+    final previous = _badgesCubit;
+    WidgetsBinding.instance.addPostFrameCallback((_) => previous.close());
+    setState(() {
+      _badgesCubit = BadgesCubit(repository: widget.badgeRepository)..load();
+    });
   }
 
   @override
@@ -137,36 +142,7 @@ class _InboxNotificationsScaffoldState
           child: Column(
             children: [
               const SizedBox(height: 12),
-              Material(
-                type: MaterialType.transparency,
-                child: TabBar(
-                  controller: tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  padding: const EdgeInsetsDirectional.only(start: 16),
-                  indicatorColor: VineTheme.tabIndicatorGreen,
-                  indicatorWeight: 4,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: VineTheme.transparent,
-                  labelColor: context.vineColors.primaryText,
-                  unselectedLabelColor: context.vineColors.onSurfaceMuted,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                  labelStyle: VineTheme.titleMediumFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                  unselectedLabelStyle: VineTheme.titleMediumFont(
-                    color: context.vineColors.onSurfaceMuted,
-                  ),
-                  tabs: [
-                    Tab(text: context.l10n.notificationsTabAll),
-                    Tab(text: context.l10n.notificationsTabLikes),
-                    Tab(text: context.l10n.notificationsTabComments),
-                    Tab(text: context.l10n.notificationsTabFollows),
-                    Tab(text: context.l10n.notificationsTabReposts),
-                    const _BadgesTab(),
-                  ],
-                ),
-              ),
+              _InboxTabBar(controller: tabController),
               Expanded(
                 child: TabBarView(
                   controller: tabController,
@@ -312,22 +288,48 @@ class _NotificationVisibilityDispatcherState
   }
 }
 
-/// Tab label for pending badge awards, carrying their count.
-///
-/// The count is the point of the tab: a badge award is an offer waiting on a
-/// decision, and nothing else in the app says one is waiting.
-class _BadgesTab extends StatelessWidget {
-  const _BadgesTab();
+/// Inbox filter tabs, built inside the badges cubit's subtree so the Badges
+/// label can carry its pending count.
+class _InboxTabBar extends StatelessWidget {
+  const _InboxTabBar({required this.controller});
+
+  final TabController controller;
 
   @override
   Widget build(BuildContext context) {
-    final pendingCount = context.select(
+    final pendingBadges = context.select(
       (BadgesCubit cubit) => cubit.state.pending.length,
     );
-    return Tab(
-      text: pendingCount == 0
-          ? context.l10n.notificationsTabBadges
-          : context.l10n.notificationsTabBadgesWithCount(pendingCount),
+    // Material is required for the TabBar ink splash.
+    return Material(
+      type: MaterialType.transparency,
+      child: TabBar(
+        controller: controller,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        padding: const EdgeInsetsDirectional.only(start: 16),
+        indicatorColor: VineTheme.tabIndicatorGreen,
+        indicatorWeight: 4,
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: VineTheme.transparent,
+        labelColor: context.vineColors.primaryText,
+        unselectedLabelColor: context.vineColors.onSurfaceMuted,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+        labelStyle: VineTheme.titleMediumFont(
+          color: context.vineColors.primaryText,
+        ),
+        unselectedLabelStyle: VineTheme.titleMediumFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
+        tabs: [
+          Tab(text: context.l10n.notificationsTabAll),
+          Tab(text: context.l10n.notificationsTabLikes),
+          Tab(text: context.l10n.notificationsTabComments),
+          Tab(text: context.l10n.notificationsTabFollows),
+          Tab(text: context.l10n.notificationsTabReposts),
+          Tab(text: context.l10n.notificationsTabBadges(pendingBadges)),
+        ],
+      ),
     );
   }
 }
@@ -345,37 +347,42 @@ class _PendingBadgesBanner extends StatelessWidget {
     );
     if (pendingCount == 0) return const SizedBox.shrink();
 
-    return InkWell(
-      onTap: onViewPending,
-      child: Semantics(
-        button: true,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          color: context.vineColors.card,
-          child: Row(
-            spacing: 12,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: VineTheme.vineGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: DivineIcon(
-                  icon: DivineIconName.sealCheck,
-                  color: context.vineColors.background,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  context.l10n.notificationsPendingBadges(pendingCount),
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.primaryText,
+    // Its own Material: the banner sits in a plain Column, so the ink splash
+    // cannot rely on an ancestor sheet being there.
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onViewPending,
+        child: Semantics(
+          button: true,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            color: context.vineColors.card,
+            child: Row(
+              spacing: 12,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: VineTheme.vineGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: DivineIcon(
+                    icon: DivineIconName.sealCheck,
+                    color: context.vineColors.background,
                   ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Text(
+                    context.l10n.notificationsPendingBadges(pendingCount),
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

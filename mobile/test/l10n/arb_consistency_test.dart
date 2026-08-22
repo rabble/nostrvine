@@ -487,7 +487,6 @@ const _knownUntranslatedDebt = <String>{
   // Inbox Badges tab and its All-tab banner. Translation deferred to the next
   // l10n pass.
   'notificationsTabBadges',
-  'notificationsTabBadgesWithCount',
   'notificationsPendingBadges',
   'notificationsBadgesEmpty',
   // #7892: safety-filter explanation on the video detail screen. Translation

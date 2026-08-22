@@ -300,7 +300,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.text(l10n.notificationsTabBadgesWithCount(2)),
+          find.text(l10n.notificationsTabBadges(2)),
           findsOneWidget,
         );
       });
@@ -309,7 +309,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.notificationsTabBadges), findsOneWidget);
+        expect(find.text(l10n.notificationsTabBadges(0)), findsOneWidget);
         expect(find.textContaining('Badges ('), findsNothing);
       });
 

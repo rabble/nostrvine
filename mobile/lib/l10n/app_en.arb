@@ -2652,13 +2652,9 @@
       }
     }
   },
-  "notificationsTabBadges": "Badges",
+  "notificationsTabBadges": "{count, plural, =0{Badges} other{Badges ({count})}}",
   "@notificationsTabBadges": {
-    "description": "Inbox tab listing badge awards that still need an accept or reject."
-  },
-  "notificationsTabBadgesWithCount": "Badges ({count})",
-  "@notificationsTabBadgesWithCount": {
-    "description": "Badges inbox tab label when awards are waiting on a decision.",
+    "description": "Inbox tab listing badge awards that still need an accept or reject, counting those waiting.",
     "placeholders": {
       "count": {
         "type": "int"

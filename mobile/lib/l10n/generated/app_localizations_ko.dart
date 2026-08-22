@@ -3931,11 +3931,14 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get notificationsTabBadges => 'Badges';
-
-  @override
-  String notificationsTabBadgesWithCount(int count) {
-    return 'Badges ($count)';
+  String notificationsTabBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Badges ($count)',
+      zero: 'Badges',
+    );
+    return '$_temp0';
   }
 
   @override
