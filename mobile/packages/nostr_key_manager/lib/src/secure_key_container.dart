@@ -57,7 +57,7 @@ class SecureKeyContainer {
         ..attach(this, _publicKeyBytes);
 
       _log.info(
-        '📱 SecureKeyContainer created for $_npub',
+        '📱 SecureKeyContainer created for ${pubkeyForLogs(_npub)}',
       );
     } on Exception catch (e) {
       // Clean up any allocated memory on error
@@ -83,7 +83,7 @@ class SecureKeyContainer {
       _finalizer.attach(this, _publicKeyBytes);
 
       _log.info(
-        '📱 SecureKeyContainer created for $_npub',
+        '📱 SecureKeyContainer created for ${pubkeyForLogs(_npub)}',
       );
     } on Exception catch (e) {
       // Clean up any allocated memory on error

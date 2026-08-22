@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
@@ -248,7 +249,8 @@ class DeepLinkService {
             ? int.tryParse(pathSegments[2])
             : null;
         Log.info(
-          '📱 Parsed profile deep link: $npub${index != null ? " (index: $index)" : ""}',
+          '📱 Parsed profile deep link: ${pubkeyForLogs(npub)}'
+          '${index != null ? " (index: $index)" : ""}',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
@@ -326,7 +328,7 @@ class DeepLinkService {
           return const DeepLink(type: DeepLinkType.unknown);
         }
         Log.info(
-          '📱 Parsed list deep link: $listPubkey/$listId',
+          '📱 Parsed list deep link: ${pubkeyForLogs(listPubkey)}/$listId',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );

@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/video_collaborator_status/video_collaborator_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -219,7 +220,7 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
 
   void _navigateToCollaborator(BuildContext context, String pubkey) {
     Log.info(
-      'Navigating to collaborator profile: $pubkey',
+      'Navigating to collaborator profile: ${pubkeyForLogs(pubkey)}',
       name: 'CollaboratorAvatarRow',
       category: LogCategory.ui,
     );

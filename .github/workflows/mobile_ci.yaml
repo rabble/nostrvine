@@ -308,6 +308,17 @@ jobs:
           # secrets are redacted whole rather than shortened — see the script
           # header. AGENTS.md -> Nostr And Async Rules.
           bash scripts/check_nostr_id_log_truncation.sh
+      - name: 🪪 Verify pubkeys reach logs as npub plus hex (encoding ratchet)
+        run: |
+          # Issue #8066, successor to #3372. Freezes at ZERO the per-file count
+          # of pubkeys interpolated into a log/debug sink in one encoding across
+          # mobile/lib and mobile/packages. Hex greps against relay and backend
+          # rows; npub is the only form a person can paste into a client, and
+          # Zendesk bug reports are one-way, so the log has to carry both. Fix
+          # with pubkeyForLogs (packages/nostr_sdk/lib/nip19/pubkey_for_logs.dart),
+          # which takes either encoding and truncates neither. Counts, booleans
+          # and collections that merely mention a pubkey are NOT counted.
+          bash scripts/check_pubkey_log_encoding.sh
       - name: 🌍 Verify delegate-less MaterialApp count does not increase (l10n ratchet)
         run: |
           # Issue #3613. Freezes the per-file count of MaterialApp /

@@ -1,3 +1,4 @@
+import '../nip19/pubkey_for_logs.dart';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:math' as math;
@@ -119,7 +120,7 @@ class GiftWrapUtil {
         : verifyGiftWrapPart(rumorEvent);
     if (!sealValid) {
       log(
-        "GiftWrap rumorEvent sign check result fail, id: ${e.id}, from: ${e.pubkey}",
+        "GiftWrap rumorEvent sign check result fail, id: ${e.id}, from: ${pubkeyForLogs(e.pubkey)}",
       );
       return null;
     }
@@ -147,8 +148,8 @@ class GiftWrapUtil {
     // seal's authenticated pubkey to prevent impersonation.
     if (claimedPubkey is String && rumorEvent.pubkey != claimedPubkey) {
       log(
-        'GiftWrap sender pubkey mismatch: seal=${rumorEvent.pubkey} '
-        'rumor=$claimedPubkey. Using seal pubkey as authoritative sender.',
+        'GiftWrap sender pubkey mismatch: seal=${pubkeyForLogs(rumorEvent.pubkey)} '
+        'rumor=${pubkeyForLogs(claimedPubkey)}. Using seal pubkey as authoritative sender.',
       );
     }
 

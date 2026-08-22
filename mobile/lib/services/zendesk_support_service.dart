@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -994,7 +995,7 @@ class ZendeskSupportService {
     }
     final effectivePubkey = userPubkey ?? _userNpub;
     if (effectivePubkey != null) {
-      buffer.writeln('**User Pubkey:** $effectivePubkey');
+      buffer.writeln('**User Pubkey:** ${pubkeyForLogs(effectivePubkey)}');
     }
     if (errorCounts != null && errorCounts.isNotEmpty) {
       buffer.writeln();
@@ -1210,7 +1211,7 @@ class ZendeskSupportService {
     final effectivePubkey = userPubkey ?? _userNpub;
     if (effectivePubkey != null) {
       buffer.writeln();
-      buffer.writeln('**User Pubkey:** $effectivePubkey');
+      buffer.writeln('**User Pubkey:** ${pubkeyForLogs(effectivePubkey)}');
     }
 
     final tags = ['feature_request', 'divine_app', 'mobile'];

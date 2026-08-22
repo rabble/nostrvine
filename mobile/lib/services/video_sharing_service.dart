@@ -9,6 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 // `auth_service` exports an unrelated `UserProfile`; hide it so the models
 // one (used by [ShareableUser.fromProfile]) resolves unambiguously.
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -171,7 +172,7 @@ class VideoSharingService {
   }) async {
     try {
       Log.debug(
-        'Sharing video with user: $recipientPubkey',
+        'Sharing video with user: ${pubkeyForLogs(recipientPubkey)}',
         name: 'VideoSharingService',
         category: LogCategory.video,
       );
@@ -334,7 +335,7 @@ class VideoSharingService {
         );
       } catch (e) {
         Log.error(
-          'Failed to share video with $pubkey: $e',
+          'Failed to share video with ${pubkeyForLogs(pubkey)}: $e',
           name: 'VideoSharingService',
           category: LogCategory.video,
         );

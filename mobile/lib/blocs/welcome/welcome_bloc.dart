@@ -7,6 +7,7 @@ import 'package:db_client/db_client.dart';
 import 'package:equatable/equatable.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/npub_hex.dart';
@@ -88,7 +89,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
 
     Log.info(
       'WelcomeBloc: found ${knownAccounts.length} known account(s)'
-      '${anchorPubkeyHex != null ? ", recovery anchor=$anchorPubkeyHex" : ""}',
+      '${anchorPubkeyHex != null ? ", recovery anchor=${pubkeyForLogs(anchorPubkeyHex)}" : ""}',
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );
@@ -163,7 +164,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       profile = await _userProfilesDao.getProfile(known.pubkeyHex);
     } catch (e, stackTrace) {
       Log.warning(
-        'Failed to load cached profile for ${known.pubkeyHex}: $e',
+        'Failed to load cached profile for ${pubkeyForLogs(known.pubkeyHex)}: $e',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
@@ -210,7 +211,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
 
     Log.info(
       'WelcomeBloc: logging back in as '
-      'pubkey=${account.pubkeyHex}, '
+      'pubkey=${pubkeyForLogs(account.pubkeyHex)}, '
       'source=${account.authSource.name}',
       name: 'WelcomeBloc',
       category: LogCategory.auth,
@@ -229,13 +230,13 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         account.authSource,
       );
       Log.info(
-        'WelcomeBloc: sign-in completed for ${account.pubkeyHex}',
+        'WelcomeBloc: sign-in completed for ${pubkeyForLogs(account.pubkeyHex)}',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
     } on SessionExpiredException catch (e, stackTrace) {
       Log.warning(
-        'WelcomeBloc: session expired for ${account.pubkeyHex} '
+        'WelcomeBloc: session expired for ${pubkeyForLogs(account.pubkeyHex)} '
         '— redirecting to login options',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
@@ -248,7 +249,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       );
     } on AccountRestoreFailedException catch (e, stackTrace) {
       Log.warning(
-        'WelcomeBloc: restore failed for ${account.pubkeyHex} '
+        'WelcomeBloc: restore failed for ${pubkeyForLogs(account.pubkeyHex)} '
         '(${e.resolvedState}) — redirecting to login options',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
@@ -261,7 +262,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       );
     } catch (e, stackTrace) {
       Log.error(
-        'WelcomeBloc: failed to log back in as ${account.pubkeyHex}: $e',
+        'WelcomeBloc: failed to log back in as ${pubkeyForLogs(account.pubkeyHex)}: $e',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
@@ -306,7 +307,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
 
     Log.info(
       'WelcomeBloc: cancel switch — restoring previous account '
-      'pubkey=${previous.pubkeyHex}',
+      'pubkey=${pubkeyForLogs(previous.pubkeyHex)}',
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );
@@ -333,7 +334,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     } on AccountRestoreFailedException catch (e, stackTrace) {
       Log.warning(
         'WelcomeBloc: restore failed while cancelling account switch for '
-        '${previous.pubkeyHex} (${e.resolvedState}) — redirecting to '
+        '${pubkeyForLogs(previous.pubkeyHex)} (${e.resolvedState}) — redirecting to '
         'login options',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
@@ -357,7 +358,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     Emitter<WelcomeState> emit,
   ) {
     Log.debug(
-      'WelcomeBloc: account selected — pubkey=${event.pubkeyHex}',
+      'WelcomeBloc: account selected — pubkey=${pubkeyForLogs(event.pubkeyHex)}',
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );

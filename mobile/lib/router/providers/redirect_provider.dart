@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
@@ -19,7 +20,7 @@ final hasFollowingInCacheProvider = Provider<bool>((ref) {
   final currentUserPubkey = prefs.getString('current_user_pubkey_hex');
 
   Log.debug(
-    'Current user pubkey from prefs: $currentUserPubkey',
+    'Current user pubkey from prefs: ${pubkeyForLogs(currentUserPubkey)}',
     name: 'RedirectGuards',
     category: LogCategory.ui,
   );

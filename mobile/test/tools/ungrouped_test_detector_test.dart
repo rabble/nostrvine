@@ -270,7 +270,7 @@ void main() {
 
     test('rejects library code that merely ends in _test.dart', () {
       expect(
-        isTestFile(File('packages/nostr_sdk/lib/signer/signer_test.dart')),
+        isTestFile(File('packages/example/lib/src/helper_test.dart')),
         isFalse,
       );
     });

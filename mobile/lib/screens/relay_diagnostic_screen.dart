@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -447,7 +448,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         for (var i = 0; i < videoEvents.take(3).length; i++) {
           final event = videoEvents[i];
           Log.info(
-            '  Event $i: kind=${event.kind}, author=${event.pubkey}, timestamp=${event.createdAt}',
+            '  Event $i: kind=${event.kind}, author=${pubkeyForLogs(event.pubkey)}, timestamp=${event.createdAt}',
             name: 'RelayDiagnostic',
           );
         }

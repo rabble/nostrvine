@@ -5,6 +5,7 @@
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/relay_rejection_classifier.dart';
@@ -208,7 +209,7 @@ class AccountDeletionService {
           customReason ?? 'User requested account deletion via Divine app';
 
       Log.info(
-        'Starting account deletion for pubkey: $pubkey',
+        'Starting account deletion for pubkey: ${pubkeyForLogs(pubkey)}',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
@@ -436,7 +437,7 @@ class AccountDeletionService {
           .toList(growable: false);
 
       Log.debug(
-        'Fetched ${events.length} events for user $pubkey '
+        'Fetched ${events.length} events for user ${pubkeyForLogs(pubkey)} '
         '(${targets.length} sweep targets after excluding kinds '
         '${_kindsExcludedFromSweep.join(', ')})',
         name: 'AccountDeletionService',
@@ -445,7 +446,7 @@ class AccountDeletionService {
 
       if (queryFailed) {
         Log.error(
-          'Relay query did not complete reliably for user $pubkey '
+          'Relay query did not complete reliably for user ${pubkeyForLogs(pubkey)} '
           '(timedOut=${query.timedOut}, noRelays=${query.noRelays})',
           name: 'AccountDeletionService',
           category: LogCategory.system,
@@ -648,7 +649,7 @@ class AccountDeletionService {
       ];
 
       Log.info(
-        'Creating NIP-62 event with pubkey: $pubkey, kind: 62, reason: $reason',
+        'Creating NIP-62 event with pubkey: ${pubkeyForLogs(pubkey)}, kind: 62, reason: $reason',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );

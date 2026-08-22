@@ -12,6 +12,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:profile_repository/src/identity_event_selection.dart';
@@ -547,7 +548,7 @@ class ProfileRepository implements ProfileReader {
       } on Exception catch (e) {
         cacheReadFailed = true;
         Log.warning(
-          'Identity-tags cache read failed for $pubkey: $e',
+          'Identity-tags cache read failed for ${pubkeyForLogs(pubkey)}: $e',
           name: 'ProfileRepository',
         );
       }
@@ -595,7 +596,7 @@ class ProfileRepository implements ProfileReader {
       final cachedTags = _decodeIdentityTags(row.tagsJson);
       if (cachedTags == null) return null;
       Log.warning(
-        'Kind-$identityEventKind read for $pubkey (created_at '
+        'Kind-$identityEventKind read for ${pubkeyForLogs(pubkey)} (created_at '
         '${live.createdAt}) is superseded by the cached event (created_at '
         '$cachedCreatedAt); keeping the cached claims',
         name: 'ProfileRepository',
@@ -603,7 +604,7 @@ class ProfileRepository implements ProfileReader {
       return cachedTags;
     } on Exception catch (e) {
       Log.warning(
-        'Identity-tags cache read failed for $pubkey: $e',
+        'Identity-tags cache read failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'ProfileRepository',
       );
       return null;
@@ -635,7 +636,7 @@ class ProfileRepository implements ProfileReader {
       );
     } on Exception catch (e) {
       Log.warning(
-        'Identity-tags cache write failed for $pubkey: $e',
+        'Identity-tags cache write failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'ProfileRepository',
       );
     }
@@ -654,7 +655,7 @@ class ProfileRepository implements ProfileReader {
       );
     } on Exception catch (e) {
       Log.warning(
-        'Kind-$identityEventKind fetch failed for $pubkey: $e',
+        'Kind-$identityEventKind fetch failed for ${pubkeyForLogs(pubkey)}: $e',
         name: 'ProfileRepository',
       );
       return null;
@@ -948,7 +949,8 @@ class ProfileRepository implements ProfileReader {
     // All sources exhausted — mark as confirmed missing.
     _confirmedMissing.add(pubkey);
     Log.debug(
-      'No profile found for $pubkey across all sources, marked missing',
+      'No profile found for ${pubkeyForLogs(pubkey)} across all sources, '
+      'marked missing',
       name: 'ProfileRepository.fetchFreshProfile',
       category: LogCategory.relay,
     );
@@ -2528,15 +2530,19 @@ class ProfileRepository implements ProfileReader {
       // Connected relay fetches (one per pubkey, in parallel)
       final relayFuture = Future.wait(
         remainingList.map(
-          (pubkey) => Future.sync(() => _nostrClient.fetchProfile(pubkey))
-              .catchError((Object e) {
-                Log.warning(
-                  'Batch connected relay fetch failed for $pubkey: $e',
-                  name: 'ProfileRepository.fetchBatchProfiles',
-                  category: LogCategory.relay,
-                );
-                return null;
-              }, test: (_) => true),
+          (
+            pubkey,
+          ) => Future.sync(() => _nostrClient.fetchProfile(pubkey)).catchError((
+            Object e,
+          ) {
+            Log.warning(
+              'Batch connected relay fetch failed for '
+              '${pubkeyForLogs(pubkey)}: $e',
+              name: 'ProfileRepository.fetchBatchProfiles',
+              category: LogCategory.relay,
+            );
+            return null;
+          }, test: (_) => true),
         ),
       );
 

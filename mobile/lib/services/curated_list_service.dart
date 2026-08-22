@@ -16,6 +16,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_relay_gateway.dart';
 import 'package:openvine/utils/curated_list_privacy.dart';
@@ -910,7 +911,7 @@ class CuratedListService extends ChangeNotifier {
 
       if (list.allowedCollaborators.contains(pubkey)) {
         Log.debug(
-          'User already a collaborator: $pubkey',
+          'User already a collaborator: ${pubkeyForLogs(pubkey)}',
           name: 'CuratedListService',
           category: LogCategory.system,
         );
@@ -926,7 +927,7 @@ class CuratedListService extends ChangeNotifier {
       if (!await _commitListMutation(updatedList)) return false;
 
       Log.debug(
-        '✅ Added collaborator to list "${list.name}": $pubkey',
+        '✅ Added collaborator to list "${list.name}": ${pubkeyForLogs(pubkey)}',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
@@ -970,7 +971,7 @@ class CuratedListService extends ChangeNotifier {
       if (!await _commitListMutation(updatedList)) return false;
 
       Log.debug(
-        '➖ Removed collaborator from list "${list.name}": $pubkey',
+        '➖ Removed collaborator from list "${list.name}": ${pubkeyForLogs(pubkey)}',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
@@ -1454,7 +1455,7 @@ class CuratedListService extends ChangeNotifier {
     if (userPubkey == null) return;
 
     Log.info(
-      "📋 Fetching user's curated lists from relays for pubkey: $userPubkey",
+      "📋 Fetching user's curated lists from relays for pubkey: ${pubkeyForLogs(userPubkey)}",
       name: 'CuratedListService',
       category: LogCategory.system,
     );
@@ -1471,7 +1472,7 @@ class CuratedListService extends ChangeNotifier {
         kinds: [30005], // NIP-51 curated lists
       );
       Log.debug(
-        '📋 Subscribing with filter: authors=[$userPubkey], kinds=[30005]',
+        '📋 Subscribing with filter: authors=[${pubkeyForLogs(userPubkey)}], kinds=[30005]',
         name: 'CuratedListService',
         category: LogCategory.system,
       );

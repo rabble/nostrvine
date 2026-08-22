@@ -264,7 +264,7 @@ class RelayDiscoveryOrchestrator {
 
       await prefs.setBool(flagKey, true);
       Log.info(
-        '✅ Published bootstrap kind:10002 for $pubkeyHex to '
+        '✅ Published bootstrap kind:10002 for ${pubkeyForLogs(pubkeyHex)} to '
         '${targetRelays.length} relays',
         name: 'RelayDiscoveryOrchestrator',
         category: LogCategory.auth,

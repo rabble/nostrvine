@@ -141,6 +141,14 @@ Nostr identifiers:
   shortening stays allowed, but prefer `maxLines` + `TextOverflow.ellipsis` to
   cutting the string. Frozen at zero by `check_nostr_id_log_truncation.sh`
   (#3372); see [`AGENTS.md`](../../AGENTS.md) → Nostr And Async Rules.
+- [ ] Every pubkey reaching a log/debug sink goes through `pubkeyForLogs`, so
+  the line carries the full npub **and** the full hex. Hex greps against relay
+  and backend rows; npub is the only form a person can paste into a client, and
+  a Zendesk report is one-way, so the log has to carry both. Pass `whenNull:`
+  when the call site's own wording for an absent value is itself diagnostic,
+  and map a collection rather than passing it. A count, boolean or joined
+  string is not a pubkey and needs nothing. Frozen at zero by
+  `check_pubkey_log_encoding.sh` (#8066).
 - [ ] A **secret** — `nsec`, `ncryptsec`, a raw private key — is not logged at
   all, whole or shortened. Truncation is not a security control; omit or redact
   whole (`BugReportConfig.sensitivePatterns`, `sanitizeForCrashReport`).

@@ -24,7 +24,7 @@ class SocialService {
   /// Get video count for a specific user
   Future<int> getUserVideoCount(String pubkey) async {
     Log.debug(
-      '📱 Fetching video count for: $pubkey',
+      '📱 Fetching video count for: ${pubkeyForLogs(pubkey)}',
       name: 'SocialService',
       category: LogCategory.system,
     );

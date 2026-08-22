@@ -1,3 +1,4 @@
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -17,7 +18,7 @@ bool isCrossAccountSessionRestore({
 
   Log.warning(
     'initialize: cross-account session restore blocked — '
-    'anchor=$anchorNpub, candidate=$candidateNpub. '
+    'anchor=${pubkeyForLogs(anchorNpub)}, candidate=${pubkeyForLogs(candidateNpub)}. '
     'Routing to unauthenticated for explicit confirmation.',
     name: 'AuthService',
     category: LogCategory.auth,

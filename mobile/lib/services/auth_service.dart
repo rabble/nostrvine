@@ -540,9 +540,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           // can switch back to it via the welcome screen.
           Log.warning(
             'initialize: local key ${localKey.publicKeyHex} is stale — '
-            'last-used=$lastUsedNpub matches session '
-            'userPubkey=$sessionPubkey. Forcing slow path with '
-            'session; archiving stale local key to $localNpub.',
+            'last-used=${pubkeyForLogs(lastUsedNpub)} matches session '
+            'userPubkey=${pubkeyForLogs(sessionPubkey)}. Forcing slow path with '
+            'session; archiving stale local key to ${pubkeyForLogs(localNpub)}.',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -560,8 +560,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           // Local key wins. Clear the stale OAuth session.
           Log.warning(
             'initialize: global OAuth session pubkey='
-            '${sessionPubkey ?? "null (legacy)"} is stale — '
-            'last-used=$lastUsedNpub matches local key '
+            '${pubkeyForLogs(sessionPubkey, whenNull: "null (legacy)")} is stale — '
+            'last-used=${pubkeyForLogs(lastUsedNpub)} matches local key '
             '${localKey.publicKeyHex}. Clearing stale session.',
             name: 'AuthService',
             category: LogCategory.auth,
@@ -574,8 +574,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           // local key stays put and the fast path uses it.
           Log.warning(
             'initialize: divergence with ambiguous last-used npub — '
-            'session=${sessionPubkey ?? "null"}, '
-            'local=${localKey.publicKeyHex}, last-used=$lastUsedNpub. '
+            'session=${pubkeyForLogs(sessionPubkey, whenNull: "null")}, '
+            'local=${localKey.publicKeyHex}, last-used=${pubkeyForLogs(lastUsedNpub)}. '
             'Clearing global session (safe default).',
             name: 'AuthService',
             category: LogCategory.auth,
@@ -674,8 +674,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           storedSession != null &&
           storedOwnerPubkey != upgradeOwnerPubkey) {
         Log.warning(
-          'OAuth RPC upgrade: refusing refresh for owner $upgradeOwnerPubkey '
-          'because stored session belongs to $storedOwnerPubkey',
+          'OAuth RPC upgrade: refusing refresh for owner ${pubkeyForLogs(upgradeOwnerPubkey)} '
+          'because stored session belongs to ${pubkeyForLogs(storedOwnerPubkey)}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -705,7 +705,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             refreshed.userPubkey != upgradeOwnerPubkey) {
           Log.warning(
             'OAuth RPC upgrade: refusing refreshed session for owner '
-            '$upgradeOwnerPubkey; got ${refreshed.userPubkey}',
+            '${pubkeyForLogs(upgradeOwnerPubkey)}; got ${pubkeyForLogs(refreshed.userPubkey)}',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -1208,7 +1208,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           final amberInfo = await _loadAmberInfo();
           if (amberInfo != null) {
             Log.info(
-              'initialize: Amber info found — pubkey=${amberInfo.pubkey}',
+              'initialize: Amber info found — pubkey=${pubkeyForLogs(amberInfo.pubkey)}',
               name: 'AuthService',
               category: LogCategory.auth,
             );
@@ -1312,7 +1312,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       Log.debug(
-        '📱 Public key: ${keyContainer.npub}',
+        '📱 Public key: ${pubkeyForLogs(keyContainer.npub)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1558,13 +1558,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await prefs.setString(kAuthenticationSourceKey, source.code);
 
       Log.info(
-        'Restored signer info for $pubkeyHex (source=${source.name})',
+        'Restored signer info for ${pubkeyForLogs(pubkeyHex)} (source=${source.name})',
         name: 'AuthService',
         category: LogCategory.auth,
       );
     } catch (e) {
       Log.warning(
-        'Failed to restore signer info for $pubkeyHex: $e',
+        'Failed to restore signer info for ${pubkeyForLogs(pubkeyHex)}: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1589,7 +1589,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     bool claimLegacyRows = true,
   }) async {
     Log.info(
-      'signInForAccount: pubkey=$pubkeyHex, source=${authSource.name}',
+      'signInForAccount: pubkey=${pubkeyForLogs(pubkeyHex)}, source=${authSource.name}',
       name: 'AuthService',
       category: LogCategory.auth,
     );
@@ -1613,7 +1613,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           await _reconnectAmber(amberInfo.pubkey, amberInfo.package);
         } else {
           Log.error(
-            'signInForAccount: no archived Amber info for $pubkeyHex',
+            'signInForAccount: no archived Amber info for ${pubkeyForLogs(pubkeyHex)}',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -1631,7 +1631,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           await _reconnectBunker(bunkerInfo);
         } else {
           Log.error(
-            'signInForAccount: no archived bunker info for $pubkeyHex',
+            'signInForAccount: no archived bunker info for ${pubkeyForLogs(pubkeyHex)}',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -1676,12 +1676,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           // RPC access. Try to refresh, then fall back to local
           // keys — same recovery strategy as _initializeDivineOAuth.
           Log.info(
-            'signInForAccount: OAuth session not usable for $pubkeyHex '
+            'signInForAccount: OAuth session not usable for ${pubkeyForLogs(pubkeyHex)} '
             '(session=${session != null}, '
             'hasRpcAccess=${session?.hasRpcAccess}, '
             'isExpired=${session?.isExpired}, '
-            'sessionPubkey=${session?.userPubkey}, '
-            'requestedPubkey=$pubkeyHex), attempting refresh...',
+            'sessionPubkey=${pubkeyForLogs(session?.userPubkey)}, '
+            'requestedPubkey=${pubkeyForLogs(pubkeyHex)}), attempting refresh...',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -1720,7 +1720,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
           if (localKey != null) {
             Log.info(
-              'signInForAccount: using local keys for $pubkeyHex '
+              'signInForAccount: using local keys for ${pubkeyForLogs(pubkeyHex)} '
               'with expired OAuth session flag',
               name: 'AuthService',
               category: LogCategory.auth,
@@ -1741,7 +1741,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           } else {
             Log.warning(
               'signInForAccount: no refresh, no local keys for '
-              '$pubkeyHex — session expired',
+              '${pubkeyForLogs(pubkeyHex)} — session expired',
               name: 'AuthService',
               category: LogCategory.auth,
             );
@@ -1754,7 +1754,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         // Try to switch to saved identity keys
         final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
         Log.info(
-          'signInForAccount: loading identity keys for npub=$npub',
+          'signInForAccount: loading identity keys for ${pubkeyForLogs(npub)}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -1778,7 +1778,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           // whatever PRIMARY account is present, which is correct for app
           // startup but unsafe for an explicit account-switch request.
           Log.warning(
-            'signInForAccount: no saved identity keys for $npub — '
+            'signInForAccount: no saved identity keys for ${pubkeyForLogs(npub)} — '
             'checking PRIMARY key for same-account fallback',
             name: 'AuthService',
             category: LogCategory.auth,
@@ -1811,7 +1811,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             );
           } else {
             Log.warning(
-              'signInForAccount: no restorable local keys for $pubkeyHex '
+              'signInForAccount: no restorable local keys for ${pubkeyForLogs(pubkeyHex)} '
               '(primaryPubkey=${primary?.publicKeyHex})',
               name: 'AuthService',
               category: LogCategory.auth,
@@ -1844,8 +1844,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         resolvedPubkeyHex != pubkeyHex) {
       Log.warning(
         'signInForAccount: resolved to $_authState '
-        '(resolvedPubkey=$resolvedPubkeyHex) for '
-        '$pubkeyHex — surfacing AccountRestoreFailedException',
+        '(resolvedPubkey=${pubkeyForLogs(resolvedPubkeyHex)}) for '
+        '${pubkeyForLogs(pubkeyHex)} — surfacing AccountRestoreFailedException',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1983,7 +1983,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             : await pullPubkey;
       } else {
         Log.info(
-          'Using saved userPubkey: $userPubkey',
+          'Using saved userPubkey: ${pubkeyForLogs(userPubkey)}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -2014,7 +2014,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       unawaited(_performDiscovery());
 
       Log.info(
-        'Bunker reconnection successful for user: $userPubkey',
+        'Bunker reconnection successful for user: ${pubkeyForLogs(userPubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2078,7 +2078,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Log what's already in _keyStorage for debugging identity issues
       final existingContainer = await _keyStorage.getKeyContainer();
       Log.debug(
-        'connectWithAmber: amberPubkey=$pubkey, '
+        'connectWithAmber: amberPubkey=${pubkeyForLogs(pubkey)}, '
         'existingStoredPubkey=${existingContainer?.publicKeyHex ?? "null"}',
         name: 'AuthService',
         category: LogCategory.auth,
@@ -2094,7 +2094,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
 
       Log.info(
-        'Amber connection successful for user: $pubkey',
+        'Amber connection successful for user: ${pubkeyForLogs(pubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2158,7 +2158,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
 
       Log.info(
-        'NIP-07 connection successful for user: $pubkey',
+        'NIP-07 connection successful for user: ${pubkeyForLogs(pubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2296,7 +2296,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       unawaited(_performDiscovery());
 
       Log.info(
-        'Amber reconnection successful for user: $pubkey',
+        'Amber reconnection successful for user: ${pubkeyForLogs(pubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2346,7 +2346,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       Log.debug(
-        '📱 Public key: ${keyContainer.npub}',
+        '📱 Public key: ${pubkeyForLogs(keyContainer.npub)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2426,7 +2426,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       Log.debug(
-        '📱 Public key: ${keyContainer.npub}',
+        '📱 Public key: ${pubkeyForLogs(keyContainer.npub)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2471,7 +2471,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       Log.debug(
         'Creating NostrRemoteSigner for '
-        'bunker: ${bunkerInfo.remoteSignerPubkey}',
+        'bunker: ${pubkeyForLogs(bunkerInfo.remoteSignerPubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2528,7 +2528,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           throw StateError('Bunker signer is null before pullPubkey');
         }
         Log.debug(
-          'Bunker signer info: remoteSignerPubkey=${signer.info.remoteSignerPubkey}, '
+          'Bunker signer info: remoteSignerPubkey=${pubkeyForLogs(signer.info.remoteSignerPubkey)}, '
           'relays=${signer.info.relays.length}, nsec=${signer.info.nsec != null}',
           name: 'AuthService',
           category: LogCategory.auth,
@@ -2543,7 +2543,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           },
         );
         Log.debug(
-          'pullPubkey result: $userPubkey',
+          'pullPubkey result: ${pubkeyForLogs(userPubkey)}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -2573,7 +2573,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
 
       Log.info(
-        'Bunker connection successful for user: $userPubkey',
+        'Bunker connection successful for user: ${pubkeyForLogs(userPubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -2661,7 +2661,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
 
     Log.info(
-      'NostrConnect authentication complete for user: $userPubkey',
+      'NostrConnect authentication complete for user: ${pubkeyForLogs(userPubkey)}',
       name: 'AuthService',
       category: LogCategory.auth,
     );
@@ -2991,8 +2991,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (session.userPubkey != ownerPubkey) {
       Log.warning(
         'Refusing a Keycast session that is not bound to the signed-in '
-        'account: session owner ${session.userPubkey ?? "unbound"}, '
-        'signed-in account $ownerPubkey',
+        'account: session owner ${pubkeyForLogs(session.userPubkey, whenNull: "unbound")}, '
+        'signed-in account ${pubkeyForLogs(ownerPubkey)}',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -3249,7 +3249,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       if (!deleteKeys && leavingNpub != null) {
         await prefs.setString(_kSessionRecoveryAnchorKey, leavingNpub);
         Log.debug(
-          'signOut: recorded session recovery anchor=$leavingNpub',
+          'signOut: recorded session recovery anchor=${pubkeyForLogs(leavingNpub)}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -3530,7 +3530,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     Log.info(
       'Preserving PRIMARY key while removing account-local login material: '
-      'removedNpub=$npub primaryNpub=${primaryContainer.npub}',
+      'removed=${pubkeyForLogs(npub)} primary=${pubkeyForLogs(primaryContainer.npub)}',
       name: 'AuthService',
       category: LogCategory.auth,
     );
@@ -3874,7 +3874,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           try {
             Log.info(
               '_tryRestoreFromKnownAccounts: '
-              'trying signInForAccount for ${account.pubkeyHex} '
+              'trying signInForAccount for ${pubkeyForLogs(account.pubkeyHex)} '
               '(source=${account.authSource.name})',
               name: 'AuthService',
               category: LogCategory.auth,
@@ -3884,7 +3884,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           } catch (e) {
             Log.warning(
               '_tryRestoreFromKnownAccounts: '
-              'signInForAccount failed for ${account.pubkeyHex}: $e',
+              'signInForAccount failed for ${pubkeyForLogs(account.pubkeyHex)}: $e',
               name: 'AuthService',
               category: LogCategory.auth,
             );
@@ -3898,7 +3898,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         if (container != null) {
           Log.info(
             '_tryRestoreFromKnownAccounts: '
-            'found keys for ${account.pubkeyHex} '
+            'found keys for ${pubkeyForLogs(account.pubkeyHex)} '
             '(source=${account.authSource.name})',
             name: 'AuthService',
             category: LogCategory.auth,
@@ -4232,7 +4232,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         Log.info(
           '_setupUserSession: identity change detected — '
           'clearing shared caches for old pubkey '
-          '${oldPubkey ?? "unknown"} '
+          '${pubkeyForLogs(oldPubkey, whenNull: "unknown")} '
           '(owner-scoped drafts/clips/uploads preserved)',
           name: 'AuthService',
           category: LogCategory.auth,

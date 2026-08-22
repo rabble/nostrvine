@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -78,7 +79,7 @@ class InspiredByAttributionRow extends ConsumerWidget {
       } catch (e) {
         Log.warning(
           'Failed to decode inspiredByNpub '
-          '${video.inspiredByNpub}: $e',
+          '${pubkeyForLogs(video.inspiredByNpub)}: $e',
           name: 'InspiredByAttributionRow',
           category: LogCategory.ui,
         );
@@ -178,7 +179,7 @@ class _InspiredByContent extends ConsumerWidget {
   void _navigateToCreatorProfile(BuildContext context) {
     final creatorPubkey = creatorPubkeys.first;
     Log.info(
-      'Navigating to inspired-by creator profile: $creatorPubkey',
+      'Navigating to inspired-by creator profile: ${pubkeyForLogs(creatorPubkey)}',
       name: 'InspiredByAttributionRow',
       category: LogCategory.ui,
     );

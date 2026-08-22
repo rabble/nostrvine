@@ -2,6 +2,7 @@
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/router/providers/router_location_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -861,7 +862,7 @@ final pageContextProvider = StreamProvider<RouteContext>((ref) async* {
   await for (final loc in locations) {
     final ctx = parseRoute(loc);
     Log.info(
-      'CTX derive: type=${ctx.type} npub=${ctx.npub} index=${ctx.videoIndex}',
+      'CTX derive: type=${ctx.type} npub=${pubkeyForLogs(ctx.npub)} index=${ctx.videoIndex}',
       name: 'Route',
       category: LogCategory.system,
     );

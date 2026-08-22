@@ -11,6 +11,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -733,7 +734,7 @@ class UploadManager implements BackgroundAwareService {
       );
     }
     Log.info(
-      '👤 Nostr pubkey: $nostrPubkey',
+      '👤 Nostr pubkey: ${pubkeyForLogs(nostrPubkey)}',
       name: 'UploadManager',
       category: LogCategory.video,
     );
@@ -1031,27 +1032,14 @@ class UploadManager implements BackgroundAwareService {
     File videoFile,
     ValueChanged<double>? onProgress,
   ) async {
+    // One entry, not five: these describe a single upload attempt, and as
+    // separate entries they interleave with other work in the captured log
+    // that support reads.
     Log.info(
-      '📤 === EXECUTING UPLOAD ===',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '📁 Video: ${videoFile.path}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '👤 Pubkey: ${upload.nostrPubkey}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '📝 Title: ${upload.title}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
+      '📤 === EXECUTING UPLOAD ===\n'
+      '📁 Video: ${videoFile.path}\n'
+      '👤 Pubkey: ${pubkeyForLogs(upload.nostrPubkey)}\n'
+      '📝 Title: ${upload.title}\n'
       '⏱️ Timeout: ${_retryConfig.networkTimeout.inMinutes} minutes',
       name: 'UploadManager',
       category: LogCategory.video,

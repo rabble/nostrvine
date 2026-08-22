@@ -9,6 +9,7 @@ import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const eventRouterBatchFlushThreshold = 50;
@@ -354,7 +355,7 @@ class EventRouter {
       await _db.userProfilesDao.upsertProfile(profile);
 
       Log.verbose(
-        'Extracted profile for ${profile.pubkey} from event ${event.id}',
+        'Extracted profile for ${pubkeyForLogs(profile.pubkey)} from event ${event.id}',
         name: 'EventRouter',
         category: LogCategory.system,
       );

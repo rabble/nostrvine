@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -429,7 +430,8 @@ Future<void> _setZendeskIdentity(
     }
 
     Log.info(
-      'Zendesk identity set for user: ${profile?.bestDisplayName ?? npub}',
+      'Zendesk identity set for user: '
+      '${profile?.bestDisplayName ?? pubkeyForLogs(npub)}',
       name: 'ZendeskIdentitySync',
       category: LogCategory.system,
     );

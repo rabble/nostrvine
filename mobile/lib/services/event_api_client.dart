@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -108,8 +109,8 @@ class EventApiClient {
     // author. Refuse before hitting the network.
     if (token.signedEvent.pubkey != event.pubkey) {
       Log.error(
-        'NIP-98 signer pubkey ${token.signedEvent.pubkey} does not match '
-        'event pubkey ${event.pubkey}; refusing to publish ${event.id}',
+        'NIP-98 signer pubkey ${pubkeyForLogs(token.signedEvent.pubkey)} does not match '
+        'event pubkey ${pubkeyForLogs(event.pubkey)}; refusing to publish ${event.id}',
         name: _logName,
         category: LogCategory.video,
       );
