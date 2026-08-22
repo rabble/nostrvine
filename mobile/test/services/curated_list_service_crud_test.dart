@@ -18,6 +18,7 @@ import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 import '../helpers/curated_list_publish_stubs.dart';
 
@@ -683,7 +684,7 @@ void main() {
         },
       );
 
-      test('merge keeps collaborative lists public', () async {
+      test('merge repairs a legacy private collaborative list', () async {
         SharedPreferences.setMockInitialValues({
           CuratedListService.listsStorageKey: jsonEncode([
             CuratedList(
@@ -725,9 +726,87 @@ void main() {
         await upgraded.fetchUserListsFromRelays();
 
         final merged = upgraded.getListById('collaborative-local')!;
-        expect(merged.isCollaborative, isTrue);
-        expect(merged.isPublic, isTrue);
+        expect(merged.isCollaborative, isFalse);
+        expect(merged.allowedCollaborators, isEmpty);
+        expect(merged.isPublic, isFalse);
       });
+
+      test(
+        'private list wins a collaborative relay conflict and republishes sealed',
+        () async {
+          await LogCaptureService().clearAllLogs();
+          SharedPreferences.setMockInitialValues({
+            CuratedListService.listsStorageKey: jsonEncode([
+              CuratedList(
+                id: 'private-local',
+                name: 'Private Local',
+                videoEventIds: const ['local_video'],
+                createdAt: DateTime(2025),
+                updatedAt: DateTime(2025),
+                isPublic: false,
+                pubkey: _ownerPubkey,
+              ).toJson(),
+            ]),
+          });
+          when(() => mockNostr.subscribe(any())).thenAnswer(
+            (_) => Stream.value(
+              Event.fromJson({
+                'id': 'relay_collaborative_event',
+                'pubkey': _ownerPubkey,
+                'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                'kind': 30005,
+                'tags': [
+                  ['d', 'private-local'],
+                  ['title', 'Collaborative Relay'],
+                  ['e', 'relay_video'],
+                  ['collaborative', 'true'],
+                  ['collaborator', _otherPubkey],
+                ],
+                'content': 'Collaborative Relay',
+                'sig': 'test_signature',
+              }),
+            ),
+          );
+          final upgraded = CuratedListService(
+            nostrService: mockNostr,
+            authService: mockAuth,
+            prefs: await SharedPreferences.getInstance(),
+          );
+
+          await upgraded.fetchUserListsFromRelays();
+
+          final merged = upgraded.getListById('private-local')!;
+          expect(merged.isPublic, isFalse);
+          expect(merged.isCollaborative, isFalse);
+          expect(merged.allowedCollaborators, isEmpty);
+          expect(merged.videoEventIds, ['relay_video', 'local_video']);
+
+          final warning = LogCaptureService()
+              .getRecentLogs()
+              .where(
+                (entry) =>
+                    entry.level == LogLevel.warning &&
+                    entry.message.contains('private-local'),
+              )
+              .single;
+          expect(warning.level, LogLevel.warning);
+
+          final republished =
+              verify(
+                    () => mockNostr.publishEventAwaitOk(captureAny()),
+                  ).captured.last
+                  as Event;
+          expect(
+            republished.tags,
+            isNot(contains(equals(['e', 'local_video']))),
+          );
+          expect(
+            republished.tags,
+            isNot(contains(equals(['e', 'relay_video']))),
+          );
+          expect(_unseal(republished.content), isNotNull);
+        },
+      );
 
       test(
         'backs up null-pubkey local lists as the authenticated owner',
