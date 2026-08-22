@@ -66,6 +66,14 @@ class BadgesState extends Equatable {
   /// Awards the user dismissed on this device, kept so they can be restored.
   final List<BadgeAwardViewData> hidden;
 
+  /// Awards waiting on a decision — offered, not yet accepted or dismissed.
+  ///
+  /// [hidden] is a separate list, so an award is pending purely on not having
+  /// been accepted. Badge awards arrive rarely and a user holds a handful, so
+  /// the filter stays a getter rather than another stored field.
+  List<BadgeAwardViewData> get pending =>
+      awarded.where((award) => !award.isAccepted).toList();
+
   /// Whether [actionStatus] is a finished outcome a reload should clear.
   ///
   /// The in-flight values gate the action buttons, so a pull to refresh

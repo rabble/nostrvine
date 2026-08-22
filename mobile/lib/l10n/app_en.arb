@@ -2652,6 +2652,28 @@
       }
     }
   },
+  "notificationsTabBadges": "{count, plural, =0{Badges} other{Badges ({count})}}",
+  "@notificationsTabBadges": {
+    "description": "Inbox tab listing badge awards that still need an accept or reject, counting those waiting.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsPendingBadges": "{count, plural, =1{A badge is waiting for you to accept it} other{{count} badges are waiting for you to accept them}}",
+  "@notificationsPendingBadges": {
+    "description": "Banner on the All inbox tab pointing at undecided badge awards.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsBadgesEmpty": "No badges waiting. When someone awards you one, it lands here.",
+  "@notificationsBadgesEmpty": {
+    "description": "Empty state for the Badges inbox tab."
+  },
   "notificationsVideoUnavailable": "Video unavailable",
   "feedFailedToLoadVideos": "Failed to load videos",
   "feedRetry": "Retry",

@@ -7115,6 +7115,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{You have {count} invite to share with friends!} other{You have {count} invites to share with friends!}}'**
   String notificationsInvitePlural(int count);
 
+  /// Inbox tab listing badge awards that still need an accept or reject, counting those waiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Badges} other{Badges ({count})}}'**
+  String notificationsTabBadges(int count);
+
+  /// Banner on the All inbox tab pointing at undecided badge awards.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{A badge is waiting for you to accept it} other{{count} badges are waiting for you to accept them}}'**
+  String notificationsPendingBadges(int count);
+
+  /// Empty state for the Badges inbox tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No badges waiting. When someone awards you one, it lands here.'**
+  String get notificationsBadgesEmpty;
+
   /// No description provided for @notificationsVideoUnavailable.
   ///
   /// In en, this message translates to:

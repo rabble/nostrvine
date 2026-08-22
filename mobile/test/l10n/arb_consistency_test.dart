@@ -484,6 +484,11 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // Inbox Badges tab and its All-tab banner. Translation deferred to the next
+  // l10n pass.
+  'notificationsTabBadges',
+  'notificationsPendingBadges',
+  'notificationsBadgesEmpty',
   // #7892: safety-filter explanation on the video detail screen. Translation
   // deferred to the next l10n pass.
   'videoDetailHiddenBySettingsTitle',
