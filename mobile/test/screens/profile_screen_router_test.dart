@@ -272,12 +272,18 @@ void main() {
       final bloc = await pumpProfileAt(tester, 0);
 
       expect(bloc.state.currentVideo?.id, mockVideos[0].id);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets('index 1 in the URL opens the second video', (tester) async {
       final bloc = await pumpProfileAt(tester, 1);
 
       expect(bloc.state.currentVideo?.id, mockVideos[1].id);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
     });
   });
 
