@@ -1,3 +1,4 @@
+import '../nip19/pubkey_for_logs.dart';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -11,7 +12,7 @@ Future<void> signerTest(NostrSigner nostrSigner) async {
     log("pubkey is null, cannot continue test");
     return;
   }
-  log("pubkey $pubkey");
+  log("pubkey ${pubkeyForLogs(pubkey)}");
 
   await Future.delayed(const Duration(seconds: 10));
 

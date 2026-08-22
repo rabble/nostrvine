@@ -1,3 +1,4 @@
+import '../nip19/pubkey_for_logs.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
@@ -124,7 +125,7 @@ class NostrRemoteSigner extends NostrSigner {
         "sign_event,get_relays,get_public_key,nip04_encrypt,nip04_decrypt,nip44_encrypt,nip44_decrypt",
       ]);
       log(
-        '[NIP46] connect: sending connect request id=${request.id} to remoteSignerPubkey=${info.remoteSignerPubkey}',
+        '[NIP46] connect: sending connect request id=${request.id} to remoteSignerPubkey=${pubkeyForLogs(info.remoteSignerPubkey)}',
       );
       var result = await sendAndWaitForResult(request, timeout: 120);
       log('[NIP46] connect: result=$result');
@@ -149,7 +150,7 @@ class NostrRemoteSigner extends NostrSigner {
         final subscriptionId = json[1];
         final event = Event.fromJson(json[2]);
         log(
-          '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${event.pubkey}, createdAt=${event.createdAt}',
+          '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${pubkeyForLogs(event.pubkey)}, createdAt=${event.createdAt}',
         );
         if (event.kind == EventKind.nostrRemoteSigning) {
           var response = await NostrRemoteResponse.decrypt(
@@ -474,7 +475,7 @@ class NostrRemoteSigner extends NostrSigner {
 
     var senderPubkey = await localNostrSigner.getPublicKey();
     log(
-      '[NIP46] sendAndWaitForResult: method=${request.method}, senderPubkey=$senderPubkey',
+      '[NIP46] sendAndWaitForResult: method=${request.method}, senderPubkey=${pubkeyForLogs(senderPubkey)}',
     );
     var content = await request.encrypt(
       localNostrSigner,
