@@ -184,6 +184,10 @@ void main() {
     environment: AppEnvironment.test,
     configuredPushServicePubkey: pushServicePubkey,
   );
+  const stagingEnvironment = _ConfiguredEnvironmentConfig(
+    environment: AppEnvironment.staging,
+    configuredPushServicePubkey: pushServicePubkey,
+  );
 
   setUpAll(() {
     registerFallbackValue(const NotificationPreferences());
@@ -1577,11 +1581,11 @@ void main() {
         when(
           () => cleanupClient.publishEventAwaitOk(
             event,
-            targetRelays: [pushEnvironment.relayUrl],
+            targetRelays: [stagingEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
           ),
         ).thenAnswer(
-          (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
+          (_) async => _acceptedOutcome(event, stagingEnvironment.relayUrl),
         );
         final initializeCompleter = Completer<void>();
         when(cleanupClient.initialize).thenAnswer(
@@ -1590,6 +1594,9 @@ void main() {
         // ignore: unnecessary_lambdas
         when(() => cleanupClient.dispose()).thenAnswer((_) async {});
 
+        var currentEnvironment = pushEnvironment;
+        EnvironmentConfig? cleanupEnvironment;
+        Object? cleanupStatisticsService;
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
         );
@@ -1603,17 +1610,31 @@ void main() {
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
-            currentEnvironmentProvider.overrideWith((_) => pushEnvironment),
+            currentEnvironmentProvider.overrideWith((_) => currentEnvironment),
             nostrSessionProvider.overrideWith(() => nostrSession),
             nostrClientFactoryProvider.overrideWithValue(
-              ({dbClient, environmentConfig, signer, statisticsService}) =>
-                  cleanupClient,
+              ({dbClient, environmentConfig, signer, statisticsService}) {
+                cleanupEnvironment = environmentConfig;
+                cleanupStatisticsService = statisticsService;
+                return cleanupClient;
+              },
             ),
           ],
         );
         final coordinator = container.read(pushNotificationSyncProvider)!;
 
         when(() => nostrClient.publicKey).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        currentEnvironment = stagingEnvironment;
+        container.invalidate(currentEnvironmentProvider);
         nostrSession.setReadiness(
           NostrSessionReadiness.nostrReady(
             pubkey: pubkeyA,
@@ -1633,7 +1654,7 @@ void main() {
         verifyNever(
           () => cleanupClient.publishEventAwaitOk(
             event,
-            targetRelays: [pushEnvironment.relayUrl],
+            targetRelays: [stagingEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
           ),
         );
@@ -1645,6 +1666,8 @@ void main() {
 
         verify(() => signer.signEvent(any())).called(1);
         verify(cleanupClient.initialize).called(1);
+        expect(cleanupEnvironment, same(stagingEnvironment));
+        expect(cleanupStatisticsService, isNull);
 
         initializeCompleter.complete();
         await teardownFuture;
@@ -1652,7 +1675,7 @@ void main() {
         verify(
           () => cleanupClient.publishEventAwaitOk(
             event,
-            targetRelays: [pushEnvironment.relayUrl],
+            targetRelays: [stagingEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
           ),
         ).called(1);

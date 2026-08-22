@@ -1,8 +1,6 @@
 // ABOUTME: Orchestrates an in-place account switch — build a container, sign it
 // ABOUTME: in as the target account, then swap; roll back on failure.
 
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';

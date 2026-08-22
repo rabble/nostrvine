@@ -10,7 +10,6 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/services/app_badge_service.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
@@ -252,8 +251,6 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   ref.watch(notificationPreferencesDirtySyncBridgeProvider);
   final nostrClientFactory = ref.read(nostrClientFactoryProvider);
-  final relayStatisticsService = ref.read(relayStatisticsServiceProvider);
-  final environmentConfig = ref.read(currentEnvironmentProvider);
   final dbClient = ref.read(appDbClientProvider);
 
   final coordinator = PushNotificationSessionCoordinator(
@@ -261,10 +258,10 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
     firebaseMessaging: ref.read(firebaseMessagingProvider),
     readReadiness: () => ref.read(nostrSessionProvider),
     readPushService: () => ref.read(pushNotificationServiceProvider),
-    createCleanupClient: (identity) {
-      return nostrClientFactory(
+    readCleanupClientFactory: () {
+      final environmentConfig = ref.read(currentEnvironmentProvider);
+      return (identity) => nostrClientFactory(
         signer: identity,
-        statisticsService: relayStatisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
       );
