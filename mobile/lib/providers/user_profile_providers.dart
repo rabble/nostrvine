@@ -122,6 +122,18 @@ Future<Map<String, UserProfile>> blockedUserProfiles(
   return profiles;
 }
 
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+@riverpod
+Stream<UserProfile?> blockedUserProfile(Ref ref, String pubkey) {
+  final repo = ref.watch(profileReadRepositoryProvider);
+  if (repo == null) return Stream.value(null);
+
+  return repo.watchProfile(pubkey: pubkey);
+}
+
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)

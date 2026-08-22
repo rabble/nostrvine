@@ -264,6 +264,106 @@ final class BlockedUserProfilesFamily extends $Family
   String toString() => r'blockedUserProfilesProvider';
 }
 
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+
+@ProviderFor(blockedUserProfile)
+final blockedUserProfileProvider = BlockedUserProfileFamily._();
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+
+final class BlockedUserProfileProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<UserProfile?>,
+          UserProfile?,
+          Stream<UserProfile?>
+        >
+    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
+  /// Watches a blocked account's cached profile without starting another fetch.
+  ///
+  /// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+  /// keeps each tile reactive to that hydration and later profile updates.
+  BlockedUserProfileProvider._({
+    required BlockedUserProfileFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'blockedUserProfileProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$blockedUserProfileHash();
+
+  @override
+  String toString() {
+    return r'blockedUserProfileProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<UserProfile?> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<UserProfile?> create(Ref ref) {
+    final argument = this.argument as String;
+    return blockedUserProfile(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BlockedUserProfileProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$blockedUserProfileHash() =>
+    r'939f57fd466b49999d7e73e97937c0660e1e1d77';
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+
+final class BlockedUserProfileFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
+  BlockedUserProfileFamily._()
+    : super(
+        retry: null,
+        name: r'blockedUserProfileProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Watches a blocked account's cached profile without starting another fetch.
+  ///
+  /// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+  /// keeps each tile reactive to that hydration and later profile updates.
+
+  BlockedUserProfileProvider call(String pubkey) =>
+      BlockedUserProfileProvider._(argument: pubkey, from: this);
+
+  @override
+  String toString() => r'blockedUserProfileProvider';
+}
+
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
 /// Use this when you need a single read (e.g., building a share sheet)

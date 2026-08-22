@@ -435,13 +435,12 @@ class _BlockedUsersSection extends ConsumerWidget {
         ),
       );
     }
-    final profiles = ref.watch(blockedUserProfilesProvider(blockedUsers)).value;
+    ref.watch(blockedUserProfilesProvider(blockedUsers));
     return Column(
       children: blockedUsers
           .map(
             (pubkey) => _BlockedUserTile(
               pubkey: pubkey,
-              profile: profiles?[pubkey],
               onUnblock: () => _unblockUser(context, pubkey),
             ),
           )
@@ -464,20 +463,18 @@ class _BlockedUsersSection extends ConsumerWidget {
 }
 
 /// Tile widget for displaying a blocked user with unblock option.
-class _BlockedUserTile extends StatelessWidget {
+class _BlockedUserTile extends ConsumerWidget {
   const _BlockedUserTile({
     required this.pubkey,
-    required this.profile,
     required this.onUnblock,
   });
 
   final String pubkey;
-  final UserProfile? profile;
   final VoidCallback onUnblock;
 
   @override
-  Widget build(BuildContext context) {
-    final profile = this.profile;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(blockedUserProfileProvider(pubkey)).value;
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
     // No relationship line here: "You follow" under an account you have

@@ -205,6 +205,9 @@ void main() {
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(profiles[pubkey]),
           ),
+          blockedUserProfileProvider.overrideWith(
+            (ref, pubkey) => Stream.value(profiles[pubkey]),
+          ),
           blockedUserProfilesProvider.overrideWith(
             (ref, pubkeys) async => {
               for (final pubkey in pubkeys) pubkey: ?profiles[pubkey],

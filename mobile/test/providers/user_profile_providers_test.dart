@@ -278,6 +278,45 @@ void main() {
     });
   });
 
+  group('blockedUserProfileProvider', () {
+    test('streams cache updates without starting a per-user fetch', () async {
+      final profileRepository = _MockProfileRepository();
+      final updates = StreamController<UserProfile?>();
+      addTearDown(updates.close);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => updates.stream);
+      final container = ProviderContainer(
+        overrides: [
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final emitted = <UserProfile?>[];
+      final subscription = container.listen(
+        blockedUserProfileProvider(pubkey),
+        (_, next) {
+          if (next.hasValue) emitted.add(next.value);
+        },
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      final cachedProfile = _profile(pubkey, name: 'updated');
+
+      updates.add(cachedProfile);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emitted, [cachedProfile]);
+      verify(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).called(1);
+      verifyNever(
+        () => profileRepository.fetchFreshProfile(pubkey: any(named: 'pubkey')),
+      );
+    });
+  });
+
   group('fetchUserProfileProvider', () {
     late _MockProfileRepository profileRepository;
     late ProviderContainer container;
