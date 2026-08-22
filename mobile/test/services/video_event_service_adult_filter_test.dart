@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -42,6 +43,7 @@ void main() {
     mockNostrService = MockNostrService();
     mockSubscriptionManager = MockSubscriptionManager();
     mockContentFilterService = MockContentFilterService();
+    when(() => mockNostrService.publicKey).thenReturn('e' * 64);
 
     videoEventService = VideoEventService(
       mockNostrService,
@@ -201,7 +203,7 @@ void main() {
       'filterVideoList keeps sexual-content videos when user preference allows sexual content',
       () {
         when(
-          () => mockContentFilterService.getPreferenceForLabels(any()),
+          () => mockContentFilterService.getPreference(ContentLabel.sexual),
         ).thenReturn(ContentFilterPreference.show);
         videoEventService.setContentFilterService(mockContentFilterService);
 
@@ -216,9 +218,6 @@ void main() {
     test(
       'filterVideoList keeps videos with only unknown moderation labels',
       () {
-        when(
-          () => mockContentFilterService.getPreferenceForLabels(any()),
-        ).thenReturn(ContentFilterPreference.show);
         videoEventService.setContentFilterService(mockContentFilterService);
 
         final video = _buildVideo(
@@ -236,7 +235,7 @@ void main() {
       'filterVideoList keeps videos with known moderation labels when preference allows them',
       () {
         when(
-          () => mockContentFilterService.getPreferenceForLabels(any()),
+          () => mockContentFilterService.getPreference(ContentLabel.nudity),
         ).thenReturn(ContentFilterPreference.show);
         videoEventService.setContentFilterService(mockContentFilterService);
 
@@ -255,7 +254,7 @@ void main() {
       'filterVideoList hides videos with known hide labels alongside unknown labels',
       () {
         when(
-          () => mockContentFilterService.getPreferenceForLabels(any()),
+          () => mockContentFilterService.getPreference(ContentLabel.nudity),
         ).thenReturn(ContentFilterPreference.hide);
         videoEventService.setContentFilterService(mockContentFilterService);
 
@@ -268,9 +267,7 @@ void main() {
 
         expect(filtered, isEmpty);
         verify(
-          () => mockContentFilterService.getPreferenceForLabels(
-            ['nudity', 'some-new-server-label'],
-          ),
+          () => mockContentFilterService.getPreference(ContentLabel.nudity),
         ).called(greaterThanOrEqualTo(1));
       },
     );
