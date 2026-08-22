@@ -1,6 +1,7 @@
 # Profile Pinning and Ordering Design
 
-**Date:** 2026-08-23  
+**Date:** 2026-08-23
+
 **Status:** Approved UX direction; awaiting written-spec review
 
 ## Goal
