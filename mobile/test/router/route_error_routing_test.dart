@@ -32,31 +32,35 @@ void main() {
     return mockAuth;
   }
 
-  testWidgets('errorBuilder shows RouteErrorScreen for unknown location', (
-    tester,
-  ) async {
-    final strings = AppLocalizationsEn();
-    final container = ProviderContainer(
-      overrides: [
-        authServiceProvider.overrideWithValue(authenticatedAuth()),
-        currentMinorAccountReviewStatusProvider.overrideWith(
-          (ref) async => MinorAccountReviewStatus.active(),
-        ),
-        currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
-      ],
-    );
-    addTearDown(container.dispose);
-    await container.read(currentMinorAccountReviewStatusProvider.future);
+  group(RouteErrorScreen, () {
+    testWidgets('errorBuilder shows RouteErrorScreen for unknown location', (
+      tester,
+    ) async {
+      final strings = AppLocalizationsEn();
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authenticatedAuth()),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
 
-    await _pumpRouter(tester, container);
+      await _pumpRouter(tester, container);
 
-    container
-        .read(goRouterProvider)
-        .go('/__route_error_smoke_not_in_route_table__');
-    await tester.pumpAndSettle();
+      container
+          .read(goRouterProvider)
+          .go('/__route_error_smoke_not_in_route_table__');
+      await tester.pumpAndSettle();
 
-    expect(find.byType(RouteErrorScreen), findsOneWidget);
-    expect(find.text(strings.routeUnknownPath), findsOneWidget);
+      expect(find.byType(RouteErrorScreen), findsOneWidget);
+      expect(find.text(strings.routeUnknownPath), findsOneWidget);
+    });
   });
 
   // The pooled fullscreen route's no-args redirect is covered at the route

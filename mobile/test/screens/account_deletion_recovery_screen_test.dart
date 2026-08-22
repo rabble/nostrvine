@@ -62,214 +62,219 @@ void main() {
     when(cubit.completeLocalCleanup).thenAnswer((_) async {});
   });
 
-  testWidgets('recoverable username offers only restore', (tester) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
+  group('renders and navigation', () {
+    testWidgets('recoverable username offers only restore', (tester) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.restorable,
+          attempt: _recoverable,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.textContaining('reserved for you until'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
+      );
+
+      verify(cubit.cancel).called(1);
+      expect(
+        find.widgetWithText(DivineButton, l10n.accountDeletionCancelAttempt),
+        findsNothing,
+      );
+    });
+
+    testWidgets('preparing attempt without username offers cancellation', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.restorable,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.preparing,
+          ),
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionCancelAttemptBody), findsOneWidget);
+      expect(
+        find.widgetWithText(DivineButton, l10n.accountDeletionCancelAttempt),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('cancelling attempt has no conflicting restore action', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.cancelInFlight,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.preparing,
+            operation: AccountDeletionAttemptOperation.cancelling,
+            username: 'alice',
+          ),
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionCancellingBody), findsOneWidget);
+      expect(
+        find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
+        findsNothing,
+      );
+    });
+
+    testWidgets('processing remains non-cancellable', (tester) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.processing,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.processing,
+          ),
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
+      expect(
+        find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
+        findsNothing,
+      );
+    });
+
+    testWidgets('cleanup failures distinguish keychain from local data', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.cleanupFailed,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.completed,
+          ),
+          failure: AccountDeletionRecoveryFailure.keychainCleanup,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.deleteAccountKeyDeletionWarning), findsOneWidget);
+      expect(
+        find.text(l10n.deleteAccountLocalDataDeletionFailed),
+        findsNothing,
+      );
+    });
+
+    testWidgets('terminal failure offers support and sign out', (tester) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.terminalFailure,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.terminalFailure,
+            failureMessage: 'Server English must not be shown.',
+          ),
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.textContaining('Server English'), findsNothing);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+      );
+      verify(cubit.signOut).called(1);
+    });
+
+    testWidgets('fail-closed load error keeps retry and sign out reachable', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.loadFailed,
+          failure: AccountDeletionRecoveryFailure.statusLookup,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.widgetWithText(DivineButton, l10n.commonRetry),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'sign-out failure offers one sign-out retry with generic copy',
+      (
+        tester,
+      ) async {
+        when(() => cubit.state).thenReturn(
+          const AccountDeletionRecoveryState(
+            status: AccountDeletionRecoveryStatus.signOutFailed,
+          ),
+        );
+        await tester.pumpWidget(_app(cubit));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.authUnexpectedError), findsOneWidget);
+        expect(
+          find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(DivineButton, l10n.commonRetry),
+          findsNothing,
+        );
+        await tester.tap(
+          find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+        );
+        verify(cubit.signOut).called(1);
+      },
+    );
+
+    testWidgets('fail-closed loading keeps sign out reachable', (tester) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.loading,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+      );
+      verify(cubit.signOut).called(1);
+    });
+
+    testWidgets('resolved state returns to the feed', (tester) async {
+      const initial = AccountDeletionRecoveryState(
         status: AccountDeletionRecoveryStatus.restorable,
         attempt: _recoverable,
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
+      );
+      const resolved = AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.resolved,
+      );
+      when(() => cubit.state).thenReturn(initial);
+      await tester.pumpWidget(_app(cubit, states: Stream.value(resolved)));
+      await tester.pumpAndSettle();
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.textContaining('reserved for you until'), findsOneWidget);
-    await tester.tap(
-      find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
-    );
-
-    verify(cubit.cancel).called(1);
-    expect(
-      find.widgetWithText(DivineButton, l10n.accountDeletionCancelAttempt),
-      findsNothing,
-    );
-  });
-
-  testWidgets('preparing attempt without username offers cancellation', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.restorable,
-        attempt: AccountDeletionAttempt(
-          id: 'attempt-id',
-          status: AccountDeletionAttemptStatus.preparing,
-        ),
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.accountDeletionCancelAttemptBody), findsOneWidget);
-    expect(
-      find.widgetWithText(DivineButton, l10n.accountDeletionCancelAttempt),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('cancelling attempt has no conflicting restore action', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.cancelInFlight,
-        attempt: AccountDeletionAttempt(
-          id: 'attempt-id',
-          status: AccountDeletionAttemptStatus.preparing,
-          operation: AccountDeletionAttemptOperation.cancelling,
-          username: 'alice',
-        ),
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.accountDeletionCancellingBody), findsOneWidget);
-    expect(
-      find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
-      findsNothing,
-    );
-  });
-
-  testWidgets('processing remains non-cancellable', (tester) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.processing,
-        attempt: AccountDeletionAttempt(
-          id: 'attempt-id',
-          status: AccountDeletionAttemptStatus.processing,
-        ),
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.accountDeletionFinishingBody), findsOneWidget);
-    expect(
-      find.widgetWithText(DivineButton, l10n.accountDeletionRestoreUsername),
-      findsNothing,
-    );
-  });
-
-  testWidgets('cleanup failures distinguish keychain from local data', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.cleanupFailed,
-        attempt: AccountDeletionAttempt(
-          id: 'attempt-id',
-          status: AccountDeletionAttemptStatus.completed,
-        ),
-        failure: AccountDeletionRecoveryFailure.keychainCleanup,
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.deleteAccountKeyDeletionWarning), findsOneWidget);
-    expect(
-      find.text(l10n.deleteAccountLocalDataDeletionFailed),
-      findsNothing,
-    );
-  });
-
-  testWidgets('terminal failure offers support and sign out', (tester) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.terminalFailure,
-        attempt: AccountDeletionAttempt(
-          id: 'attempt-id',
-          status: AccountDeletionAttemptStatus.terminalFailure,
-          failureMessage: 'Server English must not be shown.',
-        ),
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.textContaining('Server English'), findsNothing);
-    await tester.tap(
-      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
-    );
-    verify(cubit.signOut).called(1);
-  });
-
-  testWidgets('fail-closed load error keeps retry and sign out reachable', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.loadFailed,
-        failure: AccountDeletionRecoveryFailure.statusLookup,
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(
-      find.widgetWithText(DivineButton, l10n.commonRetry),
-      findsOneWidget,
-    );
-    expect(
-      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('sign-out failure offers one sign-out retry with generic copy', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.signOutFailed,
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.authUnexpectedError), findsOneWidget);
-    expect(
-      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
-      findsOneWidget,
-    );
-    expect(
-      find.widgetWithText(DivineButton, l10n.commonRetry),
-      findsNothing,
-    );
-    await tester.tap(
-      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
-    );
-    verify(cubit.signOut).called(1);
-  });
-
-  testWidgets('fail-closed loading keeps sign out reachable', (tester) async {
-    when(() => cubit.state).thenReturn(
-      const AccountDeletionRecoveryState(
-        status: AccountDeletionRecoveryStatus.loading,
-      ),
-    );
-    await tester.pumpWidget(_app(cubit));
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    await tester.tap(
-      find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
-    );
-    verify(cubit.signOut).called(1);
-  });
-
-  testWidgets('resolved state returns to the feed', (tester) async {
-    const initial = AccountDeletionRecoveryState(
-      status: AccountDeletionRecoveryStatus.restorable,
-      attempt: _recoverable,
-    );
-    const resolved = AccountDeletionRecoveryState(
-      status: AccountDeletionRecoveryStatus.resolved,
-    );
-    when(() => cubit.state).thenReturn(initial);
-    await tester.pumpWidget(_app(cubit, states: Stream.value(resolved)));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+    });
   });
 }

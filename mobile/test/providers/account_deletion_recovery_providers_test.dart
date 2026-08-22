@@ -33,37 +33,44 @@ class _TestNostrSession extends NostrSession {
 }
 
 void main() {
-  test('lookup stays loading until the active client is ready', () async {
-    final repository = _MockDeletionRepository();
-    when(repository.fetchCurrent).thenAnswer((_) async => null);
-    final container = ProviderContainer(
-      overrides: [
-        currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-        nostrSessionProvider.overrideWith(_TestNostrSession.new),
-        accountDeletionRecoveryRepositoryProvider.overrideWithValue(repository),
-      ],
-    );
-    addTearDown(container.dispose);
-    final subscription = container.listen(
-      currentAccountDeletionAttemptProvider,
-      (_, _) {},
-      fireImmediately: true,
-    );
-    addTearDown(subscription.close);
+  group('currentAccountDeletionAttemptProvider', () {
+    test('lookup stays loading until the active client is ready', () async {
+      final repository = _MockDeletionRepository();
+      when(repository.fetchCurrent).thenAnswer((_) async => null);
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          nostrSessionProvider.overrideWith(_TestNostrSession.new),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        currentAccountDeletionAttemptProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
 
-    await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(
-      container.read(currentAccountDeletionAttemptProvider).isLoading,
-      true,
-    );
-    verifyNever(repository.fetchCurrent);
+      expect(
+        container.read(currentAccountDeletionAttemptProvider).isLoading,
+        true,
+      );
+      verifyNever(repository.fetchCurrent);
 
-    (container.read(nostrSessionProvider.notifier) as _TestNostrSession)
-        .markReady();
-    await container.read(currentAccountDeletionAttemptProvider.future);
+      (container.read(nostrSessionProvider.notifier) as _TestNostrSession)
+          .markReady();
+      await container.read(currentAccountDeletionAttemptProvider.future);
 
-    expect(container.read(currentAccountDeletionAttemptProvider).value, isNull);
-    verify(repository.fetchCurrent).called(1);
+      expect(
+        container.read(currentAccountDeletionAttemptProvider).value,
+        isNull,
+      );
+      verify(repository.fetchCurrent).called(1);
+    });
   });
 }
