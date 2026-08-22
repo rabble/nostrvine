@@ -51,40 +51,42 @@ void main() {
     expect(notificationStorage, isEmpty);
   });
 
-  test('registration dirty marker is durable and generation-safe', () async {
-    const pubkey =
-        '1111111111111111111111111111111111111111111111111111111111111111';
-    final dirtyBox = _MockHiveBox();
-    final dirtyStorage = <dynamic, dynamic>{};
-    final store = HiveNotificationPreferencesStore(
-      openBox: () async => _MockHiveBox(),
-      openDirtyBox: () async => dirtyBox,
-    );
-    when(() => dirtyBox.put(any(), any())).thenAnswer((invocation) {
-      dirtyStorage[invocation.positionalArguments[0]] =
-          invocation.positionalArguments[1];
-      return Future<void>.value();
+  group('registration dirty marker', () {
+    test('is durable and generation-safe', () async {
+      const pubkey =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      final dirtyBox = _MockHiveBox();
+      final dirtyStorage = <dynamic, dynamic>{};
+      final store = HiveNotificationPreferencesStore(
+        openBox: () async => _MockHiveBox(),
+        openDirtyBox: () async => dirtyBox,
+      );
+      when(() => dirtyBox.put(any(), any())).thenAnswer((invocation) {
+        dirtyStorage[invocation.positionalArguments[0]] =
+            invocation.positionalArguments[1];
+        return Future<void>.value();
+      });
+      when(() => dirtyBox.get(any())).thenAnswer(
+        (invocation) => dirtyStorage[invocation.positionalArguments[0]],
+      );
+      when(() => dirtyBox.delete(any())).thenAnswer((invocation) {
+        dirtyStorage.remove(invocation.positionalArguments[0]);
+        return Future<void>.value();
+      });
+
+      final firstGeneration = await store.markRegistrationDirty(pubkey);
+      final secondGeneration = await store.markRegistrationDirty(pubkey);
+      await store.clearRegistrationDirtyIfMatches(pubkey, firstGeneration);
+
+      expect(secondGeneration, firstGeneration + 1);
+      expect(
+        await store.loadRegistrationDirtyGeneration(pubkey),
+        secondGeneration,
+      );
+
+      await store.clearRegistrationDirtyIfMatches(pubkey, secondGeneration);
+      expect(await store.loadRegistrationDirtyGeneration(pubkey), isNull);
     });
-    when(() => dirtyBox.get(any())).thenAnswer(
-      (invocation) => dirtyStorage[invocation.positionalArguments[0]],
-    );
-    when(() => dirtyBox.delete(any())).thenAnswer((invocation) {
-      dirtyStorage.remove(invocation.positionalArguments[0]);
-      return Future<void>.value();
-    });
-
-    final firstGeneration = await store.markRegistrationDirty(pubkey);
-    final secondGeneration = await store.markRegistrationDirty(pubkey);
-    await store.clearRegistrationDirtyIfMatches(pubkey, firstGeneration);
-
-    expect(secondGeneration, firstGeneration + 1);
-    expect(
-      await store.loadRegistrationDirtyGeneration(pubkey),
-      secondGeneration,
-    );
-
-    await store.clearRegistrationDirtyIfMatches(pubkey, secondGeneration);
-    expect(await store.loadRegistrationDirtyGeneration(pubkey), isNull);
   });
 
   test(
