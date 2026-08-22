@@ -4545,6 +4545,53 @@ void main() {
       );
 
       test(
+        'refetches stats after the in-memory cache TTL expires',
+        () async {
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+          var now = DateTime.utc(2026, 8, 22, 12);
+          var followerCount = 100;
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+          ).thenAnswer(
+            (_) async => SocialCounts(
+              pubkey: testTargetPubkey,
+              followerCount: followerCount,
+              followingCount: 50,
+            ),
+          );
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            indexerRelayUrls: const [],
+            now: () => now,
+          );
+
+          final first = await repository.getFollowerStats(testTargetPubkey);
+          followerCount = 101;
+          now = now.add(const Duration(seconds: 29));
+          final beforeExpiry = await repository.getFollowerStats(
+            testTargetPubkey,
+          );
+          now = now.add(const Duration(seconds: 2));
+          final afterExpiry = await repository.getFollowerStats(
+            testTargetPubkey,
+          );
+
+          expect(first.followers, 100);
+          expect(beforeExpiry.followers, 100);
+          expect(afterExpiry.followers, 101);
+          verify(
+            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+          ).called(2);
+        },
+      );
+
+      test(
         'falls back to WebSocket when REST API is unavailable',
         () async {
           // No funnelcake client, use nostr client subscribe for
@@ -5277,6 +5324,47 @@ void main() {
     });
 
     group('getFollowerStats - persistence', () {
+      test(
+        'does not persist raw stats for the signed-in user',
+        () async {
+          final mockStatsDao = _MockProfileStatsDao();
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getSocialCounts(testCurrentUserPubkey),
+          ).thenAnswer(
+            (_) async => const SocialCounts(
+              pubkey: testCurrentUserPubkey,
+              followerCount: 200,
+              followingCount: 100,
+            ),
+          );
+          when(
+            () => mockStatsDao.getStatsRaw(testCurrentUserPubkey),
+          ).thenAnswer((_) async => null);
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockStatsDao,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.getFollowerStats(testCurrentUserPubkey);
+
+          verifyNever(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+            ),
+          );
+        },
+      );
+
       test(
         'persists when stats differ from persisted values',
         () async {

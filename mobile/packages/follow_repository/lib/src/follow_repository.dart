@@ -25,6 +25,11 @@ import 'package:unified_logger/unified_logger.dart';
 /// API does not expose event timestamps.
 typedef _FollowerRef = ({String pubkey, int? followedAt});
 
+typedef _CachedFollowerStats = ({
+  FollowerStats stats,
+  DateTime cachedAt,
+});
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -48,6 +53,7 @@ class FollowRepository {
     QueryContactListCallback? queryContactList,
     RelayFactory? relayFactory,
     BlockedPubkeysCallback? blockedPubkeys,
+    DateTime Function()? now,
   }) : _nostrClient = nostrClient,
        _blockedPubkeys = blockedPubkeys,
        _isCacheInitialized = isCacheInitialized,
@@ -59,7 +65,8 @@ class FollowRepository {
        _queueOfflineAction = queueOfflineAction,
        _indexerRelayUrls = indexerRelayUrls,
        _queryContactList = queryContactList ?? _defaultQueryContactList,
-       _relayFactory = relayFactory ?? _defaultRelayFactory;
+       _relayFactory = relayFactory ?? _defaultRelayFactory,
+       _now = now ?? DateTime.now;
 
   final NostrClient _nostrClient;
   final IsCacheInitializedCallback? _isCacheInitialized;
@@ -90,6 +97,9 @@ class FollowRepository {
   ///
   /// Null leaves the published contact list unfiltered.
   final BlockedPubkeysCallback? _blockedPubkeys;
+
+  /// Clock used by expiring caches and persisted-stat stabilization.
+  final DateTime Function() _now;
 
   /// Default relay factory — creates a real [RelayBase].
   static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
@@ -508,6 +518,7 @@ class FollowRepository {
       fetch: fetchMyFollowersSnapshot,
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
     );
   }
 
@@ -536,6 +547,7 @@ class FollowRepository {
       fetch: () => getOthersFollowing(_nostrClient.publicKey),
       fromJson: FollowingSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
     );
   }
 
@@ -743,8 +755,8 @@ class FollowRepository {
   /// to dominate individual follow/unfollow events.
   static const _hysteresisMinimumCount = 20;
 
-  /// In-memory cache for follower/following counts.
-  final Map<String, FollowerStats> _followerStatsCache = {};
+  /// Short-lived in-memory cache for follower/following counts.
+  final Map<String, _CachedFollowerStats> _followerStatsCache = {};
 
   /// Load persisted follower stats from the Drift database.
   ///
@@ -790,7 +802,7 @@ class FollowRepository {
     if (persistedCount < _hysteresisMinimumCount) return freshCount;
 
     // Persisted count is stale → accept the fresh count
-    if (DateTime.now().difference(persistedTimestamp) > _staleDuration) {
+    if (_now().difference(persistedTimestamp) > _staleDuration) {
       return freshCount;
     }
 
@@ -859,14 +871,16 @@ class FollowRepository {
     try {
       // Check in-memory cache first
       final cachedStats = _followerStatsCache[pubkey];
-      if (cachedStats != null) {
+      if (cachedStats != null &&
+          _now().difference(cachedStats.cachedAt) < _profileListCacheTtl) {
         Log.debug(
-          'Using cached follower stats: $cachedStats',
+          'Using cached follower stats: ${cachedStats.stats}',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
-        return cachedStats;
+        return cachedStats.stats;
       }
+      _followerStatsCache.remove(pubkey);
 
       // Fetch from network
       final freshStats = await _fetchFollowerStats(pubkey);
@@ -881,7 +895,7 @@ class FollowRepository {
             followers: persisted.followers,
             following: persisted.following,
           );
-          _followerStatsCache[pubkey] = fallback;
+          _cacheFollowerStats(pubkey, fallback);
           return fallback;
         }
         return freshStats;
@@ -893,14 +907,15 @@ class FollowRepository {
       final stats = _stabilizeStats(pubkey, freshStats, persisted: persisted);
 
       // Cache in memory.
-      _followerStatsCache[pubkey] = stats;
+      _cacheFollowerStats(pubkey, stats);
 
       // Only re-persist when the value actually changed. When hysteresis
       // keeps the old persisted count, skipping the write preserves the
       // original timestamp so the stale check can eventually trigger.
-      if (persisted == null ||
-          stats.followers != persisted.followers ||
-          stats.following != persisted.following) {
+      if (pubkey != _nostrClient.publicKey &&
+          (persisted == null ||
+              stats.followers != persisted.followers ||
+              stats.following != persisted.following)) {
         await _persistFollowerStats(pubkey, stats);
       }
 
@@ -925,12 +940,16 @@ class FollowRepository {
           followers: persisted.followers,
           following: persisted.following,
         );
-        _followerStatsCache[pubkey] = fallback;
+        _cacheFollowerStats(pubkey, fallback);
         return fallback;
       }
 
       return FollowerStats.zero;
     }
+  }
+
+  void _cacheFollowerStats(String pubkey, FollowerStats stats) {
+    _followerStatsCache[pubkey] = (stats: stats, cachedAt: _now());
   }
 
   /// Fetch follower stats from the network.
