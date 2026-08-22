@@ -438,16 +438,6 @@ for file in $CHANGED_FILES; do
         continue
     fi
 
-    # A *_test.dart under a lib/ directory is library code, not a suite the
-    # runner would pick up — packages/nostr_sdk/lib/signer/signer_test.dart is
-    # a manual signer exercise with no main(). Handing it to `flutter test`
-    # fails to load, so the hook blocks any push that merely touches it.
-    # Same call the ungrouped-test detector already makes; see isTestFile in
-    # mobile/scripts/lib/ungrouped_test_detector.dart.
-    if [[ "$file" == *"/lib/"*"_test.dart" ]]; then
-        continue
-    fi
-
     # If it's already a test file, add it directly
     if [[ "$file" == *"_test.dart" ]]; then
         if [ -f "$REPO_ROOT/$file" ]; then

@@ -38,7 +38,7 @@ String pubkeyForLogs(String? pubkey, {String whenNull = '<null>'}) {
   if (keyIsValid(pubkey)) {
     try {
       return '${Nip19.encodePubKey(pubkey)} ($pubkey)';
-    } on Exception {
+    } on Object {
       return pubkey;
     }
   }
@@ -49,7 +49,7 @@ String pubkeyForLogs(String? pubkey, {String whenNull = '<null>'}) {
       // the day that swallowing is fixed — this function must not throw.
       final hex = Nip19.decode(pubkey);
       if (keyIsValid(hex)) return '$pubkey ($hex)';
-    } on Exception {
+    } on Object {
       return pubkey;
     }
   }

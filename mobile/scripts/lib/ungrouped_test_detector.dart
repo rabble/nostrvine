@@ -168,10 +168,9 @@ List<UngroupedTest> findUngroupedTests(
 
 /// True for a file the Dart test runner would pick up as a suite.
 ///
-/// `*_test.dart` alone is not enough: `packages/nostr_sdk/lib/signer/`
-/// `signer_test.dart` is library code, and `test_driver/integration_test.dart`
-/// is the driver entry point. Both are invisible to the runner, so neither is
-/// held to the grouping rule.
+/// `*_test.dart` alone is not enough: a matching file under `lib/` is library
+/// code, and `test_driver/integration_test.dart` is the driver entry point.
+/// Both are invisible to the runner, so neither is held to the grouping rule.
 ///
 /// Matching is per path SEGMENT, not `contains('/test/')` — a scan rooted at a
 /// relative `test` yields `test/foo_test.dart`, which has no leading slash and

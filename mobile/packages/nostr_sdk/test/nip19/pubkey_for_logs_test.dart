@@ -104,6 +104,8 @@ void main() {
           '',
           ' ',
           '0',
+          hex,
+          npub,
           'npub1invalid',
           'nsec1definitelynotapubkey',
           '////',
