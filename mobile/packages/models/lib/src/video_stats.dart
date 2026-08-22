@@ -625,6 +625,7 @@ class VideoStats {
       authorAvatar: authorAvatar,
       blurhash: blurhash,
       dimensions: dimensions,
+      fileSize: _fileSizeFromEventTags(eventTags),
       originalLikes: originalLikes,
       nostrLikeCount: reactions,
       originalComments: originalComments,
@@ -666,6 +667,21 @@ class VideoStats {
 
   @override
   String toString() => 'VideoStats(id: $id, title: $title)';
+}
+
+int? _fileSizeFromEventTags(List<List<String>> eventTags) {
+  int? fileSize;
+  for (final tag in eventTags) {
+    if (tag.isEmpty) continue;
+    if (tag.first == 'size' && tag.length >= 2) {
+      fileSize = int.tryParse(tag[1]);
+    } else if (tag.first == 'imeta') {
+      parseImetaTag(tag, (key, value) {
+        if (key == 'size') fileSize ??= int.tryParse(value);
+      });
+    }
+  }
+  return fileSize;
 }
 
 List<String> _parseModerationLabels(dynamic value) {

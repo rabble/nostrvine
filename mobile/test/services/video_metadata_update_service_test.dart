@@ -642,6 +642,7 @@ void main() {
                   'imeta',
                   'url https://cdn.example.com/video.mp4',
                   'm video/mp4',
+                  'size 480000',
                 ],
                 ['t', 'first'],
                 ['t', 'second'],
@@ -686,6 +687,10 @@ void main() {
           ]) {
             expect(capturedTags, contains(equals(tag)));
           }
+          expect(
+            capturedTags.singleWhere((tag) => tag.first == 'imeta'),
+            contains('size 480000'),
+          );
         },
       );
     });

@@ -104,9 +104,7 @@ VideoEvent _mergeEnrichmentIntoCurrent(
                 current.textTrackRefs.isNotEmpty
             ? null
             : enriched.textTrackContent),
-    nostrEventTags: current.nostrEventTags.isNotEmpty
-        ? current.nostrEventTags
-        : enriched.nostrEventTags,
+    nostrEventTags: _newerNostrEventTags(current, enriched),
     authorName: current.authorName ?? enriched.authorName,
     authorAvatar: current.authorAvatar ?? enriched.authorAvatar,
     nostrLikeCount: mergeNullableEngagementMax(
@@ -114,4 +112,21 @@ VideoEvent _mergeEnrichmentIntoCurrent(
       enriched.nostrLikeCount,
     ),
   );
+}
+
+List<List<String>> _newerNostrEventTags(
+  VideoEvent current,
+  VideoEvent enriched,
+) {
+  final currentCreatedAt = current.eventCreatedAt;
+  final enrichedCreatedAt = enriched.eventCreatedAt;
+  if (enriched.nostrEventTags.isNotEmpty &&
+      currentCreatedAt != null &&
+      enrichedCreatedAt != null &&
+      enrichedCreatedAt > currentCreatedAt) {
+    return enriched.nostrEventTags;
+  }
+  return current.nostrEventTags.isNotEmpty
+      ? current.nostrEventTags
+      : enriched.nostrEventTags;
 }

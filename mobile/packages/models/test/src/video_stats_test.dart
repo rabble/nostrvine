@@ -177,6 +177,34 @@ void main() {
         );
       });
 
+      test('preserves file size from imeta for metadata editing', () {
+        final video = VideoStats.fromJson(const {
+          'event': {
+            'id': 'event-id',
+            'pubkey': 'event-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'content': 'Description',
+            'tags': [
+              ['d', 'video-1'],
+              [
+                'imeta',
+                'url https://example.com/video.mp4',
+                'size 480000',
+              ],
+            ],
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        }).toVideoEvent();
+
+        expect(video.fileSize, 480000);
+      });
+
       test(
         'parses explicit addressable d tag fields from compact REST JSON',
         () {

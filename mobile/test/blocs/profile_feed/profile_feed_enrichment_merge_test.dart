@@ -14,6 +14,8 @@ VideoEvent _video({
   String? textTrackRef,
   List<String> textTrackRefs = const [],
   String? textTrackContent,
+  int? eventCreatedAt,
+  List<List<String>> nostrEventTags = const [],
 }) {
   return VideoEvent(
     id: id,
@@ -26,6 +28,8 @@ VideoEvent _video({
     textTrackRef: textTrackRef,
     textTrackRefs: textTrackRefs,
     textTrackContent: textTrackContent,
+    eventCreatedAt: eventCreatedAt,
+    nostrEventTags: nostrEventTags,
   );
 }
 
@@ -120,6 +124,66 @@ void main() {
       );
 
       expect(merged, [current]);
+    });
+
+    test('uses raw tags from a strictly newer enriched event', () {
+      final current = _video(
+        id: 'rest',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 100,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'stale'],
+        ],
+      );
+      final enriched = _video(
+        id: 'nostr',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 101,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'current'],
+        ],
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(current)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged.single.nostrEventTags, enriched.nostrEventTags);
+    });
+
+    test('keeps raw tags from a newer current event', () {
+      final current = _video(
+        id: 'nostr-current',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 102,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'current'],
+        ],
+      );
+      final enriched = _video(
+        id: 'stale-enrichment',
+        vineId: 'video-d-tag',
+        eventCreatedAt: 101,
+        nostrEventTags: const [
+          ['d', 'video-d-tag'],
+          ['t', 'stale'],
+        ],
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(current)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged.single.nostrEventTags, current.nostrEventTags);
     });
   });
 }
