@@ -31,50 +31,54 @@ class _RecordingAnalyticsService extends AnalyticsService {
 }
 
 void main() {
-  test('maps route names to the fixed contract surfaces', () {
-    expect(
-      productAnalyticsSurfaceForRoute('search-results-personal-data'),
-      ProductAnalyticsV2Surface.searchResults,
-    );
-    expect(
-      productAnalyticsSurfaceForRoute('other-user-profile'),
-      ProductAnalyticsV2Surface.profile,
-    );
-    expect(
-      productAnalyticsSurfaceForRoute('anything-private-and-new'),
-      ProductAnalyticsV2Surface.unknown,
-    );
+  group('productAnalyticsSurfaceForRoute', () {
+    test('maps route names to the fixed contract surfaces', () {
+      expect(
+        productAnalyticsSurfaceForRoute('search-results-personal-data'),
+        ProductAnalyticsV2Surface.searchResults,
+      );
+      expect(
+        productAnalyticsSurfaceForRoute('other-user-profile'),
+        ProductAnalyticsV2Surface.profile,
+      );
+      expect(
+        productAnalyticsSurfaceForRoute('anything-private-and-new'),
+        ProductAnalyticsV2Surface.unknown,
+      );
+    });
   });
 
-  test('records bounded open and back navigation', () async {
-    final analytics = _RecordingAnalyticsService();
-    final observer = ProductAnalyticsNavigationObserver(
-      analytics: () => analytics,
-    );
-    final feed = MaterialPageRoute<void>(
-      settings: const RouteSettings(name: 'home-feed'),
-      builder: (_) => const SizedBox.shrink(),
-    );
-    final profile = MaterialPageRoute<void>(
-      settings: const RouteSettings(name: 'user-profile/secret-value'),
-      builder: (_) => const SizedBox.shrink(),
-    );
+  group(ProductAnalyticsNavigationObserver, () {
+    test('records bounded open and back navigation', () async {
+      final analytics = _RecordingAnalyticsService();
+      final observer = ProductAnalyticsNavigationObserver(
+        analytics: () => analytics,
+      );
+      final feed = MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'home-feed'),
+        builder: (_) => const SizedBox.shrink(),
+      );
+      final profile = MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'user-profile/secret-value'),
+        builder: (_) => const SizedBox.shrink(),
+      );
 
-    observer.didPush(profile, feed);
-    observer.didPop(profile, feed);
-    await Future<void>.delayed(Duration.zero);
+      observer.didPush(profile, feed);
+      observer.didPop(profile, feed);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(analytics.records, [
-      (
-        from: ProductAnalyticsV2Surface.feed,
-        to: ProductAnalyticsV2Surface.profile,
-        action: ProductAnalyticsV2NavigationAction.open,
-      ),
-      (
-        from: ProductAnalyticsV2Surface.profile,
-        to: ProductAnalyticsV2Surface.feed,
-        action: ProductAnalyticsV2NavigationAction.back,
-      ),
-    ]);
+      expect(analytics.records, [
+        (
+          from: ProductAnalyticsV2Surface.feed,
+          to: ProductAnalyticsV2Surface.profile,
+          action: ProductAnalyticsV2NavigationAction.open,
+        ),
+        (
+          from: ProductAnalyticsV2Surface.profile,
+          to: ProductAnalyticsV2Surface.feed,
+          action: ProductAnalyticsV2NavigationAction.back,
+        ),
+      ]);
+    });
   });
 }

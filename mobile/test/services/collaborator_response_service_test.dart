@@ -51,68 +51,9 @@ void main() {
     );
   });
 
-  test('publishes public collaborator acceptance response', () async {
-    late Event signedEvent;
-    when(
-      () => authService.createAndSignEvent(
-        kind: any(named: 'kind'),
-        content: any(named: 'content'),
-        tags: any(named: 'tags'),
-      ),
-    ).thenAnswer((invocation) async {
-      final tags = invocation.namedArguments[#tags] as List<List<String>>;
-      return signedEvent = Event(
-        collaboratorPubkey,
-        CollaborationEventKinds.collaboratorResponse,
-        tags,
-        '',
-      );
-    });
-    when(
-      () => nostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
-
-    final result = await service.acceptInvite(invite);
-
-    expect(result.success, isTrue);
-    expect(result.eventId, signedEvent.id);
-
-    final verification = verify(
-      () => authService.createAndSignEvent(
-        kind: captureAny(named: 'kind'),
-        content: captureAny(named: 'content'),
-        tags: captureAny(named: 'tags'),
-      ),
-    );
-
-    expect(
-      verification.captured[0],
-      CollaborationEventKinds.collaboratorResponse,
-    );
-    expect(verification.captured[1], '');
-    expect(verification.captured[2], [
-      ['d', videoAddress],
-      ['a', videoAddress, 'wss://relay.divine.video', 'root'],
-      ['p', creatorPubkey],
-      ['role', 'Collaborator'],
-      ['status', 'accepted'],
-    ]);
-    verify(() => nostrClient.publishEvent(signedEvent)).called(1);
-  });
-
-  test(
-    'uses default relay hint for source address when invite has none',
-    () async {
-      late List<List<String>> capturedTags;
-      final inviteWithoutRelay = CollaboratorInvite(
-        messageId: invite.messageId,
-        videoAddress: invite.videoAddress,
-        videoKind: invite.videoKind,
-        creatorPubkey: invite.creatorPubkey,
-        videoDTag: invite.videoDTag,
-        role: invite.role,
-      );
-
+  group('acceptInvite', () {
+    test('publishes public collaborator acceptance response', () async {
+      late Event signedEvent;
       when(
         () => authService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -120,89 +61,150 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer((invocation) async {
-        capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
-        return Event(
+        final tags = invocation.namedArguments[#tags] as List<List<String>>;
+        return signedEvent = Event(
           collaboratorPubkey,
           CollaborationEventKinds.collaboratorResponse,
-          capturedTags,
+          tags,
           '',
         );
       });
-      when(() => nostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.single as Event,
+      when(
+        () => nostrClient.publishEvent(any()),
+      ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
+
+      final result = await service.acceptInvite(invite);
+
+      expect(result.success, isTrue);
+      expect(result.eventId, signedEvent.id);
+
+      final verification = verify(
+        () => authService.createAndSignEvent(
+          kind: captureAny(named: 'kind'),
+          content: captureAny(named: 'content'),
+          tags: captureAny(named: 'tags'),
         ),
       );
 
-      final result = await service.acceptInvite(inviteWithoutRelay);
-
-      expect(result.success, isTrue);
-      expect(capturedTags[1], [
-        'a',
-        videoAddress,
-        'wss://relay.divine.video',
-        'root',
+      expect(
+        verification.captured[0],
+        CollaborationEventKinds.collaboratorResponse,
+      );
+      expect(verification.captured[1], '');
+      expect(verification.captured[2], [
+        ['d', videoAddress],
+        ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+        ['p', creatorPubkey],
+        ['role', 'Collaborator'],
+        ['status', 'accepted'],
       ]);
-    },
-  );
+      verify(() => nostrClient.publishEvent(signedEvent)).called(1);
+    });
 
-  test('returns failure when signing fails', () async {
-    when(
-      () => authService.createAndSignEvent(
-        kind: any(named: 'kind'),
-        content: any(named: 'content'),
-        tags: any(named: 'tags'),
-      ),
-    ).thenAnswer((_) async => null);
+    test(
+      'uses default relay hint for source address when invite has none',
+      () async {
+        late List<List<String>> capturedTags;
+        final inviteWithoutRelay = CollaboratorInvite(
+          messageId: invite.messageId,
+          videoAddress: invite.videoAddress,
+          videoKind: invite.videoKind,
+          creatorPubkey: invite.creatorPubkey,
+          videoDTag: invite.videoDTag,
+          role: invite.role,
+        );
 
-    final result = await service.acceptInvite(invite);
+        when(
+          () => authService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
+          return Event(
+            collaboratorPubkey,
+            CollaborationEventKinds.collaboratorResponse,
+            capturedTags,
+            '',
+          );
+        });
+        when(() => nostrClient.publishEvent(any())).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.single as Event,
+          ),
+        );
 
-    expect(result.success, isFalse);
-    expect(result.error, contains('sign'));
-    verifyNever(() => nostrClient.publishEvent(any()));
-  });
+        final result = await service.acceptInvite(inviteWithoutRelay);
 
-  test('rejects self-acceptance before signing', () async {
-    when(() => authService.currentPublicKeyHex).thenReturn(creatorPubkey);
-
-    final result = await service.acceptInvite(invite);
-
-    expect(result.success, isFalse);
-    expect(result.error, contains('Creators cannot accept'));
-    verifyNever(
-      () => authService.createAndSignEvent(
-        kind: any(named: 'kind'),
-        content: any(named: 'content'),
-        tags: any(named: 'tags'),
-      ),
+        expect(result.success, isTrue);
+        expect(capturedTags[1], [
+          'a',
+          videoAddress,
+          'wss://relay.divine.video',
+          'root',
+        ]);
+      },
     );
-    verifyNever(() => nostrClient.publishEvent(any()));
-  });
 
-  test('rejects self-acceptance case-insensitively before signing', () async {
-    when(() => authService.currentPublicKeyHex).thenReturn(creatorPubkey);
+    test('returns failure when signing fails', () async {
+      when(
+        () => authService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => null);
 
-    final uppercaseInvite = CollaboratorInvite(
-      messageId: invite.messageId,
-      videoAddress: '34236:${creatorPubkey.toUpperCase()}:video-d-tag',
-      videoKind: invite.videoKind,
-      creatorPubkey: creatorPubkey.toUpperCase(),
-      videoDTag: invite.videoDTag,
-      role: invite.role,
-      relayHint: invite.relayHint,
-    );
+      final result = await service.acceptInvite(invite);
 
-    final result = await service.acceptInvite(uppercaseInvite);
+      expect(result.success, isFalse);
+      expect(result.error, contains('sign'));
+      verifyNever(() => nostrClient.publishEvent(any()));
+    });
 
-    expect(result.success, isFalse);
-    expect(result.error, contains('Creators cannot accept'));
-    verifyNever(
-      () => authService.createAndSignEvent(
-        kind: any(named: 'kind'),
-        content: any(named: 'content'),
-        tags: any(named: 'tags'),
-      ),
-    );
-    verifyNever(() => nostrClient.publishEvent(any()));
+    test('rejects self-acceptance before signing', () async {
+      when(() => authService.currentPublicKeyHex).thenReturn(creatorPubkey);
+
+      final result = await service.acceptInvite(invite);
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Creators cannot accept'));
+      verifyNever(
+        () => authService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+      verifyNever(() => nostrClient.publishEvent(any()));
+    });
+
+    test('rejects self-acceptance case-insensitively before signing', () async {
+      when(() => authService.currentPublicKeyHex).thenReturn(creatorPubkey);
+
+      final uppercaseInvite = CollaboratorInvite(
+        messageId: invite.messageId,
+        videoAddress: '34236:${creatorPubkey.toUpperCase()}:video-d-tag',
+        videoKind: invite.videoKind,
+        creatorPubkey: creatorPubkey.toUpperCase(),
+        videoDTag: invite.videoDTag,
+        role: invite.role,
+        relayHint: invite.relayHint,
+      );
+
+      final result = await service.acceptInvite(uppercaseInvite);
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Creators cannot accept'));
+      verifyNever(
+        () => authService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+      verifyNever(() => nostrClient.publishEvent(any()));
+    });
   });
 }

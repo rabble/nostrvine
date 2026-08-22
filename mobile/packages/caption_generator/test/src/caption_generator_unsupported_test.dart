@@ -5,12 +5,14 @@ import 'package:caption_generator/src/caption_generator_unsupported.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('throws $UnsupportedError', () {
-    final generator = CaptionGenerator();
+  group(CaptionGenerator, () {
+    test('throws $UnsupportedError', () {
+      final generator = CaptionGenerator();
 
-    expect(
-      () => generator.generateCaptions(audioPath: '/tmp/audio.wav'),
-      throwsUnsupportedError,
-    );
+      expect(
+        () => generator.generateCaptions(audioPath: '/tmp/audio.wav'),
+        throwsUnsupportedError,
+      );
+    });
   });
 }

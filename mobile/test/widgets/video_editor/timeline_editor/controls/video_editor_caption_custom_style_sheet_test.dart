@@ -59,36 +59,38 @@ void main() {
         l10n.rgbColorSemanticLabel(100, 20, 20),
       );
 
-  testWidgets('custom color swatch exposes RGB semantics', (tester) async {
-    await pumpSheet(tester);
+  group('custom color swatch semantics', () {
+    testWidgets('custom color swatch exposes RGB semantics', (tester) async {
+      await pumpSheet(tester);
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    final semantics = tester.getSemantics(
-      find.bySemanticsLabel(expectedLabel(l10n)),
-    );
-    final data = semantics.getSemanticsData();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final semantics = tester.getSemantics(
+        find.bySemanticsLabel(expectedLabel(l10n)),
+      );
+      final data = semantics.getSemanticsData();
 
-    expect(data.flagsCollection.isButton, isTrue);
-    expect(data.flagsCollection.isSelected, Tristate.isTrue);
-    expect(data.hasAction(SemanticsAction.tap), isTrue);
-  });
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.flagsCollection.isSelected, Tristate.isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+    });
 
-  testWidgets('custom color swatch joins its label the way the locale lists', (
-    tester,
-  ) async {
-    // Japanese lists with '、', so a swatch label rebuilt by hand with a Latin
-    // ', ' would still read correctly in English and wrong here. Pinning ja is
-    // what stops the join from drifting back into Dart.
-    await pumpSheet(tester, locale: const Locale('ja'));
+    testWidgets('custom color swatch joins its label the way the locale lists', (
+      tester,
+    ) async {
+      // Japanese lists with '、', so a swatch label rebuilt by hand with a Latin
+      // ', ' would still read correctly in English and wrong here. Pinning ja is
+      // what stops the join from drifting back into Dart.
+      await pumpSheet(tester, locale: const Locale('ja'));
 
-    final ja = lookupAppLocalizations(const Locale('ja'));
-    expect(expectedLabel(ja), contains('、'));
-    expect(find.bySemanticsLabel(expectedLabel(ja)), findsOneWidget);
-    expect(
-      find.bySemanticsLabel(
-        expectedLabel(lookupAppLocalizations(const Locale('en'))),
-      ),
-      findsNothing,
-    );
+      final ja = lookupAppLocalizations(const Locale('ja'));
+      expect(expectedLabel(ja), contains('、'));
+      expect(find.bySemanticsLabel(expectedLabel(ja)), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          expectedLabel(lookupAppLocalizations(const Locale('en'))),
+        ),
+        findsNothing,
+      );
+    });
   });
 }

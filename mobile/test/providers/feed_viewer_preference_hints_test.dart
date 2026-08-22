@@ -47,32 +47,103 @@ class _TestGeoBlockingService extends GeoBlockingService {
 }
 
 void main() {
-  test(
-    'builds ordered unique language hints from content app and device languages',
-    () {
-      final languages = buildPreferredFeedLanguages(
-        contentLanguage: 'pt-BR',
-        appLocale: 'es',
-        deviceLocales: const [Locale('en', 'US'), Locale('pt', 'PT')],
-      );
+  group('buildPreferredFeedLanguages', () {
+    test(
+      'builds ordered unique language hints from content app and device languages',
+      () {
+        final languages = buildPreferredFeedLanguages(
+          contentLanguage: 'pt-BR',
+          appLocale: 'es',
+          deviceLocales: const [Locale('en', 'US'), Locale('pt', 'PT')],
+        );
 
-      expect(languages, equals(['pt', 'es', 'en']));
-    },
-  );
+        expect(languages, equals(['pt', 'es', 'en']));
+      },
+    );
+  });
 
-  test(
-    'reads content language and viewer country hints for feed requests',
-    () async {
+  group('readFeedViewerPreferenceHints', () {
+    test(
+      'reads content language and viewer country hints for feed requests',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            languagePreferenceServiceProvider.overrideWithValue(
+              _TestLanguagePreferenceService('pt'),
+            ),
+            geoBlockingServiceProvider.overrideWithValue(
+              _TestGeoBlockingService(
+                GeoBlockResponse(
+                  blocked: false,
+                  country: 'BR',
+                  region: 'UNKNOWN',
+                  city: 'UNKNOWN',
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final hints = await readFeedViewerPreferenceHints(container.read);
+
+        expect(hints.preferredLanguages.first, equals('pt'));
+        expect(hints.viewerCountry, equals('BR'));
+      },
+    );
+
+    test(
+      'waits for content language initialization before reading hints',
+      () async {
+        final initializeCompleter = Completer<void>();
+        final container = ProviderContainer(
+          overrides: [
+            languagePreferenceServiceProvider.overrideWithValue(
+              _InitializingLanguagePreferenceService(initializeCompleter),
+            ),
+            geoBlockingServiceProvider.overrideWithValue(
+              _TestGeoBlockingService(
+                GeoBlockResponse(
+                  blocked: false,
+                  country: 'US',
+                  region: 'UNKNOWN',
+                  city: 'UNKNOWN',
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final hintsFuture = readFeedViewerPreferenceHints(container.read);
+        var completed = false;
+        unawaited(
+          hintsFuture.then<void>((_) {
+            completed = true;
+          }),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(completed, isFalse);
+
+        initializeCompleter.complete();
+        final hints = await hintsFuture;
+
+        expect(hints.preferredLanguages.first, equals('es'));
+      },
+    );
+
+    test('omits unknown viewer country', () async {
       final container = ProviderContainer(
         overrides: [
           languagePreferenceServiceProvider.overrideWithValue(
-            _TestLanguagePreferenceService('pt'),
+            _TestLanguagePreferenceService('en'),
           ),
           geoBlockingServiceProvider.overrideWithValue(
             _TestGeoBlockingService(
               GeoBlockResponse(
                 blocked: false,
-                country: 'BR',
+                country: 'UNKNOWN',
                 region: 'UNKNOWN',
                 city: 'UNKNOWN',
               ),
@@ -84,75 +155,8 @@ void main() {
 
       final hints = await readFeedViewerPreferenceHints(container.read);
 
-      expect(hints.preferredLanguages.first, equals('pt'));
-      expect(hints.viewerCountry, equals('BR'));
-    },
-  );
-
-  test(
-    'waits for content language initialization before reading hints',
-    () async {
-      final initializeCompleter = Completer<void>();
-      final container = ProviderContainer(
-        overrides: [
-          languagePreferenceServiceProvider.overrideWithValue(
-            _InitializingLanguagePreferenceService(initializeCompleter),
-          ),
-          geoBlockingServiceProvider.overrideWithValue(
-            _TestGeoBlockingService(
-              GeoBlockResponse(
-                blocked: false,
-                country: 'US',
-                region: 'UNKNOWN',
-                city: 'UNKNOWN',
-              ),
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final hintsFuture = readFeedViewerPreferenceHints(container.read);
-      var completed = false;
-      unawaited(
-        hintsFuture.then<void>((_) {
-          completed = true;
-        }),
-      );
-      await Future<void>.delayed(Duration.zero);
-
-      expect(completed, isFalse);
-
-      initializeCompleter.complete();
-      final hints = await hintsFuture;
-
-      expect(hints.preferredLanguages.first, equals('es'));
-    },
-  );
-
-  test('omits unknown viewer country', () async {
-    final container = ProviderContainer(
-      overrides: [
-        languagePreferenceServiceProvider.overrideWithValue(
-          _TestLanguagePreferenceService('en'),
-        ),
-        geoBlockingServiceProvider.overrideWithValue(
-          _TestGeoBlockingService(
-            GeoBlockResponse(
-              blocked: false,
-              country: 'UNKNOWN',
-              region: 'UNKNOWN',
-              city: 'UNKNOWN',
-            ),
-          ),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    final hints = await readFeedViewerPreferenceHints(container.read);
-
-    expect(hints.preferredLanguages.first, equals('en'));
-    expect(hints.viewerCountry, isNull);
+      expect(hints.preferredLanguages.first, equals('en'));
+      expect(hints.viewerCountry, isNull);
+    });
   });
 }

@@ -19,43 +19,45 @@ class _RecordingNavigatorObserver extends NavigatorObserver {
 }
 
 void main() {
-  testWidgets('shell home route pushes a named root route for analytics', (
-    tester,
-  ) async {
-    final observer = _RecordingNavigatorObserver();
-    final router = GoRouter(
-      initialLocation: VideoFeedPage.path,
-      observers: [observer],
-      routes: [
-        StatefulShellRoute.indexedStack(
-          pageBuilder: (_, state, navigationShell) => NoTransitionPage<void>(
-            key: state.pageKey,
-            name: goRouterPageName(state),
-            child: navigationShell,
-          ),
-          branches: [
-            StatefulShellBranch(
-              routes: [
-                GoRoute(
-                  path: VideoFeedPage.path,
-                  name: VideoFeedPage.routeName,
-                  builder: (_, _) => const SizedBox.shrink(),
-                ),
-              ],
+  group('shell route analytics', () {
+    testWidgets('shell home route pushes a named root route for analytics', (
+      tester,
+    ) async {
+      final observer = _RecordingNavigatorObserver();
+      final router = GoRouter(
+        initialLocation: VideoFeedPage.path,
+        observers: [observer],
+        routes: [
+          StatefulShellRoute.indexedStack(
+            pageBuilder: (_, state, navigationShell) => NoTransitionPage<void>(
+              key: state.pageKey,
+              name: goRouterPageName(state),
+              child: navigationShell,
             ),
-          ],
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
+            branches: [
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: VideoFeedPage.path,
+                    name: VideoFeedPage.routeName,
+                    builder: (_, _) => const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
 
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-    await tester.pump();
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pump();
 
-    expect(observer.pushedNames, contains(VideoFeedPage.routeName));
-    expect(
-      AnalyticsSurface.routeSurfaceName(VideoFeedPage.routeName),
-      AnalyticsSurface.homeFeed,
-    );
+      expect(observer.pushedNames, contains(VideoFeedPage.routeName));
+      expect(
+        AnalyticsSurface.routeSurfaceName(VideoFeedPage.routeName),
+        AnalyticsSurface.homeFeed,
+      );
+    });
   });
 }

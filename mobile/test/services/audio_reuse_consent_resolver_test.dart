@@ -67,63 +67,68 @@ void main() {
     ).thenAnswer((_) async => videos);
   }
 
-  test('accepts explicit true without a legacy lookup', () async {
-    expect(await resolver.verify(_sound(allowsReuse: true)), isTrue);
-    verifyNever(() => videosRepository.getVideosByAddressableIds(any()));
-  });
+  group('verify', () {
+    test('accepts explicit true without a legacy lookup', () async {
+      expect(await resolver.verify(_sound(allowsReuse: true)), isTrue);
+      verifyNever(() => videosRepository.getVideosByAddressableIds(any()));
+    });
 
-  test('honors explicit false without a legacy lookup', () async {
-    expect(
-      await resolver.verify(_sound(hasExplicitReuseConsent: true)),
-      isFalse,
-    );
-    verifyNever(() => videosRepository.getVideosByAddressableIds(any()));
-  });
+    test('honors explicit false without a legacy lookup', () async {
+      expect(
+        await resolver.verify(_sound(hasExplicitReuseConsent: true)),
+        isFalse,
+      );
+      verifyNever(() => videosRepository.getVideosByAddressableIds(any()));
+    });
 
-  test('grants reuse from the source video the sound points at', () async {
-    // Regression (#6769): the old reverse lookup asked which videos carry an
-    // `['e', <audioEventId>, …, 'audio']` tag back to the sound. Legacy videos
-    // predate that tag, so it returned nothing for exactly the sounds this
-    // resolver exists to rescue and every one of them failed closed.
-    stubSource([_video()]);
+    test('grants reuse from the source video the sound points at', () async {
+      // Regression (#6769): the old reverse lookup asked which videos carry an
+      // `['e', <audioEventId>, …, 'audio']` tag back to the sound. Legacy videos
+      // predate that tag, so it returned nothing for exactly the sounds this
+      // resolver exists to rescue and every one of them failed closed.
+      stubSource([_video()]);
 
-    expect(await resolver.verify(_sound()), isTrue);
-  });
+      expect(await resolver.verify(_sound()), isTrue);
+    });
 
-  test('honours a revocation on the current revision', () async {
-    stubSource([_video(createdAt: 120, allowsReuse: false)]);
+    test('honours a revocation on the current revision', () async {
+      stubSource([_video(createdAt: 120, allowsReuse: false)]);
 
-    expect(await resolver.verify(_sound()), isFalse);
-  });
+      expect(await resolver.verify(_sound()), isFalse);
+    });
 
-  test('ignores a video at a different address', () async {
-    stubSource([_video(vineId: 'other-video')]);
+    test('ignores a video at a different address', () async {
+      stubSource([_video(vineId: 'other-video')]);
 
-    expect(await resolver.verify(_sound()), isFalse);
-  });
+      expect(await resolver.verify(_sound()), isFalse);
+    });
 
-  test('fails closed when the source video predates the sound', () async {
-    stubSource([_video(createdAt: 99)]);
+    test('fails closed when the source video predates the sound', () async {
+      stubSource([_video(createdAt: 99)]);
 
-    expect(await resolver.verify(_sound()), isFalse);
-  });
+      expect(await resolver.verify(_sound()), isFalse);
+    });
 
-  test('fails closed without a source address', () async {
-    expect(await resolver.verify(_sound(sourceVideoReference: null)), isFalse);
-    verifyNever(() => videosRepository.getVideosByAddressableIds(any()));
-  });
+    test('fails closed without a source address', () async {
+      expect(
+        await resolver.verify(_sound(sourceVideoReference: null)),
+        isFalse,
+      );
+      verifyNever(() => videosRepository.getVideosByAddressableIds(any()));
+    });
 
-  test('fails closed when the source video is unreachable', () async {
-    stubSource(const []);
+    test('fails closed when the source video is unreachable', () async {
+      stubSource(const []);
 
-    expect(await resolver.verify(_sound()), isFalse);
-  });
+      expect(await resolver.verify(_sound()), isFalse);
+    });
 
-  test('fails closed when the lookup throws', () async {
-    when(
-      () => videosRepository.getVideosByAddressableIds([_sourceAddress]),
-    ).thenThrow(StateError('relay unavailable'));
+    test('fails closed when the lookup throws', () async {
+      when(
+        () => videosRepository.getVideosByAddressableIds([_sourceAddress]),
+      ).thenThrow(StateError('relay unavailable'));
 
-    expect(await resolver.verify(_sound()), isFalse);
+      expect(await resolver.verify(_sound()), isFalse);
+    });
   });
 }

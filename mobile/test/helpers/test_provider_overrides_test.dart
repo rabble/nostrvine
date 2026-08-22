@@ -12,44 +12,48 @@ import 'test_provider_overrides.dart';
 class _FakeAuthService extends Fake implements AuthService {}
 
 void main() {
-  test('standard overrides give auth mocks a session-cleanup callback', () {
-    final auth = MockAuthService();
+  group('getStandardTestOverrides', () {
+    test('standard overrides give auth mocks a session-cleanup callback', () {
+      final auth = MockAuthService();
 
-    getStandardTestOverrides(mockAuthService: auth);
+      getStandardTestOverrides(mockAuthService: auth);
 
-    final unregister = auth.registerBeforeSessionTeardownCallback(() async {});
-    expect(unregister, isA<void Function()>());
-    expect(unregister, returnsNormally);
-  });
+      final unregister = auth.registerBeforeSessionTeardownCallback(
+        () async {},
+      );
+      expect(unregister, isA<void Function()>());
+      expect(unregister, returnsNormally);
+    });
 
-  test('standard overrides leave hand-written auth fakes alone', () {
-    expect(
-      () => getStandardTestOverrides(mockAuthService: _FakeAuthService()),
-      returnsNormally,
-    );
-  });
+    test('standard overrides leave hand-written auth fakes alone', () {
+      expect(
+        () => getStandardTestOverrides(mockAuthService: _FakeAuthService()),
+        returnsNormally,
+      );
+    });
 
-  test('standard overrides keep analytics inert in unrelated tests', () {
-    final container = ProviderContainer(
-      overrides: getStandardTestOverrides().cast(),
-    );
-    addTearDown(container.dispose);
+    test('standard overrides keep analytics inert in unrelated tests', () {
+      final container = ProviderContainer(
+        overrides: getStandardTestOverrides().cast(),
+      );
+      addTearDown(container.dispose);
 
-    expect(
-      container.read(analyticsServiceProvider),
-      isA<TestAnalyticsService>(),
-    );
-  });
+      expect(
+        container.read(analyticsServiceProvider),
+        isA<TestAnalyticsService>(),
+      );
+    });
 
-  test('standard overrides mock NIP-05 verification by default', () {
-    final container = ProviderContainer(
-      overrides: getStandardTestOverrides().cast(),
-    );
-    addTearDown(container.dispose);
+    test('standard overrides mock NIP-05 verification by default', () {
+      final container = ProviderContainer(
+        overrides: getStandardTestOverrides().cast(),
+      );
+      addTearDown(container.dispose);
 
-    expect(
-      container.read(nip05VerificationServiceProvider),
-      isA<MockNip05VerificationService>(),
-    );
+      expect(
+        container.read(nip05VerificationServiceProvider),
+        isA<MockNip05VerificationService>(),
+      );
+    });
   });
 }

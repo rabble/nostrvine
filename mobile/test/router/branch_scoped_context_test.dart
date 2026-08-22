@@ -74,84 +74,86 @@ GoRouter _buildRouter() => GoRouter(
 );
 
 void main() {
-  testWidgets('an inactive branch keeps its own scoped pageContext', (
-    tester,
-  ) async {
-    final router = _buildRouter();
-    addTearDown(router.dispose);
+  group('branch-scoped pageContext', () {
+    testWidgets('an inactive branch keeps its own scoped pageContext', (
+      tester,
+    ) async {
+      final router = _buildRouter();
+      addTearDown(router.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('home scoped=home'), findsOneWidget);
+      expect(find.text('home scoped=home'), findsOneWidget);
 
-    router.go('/explore');
-    await tester.pumpAndSettle();
+      router.go('/explore');
+      await tester.pumpAndSettle();
 
-    // The newly active branch shows its own context...
-    expect(find.text('explore scoped=explore'), findsOneWidget);
-    // ...and the kept-alive home branch STILL renders its OWN content (it did
-    // NOT blank to the active 'explore' route) — that is what gives the
-    // cross-fade two live tabs to dissolve between.
-    expect(find.text('home scoped=home'), findsOneWidget);
-  });
+      // The newly active branch shows its own context...
+      expect(find.text('explore scoped=explore'), findsOneWidget);
+      // ...and the kept-alive home branch STILL renders its OWN content (it did
+      // NOT blank to the active 'explore' route) — that is what gives the
+      // cross-fade two live tabs to dissolve between.
+      expect(find.text('home scoped=home'), findsOneWidget);
+    });
 
-  testWidgets('branch-scoped pageContext ignores query parameters', (
-    tester,
-  ) async {
-    RouteContext? captured;
-    final router = GoRouter(
-      initialLocation:
-          '/profile/npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt?utm_source=test',
-      routes: [
-        StatefulShellRoute(
-          builder: (context, state, shell) => shell,
-          navigatorContainerBuilder: (context, shell, children) =>
-              AppShellBranchContainer(
-                currentIndex: shell.currentIndex,
-                children: children,
-              ),
-          branches: [
-            StatefulShellBranch(
-              initialLocation: '/profile/me',
-              routes: [
-                GoRoute(
-                  path: '/profile/:npub',
-                  pageBuilder: (context, state) => _scopedPage(
-                    state,
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final ctx = ref
-                            .watch(pageContextProvider)
-                            .asData
-                            ?.value;
-                        if (ctx != null) captured = ctx;
-                        return const SizedBox();
-                      },
+    testWidgets('branch-scoped pageContext ignores query parameters', (
+      tester,
+    ) async {
+      RouteContext? captured;
+      final router = GoRouter(
+        initialLocation:
+            '/profile/npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt?utm_source=test',
+        routes: [
+          StatefulShellRoute(
+            builder: (context, state, shell) => shell,
+            navigatorContainerBuilder: (context, shell, children) =>
+                AppShellBranchContainer(
+                  currentIndex: shell.currentIndex,
+                  children: children,
+                ),
+            branches: [
+              StatefulShellBranch(
+                initialLocation: '/profile/me',
+                routes: [
+                  GoRoute(
+                    path: '/profile/:npub',
+                    pageBuilder: (context, state) => _scopedPage(
+                      state,
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final ctx = ref
+                              .watch(pageContextProvider)
+                              .asData
+                              ?.value;
+                          if (ctx != null) captured = ctx;
+                          return const SizedBox();
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      );
+      await tester.pumpAndSettle();
 
-    final ctx = captured;
-    expect(ctx, isNotNull);
-    expect(ctx!.type, RouteType.profile);
-    expect(
-      ctx.npub,
-      'npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt',
-    );
+      final ctx = captured;
+      expect(ctx, isNotNull);
+      expect(ctx!.type, RouteType.profile);
+      expect(
+        ctx.npub,
+        'npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqlz5yt',
+      );
+    });
   });
 }

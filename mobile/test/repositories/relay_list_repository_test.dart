@@ -82,125 +82,78 @@ void main() {
     );
   }
 
-  test(
-    'publishes configured relays as kind 10002 and preserves markers',
-    () async {
-      discoveredRelays = const [
-        DiscoveredRelay(url: 'wss://read.example', write: false),
-        DiscoveredRelay(url: 'wss://write.example', read: false),
-      ];
+  group('publishConfiguredRelayList', () {
+    test(
+      'publishes configured relays as kind 10002 and preserves markers',
+      () async {
+        discoveredRelays = const [
+          DiscoveredRelay(url: 'wss://read.example', write: false),
+          DiscoveredRelay(url: 'wss://write.example', read: false),
+        ];
 
-      final result = await buildRepository().publishConfiguredRelayList();
+        final result = await buildRepository().publishConfiguredRelayList();
 
-      expect(result.status, RelayListPublishStatus.published);
-      final captured = verify(
-        () => nostrClient.publishEventAwaitOk(
-          captureAny(),
-          targetRelays: captureAny(named: 'targetRelays'),
-          timeout: captureAny(named: 'timeout'),
-        ),
-      ).captured;
-      // mocktail returns captures ordered by argument name, not call order.
-      final event = captured[0] as Event;
-      final timeout = captured[1] as Duration;
-      final targetRelays = captured[2] as List<String>;
+        expect(result.status, RelayListPublishStatus.published);
+        final captured = verify(
+          () => nostrClient.publishEventAwaitOk(
+            captureAny(),
+            targetRelays: captureAny(named: 'targetRelays'),
+            timeout: captureAny(named: 'timeout'),
+          ),
+        ).captured;
+        // mocktail returns captures ordered by argument name, not call order.
+        final event = captured[0] as Event;
+        final timeout = captured[1] as Duration;
+        final targetRelays = captured[2] as List<String>;
 
-      expect(event.kind, EventKind.relayListMetadata);
-      expect(event.pubkey, pubkey);
-      expect(event.tags, [
-        ['r', 'wss://relay.divine.video'],
-        ['r', 'wss://read.example', 'read'],
-        ['r', 'wss://write.example', 'write'],
-        ['r', 'wss://new.example'],
-      ]);
-      expect(targetRelays, contains('wss://relay.divine.video'));
-      expect(targetRelays, contains('wss://purplepag.es'));
-      // Settings blocks on this publish, so it must not inherit the 15s
-      // default on top of the signer timeout.
-      expect(timeout, lessThan(const Duration(seconds: 15)));
-      verify(
-        () => relayDiscoveryService.clearCache(Nip19.encodePubKey(pubkey)),
-      ).called(1);
-      expect(buildRepository().isDirty(pubkey), isFalse);
-    },
-  );
-
-  test('skips without dirtying when the client has no signing keys', () async {
-    when(() => nostrClient.hasKeys).thenReturn(false);
-    when(() => nostrClient.publicKey).thenReturn('');
-
-    final result = await buildRepository().publishConfiguredRelayList();
-
-    expect(result.status, RelayListPublishStatus.skippedNoKeys);
-    verifyNever(
-      () => nostrClient.publishEventAwaitOk(
-        any(),
-        targetRelays: any(named: 'targetRelays'),
-        timeout: any(named: 'timeout'),
-      ),
+        expect(event.kind, EventKind.relayListMetadata);
+        expect(event.pubkey, pubkey);
+        expect(event.tags, [
+          ['r', 'wss://relay.divine.video'],
+          ['r', 'wss://read.example', 'read'],
+          ['r', 'wss://write.example', 'write'],
+          ['r', 'wss://new.example'],
+        ]);
+        expect(targetRelays, contains('wss://relay.divine.video'));
+        expect(targetRelays, contains('wss://purplepag.es'));
+        // Settings blocks on this publish, so it must not inherit the 15s
+        // default on top of the signer timeout.
+        expect(timeout, lessThan(const Duration(seconds: 15)));
+        verify(
+          () => relayDiscoveryService.clearCache(Nip19.encodePubKey(pubkey)),
+        ).called(1);
+        expect(buildRepository().isDirty(pubkey), isFalse);
+      },
     );
-    expect(buildRepository().isDirty(pubkey), isFalse);
-  });
 
-  test('skips publishing in non-production environments', () async {
-    final result = await buildRepository(
-      environment: const EnvironmentConfig(environment: AppEnvironment.staging),
-    ).publishConfiguredRelayList();
+    test(
+      'skips without dirtying when the client has no signing keys',
+      () async {
+        when(() => nostrClient.hasKeys).thenReturn(false);
+        when(() => nostrClient.publicKey).thenReturn('');
 
-    expect(result.status, RelayListPublishStatus.skippedNonProduction);
-    verifyNever(
-      () => nostrClient.publishEventAwaitOk(
-        any(),
-        targetRelays: any(named: 'targetRelays'),
-        timeout: any(named: 'timeout'),
-      ),
-    );
-    expect(buildRepository().isDirty(pubkey), isFalse);
-  });
+        final result = await buildRepository().publishConfiguredRelayList();
 
-  test(
-    'marks dirty and does not clear cache when no indexer accepts',
-    () async {
-      when(
-        () => nostrClient.publishEventAwaitOk(
-          any(),
-          targetRelays: any(named: 'targetRelays'),
-          timeout: any(named: 'timeout'),
-        ),
-      ).thenAnswer((invocation) async {
-        final event = invocation.positionalArguments.first as Event;
-        return PublishOutcome(
-          eventId: event.id,
-          acceptedBy: const ['wss://relay.divine.video'],
-          rejectedBy: const {},
-          noResponseFrom: const [],
+        expect(result.status, RelayListPublishStatus.skippedNoKeys);
+        verifyNever(
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
         );
-      });
+        expect(buildRepository().isDirty(pubkey), isFalse);
+      },
+    );
 
-      final repository = buildRepository();
-      final result = await repository.publishConfiguredRelayList();
+    test('skips publishing in non-production environments', () async {
+      final result = await buildRepository(
+        environment: const EnvironmentConfig(
+          environment: AppEnvironment.staging,
+        ),
+      ).publishConfiguredRelayList();
 
-      expect(result.status, RelayListPublishStatus.failed);
-      expect(repository.isDirty(pubkey), isTrue);
-      verifyNever(() => relayDiscoveryService.clearCache(any()));
-    },
-  );
-
-  test(
-    'retryDirtyPublish republishes only when the dirty flag is set',
-    () async {
-      final repository = buildRepository();
-
-      expect(
-        await repository.retryDirtyPublish(),
-        isA<RelayListPublishResult>()
-            .having(
-              (result) => result.status,
-              'status',
-              RelayListPublishStatus.skippedNotDirty,
-            )
-            .having((result) => result.localOnly, 'localOnly', isFalse),
-      );
+      expect(result.status, RelayListPublishStatus.skippedNonProduction);
       verifyNever(
         () => nostrClient.publishEventAwaitOk(
           any(),
@@ -208,19 +161,75 @@ void main() {
           timeout: any(named: 'timeout'),
         ),
       );
+      expect(buildRepository().isDirty(pubkey), isFalse);
+    });
 
-      await prefs.setBool('relay_list_publish_dirty_$pubkey', true);
-      final result = await repository.retryDirtyPublish();
+    test(
+      'marks dirty and does not clear cache when no indexer accepts',
+      () async {
+        when(
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments.first as Event;
+          return PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          );
+        });
 
-      expect(result.status, RelayListPublishStatus.published);
-      verify(
-        () => nostrClient.publishEventAwaitOk(
-          any(),
-          targetRelays: any(named: 'targetRelays'),
-          timeout: any(named: 'timeout'),
-        ),
-      ).called(1);
-      expect(repository.isDirty(pubkey), isFalse);
-    },
-  );
+        final repository = buildRepository();
+        final result = await repository.publishConfiguredRelayList();
+
+        expect(result.status, RelayListPublishStatus.failed);
+        expect(repository.isDirty(pubkey), isTrue);
+        verifyNever(() => relayDiscoveryService.clearCache(any()));
+      },
+    );
+  });
+
+  group('retryDirtyPublish', () {
+    test(
+      'retryDirtyPublish republishes only when the dirty flag is set',
+      () async {
+        final repository = buildRepository();
+
+        expect(
+          await repository.retryDirtyPublish(),
+          isA<RelayListPublishResult>()
+              .having(
+                (result) => result.status,
+                'status',
+                RelayListPublishStatus.skippedNotDirty,
+              )
+              .having((result) => result.localOnly, 'localOnly', isFalse),
+        );
+        verifyNever(
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+
+        await prefs.setBool('relay_list_publish_dirty_$pubkey', true);
+        final result = await repository.retryDirtyPublish();
+
+        expect(result.status, RelayListPublishStatus.published);
+        verify(
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+        expect(repository.isDirty(pubkey), isFalse);
+      },
+    );
+  });
 }

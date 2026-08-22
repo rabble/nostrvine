@@ -93,106 +93,113 @@ Future<void> tapTile(WidgetTester tester, String title) async {
 }
 
 void main() {
-  testWidgets('renders the available Shorebird section through screen wiring', (
-    tester,
-  ) async {
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    var factoryCalls = 0;
-    final updater = _AvailableShorebirdUpdater();
-    await pumpScreen(
-      tester,
-      await mockPrefs(),
-      shorebirdUpdaterFactory: () {
-        factoryCalls++;
-        return updater;
+  group('renders', () {
+    testWidgets(
+      'renders the available Shorebird section through screen wiring',
+      (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        var factoryCalls = 0;
+        final updater = _AvailableShorebirdUpdater();
+        await pumpScreen(
+          tester,
+          await mockPrefs(),
+          shorebirdUpdaterFactory: () {
+            factoryCalls++;
+            return updater;
+          },
+        );
+
+        expect(factoryCalls, 1);
+        expect(find.text(l10n.devOptionsShorebirdTitle), findsOneWidget);
+        await tester.runAsync(() => updater.firstRead.future);
+        await tester.pumpAndSettle();
+        expect(find.text('7'), findsOneWidget);
+        expect(find.text(l10n.devOptionsShorebirdNotChecked), findsOneWidget);
       },
     );
 
-    expect(factoryCalls, 1);
-    expect(find.text(l10n.devOptionsShorebirdTitle), findsOneWidget);
-    await tester.runAsync(() => updater.firstRead.future);
-    await tester.pumpAndSettle();
-    expect(find.text('7'), findsOneWidget);
-    expect(find.text(l10n.devOptionsShorebirdNotChecked), findsOneWidget);
+    testWidgets(
+      'DeveloperOptionsScreen constrains menu content width on wide screens',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpScreen(tester, await mockPrefs());
+
+        final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+        expect(listViewWidth, moreOrLessEquals(600));
+      },
+    );
   });
 
-  testWidgets(
-    'DeveloperOptionsScreen constrains menu content width on wide screens',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(900, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  group('interactions', () {
+    testWidgets('disabling developer mode turns off the flag and pops back', (
+      tester,
+    ) async {
+      final prefs = await mockPrefs();
+      final envService = EnvironmentService();
+      await envService.initialize(sharedPreferences: prefs);
+      await envService.enableDeveloperMode();
+      expect(envService.isDeveloperModeEnabled, isTrue);
 
-      await pumpScreen(tester, await mockPrefs());
+      final availabilityCubit = seededInviteAvailabilityCubit();
+      addTearDown(availabilityCubit.close);
 
-      final listViewWidth = tester.getSize(find.byType(ListView).first).width;
-      expect(listViewWidth, moreOrLessEquals(600));
-    },
-  );
-
-  testWidgets('disabling developer mode turns off the flag and pops back', (
-    tester,
-  ) async {
-    final prefs = await mockPrefs();
-    final envService = EnvironmentService();
-    await envService.initialize(sharedPreferences: prefs);
-    await envService.enableDeveloperMode();
-    expect(envService.isDeveloperModeEnabled, isTrue);
-
-    final availabilityCubit = seededInviteAvailabilityCubit();
-    addTearDown(availabilityCubit.close);
-
-    final router = GoRouter(
-      initialLocation: '/settings',
-      routes: [
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => Scaffold(
-            body: Center(
-              child: TextButton(
-                onPressed: () => context.push(DeveloperOptionsScreen.path),
-                child: const Text('open-developer-options'),
+      final router = GoRouter(
+        initialLocation: '/settings',
+        routes: [
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => context.push(DeveloperOptionsScreen.path),
+                  child: const Text('open-developer-options'),
+                ),
               ),
             ),
           ),
-        ),
-        GoRoute(
-          path: DeveloperOptionsScreen.path,
-          builder: (context, state) => wrapWithInviteAvailability(
-            const DeveloperOptionsScreen(),
-            cubit: availabilityCubit,
+          GoRoute(
+            path: DeveloperOptionsScreen.path,
+            builder: (context, state) => wrapWithInviteAvailability(
+              const DeveloperOptionsScreen(),
+              cubit: availabilityCubit,
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            environmentServiceProvider.overrideWithValue(envService),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            routerConfig: router,
           ),
         ),
-      ],
-    );
+      );
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          environmentServiceProvider.overrideWithValue(envService),
-        ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
-          routerConfig: router,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('open-developer-options'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DeveloperOptionsScreen), findsOneWidget);
 
-    await tester.tap(find.text('open-developer-options'));
-    await tester.pumpAndSettle();
-    expect(find.byType(DeveloperOptionsScreen), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tapTile(tester, l10n.devOptionsDisableDeveloperMode);
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tapTile(tester, l10n.devOptionsDisableDeveloperMode);
-
-    expect(envService.isDeveloperModeEnabled, isFalse);
-    expect(prefs.getBool('developer_mode_enabled'), isFalse);
-    // Returned to the previous screen; the dev options entry is gone.
-    expect(find.byType(DeveloperOptionsScreen), findsNothing);
-    expect(find.text('open-developer-options'), findsOneWidget);
+      expect(envService.isDeveloperModeEnabled, isFalse);
+      expect(prefs.getBool('developer_mode_enabled'), isFalse);
+      // Returned to the previous screen; the dev options entry is gone.
+      expect(find.byType(DeveloperOptionsScreen), findsNothing);
+      expect(find.text('open-developer-options'), findsOneWidget);
+    });
   });
 
   group('protected-minor simulation (#5721)', () {

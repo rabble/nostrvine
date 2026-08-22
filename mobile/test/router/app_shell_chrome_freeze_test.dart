@@ -108,78 +108,82 @@ void main() {
     sharedPreferences = await SharedPreferences.getInstance();
   });
 
-  testWidgets(
-    'keeps the own-profile-grid app bar suppressed while a full-screen route '
-    'covers the shell (#5925)',
-    (tester) async {
-      final contextController = StreamController<RouteContext>();
-      addTearDown(contextController.close);
+  group(AppShell, () {
+    testWidgets(
+      'keeps the own-profile-grid app bar suppressed while a full-screen route '
+      'covers the shell (#5925)',
+      (tester) async {
+        final contextController = StreamController<RouteContext>();
+        addTearDown(contextController.close);
 
-      await tester.pumpWidget(
-        _buildSubject(
-          mockAuthService: mockAuthService,
-          sharedPreferences: sharedPreferences,
-          contextStream: contextController.stream,
-        ),
-      );
+        await tester.pumpWidget(
+          _buildSubject(
+            mockAuthService: mockAuthService,
+            sharedPreferences: sharedPreferences,
+            contextStream: contextController.stream,
+          ),
+        );
 
-      // Land on the own-profile grid — it renders its own scrollable header, so
-      // AppShell suppresses its app bar (npub 'me' is the own-profile sentinel).
-      contextController.add(
-        const RouteContext(type: RouteType.profile, npub: 'me'),
-      );
-      await tester.pumpAndSettle();
+        // Land on the own-profile grid — it renders its own scrollable header, so
+        // AppShell suppresses its app bar (npub 'me' is the own-profile sentinel).
+        contextController.add(
+          const RouteContext(type: RouteType.profile, npub: 'me'),
+        );
+        await tester.pumpAndSettle();
 
-      Scaffold shellScaffold() => tester.widget<Scaffold>(
-        find
-            .descendant(
-              of: find.byType(AppShell, skipOffstage: false),
-              matching: find.byType(Scaffold, skipOffstage: false),
-            )
-            .first,
-      );
+        Scaffold shellScaffold() => tester.widget<Scaffold>(
+          find
+              .descendant(
+                of: find.byType(AppShell, skipOffstage: false),
+                matching: find.byType(Scaffold, skipOffstage: false),
+              )
+              .first,
+        );
 
-      expect(
-        shellScaffold().appBar,
-        isNull,
-        reason: 'own-profile grid suppresses the shell app bar',
-      );
-      // Precondition: the shell is the top route, so it is not yet frozen.
-      expect(shellScaffold().resizeToAvoidBottomInset, isTrue);
+        expect(
+          shellScaffold().appBar,
+          isNull,
+          reason: 'own-profile grid suppresses the shell app bar',
+        );
+        // Precondition: the shell is the top route, so it is not yet frozen.
+        expect(shellScaffold().resizeToAvoidBottomInset, isTrue);
 
-      // Cover the shell: any route pushed above it flips the shell's
-      // ModalRoute.isCurrent to false (the same signal that gates
-      // resizeToAvoidBottomInset). A modal barrier stands in for the camera
-      // here — unlike a full-screen opaque route it keeps the shell onstage,
-      // which is the frame the user actually sees glitch mid-transition. Then
-      // the global pageContext flips to the recorder while the profile tab
-      // underneath is still visible.
-      final shellContext = tester.element(find.byType(AppShell));
-      unawaited(
-        showModalBottomSheet<void>(
-          context: shellContext,
-          builder: (_) => const SizedBox(height: 200),
-        ),
-      );
-      await tester.pumpAndSettle();
-      contextController.add(const RouteContext(type: RouteType.videoRecorder));
-      await tester.pumpAndSettle();
+        // Cover the shell: any route pushed above it flips the shell's
+        // ModalRoute.isCurrent to false (the same signal that gates
+        // resizeToAvoidBottomInset). A modal barrier stands in for the camera
+        // here — unlike a full-screen opaque route it keeps the shell onstage,
+        // which is the frame the user actually sees glitch mid-transition. Then
+        // the global pageContext flips to the recorder while the profile tab
+        // underneath is still visible.
+        final shellContext = tester.element(find.byType(AppShell));
+        unawaited(
+          showModalBottomSheet<void>(
+            context: shellContext,
+            builder: (_) => const SizedBox(height: 200),
+          ),
+        );
+        await tester.pumpAndSettle();
+        contextController.add(
+          const RouteContext(type: RouteType.videoRecorder),
+        );
+        await tester.pumpAndSettle();
 
-      // The shell is now covered (same isCurrent signal), so the freeze must
-      // be in effect.
-      expect(
-        shellScaffold().resizeToAvoidBottomInset,
-        isFalse,
-        reason: 'the pushed route must actually cover the shell',
-      );
+        // The shell is now covered (same isCurrent signal), so the freeze must
+        // be in effect.
+        expect(
+          shellScaffold().resizeToAvoidBottomInset,
+          isFalse,
+          reason: 'the pushed route must actually cover the shell',
+        );
 
-      // Frozen to the last tab context: the recorder must not recompute the
-      // chrome and pop the suppressed app bar in during the push transition.
-      expect(
-        shellScaffold().appBar,
-        isNull,
-        reason: 'chrome frozen to the covered tab; app bar must not pop in',
-      );
-    },
-  );
+        // Frozen to the last tab context: the recorder must not recompute the
+        // chrome and pop the suppressed app bar in during the push transition.
+        expect(
+          shellScaffold().appBar,
+          isNull,
+          reason: 'chrome frozen to the covered tab; app bar must not pop in',
+        );
+      },
+    );
+  });
 }

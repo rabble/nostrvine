@@ -66,10 +66,18 @@ when they mirror a root `lib/` file (e.g. `lib/main.dart` →
 `lib/` source path.
 
 ### Group Structure
-Split tests into groups for readability:
+Every test declaration lives inside a `group()` — a flat file gives the runner
+nothing to nest, so failures print as an undifferentiated wall of descriptions
+and you cannot run one slice of a file (`--plain-name 'FooRepository fetch'`).
+This is enforced; see [Ungrouped-test ceiling](#ungrouped-test-ceiling) below.
+
 - **Widget tests:** Group by "renders", "navigation", "interactions"
 - **BLoC tests:** Group by event name
 - **Repositories/Clients:** Group by method name
+
+Wrap the declarations only. `setUp` / `tearDown`, helper functions, and
+`late` variables stay at `main()` level — they already apply to nested
+groups, and moving them into one group hides them from the others.
 
 ```dart
 void main() {
@@ -444,6 +452,32 @@ UPDATE_BASELINE=1 bash mobile/scripts/check_test_unit_structure.sh
 The guard freezes `test/unit/` only; it does not force draining it. Two sibling
 non-mirroring buckets — `test/tdd` and `test/widget` (a split-brain vs the
 282-file `test/widgets`) — are known and deferred as a fast-follow, not frozen here.
+
+### Ungrouped-test ceiling
+
+A `test` / `testWidgets` / `blocTest` / `patrolTest` declared outside any
+`group()` is frozen per file in `mobile/scripts/baseline/ungrouped_tests.txt`
+and may only ever **shrink** (`check_ungrouped_tests.sh`, #3615). A new flat
+file, a new loose declaration in a baselined file, or a raised ceiling fails
+CI. The audit behind #3615 counted 25 flat files in April 2026 and 108 by
+August, so the shape re-accretes on its own.
+
+Nothing in the baseline is a flat file — those were all grouped in #3615.
+Each remaining entry is a file that *has* group structure and left a
+declaration or two outside it; paydown is tracked in #7705. List them:
+
+```bash
+cd mobile && dart run scripts/lib/ungrouped_test_detector.dart test integration_test packages --path-prefix . --detail
+```
+
+After grouping the loose ones, lock the win and commit the baseline:
+
+```bash
+UPDATE_BASELINE=1 bash mobile/scripts/check_ungrouped_tests.sh
+```
+
+Runs in CI only, in the `generated-files` job; the pre-push hook does not
+cover it.
 
 ---
 

@@ -72,183 +72,188 @@ void main() {
     );
   });
 
-  testWidgets('opens metadata sheet when tapping description', (tester) async {
-    await tester.pumpWidget(
-      testProviderScope(
-        additionalOverrides: [
-          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: BlocProvider<VideoInteractionsBloc>.value(
-              value: mockInteractionsBloc,
-              child: VideoOverlayActions(
-                video: testVideo,
-                isVisible: true,
-                isActive: true,
+  group('interactions', () {
+    testWidgets('opens metadata sheet when tapping description', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: testVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Tap this description'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Tap this description'));
+      await tester.pumpAndSettle();
 
-    final l10n = _l10n(tester);
-    expect(
-      find.text(l10n.metadataLoopsLabel(testVideo.totalLoops)),
-      findsOneWidget,
-    );
-    expect(find.text('Likes'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataLoopsLabel(testVideo.totalLoops)),
+        findsOneWidget,
+      );
+      expect(find.text('Likes'), findsOneWidget);
+    });
   });
 
-  testWidgets('paints a brand-green heart in the author name', (tester) async {
-    await tester.pumpWidget(
-      testProviderScope(
-        additionalOverrides: [
-          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
-          userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
-            yield UserProfile(
-              pubkey: pubkey,
-              displayName: 'Alice $divineGreenHeart',
-              rawData: const {},
-              createdAt: DateTime(2026),
-              eventId: 'kind0_event_id',
-            );
-          }),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: BlocProvider<VideoInteractionsBloc>.value(
-              value: mockInteractionsBloc,
-              child: VideoOverlayActions(
-                video: testVideo,
-                isVisible: true,
-                isActive: true,
+  group('renders', () {
+    testWidgets('paints a brand-green heart in the author name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+            userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+              yield UserProfile(
+                pubkey: pubkey,
+                displayName: 'Alice $divineGreenHeart',
+                rawData: const {},
+                createdAt: DateTime(2026),
+                eventId: 'kind0_event_id',
+              );
+            }),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: testVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    final heartFinder = find.byWidgetPredicate(
-      (w) => w is DivineIcon && w.icon == DivineIconName.heartFill,
-    );
-    expect(heartFinder, findsOneWidget);
-    expect(tester.widget<DivineIcon>(heartFinder).color, VineTheme.vineGreen);
-  });
+      final heartFinder = find.byWidgetPredicate(
+        (w) => w is DivineIcon && w.icon == DivineIconName.heartFill,
+      );
+      expect(heartFinder, findsOneWidget);
+      expect(tester.widget<DivineIcon>(heartFinder).color, VineTheme.vineGreen);
+    });
 
-  testWidgets('author line uses localized singular loop label for 1', (
-    tester,
-  ) async {
-    testVideo = testVideo.copyWith(originalLoops: 1);
+    testWidgets('author line uses localized singular loop label for 1', (
+      tester,
+    ) async {
+      testVideo = testVideo.copyWith(originalLoops: 1);
 
-    // A count of 1 is far below the public floor, so only the creator is ever
-    // shown it — the singular form is unreachable for anyone else.
-    final authStateController = StreamController<AuthState>.broadcast();
-    addTearDown(authStateController.close);
-    final mockAuthService = _MockAuthService();
-    when(
-      () => mockAuthService.currentPublicKeyHex,
-    ).thenReturn(testVideo.pubkey);
-    when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
-    when(
-      () => mockAuthService.authStateStream,
-    ).thenAnswer((_) => authStateController.stream);
+      // A count of 1 is far below the public floor, so only the creator is ever
+      // shown it — the singular form is unreachable for anyone else.
+      final authStateController = StreamController<AuthState>.broadcast();
+      addTearDown(authStateController.close);
+      final mockAuthService = _MockAuthService();
+      when(
+        () => mockAuthService.currentPublicKeyHex,
+      ).thenReturn(testVideo.pubkey);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => authStateController.stream);
 
-    await tester.pumpWidget(
-      testProviderScope(
-        additionalOverrides: [
-          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
-          authServiceProvider.overrideWithValue(mockAuthService),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: BlocProvider<VideoInteractionsBloc>.value(
-              value: mockInteractionsBloc,
-              child: VideoOverlayActions(
-                video: testVideo,
-                isVisible: true,
-                isActive: true,
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+            authServiceProvider.overrideWithValue(mockAuthService),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: testVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    final l10n = _l10n(tester);
-    // The creator's line now carries the post date too, so match within it.
-    expect(
-      find.textContaining(
-        l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(1), 1),
-      ),
-      findsOneWidget,
-    );
-  });
+      final l10n = _l10n(tester);
+      // The creator's line now carries the post date too, so match within it.
+      expect(
+        find.textContaining(
+          l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(1), 1),
+        ),
+        findsOneWidget,
+      );
+    });
 
-  testWidgets('author line does not show checkmark for verified NIP-05', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      testProviderScope(
-        additionalOverrides: [
-          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
-          userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
-            yield UserProfile(
-              pubkey: pubkey,
-              name: 'Alice',
-              nip05: 'alice@example.com',
-              rawData: const {},
-              createdAt: DateTime(2026),
-              eventId: 'kind0_event_id',
-            );
-          }),
-          nip05VerificationProvider.overrideWith(
-            (ref, pubkey) async => Nip05VerificationStatus.verified,
-          ),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: BlocProvider<VideoInteractionsBloc>.value(
-              value: mockInteractionsBloc,
-              child: VideoOverlayActions(
-                video: testVideo,
-                isVisible: true,
-                isActive: true,
+    testWidgets('author line does not show checkmark for verified NIP-05', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
+            userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+              yield UserProfile(
+                pubkey: pubkey,
+                name: 'Alice',
+                nip05: 'alice@example.com',
+                rawData: const {},
+                createdAt: DateTime(2026),
+                eventId: 'kind0_event_id',
+              );
+            }),
+            nip05VerificationProvider.overrideWith(
+              (ref, pubkey) async => Nip05VerificationStatus.verified,
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: testVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    expect(find.text('Alice'), findsOneWidget);
-    expect(_specialCheckmark(), findsNothing);
-  });
+      expect(find.text('Alice'), findsOneWidget);
+      expect(_specialCheckmark(), findsNothing);
+    });
 
-  testWidgets(
-    'author line shows checkmark for a Divine team pubkey',
-    (
+    testWidgets('author line shows checkmark for a Divine team pubkey', (
       tester,
     ) async {
       testVideo = testVideo.copyWith(pubkey: kDivineTeamPubkeys.first);
@@ -292,48 +297,50 @@ void main() {
 
       expect(find.text('Alice'), findsOneWidget);
       expect(_specialCheckmark(), findsOneWidget);
-    },
-  );
+    });
 
-  testWidgets(
-    'does not render a dedicated captions button in the action rail',
-    (tester) async {
-      final subtitleVideo = testVideo.copyWith(
-        textTrackRef: '39307:${testVideo.pubkey}:subtitles:${testVideo.id}',
-      );
+    testWidgets(
+      'does not render a dedicated captions button in the action rail',
+      (tester) async {
+        final subtitleVideo = testVideo.copyWith(
+          textTrackRef: '39307:${testVideo.pubkey}:subtitles:${testVideo.id}',
+        );
 
-      await tester.pumpWidget(
-        testProviderScope(
-          additionalOverrides: [
-            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: BlocProvider<VideoInteractionsBloc>.value(
-                value: mockInteractionsBloc,
-                child: VideoOverlayActions(
-                  video: subtitleVideo,
-                  isVisible: true,
-                  isActive: true,
+        await tester.pumpWidget(
+          testProviderScope(
+            additionalOverrides: [
+              repostsRepositoryProvider.overrideWithValue(
+                mockRepostsRepository,
+              ),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: BlocProvider<VideoInteractionsBloc>.value(
+                  value: mockInteractionsBloc,
+                  child: VideoOverlayActions(
+                    video: subtitleVideo,
+                    isVisible: true,
+                    isActive: true,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.properties.identifier == 'cc_button',
-        ),
-        findsNothing,
-      );
-    },
-  );
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.identifier == 'cc_button',
+          ),
+          findsNothing,
+        );
+      },
+    );
+  });
 }

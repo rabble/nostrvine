@@ -274,127 +274,132 @@ void main() {
     });
   });
 
-  test('polling retries transient failure and completes cleanup', () async {
-    var fetches = 0;
-    when(repository.fetchCurrent).thenAnswer((_) async {
-      fetches++;
-      if (fetches == 1) return _processing;
-      if (fetches == 2) {
-        throw const AccountDeletionRecoveryException('offline');
-      }
-      return _completed;
-    });
-    when(
-      () => authService.signOut(
-        deleteKeys: true,
-        deleteLocalUserData: true,
-      ),
-    ).thenAnswer((_) async {});
-    final cubit = buildCubit();
-    await cubit.load();
+  group('polling and cleanup', () {
+    test('polling retries transient failure and completes cleanup', () async {
+      var fetches = 0;
+      when(repository.fetchCurrent).thenAnswer((_) async {
+        fetches++;
+        if (fetches == 1) return _processing;
+        if (fetches == 2) {
+          throw const AccountDeletionRecoveryException('offline');
+        }
+        return _completed;
+      });
+      when(
+        () => authService.signOut(
+          deleteKeys: true,
+          deleteLocalUserData: true,
+        ),
+      ).thenAnswer((_) async {});
+      final cubit = buildCubit();
+      await cubit.load();
 
-    await timers.fireNext();
-    expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
-    expect(cubit.state.pollTickIndex, 1);
-    await timers.fireNext();
-
-    expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
-    expect(fetches, 3);
-    await cubit.close();
-  });
-
-  test('polling fails closed when the attempt identity changes', () async {
-    var fetches = 0;
-    when(repository.fetchCurrent).thenAnswer((_) async {
-      fetches++;
-      return fetches == 1
-          ? _processing
-          : const AccountDeletionAttempt(
-              id: 'different-attempt-id',
-              status: AccountDeletionAttemptStatus.processing,
-            );
-    });
-    final cubit = buildCubit();
-    await cubit.load();
-
-    await timers.fireNext();
-
-    expect(cubit.state.status, AccountDeletionRecoveryStatus.loadFailed);
-    expect(timers.timers.where((timer) => timer.isActive), isEmpty);
-    await cubit.close();
-  });
-
-  test('polling pauses at the session bound and keeps manual retry', () async {
-    when(repository.fetchCurrent).thenAnswer((_) async => _processing);
-    final cubit = buildCubit();
-    await cubit.load();
-
-    while (timers.timers.any((timer) => timer.isActive)) {
       await timers.fireNext();
-    }
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+      expect(cubit.state.pollTickIndex, 1);
+      await timers.fireNext();
 
-    expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
-    expect(cubit.state.pollingPaused, isTrue);
-    final fetchesBeforeRetry = cubit.state.pollTickIndex + 1;
-    await cubit.retry();
-    verify(repository.fetchCurrent).called(fetchesBeforeRetry + 1);
-    expect(cubit.state.pollingPaused, isFalse);
-    await cubit.close();
-  });
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.resolved);
+      expect(fetches, 3);
+      await cubit.close();
+    });
 
-  test(
-    'cleanup failure records a typed reason and remains retryable',
-    () async {
+    test('polling fails closed when the attempt identity changes', () async {
+      var fetches = 0;
+      when(repository.fetchCurrent).thenAnswer((_) async {
+        fetches++;
+        return fetches == 1
+            ? _processing
+            : const AccountDeletionAttempt(
+                id: 'different-attempt-id',
+                status: AccountDeletionAttemptStatus.processing,
+              );
+      });
+      final cubit = buildCubit();
+      await cubit.load();
+
+      await timers.fireNext();
+
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.loadFailed);
+      expect(timers.timers.where((timer) => timer.isActive), isEmpty);
+      await cubit.close();
+    });
+
+    test(
+      'polling pauses at the session bound and keeps manual retry',
+      () async {
+        when(repository.fetchCurrent).thenAnswer((_) async => _processing);
+        final cubit = buildCubit();
+        await cubit.load();
+
+        while (timers.timers.any((timer) => timer.isActive)) {
+          await timers.fireNext();
+        }
+
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.processing);
+        expect(cubit.state.pollingPaused, isTrue);
+        final fetchesBeforeRetry = cubit.state.pollTickIndex + 1;
+        await cubit.retry();
+        verify(repository.fetchCurrent).called(fetchesBeforeRetry + 1);
+        expect(cubit.state.pollingPaused, isFalse);
+        await cubit.close();
+      },
+    );
+
+    test(
+      'cleanup failure records a typed reason and remains retryable',
+      () async {
+        when(repository.fetchCurrent).thenAnswer((_) async => _completed);
+        when(
+          () => authService.signOut(
+            deleteKeys: true,
+            deleteLocalUserData: true,
+          ),
+        ).thenThrow(const SecureKeyStorageException('locked'));
+        final cubit = buildCubit();
+
+        await cubit.load();
+
+        expect(cubit.state.status, AccountDeletionRecoveryStatus.cleanupFailed);
+        expect(
+          cubit.state.failure,
+          AccountDeletionRecoveryFailure.keychainCleanup,
+        );
+        await cubit.close();
+      },
+    );
+
+    test('local data cleanup failure has a distinct typed reason', () async {
       when(repository.fetchCurrent).thenAnswer((_) async => _completed);
       when(
         () => authService.signOut(
           deleteKeys: true,
           deleteLocalUserData: true,
         ),
-      ).thenThrow(const SecureKeyStorageException('locked'));
+      ).thenThrow(const UserDataCleanupException('failed'));
       final cubit = buildCubit();
 
       await cubit.load();
 
-      expect(cubit.state.status, AccountDeletionRecoveryStatus.cleanupFailed);
       expect(
         cubit.state.failure,
-        AccountDeletionRecoveryFailure.keychainCleanup,
+        AccountDeletionRecoveryFailure.localDataCleanup,
       );
       await cubit.close();
-    },
-  );
+    });
 
-  test('local data cleanup failure has a distinct typed reason', () async {
-    when(repository.fetchCurrent).thenAnswer((_) async => _completed);
-    when(
-      () => authService.signOut(
-        deleteKeys: true,
-        deleteLocalUserData: true,
-      ),
-    ).thenThrow(const UserDataCleanupException('failed'));
-    final cubit = buildCubit();
+    test('close during an in-flight request drops the resumed emit', () async {
+      final completer = Completer<AccountDeletionAttempt?>();
+      when(repository.fetchCurrent).thenAnswer((_) => completer.future);
+      final cubit = buildCubit();
+      final load = cubit.load();
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.loading);
 
-    await cubit.load();
+      await cubit.close();
+      completer.complete(_recoverable);
+      await load;
 
-    expect(
-      cubit.state.failure,
-      AccountDeletionRecoveryFailure.localDataCleanup,
-    );
-    await cubit.close();
-  });
-
-  test('close during an in-flight request drops the resumed emit', () async {
-    final completer = Completer<AccountDeletionAttempt?>();
-    when(repository.fetchCurrent).thenAnswer((_) => completer.future);
-    final cubit = buildCubit();
-    final load = cubit.load();
-    expect(cubit.state.status, AccountDeletionRecoveryStatus.loading);
-
-    await cubit.close();
-    completer.complete(_recoverable);
-    await load;
-
-    expect(cubit.state.status, AccountDeletionRecoveryStatus.loading);
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.loading);
+    });
   });
 }

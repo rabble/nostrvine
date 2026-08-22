@@ -294,123 +294,155 @@ void main() {
     return l10n;
   }
 
-  testWidgets('warns about an in-flight upload before switching', (
-    tester,
-  ) async {
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
+  group('switching to another account', () {
+    testWidgets('warns about an in-flight upload before switching', (
+      tester,
+    ) async {
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
 
-    final l10n = await pumpAndTapSwitch(tester);
+      final l10n = await pumpAndTapSwitch(tester);
 
-    expect(find.text(l10n.settingsUploadInProgressTitle), findsOneWidget);
-    expect(find.text(l10n.settingsUploadInProgressMessage(1)), findsOneWidget);
-  });
+      expect(find.text(l10n.settingsUploadInProgressTitle), findsOneWidget);
+      expect(
+        find.text(l10n.settingsUploadInProgressMessage(1)),
+        findsOneWidget,
+      );
+    });
 
-  testWidgets('cancelling the warning leaves the upload untouched', (
-    tester,
-  ) async {
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
+    testWidgets('cancelling the warning leaves the upload untouched', (
+      tester,
+    ) async {
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
 
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsCancel));
-    await tester.pumpAndSettle();
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsCancel));
+      await tester.pumpAndSettle();
 
-    expectNothingParked();
-    expect(find.text(l10n.settingsUploadInProgressTitle), findsNothing);
-  });
+      expectNothingParked();
+      expect(find.text(l10n.settingsUploadInProgressTitle), findsNothing);
+    });
 
-  testWidgets('picking another account parks the in-flight uploads', (
-    tester,
-  ) async {
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-          BackgroundUpload(draft: draftWithId('d2'), result: null, progress: 0),
-          // Already finished — must not be counted in the warning.
-          BackgroundUpload(
-            draft: draftWithId('d3'),
-            result: const PublishError(PublishErrorKind.generic),
-            progress: 1,
-          ),
-        ],
-      ),
-    );
+    testWidgets('picking another account parks the in-flight uploads', (
+      tester,
+    ) async {
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+            BackgroundUpload(
+              draft: draftWithId('d2'),
+              result: null,
+              progress: 0,
+            ),
+            // Already finished — must not be counted in the warning.
+            BackgroundUpload(
+              draft: draftWithId('d3'),
+              result: const PublishError(PublishErrorKind.generic),
+              progress: 1,
+            ),
+          ],
+        ),
+      );
 
-    final l10n = await pumpAndTapSwitch(tester);
-    expect(find.text(l10n.settingsUploadInProgressMessage(2)), findsOneWidget);
+      final l10n = await pumpAndTapSwitch(tester);
+      expect(
+        find.text(l10n.settingsUploadInProgressMessage(2)),
+        findsOneWidget,
+      );
 
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-    await tester.tap(accountTile(otherPubkey));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+      await tester.tap(accountTile(otherPubkey));
+      await tester.pumpAndSettle();
 
-    // Which uploads parking covers is pinned on the bloc.
-    verify(() => publishBloc.parkInFlight()).called(1);
-  });
+      // Which uploads parking covers is pinned on the bloc.
+      verify(() => publishBloc.parkInFlight()).called(1);
+    });
 
-  testWidgets('waits for the park to land before swapping the account', (
-    tester,
-  ) async {
-    final parked = Completer<void>();
-    when(() => publishBloc.parkInFlight()).thenAnswer((_) => parked.future);
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
+    testWidgets('waits for the park to land before swapping the account', (
+      tester,
+    ) async {
+      final parked = Completer<void>();
+      when(() => publishBloc.parkInFlight()).thenAnswer((_) => parked.future);
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
 
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-    await tester.tap(accountTile(otherPubkey));
-    await tester.pumpAndSettle();
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+      await tester.tap(accountTile(otherPubkey));
+      await tester.pumpAndSettle();
 
-    // `swapAccount` disposes the container the publish bloc lives in, so it
-    // must not start while the park write is still outstanding.
-    verifyNever(() => deviceScope.switchController);
+      // `swapAccount` disposes the container the publish bloc lives in, so it
+      // must not start while the park write is still outstanding.
+      verifyNever(() => deviceScope.switchController);
 
-    parked.complete();
-    await tester.pumpAndSettle();
+      parked.complete();
+      await tester.pumpAndSettle();
 
-    verify(() => deviceScope.switchController).called(1);
-  });
+      verify(() => deviceScope.switchController).called(1);
+    });
 
-  testWidgets('failed parking aborts the account switch with feedback', (
-    tester,
-  ) async {
-    when(
-      () => publishBloc.parkInFlight(),
-    ).thenAnswer((_) async => throw Exception('database locked'));
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
+    testWidgets('failed parking aborts the account switch with feedback', (
+      tester,
+    ) async {
+      when(
+        () => publishBloc.parkInFlight(),
+      ).thenAnswer((_) async => throw Exception('database locked'));
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
 
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-    await tester.tap(accountTile(otherPubkey));
-    await tester.pumpAndSettle();
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+      await tester.tap(accountTile(otherPubkey));
+      await tester.pumpAndSettle();
 
-    verifyNever(() => deviceScope.switchController);
-    expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
+      verifyNever(() => deviceScope.switchController);
+      expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
+    });
   });
 
   // Both failures take the re-auth route, but missing local keys are not a
@@ -430,172 +462,202 @@ void main() {
         ),
       };
 
-  for (final entry in unusableSessionFailures.entries) {
-    testWidgets('offers a fresh sign-in on ${entry.key}', (tester) async {
-      // Same seam as the `_MockDeviceScope` note above: reading
-      // `switchController` throws inside the tile's try, standing in for a
-      // swap that dies on the target account's unusable credentials.
-      when(() => deviceScope.switchController).thenThrow(entry.value.$1);
+  group('switching hits an unusable session', () {
+    for (final entry in unusableSessionFailures.entries) {
+      testWidgets('offers a fresh sign-in on ${entry.key}', (tester) async {
+        // Same seam as the `_MockDeviceScope` note above: reading
+        // `switchController` throws inside the tile's try, standing in for a
+        // swap that dies on the target account's unusable credentials.
+        when(() => deviceScope.switchController).thenThrow(entry.value.$1);
+        when(() => authService.signOut()).thenAnswer((_) async {});
+
+        final l10n = await pumpAndTapSwitch(tester);
+        await tester.tap(accountTile(otherPubkey));
+        await tester.pumpAndSettle();
+
+        // Recoverable by signing in again, so the user gets that offer instead
+        // of the dead-end "couldn't switch" snackbar — and the copy says what
+        // confirming costs, since it signs the working account out.
+        expect(find.text(entry.value.$2(l10n)), findsOneWidget);
+        expect(find.text(l10n.settingsAccountSwitchFailed), findsNothing);
+
+        await tester.tap(find.text(l10n.authSignInTitle));
+        await tester.pumpAndSettle();
+
+        // Signing out lands on the welcome screen, where the pending pubkey
+        // pre-selects the account the user was trying to reach.
+        verify(
+          () => authService.pendingAccountSwitchPubkey = otherPubkey,
+        ).called(1);
+        verify(() => authService.signOut()).called(1);
+      });
+    }
+
+    testWidgets('declining the fresh sign-in keeps the current account', (
+      tester,
+    ) async {
+      when(
+        () => deviceScope.switchController,
+      ).thenThrow(SessionExpiredException());
       when(() => authService.signOut()).thenAnswer((_) async {});
 
       final l10n = await pumpAndTapSwitch(tester);
       await tester.tap(accountTile(otherPubkey));
       await tester.pumpAndSettle();
-
-      // Recoverable by signing in again, so the user gets that offer instead
-      // of the dead-end "couldn't switch" snackbar — and the copy says what
-      // confirming costs, since it signs the working account out.
-      expect(find.text(entry.value.$2(l10n)), findsOneWidget);
-      expect(find.text(l10n.settingsAccountSwitchFailed), findsNothing);
-
-      await tester.tap(find.text(l10n.authSignInTitle));
+      await tester.tap(find.text(l10n.settingsCancel));
       await tester.pumpAndSettle();
 
-      // Signing out lands on the welcome screen, where the pending pubkey
-      // pre-selects the account the user was trying to reach.
-      verify(
-        () => authService.pendingAccountSwitchPubkey = otherPubkey,
-      ).called(1);
-      verify(() => authService.signOut()).called(1);
+      verifyNever(() => authService.signOut());
+      // Nothing is remembered for the welcome screen either — backing out has to
+      // leave the session exactly as it was, not stage a switch for later.
+      verifyNever(() => authService.pendingAccountSwitchPubkey = any());
     });
-  }
-
-  testWidgets('declining the fresh sign-in keeps the current account', (
-    tester,
-  ) async {
-    when(
-      () => deviceScope.switchController,
-    ).thenThrow(SessionExpiredException());
-    when(() => authService.signOut()).thenAnswer((_) async {});
-
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(accountTile(otherPubkey));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.settingsCancel));
-    await tester.pumpAndSettle();
-
-    verifyNever(() => authService.signOut());
-    // Nothing is remembered for the welcome screen either — backing out has to
-    // leave the session exactly as it was, not stage a switch for later.
-    verifyNever(() => authService.pendingAccountSwitchPubkey = any());
   });
 
-  testWidgets('adding an account parks the in-flight uploads', (tester) async {
-    // `addNewAccount` signs out to reach the sign-in flow, ending the session
-    // the upload runs in just as the switch does — so this tile has to park
-    // too, or the copy is stranded at `publishing` and shows up in neither the
-    // queue nor the drafts library.
-    when(() => authService.signOut()).thenAnswer((_) async {});
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
+  group('the account picker', () {
+    testWidgets('adding an account parks the in-flight uploads', (
+      tester,
+    ) async {
+      // `addNewAccount` signs out to reach the sign-in flow, ending the session
+      // the upload runs in just as the switch does — so this tile has to park
+      // too, or the copy is stranded at `publishing` and shows up in neither the
+      // queue nor the drafts library.
+      when(() => authService.signOut()).thenAnswer((_) async {});
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
 
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.settingsAddAnotherAccount).last);
-    await tester.pumpAndSettle();
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.settingsAddAnotherAccount).last);
+      await tester.pumpAndSettle();
 
-    verify(() => publishBloc.parkInFlight()).called(1);
+      verify(() => publishBloc.parkInFlight()).called(1);
+    });
+
+    testWidgets('failed parking aborts adding an account with feedback', (
+      tester,
+    ) async {
+      when(
+        () => publishBloc.parkInFlight(),
+      ).thenAnswer((_) async => throw Exception('database locked'));
+      when(() => authService.signOut()).thenAnswer((_) async {});
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
+
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.settingsAddAnotherAccount).last);
+      await tester.pumpAndSettle();
+
+      verifyNever(() => authService.signOut());
+      expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
+    });
+
+    testWidgets('confirming the warning alone parks nothing', (tester) async {
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
+
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+
+      // The account picker is open but nothing has been chosen yet — backing out
+      // here must leave the upload running, not tear it down for nothing.
+      expectNothingParked();
+    });
+
+    testWidgets('dismissing the account picker leaves the upload running', (
+      tester,
+    ) async {
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
+
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+
+      Navigator.of(
+        tester.element(find.byType(SettingsScreen)),
+        rootNavigator: true,
+      ).pop();
+      await tester.pumpAndSettle();
+
+      expectNothingParked();
+    });
+
+    testWidgets('re-picking the current account parks nothing', (tester) async {
+      seedPublishState(
+        BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draftWithId('d1'),
+              result: null,
+              progress: 0,
+            ),
+          ],
+        ),
+      );
+
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(find.text(l10n.settingsSwitchAnyway));
+      await tester.pumpAndSettle();
+      await tester.tap(accountTile(currentPubkey));
+      await tester.pumpAndSettle();
+
+      expectNothingParked();
+    });
   });
 
-  testWidgets('failed parking aborts adding an account with feedback', (
-    tester,
-  ) async {
-    when(
-      () => publishBloc.parkInFlight(),
-    ).thenAnswer((_) async => throw Exception('database locked'));
-    when(() => authService.signOut()).thenAnswer((_) async {});
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
+  group('falls back to the drafts warning', () {
+    testWidgets('falls back to the drafts warning when nothing is uploading', (
+      tester,
+    ) async {
+      when(
+        () => draftStorageService.getDraftCount(),
+      ).thenAnswer((_) async => 2);
 
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.settingsAddAnotherAccount).last);
-    await tester.pumpAndSettle();
+      final l10n = await pumpAndTapSwitch(tester);
 
-    verifyNever(() => authService.signOut());
-    expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
-  });
-
-  testWidgets('confirming the warning alone parks nothing', (tester) async {
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
-
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-
-    // The account picker is open but nothing has been chosen yet — backing out
-    // here must leave the upload running, not tear it down for nothing.
-    expectNothingParked();
-  });
-
-  testWidgets('dismissing the account picker leaves the upload running', (
-    tester,
-  ) async {
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
-
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-
-    Navigator.of(
-      tester.element(find.byType(SettingsScreen)),
-      rootNavigator: true,
-    ).pop();
-    await tester.pumpAndSettle();
-
-    expectNothingParked();
-  });
-
-  testWidgets('re-picking the current account parks nothing', (tester) async {
-    seedPublishState(
-      BackgroundPublishState(
-        uploads: [
-          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
-        ],
-      ),
-    );
-
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(find.text(l10n.settingsSwitchAnyway));
-    await tester.pumpAndSettle();
-    await tester.tap(accountTile(currentPubkey));
-    await tester.pumpAndSettle();
-
-    expectNothingParked();
-  });
-
-  testWidgets('falls back to the drafts warning when nothing is uploading', (
-    tester,
-  ) async {
-    when(() => draftStorageService.getDraftCount()).thenAnswer((_) async => 2);
-
-    final l10n = await pumpAndTapSwitch(tester);
-
-    expect(find.text(l10n.settingsUnsavedDraftsTitle), findsOneWidget);
-    expect(find.text(l10n.settingsUploadInProgressTitle), findsNothing);
+      expect(find.text(l10n.settingsUnsavedDraftsTitle), findsOneWidget);
+      expect(find.text(l10n.settingsUploadInProgressTitle), findsNothing);
+    });
   });
 }

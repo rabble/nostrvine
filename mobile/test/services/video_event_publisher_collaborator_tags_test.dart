@@ -153,112 +153,114 @@ void main() {
     ).thenAnswer((_) async => <Event>[publishedEvent]);
   }
 
-  test(
-    'publishes collaborator p-tags with lowercase collaborator marker',
-    () async {
-      stubSignAndPublish();
+  group('publishDirectUpload', () {
+    test(
+      'publishes collaborator p-tags with lowercase collaborator marker',
+      () async {
+        stubSignAndPublish();
 
-      final result = await publisher.publishDirectUpload(
-        createUpload(),
-        collaboratorPubkeys: const [collaboratorPubkey],
-      );
+        final result = await publisher.publishDirectUpload(
+          createUpload(),
+          collaboratorPubkeys: const [collaboratorPubkey],
+        );
 
-      expect(result, isTrue);
-      expect(
-        _containsTag(capturedTags, buildCollaboratorPTag(collaboratorPubkey)),
-        isTrue,
-      );
-      // Verify no capitalized form is emitted
-      expect(
-        _containsTag(capturedTags, const [
-          'p',
-          collaboratorPubkey,
-          'wss://relay.divine.video',
-          'Collaborator',
-        ]),
-        isFalse,
-      );
-    },
-  );
+        expect(result, isTrue);
+        expect(
+          _containsTag(capturedTags, buildCollaboratorPTag(collaboratorPubkey)),
+          isTrue,
+        );
+        // Verify no capitalized form is emitted
+        expect(
+          _containsTag(capturedTags, const [
+            'p',
+            collaboratorPubkey,
+            'wss://relay.divine.video',
+            'Collaborator',
+          ]),
+          isFalse,
+        );
+      },
+    );
 
-  test(
-    'publishes generic mention p-tags while preserving collaborator role tags',
-    () async {
-      stubSignAndPublish();
+    test(
+      'publishes generic mention p-tags while preserving collaborator role tags',
+      () async {
+        stubSignAndPublish();
 
-      final result = await publisher.publishDirectUpload(
-        createUpload(),
-        collaboratorPubkeys: const [collaboratorPubkey],
-        mentionedPubkeys: const [
-          mentionPubkey,
-          collaboratorPubkey,
-          '',
-          'not-a-valid-pubkey',
-          mentionPubkey,
-          secondMentionPubkey,
-        ],
-      );
+        final result = await publisher.publishDirectUpload(
+          createUpload(),
+          collaboratorPubkeys: const [collaboratorPubkey],
+          mentionedPubkeys: const [
+            mentionPubkey,
+            collaboratorPubkey,
+            '',
+            'not-a-valid-pubkey',
+            mentionPubkey,
+            secondMentionPubkey,
+          ],
+        );
 
-      expect(result, isTrue);
-      expect(
-        _containsTag(capturedTags, buildCollaboratorPTag(collaboratorPubkey)),
-        isTrue,
-        reason: 'collaborator pubkeys keep the collaborator role marker',
-      );
-      expect(
-        _containsTag(capturedTags, const [
-          'p',
-          mentionPubkey,
-          'wss://relay.divine.video',
-          'mention',
-        ]),
-        isTrue,
-      );
-      expect(
-        _containsTag(capturedTags, const [
-          'p',
-          secondMentionPubkey,
-          'wss://relay.divine.video',
-          'mention',
-        ]),
-        isTrue,
-      );
-      expect(
-        capturedTags
-            .where(
-              (tag) => _deepEquals.equals(tag, const [
-                'p',
-                mentionPubkey,
-                'wss://relay.divine.video',
-                'mention',
-              ]),
-            )
-            .length,
-        equals(1),
-        reason: 'duplicate full hex mention pubkeys are emitted once',
-      );
-      expect(
-        _containsTag(capturedTags, const [
-          'p',
-          collaboratorPubkey,
-          'wss://relay.divine.video',
-          'mention',
-        ]),
-        isFalse,
-        reason: 'collaborator pubkeys are not duplicated as generic mentions',
-      );
-      expect(
-        capturedTags.any((tag) => tag.length > 1 && tag[1].isEmpty),
-        isFalse,
-        reason: 'empty mention pubkeys are skipped',
-      );
-      expect(
-        capturedTags.any(
-          (tag) => tag.length > 1 && tag[1] == 'not-a-valid-pubkey',
-        ),
-        isFalse,
-        reason: 'invalid mention pubkeys are skipped',
-      );
-    },
-  );
+        expect(result, isTrue);
+        expect(
+          _containsTag(capturedTags, buildCollaboratorPTag(collaboratorPubkey)),
+          isTrue,
+          reason: 'collaborator pubkeys keep the collaborator role marker',
+        );
+        expect(
+          _containsTag(capturedTags, const [
+            'p',
+            mentionPubkey,
+            'wss://relay.divine.video',
+            'mention',
+          ]),
+          isTrue,
+        );
+        expect(
+          _containsTag(capturedTags, const [
+            'p',
+            secondMentionPubkey,
+            'wss://relay.divine.video',
+            'mention',
+          ]),
+          isTrue,
+        );
+        expect(
+          capturedTags
+              .where(
+                (tag) => _deepEquals.equals(tag, const [
+                  'p',
+                  mentionPubkey,
+                  'wss://relay.divine.video',
+                  'mention',
+                ]),
+              )
+              .length,
+          equals(1),
+          reason: 'duplicate full hex mention pubkeys are emitted once',
+        );
+        expect(
+          _containsTag(capturedTags, const [
+            'p',
+            collaboratorPubkey,
+            'wss://relay.divine.video',
+            'mention',
+          ]),
+          isFalse,
+          reason: 'collaborator pubkeys are not duplicated as generic mentions',
+        );
+        expect(
+          capturedTags.any((tag) => tag.length > 1 && tag[1].isEmpty),
+          isFalse,
+          reason: 'empty mention pubkeys are skipped',
+        );
+        expect(
+          capturedTags.any(
+            (tag) => tag.length > 1 && tag[1] == 'not-a-valid-pubkey',
+          ),
+          isFalse,
+          reason: 'invalid mention pubkeys are skipped',
+        );
+      },
+    );
+  });
 }

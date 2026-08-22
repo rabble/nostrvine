@@ -23,39 +23,43 @@ Widget _buildSubject() {
 }
 
 void main() {
-  testWidgets('renders an accessible non-tappable checkmark', (tester) async {
-    final handle = tester.ensureSemantics();
-    await tester.pumpWidget(_buildSubject());
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    final data = tester
-        .getSemantics(find.byType(SpecialProfileCheckmark))
-        .getSemanticsData();
+  group('renders', () {
+    testWidgets('renders an accessible non-tappable checkmark', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_buildSubject());
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final data = tester
+          .getSemantics(find.byType(SpecialProfileCheckmark))
+          .getSemanticsData();
 
-    expect(data.label, l10n.profileBadgeCheckmarkTitle);
-    expect(data.hasAction(ui.SemanticsAction.tap), isFalse);
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is DivineIcon && w.icon == DivineIconName.check,
-      ),
-      findsOneWidget,
-    );
-    handle.dispose();
+      expect(data.label, l10n.profileBadgeCheckmarkTitle);
+      expect(data.hasAction(ui.SemanticsAction.tap), isFalse);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.check,
+        ),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
   });
 
-  testWidgets('does not open explanation sheet when tapped inline', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_buildSubject());
-    final l10n = lookupAppLocalizations(const Locale('en'));
+  group('interactions', () {
+    testWidgets('does not open explanation sheet when tapped inline', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildSubject());
+      final l10n = lookupAppLocalizations(const Locale('en'));
 
-    await tester.tap(
-      find.byWidgetPredicate(
-        (w) => w is DivineIcon && w.icon == DivineIconName.check,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.check,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text(l10n.profileBadgeCheckmarkBody), findsNothing);
-    expect(find.text(l10n.commonClose), findsNothing);
+      expect(find.text(l10n.profileBadgeCheckmarkBody), findsNothing);
+      expect(find.text(l10n.commonClose), findsNothing);
+    });
   });
 }

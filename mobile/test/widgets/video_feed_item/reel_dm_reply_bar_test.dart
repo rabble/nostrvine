@@ -124,769 +124,789 @@ void main() {
         ),
       );
 
-  testWidgets('renders composer + the 6 quick emojis + picker button', (
-    tester,
-  ) async {
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
+  group('renders', () {
+    testWidgets('renders composer + the 6 quick emojis + picker button', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
 
-    for (final emoji in ReelReplyConstants.quickEmojis) {
-      expect(find.text(emoji), findsOneWidget);
-    }
-    expect(find.byType(TextField), findsOneWidget);
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.bySemanticsLabel(l10n.dmReactionAddCustomA11yLabel), findsOne);
+      for (final emoji in ReelReplyConstants.quickEmojis) {
+        expect(find.text(emoji), findsOneWidget);
+      }
+      expect(find.byType(TextField), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.bySemanticsLabel(l10n.dmReactionAddCustomA11yLabel),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows the contextual name hint for a peer reel', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.dmReelReplyComposerHint('Alice')), findsOneWidget);
+    });
+
+    testWidgets('shows "reply to yourself" hint on own reel', (tester) async {
+      await tester.pumpWidget(wrap(context(isOwn: true)));
+      await tester.pump();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.dmReelReplyComposerHintSelf), findsOneWidget);
+    });
   });
 
-  testWidgets('shows the contextual name hint for a peer reel', (tester) async {
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.dmReelReplyComposerHint('Alice')), findsOneWidget);
-  });
+  group('interactions', () {
+    testWidgets('tapping a quick emoji publishes a reaction on the reel', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
 
-  testWidgets('shows "reply to yourself" hint on own reel', (tester) async {
-    await tester.pumpWidget(wrap(context(isOwn: true)));
-    await tester.pump();
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.dmReelReplyComposerHintSelf), findsOneWidget);
-  });
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
 
-  testWidgets('tapping a quick emoji publishes a reaction on the reel', (
-    tester,
-  ) async {
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.tap(find.text('❤️'));
-    await tester.pump();
-
-    verify(
-      () => reactionsRepo.publish(
-        conversationId: 'convo-id',
-        targetMessageId: _reelId,
-        targetMessageAuthor: _peer,
-        emoji: '❤️',
-      ),
-    ).called(1);
-  });
-
-  testWidgets('tapped emoji bounces softly, then settles back to rest', (
-    tester,
-  ) async {
-    // Same host as [wrap], but without the disableAnimations override so the
-    // pulse actually runs. No ReelReplyBridge is wired, so the tap still
-    // never triggers a player overlay.
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dmRepositoryProvider.overrideWithValue(dmRepo),
-          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
-          authServiceProvider.overrideWithValue(auth),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Align(
-              alignment: Alignment.bottomCenter,
-              child: ReelDmReplyBarHost(dmReplyContext: context()),
-            ),
-          ),
+      verify(
+        () => reactionsRepo.publish(
+          conversationId: 'convo-id',
+          targetMessageId: _reelId,
+          targetMessageAuthor: _peer,
+          emoji: '❤️',
         ),
-      ),
-    );
-    await tester.pump();
+      ).called(1);
+    });
 
-    final scaleFinder = find.ancestor(
-      of: find.text('❤️'),
-      matching: find.byType(ScaleTransition),
-    );
-    expect(
-      tester.widget<ScaleTransition>(scaleFinder).scale.value,
-      moreOrLessEquals(1),
-    );
-
-    await tester.tap(find.text('❤️'));
-    await tester.pump(); // start the bounce ticker
-    await tester.pump(const Duration(milliseconds: 190));
-    expect(
-      tester.widget<ScaleTransition>(scaleFinder).scale.value,
-      greaterThan(1.1),
-    );
-
-    await tester.pump(const Duration(milliseconds: 650));
-    expect(
-      tester.widget<ScaleTransition>(scaleFinder).scale.value,
-      moreOrLessEquals(1),
-    );
-  });
-
-  testWidgets('reduced motion suppresses the tap pulse', (tester) async {
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    final scaleFinder = find.ancestor(
-      of: find.text('❤️'),
-      matching: find.byType(ScaleTransition),
-    );
-
-    await tester.tap(find.text('❤️'));
-    await tester.pump(); // would start the ticker if one were scheduled
-    await tester.pump(const Duration(milliseconds: 80));
-    expect(
-      tester.widget<ScaleTransition>(scaleFinder).scale.value,
-      moreOrLessEquals(1),
-    );
-  });
-
-  testWidgets('re-tapping the active emoji is a no-op', (tester) async {
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.tap(find.text('❤️'));
-    await tester.pump();
-    // Second tap of the same (now-active) emoji must not publish again.
-    await tester.tap(find.text('❤️'));
-    await tester.pump();
-
-    verify(
-      () => reactionsRepo.publish(
-        conversationId: any(named: 'conversationId'),
-        targetMessageId: any(named: 'targetMessageId'),
-        targetMessageAuthor: any(named: 'targetMessageAuthor'),
-        emoji: '❤️',
-      ),
-    ).called(1);
-  });
-
-  testWidgets('failed optimistic reaction can be retried with the same emoji', (
-    tester,
-  ) async {
-    when(
-      () => reactionsRepo.publish(
-        conversationId: any(named: 'conversationId'),
-        targetMessageId: any(named: 'targetMessageId'),
-        targetMessageAuthor: any(named: 'targetMessageAuthor'),
-        emoji: any(named: 'emoji'),
-      ),
-    ).thenAnswer(
-      (_) async => const DmReactionPublishResult(
-        success: false,
-        rumorId: 'failed-rumor',
-      ),
-    );
-
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.tap(find.text('❤️'));
-    await tester.pump();
-    await tester.pump();
-
-    await tester.tap(find.text('❤️'));
-    await tester.pump(ReelReplyConstants.reactionThrottle);
-    await tester.pump();
-
-    verify(
-      () => reactionsRepo.publish(
-        conversationId: any(named: 'conversationId'),
-        targetMessageId: any(named: 'targetMessageId'),
-        targetMessageAuthor: any(named: 'targetMessageAuthor'),
-        emoji: '❤️',
-      ),
-    ).called(2);
-  });
-
-  testWidgets('submit while send is in flight preserves the draft', (
-    tester,
-  ) async {
-    final pendingSend = Completer<NIP17SendResult>();
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenAnswer((_) => pendingSend.future);
-
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.enterText(find.byType(TextField), 'first reply');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pump();
-
-    await tester.enterText(find.byType(TextField), 'second reply');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pump();
-
-    expect(find.text('second reply'), findsOneWidget);
-    verify(
-      () => dmRepo.sendMessage(
-        recipientPubkey: _peer,
-        content: 'first reply',
-        replyToId: _reelId,
-      ),
-    ).called(1);
-    verifyNever(
-      () => dmRepo.sendMessage(
-        recipientPubkey: _peer,
-        content: 'second reply',
-        replyToId: _reelId,
-      ),
-    );
-
-    pendingSend.complete(
-      NIP17SendResult.success(
-        rumorEventId: 'r',
-        messageEventId: 'g',
-        recipientPubkey: _peer,
-      ),
-    );
-  });
-
-  testWidgets('rapid different-emoji taps throttle to one immediate + one '
-      'coalesced publish', (tester) async {
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.tap(find.text('❤️')); // leading edge: publishes immediately
-    await tester.pump();
-    await tester.tap(find.text('😂')); // within window: coalesced
-    await tester.pump();
-
-    // Only the leading ❤️ has published so far.
-    verify(
-      () => reactionsRepo.publish(
-        conversationId: any(named: 'conversationId'),
-        targetMessageId: any(named: 'targetMessageId'),
-        targetMessageAuthor: any(named: 'targetMessageAuthor'),
-        emoji: '❤️',
-      ),
-    ).called(1);
-
-    // Advance past the throttle window; the coalesced 😂 publishes.
-    await tester.pump(ReelReplyConstants.reactionThrottle);
-    await tester.pump();
-    verify(
-      () => reactionsRepo.publish(
-        conversationId: any(named: 'conversationId'),
-        targetMessageId: any(named: 'targetMessageId'),
-        targetMessageAuthor: any(named: 'targetMessageAuthor'),
-        emoji: '😂',
-      ),
-    ).called(1);
-  });
-
-  testWidgets('tapping an emoji triggers the player reaction overlay', (
-    tester,
-  ) async {
-    String? reacted;
-    // Animations enabled (no disableAnimations MediaQuery) + a ReelReplyBridge
-    // so the bar forwards the reaction to the player overlay.
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dmRepositoryProvider.overrideWithValue(dmRepo),
-          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
-          authServiceProvider.overrideWithValue(auth),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Align(
-              alignment: Alignment.bottomCenter,
-              child: ReelReplyBridge(
-                setComposerFocused: (_) {},
-                playReaction: (emoji) => reacted = emoji,
+    testWidgets('tapped emoji bounces softly, then settles back to rest', (
+      tester,
+    ) async {
+      // Same host as [wrap], but without the disableAnimations override so the
+      // pulse actually runs. No ReelReplyBridge is wired, so the tap still
+      // never triggers a player overlay.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dmRepositoryProvider.overrideWithValue(dmRepo),
+            dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+            authServiceProvider.overrideWithValue(auth),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.bottomCenter,
                 child: ReelDmReplyBarHost(dmReplyContext: context()),
               ),
             ),
           ),
         ),
-      ),
+      );
+      await tester.pump();
+
+      final scaleFinder = find.ancestor(
+        of: find.text('❤️'),
+        matching: find.byType(ScaleTransition),
+      );
+      expect(
+        tester.widget<ScaleTransition>(scaleFinder).scale.value,
+        moreOrLessEquals(1),
+      );
+
+      await tester.tap(find.text('❤️'));
+      await tester.pump(); // start the bounce ticker
+      await tester.pump(const Duration(milliseconds: 190));
+      expect(
+        tester.widget<ScaleTransition>(scaleFinder).scale.value,
+        greaterThan(1.1),
+      );
+
+      await tester.pump(const Duration(milliseconds: 650));
+      expect(
+        tester.widget<ScaleTransition>(scaleFinder).scale.value,
+        moreOrLessEquals(1),
+      );
+    });
+
+    testWidgets('reduced motion suppresses the tap pulse', (tester) async {
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      final scaleFinder = find.ancestor(
+        of: find.text('❤️'),
+        matching: find.byType(ScaleTransition),
+      );
+
+      await tester.tap(find.text('❤️'));
+      await tester.pump(); // would start the ticker if one were scheduled
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(
+        tester.widget<ScaleTransition>(scaleFinder).scale.value,
+        moreOrLessEquals(1),
+      );
+    });
+
+    testWidgets('re-tapping the active emoji is a no-op', (tester) async {
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
+      // Second tap of the same (now-active) emoji must not publish again.
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
+
+      verify(
+        () => reactionsRepo.publish(
+          conversationId: any(named: 'conversationId'),
+          targetMessageId: any(named: 'targetMessageId'),
+          targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          emoji: '❤️',
+        ),
+      ).called(1);
+    });
+
+    testWidgets(
+      'failed optimistic reaction can be retried with the same emoji',
+      (
+        tester,
+      ) async {
+        when(
+          () => reactionsRepo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: any(named: 'emoji'),
+          ),
+        ).thenAnswer(
+          (_) async => const DmReactionPublishResult(
+            success: false,
+            rumorId: 'failed-rumor',
+          ),
+        );
+
+        await tester.pumpWidget(wrap(context()));
+        await tester.pump();
+
+        await tester.tap(find.text('❤️'));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.text('❤️'));
+        await tester.pump(ReelReplyConstants.reactionThrottle);
+        await tester.pump();
+
+        verify(
+          () => reactionsRepo.publish(
+            conversationId: any(named: 'conversationId'),
+            targetMessageId: any(named: 'targetMessageId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+            emoji: '❤️',
+          ),
+        ).called(2);
+      },
     );
-    await tester.pump();
 
-    await tester.tap(find.text('❤️'));
-    await tester.pump();
+    testWidgets('submit while send is in flight preserves the draft', (
+      tester,
+    ) async {
+      final pendingSend = Completer<NIP17SendResult>();
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer((_) => pendingSend.future);
 
-    expect(reacted, '❤️');
-  });
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
 
-  testWidgets('reduced motion suppresses the player reaction overlay', (
-    tester,
-  ) async {
-    String? reacted;
-    final dmContext = context();
+      await tester.enterText(find.byType(TextField), 'first reply');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dmRepositoryProvider.overrideWithValue(dmRepo),
-          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
-          authServiceProvider.overrideWithValue(auth),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: true),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: ReelReplyBridge(
-                    setComposerFocused: (_) {},
-                    playReaction: (emoji) => reacted = emoji,
-                    child: ReelDmReplyBarHost(dmReplyContext: dmContext),
+      await tester.enterText(find.byType(TextField), 'second reply');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+
+      expect(find.text('second reply'), findsOneWidget);
+      verify(
+        () => dmRepo.sendMessage(
+          recipientPubkey: _peer,
+          content: 'first reply',
+          replyToId: _reelId,
+        ),
+      ).called(1);
+      verifyNever(
+        () => dmRepo.sendMessage(
+          recipientPubkey: _peer,
+          content: 'second reply',
+          replyToId: _reelId,
+        ),
+      );
+
+      pendingSend.complete(
+        NIP17SendResult.success(
+          rumorEventId: 'r',
+          messageEventId: 'g',
+          recipientPubkey: _peer,
+        ),
+      );
+    });
+
+    testWidgets('rapid different-emoji taps throttle to one immediate + one '
+        'coalesced publish', (tester) async {
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      await tester.tap(find.text('❤️')); // leading edge: publishes immediately
+      await tester.pump();
+      await tester.tap(find.text('😂')); // within window: coalesced
+      await tester.pump();
+
+      // Only the leading ❤️ has published so far.
+      verify(
+        () => reactionsRepo.publish(
+          conversationId: any(named: 'conversationId'),
+          targetMessageId: any(named: 'targetMessageId'),
+          targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          emoji: '❤️',
+        ),
+      ).called(1);
+
+      // Advance past the throttle window; the coalesced 😂 publishes.
+      await tester.pump(ReelReplyConstants.reactionThrottle);
+      await tester.pump();
+      verify(
+        () => reactionsRepo.publish(
+          conversationId: any(named: 'conversationId'),
+          targetMessageId: any(named: 'targetMessageId'),
+          targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          emoji: '😂',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('tapping an emoji triggers the player reaction overlay', (
+      tester,
+    ) async {
+      String? reacted;
+      // Animations enabled (no disableAnimations MediaQuery) + a ReelReplyBridge
+      // so the bar forwards the reaction to the player overlay.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dmRepositoryProvider.overrideWithValue(dmRepo),
+            dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+            authServiceProvider.overrideWithValue(auth),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.bottomCenter,
+                child: ReelReplyBridge(
+                  setComposerFocused: (_) {},
+                  playReaction: (emoji) => reacted = emoji,
+                  child: ReelDmReplyBarHost(dmReplyContext: context()),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
+
+      expect(reacted, '❤️');
+    });
+
+    testWidgets('reduced motion suppresses the player reaction overlay', (
+      tester,
+    ) async {
+      String? reacted;
+      final dmContext = context();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dmRepositoryProvider.overrideWithValue(dmRepo),
+            dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+            authServiceProvider.overrideWithValue(auth),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(disableAnimations: true),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: ReelReplyBridge(
+                      setComposerFocused: (_) {},
+                      playReaction: (emoji) => reacted = emoji,
+                      child: ReelDmReplyBarHost(dmReplyContext: dmContext),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await tester.tap(find.text('❤️'));
-    await tester.pump();
+      await tester.tap(find.text('❤️'));
+      await tester.pump();
 
-    verify(
-      () => reactionsRepo.publish(
-        conversationId: 'convo-id',
-        targetMessageId: _reelId,
-        targetMessageAuthor: _peer,
-        emoji: '❤️',
-      ),
-    ).called(1);
-    expect(reacted, isNull);
-  });
+      verify(
+        () => reactionsRepo.publish(
+          conversationId: 'convo-id',
+          targetMessageId: _reelId,
+          targetMessageAuthor: _peer,
+          emoji: '❤️',
+        ),
+      ).called(1);
+      expect(reacted, isNull);
+    });
 
-  testWidgets('retry action closes when the bar leaves the tree', (
-    tester,
-  ) async {
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenThrow(Exception('send failed'));
+    testWidgets('retry action closes when the bar leaves the tree', (
+      tester,
+    ) async {
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenThrow(Exception('send failed'));
 
-    final barVisible = ValueNotifier(true);
-    addTearDown(barVisible.dispose);
+      final barVisible = ValueNotifier(true);
+      addTearDown(barVisible.dispose);
 
-    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
-    await tester.pump();
+      await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+      await tester.pump();
 
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
 
-    barVisible.value = false;
-    await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsNothing);
-    expect(find.text(l10n.dmSendFailedRetry), findsNothing);
+      barVisible.value = false;
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text(l10n.dmSendFailedRetry), findsNothing);
 
-    expect(tester.takeException(), isNull);
-    verify(
-      () => dmRepo.sendMessage(
-        recipientPubkey: _peer,
-        content: 'hello',
-        replyToId: _reelId,
-      ),
-    ).called(1);
-  });
+      expect(tester.takeException(), isNull);
+      verify(
+        () => dmRepo.sendMessage(
+          recipientPubkey: _peer,
+          content: 'hello',
+          replyToId: _reelId,
+        ),
+      ).called(1);
+    });
 
-  // #7316. The retry action must re-drive the row the failed send parked. A
-  // second `sendMessage` would mint a fresh rumor for the same text, and since
-  // the receiver's only stable dedup key is the rumor id — gift-wrap ids are
-  // randomised per wrap — it would render as a second message alongside the
-  // sweep's replay of the original.
-  testWidgets('tapping Retry re-drives the parked row, never re-sends', (
-    tester,
-  ) async {
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenAnswer(
-      (_) async => const NIP17SendResult.failure(
-        'no relay responded',
-        retryablePending: true,
-        queuedRumorId: 'parked-row',
-      ),
-    );
-    when(
-      () => dmRepo.recoverFullSend(
-        rumorId: any(named: 'rumorId'),
-        resetRetryBudget: any(named: 'resetRetryBudget'),
-      ),
-    ).thenAnswer(
-      (_) async => NIP17SendResult.success(
-        rumorEventId: 'parked-row',
-        messageEventId: 'g',
-        recipientPubkey: _peer,
-      ),
-    );
-
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    // Target the action, not its label: the label's own offset is inside the
-    // snackbar's slide transform and a tap there can miss the button.
-    await tester.tap(
-      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
-    );
-    await tester.pumpAndSettle();
-
-    verify(
-      () => dmRepo.recoverFullSend(
-        rumorId: 'parked-row',
-        resetRetryBudget: true,
-      ),
-    ).called(1);
-    // The original send, and only it.
-    verify(
-      () => dmRepo.sendMessage(
-        recipientPubkey: _peer,
-        content: 'hello',
-        replyToId: _reelId,
-      ),
-    ).called(1);
-  });
-
-  testWidgets('a retry whose row is gone reports unverified, not sent', (
-    tester,
-  ) async {
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenAnswer(
-      (_) async => const NIP17SendResult.failure(
-        'no relay responded',
-        retryablePending: true,
-        queuedRumorId: 'parked-row',
-      ),
-    );
-    // The row is gone: possibly delivered by the sweep, possibly cancelled,
-    // possibly another account's. Delivery cannot be proven either way.
-    when(
-      () => dmRepo.recoverFullSend(
-        rumorId: any(named: 'rumorId'),
-        resetRetryBudget: any(named: 'resetRetryBudget'),
-      ),
-    ).thenThrow(ArgumentError.value('parked-row', 'rumorId', 'no queued row'));
-
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
-
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.tap(
-      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n.dmReelReplyUnverified), findsOneWidget);
-    // Claiming "Sent" would assert a delivery nothing confirmed.
-    expect(find.text(l10n.shareSent), findsNothing);
-    // And no second Retry: there is no row left to re-drive, so tapping one
-    // would fall through to a fresh send — the duplicate #7316 closed. The
-    // send count pins that nothing re-sent behind the snackbar's back.
-    expect(
-      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
-      findsNothing,
-    );
-    // (The "View chat" affordance this outcome offers instead needs a router
-    // in the tree; `wrap` has none, so the shared snackbar builder drops the
-    // action here. The success path covers that branch.)
-    verify(
-      () => dmRepo.sendMessage(
-        recipientPubkey: _peer,
-        content: 'hello',
-        replyToId: _reelId,
-      ),
-    ).called(1);
-  });
-
-  testWidgets('a retry snackbar outliving its send still re-drives its row', (
-    tester,
-  ) async {
-    // The retry snackbar queues behind another, so the later success cannot
-    // dismiss it (`close()` only works on the visible one). When it finally
-    // surfaces and is tapped, the cubit's live `queuedRumorIds` has been
-    // cleared by that success — so a retry reading state instead of its own
-    // captured ids would fall through to a fresh send and duplicate a row the
-    // sweep is still re-driving.
-    var sends = 0;
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenAnswer((_) async {
-      sends++;
-      if (sends == 1) {
-        return const NIP17SendResult.failure(
+    // #7316. The retry action must re-drive the row the failed send parked. A
+    // second `sendMessage` would mint a fresh rumor for the same text, and since
+    // the receiver's only stable dedup key is the rumor id — gift-wrap ids are
+    // randomised per wrap — it would render as a second message alongside the
+    // sweep's replay of the original.
+    testWidgets('tapping Retry re-drives the parked row, never re-sends', (
+      tester,
+    ) async {
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.failure(
           'no relay responded',
           retryablePending: true,
           queuedRumorId: 'parked-row',
-        );
-      }
-      return NIP17SendResult.success(
-        rumorEventId: 'r$sends',
-        messageEventId: 'm$sends',
-        recipientPubkey: _peer,
+        ),
       );
+      when(
+        () => dmRepo.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'parked-row',
+          messageEventId: 'g',
+          recipientPubkey: _peer,
+        ),
+      );
+
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      // Target the action, not its label: the label's own offset is inside the
+      // snackbar's slide transform and a tap there can miss the button.
+      await tester.tap(
+        find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => dmRepo.recoverFullSend(
+          rumorId: 'parked-row',
+          resetRetryBudget: true,
+        ),
+      ).called(1);
+      // The original send, and only it.
+      verify(
+        () => dmRepo.sendMessage(
+          recipientPubkey: _peer,
+          content: 'hello',
+          replyToId: _reelId,
+        ),
+      ).called(1);
     });
-    when(
-      () => dmRepo.recoverFullSend(
-        rumorId: any(named: 'rumorId'),
-        resetRetryBudget: any(named: 'resetRetryBudget'),
-      ),
-    ).thenAnswer(
-      (_) async => NIP17SendResult.success(
-        rumorEventId: 'parked-row',
-        messageEventId: 'g',
-        recipientPubkey: _peer,
-      ),
-    );
 
-    await tester.pumpWidget(wrap(context()));
-    await tester.pump();
+    testWidgets('a retry whose row is gone reports unverified, not sent', (
+      tester,
+    ) async {
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.failure(
+          'no relay responded',
+          retryablePending: true,
+          queuedRumorId: 'parked-row',
+        ),
+      );
+      // The row is gone: possibly delivered by the sweep, possibly cancelled,
+      // possibly another account's. Delivery cannot be proven either way.
+      when(
+        () => dmRepo.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenThrow(
+        ArgumentError.value('parked-row', 'rumorId', 'no queued row'),
+      );
 
-    final messenger = tester.state<ScaffoldMessengerState>(
-      find.byType(ScaffoldMessenger).first,
-    );
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text('unrelated'),
-        duration: Duration(seconds: 30),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
 
-    // First send fails; its retry snackbar queues behind 'unrelated'.
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
 
-    // Second send succeeds, clearing the live handle for the first one's row.
-    await tester.enterText(find.byType(TextField), 'world');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(
+        find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+      );
+      await tester.pumpAndSettle();
 
-    messenger.removeCurrentSnackBar();
-    await tester.pumpAndSettle();
+      expect(find.text(l10n.dmReelReplyUnverified), findsOneWidget);
+      // Claiming "Sent" would assert a delivery nothing confirmed.
+      expect(find.text(l10n.shareSent), findsNothing);
+      // And no second Retry: there is no row left to re-drive, so tapping one
+      // would fall through to a fresh send — the duplicate #7316 closed. The
+      // send count pins that nothing re-sent behind the snackbar's back.
+      expect(
+        find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+        findsNothing,
+      );
+      // (The "View chat" affordance this outcome offers instead needs a router
+      // in the tree; `wrap` has none, so the shared snackbar builder drops the
+      // action here. The success path covers that branch.)
+      verify(
+        () => dmRepo.sendMessage(
+          recipientPubkey: _peer,
+          content: 'hello',
+          replyToId: _reelId,
+        ),
+      ).called(1);
+    });
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.tap(
-      find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
-    );
-    await tester.pumpAndSettle();
-
-    verify(
-      () => dmRepo.recoverFullSend(
-        rumorId: 'parked-row',
-        resetRetryBudget: true,
-      ),
-    ).called(1);
-    // Two deliberate sends, no third: the stale tap re-drove, never re-sent.
-    expect(sends, 2);
-  });
-
-  testWidgets('leaves a queued retry snackbar for whatever is on screen', (
-    tester,
-  ) async {
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenThrow(Exception('send failed'));
-
-    final barVisible = ValueNotifier(true);
-    addTearDown(barVisible.dispose);
-
-    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
-    await tester.pump();
-
-    // Something else on the reel route got to the messenger first, so the
-    // retry snackbar queues behind it instead of showing.
-    tester
-        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger).first)
-        .showSnackBar(
-          const SnackBar(
-            content: Text('unrelated'),
-            duration: Duration(seconds: 30),
-          ),
+    testWidgets('a retry snackbar outliving its send still re-drives its row', (
+      tester,
+    ) async {
+      // The retry snackbar queues behind another, so the later success cannot
+      // dismiss it (`close()` only works on the visible one). When it finally
+      // surfaces and is tapped, the cubit's live `queuedRumorIds` has been
+      // cleared by that success — so a retry reading state instead of its own
+      // captured ids would fall through to a fresh send and duplicate a row the
+      // sweep is still re-driving.
+      var sends = 0;
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer((_) async {
+        sends++;
+        if (sends == 1) {
+          return const NIP17SendResult.failure(
+            'no relay responded',
+            retryablePending: true,
+            queuedRumorId: 'parked-row',
+          );
+        }
+        return NIP17SendResult.success(
+          rumorEventId: 'r$sends',
+          messageEventId: 'm$sends',
+          recipientPubkey: _peer,
         );
-    await tester.pumpAndSettle();
+      });
+      when(
+        () => dmRepo.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'parked-row',
+          messageEventId: 'g',
+          recipientPubkey: _peer,
+        ),
+      );
 
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(wrap(context()));
+      await tester.pump();
 
-    barVisible.value = false;
-    await tester.pumpAndSettle();
+      final messenger = tester.state<ScaffoldMessengerState>(
+        find.byType(ScaffoldMessenger).first,
+      );
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('unrelated'),
+          duration: Duration(seconds: 30),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // Closing a queued snackbar would have dismissed this one instead.
-    expect(tester.takeException(), isNull);
-    expect(find.text('unrelated'), findsOneWidget);
+      // First send fails; its retry snackbar queues behind 'unrelated'.
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      // Second send succeeds, clearing the live handle for the first one's row.
+      await tester.enterText(find.byType(TextField), 'world');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      messenger.removeCurrentSnackBar();
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(
+        find.widgetWithText(SnackBarAction, l10n.dmSendFailedRetry),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => dmRepo.recoverFullSend(
+          rumorId: 'parked-row',
+          resetRetryBudget: true,
+        ),
+      ).called(1);
+      // Two deliberate sends, no third: the stale tap re-drove, never re-sent.
+      expect(sends, 2);
+    });
+
+    testWidgets('leaves a queued retry snackbar for whatever is on screen', (
+      tester,
+    ) async {
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenThrow(Exception('send failed'));
+
+      final barVisible = ValueNotifier(true);
+      addTearDown(barVisible.dispose);
+
+      await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+      await tester.pump();
+
+      // Something else on the reel route got to the messenger first, so the
+      // retry snackbar queues behind it instead of showing.
+      tester
+          .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger).first)
+          .showSnackBar(
+            const SnackBar(
+              content: Text('unrelated'),
+              duration: Duration(seconds: 30),
+            ),
+          );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      barVisible.value = false;
+      await tester.pumpAndSettle();
+
+      // Closing a queued snackbar would have dismissed this one instead.
+      expect(tester.takeException(), isNull);
+      expect(find.text('unrelated'), findsOneWidget);
+    });
+
+    testWidgets('closes the retry snackbar when navigation is accessible', (
+      tester,
+    ) async {
+      // The messenger skips the exit animation in this mode and rebuilds
+      // synchronously, which the framework rejects while it is unmounting the
+      // bar unless the close is deferred past the state lock.
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(accessibleNavigation: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenThrow(Exception('send failed'));
+
+      final barVisible = ValueNotifier(true);
+      addTearDown(barVisible.dispose);
+
+      await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+
+      barVisible.value = false;
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(l10n.dmSendFailedRetry), findsNothing);
+    });
   });
 
-  testWidgets('closes the retry snackbar when navigation is accessible', (
-    tester,
-  ) async {
-    // The messenger skips the exit animation in this mode and rebuilds
-    // synchronously, which the framework rejects while it is unmounting the
-    // bar unless the close is deferred past the state lock.
-    tester.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(accessibleNavigation: true);
-    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  group('navigation', () {
+    testWidgets('view chat action navigates after the bar leaves the tree', (
+      tester,
+    ) async {
+      when(
+        () => dmRepo.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'rumor-id',
+          messageEventId: 'message-id',
+          recipientPubkey: _peer,
+        ),
+      );
 
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenThrow(Exception('send failed'));
+      final barVisible = ValueNotifier(true);
+      addTearDown(barVisible.dispose);
+      final dmContext = context();
 
-    final barVisible = ValueNotifier(true);
-    addTearDown(barVisible.dispose);
-
-    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
-    await tester.pump();
-
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
-
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
-
-    barVisible.value = false;
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
-    expect(find.text(l10n.dmSendFailedRetry), findsNothing);
-  });
-
-  testWidgets('view chat action navigates after the bar leaves the tree', (
-    tester,
-  ) async {
-    when(
-      () => dmRepo.sendMessage(
-        recipientPubkey: any(named: 'recipientPubkey'),
-        content: any(named: 'content'),
-        replyToId: any(named: 'replyToId'),
-      ),
-    ).thenAnswer(
-      (_) async => NIP17SendResult.success(
-        rumorEventId: 'rumor-id',
-        messageEventId: 'message-id',
-        recipientPubkey: _peer,
-      ),
-    );
-
-    final barVisible = ValueNotifier(true);
-    addTearDown(barVisible.dispose);
-    final dmContext = context();
-
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, _) => Scaffold(
-            body: Builder(
-              builder: (inner) => MediaQuery(
-                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: barVisible,
-                  builder: (_, visible, _) => visible
-                      ? ReelDmReplyBarHost(dmReplyContext: dmContext)
-                      : const SizedBox.shrink(),
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, _) => Scaffold(
+              body: Builder(
+                builder: (inner) => MediaQuery(
+                  data: MediaQuery.of(inner).copyWith(disableAnimations: true),
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: barVisible,
+                    builder: (_, visible, _) => visible
+                        ? ReelDmReplyBarHost(dmReplyContext: dmContext)
+                        : const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        GoRoute(
-          path: ConversationPage.pathPattern,
-          builder: (_, state) => Scaffold(
-            body: Text('conversation ${state.pathParameters['id']}'),
+          GoRoute(
+            path: ConversationPage.pathPattern,
+            builder: (_, state) => Scaffold(
+              body: Text('conversation ${state.pathParameters['id']}'),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dmRepositoryProvider.overrideWithValue(dmRepo),
+            dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+            authServiceProvider.overrideWithValue(auth),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
           ),
         ),
-      ],
-    );
+      );
+      await tester.pump();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dmRepositoryProvider.overrideWithValue(dmRepo),
-          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
-          authServiceProvider.overrideWithValue(auth),
-        ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      ),
-    );
-    await tester.pump();
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'hello');
-    await tester.pump();
-    await tester.tap(find.byType(IconButton));
-    await tester.pumpAndSettle();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
 
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+      barVisible.value = false;
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
 
-    barVisible.value = false;
-    await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsNothing);
-    expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+      await tester.tap(find.text(l10n.dmReelReplyViewChat));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text(l10n.dmReelReplyViewChat));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
-    expect(find.text('conversation convo-id'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(find.text('conversation convo-id'), findsOneWidget);
+    });
   });
 }

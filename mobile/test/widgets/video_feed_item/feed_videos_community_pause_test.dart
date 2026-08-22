@@ -227,151 +227,158 @@ void main() {
     InfiniteVideoFeed.debugIsSupportedOverride = null;
   });
 
-  testWidgets(
-    'pauses the already-playing current video when a community warning '
-    'crosses the threshold',
-    (tester) async {
-      final harness = _NativePlayerHarness(tester);
-      harness.install();
-      addTearDown(harness.dispose);
+  group('community warning pause', () {
+    testWidgets(
+      'pauses the already-playing current video when a community warning '
+      'crosses the threshold',
+      (tester) async {
+        final harness = _NativePlayerHarness(tester);
+        harness.install();
+        addTearDown(harness.dispose);
 
-      final video = _makeVideo();
-      final repository = _MockCommunityContentLabelRepository();
-      // Gate the aggregation so the video starts playing before the label
-      // crosses — the exact race M1 fixes.
-      final labelGate = Completer<Set<String>>();
-      when(
-        () => repository.communityLabelsForVideo(video),
-      ).thenAnswer((_) => labelGate.future);
-      final filter = _MockContentFilterService();
-      when(
-        () => filter.getPreference(ContentLabel.gambling),
-      ).thenReturn(ContentFilterPreference.warn);
-      final service = CommunityContentLabelService(
-        repository: repository,
-        contentFilterService: filter,
-      );
+        final video = _makeVideo();
+        final repository = _MockCommunityContentLabelRepository();
+        // Gate the aggregation so the video starts playing before the label
+        // crosses — the exact race M1 fixes.
+        final labelGate = Completer<Set<String>>();
+        when(
+          () => repository.communityLabelsForVideo(video),
+        ).thenAnswer((_) => labelGate.future);
+        final filter = _MockContentFilterService();
+        when(
+          () => filter.getPreference(ContentLabel.gambling),
+        ).thenReturn(ContentFilterPreference.warn);
+        final service = CommunityContentLabelService(
+          repository: repository,
+          contentFilterService: filter,
+        );
 
-      final likes = _MockLikesRepository();
-      when(
-        likes.watchLikedEventIds,
-      ).thenAnswer((_) => const Stream<List<String>>.empty());
-      when(
-        () => likes.isLikedResolvingCoordinate(
-          eventId: any(named: 'eventId'),
-          addressableId: any(named: 'addressableId'),
-        ),
-      ).thenAnswer((_) async => false);
-      when(
-        () => likes.getLikeCount(
-          any(),
-          addressableId: any(named: 'addressableId'),
-        ),
-      ).thenAnswer((_) async => 0);
-      final comments = _MockCommentsRepository();
-      when(
-        () => comments.getCommentsCount(
-          any(),
-          rootAddressableId: any(named: 'rootAddressableId'),
-        ),
-      ).thenAnswer((_) async => 0);
-      final reposts = _MockRepostsRepository();
-      when(
-        reposts.watchRepostedAddressableIds,
-      ).thenAnswer((_) => const Stream<Set<String>>.empty());
-      when(
-        () => reposts.getRepostCountByEventId(any()),
-      ).thenAnswer((_) async => 0);
-
-      final playbackCubit = _MockVideoPlaybackStatusCubit();
-      when(() => playbackCubit.state).thenReturn(VideoPlaybackStatusState());
-      whenListen(
-        playbackCubit,
-        const Stream<VideoPlaybackStatusState>.empty(),
-      );
-      final autoAdvanceCubit = _MockFeedAutoAdvanceCubit();
-      when(
-        () => autoAdvanceCubit.state,
-      ).thenReturn(const FeedAutoAdvanceState());
-      whenListen(autoAdvanceCubit, const Stream<FeedAutoAdvanceState>.empty());
-      final volumeCubit = _MockVideoVolumeCubit();
-      when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
-      whenListen(volumeCubit, const Stream<VideoVolumeState>.empty());
-
-      final container = ProviderContainer(
-        overrides: [
-          ...getStandardTestOverrides(
-            mockAuthService: createMockAuthService(),
-            analyticsService: _NoopAnalyticsService(),
+        final likes = _MockLikesRepository();
+        when(
+          likes.watchLikedEventIds,
+        ).thenAnswer((_) => const Stream<List<String>>.empty());
+        when(
+          () => likes.isLikedResolvingCoordinate(
+            eventId: any(named: 'eventId'),
+            addressableId: any(named: 'addressableId'),
           ),
-          seenVideosServiceProvider.overrideWithValue(_NoopSeenVideosService()),
-          connectionStatusServiceProvider.overrideWithValue(
-            _MockConnectionStatusService(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => likes.getLikeCount(
+            any(),
+            addressableId: any(named: 'addressableId'),
           ),
-          videoModerationStatusServiceProvider.overrideWithValue(
-            _MockVideoModerationStatusService(),
+        ).thenAnswer((_) async => 0);
+        final comments = _MockCommentsRepository();
+        when(
+          () => comments.getCommentsCount(
+            any(),
+            rootAddressableId: any(named: 'rootAddressableId'),
           ),
-          subtitleVisibilityProvider.overrideWithValue(false),
-          likesRepositoryProvider.overrideWithValue(likes),
-          commentsRepositoryProvider.overrideWithValue(comments),
-          repostsRepositoryProvider.overrideWithValue(reposts),
-          communityContentLabelServiceProvider.overrideWith((ref) => service),
-          featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
-        ].cast(),
-      );
-      container.read(appForegroundProvider.notifier).setForeground(true);
-      addTearDown(container.dispose);
+        ).thenAnswer((_) async => 0);
+        final reposts = _MockRepostsRepository();
+        when(
+          reposts.watchRepostedAddressableIds,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        when(
+          () => reposts.getRepostCountByEventId(any()),
+        ).thenAnswer((_) async => 0);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: MultiBlocProvider(
-              providers: [
-                BlocProvider<FeedAutoAdvanceCubit>.value(
-                  value: autoAdvanceCubit,
+        final playbackCubit = _MockVideoPlaybackStatusCubit();
+        when(() => playbackCubit.state).thenReturn(VideoPlaybackStatusState());
+        whenListen(
+          playbackCubit,
+          const Stream<VideoPlaybackStatusState>.empty(),
+        );
+        final autoAdvanceCubit = _MockFeedAutoAdvanceCubit();
+        when(
+          () => autoAdvanceCubit.state,
+        ).thenReturn(const FeedAutoAdvanceState());
+        whenListen(
+          autoAdvanceCubit,
+          const Stream<FeedAutoAdvanceState>.empty(),
+        );
+        final volumeCubit = _MockVideoVolumeCubit();
+        when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
+        whenListen(volumeCubit, const Stream<VideoVolumeState>.empty());
+
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(
+              mockAuthService: createMockAuthService(),
+              analyticsService: _NoopAnalyticsService(),
+            ),
+            seenVideosServiceProvider.overrideWithValue(
+              _NoopSeenVideosService(),
+            ),
+            connectionStatusServiceProvider.overrideWithValue(
+              _MockConnectionStatusService(),
+            ),
+            videoModerationStatusServiceProvider.overrideWithValue(
+              _MockVideoModerationStatusService(),
+            ),
+            subtitleVisibilityProvider.overrideWithValue(false),
+            likesRepositoryProvider.overrideWithValue(likes),
+            commentsRepositoryProvider.overrideWithValue(comments),
+            repostsRepositoryProvider.overrideWithValue(reposts),
+            communityContentLabelServiceProvider.overrideWith((ref) => service),
+            featureFlagServiceProvider.overrideWithValue(_communityFlagsOn()),
+          ].cast(),
+        );
+        container.read(appForegroundProvider.notifier).setForeground(true);
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<FeedAutoAdvanceCubit>.value(
+                    value: autoAdvanceCubit,
+                  ),
+                  BlocProvider<VideoPlaybackStatusCubit>.value(
+                    value: playbackCubit,
+                  ),
+                  BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
+                ],
+                child: Scaffold(
+                  body: FeedVideos(videos: [video], onNearEnd: () {}),
                 ),
-                BlocProvider<VideoPlaybackStatusCubit>.value(
-                  value: playbackCubit,
-                ),
-                BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
-              ],
-              child: Scaffold(
-                body: FeedVideos(videos: [video], onNearEnd: () {}),
               ),
             ),
           ),
-        ),
-      );
-      // Let the controller initialize and start playing.
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 4));
+        );
+        // Let the controller initialize and start playing.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 4));
 
-      expect(
-        harness.countCalls('play'),
-        greaterThanOrEqualTo(1),
-        reason: 'the ungated video should start playing first',
-      );
-      final pausesBeforeCrossing = harness.countCalls('pause');
+        expect(
+          harness.countCalls('play'),
+          greaterThanOrEqualTo(1),
+          reason: 'the ungated video should start playing first',
+        );
+        final pausesBeforeCrossing = harness.countCalls('pause');
 
-      // Community warning crosses the threshold while the video plays.
-      labelGate.complete({'gambling'});
-      await tester.pump();
-      await tester.pump();
+        // Community warning crosses the threshold while the video plays.
+        labelGate.complete({'gambling'});
+        await tester.pump();
+        await tester.pump();
 
-      expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
-      expect(
-        harness.countCalls('pause'),
-        greaterThan(pausesBeforeCrossing),
-        reason:
-            'a newly-crossed community warning must imperatively pause the '
-            'already-playing controller, not just close the autoplay gate',
-      );
+        expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+        expect(
+          harness.countCalls('pause'),
+          greaterThan(pausesBeforeCrossing),
+          reason:
+              'a newly-crossed community warning must imperatively pause the '
+              'already-playing controller, not just close the autoplay gate',
+        );
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    },
-  );
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+  });
 }

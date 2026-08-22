@@ -198,202 +198,213 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
   }
 
-  testWidgets('Settings hub uses General Settings and Content & Safety', (
-    tester,
-  ) async {
-    await setStandardSurface(tester);
-    await tester.pumpWidget(
-      wrap(
-        const SettingsScreen(),
-        overrides: [
-          isFeatureEnabledProvider(
-            FeatureFlag.blueskyPublishing,
-          ).overrideWithValue(true),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('General Settings'), findsOneWidget);
-    expect(find.text('Content & Safety'), findsOneWidget);
-    expect(find.text('Content Preferences'), findsNothing);
-    expect(find.text('Moderation Controls'), findsNothing);
-    expect(find.text('Bluesky Publishing'), findsNothing);
-  });
-
-  testWidgets('localizes settings taxonomy for Amharic', (tester) async {
-    await setStandardSurface(tester);
-    await tester.pumpWidget(
-      wrap(const SettingsScreen(), locale: const Locale('am')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
-    expect(find.text('ይዘት እና ደህንነት'), findsOneWidget);
-    expect(find.text('General Settings'), findsNothing);
-    expect(find.text('Content & Safety'), findsNothing);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-
-    await tester.pumpWidget(
-      wrap(
-        const GeneralSettingsScreen(),
-        locale: const Locale('am'),
-        overrides: [
-          isFeatureEnabledProvider(
-            FeatureFlag.blueskyPublishing,
-          ).overrideWithValue(true),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
-    expect(find.text('ውህደቶች'), findsOneWidget);
-    expect(find.text('የተዘጉ መግለጫዎች'), findsOneWidget);
-    expect(find.text('ካሬ ቪዲዮዎች ብቻ'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-
-    await tester.pumpWidget(
-      wrap(const SafetySettingsScreen(), locale: const Locale('am')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('ይዘት እና ደህንነት'), findsOneWidget);
-    expect(find.text('የሚያዩት'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('የሚያትሙት'),
-      300,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text('የሚያትሙት'), findsOneWidget);
-  });
-
-  testWidgets('General Settings contains integrations and viewing defaults', (
-    tester,
-  ) async {
-    await setStandardSurface(tester);
-    await tester.pumpWidget(
-      wrap(
-        const GeneralSettingsScreen(),
-        overrides: [
-          isFeatureEnabledProvider(
-            FeatureFlag.blueskyPublishing,
-          ).overrideWithValue(true),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('General Settings'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Bluesky Publishing'),
-      120,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text('Bluesky Publishing'), findsOneWidget);
-    expect(find.text('Closed Captions'), findsOneWidget);
-    expect(find.text('Square videos only'), findsOneWidget);
-    expect(find.text('App Language'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Make my audio available for reuse'),
-      120,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text('Make my audio available for reuse'), findsOneWidget);
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    await tester.scrollUntilVisible(
-      find.text(l10n.generalSettingsHoldToRecord),
-      120,
-      scrollable: find.byType(Scrollable),
-    );
-    expect(find.text(l10n.generalSettingsHoldToRecord), findsOneWidget);
-
-    final captionsToggle = find.byWidgetPredicate(
-      (widget) =>
-          widget is DivineSwitchTile && widget.title == 'Closed Captions',
-    );
-    expect(captionsToggle, findsOneWidget);
-    expect(
-      ProviderScope.containerOf(
-        tester.element(find.byType(GeneralSettingsScreen)),
-      ).read(subtitleVisibilityProvider),
-      isTrue,
-    );
-
-    // The scroll above targeted a different row, so bring the toggle itself
-    // back into view — and pump — before reading its centre.
-    await scrollUntilTappable(
+  group(SettingsScreen, () {
+    testWidgets('Settings hub uses General Settings and Content & Safety', (
       tester,
-      captionsToggle,
-      120,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.tap(captionsToggle);
-    await tester.pumpAndSettle();
+    ) async {
+      await setStandardSurface(tester);
+      await tester.pumpWidget(
+        wrap(
+          const SettingsScreen(),
+          overrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.blueskyPublishing,
+            ).overrideWithValue(true),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(
-      ProviderScope.containerOf(
-        tester.element(find.byType(GeneralSettingsScreen)),
-      ).read(subtitleVisibilityProvider),
-      isFalse,
-    );
+      expect(find.text('General Settings'), findsOneWidget);
+      expect(find.text('Content & Safety'), findsOneWidget);
+      expect(find.text('Content Preferences'), findsNothing);
+      expect(find.text('Moderation Controls'), findsNothing);
+      expect(find.text('Bluesky Publishing'), findsNothing);
+    });
   });
 
-  testWidgets('General Settings always shows Appearance', (tester) async {
-    await setStandardSurface(tester);
-    // No override: the row used to be gated on FeatureFlag.lightMode. It is
-    // unconditional now, so pumping with the default provider set must still
-    // find it.
-    await tester.pumpWidget(wrap(const GeneralSettingsScreen()));
-    await tester.pumpAndSettle();
+  group('localization', () {
+    testWidgets('localizes settings taxonomy for Amharic', (tester) async {
+      await setStandardSurface(tester);
+      await tester.pumpWidget(
+        wrap(const SettingsScreen(), locale: const Locale('am')),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Appearance'),
-      120,
-      scrollable: find.byType(Scrollable),
-    );
+      expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
+      expect(find.text('ይዘት እና ደህንነት'), findsOneWidget);
+      expect(find.text('General Settings'), findsNothing);
+      expect(find.text('Content & Safety'), findsNothing);
 
-    expect(find.text('Appearance'), findsOneWidget);
-    expect(
-      find.text('Choose how Divine looks on this device'),
-      findsOneWidget,
-    );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      await tester.pumpWidget(
+        wrap(
+          const GeneralSettingsScreen(),
+          locale: const Locale('am'),
+          overrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.blueskyPublishing,
+            ).overrideWithValue(true),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
+      expect(find.text('ውህደቶች'), findsOneWidget);
+      expect(find.text('የተዘጉ መግለጫዎች'), findsOneWidget);
+      expect(find.text('ካሬ ቪዲዮዎች ብቻ'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      await tester.pumpWidget(
+        wrap(const SafetySettingsScreen(), locale: const Locale('am')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('ይዘት እና ደህንነት'), findsOneWidget);
+      expect(find.text('የሚያዩት'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('የሚያትሙት'),
+        300,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('የሚያትሙት'), findsOneWidget);
+    });
   });
 
-  testWidgets('Content & Safety exposes content filters and account labels', (
-    tester,
-  ) async {
-    await setStandardSurface(tester);
-    await tester.pumpWidget(wrap(const SafetySettingsScreen()));
-    await tester.pumpAndSettle();
+  group(GeneralSettingsScreen, () {
+    testWidgets('General Settings contains integrations and viewing defaults', (
+      tester,
+    ) async {
+      await setStandardSurface(tester);
+      await tester.pumpWidget(
+        wrap(
+          const GeneralSettingsScreen(),
+          overrides: [
+            isFeatureEnabledProvider(
+              FeatureFlag.blueskyPublishing,
+            ).overrideWithValue(true),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Content & Safety'), findsOneWidget);
-    expect(find.text('Content Filters'), findsOneWidget);
-    expect(find.text('Only show Divine-hosted videos'), findsOneWidget);
-    expect(find.text('Divine'), findsOneWidget);
+      expect(find.text('General Settings'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Bluesky Publishing'),
+        120,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Bluesky Publishing'), findsOneWidget);
+      expect(find.text('Closed Captions'), findsOneWidget);
+      expect(find.text('Square videos only'), findsOneWidget);
+      expect(find.text('App Language'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Make my audio available for reuse'),
+        120,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Make my audio available for reuse'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.scrollUntilVisible(
+        find.text(l10n.generalSettingsHoldToRecord),
+        120,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text(l10n.generalSettingsHoldToRecord), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pumpAndSettle();
+      final captionsToggle = find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineSwitchTile && widget.title == 'Closed Captions',
+      );
+      expect(captionsToggle, findsOneWidget);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(GeneralSettingsScreen)),
+        ).read(subtitleVisibilityProvider),
+        isTrue,
+      );
 
-    expect(find.text('Account Labels'), findsOneWidget);
+      // The scroll above targeted a different row, so bring the toggle itself
+      // back into view — and pump — before reading its centre.
+      await scrollUntilTappable(
+        tester,
+        captionsToggle,
+        120,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.tap(captionsToggle);
+      await tester.pumpAndSettle();
+
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(GeneralSettingsScreen)),
+        ).read(subtitleVisibilityProvider),
+        isFalse,
+      );
+    });
+
+    testWidgets('General Settings always shows Appearance', (tester) async {
+      await setStandardSurface(tester);
+      // No override: the row used to be gated on FeatureFlag.lightMode. It is
+      // unconditional now, so pumping with the default provider set must still
+      // find it.
+      await tester.pumpWidget(wrap(const GeneralSettingsScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Appearance'),
+        120,
+        scrollable: find.byType(Scrollable),
+      );
+
+      expect(find.text('Appearance'), findsOneWidget);
+      expect(
+        find.text('Choose how Divine looks on this device'),
+        findsOneWidget,
+      );
+    });
   });
 
-  testWidgets('Content Filters constrains menu content width on wide screens', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(900, 1200);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  group('Content & Safety', () {
+    testWidgets('Content & Safety exposes content filters and account labels', (
+      tester,
+    ) async {
+      await setStandardSurface(tester);
+      await tester.pumpWidget(wrap(const SafetySettingsScreen()));
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(wrap(const ContentFiltersScreen()));
-    await tester.pumpAndSettle();
+      expect(find.text('Content & Safety'), findsOneWidget);
+      expect(find.text('Content Filters'), findsOneWidget);
+      expect(find.text('Only show Divine-hosted videos'), findsOneWidget);
+      expect(find.text('Divine'), findsOneWidget);
 
-    final listViewWidth = tester.getSize(find.byType(ListView).first).width;
-    expect(listViewWidth, moreOrLessEquals(600));
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Account Labels'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Content Filters constrains menu content width on wide screens',
+      (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(900, 1200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(wrap(const ContentFiltersScreen()));
+        await tester.pumpAndSettle();
+
+        final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+        expect(listViewWidth, moreOrLessEquals(600));
+      },
+    );
   });
 }

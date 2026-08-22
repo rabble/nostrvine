@@ -338,141 +338,152 @@ void main() {
     expect(captured.last as int, lessThan(2000));
   });
 
-  testWidgets('the video stage is skipped when there is nothing to play', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(
-        status: SubtitleEditorStatus.ready,
-        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
-      ),
-    );
-    await tester.pumpWidget(pump());
-
-    expect(find.byType(SubtitleEditorStage), findsNothing);
-    expect(cueTextInList('one'), findsOneWidget);
-  });
-
-  testWidgets('the rows fill the screen when there is nothing to play', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(
-        status: SubtitleEditorStatus.ready,
-        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
-      ),
-    );
-    await tester.pumpWidget(pump());
-
-    // Without a picture the sheet has nothing to sit on: parked halfway up it
-    // would leave the top of the screen empty above the rows.
-    expect(find.byType(DraggableScrollableSheet), findsNothing);
-    final list = tester.getRect(find.byType(ListView));
-    final body = tester.getRect(find.byType(Scaffold));
-    expect(list.top - body.top, lessThan(body.height / 4));
-  });
-
-  testWidgets('no-stage rows clear the keyboard inset', (tester) async {
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(800, 600);
-    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
-    addTearDown(tester.view.reset);
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(
-        status: SubtitleEditorStatus.ready,
-        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
-      ),
-    );
-    await tester.pumpWidget(pump());
-
-    final saveButton = find.text(
-      lookupAppLocalizations(const Locale('en')).subtitleEditorSave,
-    );
-    expect(tester.getBottomLeft(saveButton).dy, lessThan(600 - 260));
-  });
-
-  testWidgets('the cue sheet rests on the stage and cannot collapse past it', (
-    tester,
-  ) async {
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(
-        status: SubtitleEditorStatus.ready,
-        videoDurationMs: 6000,
-        cues: [
-          EditableCue(start: 0, end: 1000, text: 'one'),
-          EditableCue(start: 1000, end: 2000, text: 'two'),
-        ],
-      ),
-    );
-    await tester.pumpWidget(pump(videoUrl: 'https://example.com/video.mp4'));
-    await tester.pump();
-
-    double sheetTop() => tester
-        .getRect(
-          find
-              .descendant(
-                of: find.byType(DraggableScrollableSheet),
-                matching: find.byType(DecoratedBox),
-              )
-              .first,
-        )
-        .top;
-
-    // A one-pixel divider closes the stage, so the sheet's edge meets it.
-    final stageBottom = tester.getRect(find.byType(SubtitleEditorStage)).bottom;
-    expect(sheetTop() - stageBottom, closeTo(1, 0.5));
-
-    await tester.drag(find.byType(ListView), const Offset(0, 80));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(
-      sheetTop() - stageBottom,
-      closeTo(1, 0.5),
-      reason:
-          'the picture is a fixed height, so a lower sheet would only '
-          'open a band of empty background under it',
-    );
-  });
-
-  testWidgets('the stage plays the renditions the feed would pick', (
-    tester,
-  ) async {
-    const hash =
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    when(() => cubit.state).thenReturn(
-      const SubtitleEditorState(
-        status: SubtitleEditorStatus.ready,
-        cues: [EditableCue(start: 0, end: 1000, text: 'one')],
-      ),
-    );
-    await tester.pumpWidget(pump(videoUrl: 'https://media.divine.video/$hash'));
-    await tester.pump();
-
-    final stage = tester.widget<SubtitleEditorStage>(
-      find.byType(SubtitleEditorStage),
-    );
-
-    // The editor must not carry its own ladder: #7550 is what happens when it
-    // does. The bare blob answers a Range request with a cached NoSuchKey body
-    // dressed up as a 206 (divine-blossom#198), so it is absent here, and the
-    // HLS rung is the master playlist the native player takes directly.
-    expect(
-      stage.playbackUrls,
-      equals(
-        resolvePlaybackSources(
-          _video(videoUrl: 'https://media.divine.video/$hash'),
-          urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+  group('video stage', () {
+    testWidgets('the video stage is skipped when there is nothing to play', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const SubtitleEditorState(
+          status: SubtitleEditorStatus.ready,
+          cues: [EditableCue(start: 0, end: 1000, text: 'one')],
         ),
-      ),
+      );
+      await tester.pumpWidget(pump());
+
+      expect(find.byType(SubtitleEditorStage), findsNothing);
+      expect(cueTextInList('one'), findsOneWidget);
+    });
+
+    testWidgets('the rows fill the screen when there is nothing to play', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const SubtitleEditorState(
+          status: SubtitleEditorStatus.ready,
+          cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+        ),
+      );
+      await tester.pumpWidget(pump());
+
+      // Without a picture the sheet has nothing to sit on: parked halfway up it
+      // would leave the top of the screen empty above the rows.
+      expect(find.byType(DraggableScrollableSheet), findsNothing);
+      final list = tester.getRect(find.byType(ListView));
+      final body = tester.getRect(find.byType(Scaffold));
+      expect(list.top - body.top, lessThan(body.height / 4));
+    });
+
+    testWidgets('no-stage rows clear the keyboard inset', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+      addTearDown(tester.view.reset);
+      when(() => cubit.state).thenReturn(
+        const SubtitleEditorState(
+          status: SubtitleEditorStatus.ready,
+          cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+        ),
+      );
+      await tester.pumpWidget(pump());
+
+      final saveButton = find.text(
+        lookupAppLocalizations(const Locale('en')).subtitleEditorSave,
+      );
+      expect(tester.getBottomLeft(saveButton).dy, lessThan(600 - 260));
+    });
+
+    testWidgets(
+      'the cue sheet rests on the stage and cannot collapse past it',
+      (
+        tester,
+      ) async {
+        when(() => cubit.state).thenReturn(
+          const SubtitleEditorState(
+            status: SubtitleEditorStatus.ready,
+            videoDurationMs: 6000,
+            cues: [
+              EditableCue(start: 0, end: 1000, text: 'one'),
+              EditableCue(start: 1000, end: 2000, text: 'two'),
+            ],
+          ),
+        );
+        await tester.pumpWidget(
+          pump(videoUrl: 'https://example.com/video.mp4'),
+        );
+        await tester.pump();
+
+        double sheetTop() => tester
+            .getRect(
+              find
+                  .descendant(
+                    of: find.byType(DraggableScrollableSheet),
+                    matching: find.byType(DecoratedBox),
+                  )
+                  .first,
+            )
+            .top;
+
+        // A one-pixel divider closes the stage, so the sheet's edge meets it.
+        final stageBottom = tester
+            .getRect(find.byType(SubtitleEditorStage))
+            .bottom;
+        expect(sheetTop() - stageBottom, closeTo(1, 0.5));
+
+        await tester.drag(find.byType(ListView), const Offset(0, 80));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(
+          sheetTop() - stageBottom,
+          closeTo(1, 0.5),
+          reason:
+              'the picture is a fixed height, so a lower sheet would only '
+              'open a band of empty background under it',
+        );
+      },
     );
-    expect(
-      stage.playbackUrls,
-      equals([
-        'https://media.divine.video/$hash/720p.mp4',
-        'https://media.divine.video/$hash/hls/master.m3u8',
-      ]),
-    );
+
+    testWidgets('the stage plays the renditions the feed would pick', (
+      tester,
+    ) async {
+      const hash =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      when(() => cubit.state).thenReturn(
+        const SubtitleEditorState(
+          status: SubtitleEditorStatus.ready,
+          cues: [EditableCue(start: 0, end: 1000, text: 'one')],
+        ),
+      );
+      await tester.pumpWidget(
+        pump(videoUrl: 'https://media.divine.video/$hash'),
+      );
+      await tester.pump();
+
+      final stage = tester.widget<SubtitleEditorStage>(
+        find.byType(SubtitleEditorStage),
+      );
+
+      // The editor must not carry its own ladder: #7550 is what happens when it
+      // does. The bare blob answers a Range request with a cached NoSuchKey body
+      // dressed up as a 206 (divine-blossom#198), so it is absent here, and the
+      // HLS rung is the master playlist the native player takes directly.
+      expect(
+        stage.playbackUrls,
+        equals(
+          resolvePlaybackSources(
+            _video(videoUrl: 'https://media.divine.video/$hash'),
+            urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+          ),
+        ),
+      );
+      expect(
+        stage.playbackUrls,
+        equals([
+          'https://media.divine.video/$hash/720p.mp4',
+          'https://media.divine.video/$hash/hls/master.m3u8',
+        ]),
+      );
+    });
   });
 
   testWidgets('focusing a row selects its cue on the timeline', (tester) async {
