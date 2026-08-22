@@ -1542,7 +1542,7 @@ void main() {
     );
 
     test(
-      'account-switch cleanup survives outgoing container disposal',
+      'account-switch cleanup retains provider dependencies after disposal',
       () async {
         final tokenRefreshController = StreamController<String>.broadcast();
         addTearDown(tokenRefreshController.close);

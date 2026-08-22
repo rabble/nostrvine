@@ -192,10 +192,10 @@ class PushNotificationSessionCoordinator {
 
   /// Deregisters the captured outgoing session after an account swap commits.
   ///
-  /// Unlike sign-out teardown, the old provider container may be disposed while
-  /// this work awaits the cleanup client. The captured pubkey and identity are
-  /// authoritative for this explicit switch, so this path never reads the old
-  /// Riverpod session after the swap.
+  /// Unlike sign-out teardown, this runs after the target container commits.
+  /// The swap host retains the outgoing provider container until this work
+  /// settles, while the captured pubkey and identity keep cleanup scoped to the
+  /// account being left.
   Future<void> deregisterLastReadyPubkeyAfterAccountSwitch() =>
       _deregisterLastReadyPubkey(requireCurrentSession: false);
 

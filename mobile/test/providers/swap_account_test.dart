@@ -1,6 +1,8 @@
 // ABOUTME: Tests swapAccount orchestration — build, sign in, swap; roll back
 // ABOUTME: (dispose the new container, leave the old) when sign-in fails.
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -448,6 +450,7 @@ void main() {
   ) async {
     ProviderContainer? signedInto;
     final events = <String>[];
+    final cleanupCompleter = Completer<void>();
     final pushCoordinator = _MockPushNotificationSessionCoordinator();
     when(
       pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
@@ -456,6 +459,7 @@ void main() {
     ) async {
       expect(controller.currentContainer, same(signedInto));
       events.add('deregister outgoing');
+      await cleanupCompleter.future;
     });
     final initial = await pumpHost(
       tester,
@@ -481,10 +485,16 @@ void main() {
     // Signed into a freshly-built container, not the initial one.
     expect(signedInto, isNotNull);
     expect(signedInto, isNot(same(initial)));
-    // The new container is live; the old one was disposed by the swap.
+    // The target is live, but the old container still owns the signer needed by
+    // the outgoing cleanup and cannot be disposed until that work settles.
     expect(_isDisposed(signedInto!), isFalse);
-    expect(_isDisposed(initial), isTrue);
+    expect(_isDisposed(initial), isFalse);
     expect(events, ['sign in target', 'deregister outgoing']);
+
+    cleanupCompleter.complete();
+    await tester.pump();
+
+    expect(_isDisposed(initial), isTrue);
   });
 
   group('account swap failure boundaries', () {

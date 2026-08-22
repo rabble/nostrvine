@@ -1,6 +1,8 @@
 // ABOUTME: Hosts the active ProviderContainer and swaps it in place on an
 // ABOUTME: account switch — no widget-tree remount, no welcome-screen bounce.
 
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,7 +15,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// [swapTo] with a freshly-built, already-signed-in container for the target
 /// account.
 class AccountSwitchController {
-  Future<void> Function(ProviderContainer next)? _onSwap;
+  Future<void> Function(
+    ProviderContainer next,
+    Future<void> Function()? beforePreviousContainerDispose,
+  )?
+  _onSwap;
   ProviderContainer? _currentContainer;
   bool _switchInProgress = false;
 
@@ -40,12 +46,15 @@ class AccountSwitchController {
   ///
   /// [next] must already be built (via `buildAccountContainer`) and signed in
   /// as the target account — the host only mounts it and disposes the old one.
-  Future<void> swapTo(ProviderContainer next) {
+  Future<void> swapTo(
+    ProviderContainer next, {
+    Future<void> Function()? beforePreviousContainerDispose,
+  }) {
     final onSwap = _onSwap;
     if (onSwap == null) {
       throw StateError('ContainerSwapHost is not mounted');
     }
-    return onSwap(next);
+    return onSwap(next, beforePreviousContainerDispose);
   }
 }
 
@@ -87,7 +96,10 @@ class _ContainerSwapHostState extends State<ContainerSwapHost> {
     widget.controller._onSwap = _swap;
   }
 
-  Future<void> _swap(ProviderContainer next) async {
+  Future<void> _swap(
+    ProviderContainer next,
+    Future<void> Function()? beforePreviousContainerDispose,
+  ) async {
     if (!mounted) {
       // The host is gone; the caller owns the orphaned container.
       next.dispose();
@@ -103,8 +115,20 @@ class _ContainerSwapHostState extends State<ContainerSwapHost> {
     });
 
     // Dispose the leaving container only after this frame commits, so widgets
-    // still reading it during the unmount don't hit a disposed container.
-    WidgetsBinding.instance.addPostFrameCallback((_) => previous.dispose());
+    // still reading it during the unmount don't hit a disposed container. A
+    // post-commit cleanup may retain account-scoped signers owned by that
+    // container, so keep it alive until the cleanup settles.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        (() async {
+          try {
+            await beforePreviousContainerDispose?.call();
+          } finally {
+            previous.dispose();
+          }
+        })(),
+      );
+    });
   }
 
   @override

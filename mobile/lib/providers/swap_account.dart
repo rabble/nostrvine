@@ -1,8 +1,6 @@
 // ABOUTME: Orchestrates an in-place account switch — build a container, sign it
 // ABOUTME: in as the target account, then swap; roll back on failure.
 
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
@@ -137,9 +135,9 @@ String? accountSwitchInitialLocation({
 ///
 /// Push deregistration follows the same commit boundary. The outgoing
 /// coordinator is captured before sign-in can replace shared signer storage,
-/// but it runs only after [AccountSwitchController.swapTo] succeeds. Its
-/// dedicated cleanup client can then publish for the outgoing identity even as
-/// the old account container is being torn down.
+/// but it runs only after [AccountSwitchController.swapTo] commits the target.
+/// The swap host retains the outgoing container until cleanup settles so its
+/// account-scoped signer remains usable throughout deregistration.
 ///
 /// Rolling the container back is not enough on its own: a sign-in that got far
 /// enough to fail has already restored the *target* account's signer keys over
@@ -181,31 +179,32 @@ Future<void> swapAccount({
     try {
       previousPrimary = await keyStorage.getKeyContainer();
       await signIn(container, account);
-      await controller.swapTo(container);
-      if (outgoingPushCoordinator != null) {
-        unawaited(
-          (() async {
-            try {
-              await outgoingPushCoordinator
-                  .deregisterLastReadyPubkeyAfterAccountSwitch();
-            } catch (error) {
-              // The target account is already live. Push cleanup is best-effort
-              // and must not turn a committed switch into a rollback attempt.
-              Log.warning(
-                'Outgoing account push deregistration failed: $error',
-                name: 'swapAccount',
-              );
-            }
-          })(),
-        );
-      }
+      await controller.swapTo(
+        container,
+        beforePreviousContainerDispose: outgoingPushCoordinator == null
+            ? null
+            : () async {
+                try {
+                  await outgoingPushCoordinator
+                      .deregisterLastReadyPubkeyAfterAccountSwitch();
+                } catch (error) {
+                  // The target account is already live. Push cleanup is
+                  // best-effort and must not turn a committed switch into a
+                  // rollback attempt.
+                  Log.warning(
+                    'Outgoing account push deregistration failed: $error',
+                    name: 'swapAccount',
+                  );
+                }
+              },
+      );
       try {
         await container
             .read(authServiceProvider)
             .claimLegacyRowsForCurrentUser();
       } catch (error) {
-        // The target container is already mounted and the outgoing container
-        // has been retired, so this post-commit migration cannot be rolled back.
+        // The target container is already mounted, so this post-commit
+        // migration cannot be rolled back.
         Log.warning(
           'Claiming legacy user data after account swap failed: $error',
           name: 'swapAccount',
