@@ -79,7 +79,7 @@ class InspiredByAttributionRow extends ConsumerWidget {
       } catch (e) {
         Log.warning(
           'Failed to decode inspiredByNpub '
-          '${video.inspiredByNpub}: $e',
+          '${pubkeyForLogs(video.inspiredByNpub)}: $e',
           name: 'InspiredByAttributionRow',
           category: LogCategory.ui,
         );

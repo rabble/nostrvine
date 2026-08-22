@@ -89,7 +89,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
 
     Log.info(
       'WelcomeBloc: found ${knownAccounts.length} known account(s)'
-      '${anchorPubkeyHex != null ? ", recovery anchor=$anchorPubkeyHex" : ""}',
+      '${anchorPubkeyHex != null ? ", recovery anchor=${pubkeyForLogs(anchorPubkeyHex)}" : ""}',
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );

@@ -1911,7 +1911,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       Log.info(
-        '  - Authors: ${authors?.length ?? 'all'} ${authors?.isNotEmpty == true ? "(first: ${authors!.first})" : ""}',
+        '  - Authors: ${authors?.length ?? 'all'} ${authors?.isNotEmpty == true ? "(first: ${pubkeyForLogs(authors!.first)})" : ""}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );

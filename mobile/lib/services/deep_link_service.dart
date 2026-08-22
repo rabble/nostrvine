@@ -249,7 +249,8 @@ class DeepLinkService {
             ? int.tryParse(pathSegments[2])
             : null;
         Log.info(
-          '📱 Parsed profile deep link: $npub${index != null ? " (index: $index)" : ""}',
+          '📱 Parsed profile deep link: ${pubkeyForLogs(npub)}'
+          '${index != null ? " (index: $index)" : ""}',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );

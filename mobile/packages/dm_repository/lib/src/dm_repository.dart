@@ -5418,7 +5418,8 @@ class DmRepository {
             'conversationId=${conversation.id} '
             'isGroup=${conversation.isGroup} '
             'participantCount=${conversation.participantPubkeys.length} '
-            'otherPubkeys=$otherPubkeys follows={$follows}',
+            'otherPubkeys=${otherPubkeys.map(pubkeyForLogs).join(", ")} '
+            'follows={$follows}',
             category: LogCategory.system,
           );
         }

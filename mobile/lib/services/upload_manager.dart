@@ -1032,27 +1032,14 @@ class UploadManager implements BackgroundAwareService {
     File videoFile,
     ValueChanged<double>? onProgress,
   ) async {
+    // One entry, not five: these describe a single upload attempt, and as
+    // separate entries they interleave with other work in the captured log
+    // that support reads.
     Log.info(
-      '📤 === EXECUTING UPLOAD ===',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '📁 Video: ${videoFile.path}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '👤 Pubkey: ${pubkeyForLogs(upload.nostrPubkey)}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '📝 Title: ${upload.title}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
+      '📤 === EXECUTING UPLOAD ===\n'
+      '📁 Video: ${videoFile.path}\n'
+      '👤 Pubkey: ${pubkeyForLogs(upload.nostrPubkey)}\n'
+      '📝 Title: ${upload.title}\n'
       '⏱️ Timeout: ${_retryConfig.networkTimeout.inMinutes} minutes',
       name: 'UploadManager',
       category: LogCategory.video,

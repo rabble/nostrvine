@@ -445,7 +445,7 @@ class PersonalEventCacheService {
       category: LogCategory.storage,
     );
     Log.info(
-      '  - User: ${stats['user_pubkey']}',
+      '  - User: ${pubkeyForLogs(stats['user_pubkey'] as String?)}',
       name: 'PersonalEventCache',
       category: LogCategory.storage,
     );

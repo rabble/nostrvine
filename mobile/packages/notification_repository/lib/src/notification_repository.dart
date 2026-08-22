@@ -2236,8 +2236,9 @@ class NotificationRepository {
       'notificationId=$notificationId '
       'sourcePubkey=${pubkeyForLogs(sourcePubkey)} '
       'referencedVideoEventId=$referencedVideoEventId '
-      'referencedVideoOwnerPubkey=${referencedVideoOwnerPubkey ?? 'unknown'} '
-      'rootEventPubkey=${rootEventPubkey ?? 'unknown'} '
+      'referencedVideoOwnerPubkey='
+      '${pubkeyForLogs(referencedVideoOwnerPubkey, whenNull: 'unknown')} '
+      'rootEventPubkey=${pubkeyForLogs(rootEventPubkey, whenNull: 'unknown')} '
       'currentUserPubkey=${pubkeyForLogs(_userPubkey)}',
       name: 'NotificationRepository',
       category: LogCategory.api,

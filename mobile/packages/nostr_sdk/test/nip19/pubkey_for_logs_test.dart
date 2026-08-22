@@ -29,17 +29,57 @@ void main() {
       });
     });
 
+    group('npub input', () {
+      test('renders the same npub-then-hex pair as the hex input does', () {
+        expect(pubkeyForLogs(npub), equals(pubkeyForLogs(hex)));
+      });
+
+      test('carries both identifiers whole', () {
+        final rendered = pubkeyForLogs(npub);
+
+        expect(rendered, contains(npub));
+        expect(rendered, contains(hex));
+      });
+
+      test('returns a malformed npub unchanged and whole', () {
+        expect(
+          pubkeyForLogs('npub1notvalidbech32'),
+          equals('npub1notvalidbech32'),
+        );
+      });
+    });
+
+    group('secrets', () {
+      test('redacts an nsec whole rather than shortening it', () {
+        const nsec =
+            'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5';
+
+        expect(pubkeyForLogs(nsec), equals('<redacted>'));
+      });
+
+      test('redacts an ncryptsec whole', () {
+        expect(pubkeyForLogs('ncryptsec1abcdef'), equals('<redacted>'));
+      });
+    });
+
     group('values that cannot be encoded', () {
       test('returns a marker for null', () {
         expect(pubkeyForLogs(null), equals('<null>'));
       });
 
-      test('returns a marker for an empty string', () {
-        expect(pubkeyForLogs(''), equals('<empty>'));
+      test('returns the call site wording for null when given one', () {
+        expect(
+          pubkeyForLogs(null, whenNull: 'null (legacy)'),
+          equals('null (legacy)'),
+        );
       });
 
-      test('returns an npub unchanged rather than double-encoding it', () {
-        expect(pubkeyForLogs(npub), equals(npub));
+      test('ignores whenNull when the pubkey is present', () {
+        expect(pubkeyForLogs(hex, whenNull: 'nope'), contains(npub));
+      });
+
+      test('returns a marker for an empty string', () {
+        expect(pubkeyForLogs(''), equals('<empty>'));
       });
 
       test('returns a short hex unchanged and whole', () {

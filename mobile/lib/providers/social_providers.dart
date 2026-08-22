@@ -738,7 +738,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             await fn();
           } catch (e) {
             Log.warning(
-              'Failed to clean $name for ${userPubkey ?? "unknown user"}: $e',
+              'Failed to clean $name for ${pubkeyForLogs(userPubkey, whenNull: "unknown user")}: $e',
               name: 'UserDataCleanup',
               category: LogCategory.auth,
             );

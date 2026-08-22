@@ -242,7 +242,7 @@ class SignerSecureStore {
         Log.warning(
           'archive: skipping OAuth archive for ${pubkeyForLogs(pubkeyHex)} — '
           'global session pubkey='
-          '${oauthSession.userPubkey ?? "null (legacy)"} '
+          '${pubkeyForLogs(oauthSession.userPubkey, whenNull: "null (legacy)")} '
           '(cannot verify ownership, not archiving to avoid corruption)',
           name: 'SignerSecureStore',
           category: LogCategory.auth,
@@ -339,7 +339,7 @@ class SignerSecureStore {
             Log.warning(
               'restoreActiveKeys: corrupt OAuth archive for '
               '${pubkeyForLogs(pubkeyHex)} — archive pubkey='
-              '${archivePubkey ?? "null (legacy)"}. '
+              '${pubkeyForLogs(archivePubkey, whenNull: "null (legacy)")}. '
               'Deleting corrupt archive.',
               name: 'SignerSecureStore',
               category: LogCategory.auth,

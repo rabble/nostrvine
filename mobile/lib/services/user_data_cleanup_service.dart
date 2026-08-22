@@ -169,7 +169,7 @@ class UserDataCleanupService {
       'Starting user data cleanup (reason: $cleanupReason, '
       'identityChange: $isIdentityChange, '
       'deleteUserData: $deleteUserData, '
-      'userPubkey: ${userPubkey ?? "null"}, '
+      'userPubkey: ${pubkeyForLogs(userPubkey, whenNull: "null")}, '
       'checking ${userSpecificKeys.length} keys'
       '${isIdentityChange ? ' + ${identityChangePrefixes.length} prefixes' : ''})',
       name: 'UserDataCleanupService',

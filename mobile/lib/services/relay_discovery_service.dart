@@ -144,7 +144,7 @@ class RelayDiscoveryService {
   /// indexer relays for a clean, self-contained query.
   Future<RelayDiscoveryResult> discoverRelays(String npub) async {
     Log.info(
-      '🔍 Starting relay discovery for $npub',
+      '🔍 Starting relay discovery for ${pubkeyForLogs(npub)}',
       name: 'RelayDiscoveryService',
       category: LogCategory.auth,
     );
@@ -153,7 +153,7 @@ class RelayDiscoveryService {
     final cached = await _getCachedRelays(npub);
     if (cached != null && cached.isNotEmpty) {
       Log.info(
-        '✅ Found ${cached.length} cached relays for $npub',
+        '✅ Found ${cached.length} cached relays for ${pubkeyForLogs(npub)}',
         name: 'RelayDiscoveryService',
         category: LogCategory.auth,
       );
@@ -190,7 +190,7 @@ class RelayDiscoveryService {
 
       // No relay list found on any indexer
       Log.warning(
-        '⚠️ No relay list found for $npub on any indexer',
+        '⚠️ No relay list found for ${pubkeyForLogs(npub)} on any indexer',
         name: 'RelayDiscoveryService',
         category: LogCategory.auth,
       );

@@ -12,6 +12,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
@@ -259,7 +260,9 @@ class BugReportService {
         buffer.writeln('Current Screen: ${sanitizedData.currentScreen}');
       }
       if (sanitizedData.userPubkey != null) {
-        buffer.writeln('User Pubkey: ${sanitizedData.userPubkey}');
+        buffer.writeln(
+          'User Pubkey: ${pubkeyForLogs(sanitizedData.userPubkey)}',
+        );
       }
       buffer.writeln('═' * 80);
       buffer.writeln();
@@ -551,7 +554,7 @@ class BugReportService {
         buffer.writeln('Current Screen: $currentScreen');
       }
       if (userPubkey != null) {
-        buffer.writeln('User Pubkey: $userPubkey');
+        buffer.writeln('User Pubkey: ${pubkeyForLogs(userPubkey)}');
       }
       buffer.writeln('═' * 80);
       buffer.writeln();
