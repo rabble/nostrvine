@@ -51,16 +51,44 @@ without first fetching the list. **The list is authoritative for order.** If the
 two disagree — the owner reordered parts after publishing — the list wins and
 the chip renders from list position.
 
+**Parts also chain as video replies.** Every part after the first publishes as a
+NIP-22 video reply, root (`E`/`A`/`K`) pointing at part 1 and parent
+(`e`/`a`/`k`) at part N-1 — the same tag shape `comments_repository` already
+builds for video replies. This is free continuity: the chain renders as a thread
+in any Nostr client, and `VideoReplyParentLink` already shows the parent link in
+this app with no new work.
+
+The chain is a second, redundant expression of the order. The list stays
+authoritative: it survives a deleted part, supports reorder without re-parenting
+videos, and answers "of 10" in one fetch, none of which a chain does. When the
+two disagree, the list wins.
+
+### Series parts are not comments
+
+Because parts reply to part 1, they would otherwise appear as comments on it — a
+10-part series reading as 9 comments. The comments list filters out a video
+reply when it is authored by the root video's author *and* carries the root's
+series coordinate. Those are series parts, surfaced by the series UI, not the
+comment thread. Video replies from anyone else, and the author's own video
+replies that are not series parts, are unaffected.
+
 ### Why tags on the video
 
 Tagging the video gives reverse lookup for free: a video met anywhere (main
 feed, profile, hashtag, deep link) already names its series, so the chip needs
 one addressable fetch of the list, cached, and no `#a` scan or server index.
 
-The alternative considered — prev/next tags chaining videos with no list object
-— was rejected: linking part N to part N+1 requires republishing part N *after*
-N+1 exists, which is one edit per link, and a single failed edit breaks the
-chain with no object holding the truth.
+Two alternatives were considered and folded in or rejected:
+
+- **Prev/next tags with no list object** — rejected. Linking part N to part N+1
+  means republishing part N *after* N+1 exists: one edit per link, and a single
+  failed edit breaks the chain with nothing holding the truth.
+- **Reply chain only** (part N is a video reply to part N-1, no list) — folded
+  in as the redundant layer rather than adopted alone. It costs nothing and
+  reads natively as a thread, but on its own it can't answer "of 10" without
+  walking every hop, branches ambiguously if the author posts two video replies
+  to one part, snaps when a middle part is deleted, and needs re-parenting edits
+  to reorder.
 
 ### Membership
 
@@ -92,7 +120,15 @@ feature, covered by a regression test — not worked around.
 
 The existing publish/metadata flow gains a series field. The picked series
 coordinate and computed part index are written into the kind 34236 tags at sign
-time, so first-publish assignment never involves an edit.
+time, so first-publish assignment never involves an edit. When the series
+already has parts, the same sign step adds the NIP-22 root and parent tags,
+reusing the tag builder in `comments_repository`.
+
+### Comments list
+
+`comments_list_bloc` drops video replies that are authored by the root video's
+author and carry the root's series coordinate, so series parts stay out of the
+comment thread. Everything else about comments is untouched.
 
 ### BLoC: `mobile/lib/features/series/bloc/`
 
@@ -185,6 +221,8 @@ v1 by decision.
 | Retro-assign edit drops `published_at` | Hard blocker. Republish preserves all original tags verbatim; regression test asserts `published_at` survives. |
 | Part deleted (kind 5) | Remaining parts render, renumbered from list position. |
 | Series list deleted, videos still tagged | Chip resolves nothing and renders nothing. Never an error state. |
+| Middle part deleted, breaking the reply chain | List renumbers and playback continues; the chain is redundant, so a snapped link is cosmetic. Later parts keep pointing at a deleted parent and their parent link renders nothing. |
+| Retro-assigned part has no reply tags | Expected. Videos assigned after publish keep their original threading; only the list places them. The chain is best-effort, the list is complete. |
 | Segment export fails mid-batch | Already-exported segments keep their queued uploads; the failed segment retries without redoing the others. |
 
 ## Testing
@@ -197,8 +235,11 @@ v1 by decision.
   over a stale `part` tag.
 - **Widget**: chip renders `Part 3 of 10`; prev disabled at part 1; next
   disabled at the last part; no chip on ordinary videos; l10n delegates wired.
-- **Publish**: tags written on first publish; retro-assign preserves
-  `published_at` and every prior tag.
+- **Publish**: tags written on first publish; part N carries NIP-22 root at
+  part 1 and parent at part N-1; retro-assign preserves `published_at` and
+  every prior tag and adds no reply tags.
+- **Comments**: a series part does not appear in the root video's comment
+  thread; a non-series video reply from the same author still does.
 - **Editor**: split-point math, N-segment export, partial-failure recovery.
 - **Golden**: chip in the fullscreen overlay.
 
