@@ -2,235 +2,181 @@
 
 **Date:** 2026-08-23
 
-**Status:** Approved UX direction; awaiting written-spec review
+**Status:** Approved UX direction; spec scoped down to a minimal first ship
 
 ## Goal
 
-Let a creator choose an unlimited ordered list of their videos to showcase at
-the start of their profile. Everyone sees those pinned videos in the creator's
-chosen order, followed by the creator's remaining videos in their existing
-newest-first order.
+Let a creator showcase a few of their videos at the start of their profile.
+Everyone sees pinned videos first, then the rest of the profile's videos in
+the existing newest-first order.
 
-The mental model is:
+The user goal is "put my best stuff first". It is not "manage a playlist".
+The spec below is deliberately the smallest thing that serves that goal.
 
-> The pin list is the curated start of the profile. Everything outside the
-> list follows normally.
+## Scope Decisions (why this is small)
 
-There is no product-level pin limit. Relay or event-size limits must surface as
-a save error; the client must never silently truncate the list.
+Three choices remove most of the original design's surface area:
+
+1. **Pin order is the pinning order — newest pin first.** Pinning is the
+   reorder gesture. Want a video at the top? Pin it. Want it lower? Unpin the
+   ones above it, or unpin and re-pin. No arranger screen, no drag handles, no
+   draft/dirty/discard flow, no multi-select picker, no second cubit.
+2. **Hard cap of 12 pins.** A showcase is a handful, not a catalog. The cap
+   removes the oversize-event failure path, virtualization, and paginated
+   reference resolution. 12 `a` tags is a small event.
+3. **One grid, no section headers.** Pinned tiles carry a pin badge and are
+   simply first. No second grid, no partial-row / new-row rules, no section
+   labels to localize.
+
+If creators actually ask for manual reordering after this ships, an arranger
+is an additive follow-up on the same data model. Do not build it now.
 
 ## Current Experience
 
 - The profile Videos tab is a three-column grid backed by `ProfileFeedCubit`.
-- Published profile videos currently retain the feed's normal order.
+- Published profile videos retain the feed's normal newest-first order.
 - Tapping a tile opens the fullscreen profile feed.
 - Long-pressing an owned tile opens the existing Edit/Delete action sheet.
 - In-progress uploads appear before published videos on the owner's profile.
 
 ## Viewer Experience
 
-The Videos tab renders up to three sections:
-
-1. **Publishing** — transient uploads, visible only to the owner.
-2. **Pinned** — available videos referenced by the profile's ordered pin list.
-3. **Latest** — all other profile videos, retaining the current newest-first
-   order.
-
-`Pinned` and `Latest` have small section labels. Each pinned thumbnail also has
-a subtle pin badge. A section is omitted when it has no items. Pinned and
-Latest are separate grids, so Latest begins on a new row even when the final
-Pinned row is not full; preserving the section boundary is more important than
-filling every grid cell.
-
-The list order applies to both the grid and fullscreen playback. Tapping a
-pinned or unpinned tile opens one sequence ordered as:
+One grid. Order:
 
 ```text
-available pinned videos in pin-list order
-+ unpinned profile videos in normal feed order
+owner-only in-progress uploads (unchanged)
++ resolved pinned videos, newest pin first
++ every other profile video in normal feed order
 ```
 
-The tapped video remains the initial fullscreen item. Pagination and
-prefetching continue from that same sequence, so the grid never opens a
-differently ordered feed.
+Pinned tiles show a pin badge. No section labels, no layout break between
+pinned and unpinned.
+
+The same order applies to fullscreen playback. Tapping any tile opens that one
+sequence with the tapped video as the initial item, so pagination and
+prefetching continue from the sequence the grid displayed.
 
 ## Owner Experience
 
-### Quick Pin and Unpin
+The existing long-press sheet for an owned video gains one action:
 
-The existing long-press sheet for an owned video adds one contextual action:
+- `Pin to profile` when not pinned — prepends the video to the pin list.
+- `Unpin from profile` when pinned — removes it, leaving the rest in order.
 
-- `Pin to profile` when the video is not pinned.
-- `Unpin from profile` when the video is pinned.
+Feedback is a plain snackbar. At the cap, `Pin to profile` is disabled with a
+message naming the limit ("You can pin up to 12 videos"), so the pin never
+silently evicts another video.
 
-Quick pin appends the video to the end of the ordered list. Success feedback
-uses a short snackbar with an `Arrange` action. Quick unpin removes the video
-without changing the relative order of the remaining pins. A failed quick
-action leaves the visible order unchanged and offers retry feedback.
+A failed pin or unpin leaves the visible order unchanged and offers retry.
 
-The full arranger is the first item in the owner's existing top-right profile
-options sheet. This keeps the profile header unchanged while providing a stable
-non-contextual entry point.
-
-### Arrange Profile
-
-`Arrange profile` is a full-screen flow with `Cancel`, a title, and `Done` in
-the app bar.
-
-The main view is a virtualized, numbered list of pinned videos. Each row shows:
-
-- thumbnail and video title;
-- current position;
-- a dedicated drag handle;
-- an accessible remove action.
-
-Dragging a handle reorders the local draft. The entire row is not draggable,
-which keeps scrolling and opening a preview unambiguous. Assistive-technology
-actions provide equivalent `Move earlier`, `Move later`, `Move to top`, and
-`Move to bottom` operations.
-
-A persistent `Add videos` button opens a full-screen, paginated grid of the
-creator's unpinned videos in newest-first order. The owner can select multiple
-videos and add them; selected videos append to the ordered list in selection
-order. Selection badges show that order before the owner confirms. Keeping the
-picker behind this button avoids forcing someone with hundreds of pins to
-scroll through the entire ordered list before reaching their unpinned videos.
-
-Removing, adding, and reordering only mutate the local draft. `Done` publishes
-the complete updated list once. `Done` is disabled while there are no changes
-or while saving. Leaving with unsaved changes asks the owner to discard changes
-or keep editing.
+That is the entire owner surface. No profile-options entry point, no
+`Arrange profile` screen.
 
 ## Loading and Failure Behavior
 
-- The last cached pin list renders immediately when available, then revalidates
-  from relays.
-- Pinned references are resolved directly in display-sized batches. An old
-  pinned video must not wait for normal profile pagination to reach it.
-- An unavailable, deleted, blocked, or no-longer-owned referenced video is
-  omitted without leaving an empty grid cell. The reference remains in the
-  stored list unless the owner explicitly saves an edited list, avoiding
-  destructive cleanup caused by a temporary fetch failure.
-- A save failure leaves the draft and current scroll position intact and shows
-  a clear retry action. The profile keeps showing the last successfully saved
-  order.
-- If the list exceeds a relay's accepted event size, saving fails visibly; no
-  prefix-only or otherwise truncated list is published.
+- The cached pin list renders immediately when available, then revalidates.
+- With at most 12 references, resolve them in a single batch. Nothing waits on
+  profile pagination.
+- An unavailable, deleted, blocked, or no-longer-owned reference is omitted
+  from display without leaving an empty cell. The reference stays in the
+  stored list — a temporary fetch failure must not delete pins.
+- A failed publish leaves the previously saved order live and shows a retry.
 
 ## Ordering Rules
 
-Let `P` be the ordered stable identities from the pin list and `V` be the
-profile's videos in normal feed order.
+Let `P` be the ordered identities from the pin list and `V` the profile's
+videos in normal feed order.
 
-1. De-duplicate `P` by stable video identity; the first occurrence wins.
-2. Keep only references that resolve to a visible video authored by the
-   profile owner.
-3. Emit the resolved intersection of `P` and `V` in `P` order.
-4. Append every video from `V` whose stable identity was not emitted, retaining
-   its order from `V`.
-5. Keep transient uploads outside `P` and `V` in the owner-only Publishing
-   section.
+1. De-duplicate `P` by stable video identity; first occurrence wins.
+2. Keep only references resolving to a visible video authored by the owner.
+3. Emit that resolved subset in `P` order.
+4. Append every video in `V` not already emitted, keeping `V` order.
+5. Transient uploads stay in the owner-only publishing position, ahead of both.
 
-The same pure ordering result supplies the profile grid, tile indexes,
-prefetching, and fullscreen feed seed.
+One pure function returns this order and feeds the grid, tile indexes,
+prefetching, and the fullscreen seed. It is the first thing to write and the
+first thing to test.
 
 ## Architecture and Data Flow
 
-Follow the repository's preferred layered flow:
-
 ```text
-Profile UI / Arrange Profile UI
-        ↓
-ProfileFeedCubit / ProfilePinsEditorCubit
-        ↓
+Profile UI
+    ↓
+ProfileFeedCubit
+    ↓
 ProfilePinsRepository + VideosRepository
-        ↓
+    ↓
 Nostr client and local cache
 ```
 
-`ProfilePinsRepository` owns pin-list subscription, cache, parsing, merging,
-signing, and publishing. UI and cubits work only with ordered stable video
-identities and never construct Nostr tags.
+`ProfilePinsRepository` owns the pin-list subscription, cache, parsing,
+merging, signing, and publishing, and exposes `pin`, `unpin`, and an ordered
+identity stream. UI never constructs Nostr tags.
 
-`ProfileFeedCubit` combines the repository's pin stream with profile video
-pages and exposes:
-
-- the single ordered published-video sequence;
-- the number of resolved pinned videos;
-- pin membership by stable identity;
-- pin-list loading and revalidation state.
-
-`ProfilePinsEditorCubit` owns the mutable draft, add/remove/reorder operations,
-dirty state, and one-shot save state. A successful repository write updates the
-shared pin stream, which makes the profile feed adopt the new order without a
-separate UI-side patch.
+`ProfileFeedCubit` combines that stream with profile video pages and exposes
+the single ordered sequence, pin membership by identity, and whether the pin
+list is still loading. There is no editor cubit, because there is no draft:
+pin and unpin publish immediately.
 
 ### Nostr Representation
 
-Use the standard replaceable NIP-51 pin list, kind `10001`, as the single list
-per profile. Divine's addressable kind `34236` videos are stored as ordered
-NIP-71 `a` references using the stable coordinate
-`34236:<author-pubkey>:<d-tag>`.
+Kind `10001` (NIP-51 pin list), one replaceable event per profile. Divine's
+addressable kind `34236` videos are stored as ordered NIP-71 `a` references
+using `34236:<author-pubkey>:<d-tag>`, so a metadata edit never loses a pin.
 
-NIP-51's pinned-notes table describes kind-1 `e` references, while its general
-list model allows references to things and NIP-71 defines `a` as the stable way
-to reference addressable videos. Divine therefore manages only valid kind
-`34236` `a` tags authored by the list owner. On save, the repository must
-preserve all unrelated public tags and encrypted `content` byte-for-byte so
-using Divine never destroys pins maintained by another Nostr client.
+Divine manages only valid kind `34236` `a` tags authored by the list owner. On
+save it preserves every unrelated public tag and the `content` field
+byte-for-byte, so using Divine never destroys pins another Nostr client keeps
+in the same list.
 
-Canonical references:
-
-- [NIP-51 Lists](https://github.com/nostr-protocol/nips/blob/master/51.md)
-- [NIP-71 Video Events](https://github.com/nostr-protocol/nips/blob/master/71.md)
+References: [NIP-51](https://github.com/nostr-protocol/nips/blob/master/51.md),
+[NIP-71](https://github.com/nostr-protocol/nips/blob/master/71.md)
 
 ## Accessibility
 
-- Pin badges are not the only indication of state; section labels and tile
-  semantics announce pinned status and position.
-- Reordering has semantic actions equivalent to drag gestures.
-- Drag handles and remove controls meet the platform tap-target minimums.
-- Saving, success, and failure changes are announced without moving focus away
-  from the affected control.
-- Dynamic labels use full localized strings rather than concatenated fragments.
+- The pin badge is not the only signal: tile semantics announce pinned state
+  and position.
+- Pin and unpin are sheet actions, so they are already reachable and labeled.
+- Success and failure are announced without moving focus.
+- Labels are full localized strings, not concatenated fragments.
 
 ## Testing
 
-### Pure ordering tests
+Written in this order, test before implementation at each step.
 
-- pinned videos precede unpinned videos;
-- pin-list order is preserved;
-- unpinned videos retain normal order;
-- duplicate pin references use the first position;
-- unavailable, foreign-authored, blocked, and deleted videos are omitted;
-- the same stable identity is not emitted twice;
-- metadata replacement of a kind `34236` video does not lose its pin.
+**Pure ordering** (first, no Flutter, no mocks):
 
-### Repository tests
+- pinned precede unpinned;
+- pin-list order preserved;
+- unpinned retain normal order;
+- duplicate references collapse to the first position;
+- unavailable, foreign-authored, blocked, and deleted references are omitted;
+- no identity is emitted twice;
+- a metadata replacement of a kind `34236` video keeps its pin.
+
+**Repository:**
 
 - cached list emits before relay revalidation;
 - parsing preserves ordered kind `34236` `a` tags;
-- saving preserves unrelated public tags and encrypted content;
-- one editor save produces one signed replacement event;
-- partial relay failure follows the repository's normal publish-success policy;
-- oversize rejection never produces a truncated fallback event.
+- saving preserves unrelated tags and `content`;
+- pin prepends, unpin removes without reordering the remainder;
+- pin at the cap is rejected without publishing.
 
-### Cubit and widget tests
+**Cubit and widget:**
 
-- quick pin appends and quick unpin removes;
-- add, remove, and drag operations update only the draft before `Done`;
-- dirty back navigation protects changes;
-- save failure preserves the draft and exposes retry;
-- owner profiles show Publishing separately;
-- Pinned and Latest section labels and pin semantics render correctly;
+- pin and unpin update the visible order;
+- a failed pin leaves the order unchanged and surfaces retry;
+- pin badge and pinned semantics render;
 - tapping any tile opens the identical ordered fullscreen sequence;
-- paginated unpinned videos remain de-duplicated against pinned videos.
+- paginated unpinned videos stay de-duplicated against pinned ones.
 
 ## Out of Scope
 
+- Manual reordering of pins (an arranger screen), and therefore drag handles,
+  semantic move actions, drafts, and a multi-select add picker.
+- Section headers or a separate pinned grid.
+- Unlimited pins, and the oversize-event handling it would require.
 - Reordering unpinned videos.
-- Pinning videos authored by another account.
-- Multiple named profile-pin sets.
-- A product-level maximum number of pins.
-- Search, folders, or bulk automatic ordering in the arranger.
+- Pinning another account's videos.
+- Multiple named pin sets.
 - Changing video metadata or deletion behavior.
