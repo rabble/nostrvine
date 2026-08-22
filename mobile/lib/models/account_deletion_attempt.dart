@@ -84,10 +84,6 @@ class AccountDeletionAttempt {
       status == AccountDeletionAttemptStatus.preparing &&
       operation == AccountDeletionAttemptOperation.cancelling;
 
-  bool get needsPolling =>
-      status == AccountDeletionAttemptStatus.processing ||
-      isCancellationInFlight;
-
   /// Whether this state must hold the user on the full-screen recovery gate.
   ///
   /// Terminal failures stay on the recovery screen because it renders the
