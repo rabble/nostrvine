@@ -158,79 +158,69 @@ final class UserProfileReactiveFamily extends $Family
   String toString() => r'userProfileReactiveProvider';
 }
 
-/// Reactive profile provider for a pubkey the viewer has blocked.
+/// Resolves profiles for the accounts the viewer has blocked.
 ///
-/// [userProfileReactive] cannot serve this: the repository's block filter
-/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
-/// account the viewer never saw in a feed has nothing cached and renders as a
-/// generated fallback name forever. Reviewing a block needs the real name and
-/// avatar, so this path fetches with the filter bypassed. It is *about* the
-/// account rather than a surface for its content.
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
 
-@ProviderFor(blockedUserProfile)
-final blockedUserProfileProvider = BlockedUserProfileFamily._();
+@ProviderFor(blockedUserProfiles)
+final blockedUserProfilesProvider = BlockedUserProfilesFamily._();
 
-/// Reactive profile provider for a pubkey the viewer has blocked.
+/// Resolves profiles for the accounts the viewer has blocked.
 ///
-/// [userProfileReactive] cannot serve this: the repository's block filter
-/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
-/// account the viewer never saw in a feed has nothing cached and renders as a
-/// generated fallback name forever. Reviewing a block needs the real name and
-/// avatar, so this path fetches with the filter bypassed. It is *about* the
-/// account rather than a surface for its content.
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
 
-final class BlockedUserProfileProvider
+final class BlockedUserProfilesProvider
     extends
         $FunctionalProvider<
-          AsyncValue<UserProfile?>,
-          UserProfile?,
-          Stream<UserProfile?>
+          AsyncValue<Map<String, UserProfile>>,
+          Map<String, UserProfile>,
+          FutureOr<Map<String, UserProfile>>
         >
-    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
-  /// Reactive profile provider for a pubkey the viewer has blocked.
+    with
+        $FutureModifier<Map<String, UserProfile>>,
+        $FutureProvider<Map<String, UserProfile>> {
+  /// Resolves profiles for the accounts the viewer has blocked.
   ///
-  /// [userProfileReactive] cannot serve this: the repository's block filter
-  /// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
-  /// account the viewer never saw in a feed has nothing cached and renders as a
-  /// generated fallback name forever. Reviewing a block needs the real name and
-  /// avatar, so this path fetches with the filter bypassed. It is *about* the
-  /// account rather than a surface for its content.
-  BlockedUserProfileProvider._({
-    required BlockedUserProfileFamily super.from,
-    required String super.argument,
+  /// Fetching the set in bounded batches avoids starting a REST request plus two
+  /// relay queries for every uncached row when a synced mute list is large.
+  BlockedUserProfilesProvider._({
+    required BlockedUserProfilesFamily super.from,
+    required Set<String> super.argument,
   }) : super(
          retry: null,
-         name: r'blockedUserProfileProvider',
+         name: r'blockedUserProfilesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$blockedUserProfileHash();
+  String debugGetCreateSourceHash() => _$blockedUserProfilesHash();
 
   @override
   String toString() {
-    return r'blockedUserProfileProvider'
+    return r'blockedUserProfilesProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  $StreamProviderElement<UserProfile?> $createElement(
+  $FutureProviderElement<Map<String, UserProfile>> $createElement(
     $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  ) => $FutureProviderElement(pointer);
 
   @override
-  Stream<UserProfile?> create(Ref ref) {
-    final argument = this.argument as String;
-    return blockedUserProfile(ref, argument);
+  FutureOr<Map<String, UserProfile>> create(Ref ref) {
+    final argument = this.argument as Set<String>;
+    return blockedUserProfiles(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is BlockedUserProfileProvider && other.argument == argument;
+    return other is BlockedUserProfilesProvider && other.argument == argument;
   }
 
   @override
@@ -239,43 +229,39 @@ final class BlockedUserProfileProvider
   }
 }
 
-String _$blockedUserProfileHash() =>
-    r'99591a8116981c4015ffdae9d6f3dce3db3b6bd7';
+String _$blockedUserProfilesHash() =>
+    r'85f3707aa089783ffa55e4854d874a4a7bd3b68f';
 
-/// Reactive profile provider for a pubkey the viewer has blocked.
+/// Resolves profiles for the accounts the viewer has blocked.
 ///
-/// [userProfileReactive] cannot serve this: the repository's block filter
-/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
-/// account the viewer never saw in a feed has nothing cached and renders as a
-/// generated fallback name forever. Reviewing a block needs the real name and
-/// avatar, so this path fetches with the filter bypassed. It is *about* the
-/// account rather than a surface for its content.
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
 
-final class BlockedUserProfileFamily extends $Family
-    with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
-  BlockedUserProfileFamily._()
+final class BlockedUserProfilesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<Map<String, UserProfile>>,
+          Set<String>
+        > {
+  BlockedUserProfilesFamily._()
     : super(
         retry: null,
-        name: r'blockedUserProfileProvider',
+        name: r'blockedUserProfilesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// Reactive profile provider for a pubkey the viewer has blocked.
+  /// Resolves profiles for the accounts the viewer has blocked.
   ///
-  /// [userProfileReactive] cannot serve this: the repository's block filter
-  /// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
-  /// account the viewer never saw in a feed has nothing cached and renders as a
-  /// generated fallback name forever. Reviewing a block needs the real name and
-  /// avatar, so this path fetches with the filter bypassed. It is *about* the
-  /// account rather than a surface for its content.
+  /// Fetching the set in bounded batches avoids starting a REST request plus two
+  /// relay queries for every uncached row when a synced mute list is large.
 
-  BlockedUserProfileProvider call(String pubkey) =>
-      BlockedUserProfileProvider._(argument: pubkey, from: this);
+  BlockedUserProfilesProvider call(Set<String> pubkeys) =>
+      BlockedUserProfilesProvider._(argument: pubkeys, from: this);
 
   @override
-  String toString() => r'blockedUserProfileProvider';
+  String toString() => r'blockedUserProfilesProvider';
 }
 
 /// One-shot provider: returns cached profile or fetches fresh.

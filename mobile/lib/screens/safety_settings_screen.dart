@@ -416,11 +416,11 @@ class _AddLabelerSheetState extends State<_AddLabelerSheet> {
   }
 }
 
-class _BlockedUsersSection extends StatelessWidget {
+class _BlockedUsersSection extends ConsumerWidget {
   const _BlockedUsersSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final blockedUsers = context.select(
       (SafetySettingsCubit cubit) => cubit.state.blockedUsers,
     );
@@ -435,11 +435,13 @@ class _BlockedUsersSection extends StatelessWidget {
         ),
       );
     }
+    final profiles = ref.watch(blockedUserProfilesProvider(blockedUsers)).value;
     return Column(
       children: blockedUsers
           .map(
             (pubkey) => _BlockedUserTile(
               pubkey: pubkey,
+              profile: profiles?[pubkey],
               onUnblock: () => _unblockUser(context, pubkey),
             ),
           )
@@ -462,16 +464,20 @@ class _BlockedUsersSection extends StatelessWidget {
 }
 
 /// Tile widget for displaying a blocked user with unblock option.
-class _BlockedUserTile extends ConsumerWidget {
-  const _BlockedUserTile({required this.pubkey, required this.onUnblock});
+class _BlockedUserTile extends StatelessWidget {
+  const _BlockedUserTile({
+    required this.pubkey,
+    required this.profile,
+    required this.onUnblock,
+  });
 
   final String pubkey;
+  final UserProfile? profile;
   final VoidCallback onUnblock;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(blockedUserProfileProvider(pubkey));
-    final profile = profileAsync.value;
+  Widget build(BuildContext context) {
+    final profile = this.profile;
     final displayName =
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
     // No relationship line here: "You follow" under an account you have

@@ -62,22 +62,19 @@ abstract interface class ProfileReader {
   ///
   /// Reads only — the relay query and the funnelcake REST fallback are both
   /// unauthenticated. Returns `null` when no profile exists anywhere.
-  ///
-  /// Set [ignoreBlockFilter] when the caller is *about* the blocked account
-  /// rather than showing its content — the blocked-users list in Safety
-  /// Settings needs a name and avatar to be reviewable at all.
   Future<UserProfile?> fetchFreshProfile({
     required String pubkey,
     bool requireRawKind0,
     List<Duration> rawKind0RetryDelays,
-    bool ignoreBlockFilter,
   });
 
   /// Resolves many profiles at once, preferring the Drift cache.
   ///
   /// Partial results are returned rather than throwing.
+  /// Set [ignoreBlockFilter] only for a surface that manages blocked accounts.
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter,
   });
 
   /// Returns the cached NIP-39 `i` tag list for [pubkey] from local storage.

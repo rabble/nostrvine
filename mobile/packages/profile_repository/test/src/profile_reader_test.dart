@@ -51,12 +51,12 @@ class _ExhaustiveReader implements ProfileReader {
     required String pubkey,
     bool requireRawKind0 = false,
     List<Duration> rawKind0RetryDelays = const [],
-    bool ignoreBlockFilter = false,
   }) async => null;
 
   @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter = false,
   }) async => {};
 
   @override

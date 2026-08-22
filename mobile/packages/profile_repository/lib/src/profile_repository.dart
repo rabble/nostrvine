@@ -765,7 +765,6 @@ class ProfileRepository implements ProfileReader {
     required String pubkey,
     bool requireRawKind0 = false,
     List<Duration> rawKind0RetryDelays = const [],
-    bool ignoreBlockFilter = false,
   }) {
     if (_vanished.contains(pubkey)) {
       revalidateVanishOnce(pubkey);
@@ -776,7 +775,6 @@ class ProfileRepository implements ProfileReader {
       pubkey: pubkey,
       requireRawKind0: requireRawKind0,
       rawKind0RetryDelays: rawKind0RetryDelays,
-      ignoreBlockFilter: ignoreBlockFilter,
     );
   }
 
@@ -788,7 +786,6 @@ class ProfileRepository implements ProfileReader {
     required String pubkey,
     bool requireRawKind0 = false,
     List<Duration> rawKind0RetryDelays = const [],
-    bool ignoreBlockFilter = false,
   }) {
     if (requireRawKind0 && _rawKind0ConfirmedMissing.contains(pubkey)) {
       return Future<UserProfile?>.value();
@@ -800,13 +797,9 @@ class ProfileRepository implements ProfileReader {
     _confirmedMissing.remove(pubkey);
 
     // Deduplicate: return existing in-flight future if present.
-    final rawKind0Suffix = requireRawKind0
-        ? '#raw-kind0#retry-${rawKind0RetryDelays.length}'
-        : '';
-    // A bypassing call must not dedupe onto a filtered one and inherit its
-    // null.
-    final blockFilterSuffix = ignoreBlockFilter ? '#no-block-filter' : '';
-    final fetchKey = '$pubkey$rawKind0Suffix$blockFilterSuffix';
+    final fetchKey = requireRawKind0
+        ? '$pubkey#raw-kind0#retry-${rawKind0RetryDelays.length}'
+        : pubkey;
     final existing = _inFlightFetches[fetchKey];
     if (existing != null) return existing;
 
@@ -814,7 +807,6 @@ class ProfileRepository implements ProfileReader {
       pubkey,
       requireRawKind0: requireRawKind0,
       rawKind0RetryDelays: rawKind0RetryDelays,
-      ignoreBlockFilter: ignoreBlockFilter,
     );
     _inFlightFetches[fetchKey] = future;
 
@@ -825,12 +817,10 @@ class ProfileRepository implements ProfileReader {
     String pubkey, {
     required bool requireRawKind0,
     required List<Duration> rawKind0RetryDelays,
-    bool ignoreBlockFilter = false,
   }) async {
     final first = await _doFetchFreshProfile(
       pubkey,
       requireRawKind0: requireRawKind0,
-      ignoreBlockFilter: ignoreBlockFilter,
     );
     if (!requireRawKind0 || first != null) return first;
 
@@ -841,7 +831,6 @@ class ProfileRepository implements ProfileReader {
       final retry = await _doFetchFreshProfile(
         pubkey,
         requireRawKind0: true,
-        ignoreBlockFilter: ignoreBlockFilter,
       );
       if (retry != null) return retry;
     }
@@ -853,11 +842,8 @@ class ProfileRepository implements ProfileReader {
   Future<UserProfile?> _doFetchFreshProfile(
     String pubkey, {
     required bool requireRawKind0,
-    bool ignoreBlockFilter = false,
   }) async {
-    if (!ignoreBlockFilter && (_blockFilter?.call(pubkey) ?? false)) {
-      return null;
-    }
+    if (_blockFilter?.call(pubkey) ?? false) return null;
 
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
     if (_funnelcakeApiClient?.isAvailable ?? false) {
@@ -2455,6 +2441,7 @@ class ProfileRepository implements ProfileReader {
   @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter = false,
   }) async {
     if (pubkeys.isEmpty) return {};
 
@@ -2463,7 +2450,7 @@ class ProfileRepository implements ProfileReader {
 
     Map<String, UserProfile> filteredResults() {
       final blockFilter = _blockFilter;
-      if (blockFilter != null) {
+      if (!ignoreBlockFilter && blockFilter != null) {
         results.removeWhere((pubkey, _) => blockFilter(pubkey));
       }
       return results;

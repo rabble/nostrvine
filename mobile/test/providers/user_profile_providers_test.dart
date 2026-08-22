@@ -219,7 +219,7 @@ void main() {
     );
   });
 
-  group('blockedUserProfileProvider', () {
+  group('blockedUserProfilesProvider', () {
     late _MockProfileRepository profileRepository;
     late ProviderContainer container;
 
@@ -233,74 +233,48 @@ void main() {
       addTearDown(container.dispose);
     });
 
-    test('fetches a blocked pubkey with the block filter bypassed', () async {
-      final liveController = StreamController<UserProfile?>();
-      addTearDown(liveController.close);
-
+    test('fetches blocked pubkeys in one filter-bypassing batch', () async {
+      final blockedProfile = _profile(pubkey, name: 'blocked');
       when(
-        () => profileRepository.getCachedProfile(pubkey: pubkey),
-      ).thenAnswer((_) async => null);
-      when(
-        () => profileRepository.fetchFreshProfile(
-          pubkey: pubkey,
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: [pubkey],
           ignoreBlockFilter: true,
         ),
-      ).thenAnswer((_) async => null);
-      when(
-        () => profileRepository.watchProfile(pubkey: pubkey),
-      ).thenAnswer((_) => liveController.stream);
+      ).thenAnswer((_) async => {pubkey: blockedProfile});
 
-      final sub = container.listen(
-        blockedUserProfileProvider(pubkey),
-        (_, _) {},
-        fireImmediately: true,
+      final result = await container.read(
+        blockedUserProfilesProvider({pubkey}).future,
       );
-      addTearDown(sub.close);
 
-      await Future<void>.delayed(Duration.zero);
-
+      expect(result, {pubkey: blockedProfile});
       verify(
-        () => profileRepository.fetchFreshProfile(
-          pubkey: pubkey,
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: [pubkey],
           ignoreBlockFilter: true,
         ),
       ).called(1);
     });
 
-    test('emits the cached profile without fetching', () async {
-      final liveController = StreamController<UserProfile?>();
-      addTearDown(liveController.close);
-      final cachedProfile = _profile(pubkey, name: 'blocked');
-
+    test('chunks large blocklists into bounded batch requests', () async {
+      final pubkeys = {
+        for (var i = 0; i < 51; i++) i.toString().padLeft(64, '0'),
+      };
       when(
-        () => profileRepository.getCachedProfile(pubkey: pubkey),
-      ).thenAnswer((_) async => cachedProfile);
-      when(
-        () => profileRepository.watchProfile(pubkey: pubkey),
-      ).thenAnswer((_) => liveController.stream);
-
-      final emitted = <AsyncValue<UserProfile?>>[];
-      final sub = container.listen(
-        blockedUserProfileProvider(pubkey),
-        (_, next) => emitted.add(next),
-        fireImmediately: true,
-      );
-      addTearDown(sub.close);
-
-      await untilCalled(() => profileRepository.watchProfile(pubkey: pubkey));
-      liveController.add(cachedProfile);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(
-        emitted.where((value) => value.hasValue).map((v) => v.value),
-        [cachedProfile],
-      );
-      verifyNever(
-        () => profileRepository.fetchFreshProfile(
-          pubkey: pubkey,
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
           ignoreBlockFilter: true,
         ),
-      );
+      ).thenAnswer((_) async => {});
+
+      await container.read(blockedUserProfilesProvider(pubkeys).future);
+
+      final captured = verify(
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: captureAny(named: 'pubkeys'),
+          ignoreBlockFilter: true,
+        ),
+      ).captured.cast<List<String>>();
+      expect(captured.map((chunk) => chunk.length), [50, 1]);
     });
   });
 

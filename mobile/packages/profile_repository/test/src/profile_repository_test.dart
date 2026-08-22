@@ -635,42 +635,6 @@ void main() {
         },
       );
 
-      test('fetches a blocked pubkey when ignoreBlockFilter is set', () async {
-        final blockingRepository = ProfileRepository(
-          nostrClient: mockNostrClient,
-          userProfilesDao: mockUserProfilesDao,
-          httpClient: mockHttpClient,
-          blockFilter: (pubkey) => pubkey == testPubkey,
-        );
-
-        final result = await blockingRepository.fetchFreshProfile(
-          pubkey: testPubkey,
-          ignoreBlockFilter: true,
-        );
-
-        expect(result?.displayName, equals('Test User'));
-      });
-
-      test('bypassing fetch does not dedupe onto a filtered one', () async {
-        final blockingRepository = ProfileRepository(
-          nostrClient: mockNostrClient,
-          userProfilesDao: mockUserProfilesDao,
-          httpClient: mockHttpClient,
-          blockFilter: (pubkey) => pubkey == testPubkey,
-        );
-
-        final results = await Future.wait([
-          blockingRepository.fetchFreshProfile(pubkey: testPubkey),
-          blockingRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-            ignoreBlockFilter: true,
-          ),
-        ]);
-
-        expect(results.first, isNull);
-        expect(results.last?.displayName, equals('Test User'));
-      });
-
       test('deduplicates concurrent calls for the same pubkey', () async {
         final results = await Future.wait([
           profileRepository.fetchFreshProfile(pubkey: testPubkey),
@@ -6833,6 +6797,48 @@ void main() {
         expect(result[testPubkey2]?.displayName, equals('Allowed Cached'));
         verifyNever(() => mockNostrClient.fetchProfile(any()));
       });
+
+      test(
+        'returns uncached blocked profiles when the block filter is bypassed',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys([testPubkey]),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getBulkProfiles([testPubkey]),
+          ).thenAnswer(
+            (_) async => BulkProfilesResponse(
+              profiles: {
+                testPubkey: UserProfileFound(
+                  profile: UserProfileData.fromJson(testPubkey, const {
+                    'display_name': 'Blocked API User',
+                  }),
+                ),
+              },
+            ),
+          );
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: (pubkey) => pubkey == testPubkey,
+          );
+
+          final result = await repoWithBlockFilter.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+            ignoreBlockFilter: true,
+          );
+
+          expect(result[testPubkey]?.displayName, equals('Blocked API User'));
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
 
       test('fetches uncached from Funnelcake API', () async {
         when(

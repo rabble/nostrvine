@@ -12,6 +12,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
+const _blockedProfileFetchChunkSize = 50;
+
 final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
   return ref
       .watch(databaseProvider)
@@ -94,34 +96,30 @@ Stream<UserProfile?> _watchUserProfile(
   yield* repo.watchProfile(pubkey: pubkey);
 }
 
-/// Reactive profile provider for a pubkey the viewer has blocked.
+/// Resolves profiles for the accounts the viewer has blocked.
 ///
-/// [userProfileReactive] cannot serve this: the repository's block filter
-/// short-circuits `fetchFreshProfile` for a blocked pubkey, so a blocked
-/// account the viewer never saw in a feed has nothing cached and renders as a
-/// generated fallback name forever. Reviewing a block needs the real name and
-/// avatar, so this path fetches with the filter bypassed. It is *about* the
-/// account rather than a surface for its content.
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
 @riverpod
-Stream<UserProfile?> blockedUserProfile(Ref ref, String pubkey) {
+Future<Map<String, UserProfile>> blockedUserProfiles(
+  Ref ref,
+  Set<String> pubkeys,
+) async {
   final repo = ref.watch(profileReadRepositoryProvider);
-  if (repo == null) return Stream<UserProfile?>.value(null);
+  if (repo == null || pubkeys.isEmpty) return const {};
 
-  return _watchBlockedUserProfile(repo, pubkey);
-}
-
-Stream<UserProfile?> _watchBlockedUserProfile(
-  ProfileReader repo,
-  String pubkey,
-) async* {
-  final cached = await repo.getCachedProfile(pubkey: pubkey);
-  if (cached == null) {
-    unawaited(
-      repo.fetchFreshProfile(pubkey: pubkey, ignoreBlockFilter: true),
+  final profiles = <String, UserProfile>{};
+  final pending = pubkeys.toList();
+  for (var i = 0; i < pending.length; i += _blockedProfileFetchChunkSize) {
+    final chunk = pending.skip(i).take(_blockedProfileFetchChunkSize).toList();
+    profiles.addAll(
+      await repo.fetchBatchProfiles(
+        pubkeys: chunk,
+        ignoreBlockFilter: true,
+      ),
     );
   }
-
-  yield* repo.watchProfile(pubkey: pubkey);
+  return profiles;
 }
 
 /// One-shot provider: returns cached profile or fetches fresh.
