@@ -50,11 +50,8 @@ void main() {
       mockBadgeRepo = _MockBadgeRepository();
 
       when(mockBadgeRepo.loadDashboard).thenAnswer(
-        (_) async => const BadgeDashboardData(
-          awarded: [],
-          issued: [],
-          created: [],
-        ),
+        (_) async =>
+            const BadgeDashboardData(awarded: [], issued: [], created: []),
       );
 
       when(
@@ -299,10 +296,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        expect(
-          find.text(l10n.notificationsTabBadges(2)),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.notificationsTabBadges(2)), findsOneWidget);
       });
 
       testWidgets('drops the count once nothing is waiting', (tester) async {
@@ -335,6 +329,22 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.notificationsPendingBadges(1)), findsNothing);
+      });
+
+      testWidgets('reloads pending awards when the inbox becomes visible', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(isVisible: false));
+        await tester.pumpAndSettle();
+
+        verify(mockBadgeRepo.loadDashboard).called(1);
+        clearInteractions(mockBadgeRepo);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
+
+        verify(mockBadgeRepo.loadDashboard).called(1);
       });
     });
 

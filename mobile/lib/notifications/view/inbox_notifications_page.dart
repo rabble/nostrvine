@@ -1,6 +1,5 @@
-// ABOUTME: Inbox notifications scaffold — TabBar (All/Likes/Comments/
-// ABOUTME: Follows/Reposts) + invites banner wrapping the BLoC-driven
-// ABOUTME: NotificationsView.
+// ABOUTME: Inbox notifications scaffold — six filter tabs plus actionable
+// ABOUTME: invite and pending-badge banners wrapping NotificationsView.
 
 import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -25,9 +24,9 @@ import 'package:openvine/widgets/signup_invites_availability_builder.dart';
 
 /// Inbox notifications page — owns the BLoC and tab scaffold.
 ///
-/// Wraps [NotificationsView] with the existing 5-tab UI (All / Likes /
-/// Comments / Follows / Reposts) and the invites banner shown on the All
-/// tab. Each tab owns a feed BLoC with independent server-side pagination.
+/// Wraps [NotificationsView] with the six-tab UI (All / Likes / Comments /
+/// Follows / Reposts / Badges) and actionable banners shown on the All tab.
+/// Each notification tab owns a feed BLoC with independent pagination.
 class InboxNotificationsPage extends ConsumerWidget {
   /// Creates an [InboxNotificationsPage].
   const InboxNotificationsPage({this.isVisible = true, super.key});
@@ -58,8 +57,10 @@ class InboxNotificationsPage extends ConsumerWidget {
   }
 }
 
+const int _inboxTabCount = 6;
+
 /// Position of the Badges tab, last after the reaction filters.
-const _badgesTabIndex = 5;
+const int _badgesTabIndex = _inboxTabCount - 1;
 
 class _InboxNotificationsScaffold extends StatefulWidget {
   const _InboxNotificationsScaffold({
@@ -83,7 +84,7 @@ class _InboxNotificationsScaffoldState
     extends State<_InboxNotificationsScaffold>
     with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   @override
-  int get tabCount => 6;
+  int get tabCount => _inboxTabCount;
 
   /// Owned here rather than by a keyed `BlocProvider` so a repository swap
   /// rebuilds the badge subtree only. Keying a provider above the tabs would
@@ -103,16 +104,24 @@ class _InboxNotificationsScaffoldState
   @override
   void didUpdateWidget(_InboxNotificationsScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.badgeRepository == oldWidget.badgeRepository) return;
-    // A new repository is bound to a different signer, so in-flight accepts
-    // belong to the previous one and are dropped with the cubit. The old one
-    // is closed after the frame: descendants are still subscribed to it until
-    // this rebuild swaps them onto the new instance.
-    final previous = _badgesCubit;
-    WidgetsBinding.instance.addPostFrameCallback((_) => previous.close());
-    setState(() {
-      _badgesCubit = BadgesCubit(repository: widget.badgeRepository)..load();
-    });
+    if (widget.badgeRepository != oldWidget.badgeRepository) {
+      // Keep the old cubit alive through the rebuild while descendants rebind.
+      // See PR #8046.
+      final previous = _badgesCubit;
+      WidgetsBinding.instance.addPostFrameCallback((_) => previous.close());
+      setState(() {
+        _badgesCubit = BadgesCubit(repository: widget.badgeRepository)..load();
+      });
+      return;
+    }
+
+    if (!oldWidget.isVisible && widget.isVisible) {
+      final cubit = _badgesCubit;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !identical(_badgesCubit, cubit)) return;
+        cubit.refresh();
+      });
+    }
   }
 
   @override
@@ -347,45 +356,10 @@ class _PendingBadgesBanner extends StatelessWidget {
     );
     if (pendingCount == 0) return const SizedBox.shrink();
 
-    // Its own Material: the banner sits in a plain Column, so the ink splash
-    // cannot rely on an ancestor sheet being there.
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onViewPending,
-        child: Semantics(
-          button: true,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            color: context.vineColors.card,
-            child: Row(
-              spacing: 12,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    color: VineTheme.vineGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: DivineIcon(
-                    icon: DivineIconName.sealCheck,
-                    color: context.vineColors.background,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    context.l10n.notificationsPendingBadges(pendingCount),
-                    style: VineTheme.bodyMediumFont(
-                      color: context.vineColors.primaryText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return _InboxBanner(
+      icon: DivineIconName.sealCheck,
+      label: context.l10n.notificationsPendingBadges(pendingCount),
+      onTap: onViewPending,
     );
   }
 }
@@ -419,39 +393,64 @@ class _InviteNotificationCard extends StatelessWidget {
     final label = count == 1
         ? context.l10n.notificationsInviteSingular
         : context.l10n.notificationsInvitePlural(count);
-    return InkWell(
+    return _InboxBanner(
+      icon: DivineIconName.shareNetwork,
+      label: label,
       onTap: () => context.push(InvitesScreen.path),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        color: context.vineColors.card,
-        child: Row(
-          spacing: 12,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: VineTheme.vineGreen,
-                shape: BoxShape.circle,
-              ),
-              child: DivineIcon(
-                icon: DivineIconName.shareNetwork,
-                color: context.vineColors.background,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                label,
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.primaryText,
+    );
+  }
+}
+
+/// Shared actionable banner chrome for the All tab.
+class _InboxBanner extends StatelessWidget {
+  const _InboxBanner({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // The card color belongs to Material so the InkWell splash paints above it.
+    return Material(
+      color: context.vineColors.card,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            spacing: 12,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: VineTheme.vineGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: DivineIcon(
+                  icon: icon,
+                  color: context.vineColors.background,
                 ),
               ),
-            ),
-            DivineIcon(
-              icon: DivineIconName.caretRight,
-              color: context.vineColors.mutedText,
-            ),
-          ],
+              Expanded(
+                child: Text(
+                  label,
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                ),
+              ),
+              DivineIcon(
+                icon: DivineIconName.caretRight,
+                color: context.vineColors.mutedText,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -11,13 +11,14 @@ BadgeAwardViewData badgeAwardFixture({
   required bool isAccepted,
   String name = 'Diviner of the Day',
   String dTag = 'daily-diviner',
+  String description = 'Awarded for showing up with a good eye.',
   int seed = 1,
 }) {
   final issuerPubkey = badgeTestPubkey(2);
   final definitionCoordinate = '30009:$issuerPubkey:$dTag';
   return BadgeAwardViewData(
     award: Nip58BadgeAward(
-      event: _event(
+      event: badgeTestEvent(
         id: badgeTestEventId(seed),
         pubkey: issuerPubkey,
         kind: EventKind.badgeAward,
@@ -30,7 +31,7 @@ BadgeAwardViewData badgeAwardFixture({
       recipientPubkeys: [badgeTestPubkey(1)],
     ),
     definition: Nip58BadgeDefinition(
-      event: _event(
+      event: badgeTestEvent(
         id: badgeTestEventId(seed + 100),
         pubkey: issuerPubkey,
         kind: EventKind.badgeDefinition,
@@ -38,7 +39,7 @@ BadgeAwardViewData badgeAwardFixture({
       coordinate: definitionCoordinate,
       dTag: dTag,
       name: name,
-      description: 'Awarded for showing up with a good eye.',
+      description: description,
     ),
     isAccepted: isAccepted,
   );
@@ -51,19 +52,22 @@ String badgeTestEventId(int seed) => seed.toRadixString(16).padLeft(64, '0');
 String badgeTestPubkey(int seed) =>
     (seed + 100).toRadixString(16).padLeft(64, '0');
 
-Event _event({
+/// Builds a deterministic synthetic Nostr event for badge fixtures.
+Event badgeTestEvent({
   required String id,
   required String pubkey,
   int kind = 1,
   List<List<String>> tags = const [],
+  int createdAt = 1000,
+  String content = '',
 }) {
   return Event.fromJson({
     'id': id,
     'pubkey': pubkey,
-    'created_at': 1000,
+    'created_at': createdAt,
     'kind': kind,
     'tags': tags,
-    'content': '',
+    'content': content,
     'sig': '',
   });
 }
