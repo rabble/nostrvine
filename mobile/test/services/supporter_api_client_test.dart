@@ -20,7 +20,11 @@ void main() {
     httpClient: httpClient,
     authHeaderProvider: ({required url, required method, payload}) async {
       authCalls.add((url: url, method: method, payload: payload));
-      return 'Nostr test-token';
+      return (
+        authorizationHeader: 'Nostr test-token',
+        pubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      );
     },
   );
 
@@ -110,6 +114,8 @@ void main() {
           idempotencyKey: 'attempt-1234567890',
           proof: proof,
         ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       );
 
       expect(jsonDecode(requestBody), {
@@ -122,6 +128,45 @@ void main() {
       expect(authCalls.single.payload, requestBody);
     },
   );
+
+  test('rejects a claim signed by a different account', () async {
+    final client = SupporterApiClient(
+      baseUri: Uri.parse('https://supporters.test'),
+      httpClient: httpClient,
+      authHeaderProvider: ({required url, required method, payload}) async => (
+        authorizationHeader: 'Nostr stale-token',
+        pubkey:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      ),
+    );
+
+    await expectLater(
+      client.claimPurchase(
+        const SupporterPurchaseClaim(
+          store: 'apple',
+          productId: 'divine.supporter.monthly',
+          idempotencyKey: 'attempt-1234567890',
+          proof: {'signed_payload': 'opaque-proof-material'},
+        ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ),
+      throwsA(
+        isA<SupporterApiException>().having(
+          (error) => error.kind,
+          'kind',
+          SupporterApiFailureKind.unauthorized,
+        ),
+      ),
+    );
+    verifyNever(
+      () => httpClient.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    );
+  });
 
   test('maps ownership conflict to a typed API failure', () async {
     when(
@@ -140,6 +185,8 @@ void main() {
           idempotencyKey: 'attempt-1234567890',
           proof: {'purchase_token': 'opaque'},
         ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       ),
       throwsA(
         isA<SupporterApiException>().having(

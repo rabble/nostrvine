@@ -59,7 +59,7 @@ final class SupporterApiClientProvider
 }
 
 String _$supporterApiClientHash() =>
-    r'715fac50da56c5849e3451b87c5fad149e223d1b';
+    r'b2fccc742b9187925bc86a96aab4bba3294894de';
 
 /// The store-backed [EntitlementValidator] for the current platform.
 ///

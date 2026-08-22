@@ -67,10 +67,7 @@ class _FakeValidator implements EntitlementValidator {
   void emit(SupporterEntitlement e) => _controller.add(e);
 
   void emitError(Object error, [StackTrace? stackTrace]) =>
-      _controller.addError(
-        error,
-        stackTrace,
-      );
+      _controller.addError(error, stackTrace);
 
   @override
   void dispose() {
@@ -276,8 +273,10 @@ void main() {
         final apiClient = SupporterApiClient(
           baseUri: Uri.parse('https://supporters.test'),
           authHeaderProvider:
-              ({required url, required method, payload}) async =>
-                  'Nostr test-token',
+              ({required url, required method, payload}) async => (
+                authorizationHeader: 'Nostr test-token',
+                pubkey: pubkeyA,
+              ),
         );
         final repo = SupporterRepository(
           pubkey: pubkeyA,
@@ -300,7 +299,10 @@ void main() {
       final apiClient = SupporterApiClient(
         baseUri: Uri.parse('https://supporters.test'),
         authHeaderProvider: ({required url, required method, payload}) async =>
-            'Nostr test-token',
+            (
+              authorizationHeader: 'Nostr test-token',
+              pubkey: pubkeyA,
+            ),
       );
       final repo = SupporterRepository(
         pubkey: pubkeyA,

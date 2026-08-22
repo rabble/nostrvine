@@ -2,8 +2,6 @@
 // ABOUTME: Selects the store-backed EntitlementValidator on iOS/Android and a
 // ABOUTME: stub elsewhere, owned by an account-scoped SupporterRepository.
 
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iap_repository/iap_repository.dart';
@@ -31,9 +29,7 @@ bool get hasInAppPurchaseStore =>
 ///
 /// Keeping this empty by default prevents the flag-gated client foundation
 /// from sending requests to an invented or undeployed endpoint.
-const supporterApiBaseUrl = String.fromEnvironment(
-  'SUPPORTERS_API_BASE_URL',
-);
+const supporterApiBaseUrl = String.fromEnvironment('SUPPORTERS_API_BASE_URL');
 
 /// The NIP-98 authenticated supporter Worker client, when configured.
 @riverpod
@@ -50,7 +46,11 @@ SupporterApiClient? supporterApiClient(Ref ref) {
         method: method,
         payload: payload,
       );
-      return token?.authorizationHeader;
+      if (token == null) return null;
+      return (
+        authorizationHeader: token.authorizationHeader,
+        pubkey: token.signedEvent.pubkey,
+      );
     },
   );
   ref.onDispose(client.dispose);
@@ -96,12 +96,18 @@ SupporterRepository supporterRepository(Ref ref) {
 /// must be able to claim it as soon as an authenticated build with the Worker
 /// URL opens. The repository coalesces overlapping calls and retains failed
 /// store proofs for a later foreground retry.
-final supporterRecoveryProvider = Provider<void>((ref) {
+final supporterRecoveryProvider = Provider<Future<void>?>((ref) {
+  final authService = ref.watch(authServiceProvider);
   final authState = ref.watch(currentAuthStateProvider);
+  ref.watch(currentAuthRpcCapabilityProvider);
   final isForeground = ref.watch(appForegroundProvider);
-  if (authState != AuthState.authenticated || !isForeground) return;
+  if (authState != AuthState.authenticated ||
+      !authService.canPublishNostrWritesNow ||
+      !isForeground) {
+    return null;
+  }
 
   final repository = ref.watch(supporterRepositoryProvider);
-  if (!repository.hasServerClient) return;
-  unawaited(repository.recoverPurchases());
+  if (!repository.hasServerClient) return null;
+  return repository.recoverPurchases();
 });

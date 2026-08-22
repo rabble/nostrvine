@@ -157,7 +157,7 @@ class SupporterRepository {
         'Supporter verification is not configured.',
       );
     }
-    final snapshot = await client.claimPurchase(claim);
+    final snapshot = await client.claimPurchase(claim, expectedPubkey: _pubkey);
     _handleChange(snapshot.entitlement);
     return snapshot;
   }
@@ -244,6 +244,7 @@ class SupporterRepository {
           idempotencyKey: proof.attemptId,
           proof: proof.toJson(),
         ),
+        expectedPubkey: _pubkey,
       );
       _handleChange(snapshot.entitlement);
       await _validator.completePurchase(proof);
