@@ -1,121 +1,208 @@
-# Profile Pinning and Ordering Design
+# Pinned Videos on Divine Profiles
 
 **Date:** 2026-08-23
 
-**Status:** UX and mobile product policy approved; implementation blocked on
-the accompanying [evidence audit](2026-08-23-profile-pinning-order-evidence-audit.md)
+**Status:** Research complete; recommended mobile design
 
-Implementation must not proceed until the four remaining edge-case decisions
-and the technical corrections in that audit are resolved. This spec remains
-authoritative for approved product behavior; the audit is authoritative for its
-cited protocol and current-code facts.
+## Executive Summary
 
-## Goal
+Divine should let creators pin up to 12 of their videos to the beginning of
+their mobile profile grid. A newly pinned video moves to the front. Within
+Mobile, the grid and fullscreen player use the same resolved sequence. For a
+given selected list event, Mobile preserves stored managed order among visible
+candidates, but cross-relay and cross-client convergence is not guaranteed.
 
-Let a creator showcase a few of their videos at the start of their profile.
-Everyone sees pinned videos first, then the rest of the profile's videos in
-the existing newest-first order.
+This is not a new Divine concept. Divine Web already shipped profile video pins
+in commit
+[`0058e2f5`](https://github.com/divinevideo/divine-web/commit/0058e2f51091501e0cf04fe3018f05fff0460eb9).
+The mobile design should reuse that established event shape: a kind-`10001`
+replaceable event containing kind-`34236` video `a` coordinates.
 
-The user goal is "put my best stuff first". It is not "manage a playlist".
-The spec below is deliberately the smallest thing that serves that goal.
+That event shape is a Divine convention, not standard NIP-51 semantics.
+NIP-51 defines kind `10001` as a list of pinned kind-1 notes using `e` tags.
+The distinction matters because other Nostr clients may ignore Divine's video
+references, and Divine must preserve list data it does not manage.
 
-## Scope Decisions (why this is small)
+The recommendation is deliberately small: one grid, one Pin/Unpin action, no
+arranger screen, no separate pinned section, and no manual drag ordering.
 
-Three choices remove most of the original design's surface area:
+The detailed evidence and engineering risk register are in the
+[evidence appendix](2026-08-23-profile-pinning-order-evidence-audit.md).
 
-1. **Pin order is the pinning order — newest pin first.** This is the approved
-   product intent. A mobile pin action places that video first. Web-written and
-   mixed-client chronology is an unresolved representation edge case because
-   list items have no individual timestamps. Want a video at the top? Pin it.
-   Want it lower? Unpin the ones above it, or unpin and re-pin. No arranger
-   screen, no drag handles, no draft/dirty/discard flow, no multi-select picker,
-   no second cubit.
-2. **Hard cap of 12 pins.** A showcase is a handful, not a catalog. The cap
-   keeps creator-managed resolution within one current mobile relay batch and
-   avoids pagination for conforming lists. Imported open-Nostr lists can still
-   exceed 12; their edge-case policy is unresolved in the evidence audit.
-3. **One grid, no section headers.** Pinned tiles carry a pin badge and are
-   simply first. No second grid, no partial-row / new-row rules, no section
-   labels to localize.
+## What Exists Today
 
-If creators actually ask for manual reordering after this ships, an arranger
-is an additive follow-up on the same data model. Do not build it now.
+### Divine Mobile
 
-## Current Experience
-
-- The profile Videos tab is a three-column grid backed by `ProfileFeedCubit`.
-- Published profile videos retain the feed's normal newest-first order.
+- The Videos tab is a three-column grid backed by `ProfileFeedCubit`.
+- Published videos retain the profile feed's normal newest-first order.
+- In-progress uploads appear first on the owner's profile.
 - Tapping a tile opens the fullscreen profile feed.
 - Long-pressing an owned tile opens the existing Edit/Delete action sheet.
-- In-progress uploads appear before published videos on the owner's profile.
+- Mobile does not currently read, display, or publish profile video pins.
 
-## Viewer Experience
+### Divine Web
 
-One grid. Order:
+Divine Web already:
+
+- reads and writes kind `10001`;
+- stores videos as kind-`34236` `a` coordinates;
+- preserves unrelated public tags;
+- displays pinned videos on profiles;
+- exposes Pin and Unpin actions.
+
+Web currently limits additions to three, appends new tags, and accepts
+foreign-authored video coordinates. Mobile's recommended behavior differs:
+12 creator-owned pins, with a new mobile pin inserted at the front. These
+differences are documented rather than mistaken for Nostr requirements.
+
+## Recommended Mobile Experience
+
+### Viewer
+
+Render one grid in this order:
 
 ```text
-owner-only in-progress uploads (unchanged)
-+ resolved pinned videos, newest pin first
-+ every other profile video in normal feed order
+owner-only in-progress uploads
++ visible pinned videos in stored managed order
++ every remaining profile video in normal feed order
 ```
 
-Pinned tiles show a pin badge. No section labels, no layout break between
-pinned and unpinned.
+Pinned tiles show a small pin badge. There is no heading, separate section, or
+layout break. The badge is not the only signal: accessibility semantics also
+announce that the video is pinned and its position.
 
-Newest-first is the approved target and is guaranteed when a mobile pin action
-moves that video to the front. Whether a Web-written or mixed-client stored
-sequence is treated as chronological or simply authoritative remains blocked on
-the evidence audit's cross-client ordering decision.
+The fullscreen sequence must exactly match the published-video sequence shown
+by the grid. Tapping any tile opens that tile at the corresponding index, and
+pagination continues without re-sorting or dropping the pinned launch order.
 
-The same order applies to fullscreen playback. Tapping any tile opens that one
-sequence with the tapped video as the initial item, so pagination and
-prefetching continue from the sequence the grid displayed.
+### Creator
 
-## Owner Experience
+The existing long-press action sheet gains one action:
 
-The existing long-press sheet for an owned video gains one action:
+- `Pin to profile` for an eligible unpinned video;
+- `Unpin from profile` for a pinned video.
 
-- `Pin to profile` when not pinned — prepends the video to Divine's managed
-  pin sequence.
-- `Unpin from profile` when pinned — removes it, leaving the rest in order.
+Pin inserts the video's coordinate at the front of Divine Mobile's managed
+sequence. Unpin removes every managed tag for that exact coordinate without
+reordering the remaining entries; this prevents a duplicate stored tag from
+making the video appear pinned again immediately.
 
-Feedback is a plain snackbar. At the cap, `Pin to profile` is disabled with a
-message naming the limit ("You can pin up to 12 videos"), so the pin never
-silently evicts another video.
+Success and failure use localized snackbars and explicit screen-reader
+announcements. A failed or unconfirmed publish leaves the local visible order
+unchanged and offers retry.
 
-A failed pin or unpin leaves the local visible order unchanged and offers
-retry. If no relay acknowledgement arrives, the remote outcome may be unknown.
+### Eligibility
 
-That is the entire owner surface. No profile-options entry point, no
-`Arrange profile` screen.
+Mobile offers Pin only when all of these are true:
 
-## Loading and Failure Behavior
+- the viewer owns the profile;
+- the video is authored by that profile;
+- the source event is kind `34236`;
+- it has a nonempty addressable `d` value.
 
-- The cached pin list renders immediately when available, then revalidates.
-- For lists at or below the creator cap, resolve the references in one current
-  mobile relay batch. Nothing waits on profile pagination.
-- An unavailable, deleted, blocked, or no-longer-owned reference is omitted
-  from display without leaving an empty cell. The reference stays in the
-  stored list — a temporary fetch failure must not delete pins.
-- A failed or unconfirmed publish leaves the local visible order unchanged and
-  shows a retry. It cannot prove what every remote relay stored.
+Legacy or non-addressable videos simply omit the Pin action. Mobile preserves
+foreign-authored and malformed list data as unrelated data but does not display
+or manage it.
 
-## Ordering Rules
+### Loading
 
-Let `P` be the ordered identities from the pin list and `V` the profile's
-videos in normal feed order.
+While the initial cached/relay snapshot is unresolved, show the Pin action as
+disabled rather than guessing whether the video is already pinned or whether
+the profile is at the cap. Unpin may be shown only when current cached state
+already proves membership.
 
-1. De-duplicate `P` by stable video identity; first occurrence wins.
-2. Keep only references resolving to a visible video authored by the owner.
-3. Emit that resolved subset in `P` order.
-4. Append every video in `V` not already emitted, keeping `V` order.
-5. Transient uploads stay in the owner-only publishing position, ahead of both.
+## Ordering and Cap Rules
 
-One pure function returns this order and feeds the grid, tile indexes,
-prefetching, and the fullscreen seed. It is the first thing to write and the
-first thing to test.
+Let `P` be the valid, owner-authored video coordinates in stored tag order and
+`V` be the already-filtered profile video sequence.
 
-## Architecture and Data Flow
+1. De-duplicate `P`; first occurrence wins.
+2. The first 12 coordinates in `P` are display candidates.
+3. Resolve those candidates to canonical kind-`34236` events.
+4. Omit candidates that are unavailable, deleted, blocked, expired, unplayable,
+   or no longer authored by the owner.
+5. Emit the visible candidates in `P` order.
+6. Append every item from `V` not already emitted, preserving `V` order.
+7. Keep transient uploads outside this published-video sequence and prefix them
+   only in the owner's grid.
+
+The cap counts every unique valid owner-authored coordinate in the stored list,
+including references that are currently unavailable or hidden. This prevents a
+temporarily invisible pin from allowing the stored list to grow without bound
+and then reappear above the cap later.
+
+For an imported list containing more than 12 managed coordinates:
+
+- display from the first 12 candidates in stored order;
+- preserve every stored tag and the opaque `content` value;
+- allow Unpin for any coordinate whose video is available to the owner;
+- reject new Pin actions until the managed count is below 12;
+- never truncate the list as a side effect of an unrelated save.
+
+These rules distinguish stored membership from an active displayed pin. A
+coordinate anywhere in `P` is a stored member and therefore counts toward the
+cap and offers Unpin to the owner. Only a visible video resolved from the first
+12 candidates is an active displayed pin: it moves to the front and receives
+the pin badge, pin-rank semantics, and pinned position. A stored overflow video
+that also appears through `V` stays in its ordinary feed position without the
+badge or pinned semantics, while still offering Unpin to remove the preserved
+overflow entry.
+
+Stored order is authoritative because list items have no individual pin
+timestamps. A mobile Pin reliably moves that video to the front, but Mobile
+cannot reconstruct a globally newest-first history for a list previously
+written by Web or by multiple clients using different insertion rules.
+
+## Nostr Representation
+
+### Existing Divine convention
+
+Use one current kind-`10001` replaceable event for each owner and store managed
+videos as:
+
+```text
+["a", "34236:<author-pubkey>:<d-tag>"]
+```
+
+The full addressable coordinate survives a metadata replacement as long as the
+author and `d` value remain unchanged. Event IDs and `stableId` are not suitable
+stored identities for this feature.
+
+### Standards boundary
+
+[NIP-51](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md)
+names kind `10001` **Pinned notes** and expects kind-1 `e` references. Divine's
+kind-`34236` `a` tags are an extension already used by Divine Web.
+
+[NIP-51](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md#L9-L13)
+also recommends appending new list items chronologically. Mobile deliberately
+inserts a new pin at the front to implement the product behavior above. This is
+a SHOULD-level interoperability deviation and must be documented as such.
+
+[NIP-01](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L78-L82)
+defines `a` coordinates, while
+[NIP-71](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/71.md#L23-L32)
+defines kind `34236` addressable short video.
+
+### Lossless read-modify-write
+
+Before Pin or Unpin, Mobile must read the current selected base event and:
+
+- manage only valid kind-`34236` coordinates authored by the event owner;
+- treat every exact duplicate of a managed coordinate as managed mutation data,
+  removing all copies on Unpin while first occurrence wins for display;
+- preserve every unrelated public tag exactly, including order and extra
+  fields;
+- preserve `content` byte-for-byte because it may contain encrypted private
+  list items;
+- publish a replacement only after a fully settled configured-relay read;
+- update local visible state only after at least one relay returns `OK true`.
+
+This does not make the read globally authoritative. A silent, unrelated, or
+unqueried relay may hold a divergent event. `OK true` means a relay accepted the
+write; it does not prove durable storage everywhere.
+
+## Technical Design
 
 ```text
 Profile UI
@@ -127,89 +214,109 @@ ProfilePinsRepository + VideosRepository
 Nostr client and local cache
 ```
 
-`ProfilePinsRepository` owns the pin-list subscription, cache, parsing,
-merging, signing, and publishing, and exposes `pin`, `unpin`, and an ordered
-identity stream. UI never constructs Nostr tags.
+`ProfilePinsRepository` owns list parsing, cached snapshots, relay
+revalidation/subscription, signing, lossless mutation, and publication. UI code
+never constructs Nostr tags.
 
-`ProfileFeedCubit` combines that stream with profile video pages and exposes
-the single ordered sequence, pin membership by identity, and whether the pin
-list is still loading. There is no editor cubit, because there is no draft:
-pin and unpin publish immediately.
+`ProfileFeedCubit` combines pin coordinates with the existing profile feed and
+exposes one displayed sequence, pin membership, loading state, and mutation
+outcomes. Every emit path and sequence comparison must use one centralized
+base-to-displayed derivation; otherwise a cache, relay, enrichment, pagination,
+or filter update can silently replace the pinned sequence with the base feed.
 
-### Nostr Representation
+Keep the raw base feed, normally filtered base feed, and pin-augmented displayed
+sequence separate. Pagination counts use the normally filtered base feed. The
+Nostr `until` cursor uses the minimum `nostrCreatedAt` in `_unfilteredVideos`,
+not `createdAt` and not the pin-augmented displayed sequence.
 
-Divine Web already stores video pins in a kind-`10001` replaceable event as
-kind-`34236` `a` coordinates. This is an existing Divine convention, not the
-standard kind-10001 item type: NIP-51 calls kind `10001` **Pinned notes** and
-expects kind-1 `e` references. Other NIP-51 clients may ignore Divine's video
-`a` tags.
+The published sequence actually rendered by the grid is authoritative for tap
+index, prefetch, and the fullscreen seed. The tap handler must not substitute a
+different Cubit list after grid-level upload/relay de-duplication. Thread the
+exact addressable coordinate through the fullscreen route and BLoC.
 
-The full coordinate is `34236:<author-pubkey>:<d-tag>`. It remains stable across
-a video replacement only while the author and `d` value remain unchanged.
+Canonical replaceable-event selection must use `created_at` descending and
+event ID ascending for ties. The current addressable-video resolver must select
+the raw canonical winner before applying visibility filters; arrival order is
+not a valid winner rule. Track raw-resolved coordinates separately from visible
+results so a canonical-but-hidden event is not misclassified as missing and
+reintroduced from Funnelcake fallback. Equivalently, canonicalize candidates
+across sources before applying visibility exactly once.
 
-NIP-51 recommends appending new list items chronologically. The approved mobile
-behavior deliberately prepends instead, a SHOULD-level interoperability
-deviation. Divine Web currently appends. Both clients render stored tag order,
-but render different coordinate subsets and pin actions insert at opposite
-ends; a mixed list has no recoverable global pin chronology.
+The exact cache backend, package boundary, and same-event enrichment merge are
+engineering choices, not product facts. They should follow the repository's
+existing UI → BLoC → Repository → Client architecture and CI package rules.
 
-On save, Divine must preserve every unrelated public tag and the opaque
-`content` value byte-for-byte. It can guarantee that preservation only for the
-selected base event returned by the configured relay read; it cannot guarantee
-preservation of divergent data held only by an unqueried or nonresponsive
-relay.
+## Failure and Concurrency
 
-References:
-[NIP-01](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md),
-[NIP-51](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md),
-[NIP-71](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/71.md)
+- Cached pins may render immediately and then revalidate.
+- Missing payloads do not delete stored references.
+- A stale asynchronous resolution result must not overwrite a newer snapshot.
+- Filter-policy changes must re-resolve omitted pins or retain canonical raw
+  winners below the visibility layer.
+- A local mutation queue serializes one process but cannot prevent two devices
+  from publishing competing replacements.
+- Same-process replacement timestamps must advance beyond both the selected
+  base and the last locally issued/accepted timestamp, without exceeding relay
+  future-skew policy.
+- Partial relay acceptance remains partial; Mobile does not claim durability or
+  automatic repair across rejecting relays.
 
-## Accessibility
+## Accessibility and Localization
 
-- The pin badge is not the only signal: tile semantics announce pinned state
-  and position.
-- Pin and unpin are sheet actions, so they are already reachable and labeled.
-- Success and failure are announced without moving focus.
-- Labels are full localized strings, not concatenated fragments.
+- Add an approved pin SVG to Mobile's icon assets, expose it through a new
+  `DivineIconName` mapping, and cover the mapping with the design-system icon
+  test. Divine Web's Phosphor `PushPin` is the cross-client visual precedent;
+  Mobile does not currently have a pin glyph or a Phosphor dependency.
+- Exclude the decorative badge icon from duplicate semantics.
+- Announce pinned state and position with one complete localized label.
+- Announce Pin/Unpin success and failure with
+  `SemanticsService.sendAnnouncement` in addition to the snackbar.
+- Use full localization messages, including cap and retry text; do not assemble
+  translated fragments.
 
-## Testing
+## Acceptance Tests
 
-Written in this order, test before implementation at each step.
+The report recommends coverage for:
 
-**Pure ordering** (first, no Flutter, no mocks):
+- stored pin order and first-occurrence de-duplication;
+- first-12 display, imported oversize preservation, and the distinct overflow
+  membership/action/badge behavior;
+- owner-only eligibility and foreign-tag preservation;
+- metadata replacement retaining a pin by coordinate;
+- equal-timestamp replaceable-event tie handling;
+- canonical raw winner selection before filtering;
+- cache-first rendering followed by relay revalidation;
+- stale resolution and subscription races;
+- every Cubit update path retaining the centralized pin overlay;
+- base-feed pagination unaffected by off-page pins and using the oldest raw
+  `nostrCreatedAt` cursor;
+- grid, prefetch, and fullscreen using the identical sequence;
+- canonical-but-hidden coordinates not being reintroduced by fallback;
+- failed/unconfirmed publish leaving local order unchanged with retry;
+- loading, cap, and legacy-video action states;
+- pin badge, semantics, announcements, and localized copy.
 
-- pinned precede unpinned;
-- pin-list order preserved;
-- unpinned retain normal order;
-- duplicate references collapse to the first position;
-- unavailable, foreign-authored, blocked, and deleted references are omitted;
-- no identity is emitted twice;
-- a metadata replacement of a kind `34236` video keeps its pin.
+## Cross-Client Follow-Up
 
-**Repository:**
+Mobile can ship this design without silently changing Divine Web, but the
+report records existing Web differences and defects:
 
-- cached list emits before relay revalidation;
-- parsing preserves ordered kind `34236` `a` tags;
-- saving preserves unrelated tags and `content`;
-- pin prepends, unpin removes without reordering the remainder;
-- pin at the cap is rejected without publishing.
+- Web caps additions at three while Mobile recommends 12.
+- Web appends new pins while Mobile prepends.
+- Web displays foreign-authored coordinates while Mobile omits them.
+- Web Pin/Unpin currently replaces opaque `content` with an empty string.
+- Web kind-10001 reads use `limit: 1` without the NIP-01 event-ID tie-break.
 
-**Cubit and widget:**
-
-- pin and unpin update the visible order;
-- a failed pin leaves the order unchanged and surfaces retry;
-- pin badge and pinned semantics render;
-- tapping any tile opens the identical ordered fullscreen sequence;
-- paginated unpinned videos stay de-duplicated against pinned ones.
+Those are separate cross-repo corrections. They should not be hidden inside a
+Mobile change, but they matter if Divine wants identical behavior on every
+client.
 
 ## Out of Scope
 
-- Manual reordering of pins (an arranger screen), and therefore drag handles,
-  semantic move actions, drafts, and a multi-select add picker.
-- Section headers or a separate pinned grid.
-- Unlimited creator-managed pins. Imported lists over 12 require the explicit
-  edge-case decision called out by the evidence audit.
-- Reordering unpinned videos.
-- Pinning another account's videos.
+- Manual drag ordering or an arranger screen.
+- A separate pinned section or section heading.
+- Pinning another account's videos from Mobile.
+- Reordering unpinned profile videos.
 - Multiple named pin sets.
 - Changing video metadata or deletion behavior.
+- Implementing the Divine Web follow-up described above.

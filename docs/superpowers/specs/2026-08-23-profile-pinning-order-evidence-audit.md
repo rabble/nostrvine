@@ -2,22 +2,20 @@
 
 **Date:** 2026-08-23
 
-**Status:** Complete; implementation remains paused pending four edge-case
-decisions and a corrected implementation plan
+**Status:** Complete; evidence appendix for the pinned-video report
 
 ## Why this audit exists
 
 This audit separates four different kinds of statement that had been mixed
-together in the design and implementation plan:
+together in earlier report drafts:
 
 1. behavior already shipped by a Divine client;
 2. behavior required or recommended by a Nostr NIP;
 3. behavior verified in the current mobile and relay code;
-4. new product or implementation choices that still require a decision.
+4. new product or implementation recommendations made by the report.
 
-The implementation plan dated 2026-08-23 must not be executed as written. It
-contains protocol, pagination, resolution, fullscreen, accessibility, and CI
-errors listed below.
+The consolidated report uses this appendix to distinguish established behavior,
+protocol facts, engineering risks, and report recommendations.
 
 ## Sources checked
 
@@ -61,7 +59,7 @@ risks:
   [`e74b6b04`](https://github.com/divinevideo/divine-web/commit/e74b6b042eb976600683ee830360cfa27592cfbb)
   added deterministic newest-event selection for each video coordinate.
 - Kind-10001 reads still query with `limit: 1` and compare only timestamps, so
-  they have the same equal-timestamp winner defect found in the mobile plan.
+  they have the same equal-timestamp winner defect identified for Mobile.
 - The owned-profile unpin lookup keys by `d` value alone. Two authors using the
   same `d` value can select the wrong foreign-authored coordinate.
 
@@ -152,59 +150,72 @@ updates.
   destroys a pinned launch order
   (`mobile/lib/widgets/profile/profile_video_feed_view.dart:113-153`).
 
-### Correctness defects in the implementation plan
+### Engineering findings relevant to future implementation
 
-An interrupted, uncommitted Task 1 slice is present in the worktree. Its pure
-orderer re-filters the authoritative base feed and lets one input overwrite the
-other without coordinate-level version reconciliation; its tests encode those
-defects. It must be corrected rather than committed as-is.
-
-1. **Pagination uses the wrong sequence.** The plan would add off-page pins to
-   `state.videos`, but existing backfill counts and the Nostr fallback cursor
-   use that rendered list. An old pin can move the cursor backwards and skip
-   ordinary profile pages. The Nostr `until` cursor must use
-   `_unfilteredVideos`; initial backfill progress must use the normally filtered
-   base feed, such as `_applyFeedFilters(_unfilteredVideos).length`. Neither may
-   use pin-augmented `state.videos`
-   (`profile_feed_cubit.dart:404-460,510-516,727-744`).
-2. **The pure ordering function drops valid base-feed entries.** The proposed
-   function filters every base-feed video by owner and visibility. The approved
-   ordering rule says to validate resolved pins and then append the existing
-   authoritative base sequence unchanged, minus exact duplicates.
+1. **Pin overlays and pagination need separate centralized sequences.** Current
+   cold-load, cache, REST, Nostr load-more, enrichment, relay, and filter paths
+   directly emit the filtered base feed. `_onRelaySnapshot` also compares the
+   pin-augmented state against the unpinned base and can remove pins during a
+   routine callback. Every video emit and comparison needs one centralized
+   base-to-displayed derivation
+   (`profile_feed_cubit.dart:204-207,255-258,299-302,536-538,576-579,631-633,648-659,678`).
+   Keep raw base, normally filtered base, and displayed sequences separate.
+   Backfill counts use the normally filtered base. The Nostr `until` cursor uses
+   `min(_unfilteredVideos.map((video) => video.nostrCreatedAt))`, not
+   `createdAt` and not pin-augmented `state.videos`; `createdAt` can represent
+   the video's original `published_at` and move the boundary too far backward
+   (`profile_feed_cubit.dart:404-460,510-516,727-744`,
+   `video_event.dart:1090-1097`).
+2. **A naive orderer can drop valid base-feed entries.** Pin-specific owner and
+   visibility validation must apply to resolved pins, not re-filter the existing
+   authoritative base sequence. Append that base sequence unchanged, minus
+   exact duplicates.
 3. **Overlapping copies are not reconciled.** When both inputs contain one
    coordinate, neither the feed nor separately resolved copy should win by input
    position. Different event IDs require NIP-01 winner selection by
    `nostrCreatedAt` descending then event ID ascending. Same-event enrichment
-   precedence and merging are implementation policy that the corrected plan
-   must state and test explicitly. Preserve the authoritative base sequence
-   position.
+   precedence and merging are implementation policy that future engineering
+   work must state and test explicitly. Preserve the authoritative base
+   sequence position.
 4. **Video replacement resolution is nondeterministic.** Mobile's
    `getVideosByAddressableIds` currently lets arrival order choose between
    multiple versions of one coordinate. It must select the raw NIP-01 winner by
    timestamp/ID before parsing and visibility filtering; otherwise an older
    playable version can incorrectly replace a newer filtered version
-   (`videos_repository.dart:1529-1558`).
+   (`videos_repository.dart:1529-1558`). Raw-resolved coordinates must be
+   tracked independently from visible results: the current fallback path treats
+   absence from the visible map as missing and can reintroduce an older visible
+   Funnelcake representation of a canonical-but-filtered event
+   (`videos_repository.dart:1561-1570,1613-1629`). Canonicalize across sources
+   before visibility filtering, or otherwise prevent fallback for a coordinate
+   already resolved canonically.
 5. **`restartable()` is not enough.** Cancelling a Bloc handler does not cancel
    its underlying resolver future. A generation guard or `emit.isDone` check
    is required before a stale result mutates pin state.
-6. **Fullscreen takeover is under-specified.** Seeing the tapped coordinate in
-   a live page does not prove the live sequence has reconciled the displayed
-   launch sequence. Switching at that point can drop or reorder seed videos.
-7. **Exact identity is not threaded end to end.** The plan omits
-   `FullscreenFeedBloc` and its tests from the new addressable-coordinate path.
+6. **Grid-to-fullscreen identity is already lossy.** The grid constructs a
+   de-duplicated displayed list but its tap handler substitutes `state.videos`
+   whenever Cubit state is nonempty. Index, prefetch, and fullscreen seed can
+   therefore differ from what the user tapped
+   (`profile_videos_grid.dart:249-252,315-339,425-430`). The rendered published
+   sequence must be authoritative, and the exact addressable coordinate must be
+   threaded into fullscreen. Seeing that coordinate in a later live page does
+   not by itself prove the live sequence has reconciled the displayed launch
+   sequence; switching early can still drop or reorder seed videos.
+7. **Exact identity must be threaded end to end.** Future work must include
+   `FullscreenFeedBloc` and its tests in the addressable-coordinate path.
 8. **Publish language overclaims certainty.** A fully settled query covers the
    configured relay fan-out, not every relay. `OK true` means accepted for
    writing, not durable. A lost `OK` can leave the remote outcome unknown.
    Failed mutations may keep local visible order unchanged; they cannot
    guarantee the previous order is still live everywhere.
-9. **Accessibility contradicts repository policy.** The plan says to rely on a
-   snackbar alone. `.claude/rules/accessibility.md` requires
+9. **A snackbar alone is insufficient.** `.claude/rules/accessibility.md` requires
    `SemanticsService.sendAnnouncement` for snackbars and asynchronous visible
    changes.
-10. **The new package list is incomplete.** A new repository package also
+10. **A new package requires complete CI ownership.** If engineering creates a
+    repository package, it also
     requires `analysis_options.yaml`, a package CI workflow, a measured package
     coverage-floor entry, and the package CI/coverage floor checks.
-11. **The analyzer command is invalid.** The supported command is
+11. **Use the supported analyzer command.** The supported command is
     `cd mobile && flutter analyze`, without positional directories.
 12. **Mutation serialization is only process-local.** A future chain can order
     one app process, but two devices or Web and mobile can read the same base and
@@ -225,10 +236,16 @@ defects. It must be corrected rather than committed as-is.
     hardcodes `34236` for any nonempty addressable `d` value. Pin eligibility
     must also require the source `eventKind` to be the addressable short-video
     kind; a nonnull coordinate alone is insufficient.
+15. **Mobile has no sanctioned pin glyph yet.** `DivineIcon` accepts only
+    `DivineIconName`, whose current enum has no pin entry, and Mobile has no
+    Phosphor dependency or pin asset. Reusing Web's Phosphor `PushPin` visual
+    requires an approved SVG asset, enum/mapping entry, and mapping test; it
+    cannot be requested as though the glyph already exists
+    (`mobile/packages/divine_ui/lib/src/icon/divine_icon.dart:9-256`).
 
 ## Approved mobile decisions and known divergence
 
-The user-approved mobile spec remains authoritative for product behavior:
+The consolidated report retains these approved mobile product choices:
 
 - mobile prepends new pins and displays newest pin first;
 - mobile caps creator-managed pins at 12;
@@ -242,42 +259,42 @@ addition whenever the list already contains at least three video tags. Any Web
 convergence is separate cross-repo work, not a hidden prerequisite of this
 mobile task.
 
-## Product decisions still required
+## Report Recommendations for Edge Cases
 
 ### 1. Web-written or mixed-client order
 
 Both clients preserve stored tag order for the coordinate subset they display,
 but mobile prepends while Web appends. Without per-item timestamps, mobile
 cannot infer a global pin chronology for an existing Web-written or mixed-client
-sequence. Decide whether to treat stored order as authoritative while
-guaranteeing only that a mobile pin moves to the front, or choose a cross-client
-migration/protocol rule.
+sequence. Treat stored order as authoritative and guarantee only that a Mobile
+Pin action moves that video to the front.
 
 ### 2. Cap counting and imported lists over 12
 
-The original plan invented a first-12 display and mutation policy. Open Nostr
-data can exceed a local creator cap, so the reader still needs explicit
-display, preserve, unpin, and add behavior for imported lists over 12. The same
-decision must say whether valid but unresolved or hidden references count
-toward the creator cap.
+Open Nostr data can exceed a local creator cap. Count every unique valid
+owner-authored stored reference, including unresolved or hidden references.
+Display from the first 12 candidates, preserve the complete event, permit
+Unpin, and reject new Pin actions while the managed count is at or above 12.
+Only visible videos resolved from those first 12 candidates are active displayed
+pins and receive the badge, pin-rank semantics, and pinned-first position. A
+stored overflow member can appear later through the base feed without the badge
+or pinned semantics, while still offering Unpin to remove that stored entry.
 
 ### 3. Pin action while the first snapshot loads
 
-The approved spec disables Pin at the cap but does not choose hide, disable, or
-explanatory feedback before the first cache/relay snapshot establishes current
-membership and count.
+Disable Pin until the first cache/relay snapshot establishes current membership
+and count. Do not guess or publish from an unknown base.
 
 ### 4. Legacy or non-addressable video action
 
-The storage model requires an addressable coordinate, but the approved spec does
-not choose whether the owner sheet hides Pin, disables it, or explains why it
-is unavailable for a legacy/non-addressable video. Eligibility must use the
-source event kind plus a nonempty `d` value, not `addressableId != null` alone.
+Omit Pin for a legacy/non-addressable video. Eligibility must use the source
+event kind plus a nonempty `d` value, not `addressableId != null` alone.
 
 ## Implementation choices, not product facts
 
 The following may be reasonable, but they must be justified as implementation
-choices rather than described as user-approved behavior:
+choices rather than treated as protocol requirements or established product
+facts:
 
 - SharedPreferences as the cache backend;
 - caching the complete selected raw event;
@@ -303,8 +320,10 @@ mobile is a cross-client design-system proposal, not a Nostr requirement.
 | Divine already uses kind `10001` plus video `a` tags | Divine Web commit [`0058e2f5`](https://github.com/divinevideo/divine-web/commit/0058e2f51091501e0cf04fe3018f05fff0460eb9) | Verified Divine precedent | Cite it; do not call it standard NIP-51. |
 | Current relay code accepts replaceable-range kinds automatically | Funnelcake commit [`7dcb41c6`](https://github.com/divinevideo/divine-funnelcake/commit/7dcb41c6e5e3f112ff699901743fbe5291c7e647), `crates/relay/src/relay.rs:2159-2208` | Verified code policy, not production state | Qualify explicit disallow override. |
 | `limit: 1` can hide the expected tie winner | `mobile/packages/nostr_client/lib/src/nostr_client.dart:1865-1912` | Verified current defect | Query without the limit or fix the client comparator first. |
-| Pin display ordering can corrupt pagination boundaries | `mobile/lib/blocs/profile_feed/profile_feed_cubit.dart:404-460,510-516` | Verified current integration risk | Use raw base feed for cursors and normally filtered base feed for visible backfill counts; never use pin-augmented state. |
-| Addressable resolution is arrival-order dependent | `mobile/packages/videos_repository/lib/src/videos_repository.dart:1529-1558` | Verified current defect | Select the raw winner before parsing/filtering. |
+| Cubit updates can drop the pin overlay or corrupt pagination boundaries | `mobile/lib/blocs/profile_feed/profile_feed_cubit.dart:204-207,255-258,299-302,404-460,510-516,536-538,576-579,631-633,648-659,678,727-744`; `mobile/packages/models/lib/src/video_event.dart:1090-1097` | Verified current integration risk | Centralize base-to-displayed derivation for all emits/comparisons; use normally filtered base counts and the oldest raw `nostrCreatedAt` cursor. |
+| Addressable resolution is arrival-order dependent and can reintroduce a filtered winner through fallback | `mobile/packages/videos_repository/lib/src/videos_repository.dart:1529-1629` | Verified current defect | Canonicalize raw candidates across sources before applying visibility once, or separately track raw-resolved coordinates so fallback cannot replace a hidden canonical winner. |
+| Grid tap navigation can discard the sequence actually rendered | `mobile/lib/widgets/profile/profile_videos_grid.dart:249-252,315-339,425-430` | Verified current integration risk | Use the rendered published list for index, prefetch, and fullscreen seed, and thread the exact addressable coordinate. |
+| Mobile has no sanctioned pin icon | `mobile/packages/divine_ui/lib/src/icon/divine_icon.dart:9-256` and `mobile/assets/icon/` at pinned `origin/main` | Verified current design-system gap | Add an approved SVG asset, `DivineIconName` mapping, and mapping test rather than assuming a Phosphor dependency. |
 | Snackbar-only announcement violates repo policy | `.claude/rules/accessibility.md:83-111` | Verified policy conflict | Use `SemanticsService.sendAnnouncement` and test it. |
 | `e` identifies an event and `a` identifies an addressable coordinate | [NIP-01 lines 78-82](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L78-L82) | Verified NIP fact | Store full kind/pubkey/`d` coordinates for replaceable videos. |
 | NIP-51 public items live in tags and private items may live in encrypted `content` | [NIP-51 lines 9-13](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md#L9-L13) | Verified NIP fact | Preserve selected-base unrelated tags and `content` byte-for-byte. |
