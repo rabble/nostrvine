@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
@@ -96,7 +97,7 @@ Future<Nip05VerificationStatus> nip05Verification(
       const Duration(seconds: 10),
       onTimeout: () {
         Log.warning(
-          'NIP-05 verification timeout for $pubkey',
+          'NIP-05 verification timeout for ${pubkeyForLogs(pubkey)}',
           name: 'Nip05VerificationProvider',
           category: LogCategory.system,
         );

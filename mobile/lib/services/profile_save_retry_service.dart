@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:db_client/db_client.dart';
 import 'package:meta/meta.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -176,7 +177,7 @@ class ProfileSaveRetryService {
     // OutgoingDmRetryService) — no explicit sweep() call needed here.
 
     Log.info(
-      'initialized for $_userPubkey',
+      'initialized for ${pubkeyForLogs(_userPubkey)}',
       name: 'ProfileSaveRetryService',
       category: LogCategory.system,
     );

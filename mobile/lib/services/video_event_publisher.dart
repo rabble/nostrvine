@@ -17,6 +17,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
@@ -415,7 +416,7 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
       Log.info(
-        '  Pubkey: ${event.pubkey}',
+        '  Pubkey: ${pubkeyForLogs(event.pubkey)}',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );

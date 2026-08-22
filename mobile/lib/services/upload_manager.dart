@@ -11,6 +11,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -733,7 +734,7 @@ class UploadManager implements BackgroundAwareService {
       );
     }
     Log.info(
-      '👤 Nostr pubkey: $nostrPubkey',
+      '👤 Nostr pubkey: ${pubkeyForLogs(nostrPubkey)}',
       name: 'UploadManager',
       category: LogCategory.video,
     );
@@ -1042,7 +1043,7 @@ class UploadManager implements BackgroundAwareService {
       category: LogCategory.video,
     );
     Log.info(
-      '👤 Pubkey: ${upload.nostrPubkey}',
+      '👤 Pubkey: ${pubkeyForLogs(upload.nostrPubkey)}',
       name: 'UploadManager',
       category: LogCategory.video,
     );

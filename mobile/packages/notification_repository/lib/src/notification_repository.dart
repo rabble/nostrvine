@@ -12,6 +12,7 @@ import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:notification_repository/src/blocked_notification_filter.dart';
 import 'package:notification_repository/src/notification_page.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -2233,11 +2234,11 @@ class NotificationRepository {
     Log.info(
       'Reclassifying misattributed video notification as actor-anchored: '
       'notificationId=$notificationId '
-      'sourcePubkey=$sourcePubkey '
+      'sourcePubkey=${pubkeyForLogs(sourcePubkey)} '
       'referencedVideoEventId=$referencedVideoEventId '
       'referencedVideoOwnerPubkey=${referencedVideoOwnerPubkey ?? 'unknown'} '
       'rootEventPubkey=${rootEventPubkey ?? 'unknown'} '
-      'currentUserPubkey=$_userPubkey',
+      'currentUserPubkey=${pubkeyForLogs(_userPubkey)}',
       name: 'NotificationRepository',
       category: LogCategory.api,
     );

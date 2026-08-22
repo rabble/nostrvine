@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:hive_ce/hive.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/hive_box_names.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -70,7 +71,7 @@ class PersonalEventCacheService {
       await _flushPendingEventWrites();
 
       Log.info(
-        'PersonalEventCacheService initialized for $userPubkey with ${_eventsBox!.length} cached events',
+        'PersonalEventCacheService initialized for ${pubkeyForLogs(userPubkey)} with ${_eventsBox!.length} cached events',
         name: 'PersonalEventCache',
         category: LogCategory.storage,
       );

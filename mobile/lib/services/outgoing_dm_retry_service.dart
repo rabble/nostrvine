@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:meta/meta.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/outgoing_dm_retry_service_reportable_sites.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -233,7 +234,7 @@ class OutgoingDmRetryService {
     });
 
     Log.info(
-      'initialized for $_userPubkey',
+      'initialized for ${pubkeyForLogs(_userPubkey)}',
       name: 'OutgoingDmRetryService',
       category: LogCategory.system,
     );

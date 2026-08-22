@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/exceptions/video_exceptions.dart';
@@ -639,7 +640,7 @@ class VideoPublishService {
             .join(', ');
         Log.error(
           'Some collaborator invites failed to send for '
-          '$videoAddress (creator=$creatorPubkey): $failures',
+          '$videoAddress (creator=${pubkeyForLogs(creatorPubkey)}): $failures',
           category: .video,
         );
       }
@@ -660,7 +661,7 @@ class VideoPublishService {
     } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to send collaborator invites for $videoAddress '
-        '(creator=$creatorPubkey): $e\n$stackTrace',
+        '(creator=${pubkeyForLogs(creatorPubkey)}): $e\n$stackTrace',
         category: .video,
       );
       return draft.collaboratorPubkeys

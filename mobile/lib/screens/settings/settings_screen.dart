@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart'
     show SessionExpiredException;
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -171,7 +172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     Object error,
   ) async {
     Log.warning(
-      'Account switch to ${account.pubkeyHex} has no usable session '
+      'Account switch to ${pubkeyForLogs(account.pubkeyHex)} has no usable session '
       '($error) — offering re-authentication',
       name: 'SettingsScreen',
       category: LogCategory.auth,

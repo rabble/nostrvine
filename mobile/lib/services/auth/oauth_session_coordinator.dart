@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Coordinates OAuth session refresh so concurrent callers never race on a
@@ -280,7 +281,7 @@ class OAuthSessionCoordinator {
   ) {
     Log.warning(
       '${caller ?? '_refreshOAuthSession'}: refusing $source OAuth session '
-      'for owner $expectedOwnerPubkey because it belongs to $actualOwnerPubkey',
+      'for owner ${pubkeyForLogs(expectedOwnerPubkey)} because it belongs to ${pubkeyForLogs(actualOwnerPubkey)}',
       name: 'OAuthSessionCoordinator',
       category: LogCategory.auth,
     );

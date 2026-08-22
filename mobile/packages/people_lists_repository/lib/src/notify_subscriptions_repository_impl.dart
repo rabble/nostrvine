@@ -264,7 +264,8 @@ class NotifySubscriptionsRepositoryImpl
       final sent = await _nostrClient.publishEvent(event);
       if (sent is! PublishSuccess) {
         Log.warning(
-          'Notify list publish returned no event for owner $ownerPubkey',
+          'Notify list publish returned no event for owner '
+          '${pubkeyForLogs(ownerPubkey)}',
           name: _logName,
           category: LogCategory.relay,
         );
@@ -277,7 +278,7 @@ class NotifySubscriptionsRepositoryImpl
       return PeopleListPublishResult.submitted(eventId: sent.event.id);
     } on Object catch (error, stackTrace) {
       Log.error(
-        'Failed to publish notify list for owner $ownerPubkey',
+        'Failed to publish notify list for owner ${pubkeyForLogs(ownerPubkey)}',
         name: _logName,
         category: LogCategory.relay,
         error: error,
@@ -344,7 +345,7 @@ class NotifySubscriptionsRepositoryImpl
       final result = await _nostrClient.queryEventsDetailed([filter]);
       if (result.noRelays || result.timedOut) {
         Log.warning(
-          'Notify list unreadable for owner $ownerPubkey '
+          'Notify list unreadable for owner ${pubkeyForLogs(ownerPubkey)} '
           '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut})',
           name: _logName,
           category: LogCategory.relay,
@@ -368,7 +369,8 @@ class NotifySubscriptionsRepositoryImpl
       return newest;
     } on Object catch (error) {
       Log.warning(
-        'Failed to read notify list for owner $ownerPubkey: $error',
+        'Failed to read notify list for owner ${pubkeyForLogs(ownerPubkey)}: '
+        '$error',
         name: _logName,
         category: LogCategory.relay,
       );

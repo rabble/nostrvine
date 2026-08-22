@@ -589,7 +589,7 @@ class FollowRepository {
       return stats.followers;
     } catch (e) {
       Log.warning(
-        'Error fetching follower count for $pubkey: $e',
+        'Error fetching follower count for ${pubkeyForLogs(pubkey)}: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -828,7 +828,7 @@ class FollowRepository {
     if (stableFollowers != freshStats.followers ||
         stableFollowing != freshStats.following) {
       Log.info(
-        'Hysteresis stabilized stats for $pubkey: '
+        'Hysteresis stabilized stats for ${pubkeyForLogs(pubkey)}: '
         'fresh=${freshStats.followers}/${freshStats.following} '
         '-> stable=$stableFollowers/$stableFollowing '
         '(persisted=${persisted.followers}/'
@@ -851,7 +851,7 @@ class FollowRepository {
   /// hysteresis to avoid visible count fluctuations across app restarts.
   Future<FollowerStats> getFollowerStats(String pubkey) async {
     Log.debug(
-      'Fetching follower stats for: $pubkey',
+      'Fetching follower stats for: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -989,7 +989,7 @@ class FollowRepository {
           'REST API follower stats: '
           '${counts.followerCount} followers, '
           '${counts.followingCount} following '
-          'for $pubkey',
+          'for ${pubkeyForLogs(pubkey)}',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -1045,7 +1045,7 @@ class FollowRepository {
           .where((tag) => tag.isNotEmpty && tag[0] == 'p')
           .length;
       Log.debug(
-        'WebSocket following count: $count for $pubkey',
+        'WebSocket following count: $count for ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1079,7 +1079,7 @@ class FollowRepository {
 
     Log.info(
       'Indexer followers counts: $results, '
-      'using $best for $pubkey',
+      'using $best for ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1136,7 +1136,7 @@ class FollowRepository {
       await relay.send(<dynamic>['CLOSE', subscriptionId]);
       Log.debug(
         'Indexer $indexerUrl returned $result '
-        'followers for $pubkey',
+        'followers for ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1216,7 +1216,7 @@ class FollowRepository {
         refs.map((ref) => ref.pubkey).toSet().length;
 
     Log.info(
-      'Followers for $pubkey: '
+      'Followers for ${pubkeyForLogs(pubkey)}: '
       'API=${uniqueCount(apiFollowers)}, '
       'relays=${uniqueCount(relayFollowers)}, '
       'indexers=${uniqueCount(indexerFollowers)}, '
@@ -1440,7 +1440,7 @@ class FollowRepository {
             onTimeout: () {
               Log.warning(
                 'Followers relay query timed out '
-                'for $pubkey',
+                'for ${pubkeyForLogs(pubkey)}',
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
@@ -1457,7 +1457,7 @@ class FollowRepository {
       ];
     } on TimeoutException {
       Log.warning(
-        'Followers relay query timed out for $pubkey',
+        'Followers relay query timed out for ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1485,7 +1485,7 @@ class FollowRepository {
 
     Log.debug(
       'Indexer follower pubkeys: '
-      '${refs.map((ref) => ref.pubkey).toSet().length} for $pubkey',
+      '${refs.map((ref) => ref.pubkey).toSet().length} for ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1584,7 +1584,7 @@ class FollowRepository {
           await _checkIfTheyFollowUs(pubkey);
     } catch (e) {
       Log.warning(
-        'Failed to check mutual follow for $pubkey: $e',
+        'Failed to check mutual follow for ${pubkeyForLogs(pubkey)}: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1624,7 +1624,7 @@ class FollowRepository {
       return false;
     } catch (e) {
       Log.warning(
-        'Failed to check if $pubkey follows us: $e',
+        'Failed to check if ${pubkeyForLogs(pubkey)} follows us: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1729,7 +1729,7 @@ class FollowRepository {
     // the Kind 3 publish later, which would block every subsequent follow.
     if (!keyIsValid(pubkey)) {
       Log.error(
-        'Cannot follow - invalid pubkey: $pubkey',
+        'Cannot follow - invalid pubkey: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1748,7 +1748,7 @@ class FollowRepository {
 
     if (_followingPubkeys.contains(pubkey)) {
       Log.debug(
-        'Already following user: $pubkey',
+        'Already following user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1756,7 +1756,7 @@ class FollowRepository {
     }
 
     Log.debug(
-      'Following user: $pubkey',
+      'Following user: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1778,7 +1778,7 @@ class FollowRepository {
 
       Log.info(
         'Queued follow action for offline sync: '
-        '$pubkey',
+        '${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1793,7 +1793,7 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Successfully followed user: $pubkey',
+        'Successfully followed user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1834,7 +1834,7 @@ class FollowRepository {
     await _saveToLocalStorage();
 
     Log.info(
-      'Executed follow action for: $pubkey',
+      'Executed follow action for: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1863,7 +1863,7 @@ class FollowRepository {
 
     if (!_followingPubkeys.contains(pubkey)) {
       Log.debug(
-        'Not following user: $pubkey',
+        'Not following user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1871,7 +1871,7 @@ class FollowRepository {
     }
 
     Log.debug(
-      'Unfollowing user: $pubkey',
+      'Unfollowing user: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1893,7 +1893,7 @@ class FollowRepository {
 
       Log.info(
         'Queued unfollow action for offline sync: '
-        '$pubkey',
+        '${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1908,7 +1908,7 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Successfully unfollowed user: $pubkey',
+        'Successfully unfollowed user: ${pubkeyForLogs(pubkey)}',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1949,7 +1949,7 @@ class FollowRepository {
     await _saveToLocalStorage();
 
     Log.info(
-      'Executed unfollow action for: $pubkey',
+      'Executed unfollow action for: ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -2403,7 +2403,7 @@ class FollowRepository {
 
     Log.debug(
       'Subscribing to contact list for: '
-      '$currentUserPubkey',
+      '${pubkeyForLogs(currentUserPubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );

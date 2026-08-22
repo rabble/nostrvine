@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -584,7 +585,7 @@ class ContentBlocklistRepository {
     if (_severedFollowers.remove(pubkey)) {
       unawaited(_saveSeveredFollowers());
       Log.debug(
-        'Removed severed follower: $pubkey',
+        'Removed severed follower: ${pubkeyForLogs(pubkey)}',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
@@ -1028,7 +1029,7 @@ class ContentBlocklistRepository {
       await _publishMuteListToNostr();
 
       Log.info(
-        'Removed user from blocklist: $pubkey',
+        'Removed user from blocklist: ${pubkeyForLogs(pubkey)}',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
@@ -1038,7 +1039,7 @@ class ContentBlocklistRepository {
       // unreachable in production. Retained as a guard in case hardcoded
       // moderation blocks are re-introduced.
       Log.warning(
-        'Cannot unblock user from internal blocklist: $pubkey',
+        'Cannot unblock user from internal blocklist: ${pubkeyForLogs(pubkey)}',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
@@ -1167,7 +1168,7 @@ class ContentBlocklistRepository {
     );
 
     Log.info(
-      'Starting mutual mute list sync for pubkey: $ourPubkey',
+      'Starting mutual mute list sync for pubkey: ${pubkeyForLogs(ourPubkey)}',
       name: 'ContentBlocklistRepository',
       category: LogCategory.system,
     );
@@ -1264,7 +1265,7 @@ class ContentBlocklistRepository {
     );
 
     Log.info(
-      'Starting block list sync for pubkey: $ourPubkey',
+      'Starting block list sync for pubkey: ${pubkeyForLogs(ourPubkey)}',
       name: 'ContentBlocklistRepository',
       category: LogCategory.system,
     );
@@ -1445,7 +1446,7 @@ class ContentBlocklistRepository {
 
     if (latestSeen != null && createdAt < latestSeen) {
       Log.debug(
-        'Ignoring stale mute list event from $muterPubkey '
+        'Ignoring stale mute list event from ${pubkeyForLogs(muterPubkey)} '
         '(createdAt=$createdAt < latestSeen=$latestSeen)',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
@@ -1480,7 +1481,7 @@ class ContentBlocklistRepository {
         );
         _notifyChanged();
         Log.info(
-          'Added mutual mute: $muterPubkey',
+          'Added mutual mute: ${pubkeyForLogs(muterPubkey)}',
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
@@ -1494,7 +1495,7 @@ class ContentBlocklistRepository {
         );
         _notifyChanged();
         Log.info(
-          'Removed mutual mute (unmuted): $muterPubkey',
+          'Removed mutual mute (unmuted): ${pubkeyForLogs(muterPubkey)}',
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
@@ -1619,7 +1620,7 @@ class ContentBlocklistRepository {
 
     if (latestSeen != null && createdAt < latestSeen) {
       Log.debug(
-        'Ignoring stale block list event from $blockerPubkey '
+        'Ignoring stale block list event from ${pubkeyForLogs(blockerPubkey)} '
         '(createdAt=$createdAt < latestSeen=$latestSeen)',
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
@@ -1653,7 +1654,7 @@ class ContentBlocklistRepository {
         );
         _notifyChanged();
         Log.info(
-          'Detected block from user: $blockerPubkey',
+          'Detected block from user: ${pubkeyForLogs(blockerPubkey)}',
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
@@ -1666,7 +1667,7 @@ class ContentBlocklistRepository {
         );
         _notifyChanged();
         Log.info(
-          'Detected unblock from user: $blockerPubkey',
+          'Detected unblock from user: ${pubkeyForLogs(blockerPubkey)}',
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );

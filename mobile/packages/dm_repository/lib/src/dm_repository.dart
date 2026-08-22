@@ -31,6 +31,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_batch_unwrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
@@ -652,7 +653,8 @@ class DmRepository {
     // If switching users, stop the old subscription first.
     if (isInitialized && _userPubkey != userPubkey) {
       Log.info(
-        'DmRepository: switching user from $_userPubkey to $userPubkey',
+        'DmRepository: switching user from ${pubkeyForLogs(_userPubkey)} to '
+        '${pubkeyForLogs(userPubkey)}',
         category: LogCategory.system,
       );
       _resetState();
@@ -820,7 +822,7 @@ class DmRepository {
       );
 
       Log.info(
-        'Starting DM subscription for pubkey $_userPubkey '
+        'Starting DM subscription for pubkey ${pubkeyForLogs(_userPubkey)} '
         '(connected relays: '
         '${_nostrClient.connectedRelayCount}/'
         '${_nostrClient.configuredRelayCount}, '
@@ -1071,7 +1073,8 @@ class DmRepository {
       // defers drain completion so recovery retries on the next inbox open
       // rather than silently skipping it and marking complete. See #5304.
       Log.warning(
-        'Outgoing NIP-04 recovery did not finish for $pubkey: $e',
+        'Outgoing NIP-04 recovery did not finish for ${pubkeyForLogs(pubkey)}: '
+        '$e',
         category: LogCategory.system,
       );
       return false;
@@ -1219,7 +1222,8 @@ class DmRepository {
         // the UI — but dropping it with no trace at all made permanent message
         // loss invisible in triage.
         Log.warning(
-          'Abandoned $abandoned undecryptable gift wrap(s) for $pubkey after '
+          'Abandoned $abandoned undecryptable gift wrap(s) for '
+          '${pubkeyForLogs(pubkey)} after '
           '${DmHistoryDrainConfig.maxDecryptRetries} attempts; those inbound '
           'messages are permanently unrecoverable',
           category: LogCategory.system,
@@ -1269,7 +1273,8 @@ class DmRepository {
           // costs the user an inbound message; report it rather than dropping
           // silently.
           Log.error(
-            'Corrupt pending gift wrap ${row.giftWrapId} for $pubkey; '
+            'Corrupt pending gift wrap ${row.giftWrapId} for '
+            '${pubkeyForLogs(pubkey)}; '
             'dropping an unrecoverable inbound message',
             category: LogCategory.system,
             error: e,
@@ -1328,14 +1333,15 @@ class DmRepository {
     await syncState.upgradeDrainVersionIfNeeded(pubkey);
     if (syncState.historyDrainComplete(pubkey)) {
       Log.info(
-        'DM history drain skipped for $pubkey: already complete',
+        'DM history drain skipped for ${pubkeyForLogs(pubkey)}: already '
+        'complete',
         category: LogCategory.system,
       );
       return;
     }
 
     Log.info(
-      'DM history drain starting for $pubkey '
+      'DM history drain starting for ${pubkeyForLogs(pubkey)} '
       '(connected relays ${_nostrClient.connectedRelayCount}/'
       '${_nostrClient.configuredRelayCount})',
       category: LogCategory.system,
@@ -1429,7 +1435,8 @@ class DmRepository {
           if (_nostrClient.connectedRelayCount == 0) {
             Log.warning(
               'DM history drain saw an empty page with 0 connected relays '
-              'for $pubkey; deferring completion to the next inbox open.',
+              'for ${pubkeyForLogs(pubkey)}; deferring completion to the next '
+              'inbox open.',
               category: LogCategory.system,
             );
             return;
@@ -1476,13 +1483,14 @@ class DmRepository {
           // last-sent floor + any read markers stashed during the drain. #4977.
           await _restoreReadStateAfterDrain(pubkey);
           Log.info(
-            'DM history drain complete for $pubkey: '
+            'DM history drain complete for ${pubkeyForLogs(pubkey)}: '
             'pages=$pagesRun, eventsFetched=$totalEvents',
             category: LogCategory.system,
           );
         } else {
           Log.warning(
-            'DM history drain reached the end for $pubkey but outgoing '
+            'DM history drain reached the end for ${pubkeyForLogs(pubkey)} but '
+            'outgoing '
             'NIP-04 recovery could not complete (no live relay); deferring '
             'completion to the next inbox open.',
             category: LogCategory.system,
@@ -1494,7 +1502,8 @@ class DmRepository {
         // instead of permanently truncating it for heavy users. See #4953.
         Log.warning(
           'DM history drain paused at the page cap '
-          '(${DmHistoryDrainConfig.maxPages}) for $pubkey after '
+          '(${DmHistoryDrainConfig.maxPages}) for ${pubkeyForLogs(pubkey)} '
+          'after '
           '$totalEvents events; will resume from the persisted cursor '
           '($cursor) on the next inbox open.',
           category: LogCategory.system,
@@ -1630,8 +1639,8 @@ class DmRepository {
         if (row.senderPubkey != deletionEvent.pubkey) {
           Log.debug(
             'Ignoring kind 5 for $rumorId: author mismatch '
-            '(event=${deletionEvent.pubkey}, '
-            'sender=${row.senderPubkey})',
+            '(event=${pubkeyForLogs(deletionEvent.pubkey)}, '
+            'sender=${pubkeyForLogs(row.senderPubkey)})',
             category: LogCategory.system,
           );
           continue;
@@ -1810,7 +1819,8 @@ class DmRepository {
       if (rumor.createdAt >
           clock.nowSeconds + DmSyncState.maxFutureSkewSeconds) {
         Log.warning(
-          'Clamped DM (kind ${rumor.kind}) from ${rumor.pubkey}: rumor '
+          'Clamped DM (kind ${rumor.kind}) from '
+          '${pubkeyForLogs(rumor.pubkey)}: rumor '
           'created_at ${rumor.createdAt} is beyond the expected skew of '
           '${DmSyncState.maxFutureSkewSeconds}s (now ${clock.nowSeconds})',
           category: LogCategory.system,
@@ -1938,7 +1948,8 @@ class DmRepository {
         await _recordProcessedWrap(giftWrapEvent.id);
         Log.debug(
           'Skipping duplicate NIP-17 DM ${rumor.id} in conversation '
-          '$conversationId from ${rumor.pubkey}: matching message already '
+          '$conversationId from ${pubkeyForLogs(rumor.pubkey)}: matching '
+          'message already '
           'stored',
           category: LogCategory.system,
         );
@@ -2069,7 +2080,8 @@ class DmRepository {
 
       Log.debug(
         'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
-        '$conversationId from ${rumor.pubkey} createdAt=$persistedCreatedAt',
+        '$conversationId from ${pubkeyForLogs(rumor.pubkey)} '
+        'createdAt=$persistedCreatedAt',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
@@ -2527,7 +2539,8 @@ class DmRepository {
           clock.nowSeconds + DmSyncState.maxFutureSkewSeconds) {
         Log.warning(
           'Clamped DM (kind ${EventKind.directMessage}) from '
-          '${nip04Event.pubkey}: event created_at ${nip04Event.createdAt} is '
+          '${pubkeyForLogs(nip04Event.pubkey)}: event created_at '
+          '${nip04Event.createdAt} is '
           'beyond the expected skew of ${DmSyncState.maxFutureSkewSeconds}s '
           '(now ${clock.nowSeconds})',
           category: LogCategory.system,
@@ -2707,7 +2720,7 @@ class DmRepository {
       Log.debug(
         'Persisted NIP-04 DM ${nip04Event.id} '
         '(kind ${EventKind.directMessage}) in conversation '
-        '$conversationId from $senderPubkey '
+        '$conversationId from ${pubkeyForLogs(senderPubkey)} '
         'createdAt=$persistedCreatedAt',
         category: LogCategory.system,
       );
@@ -2789,11 +2802,12 @@ class DmRepository {
       urls,
       cap: RelayListCaps.dmInbox,
       onRejected: (url) => Log.warning(
-        'Refusing DM inbox relay advertised by $pubkey: $url',
+        'Refusing DM inbox relay advertised by ${pubkeyForLogs(pubkey)}: $url',
         category: LogCategory.system,
       ),
       onTruncated: (kept, total) => Log.warning(
-        'kind-10050 for $pubkey lists $total relays; routing to the first '
+        'kind-10050 for ${pubkeyForLogs(pubkey)} lists $total relays; routing '
+        'to the first '
         '$kept',
         category: LogCategory.system,
       ),
@@ -2832,7 +2846,8 @@ class DmRepository {
       ];
       if (matchingEvents.isEmpty) {
         Log.warning(
-          'Ignoring off-filter DM inbox relay response for $pubkey',
+          'Ignoring off-filter DM inbox relay response for '
+          '${pubkeyForLogs(pubkey)}',
           category: LogCategory.system,
         );
         return (state: _OwnDmInboxState.absent, relays: null);
@@ -2861,7 +2876,7 @@ class DmRepository {
           : (state: _OwnDmInboxState.found, relays: relays);
     } on Object catch (e) {
       Log.warning(
-        'Failed to resolve DM inbox relays for $pubkey: $e',
+        'Failed to resolve DM inbox relays for ${pubkeyForLogs(pubkey)}: $e',
         category: LogCategory.system,
       );
       return (state: _OwnDmInboxState.failed, relays: null);
@@ -2961,7 +2976,8 @@ class DmRepository {
 
       await syncState.markDmRelayListPublished(pubkey);
       Log.info(
-        'Published kind-10050 DM inbox relay list for $pubkey -> $relayUrl',
+        'Published kind-10050 DM inbox relay list for ${pubkeyForLogs(pubkey)} '
+        '-> $relayUrl',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {
@@ -4112,7 +4128,8 @@ class DmRepository {
           blocked++;
           Log.warning(
             'Collaborator invite blocked by policy for rumor '
-            '${invite.rumorId} (recipient=${invite.collaboratorPubkey}, '
+            '${invite.rumorId} '
+            '(recipient=${pubkeyForLogs(invite.collaboratorPubkey)}, '
             'video=${invite.videoAddress}); row dropped',
             category: LogCategory.system,
           );
@@ -4120,7 +4137,7 @@ class DmRepository {
           failure++;
           Log.warning(
             'Collaborator invite retry failed for rumor ${invite.rumorId} '
-            '(recipient=${invite.collaboratorPubkey}, '
+            '(recipient=${pubkeyForLogs(invite.collaboratorPubkey)}, '
             'video=${invite.videoAddress}): ${result.error}',
             category: LogCategory.system,
           );
@@ -4142,7 +4159,7 @@ class DmRepository {
         failure++;
         Log.error(
           'Collaborator invite retry threw for rumor ${invite.rumorId} '
-          '(recipient=${invite.collaboratorPubkey}, '
+          '(recipient=${pubkeyForLogs(invite.collaboratorPubkey)}, '
           'video=${invite.videoAddress}): $error',
           category: LogCategory.system,
           error: error,
@@ -5636,7 +5653,8 @@ class DmRepository {
     if (_userPubkey.isEmpty || rumor.pubkey != _userPubkey) {
       Log.debug(
         'Ignoring DM read marker ${rumor.id}: author mismatch '
-        '(event=${rumor.pubkey}, user=$_userPubkey)',
+        '(event=${pubkeyForLogs(rumor.pubkey)}, '
+        'user=${pubkeyForLogs(_userPubkey)})',
         category: LogCategory.system,
       );
       return;

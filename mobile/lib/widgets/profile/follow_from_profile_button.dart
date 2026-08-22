@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -186,7 +187,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
 
   void _follow(BuildContext context) {
     Log.info(
-      'Profile follow button tapped for $pubkey',
+      'Profile follow button tapped for ${pubkeyForLogs(pubkey)}',
       name: 'FollowFromProfileButton',
       category: LogCategory.ui,
     );
@@ -205,7 +206,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
 
   void _unfollow(BuildContext context) {
     Log.info(
-      'Profile unfollow confirmed for $pubkey',
+      'Profile unfollow confirmed for ${pubkeyForLogs(pubkey)}',
       name: 'FollowFromProfileButton',
       category: LogCategory.ui,
     );

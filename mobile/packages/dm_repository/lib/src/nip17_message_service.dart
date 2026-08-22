@@ -15,6 +15,7 @@ import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_batch_wrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
@@ -642,7 +643,7 @@ class NIP17MessageService {
 
       Log.debug(
         'Created recipient gift wrap with ephemeral key: '
-        '${giftWrapEvent.pubkey}',
+        '${pubkeyForLogs(giftWrapEvent.pubkey)}',
         category: LogCategory.system,
       );
 
@@ -743,7 +744,8 @@ class NIP17MessageService {
         }
         Log.warning(
           'NIP-17 $rumorNoun recipient publish unconfirmed '
-          '(rumor=${rumorEvent.id}, recipient=$recipientPubkey, '
+          '(rumor=${rumorEvent.id}, '
+          'recipient=${pubkeyForLogs(recipientPubkey)}, '
           '${outcome.summary}); selfWrapPublished=$selfWrapPublished',
           category: LogCategory.system,
         );
@@ -765,7 +767,8 @@ class NIP17MessageService {
       if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(
-          '$errorMsg (rumor=${rumorEvent.id}, recipient=$recipientPubkey)',
+          '$errorMsg (rumor=${rumorEvent.id}, '
+          'recipient=${pubkeyForLogs(recipientPubkey)})',
           category: LogCategory.system,
         );
         return const NIP17SendResult.failure(errorMsg);
@@ -800,7 +803,8 @@ class NIP17MessageService {
     } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to send NIP-17 message '
-        '(rumor=${rumorEvent.id}, recipient=$recipientPubkey): $e',
+        '(rumor=${rumorEvent.id}, '
+        'recipient=${pubkeyForLogs(recipientPubkey)}): $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,

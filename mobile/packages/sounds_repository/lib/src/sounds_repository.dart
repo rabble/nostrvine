@@ -172,7 +172,7 @@ class SoundsRepository {
     }
 
     Log.debug(
-      'Fetching sounds by creator: $pubkey',
+      'Fetching sounds by creator: ${pubkeyForLogs(pubkey)}',
       name: 'SoundsRepository',
       category: LogCategory.api,
     );

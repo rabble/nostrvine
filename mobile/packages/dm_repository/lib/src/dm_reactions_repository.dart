@@ -14,6 +14,7 @@ import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Reporter port for forwarding DAO-layer surprises to Crashlytics.
@@ -919,7 +920,8 @@ class DmReactionsRepository {
       if (row.reactorPubkey != rumorEvent.pubkey) {
         Log.debug(
           'Ignoring wrapped reaction deletion for $rumorId: author mismatch '
-          '(event=${rumorEvent.pubkey}, reactor=${row.reactorPubkey}, '
+          '(event=${pubkeyForLogs(rumorEvent.pubkey)}, '
+          'reactor=${pubkeyForLogs(row.reactorPubkey)}, '
           'giftWrap=$giftWrapId)',
           category: LogCategory.system,
         );

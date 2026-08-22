@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/nip05/nip05_validor.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Verification status for NIP-05 addresses
@@ -195,14 +196,14 @@ class Nip05VerificationService extends ChangeNotifier {
       } else if (isValid) {
         status = Nip05VerificationStatus.verified;
         Log.debug(
-          'NIP-05 verified: $nip05 for $pubkey',
+          'NIP-05 verified: $nip05 for ${pubkeyForLogs(pubkey)}',
           name: 'Nip05VerificationService',
           category: LogCategory.system,
         );
       } else {
         status = Nip05VerificationStatus.failed;
         Log.debug(
-          'NIP-05 verification failed: $nip05 for $pubkey',
+          'NIP-05 verification failed: $nip05 for ${pubkeyForLogs(pubkey)}',
           name: 'Nip05VerificationService',
           category: LogCategory.system,
         );

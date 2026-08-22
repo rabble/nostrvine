@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip05/nip05_validor.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -212,7 +213,7 @@ class ModerationLabelService {
       Log.info(
         'ModerationLabelService loaded '
         '${_subscribedLabelers.length} labelers '
-        '(moderation pubkey: $_divineModerationPubkey)',
+        '(moderation pubkey: ${pubkeyForLogs(_divineModerationPubkey)})',
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
@@ -254,7 +255,7 @@ class ModerationLabelService {
   Future<void> _subscribeToLabelerInternal(String pubkey) async {
     if (!_canQueryRelays()) {
       Log.debug(
-        'Deferring labeler subscription until Nostr session is ready: $pubkey',
+        'Deferring labeler subscription until Nostr session is ready: ${pubkeyForLogs(pubkey)}',
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
@@ -274,14 +275,14 @@ class ModerationLabelService {
       _loadedLabelers.add(pubkey);
 
       Log.debug(
-        'Subscribed to labeler $pubkey, '
+        'Subscribed to labeler ${pubkeyForLogs(pubkey)}, '
         'loaded ${events.length} label events',
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
     } catch (e) {
       Log.error(
-        'Error subscribing to labeler $pubkey: $e',
+        'Error subscribing to labeler ${pubkeyForLogs(pubkey)}: $e',
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
@@ -702,7 +703,7 @@ class ModerationLabelService {
     }
     Log.warning(
       'Moderation pubkey diverges from the key pinned in this build: '
-      'adopted $adoptedPubkey, pinned $fallbackModerationPubkeyHex. '
+      'adopted ${pubkeyForLogs(adoptedPubkey)}, pinned ${pubkeyForLogs(fallbackModerationPubkeyHex)}. '
       'Expected after an intended rotation; otherwise investigate '
       '$divineModerationNip05 for an unauthorized repoint.',
       name: 'ModerationLabelService',
@@ -722,7 +723,7 @@ class ModerationLabelService {
     await _unloadLabeler(previousPubkey);
 
     Log.info(
-      'Updated moderation labeler from $previousPubkey to $resolvedPubkey',
+      'Updated moderation labeler from ${pubkeyForLogs(previousPubkey)} to ${pubkeyForLogs(resolvedPubkey)}',
       name: 'ModerationLabelService',
       category: LogCategory.system,
     );
@@ -751,7 +752,7 @@ class ModerationLabelService {
 
     Log.info(
       'Migrated moderation labeler from retired pubkey(s) '
-      '${retired.join(', ')} to $_divineModerationPubkey',
+      '${retired.join(', ')} to ${pubkeyForLogs(_divineModerationPubkey)}',
       name: 'ModerationLabelService',
       category: LogCategory.system,
     );

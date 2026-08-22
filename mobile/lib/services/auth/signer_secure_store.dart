@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show NostrRemoteSignerInfo;
 import 'package:openvine/models/authentication_source.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -239,7 +240,7 @@ class SignerSecureStore {
         );
       } else if (oauthSession != null) {
         Log.warning(
-          'archive: skipping OAuth archive for $pubkeyHex — '
+          'archive: skipping OAuth archive for ${pubkeyForLogs(pubkeyHex)} — '
           'global session pubkey='
           '${oauthSession.userPubkey ?? "null (legacy)"} '
           '(cannot verify ownership, not archiving to avoid corruption)',
@@ -249,7 +250,7 @@ class SignerSecureStore {
       }
 
       Log.info(
-        'archive: archived for $pubkeyHex — '
+        'archive: archived for ${pubkeyForLogs(pubkeyHex)} — '
         'amber=${amberInfo != null}, '
         'bunker=${bunkerUrl != null && bunkerUrl.isNotEmpty}, '
         'oauth=$archiveOauth',
@@ -258,7 +259,7 @@ class SignerSecureStore {
       );
     } catch (e) {
       Log.warning(
-        'archive: failed for $pubkeyHex: $e',
+        'archive: failed for ${pubkeyForLogs(pubkeyHex)}: $e',
         name: 'SignerSecureStore',
         category: LogCategory.auth,
       );
@@ -337,7 +338,7 @@ class SignerSecureStore {
           if (corrupt) {
             Log.warning(
               'restoreActiveKeys: corrupt OAuth archive for '
-              '$pubkeyHex — archive pubkey='
+              '${pubkeyForLogs(pubkeyHex)} — archive pubkey='
               '${archivePubkey ?? "null (legacy)"}. '
               'Deleting corrupt archive.',
               name: 'SignerSecureStore',
@@ -387,7 +388,7 @@ class SignerSecureStore {
   Future<void> clearArchive(String pubkeyHex) async {
     if (_storage == null) return;
     Log.info(
-      'clearArchive: removing all archives for $pubkeyHex',
+      'clearArchive: removing all archives for ${pubkeyForLogs(pubkeyHex)}',
       name: 'SignerSecureStore',
       category: LogCategory.auth,
     );
@@ -398,7 +399,7 @@ class SignerSecureStore {
       await _storage.delete(key: _keycastSessionKey(pubkeyHex));
     } catch (e) {
       Log.warning(
-        'clearArchive: failed for $pubkeyHex: $e',
+        'clearArchive: failed for ${pubkeyForLogs(pubkeyHex)}: $e',
         name: 'SignerSecureStore',
         category: LogCategory.auth,
       );
@@ -439,7 +440,7 @@ class SignerSecureStore {
       }
     } catch (e) {
       Log.warning(
-        'hasArchive: failed for $pubkeyHex: $e',
+        'hasArchive: failed for ${pubkeyForLogs(pubkeyHex)}: $e',
         name: 'SignerSecureStore',
         category: LogCategory.auth,
       );

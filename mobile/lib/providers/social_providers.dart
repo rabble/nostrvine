@@ -9,6 +9,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meta/meta.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_version_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -822,7 +823,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
               await fn();
             } catch (e) {
               Log.warning(
-                'Failed to clean $name for $userPubkey: $e',
+                'Failed to clean $name for ${pubkeyForLogs(userPubkey)}: $e',
                 name: 'UserDataCleanup',
                 category: LogCategory.auth,
               );

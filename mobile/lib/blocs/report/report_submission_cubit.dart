@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
@@ -593,7 +594,7 @@ class ReportSubmissionCubit extends Cubit<ReportSubmissionState> {
       if (dmResult case final NIP17SendFailure failure) {
         Log.warning(
           'Moderation DM not delivered '
-          '(recipient=${transport.pubkey}, '
+          '(recipient=${pubkeyForLogs(transport.pubkey)}, '
           'blocked=${failure.blocked}, '
           'retryablePending=${failure.retryablePending}): '
           '${failure.error}',

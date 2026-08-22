@@ -26,6 +26,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/content_label.dart';
@@ -449,7 +450,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (ids.isEmpty) return;
 
     Log.info(
-      'sweepAuthor: emitting ${ids.length} removal(s) for pubkey=$pubkey',
+      'sweepAuthor: emitting ${ids.length} removal(s) for pubkey=${pubkeyForLogs(pubkey)}',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -994,7 +995,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   List<VideoEvent> getVideosByAuthor(String pubkey) {
     final result = <VideoEvent>[];
     Log.debug(
-      '🔍 Searching for videos by author $pubkey across ${_eventLists.length} subscription types',
+      '🔍 Searching for videos by author ${pubkeyForLogs(pubkey)} across ${_eventLists.length} subscription types',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -1020,7 +1021,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       result.addAll(matchingVideos);
     }
     Log.debug(
-      '✅ Total videos found for $pubkey: ${result.length}',
+      '✅ Total videos found for ${pubkeyForLogs(pubkey)}: ${result.length}',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -1101,7 +1102,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       onBucketRemoved: (authorPubkey, removed) {
         removedCount += removed;
         Log.debug(
-          'Removed video $logIdentity from author bucket $authorPubkey',
+          'Removed video $logIdentity from author bucket ${pubkeyForLogs(authorPubkey)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2024,7 +2025,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       if (authors != null &&
           authors.contains(AppConstants.classicVinesPubkey)) {
         Log.debug(
-          '🌟 Subscribing to Classic Vines account (${AppConstants.classicVinesPubkey})',
+          '🌟 Subscribing to Classic Vines account (${pubkeyForLogs(AppConstants.classicVinesPubkey)})',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2556,7 +2557,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
             if (subscriptionType == SubscriptionType.homeFeed) {
               Log.info(
-                '🏠📥 HOME FEED EVENT #$eventCount RECEIVED: kind=${event.kind}, author=${event.pubkey}',
+                '🏠📥 HOME FEED EVENT #$eventCount RECEIVED: kind=${event.kind}, author=${pubkeyForLogs(event.pubkey)}',
                 name: 'VideoEventService',
                 category: LogCategory.video,
               );
@@ -2862,7 +2863,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
                 .cacheProfile(profile)
                 .then((_) {
                   Log.verbose(
-                    '✅ Cached profile event for ${event.pubkey} from video subscription',
+                    '✅ Cached profile event for ${pubkeyForLogs(event.pubkey)} from video subscription',
                     name: 'VideoEventService',
                     category: LogCategory.video,
                   );
@@ -2914,7 +2915,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Check if content is blocked
       if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
-          'Filtering blocked content from ${event.pubkey}',
+          'Filtering blocked content from ${pubkeyForLogs(event.pubkey)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -3049,7 +3050,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             category: LogCategory.video,
           );
           Log.verbose(
-            '  - Pubkey: ${event.pubkey}',
+            '  - Pubkey: ${pubkeyForLogs(event.pubkey)}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );
@@ -3109,7 +3110,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       Log.debug(
-        '📥 Received historical $subscriptionType event: kind=${event.kind}, author=${event.pubkey}, id=${event.id}',
+        '📥 Received historical $subscriptionType event: kind=${event.kind}, author=${pubkeyForLogs(event.pubkey)}, id=${event.id}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -3151,7 +3152,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Check if content is blocked
       if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
-          'Filtering blocked historical content from ${event.pubkey}',
+          'Filtering blocked historical content from ${pubkeyForLogs(event.pubkey)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -3358,7 +3359,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Subscribe to specific user's video events
   Future<void> subscribeToUserVideos(String pubkey, {int limit = 50}) async {
     Log.info(
-      'SVC subscribeToUser: hex=$pubkey',
+      'SVC subscribeToUser: hex=${pubkeyForLogs(pubkey)}',
       name: 'Service',
       category: LogCategory.video,
     );
@@ -3389,7 +3390,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     final authorVideoCount = _authorBuckets.videosFor(pubkey).length;
     if (authorVideoCount > 0) {
       Log.info(
-        'SVC subscribeToUser: backfilled $authorVideoCount existing videos for $pubkey',
+        'SVC subscribeToUser: backfilled $authorVideoCount existing videos for ${pubkeyForLogs(pubkey)}',
         name: 'Service',
         category: LogCategory.video,
       );
@@ -3416,7 +3417,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     if (!isActiveAuthor) {
       Log.debug(
-        'Skipping stale profile unsubscribe for $pubkey',
+        'Skipping stale profile unsubscribe for ${pubkeyForLogs(pubkey)}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -3443,7 +3444,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     Log.info(
-      'Querying historical videos for user=$pubkey until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'} limit=$limit',
+      'Querying historical videos for user=${pubkeyForLogs(pubkey)} until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'} limit=$limit',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -3481,7 +3482,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Set timeout for receiving events
       final timeoutTimer = Timer(const Duration(seconds: 5), () {
         Log.info(
-          'Historical query timeout for user=$pubkey - received $receivedCount events',
+          'Historical query timeout for user=${pubkeyForLogs(pubkey)} - received $receivedCount events',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -3501,7 +3502,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           timeoutTimer.cancel();
           if (!completer.isCompleted) {
             Log.info(
-              'Historical query stream completed for user=$pubkey - received $receivedCount events',
+              'Historical query stream completed for user=${pubkeyForLogs(pubkey)} - received $receivedCount events',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
@@ -3512,7 +3513,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           timeoutTimer.cancel();
           if (!completer.isCompleted) {
             Log.error(
-              'Historical query stream error for user=$pubkey: $error',
+              'Historical query stream error for user=${pubkeyForLogs(pubkey)}: $error',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
@@ -3526,7 +3527,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       await streamSubscription.cancel();
 
       Log.info(
-        'Historical user videos query completed - received $receivedCount events for user=$pubkey',
+        'Historical user videos query completed - received $receivedCount events for user=${pubkeyForLogs(pubkey)}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -3535,7 +3536,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       notifyListeners();
     } catch (e) {
       Log.error(
-        'Failed to query historical user videos for user=$pubkey: $e',
+        'Failed to query historical user videos for user=${pubkeyForLogs(pubkey)}: $e',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -4907,7 +4908,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (_blocklistRepository?.shouldFilterFromFeeds(videoEvent.pubkey) ==
         true) {
       Log.verbose(
-        'Filtering blocked content from ${videoEvent.pubkey} in $subscriptionType',
+        'Filtering blocked content from ${pubkeyForLogs(videoEvent.pubkey)} in $subscriptionType',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -5185,7 +5186,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       await _profileRepository.fetchFreshProfile(pubkey: pubkey);
     } catch (e) {
       Log.warning(
-        'Failed to fetch profile for $pubkey: $e',
+        'Failed to fetch profile for ${pubkeyForLogs(pubkey)}: $e',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -6515,7 +6516,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             category: LogCategory.video,
           );
           Log.warning(
-            '      - pubkey: ${event.pubkey}',
+            '      - pubkey: ${pubkeyForLogs(event.pubkey)}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );

@@ -2,6 +2,7 @@
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
 import 'package:creator_sync/creator_sync.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/creator_sync/prefs_sync_state_store.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -308,7 +309,7 @@ class UserDataCleanupService {
     try {
       await onClaimLegacyRows!(userPubkey);
       Log.info(
-        'Legacy row claim complete for $userPubkey',
+        'Legacy row claim complete for ${pubkeyForLogs(userPubkey)}',
         name: 'UserDataCleanupService',
         category: LogCategory.auth,
       );

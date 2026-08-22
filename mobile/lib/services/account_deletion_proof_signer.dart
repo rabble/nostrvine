@@ -1,6 +1,7 @@
 // ABOUTME: Signs the NIP-98 proof-of-key for the Keycast account-deletion retry
 // ABOUTME: Pins the proof to the account whose bearer token is being spent
 
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -77,7 +78,7 @@ class AccountDeletionProofSigner {
       // accounts matched before a call that can take seconds.
       if (_activePubkey() != tokenOwnerPubkey) {
         Log.warning(
-          'Discarding a deletion proof signed for $tokenOwnerPubkey: the '
+          'Discarding a deletion proof signed for ${pubkeyForLogs(tokenOwnerPubkey)}: the '
           'signed-in account changed to ${_activePubkey() ?? "none"} while it '
           'was being signed',
           name: 'AccountDeletionProofSigner',

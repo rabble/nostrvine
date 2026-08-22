@@ -6,6 +6,7 @@ import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_following_event.dart';
@@ -108,7 +109,7 @@ class OthersFollowingBloc
         },
         onError: (error, stackTrace) {
           Log.error(
-            'Failed to load following list for ${event.targetPubkey}: $error',
+            'Failed to load following list for ${pubkeyForLogs(event.targetPubkey)}: $error',
             name: 'OthersFollowingBloc',
             category: LogCategory.system,
           );
@@ -124,7 +125,7 @@ class OthersFollowingBloc
       );
     } catch (e, stackTrace) {
       Log.error(
-        'Unexpected error loading following list for ${event.targetPubkey}: $e',
+        'Unexpected error loading following list for ${pubkeyForLogs(event.targetPubkey)}: $e',
         name: 'OthersFollowingBloc',
         category: LogCategory.system,
       );
