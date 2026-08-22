@@ -856,7 +856,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Username (Opsional)';
 
   @override
-  String get profileSetupUsernameHelper => 'Identitas unikmu di Divine';
+  String get profileSetupUsernameHelper =>
+      'Gunakan huruf, angka, atau tanda hubung. Nama pengguna menjadi alamat divine.video. Gunakan nama tampilan untuk spasi atau simbol.';
 
   @override
   String get profileSetupSaveButton => 'Simpan';
@@ -980,6 +981,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Hanya huruf, angka, dan tanda hubung yang diperbolehkan';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Nama pengguna tidak boleh diawali atau diakhiri tanda hubung';
 
   @override
   String get profileSetupUsernameInvalidLength =>

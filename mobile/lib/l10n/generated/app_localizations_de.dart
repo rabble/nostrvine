@@ -924,7 +924,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileSetupUsernameHelper =>
-      'Deine einzigartige Identität auf Divine';
+      'Verwende Buchstaben, Zahlen oder Bindestriche. Dein Benutzername wird zu einer divine.video-Adresse. Leerzeichen und Symbole kannst du im Anzeigenamen verwenden.';
 
   @override
   String get profileSetupSaveButton => 'Speichern';
@@ -1051,6 +1051,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Nur Buchstaben, Zahlen und Bindestriche sind erlaubt';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Der Benutzername darf nicht mit einem Bindestrich beginnen oder enden';
 
   @override
   String get profileSetupUsernameInvalidLength =>

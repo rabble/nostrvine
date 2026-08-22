@@ -5795,10 +5795,10 @@ void main() {
 
           expect(
             result,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Usernames must be 3–63 characters',
+            isA<UsernameClaimInvalidFormat>().having(
+              (e) => e.failure,
+              'failure',
+              DivineUsernameValidationFailure.invalidLength,
             ),
           );
           verifyNever(
@@ -6061,9 +6061,9 @@ void main() {
         expect(
           result,
           isA<UsernameInvalidFormat>().having(
-            (e) => e.reason,
-            'reason',
-            'Usernames must be 3–63 characters',
+            (e) => e.failure,
+            'failure',
+            DivineUsernameValidationFailure.invalidLength,
           ),
         );
         verifyNever(
@@ -6238,17 +6238,14 @@ void main() {
         },
       );
 
-      test('returns $UsernameInvalidFormat with fallback message '
-          'when code is invalid_format but no reason', () async {
+      test('returns $UsernameInvalidFormat without a client failure '
+          'when the server rejects the format', () async {
         stubNameServerCheck('bad', available: false, code: 'invalid_format');
         final result = await profileRepository.checkUsernameAvailability(
           username: 'bad',
         );
         expect(result, isA<UsernameInvalidFormat>());
-        expect(
-          (result as UsernameInvalidFormat).reason,
-          equals('Invalid username format'),
-        );
+        expect((result as UsernameInvalidFormat).failure, isNull);
       });
 
       test('returns $UsernameTaken when code field is missing', () async {

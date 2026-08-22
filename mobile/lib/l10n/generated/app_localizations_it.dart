@@ -926,7 +926,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Nome utente (opzionale)';
 
   @override
-  String get profileSetupUsernameHelper => 'La tua identità univoca su Divine';
+  String get profileSetupUsernameHelper =>
+      'Usa lettere, numeri o trattini. Il tuo nome utente diventa un indirizzo divine.video. Usa il nome visualizzato per spazi o simboli.';
 
   @override
   String get profileSetupSaveButton => 'Salva';
@@ -1052,6 +1053,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Sono ammessi solo lettere, numeri e trattini';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Il nome utente non può iniziare o terminare con un trattino';
 
   @override
   String get profileSetupUsernameInvalidLength =>

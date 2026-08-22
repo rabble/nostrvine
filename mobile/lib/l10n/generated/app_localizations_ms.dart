@@ -885,7 +885,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Nama Pengguna (Pilihan)';
 
   @override
-  String get profileSetupUsernameHelper => 'Identiti unik anda di Divine';
+  String get profileSetupUsernameHelper =>
+      'Gunakan huruf, nombor atau tanda sempang. Nama pengguna anda menjadi alamat divine.video. Gunakan nama paparan untuk ruang atau simbol.';
 
   @override
   String get profileSetupSaveButton => 'Simpan';
@@ -1011,6 +1012,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Hanya huruf, nombor dan sempang dibenarkan';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Nama pengguna tidak boleh bermula atau berakhir dengan tanda sempang';
 
   @override
   String get profileSetupUsernameInvalidLength =>

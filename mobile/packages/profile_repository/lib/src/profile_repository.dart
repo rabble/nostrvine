@@ -1371,6 +1371,8 @@ class ProfileRepository implements ProfileReader {
         case UsernameClaimNetworkError():
         case UsernameClaimError():
           return PendingSaveDriveOutcome.retryableFailure;
+        case UsernameClaimInvalidFormat():
+          return PendingSaveDriveOutcome.permanentFailure;
       }
     }
 
@@ -1505,8 +1507,8 @@ class ProfileRepository implements ProfileReader {
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
   Future<UsernameClaimResult> claimUsername({required String username}) async {
     final validation = validateDivineUsername(username);
-    if (validation case DivineUsernameInvalid(:final reason)) {
-      return UsernameClaimError(reason);
+    if (validation case DivineUsernameInvalid(:final failure)) {
+      return UsernameClaimInvalidFormat(failure);
     }
 
     final normalizedUsername = (validation as DivineUsernameValid).normalized;
@@ -1825,8 +1827,8 @@ class ProfileRepository implements ProfileReader {
     String? currentUserPubkey,
   }) async {
     final validation = validateDivineUsername(username);
-    if (validation case DivineUsernameInvalid(:final reason)) {
-      return UsernameInvalidFormat(reason);
+    if (validation case DivineUsernameInvalid(:final failure)) {
+      return UsernameInvalidFormat(failure);
     }
     final normalizedUsername = (validation as DivineUsernameValid).normalized;
 
@@ -1896,9 +1898,7 @@ class ProfileRepository implements ProfileReader {
         return switch (code) {
           'reserved' => const UsernameReserved(),
           'burned' => const UsernameBurned(),
-          'invalid_format' => UsernameInvalidFormat(
-            reason ?? 'Invalid username format',
-          ),
+          'invalid_format' => const UsernameInvalidFormat(),
           // taken, pending_confirmation, or any unknown code
           _ => const UsernameTaken(),
         };

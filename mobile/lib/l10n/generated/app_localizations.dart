@@ -1563,7 +1563,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSetupUsernameHelper.
   ///
   /// In en, this message translates to:
-  /// **'Your unique identity on Divine'**
+  /// **'Use letters, numbers, or hyphens. Your username becomes a divine.video address. Use your display name for spaces or symbols.'**
   String get profileSetupUsernameHelper;
 
   /// No description provided for @profileSetupSaveButton.
@@ -1793,6 +1793,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only letters, numbers, and hyphens are allowed'**
   String get profileSetupUsernameInvalidFormat;
+
+  /// No description provided for @profileSetupUsernameInvalidHyphenPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Username can\'t start or end with a hyphen'**
+  String get profileSetupUsernameInvalidHyphenPlacement;
 
   /// No description provided for @profileSetupUsernameInvalidLength.
   ///

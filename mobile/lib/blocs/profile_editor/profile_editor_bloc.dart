@@ -24,10 +24,18 @@ import 'package:unified_logger/unified_logger.dart';
 part 'profile_editor_event.dart';
 part 'profile_editor_state.dart';
 
-/// Matches [DivineUsernameInvalid.reason] for length failures from
-/// [validateDivineUsername].
-String get _divineUsernameLengthFailureReason =>
-    'Usernames must be $kDivineUsernameMinLength–$kDivineUsernameMaxLength characters';
+UsernameValidationError _usernameValidationErrorFor(
+  DivineUsernameValidationFailure? failure,
+) => switch (failure) {
+  DivineUsernameValidationFailure.invalidLength =>
+    UsernameValidationError.invalidLength,
+  DivineUsernameValidationFailure.leadingOrTrailingHyphen =>
+    UsernameValidationError.invalidHyphenPlacement,
+  DivineUsernameValidationFailure.invalidCharacters =>
+    UsernameValidationError.invalidCharacters,
+  DivineUsernameValidationFailure.required ||
+  null => UsernameValidationError.invalidFormat,
+};
 
 /// External NIP-05 format: `local-part@domain` per NIP-05 spec.
 /// Local part: a-z0-9-_. (lowercase only).
@@ -824,18 +832,16 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       }
 
       final validation = validateDivineUsername(rawUsername);
-      if (validation case DivineUsernameInvalid(:final reason)) {
-        final isLength = reason == _divineUsernameLengthFailureReason;
+      if (validation case DivineUsernameInvalid(:final failure)) {
+        final validationError = _usernameValidationErrorFor(failure);
         emit(
           state.copyWith(
             username: username,
-            usernameStatus: isLength
+            usernameStatus:
+                validationError == UsernameValidationError.invalidLength
                 ? UsernameStatus.error
                 : UsernameStatus.invalidFormat,
-            usernameError: isLength
-                ? UsernameValidationError.invalidLength
-                : UsernameValidationError.invalidFormat,
-            usernameFormatMessage: isLength ? null : reason,
+            usernameError: validationError,
           ),
         );
         return;
@@ -895,12 +901,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           );
         case UsernameBurned():
           emit(state.copyWith(usernameStatus: UsernameStatus.burned));
-        case UsernameInvalidFormat(:final reason):
+        case UsernameInvalidFormat(:final failure):
           emit(
             state.copyWith(
               usernameStatus: UsernameStatus.invalidFormat,
-              usernameError: UsernameValidationError.invalidFormat,
-              usernameFormatMessage: reason,
+              usernameError: _usernameValidationErrorFor(failure),
             ),
           );
         case UsernameCheckError(:final message):
@@ -1060,12 +1065,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           );
         case UsernameBurned():
           emit(state.copyWith(usernameStatus: UsernameStatus.burned));
-        case UsernameInvalidFormat(:final reason):
+        case UsernameInvalidFormat(:final failure):
           emit(
             state.copyWith(
               usernameStatus: UsernameStatus.invalidFormat,
-              usernameError: UsernameValidationError.invalidFormat,
-              usernameFormatMessage: reason,
+              usernameError: _usernameValidationErrorFor(failure),
             ),
           );
         case UsernameCheckError(:final message):
@@ -1208,6 +1212,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         UsernameClaimTaken() => ProfileEditorError.usernameTaken,
         UsernameClaimReserved() => ProfileEditorError.usernameReserved,
         UsernameClaimNetworkError() => ProfileEditorError.claimNetworkError,
+        UsernameClaimInvalidFormat() => ProfileEditorError.claimFailed,
         UsernameClaimError() => ProfileEditorError.claimFailed,
       };
 

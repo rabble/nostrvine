@@ -189,11 +189,14 @@ enum UsernameStatus {
 ///
 /// The UI layer should map these to localized strings.
 enum UsernameValidationError {
-  /// Username contains invalid characters or hyphen placement.
-  ///
-  /// Valid characters for a divine.video username are lowercase letters,
-  /// digits, and non-edge hyphens (single DNS label under *.divine.video).
+  /// The server rejected the username format without a recognized reason.
   invalidFormat,
+
+  /// Username contains characters that are not valid in a DNS label.
+  invalidCharacters,
+
+  /// Username starts or ends with a hyphen.
+  invalidHyphenPlacement,
 
   /// Username length is outside allowed range (3–63 characters).
   invalidLength,
@@ -250,7 +253,6 @@ final class ProfileEditorState extends Equatable {
     this.initialUsername,
     this.usernameStatus = UsernameStatus.idle,
     this.usernameError,
-    this.usernameFormatMessage,
     this.reservedUsernames = const {},
     this.nip05Mode = Nip05Mode.divine,
     this.externalNip05 = '',
@@ -307,9 +309,6 @@ final class ProfileEditorState extends Equatable {
 
   /// Error message for username validation (when status is error).
   final UsernameValidationError? usernameError;
-
-  /// Human-readable reason when [usernameStatus] is [UsernameStatus.invalidFormat].
-  final String? usernameFormatMessage;
 
   /// Cache of reserved usernames (403 responses from claim API).
   final Set<String> reservedUsernames;
@@ -479,7 +478,6 @@ final class ProfileEditorState extends Equatable {
     Object? initialUsername = _kUnset,
     UsernameStatus? usernameStatus,
     UsernameValidationError? usernameError,
-    String? usernameFormatMessage,
     Set<String>? reservedUsernames,
     Nip05Mode? nip05Mode,
     String? externalNip05,
@@ -513,7 +511,6 @@ final class ProfileEditorState extends Equatable {
           : initialUsername as String?,
       usernameStatus: usernameStatus ?? this.usernameStatus,
       usernameError: usernameError,
-      usernameFormatMessage: usernameFormatMessage,
       reservedUsernames: reservedUsernames ?? this.reservedUsernames,
       nip05Mode: nip05Mode ?? this.nip05Mode,
       externalNip05: externalNip05 ?? this.externalNip05,
@@ -560,7 +557,6 @@ final class ProfileEditorState extends Equatable {
     initialUsername,
     usernameStatus,
     usernameError,
-    usernameFormatMessage,
     reservedUsernames,
     nip05Mode,
     externalNip05,

@@ -886,7 +886,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileSetupUsernameHelper =>
-      'Danh tính duy nhất của bạn trên Divine';
+      'Dùng chữ cái, chữ số hoặc dấu gạch nối. Tên người dùng sẽ trở thành địa chỉ divine.video. Dùng tên hiển thị cho khoảng trắng hoặc ký hiệu.';
 
   @override
   String get profileSetupSaveButton => 'Lưu';
@@ -1012,6 +1012,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Chỉ được dùng chữ cái, số và dấu gạch ngang';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Tên người dùng không thể bắt đầu hoặc kết thúc bằng dấu gạch nối';
 
   @override
   String get profileSetupUsernameInvalidLength =>

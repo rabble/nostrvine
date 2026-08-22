@@ -923,7 +923,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileSetupUsernameHelper =>
-      'Твоята уникална самоличност в Divine';
+      'Използвай букви, цифри или тирета. Потребителското ти име става divine.video адрес. За интервали или символи използвай показваното име.';
 
   @override
   String get profileSetupSaveButton => 'Запази';
@@ -1049,6 +1049,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Разрешени са само букви, цифри и тирета';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Потребителското име не може да започва или завършва с тире';
 
   @override
   String get profileSetupUsernameInvalidLength =>

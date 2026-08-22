@@ -895,7 +895,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupUsernameLabel => 'اسم المستخدم (اختياري)';
 
   @override
-  String get profileSetupUsernameHelper => 'هويتك الفريدة على Divine';
+  String get profileSetupUsernameHelper =>
+      'استخدم الحروف والأرقام أو الشرطات. يصبح اسم المستخدم عنوانًا على divine.video. استخدم اسم العرض للمسافات أو الرموز.';
 
   @override
   String get profileSetupSaveButton => 'حفظ';
@@ -1019,6 +1020,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'يُسمح بالأحرف والأرقام والواصلات فقط';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'لا يمكن أن يبدأ اسم المستخدم أو ينتهي بشرطة';
 
   @override
   String get profileSetupUsernameInvalidLength =>

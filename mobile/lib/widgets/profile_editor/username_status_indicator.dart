@@ -12,15 +12,11 @@ class UsernameStatusIndicator extends StatelessWidget {
   const UsernameStatusIndicator({
     required this.status,
     this.error,
-    this.formatMessage,
     super.key,
   });
 
   final UsernameStatus status;
   final UsernameValidationError? error;
-
-  /// Custom message from the server for format validation errors.
-  final String? formatMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +24,11 @@ class UsernameStatusIndicator extends StatelessWidget {
     if (error != null) {
       errorText = switch (error) {
         UsernameValidationError.invalidFormat =>
-          formatMessage ?? context.l10n.profileSetupUsernameInvalidFormat,
+          context.l10n.profileSetupUsernameInvalidFormatGeneric,
+        UsernameValidationError.invalidCharacters =>
+          context.l10n.profileSetupUsernameInvalidFormat,
+        UsernameValidationError.invalidHyphenPlacement =>
+          context.l10n.profileSetupUsernameInvalidHyphenPlacement,
         UsernameValidationError.invalidLength =>
           context.l10n.profileSetupUsernameInvalidLength,
         UsernameValidationError.networkError =>
