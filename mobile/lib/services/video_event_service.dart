@@ -29,7 +29,6 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/author_video_buckets.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -288,7 +287,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   VideoProvenanceFilterService? _provenanceFilterService;
   FeedAspectRatioPreferenceService? _feedAspectRatioPreferenceService;
   BrokenVideoTracker? _brokenVideoTracker;
+  late String? Function() _currentUserPubkey = () => _nostrService.publicKey;
   final SubscriptionManager _subscriptionManager;
+
+  /// Supplies the authenticated pubkey independently of signer readiness.
+  void setCurrentUserPubkeyProvider(String? Function() provider) {
+    _currentUserPubkey = provider;
+  }
 
   // Side-channel observers that fire for every video that flows through the
   // service after filtering — both REST-loaded batches via [filterVideoList]
@@ -675,9 +680,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return (ContentFilterPreference.show, <String>[]);
     }
 
-    // Get the most restrictive preference for matched labels
-    final preference = contentFilterService.getPreferenceForLabels(labels);
-    return (preference, labels);
+    final decision = resolveEffectiveContentFilterDecision(
+      sources: (creator: labels, trusted: const <String>[]),
+      moderationLabels: const <String>[],
+      contentFilterService: contentFilterService,
+      isOwner: contentOwnerMatches(event.pubkey, _currentUserPubkey()),
+    );
+    return (
+      decision.preference,
+      decision.preference == ContentFilterPreference.warn
+          ? decision.warnLabels
+          : labels,
+    );
   }
 
   /// Filter a list of [VideoEvent]s based on the user's content filter
@@ -706,78 +720,25 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return baseVideos;
     }
 
-    final result = baseVideos
-        .map((video) {
-          final sources = resolveEffectiveContentLabelSources(
-            video,
-            moderationLabelService: _moderationLabelService,
-          );
-          final labels = {...sources.creator, ...sources.trusted}.toList();
-          if (labels.isEmpty) {
-            return video.warnLabels.isEmpty
-                ? video
-                : video.copyWith(warnLabels: const []);
-          }
-
-          final pref = service.getPreferenceForLabels(labels);
-          final isOwner = video.pubkey == _nostrService.publicKey;
-          if (pref == ContentFilterPreference.warn || isOwner) {
-            final matchedWarnLabels = labels.where((value) {
-              final label = ContentLabel.fromValue(value);
-              if (label == null) return false;
-              final labelPreference = service.getPreference(label);
-              return labelPreference == ContentFilterPreference.warn ||
-                  (isOwner &&
-                      sources.creator.contains(value) &&
-                      labelPreference == ContentFilterPreference.hide);
-            }).toList();
-            if (matchedWarnLabels.isNotEmpty) {
-              return video.copyWith(warnLabels: matchedWarnLabels);
-            }
-          }
-
-          return pref == ContentFilterPreference.show &&
-                  video.warnLabels.isNotEmpty
-              ? video.copyWith(warnLabels: const [])
-              : video;
-        })
-        .where((video) {
-          // Hide check considers effective warning labels plus moderation labels.
-          final sources = resolveEffectiveContentLabelSources(
-            video,
-            moderationLabelService: _moderationLabelService,
-          );
-          final modLabels = video.moderationLabels;
-          if (sources.creator.isEmpty &&
-              sources.trusted.isEmpty &&
-              modLabels.isEmpty) {
-            return true;
-          }
-
-          // Creators can still see their own self-labels behind a warning.
-          if (sources.creator.isNotEmpty &&
-              video.pubkey != _nostrService.publicKey) {
-            final pref = service.getPreferenceForLabels(sources.creator);
-            if (pref == ContentFilterPreference.hide) return false;
-          }
-
-          // Trusted NIP-32 moderation remains hide-capable for the creator.
-          if (sources.trusted.isNotEmpty) {
-            final pref = service.getPreferenceForLabels(sources.trusted);
-            if (pref == ContentFilterPreference.hide) return false;
-          }
-
-          // Check moderation labels (hide-only — never warn).
-          // getPreferenceForLabels ignores unrecognized labels, so a video
-          // tagged only with unknown labels never force-hides.
-          if (modLabels.isNotEmpty) {
-            final pref = service.getPreferenceForLabels(modLabels);
-            if (pref == ContentFilterPreference.hide) return false;
-          }
-
-          return true;
-        })
-        .toList();
+    final result = <VideoEvent>[];
+    for (final video in baseVideos) {
+      final sources = resolveEffectiveContentLabelSources(
+        video,
+        moderationLabelService: _moderationLabelService,
+      );
+      final decision = resolveEffectiveContentFilterDecision(
+        sources: sources,
+        moderationLabels: video.moderationLabels,
+        contentFilterService: service,
+        isOwner: contentOwnerMatches(video.pubkey, _currentUserPubkey()),
+      );
+      if (decision.preference == ContentFilterPreference.hide) continue;
+      result.add(
+        video.warnLabels == decision.warnLabels
+            ? video
+            : video.copyWith(warnLabels: decision.warnLabels),
+      );
+    }
 
     _notifyVideoObservers(result);
     return result;

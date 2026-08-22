@@ -1,5 +1,6 @@
 import 'package:models/models.dart';
 import 'package:openvine/models/content_label.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 
 /// Content-warning labels separated by who applied them.
@@ -7,6 +8,67 @@ typedef EffectiveContentLabelSources = ({
   List<String> creator,
   List<String> trusted,
 });
+
+typedef EffectiveContentFilterDecision = ({
+  ContentFilterPreference preference,
+  List<String> warnLabels,
+});
+
+bool contentOwnerMatches(String authorPubkey, String? viewerPubkey) =>
+    viewerPubkey != null &&
+    authorPubkey.toLowerCase() == viewerPubkey.toLowerCase();
+
+/// Applies content preferences without losing label provenance.
+///
+/// Only the narrow creator-label carve-out owned by [ContentFilterService]
+/// can turn a creator-applied hide into a warning. Trusted and server-applied
+/// moderation labels remain hide-capable for every viewer.
+EffectiveContentFilterDecision resolveEffectiveContentFilterDecision({
+  required EffectiveContentLabelSources sources,
+  required List<String> moderationLabels,
+  required ContentFilterService contentFilterService,
+  required bool isOwner,
+}) {
+  final warnLabels = <String>[];
+  var preference = ContentFilterPreference.show;
+
+  void consider(
+    String value, {
+    required bool creatorApplied,
+    required bool warningsEnabled,
+  }) {
+    final label = ContentLabel.fromValue(value);
+    if (label == null) return;
+    final next = creatorApplied
+        ? contentFilterService.getCreatorSelfLabelPreference(
+            label,
+            isOwner: isOwner,
+          )
+        : contentFilterService.getPreference(label);
+    if (next == ContentFilterPreference.hide) {
+      preference = ContentFilterPreference.hide;
+      return;
+    }
+    if (warningsEnabled && next == ContentFilterPreference.warn) {
+      if (preference != ContentFilterPreference.hide) {
+        preference = ContentFilterPreference.warn;
+      }
+      if (!warnLabels.contains(value)) warnLabels.add(value);
+    }
+  }
+
+  for (final value in sources.creator) {
+    consider(value, creatorApplied: true, warningsEnabled: true);
+  }
+  for (final value in sources.trusted) {
+    consider(value, creatorApplied: false, warningsEnabled: true);
+  }
+  for (final value in moderationLabels) {
+    consider(value, creatorApplied: false, warningsEnabled: false);
+  }
+
+  return (preference: preference, warnLabels: warnLabels);
+}
 
 /// Builds the effective moderation label set for a [VideoEvent].
 ///

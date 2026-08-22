@@ -228,6 +228,39 @@ void main() {
       expect(result.single.warnLabels, equals(['profanity']));
     });
 
+    test('relay ingest warns instead of hiding an owner profanity label', () {
+      videoEventService.setCurrentUserPubkeyProvider(
+        () =>
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      );
+      final result = videoEventService.getFilterAction(
+        _FakeLabelEvent(
+          pubkey:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          tags: const [
+            ['content-warning', 'profanity'],
+          ],
+        ),
+      );
+
+      expect(result.$1, ContentFilterPreference.warn);
+      expect(result.$2, ['profanity']);
+    });
+
+    test('relay ingest still hides an owner violence label', () {
+      final result = videoEventService.getFilterAction(
+        _FakeLabelEvent(
+          pubkey:
+              '1111111111111111111111111111111111111111111111111111111111111111',
+          tags: const [
+            ['content-warning', 'violence'],
+          ],
+        ),
+      );
+
+      expect(result.$1, ContentFilterPreference.hide);
+    });
+
     test('non-owner remains hidden by an age-restricted self-label', () {
       final result = videoEventService.filterVideoList([
         _createVideo(
@@ -240,7 +273,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('owner keeps an always-filtered self-label behind the overlay', () {
+    test('owner remains hidden by an always-filtered self-label', () {
       final result = videoEventService.filterVideoList([
         _createVideo(
           id: 'owner-violence',
@@ -248,8 +281,18 @@ void main() {
         ),
       ]);
 
-      expect(result, hasLength(1));
-      expect(result.single.warnLabels, equals(['violence']));
+      expect(result, isEmpty);
+    });
+
+    test('owner remains hidden by an adult self-label without age proof', () {
+      final result = videoEventService.filterVideoList([
+        _createVideo(
+          id: 'owner-nudity',
+          contentWarningLabels: const ['nudity'],
+        ),
+      ]);
+
+      expect(result, isEmpty);
     });
 
     test('owner remains hidden by a Funnelcake moderation label', () {

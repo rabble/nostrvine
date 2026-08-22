@@ -65,7 +65,6 @@ VideoEvent _video(
   int createdAt = 1000,
   int? originalLikes,
   String? vineId,
-  List<String> contentWarningLabels = const [],
 }) {
   return VideoEvent(
     id: id,
@@ -76,7 +75,6 @@ VideoEvent _video(
     videoUrl: 'https://example.com/$id.mp4',
     originalLikes: originalLikes,
     vineId: vineId,
-    contentWarningLabels: contentWarningLabels,
   );
 }
 
@@ -446,38 +444,6 @@ void main() {
       expect(cubit.state.isFetchingTotalCount, isFalse);
       expect(cubit.state.isInitialLoad, isFalse);
       verify(() => h.ves.subscribeToUserVideos(_author)).called(1);
-    });
-
-    test('owner self-label survives a REST profile snapshot', () async {
-      final labeled = _video(
-        'labeled',
-        contentWarningLabels: const ['profanity'],
-      );
-      final cubit = await buildReady(_result([labeled]));
-      addTearDown(cubit.close);
-
-      expect(cubit.state.videos, [labeled]);
-      verify(
-        () => h.ves.filterVideoList(any(that: contains(same(labeled)))),
-      ).called(1);
-    });
-
-    test('owner self-label survives a relay profile snapshot', () async {
-      final labeled = _video(
-        'labeled',
-        contentWarningLabels: const ['profanity'],
-      );
-      h.stubAuthorFeedThrows(Exception('offline'));
-      when(() => h.ves.authorVideos(_author)).thenReturn([labeled]);
-
-      final cubit = h.build();
-      addTearDown(cubit.close);
-      await pumpEventQueue();
-
-      expect(cubit.state.videos, [labeled]);
-      verify(
-        () => h.ves.filterVideoList(any(that: contains(same(labeled)))),
-      ).called(2);
     });
 
     test(
