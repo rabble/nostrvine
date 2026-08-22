@@ -79,4 +79,4 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'6737aee3e63253d4a7b2a50a2e9388ce3b5845ee';
+    r'6cdcb5f909f6463828420979de4373f3c7a3fc3e';
