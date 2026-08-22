@@ -2462,6 +2462,10 @@
       }
     }
   },
+  "shareMenuOriginalVideoUnavailable": "Couldn't load the original video. Try again in a moment.",
+  "@shareMenuOriginalVideoUnavailable": {
+    "description": "Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely."
+  },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
   "shareMenuVideoDeletionRequested": "Video deleted",
   "authSessionExpired": "Your session has expired. Please sign in again.",

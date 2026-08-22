@@ -49,13 +49,16 @@ class VideoEventResolver {
   Future<VideoEvent?> resolveById(
     String eventId, {
     bool allowOwnContentBypass = false,
+    bool requireRawTags = false,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     if (eventId.isEmpty) return null;
 
     // 1) In-memory feeds.
     final cached = _videoEventService.getVideoEventById(eventId);
-    if (cached != null && _passesFilter(cached, allowOwnContentBypass)) {
+    if (cached != null &&
+        _hasRequiredRawTags(cached, requireRawTags) &&
+        _passesFilter(cached, allowOwnContentBypass)) {
       return cached;
     }
 
@@ -63,7 +66,9 @@ class VideoEventResolver {
     final cachedEvent = _personalEventCache.getEventById(eventId);
     if (cachedEvent != null) {
       final parsed = _tryParse(cachedEvent);
-      if (parsed != null && _passesFilter(parsed, allowOwnContentBypass)) {
+      if (parsed != null &&
+          _hasRequiredRawTags(parsed, requireRawTags) &&
+          _passesFilter(parsed, allowOwnContentBypass)) {
         return parsed;
       }
     }
@@ -71,7 +76,9 @@ class VideoEventResolver {
     // 3) Relay fetch.
     try {
       final fetched = await _fetchFromRelay(eventId, timeout);
-      if (fetched != null && _passesFilter(fetched, allowOwnContentBypass)) {
+      if (fetched != null &&
+          _hasRequiredRawTags(fetched, requireRawTags) &&
+          _passesFilter(fetched, allowOwnContentBypass)) {
         return fetched;
       }
     } catch (e, st) {
@@ -86,6 +93,9 @@ class VideoEventResolver {
 
     return null;
   }
+
+  bool _hasRequiredRawTags(VideoEvent video, bool requireRawTags) =>
+      !requireRawTags || video.nostrEventTags.isNotEmpty;
 
   bool _passesFilter(VideoEvent video, bool allowOwnContentBypass) {
     if (allowOwnContentBypass) {

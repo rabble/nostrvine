@@ -27,7 +27,8 @@ import 'package:openvine/widgets/subtitle_editor/subtitle_editor_stage.dart';
 ///
 /// The screen is keyed on [videoId] so it can be rebuilt from the route alone.
 /// A [prefetched] video may be passed as a fast path when navigating from a
-/// feed or metadata screen, but route state is not required for correctness.
+/// feed or metadata screen. It is used only when its complete raw tag array is
+/// available for the video replacement published after subtitle changes.
 class SubtitleEditorScreen extends ConsumerStatefulWidget {
   /// Creates the subtitle editor page for [videoId].
   const SubtitleEditorScreen({
@@ -49,7 +50,7 @@ class SubtitleEditorScreen extends ConsumerStatefulWidget {
   /// The event id of the video whose subtitles are being edited.
   final String videoId;
 
-  /// Optional prefetched video used to avoid an async resolve on push.
+  /// Optional complete prefetched video used to avoid an async resolve.
   final VideoEvent? prefetched;
 
   @override
@@ -71,7 +72,9 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen>
   @override
   void initState() {
     super.initState();
-    if (widget.prefetched != null && widget.prefetched!.id == widget.videoId) {
+    if (widget.prefetched != null &&
+        widget.prefetched!.id == widget.videoId &&
+        widget.prefetched!.nostrEventTags.isNotEmpty) {
       _resolved = widget.prefetched;
     } else {
       _resolve();
@@ -83,6 +86,7 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen>
     final video = await resolver.resolveById(
       widget.videoId,
       allowOwnContentBypass: true,
+      requireRawTags: true,
     );
     if (!mounted) return;
     setState(() {

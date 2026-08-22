@@ -3,6 +3,7 @@
 // ABOUTME: edited-field replacement, replacement created_at, successful publish,
 // ABOUTME: publish failure, and invite failure via inviteFailureCount.
 
+import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -74,6 +75,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeVideoEvent());
+    registerFallbackValue(File('/tmp/fallback-thumbnail.jpg'));
   });
 
   setUp(() {
@@ -580,38 +582,112 @@ void main() {
         expect(capturedTags, contains(equals(['expiration', '1799999999'])));
       });
 
-      test('rebuilds imeta from videoUrl when nostrEventTags is empty and the '
-          'event is not cached', () async {
-        final video = VideoEvent(
-          id: 'uncached-event-id',
-          pubkey: _ownerPubkey,
-          createdAt: 1757385263,
-          content: 'Test video content',
-          timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
-          videoUrl: 'https://cdn.example.com/video.mp4',
-          title: 'Test Video Title',
-          vineId: 'video-d-tag',
-        );
-        when(
-          () => mockPersonalEventCacheService.getEventById('uncached-event-id'),
-        ).thenReturn(null);
+      test(
+        'refuses to publish when original raw tags are unavailable',
+        () async {
+          final video = VideoEvent(
+            id: 'uncached-event-id',
+            pubkey: _ownerPubkey,
+            createdAt: 1757385263,
+            content: 'Test video content',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+            videoUrl: 'https://cdn.example.com/video.mp4',
+            title: 'Test Video Title',
+            vineId: 'video-d-tag',
+          );
+          when(
+            () =>
+                mockPersonalEventCacheService.getEventById('uncached-event-id'),
+          ).thenReturn(null);
 
-        final result = await service.updateVideo(
-          originalVideo: video,
-          editorState: VideoEditorProviderState(),
-          initialCollaboratorPubkeys: const {},
-        );
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+            newThumbnailFile: File('/tmp/unused-thumbnail.jpg'),
+          );
 
-        expect(result, isA<VideoUpdateSuccess>());
-        final imetaTags = capturedTags
-            .where((t) => t.isNotEmpty && t.first == 'imeta')
-            .toList();
-        expect(imetaTags, hasLength(1));
-        expect(
-          imetaTags.single,
-          contains('url https://cdn.example.com/video.mp4'),
-        );
-      });
+          expect(result, isA<VideoUpdateOriginalUnavailable>());
+          verifyNever(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          );
+          verifyNever(() => mockNostrService.publishEvent(any()));
+        },
+      );
+
+      test(
+        'REST-sourced edit preserves hashtags and provenance tags',
+        () async {
+          final video = VideoStats.fromJson(const {
+            'event': {
+              'id': 'rest-event-id',
+              'pubkey': _ownerPubkey,
+              'created_at': 1757385263,
+              'kind': 34236,
+              'content': 'Test video content',
+              'tags': [
+                ['d', 'video-d-tag'],
+                [
+                  'imeta',
+                  'url https://cdn.example.com/video.mp4',
+                  'm video/mp4',
+                ],
+                ['t', 'first'],
+                ['t', 'second'],
+                ['alt', 'Accessible description'],
+                ['duration', '6'],
+                ['proofmode', 'proof-manifest'],
+                ['c2pa_manifest_id', 'urn:c2pa:test'],
+                ['verification', 'verified_mobile'],
+                ['device_attestation', 'attestation'],
+                ['text-track', '39307:author:subtitles:video-d-tag'],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          }).toVideoEvent();
+
+          final result = await service.updateVideo(
+            originalVideo: video,
+            editorState: VideoEditorProviderState(
+              title: video.title ?? '',
+              description: video.content,
+              tags: video.hashtags.toSet(),
+            ),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          for (final tag in const [
+            ['t', 'first'],
+            ['t', 'second'],
+            ['alt', 'Accessible description'],
+            ['duration', '6'],
+            ['proofmode', 'proof-manifest'],
+            ['c2pa_manifest_id', 'urn:c2pa:test'],
+            ['verification', 'verified_mobile'],
+            ['device_attestation', 'attestation'],
+            ['text-track', '39307:author:subtitles:video-d-tag'],
+          ]) {
+            expect(capturedTags, contains(equals(tag)));
+          }
+        },
+      );
     });
 
     group('edited field replacement', () {
@@ -652,6 +728,28 @@ void main() {
           expect(capturedTags, isNot(contains(equals(['t', 'oldtag']))));
         },
       );
+
+      test('allows the user to clear hashtags from a complete event', () async {
+        final video = _testVideo(
+          extraTags: const [
+            ['t', 'oldtag'],
+            ['proofmode', 'proof-manifest'],
+          ],
+        );
+
+        final result = await service.updateVideo(
+          originalVideo: video,
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateSuccess>());
+        expect(capturedTags.where((tag) => tag.first == 't'), isEmpty);
+        expect(
+          capturedTags,
+          contains(equals(['proofmode', 'proof-manifest'])),
+        );
+      });
 
       test(
         'removes the content-warning group when warnings are cleared',

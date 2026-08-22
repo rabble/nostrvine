@@ -5,11 +5,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
+import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart';
 
 import '../../../../helpers/go_router.dart';
 import '../../../../helpers/test_helpers.dart';
+
+class _MockVideoMetadataUpdateService extends Mock
+    implements VideoMetadataUpdateService {}
+
+class _MockVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState();
+}
 
 void main() {
   group(VideoMetadataEditBottomBar, () {
@@ -18,6 +30,8 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(TestHelpers.createVideoEvent(id: 'fallback'));
+      registerFallbackValue(VideoEditorProviderState());
+      registerFallbackValue(<String>{});
     });
 
     setUp(() {
@@ -29,8 +43,16 @@ void main() {
     Widget buildSubject(
       MockGoRouter goRouter, {
       ValueChanged<VideoEvent>? onVideoUpdated,
+      VideoMetadataUpdateService? updateService,
     }) {
       return ProviderScope(
+        overrides: [
+          videoEditorProvider.overrideWith(_MockVideoEditorNotifier.new),
+          if (updateService != null)
+            videoMetadataUpdateServiceProvider.overrideWithValue(
+              updateService,
+            ),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -107,6 +129,37 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('explains when complete original metadata is unavailable', (
+      tester,
+    ) async {
+      final mockGoRouter = MockGoRouter();
+      final updateService = _MockVideoMetadataUpdateService();
+      when(
+        () => updateService.updateVideo(
+          originalVideo: any(named: 'originalVideo'),
+          editorState: any(named: 'editorState'),
+          initialCollaboratorPubkeys: any(
+            named: 'initialCollaboratorPubkeys',
+          ),
+          newThumbnailFile: any(named: 'newThumbnailFile'),
+        ),
+      ).thenAnswer((_) async => const VideoUpdateOriginalUnavailable());
+
+      await tester.pumpWidget(
+        buildSubject(mockGoRouter, updateService: updateService),
+      );
+
+      await tester.tap(find.text(l10n.shareMenuUpdate));
+      await tester.pump();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      final snackbar = tester.widget<DivineSnackbarContainer>(
+        find.byType(DivineSnackbarContainer),
+      );
+      expect(snackbar.label, l10n.shareMenuOriginalVideoUnavailable);
+      expect(snackbar.error, isTrue);
     });
   });
 }
