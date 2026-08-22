@@ -204,7 +204,7 @@ void main() {
         );
 
         final service = buildService();
-        await service.register(testPubkey);
+        expect(await service.register(testPubkey), isTrue);
 
         expect(capturedTags, isNotNull);
 
@@ -239,7 +239,7 @@ void main() {
 
       test('does nothing when FCM token is null', () async {
         final service = buildService(token: null);
-        await service.register(testPubkey);
+        expect(await service.register(testPubkey), isFalse);
 
         verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
         verifyNever(
@@ -262,7 +262,7 @@ void main() {
             getToken: () async => testToken,
           );
 
-          await service.register(testPubkey);
+          expect(await service.register(testPubkey), isFalse);
 
           verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
           verifyNever(
@@ -282,7 +282,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final service = buildService();
-        await service.register(testPubkey);
+        expect(await service.register(testPubkey), isFalse);
 
         verifyNever(
           () => mockAuthService.createAndSignEvent(
@@ -307,7 +307,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final service = buildService();
-        await service.register(testPubkey);
+        expect(await service.register(testPubkey), isFalse);
 
         verifyNever(
           () => mockNostrClient.publishEventAwaitOk(
@@ -320,7 +320,7 @@ void main() {
       });
 
       test(
-        'completes without error when registration publish receives no OK response',
+        'reports failure when registration publish receives no OK response',
         () async {
           when(
             () => mockNostrSigner.nip44Encrypt(any(), any()),
@@ -351,13 +351,13 @@ void main() {
           );
 
           final service = buildService();
-          await expectLater(service.register(testPubkey), completes);
+          expect(await service.register(testPubkey), isFalse);
           service.dispose();
         },
       );
 
       test(
-        'completes without error when registration publish is rejected',
+        'reports failure when registration publish is rejected',
         () async {
           when(
             () => mockNostrSigner.nip44Encrypt(any(), any()),
@@ -388,7 +388,7 @@ void main() {
           );
 
           final service = buildService();
-          await expectLater(service.register(testPubkey), completes);
+          expect(await service.register(testPubkey), isFalse);
           service.dispose();
         },
       );

@@ -151,9 +151,7 @@ notificationPreferencesDirtySyncBridgeProvider =
           await preferencesService.markDirtyIfSchemaOutdated(pubkey);
           if (!isReadyForPubkey(pubkey)) return;
           final outcome = await preferencesService
-              .syncDirtyPreferencesForPubkey(
-                pubkey,
-              );
+              .syncDirtyPreferencesForPubkey(pubkey);
           if (disposed || generation != drainGeneration) return;
           switch (outcome) {
             case NotificationPreferencesSyncOutcome.publishedAndCleared:
@@ -256,6 +254,7 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
   final coordinator = PushNotificationSessionCoordinator(
     authService: authService,
     firebaseMessaging: ref.read(firebaseMessagingProvider),
+    registrationRetryStore: ref.read(notificationPreferencesStoreProvider),
     readReadiness: () => ref.read(nostrSessionProvider),
     readPushService: () => ref.read(pushNotificationServiceProvider),
     readCleanupClientFactory: () {

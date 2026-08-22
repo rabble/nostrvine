@@ -1,5 +1,5 @@
-// ABOUTME: Persists push notification preferences and syncs them to the push service
-// ABOUTME: Keeps storage and remote update logic out of the settings UI
+// ABOUTME: Persists push preferences and registration retry state.
+// ABOUTME: Keeps push dirty-state storage and preference sync out of the UI.
 
 import 'dart:convert';
 
@@ -8,13 +8,17 @@ import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-abstract interface class NotificationPreferencesStore {
+abstract interface class PushRegistrationRetryStore {
+  Future<int> markRegistrationDirty(String pubkey);
+  Future<int?> loadRegistrationDirtyGeneration(String pubkey);
+  Future<void> clearRegistrationDirtyIfMatches(String pubkey, int generation);
+}
+
+abstract interface class NotificationPreferencesStore
+    implements PushRegistrationRetryStore {
   Future<NotificationPreferences> loadPreferences();
   Future<void> savePreferences(NotificationPreferences preferences);
-  Future<void> markDirty(
-    String pubkey,
-    NotificationPreferences preferences,
-  );
+  Future<void> markDirty(String pubkey, NotificationPreferences preferences);
   Future<NotificationPreferences?> loadDirty(String pubkey);
   Future<void> clearDirty(String pubkey);
   Future<void> clearDirtyIfMatches(
@@ -46,6 +50,58 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   static const _prefsKey = 'push_preferences';
   static const _dirtyPrefix = 'push_preferences_dirty_';
   static const _schemaVersionPrefix = 'push_preferences_schema_';
+  static const _registrationDirtyPrefix = 'push_registration_dirty_';
+
+  @override
+  Future<int> markRegistrationDirty(String pubkey) async {
+    try {
+      final box = await _openDirtyBox();
+      final key = _registrationDirtyKey(pubkey);
+      final generation = ((box.get(key) as int?) ?? 0) + 1;
+      await box.put(key, generation);
+      return generation;
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to mark push registration dirty: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+      return 0;
+    }
+  }
+
+  @override
+  Future<int?> loadRegistrationDirtyGeneration(String pubkey) async {
+    try {
+      final box = await _openDirtyBox();
+      return box.get(_registrationDirtyKey(pubkey)) as int?;
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to load dirty push registration: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  @override
+  Future<void> clearRegistrationDirtyIfMatches(
+    String pubkey,
+    int generation,
+  ) async {
+    try {
+      final box = await _openDirtyBox();
+      final key = _registrationDirtyKey(pubkey);
+      if (box.get(key) == generation) await box.delete(key);
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to clear dirty push registration: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+    }
+  }
 
   @override
   Future<NotificationPreferences> loadPreferences() async {
@@ -200,6 +256,9 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
 
   static String _schemaVersionKey(String pubkey) =>
       '$_schemaVersionPrefix$pubkey';
+
+  static String _registrationDirtyKey(String pubkey) =>
+      '$_registrationDirtyPrefix$pubkey';
 }
 
 enum NotificationPreferencesSyncOutcome {

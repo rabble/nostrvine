@@ -84,51 +84,43 @@ class PushNotificationService {
   /// [pushRegistrationKind] Nostr event to the push service pubkey.
   ///
   /// Does nothing on web ([kIsWeb] is true).
-  Future<void> register(
+  Future<bool> register(
     String userPubkey, {
     FutureOr<bool> Function()? isCurrent,
   }) async {
-    if (kIsWeb) return;
+    if (kIsWeb) return false;
 
     final pushServicePubkey = _configuredPushServicePubkey();
-    if (pushServicePubkey == null) return;
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (pushServicePubkey == null) return false;
+    if (!await _isPublishCurrent(isCurrent)) return false;
 
     final token = await _getToken();
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) return false;
     if (token == null) {
       Log.warning(
         'FCM token is null — skipping push notification registration',
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return;
+      return false;
     }
 
-    await _publishRegistration(
-      token,
-      pushServicePubkey,
-      isCurrent: isCurrent,
-    );
+    return _publishRegistration(token, pushServicePubkey, isCurrent: isCurrent);
   }
 
-  Future<void> registerToken(
+  Future<bool> registerToken(
     String userPubkey,
     String token, {
     FutureOr<bool> Function()? isCurrent,
   }) async {
-    if (kIsWeb) return;
-    if (userPubkey != _authService.currentIdentity?.pubkey) return;
+    if (kIsWeb) return false;
+    if (userPubkey != _authService.currentIdentity?.pubkey) return false;
 
     final pushServicePubkey = _configuredPushServicePubkey();
-    if (pushServicePubkey == null) return;
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (pushServicePubkey == null) return false;
+    if (!await _isPublishCurrent(isCurrent)) return false;
 
-    await _publishRegistration(
-      token,
-      pushServicePubkey,
-      isCurrent: isCurrent,
-    );
+    return _publishRegistration(token, pushServicePubkey, isCurrent: isCurrent);
   }
 
   /// Deregisters this device from the divine push service.
@@ -327,12 +319,12 @@ class PushNotificationService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  Future<void> _publishRegistration(
+  Future<bool> _publishRegistration(
     String token,
     String pushServicePubkey, {
     FutureOr<bool> Function()? isCurrent,
   }) async {
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) return false;
 
     final plaintext = jsonEncode({'token': token});
 
@@ -340,7 +332,7 @@ class PushNotificationService {
       pushServicePubkey,
       plaintext,
     );
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) return false;
 
     if (encrypted == null) {
       Log.error(
@@ -348,7 +340,7 @@ class PushNotificationService {
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return;
+      return false;
     }
 
     final expirationTimestamp =
@@ -366,7 +358,7 @@ class PushNotificationService {
         ['expiration', expirationTimestamp.toString()],
       ],
     );
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) return false;
 
     if (event == null) {
       Log.error(
@@ -374,11 +366,11 @@ class PushNotificationService {
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return;
+      return false;
     }
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) return false;
 
-    await _publishPushControlEvent(event, 'registration');
+    return _publishPushControlEvent(event, 'registration');
   }
 
   Future<bool> _publishPushControlEvent(
