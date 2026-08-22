@@ -49,6 +49,8 @@ class _FakeNotificationPreferencesStore
   int registrationMarkCalls = 0;
   bool failRegistrationMark = false;
   bool failRegistrationClear = false;
+  bool changeRegistrationOnNextClear = false;
+  bool _registrationClearChanged = false;
 
   @override
   Future<int> markRegistrationDirty(String pubkey) async {
@@ -70,6 +72,14 @@ class _FakeNotificationPreferencesStore
   ) async {
     if (failRegistrationClear) {
       return PushRegistrationClearOutcome.failed;
+    }
+    if (changeRegistrationOnNextClear) {
+      if (_registrationClearChanged) {
+        throw StateError('stale generation was cleared twice');
+      }
+      _registrationClearChanged = true;
+      registrationDirtyGenerations.remove(pubkey);
+      return PushRegistrationClearOutcome.changed;
     }
     if (registrationDirtyGenerations[pubkey] == generation) {
       registrationDirtyGenerations.remove(pubkey);
@@ -659,6 +669,41 @@ void main() {
           preferenceStore.registrationDirtyGenerations[pubkeyA],
           isNotNull,
         );
+        container.dispose();
+      });
+    });
+
+    test('stops after a changed marker is no longer dirty', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        preferenceStore.changeRegistrationOnNextClear = true;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return true;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        expect(preferenceStore.registrationDirtyGenerations[pubkeyA], isNull);
         container.dispose();
       });
     });

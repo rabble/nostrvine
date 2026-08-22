@@ -485,8 +485,9 @@ class PushNotificationSessionCoordinator {
                 operation.dirtyGeneration = null;
               }
             case PushRegistrationClearOutcome.changed:
-              operation.dirtyGeneration ??= await _registrationRetryStore
+              operation.dirtyGeneration = await _registrationRetryStore
                   .loadRegistrationDirtyGeneration(operation.pubkey);
+              if (operation.dirtyGeneration == null) return;
             case PushRegistrationClearOutcome.failed:
               if (operation.pendingToken == null) return;
               await _waitForRegistrationRetry(operation);
