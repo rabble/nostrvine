@@ -18,6 +18,12 @@ VideoEvent _video({
   List<List<String>> nostrEventTags = const [],
   List<String> hashtags = const [],
   String? title,
+  int? nostrLikeCount,
+  int? nostrCommentCount,
+  int? nostrRepostCount,
+  List<String> categories = const [],
+  List<String> moderationLabels = const [],
+  ProofVerificationSummary? proofSummary,
 }) {
   return VideoEvent(
     id: id,
@@ -34,6 +40,12 @@ VideoEvent _video({
     nostrEventTags: nostrEventTags,
     hashtags: hashtags,
     title: title,
+    nostrLikeCount: nostrLikeCount,
+    nostrCommentCount: nostrCommentCount,
+    nostrRepostCount: nostrRepostCount,
+    categories: categories,
+    moderationLabels: moderationLabels,
+    proofSummary: proofSummary,
   );
 }
 
@@ -141,6 +153,17 @@ void main() {
         ],
         hashtags: const ['stale'],
         title: 'Stale title',
+        nostrLikeCount: 11,
+        nostrCommentCount: 7,
+        nostrRepostCount: 3,
+        categories: const ['comedy'],
+        moderationLabels: const ['label'],
+        proofSummary: const ProofVerificationSummary(
+          status: 'present',
+          level: 'basic_proof',
+          version: 1,
+          checks: {'proofmode_present': true},
+        ),
       );
       final enriched = _video(
         id: 'nostr',
@@ -165,6 +188,12 @@ void main() {
       expect(merged.single.hashtags, enriched.hashtags);
       expect(merged.single.title, enriched.title);
       expect(merged.single.id, enriched.id);
+      expect(merged.single.nostrLikeCount, 11);
+      expect(merged.single.nostrCommentCount, 7);
+      expect(merged.single.nostrRepostCount, 3);
+      expect(merged.single.categories, ['comedy']);
+      expect(merged.single.moderationLabels, ['label']);
+      expect(merged.single.proofSummary, current.proofSummary);
     });
 
     test('keeps raw tags from a newer current event', () {

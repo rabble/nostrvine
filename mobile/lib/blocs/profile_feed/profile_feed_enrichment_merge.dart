@@ -1,13 +1,12 @@
 // ABOUTME: Nostr-enrichment merge policy for the profile/author feed (#3705).
-// ABOUTME: Fills missing fields on the current videos from their enriched Nostr
-// ABOUTME: copies without clobbering relay updates that arrived meanwhile.
+// ABOUTME: Merges REST and Nostr metadata without clobbering newer relay events.
 
 import 'package:models/models.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-/// Merges enriched copies over [sourceKeys] against [current], filling missing
-/// fields without clobbering relay updates that arrived during the enrichment
-/// window (#3705).
+/// Merges enriched copies over [sourceKeys] against [current]. A strictly newer
+/// raw Nostr event supplies edit-sensitive metadata; otherwise current state
+/// remains primary so relay updates that arrived during enrichment survive.
 ///
 /// [removeTombstones] drops NIP-09-deleted events; it is injected because
 /// tombstone state is a session-scoped, `VideoEventService`-owned concern that
@@ -63,6 +62,13 @@ VideoEvent _mergeEnrichmentIntoCurrent(
     contentWarningLabels: primary.contentWarningLabels.isNotEmpty
         ? primary.contentWarningLabels
         : secondary.contentWarningLabels,
+    categories: primary.categories.isNotEmpty
+        ? primary.categories
+        : secondary.categories,
+    moderationLabels: primary.moderationLabels.isNotEmpty
+        ? primary.moderationLabels
+        : secondary.moderationLabels,
+    proofSummary: primary.proofSummary ?? secondary.proofSummary,
     title: primary.title ?? secondary.title,
     videoUrl: primary.videoUrl ?? secondary.videoUrl,
     thumbnailUrl: primary.thumbnailUrl ?? secondary.thumbnailUrl,
@@ -119,6 +125,14 @@ VideoEvent _mergeEnrichmentIntoCurrent(
     nostrLikeCount: mergeNullableEngagementMax(
       primary.nostrLikeCount,
       secondary.nostrLikeCount,
+    ),
+    nostrCommentCount: mergeNullableEngagementMax(
+      primary.nostrCommentCount,
+      secondary.nostrCommentCount,
+    ),
+    nostrRepostCount: mergeNullableEngagementMax(
+      primary.nostrRepostCount,
+      secondary.nostrRepostCount,
     ),
   );
 }
