@@ -39,6 +39,7 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/secure_account_prompt_dismissal.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
@@ -294,11 +295,19 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         !isDivineLoginBannerHidden;
 
     // Compute pending profile actions for the avatar badge
-    final pendingActions = ProfileActionType.pending(
-      isOwnProfile: widget.isOwnProfile,
-      isAnonymous: isAnonymous,
-      hasAnyProfileInfo: hasAnyProfileInfo,
+    final secureAccountPromptDismissal = SecureAccountPromptDismissalStore(
+      prefs: prefs,
+      userIdHex: widget.userIdHex,
     );
+    final pendingActions =
+        ProfileActionType.pending(
+          isOwnProfile: widget.isOwnProfile,
+          isAnonymous: isAnonymous,
+          hasAnyProfileInfo: hasAnyProfileInfo,
+        ).where((action) {
+          return action != ProfileActionType.secureAccount ||
+              !secureAccountPromptDismissal.isDismissed();
+        }).toList();
 
     // Banner is rendered separately by ProfileBannerLayer in profile_grid.dart
     // so it can be placed behind the safe area. This widget only renders the
@@ -388,7 +397,11 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     profileColor: profileColor,
                     pendingActions: pendingActions,
                     onActionTap: pendingActions.isNotEmpty
-                        ? () => _showActionsSheet(context, pendingActions)
+                        ? () => _showActionsSheet(
+                            context,
+                            pendingActions,
+                            secureAccountPromptDismissal,
+                          )
                         : null,
                   ),
                 ),
@@ -538,12 +551,20 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   void _showActionsSheet(
     BuildContext context,
     List<ProfileActionType> actions,
+    SecureAccountPromptDismissalStore secureAccountPromptDismissal,
   ) {
     VineBottomSheet.show<void>(
       context: context,
       scrollable: false,
       showHeaderDivider: false,
-      body: ProfileActionsSheetContent(actions: actions),
+      body: ProfileActionsSheetContent(
+        actions: actions,
+        onMaybeLater: (action) {
+          if (action != ProfileActionType.secureAccount) return;
+          unawaited(secureAccountPromptDismissal.dismiss());
+          if (mounted) setState(() {});
+        },
+      ),
     );
   }
 }

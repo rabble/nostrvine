@@ -559,11 +559,11 @@ class _ProfileActionLabel extends StatelessWidget {
     final (icon, label) = switch (action) {
       ProfileActionType.secureAccount => (
         DivineIconName.lockSimple,
-        'Secure your account',
+        context.l10n.profileSecureYourAccount,
       ),
       ProfileActionType.completeProfile => (
         DivineIconName.pencilSimple,
-        'Complete your profile',
+        context.l10n.profileCompleteYourProfile,
       ),
     };
 

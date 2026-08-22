@@ -21,12 +21,18 @@ class ProfileActionsSheetContent extends StatefulWidget {
   /// Creates a [ProfileActionsSheetContent].
   ///
   /// [actions] must contain at least one element.
-  const ProfileActionsSheetContent({required this.actions, super.key})
-    : assert(actions.length > 0, 'actions must not be empty');
+  const ProfileActionsSheetContent({
+    required this.actions,
+    this.onMaybeLater,
+    super.key,
+  }) : assert(actions.length > 0, 'actions must not be empty');
 
   /// Ordered list of actions to present. The first action is shown
   /// immediately; subsequent ones appear after "Maybe Later".
   final List<ProfileActionType> actions;
+
+  /// Called with the action the user dismissed before the sheet advances.
+  final void Function(ProfileActionType action)? onMaybeLater;
 
   @override
   State<ProfileActionsSheetContent> createState() =>
@@ -38,6 +44,7 @@ class _ProfileActionsSheetContentState
   int _currentIndex = 0;
 
   void _onMaybeLater() {
+    widget.onMaybeLater?.call(widget.actions[_currentIndex]);
     final nextIndex = _currentIndex + 1;
     if (nextIndex >= widget.actions.length) {
       Navigator.of(context).pop();

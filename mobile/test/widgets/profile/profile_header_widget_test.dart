@@ -643,9 +643,7 @@ void main() {
       // so this is the default state for Divine team accounts rather than an
       // edge case. Without the guard the header renders two explainer
       // buttons side by side.
-      final dualPubkey = kDivineTeamPubkeys.firstWhere(
-        isOgBetaTesterPubkey,
-      );
+      final dualPubkey = kDivineTeamPubkeys.firstWhere(isOgBetaTesterPubkey);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -1847,7 +1845,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Complete your profile'), findsOneWidget);
+        expect(find.text('Complete Your Profile'), findsOneWidget);
       },
     );
 
@@ -1866,7 +1864,7 @@ void main() {
 
       // Action label is replaced with SizedBox.shrink() during the loading
       // window so the prompt doesn't flicker between states (#4183 review).
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text('Complete Your Profile'), findsNothing);
     });
 
     testWidgets('hides action label when profile has custom name', (
@@ -1883,7 +1881,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text('Complete Your Profile'), findsNothing);
     });
 
     testWidgets('hides action label for other profiles', (tester) async {
@@ -1898,7 +1896,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text('Complete Your Profile'), findsNothing);
     });
 
     testWidgets('renders PeopleListMembershipIndicator for other users', (
@@ -2142,7 +2140,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsOneWidget);
+        expect(find.text('Secure Your Account'), findsOneWidget);
         // 1 action — badge shows "1"
         expect(find.text('1'), findsOneWidget);
       });
@@ -2163,7 +2161,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Secure takes precedence
-          expect(find.text('Secure your account'), findsOneWidget);
+          expect(find.text('Secure Your Account'), findsOneWidget);
           // 2 actions — red badge with "2"
           expect(find.text('2'), findsOneWidget);
         },
@@ -2183,8 +2181,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsNothing);
-        expect(find.text('Complete your profile'), findsNothing);
+        expect(find.text('Secure Your Account'), findsNothing);
+        expect(find.text('Complete Your Profile'), findsNothing);
       });
 
       testWidgets('hides label for other profiles even when anonymous', (
@@ -2202,7 +2200,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsNothing);
+        expect(find.text('Secure Your Account'), findsNothing);
       });
 
       testWidgets('tapping label opens actions bottom sheet', (tester) async {
@@ -2219,13 +2217,44 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap on the action label
-        await tester.tap(find.text('Secure your account'));
+        await tester.tap(find.text('Secure Your Account'));
         await tester.pumpAndSettle();
 
         // The bottom sheet should show the first action
-        expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text('Secure Your Account'), findsNWidgets(2));
         expect(find.text('Add Email & Password'), findsOneWidget);
         expect(find.text('Maybe Later'), findsOneWidget);
+      });
+
+      testWidgets('Maybe Later permanently hides the secure-account action', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final testProfile = createTestProfile(displayName: 'Test User');
+
+        Widget buildHeader() => buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+          isAnonymous: true,
+          sharedPreferences: prefs,
+        );
+
+        await tester.pumpWidget(buildHeader());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Secure Your Account'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Maybe Later'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Secure Your Account'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildHeader());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Secure Your Account'), findsNothing);
       });
     });
 
@@ -2427,7 +2456,7 @@ void main() {
 
           // Anonymous users see the action label pill, not session expired
           final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text('Secure your account'), findsOneWidget);
+          expect(find.text('Secure Your Account'), findsOneWidget);
           expect(find.text(l10n.profileSessionExpired), findsNothing);
         },
       );
