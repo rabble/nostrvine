@@ -46,6 +46,8 @@ class AccountSwitchController {
   ///
   /// [next] must already be built (via `buildAccountContainer`) and signed in
   /// as the target account — the host only mounts it and disposes the old one.
+  /// [beforePreviousContainerDispose] runs after the target mounts and must
+  /// handle its own errors; the previous container is disposed in either case.
   Future<void> swapTo(
     ProviderContainer next, {
     Future<void> Function()? beforePreviousContainerDispose,

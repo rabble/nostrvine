@@ -529,6 +529,38 @@ void main() {
       expect(currentAuthService.calls, equals(['archive']));
     });
 
+    testWidgets('bounds push cleanup before disposing the outgoing account', (
+      tester,
+    ) async {
+      final cleanupCompleter = Completer<void>();
+      final pushCoordinator = _MockPushNotificationSessionCoordinator();
+      when(
+        pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+      ).thenAnswer((_) => cleanupCompleter.future);
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+        ],
+      );
+      initial.read(pushNotificationSyncProvider);
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async {},
+      );
+      await tester.pump();
+
+      expect(_isDisposed(initial), isFalse);
+
+      await tester.pump(const Duration(seconds: 15));
+
+      expect(_isDisposed(initial), isTrue);
+    });
+
     testWidgets('keeps outgoing push registration when target swap fails', (
       tester,
     ) async {

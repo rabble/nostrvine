@@ -1,6 +1,8 @@
 // ABOUTME: Orchestrates an in-place account switch — build a container, sign it
 // ABOUTME: in as the target account, then swap; roll back on failure.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
@@ -24,6 +26,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// skip the side-effect-free `activate()` refactor (design §8.2 correction).
 typedef AccountSignIn =
     Future<void> Function(ProviderContainer container, KnownAccount account);
+
+const _accountSwitchPushCleanupTimeout = Duration(seconds: 15);
 
 Future<void> _defaultSignIn(
   ProviderContainer container,
@@ -186,7 +190,8 @@ Future<void> swapAccount({
             : () async {
                 try {
                   await outgoingPushCoordinator
-                      .deregisterLastReadyPubkeyAfterAccountSwitch();
+                      .deregisterLastReadyPubkeyAfterAccountSwitch()
+                      .timeout(_accountSwitchPushCleanupTimeout);
                 } catch (error) {
                   // The target account is already live. Push cleanup is
                   // best-effort and must not turn a committed switch into a
