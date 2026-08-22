@@ -12,7 +12,9 @@ part of 'notifications_providers.dart';
 ///
 /// Registers FCM token only after the signer-backed Nostr client is ready.
 /// Deregisters the last ready client through AuthService's pre-teardown hook so
-/// outgoing-session cleanup runs before signers and callbacks are cleared.
+/// outgoing-session cleanup runs before signers and callbacks are cleared. The
+/// returned coordinator lets account switching run the same captured-identity
+/// cleanup after the replacement account has committed.
 
 @ProviderFor(pushNotificationSync)
 final pushNotificationSyncProvider = PushNotificationSyncProvider._();
@@ -21,16 +23,25 @@ final pushNotificationSyncProvider = PushNotificationSyncProvider._();
 ///
 /// Registers FCM token only after the signer-backed Nostr client is ready.
 /// Deregisters the last ready client through AuthService's pre-teardown hook so
-/// outgoing-session cleanup runs before signers and callbacks are cleared.
+/// outgoing-session cleanup runs before signers and callbacks are cleared. The
+/// returned coordinator lets account switching run the same captured-identity
+/// cleanup after the replacement account has committed.
 
 final class PushNotificationSyncProvider
-    extends $FunctionalProvider<void, void, void>
-    with $Provider<void> {
+    extends
+        $FunctionalProvider<
+          PushNotificationSessionCoordinator?,
+          PushNotificationSessionCoordinator?,
+          PushNotificationSessionCoordinator?
+        >
+    with $Provider<PushNotificationSessionCoordinator?> {
   /// Bridges Nostr session readiness to push notification registration.
   ///
   /// Registers FCM token only after the signer-backed Nostr client is ready.
   /// Deregisters the last ready client through AuthService's pre-teardown hook so
-  /// outgoing-session cleanup runs before signers and callbacks are cleared.
+  /// outgoing-session cleanup runs before signers and callbacks are cleared. The
+  /// returned coordinator lets account switching run the same captured-identity
+  /// cleanup after the replacement account has committed.
   PushNotificationSyncProvider._()
     : super(
         from: null,
@@ -47,22 +58,25 @@ final class PushNotificationSyncProvider
 
   @$internal
   @override
-  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<PushNotificationSessionCoordinator?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  void create(Ref ref) {
+  PushNotificationSessionCoordinator? create(Ref ref) {
     return pushNotificationSync(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(void value) {
+  Override overrideWithValue(PushNotificationSessionCoordinator? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<void>(value),
+      providerOverride: $SyncValueProvider<PushNotificationSessionCoordinator?>(
+        value,
+      ),
     );
   }
 }
 
 String _$pushNotificationSyncHash() =>
-    r'bd7c6af23335a355541b7086d8afedf15743369b';
+    r'ec334ed56ef7af263fc6104ae3e0e19db5be44ec';

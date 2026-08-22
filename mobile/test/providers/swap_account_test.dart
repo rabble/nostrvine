@@ -14,11 +14,13 @@ import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
+import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 // Override lives in riverpod's misc barrel; flutter_riverpod does not
 // re-export the type name even though it accepts List<Override>.
@@ -26,6 +28,9 @@ import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockPushNotificationSessionCoordinator extends Mock
+    implements PushNotificationSessionCoordinator {}
 
 bool _isDisposed(ProviderContainer c) {
   try {
@@ -438,9 +443,27 @@ void main() {
     );
   });
 
-  testWidgets('signs in a fresh container and swaps it in', (tester) async {
-    final initial = await pumpHost(tester);
+  testWidgets('deregisters outgoing push after target swap succeeds', (
+    tester,
+  ) async {
     ProviderContainer? signedInto;
+    final events = <String>[];
+    final pushCoordinator = _MockPushNotificationSessionCoordinator();
+    when(
+      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+    ).thenAnswer((
+      _,
+    ) async {
+      expect(controller.currentContainer, same(signedInto));
+      events.add('deregister outgoing');
+    });
+    final initial = await pumpHost(
+      tester,
+      accountOverrides: [
+        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+      ],
+    );
+    initial.read(pushNotificationSyncProvider);
 
     await swapAccount(
       deviceScope: deviceScope,
@@ -449,6 +472,7 @@ void main() {
       account: account,
       signIn: (container, acct) async {
         signedInto = container;
+        events.add('sign in target');
         expect(acct, equals(account));
       },
     );
@@ -460,10 +484,23 @@ void main() {
     // The new container is live; the old one was disposed by the swap.
     expect(_isDisposed(signedInto!), isFalse);
     expect(_isDisposed(initial), isTrue);
+    expect(events, ['sign in target', 'deregister outgoing']);
   });
 
-  testWidgets('rolls back when sign-in fails', (tester) async {
-    final initial = await pumpHost(tester);
+  testWidgets('keeps outgoing push registration when target sign-in fails', (
+    tester,
+  ) async {
+    final pushCoordinator = _MockPushNotificationSessionCoordinator();
+    when(
+      pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch,
+    ).thenAnswer((_) async {});
+    final initial = await pumpHost(
+      tester,
+      accountOverrides: [
+        pushNotificationSyncProvider.overrideWithValue(pushCoordinator),
+      ],
+    );
+    initial.read(pushNotificationSyncProvider);
     ProviderContainer? attempted;
     keyStorage.primary = _FakeSecureKeyContainer(
       npub: 'npub_previous',
@@ -496,6 +533,7 @@ void main() {
     // its container does not undo that — the leaving account's own keys have
     // to go back, or it reads the wrong signer at the next launch.
     expect(currentAuthService.calls, equals(['archive', 'restore']));
+    verifyNever(pushCoordinator.deregisterLastReadyPubkeyAfterAccountSwitch);
   });
 
   testWidgets('archives the leaving account before signing the new one in', (

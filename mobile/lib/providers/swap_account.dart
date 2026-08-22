@@ -8,6 +8,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -132,6 +133,12 @@ String? accountSwitchInitialLocation({
 /// intentionally: it only ever copies the leaving account's own credentials
 /// into its own slot.
 ///
+/// Push deregistration follows the same commit boundary. The outgoing
+/// coordinator is captured before sign-in can replace shared signer storage,
+/// but it runs only after [AccountSwitchController.swapTo] succeeds. Its
+/// dedicated cleanup client can then publish for the outgoing identity even as
+/// the old account container is being torn down.
+///
 /// Rolling the container back is not enough on its own: a sign-in that got far
 /// enough to fail has already restored the *target* account's signer keys over
 /// the shared slots and persisted its auth source, which the live container
@@ -151,6 +158,10 @@ Future<void> swapAccount({
   await controller.runExclusive(() async {
     await currentAuthService.archiveCurrentSignerInfo();
     final current = controller.currentContainer;
+    final outgoingPushCoordinator =
+        current != null && current.exists(pushNotificationSyncProvider)
+        ? current.read(pushNotificationSyncProvider)
+        : null;
     final currentLocation = accountSwitchInitialLocation(
       currentLocation: _currentRouterLocation(controller),
       currentPubkeyHex: current?.read(authServiceProvider).currentPublicKeyHex,
@@ -169,6 +180,19 @@ Future<void> swapAccount({
       previousPrimary = await keyStorage.getKeyContainer();
       await signIn(container, account);
       await controller.swapTo(container);
+      if (outgoingPushCoordinator != null) {
+        try {
+          await outgoingPushCoordinator
+              .deregisterLastReadyPubkeyAfterAccountSwitch();
+        } catch (error) {
+          // The target account is already live. Push cleanup is best-effort and
+          // must not turn a committed switch into a broken rollback attempt.
+          Log.warning(
+            'Outgoing account push deregistration failed: $error',
+            name: 'swapAccount',
+          );
+        }
+      }
       await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
     } catch (_) {
       try {

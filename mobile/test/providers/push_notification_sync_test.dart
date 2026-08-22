@@ -1542,7 +1542,7 @@ void main() {
     );
 
     test(
-      'direct pre-teardown deregistration uses a captured cleanup client',
+      'account-switch cleanup survives outgoing container disposal',
       () async {
         final tokenRefreshController = StreamController<String>.broadcast();
         addTearDown(tokenRefreshController.close);
@@ -1608,8 +1608,7 @@ void main() {
             ),
           ],
         );
-        addTearDown(container.dispose);
-        container.read(pushNotificationSyncProvider);
+        final coordinator = container.read(pushNotificationSyncProvider)!;
 
         when(() => nostrClient.publicKey).thenReturn(pubkeyA);
         nostrSession.setReadiness(
@@ -1621,7 +1620,8 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
-        final teardownFuture = beforeSessionTeardownCallback!();
+        final teardownFuture = coordinator
+            .deregisterLastReadyPubkeyAfterAccountSwitch();
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
@@ -1635,6 +1635,7 @@ void main() {
           ),
         );
 
+        container.dispose();
         initializeCompleter.complete();
         await teardownFuture;
 

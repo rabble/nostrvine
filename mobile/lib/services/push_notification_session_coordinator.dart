@@ -187,7 +187,21 @@ class PushNotificationSessionCoordinator {
     );
   }
 
-  Future<void> deregisterLastReadyPubkey() async {
+  Future<void> deregisterLastReadyPubkey() =>
+      _deregisterLastReadyPubkey(requireCurrentSession: true);
+
+  /// Deregisters the captured outgoing session after an account swap commits.
+  ///
+  /// Unlike sign-out teardown, the old provider container may be disposed while
+  /// this work awaits the cleanup client. The captured pubkey and identity are
+  /// authoritative for this explicit switch, so this path never reads the old
+  /// Riverpod session after the swap.
+  Future<void> deregisterLastReadyPubkeyAfterAccountSwitch() =>
+      _deregisterLastReadyPubkey(requireCurrentSession: false);
+
+  Future<void> _deregisterLastReadyPubkey({
+    required bool requireCurrentSession,
+  }) async {
     final pubkey = _lastReadyPubkey;
     final client = _lastReadyClient;
     final pushService = _lastReadyPushService;
@@ -203,7 +217,10 @@ class PushNotificationSessionCoordinator {
     for (final operation in operations) {
       if (operation.phase == _PushRegistrationPhase.mayPublish) {
         deferredCleanupDeregistrationEvent ??=
-            await _createDeferredCleanupDeregistrationEvent(operation);
+            await _createDeferredCleanupDeregistrationEvent(
+              operation,
+              requireCurrentSession: requireCurrentSession,
+            );
         operation.deferredCleanupDeregistrationEvent ??=
             deferredCleanupDeregistrationEvent;
       }
@@ -235,10 +252,20 @@ class PushNotificationSessionCoordinator {
       }
     }
 
-    if (!_isOutgoingSessionCurrent(pubkey, client, pushService)) return;
+    if (requireCurrentSession &&
+        !_isOutgoingSessionCurrent(pubkey, client, pushService)) {
+      return;
+    }
 
     if (identity == null) {
-      await _deregisterCapturedPubkey(pubkey, client, pushService, null, null);
+      await _deregisterCapturedPubkey(
+        pubkey,
+        client,
+        pushService,
+        null,
+        null,
+        requireCurrentSession: requireCurrentSession,
+      );
       return;
     }
 
@@ -260,7 +287,13 @@ class PushNotificationSessionCoordinator {
       return;
     }
 
-    await _deregisterWithCleanupClient(pubkey, client, pushService, identity);
+    await _deregisterWithCleanupClient(
+      pubkey,
+      client,
+      pushService,
+      identity,
+      requireCurrentSession: requireCurrentSession,
+    );
   }
 
   void _invalidateActiveRegistrations() {
@@ -377,12 +410,13 @@ class PushNotificationSessionCoordinator {
     NostrClient client,
     PushNotificationService pushService,
     NostrIdentity? signingIdentity,
-    NostrClient? publishClient,
-  ) async {
+    NostrClient? publishClient, {
+    required bool requireCurrentSession,
+  }) async {
     try {
       await pushService.deregister(
         pubkey,
-        isCurrent: publishClient == null
+        isCurrent: requireCurrentSession && publishClient == null
             ? () => _isOutgoingSessionCurrent(pubkey, client, pushService)
             : null,
         signingIdentity: signingIdentity,
@@ -418,10 +452,14 @@ class PushNotificationSessionCoordinator {
     String pubkey,
     NostrClient client,
     PushNotificationService pushService,
-    NostrIdentity identity,
-  ) async {
+    NostrIdentity identity, {
+    required bool requireCurrentSession,
+  }) async {
     try {
-      if (!_isOutgoingSessionCurrent(pubkey, client, pushService)) return;
+      if (requireCurrentSession &&
+          !_isOutgoingSessionCurrent(pubkey, client, pushService)) {
+        return;
+      }
       final deregistrationEvent = await pushService
           .createSignedDeregistrationEvent(pubkey, signingIdentity: identity);
       if (deregistrationEvent == null) return;
@@ -441,14 +479,16 @@ class PushNotificationSessionCoordinator {
   }
 
   Future<Event?> _createDeferredCleanupDeregistrationEvent(
-    _PushRegistrationOperation operation,
-  ) async {
+    _PushRegistrationOperation operation, {
+    required bool requireCurrentSession,
+  }) async {
     try {
-      if (!_isOutgoingSessionCurrent(
-        operation.pubkey,
-        operation.client,
-        operation.pushService,
-      )) {
+      if (requireCurrentSession &&
+          !_isOutgoingSessionCurrent(
+            operation.pubkey,
+            operation.client,
+            operation.pushService,
+          )) {
         return null;
       }
       return await operation.pushService.createSignedDeregistrationEvent(

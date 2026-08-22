@@ -239,12 +239,14 @@ final notificationPreferencesServiceProvider =
 ///
 /// Registers FCM token only after the signer-backed Nostr client is ready.
 /// Deregisters the last ready client through AuthService's pre-teardown hook so
-/// outgoing-session cleanup runs before signers and callbacks are cleared.
+/// outgoing-session cleanup runs before signers and callbacks are cleared. The
+/// returned coordinator lets account switching run the same captured-identity
+/// cleanup after the replacement account has committed.
 @Riverpod(keepAlive: true)
-void pushNotificationSync(Ref ref) {
+PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
   // Firebase Messaging only supports Android, iOS, macOS, and web.
   if (!isFirebaseSupported) {
-    return;
+    return null;
   }
 
   final authService = ref.watch(authServiceProvider);
@@ -295,4 +297,6 @@ void pushNotificationSync(Ref ref) {
     authStateSubscription.cancel();
     onMessageSubscription.cancel();
   });
+
+  return coordinator;
 }
