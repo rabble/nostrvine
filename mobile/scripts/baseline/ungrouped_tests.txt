@@ -24,7 +24,6 @@ test/router/app_shell_header_test.dart	4
 test/router/app_shell_obscured_test.dart	3
 test/router/route_coverage_test.dart	1
 test/screens/comments/comment_item_test.dart	7
-test/screens/developer_options_screen_test.dart	2
 test/screens/explore_screen_apps_tab_test.dart	3
 test/screens/relay_settings_screen_layout_test.dart	3
 test/screens/subtitle_editor/subtitle_editor_screen_test.dart	20
