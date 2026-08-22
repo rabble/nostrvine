@@ -199,7 +199,18 @@ Future<void> swapAccount({
           })(),
         );
       }
-      await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
+      try {
+        await container
+            .read(authServiceProvider)
+            .claimLegacyRowsForCurrentUser();
+      } catch (error) {
+        // The target container is already mounted and the outgoing container
+        // has been retired, so this post-commit migration cannot be rolled back.
+        Log.warning(
+          'Claiming legacy user data after account swap failed: $error',
+          name: 'swapAccount',
+        );
+      }
     } catch (_) {
       try {
         await currentAuthService.restoreSignerInfoForCurrentAccount();
