@@ -227,8 +227,11 @@ class PushNotificationSessionCoordinator {
   Future<void> _markDirtyAndRegister(
     _PushRegistrationOperation operation,
   ) async {
-    operation.dirtyGeneration = await _registrationRetryStore
-        .markRegistrationDirty(operation.pubkey);
+    operation.dirtyGeneration =
+        await _registrationRetryStore.loadRegistrationDirtyGeneration(
+          operation.pubkey,
+        ) ??
+        await _registrationRetryStore.markRegistrationDirty(operation.pubkey);
     if (!_isRegistrationCurrent(operation)) return;
     await _requestPermissionAndRegister(operation);
   }
@@ -485,7 +488,8 @@ class PushNotificationSessionCoordinator {
               operation.dirtyGeneration ??= await _registrationRetryStore
                   .loadRegistrationDirtyGeneration(operation.pubkey);
             case PushRegistrationClearOutcome.failed:
-              return;
+              if (operation.pendingToken == null) return;
+              await _waitForRegistrationRetry(operation);
           }
           continue;
         }

@@ -46,11 +46,13 @@ class _FakeNotificationPreferencesStore
     implements NotificationPreferencesStore {
   final publishedSchemaVersions = <String, int>{};
   final registrationDirtyGenerations = <String, int>{};
+  int registrationMarkCalls = 0;
   bool failRegistrationMark = false;
   bool failRegistrationClear = false;
 
   @override
   Future<int> markRegistrationDirty(String pubkey) async {
+    registrationMarkCalls += 1;
     if (failRegistrationMark) return 0;
     final generation = (registrationDirtyGenerations[pubkey] ?? 0) + 1;
     registrationDirtyGenerations[pubkey] = generation;
@@ -549,6 +551,42 @@ void main() {
       });
     });
 
+    test('resumes a durable registration marker from a previous session', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        preferenceStore.registrationDirtyGenerations[pubkeyA] = 7;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return true;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        expect(preferenceStore.registrationMarkCalls, 0);
+        expect(preferenceStore.registrationDirtyGenerations[pubkeyA], isNull);
+        container.dispose();
+      });
+    });
+
     test('publishes when durable registration storage is unavailable', () {
       fakeAsync((async) {
         var registerCalls = 0;
@@ -621,6 +659,60 @@ void main() {
           preferenceStore.registrationDirtyGenerations[pubkeyA],
           isNotNull,
         );
+        container.dispose();
+      });
+    });
+
+    test('retries a refreshed token after marker clearing fails', () {
+      fakeAsync((async) {
+        final firstPublish = Completer<bool>();
+        var registerCalls = 0;
+        var refreshedTokenCalls = 0;
+        preferenceStore.failRegistrationClear = true;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) {
+          registerCalls += 1;
+          return firstPublish.future;
+        });
+        when(
+          () => pushService.registerToken(
+            any(),
+            any(),
+            isCurrent: any(named: 'isCurrent'),
+          ),
+        ).thenAnswer((_) async {
+          refreshedTokenCalls += 1;
+          return true;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        expect(registerCalls, 1);
+
+        defaultTokenRefreshController.add('refreshed-token');
+        async.flushMicrotasks();
+        firstPublish.complete(true);
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        expect(refreshedTokenCalls, 1);
         container.dispose();
       });
     });
