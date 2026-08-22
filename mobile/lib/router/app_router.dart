@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/analytics_providers.dart';
@@ -126,8 +127,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable.refresh();
   });
   ref.listen(currentAccountDeletionAttemptProvider, (previous, next) {
-    final before = previous?.value?.requiresRecoveryScreen ?? false;
-    final after = next.value?.requiresRecoveryScreen ?? false;
+    final before = accountDeletionRecoveryGateActive(previous);
+    final after = accountDeletionRecoveryGateActive(next);
     if (before != after) refreshListenable.refresh();
   });
   ref.onDispose(refreshListenable.dispose);

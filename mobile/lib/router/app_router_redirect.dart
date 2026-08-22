@@ -7,6 +7,14 @@ part of 'app_router.dart';
 bool _hasNavigated = false;
 bool _suppressNextAuthenticatedAuthRouteRedirect = false;
 
+@visibleForTesting
+bool accountDeletionRecoveryGateActive(
+  AsyncValue<AccountDeletionAttempt?>? attempt,
+) {
+  if (attempt == null || attempt.isLoading || !attempt.hasValue) return true;
+  return attempt.value?.requiresRecoveryScreen ?? false;
+}
+
 /// Prevents the next authenticated auth-route redirect from going home.
 ///
 /// Used when a cold-start quick action already opened a protected route before
@@ -306,7 +314,10 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   }
 
   final reviewStatusAsync = ref.read(currentMinorAccountReviewStatusProvider);
-  final deletionAttempt = ref.read(currentAccountDeletionAttemptProvider).value;
+  final deletionAttemptAsync = ref.read(currentAccountDeletionAttemptProvider);
+  final deletionRecoveryGateActive = accountDeletionRecoveryGateActive(
+    deletionAttemptAsync,
+  );
   final reviewStatus = reviewStatusAsync.value;
   final moderationConversationId = _moderationConversationId(
     authService,
@@ -345,13 +356,13 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   final isAuthRoute = _isAuthEntryLocation(location);
 
   if (authState == AuthState.authenticated &&
-      deletionAttempt?.requiresRecoveryScreen == true &&
+      deletionRecoveryGateActive &&
       !isDeletionRecoveryRoute &&
       !isSupportRoute) {
     return AccountDeletionRecoveryScreen.path;
   }
   if (authState == AuthState.authenticated &&
-      deletionAttempt?.requiresRecoveryScreen != true &&
+      !deletionRecoveryGateActive &&
       isDeletionRecoveryRoute) {
     return VideoFeedPage.pathForIndex(0);
   }

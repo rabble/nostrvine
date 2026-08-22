@@ -278,6 +278,31 @@ void main() {
     );
   });
 
+  for (final status in [
+    'recoverable',
+    'processing',
+    'cancelled',
+    'completed',
+    'terminal_failure',
+  ]) {
+    test('$status + cancelling fails closed', () async {
+      final result = repository(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'id': 'attempt-1',
+              'status': status,
+              'operation': 'cancelling',
+            }),
+            200,
+          ),
+        ),
+      );
+
+      await expectLater(result.fetchCurrent(), throwsFormatException);
+    });
+  }
+
   test('202 cancel returns a cancellation-in-flight attempt', () async {
     final result = await repository(
       MockClient(
@@ -410,59 +435,6 @@ void main() {
       Duration(milliseconds: 10),
       Duration(milliseconds: 20),
     ]);
-  });
-
-  test(
-    'watchCurrent polls processing until the attempt is completed',
-    () async {
-      var calls = 0;
-      final states = await repository(
-        MockClient((_) async {
-          calls++;
-          return http.Response(
-            jsonEncode({
-              'id': 'attempt-1',
-              'status': calls == 1 ? 'processing' : 'completed',
-              'operation': 'none',
-            }),
-            200,
-          );
-        }),
-        delay: (_) async {},
-      ).watchCurrent().toList();
-
-      expect(states.map((attempt) => attempt?.status), [
-        AccountDeletionAttemptStatus.processing,
-        AccountDeletionAttemptStatus.completed,
-      ]);
-    },
-  );
-
-  test('watchCurrent stops when the active account changes', () async {
-    var pubkey =
-        '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
-    final stream = repository(
-      MockClient(
-        (_) async => http.Response(
-          jsonEncode({
-            'id': 'attempt-1',
-            'status': 'processing',
-            'operation': 'none',
-          }),
-          200,
-        ),
-      ),
-      currentPubkey: () => pubkey,
-      delay: (_) async => pubkey = _otherPubkey,
-    ).watchCurrent();
-
-    await expectLater(
-      stream,
-      emitsInOrder([
-        isA<AccountDeletionAttempt>(),
-        emitsError(isA<AccountDeletionRecoveryException>()),
-      ]),
-    );
   });
 
   test('a stalled Name Server keeps the repository failure type', () async {

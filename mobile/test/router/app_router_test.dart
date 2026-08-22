@@ -687,6 +687,9 @@ void main() {
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
           ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
           // These navigations model an adult with a confirmed not-protected
           // verdict; the #176 guard otherwise fails closed and bounces.
           isDmRestrictedProvider.overrideWithValue(false),
@@ -737,6 +740,9 @@ void main() {
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
+          ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
           ),
           // These navigations model an adult with a confirmed not-protected
           // verdict; the #176 guard otherwise fails closed and bounces.

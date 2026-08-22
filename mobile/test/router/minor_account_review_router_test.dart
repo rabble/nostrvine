@@ -10,6 +10,7 @@ import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
 import 'package:openvine/screens/account_deletion_recovery_screen.dart';
@@ -34,9 +35,53 @@ class _NotReadyNostrSession extends NostrSession {
       const NostrSessionReadiness.identityKnown(pubkey: 'user-pubkey');
 }
 
+class _MockDeletionRepository extends Mock
+    implements AccountDeletionRecoveryRepository {}
+
 void main() {
+  group('Account deletion recovery gate', () {
+    test('fails closed while the attempt is loading', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncLoading<AccountDeletionAttempt?>(),
+        ),
+        isTrue,
+      );
+    });
+
+    test('fails closed when the coordinator lookup errors', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          AsyncError<AccountDeletionAttempt?>(
+            StateError('coordinator unavailable'),
+            StackTrace.empty,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('opens only after a ready lookup definitively finds no attempt', () {
+      expect(
+        accountDeletionRecoveryGateActive(
+          const AsyncData<AccountDeletionAttempt?>(null),
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('Minor account review router gating', () {
     late MockAuthService mockAuthService;
+
+    List<dynamic> routerOverrides({
+      AccountDeletionAttempt? deletionAttempt,
+    }) => [
+      ...getStandardTestOverrides(mockAuthService: mockAuthService),
+      currentAccountDeletionAttemptProvider.overrideWith(
+        (_) async => deletionAttempt,
+      ),
+    ];
 
     setUp(() {
       resetNavigationState();
@@ -53,6 +98,7 @@ void main() {
       WidgetTester tester,
       ProviderContainer container, {
       bool activateRouteNormalizer = false,
+      bool settle = true,
     }) async {
       if (activateRouteNormalizer) {
         container.read(routeNormalizationProvider);
@@ -67,7 +113,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        await tester.pump();
+      }
     }
 
     void registerContainerTearDown(
@@ -111,7 +161,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
@@ -137,37 +187,30 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            ...getStandardTestOverrides(mockAuthService: mockAuthService),
-            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
-            currentMinorAccountReviewStatusProvider.overrideWith(
-              (_) async => MinorAccountReviewStatus.active(),
-            ),
-            currentAccountDeletionAttemptProvider.overrideWith(
-              (_) async => const AccountDeletionAttempt(
+            ...routerOverrides(
+              deletionAttempt: const AccountDeletionAttempt(
                 id: 'attempt-id',
                 status: AccountDeletionAttemptStatus.recoverable,
                 username: 'alice',
               ),
             ),
-            pollingAccountDeletionAttemptProvider.overrideWith(
-              (_) => Stream.value(
-                const AccountDeletionAttempt(
-                  id: 'attempt-id',
-                  status: AccountDeletionAttemptStatus.recoverable,
-                  username: 'alice',
-                ),
-              ),
+            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+            currentMinorAccountReviewStatusProvider.overrideWith(
+              (_) async => MinorAccountReviewStatus.active(),
+            ),
+            accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+              _MockDeletionRepository(),
             ),
           ],
         );
         registerContainerTearDown(tester, container);
         await container.read(currentMinorAccountReviewStatusProvider.future);
         await container.read(currentAccountDeletionAttemptProvider.future);
-        await pumpRouter(tester, container);
+        await pumpRouter(tester, container, settle: false);
 
         final router = container.read(goRouterProvider);
         router.go(VideoFeedPage.pathForIndex(0));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(
           router.routeInformationProvider.value.uri.toString(),
@@ -181,31 +224,25 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
-          currentMinorAccountReviewStatusProvider.overrideWith(
-            (_) async => MinorAccountReviewStatus.active(),
-          ),
-          currentAccountDeletionAttemptProvider.overrideWith(
-            (_) async => const AccountDeletionAttempt(
+          ...routerOverrides(
+            deletionAttempt: const AccountDeletionAttempt(
               id: 'attempt-id',
               status: AccountDeletionAttemptStatus.terminalFailure,
             ),
           ),
-          pollingAccountDeletionAttemptProvider.overrideWith(
-            (_) => Stream.value(
-              const AccountDeletionAttempt(
-                id: 'attempt-id',
-                status: AccountDeletionAttemptStatus.terminalFailure,
-              ),
-            ),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (_) async => MinorAccountReviewStatus.active(),
+          ),
+          accountDeletionRecoveryRepositoryProvider.overrideWithValue(
+            _MockDeletionRepository(),
           ),
         ],
       );
       registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await container.read(currentAccountDeletionAttemptProvider.future);
-      await pumpRouter(tester, container);
+      await pumpRouter(tester, container, settle: false);
 
       final router = container.read(goRouterProvider);
       router.go(SupportCenterScreen.path);
@@ -220,7 +257,7 @@ void main() {
     testWidgets('allows parent contact route while restricted', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
@@ -246,7 +283,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
@@ -276,7 +313,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
@@ -303,7 +340,7 @@ void main() {
     testWidgets('allows support center route while restricted', (tester) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           bugReportServiceProvider.overrideWith((ref) => BugReportService()),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
@@ -330,7 +367,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
@@ -360,7 +397,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
@@ -394,7 +431,7 @@ void main() {
       final allowedConversationId = ConversationPage.pathForId('mod-conv-123');
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async =>
@@ -420,7 +457,7 @@ void main() {
     ) async {
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async =>
@@ -448,7 +485,7 @@ void main() {
       final completer = Completer<MinorAccountReviewStatus>();
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) => completer.future,
@@ -485,7 +522,7 @@ void main() {
         final pendingRefetch = Completer<MinorAccountReviewStatus>();
         final container = ProviderContainer(
           overrides: [
-            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            ...routerOverrides(),
             bugReportServiceProvider.overrideWith((ref) => BugReportService()),
             nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
             currentMinorAccountReviewStatusProvider.overrideWith((ref) {
@@ -545,7 +582,7 @@ void main() {
       final pendingRefetch = Completer<MinorAccountReviewStatus>();
       final container = ProviderContainer(
         overrides: [
-          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          ...routerOverrides(),
           nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith((ref) {
             loadCount++;

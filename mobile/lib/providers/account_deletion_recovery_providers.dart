@@ -1,6 +1,8 @@
 // ABOUTME: Riverpod wiring for resumable server-side account deletion.
 // ABOUTME: Fetches current attempt after authentication for launch routing.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -31,22 +33,11 @@ final currentAccountDeletionAttemptProvider =
         return null;
       }
       if (!ref.watch(nostrSessionProvider).isReadyForActiveClient) {
-        return null;
+        final waitingForReadiness = Completer<AccountDeletionAttempt?>();
+        ref.onDispose(waitingForReadiness.complete);
+        return waitingForReadiness.future;
       }
       return ref
           .watch(accountDeletionRecoveryRepositoryProvider)
           .fetchCurrent();
-    });
-
-final pollingAccountDeletionAttemptProvider =
-    StreamProvider<AccountDeletionAttempt?>((ref) {
-      if (ref.watch(currentAuthStateProvider) != AuthState.authenticated) {
-        return Stream.value(null);
-      }
-      if (!ref.watch(nostrSessionProvider).isReadyForActiveClient) {
-        return Stream.value(null);
-      }
-      return ref
-          .watch(accountDeletionRecoveryRepositoryProvider)
-          .watchCurrent();
     });

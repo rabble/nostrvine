@@ -58,6 +58,7 @@ void main() {
         currentMinorAccountReviewStatusProvider.overrideWith(
           (ref) async => MinorAccountReviewStatus.active(),
         ),
+        currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
       ],
     );
     addTearDown(container.dispose);
@@ -117,6 +118,9 @@ void main() {
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
           ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
           nostrAppDirectoryServiceProvider.overrideWithValue(
             mockDirectoryService,
           ),
@@ -175,6 +179,9 @@ void main() {
           ),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
+          ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
           ),
           nostrAppDirectoryServiceProvider.overrideWithValue(
             mockDirectoryService,
@@ -283,6 +290,7 @@ Future<void> _pumpRouterAt(
       currentMinorAccountReviewStatusProvider.overrideWith(
         (ref) async => MinorAccountReviewStatus.active(),
       ),
+      currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
       nostrAppDirectoryServiceProvider.overrideWithValue(mockDirectoryService),
     ],
   );

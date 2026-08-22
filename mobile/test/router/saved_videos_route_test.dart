@@ -40,6 +40,7 @@ void main() {
         currentMinorAccountReviewStatusProvider.overrideWith(
           (ref) async => MinorAccountReviewStatus.active(),
         ),
+        currentAccountDeletionAttemptProvider.overrideWith((ref) async => null),
         videoEventServiceProvider.overrideWithValue(
           createMockVideoEventService(),
         ),

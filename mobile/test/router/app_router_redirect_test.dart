@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/providers/account_deletion_recovery_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/minor_account_review_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -217,6 +218,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authServiceProvider.overrideWithValue(authService),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => status,
           ),
@@ -226,6 +230,7 @@ void main() {
         ],
       );
       addTearDown(container.dispose);
+      await container.read(currentAccountDeletionAttemptProvider.future);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       return container;
     }
