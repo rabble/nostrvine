@@ -36,6 +36,7 @@ class StubEntitlementValidator implements EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
+    bool silent = false,
   }) => Future.value(SupporterEntitlement.inactive);
 
   @override

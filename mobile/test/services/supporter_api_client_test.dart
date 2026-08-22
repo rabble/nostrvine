@@ -20,7 +20,11 @@ void main() {
     httpClient: httpClient,
     authHeaderProvider: ({required url, required method, payload}) async {
       authCalls.add((url: url, method: method, payload: payload));
-      return 'Nostr test-token';
+      return (
+        authorizationHeader: 'Nostr test-token',
+        pubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      );
     },
   );
 
@@ -63,7 +67,10 @@ void main() {
       ),
     );
 
-    final snapshot = await buildClient().fetchMe();
+    final snapshot = await buildClient().fetchMe(
+      expectedPubkey:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    );
 
     expect(snapshot.status, SupporterServerStatus.grace);
     expect(snapshot.entitlement.productId, 'divine.supporter.annual');
@@ -110,6 +117,8 @@ void main() {
           idempotencyKey: 'attempt-1234567890',
           proof: proof,
         ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       );
 
       expect(jsonDecode(requestBody), {
@@ -123,6 +132,81 @@ void main() {
     },
   );
 
+  test('rejects a claim signed by a different account', () async {
+    final client = SupporterApiClient(
+      baseUri: Uri.parse('https://supporters.test'),
+      httpClient: httpClient,
+      authHeaderProvider: ({required url, required method, payload}) async => (
+        authorizationHeader: 'Nostr stale-token',
+        pubkey:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      ),
+    );
+
+    await expectLater(
+      client.claimPurchase(
+        const SupporterPurchaseClaim(
+          store: 'apple',
+          productId: 'divine.supporter.monthly',
+          idempotencyKey: 'attempt-1234567890',
+          proof: {'signed_payload': 'opaque-proof-material'},
+        ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ),
+      throwsA(
+        isA<SupporterApiException>().having(
+          (error) => error.kind,
+          'kind',
+          SupporterApiFailureKind.unauthorized,
+        ),
+      ),
+    );
+    verifyNever(
+      () => httpClient.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    );
+  });
+
+  test('rejects reads and preference writes signed by another account', () async {
+    final client = SupporterApiClient(
+      baseUri: Uri.parse('https://supporters.test'),
+      httpClient: httpClient,
+      authHeaderProvider: ({required url, required method, payload}) async => (
+        authorizationHeader: 'Nostr stale-token',
+        pubkey:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      ),
+    );
+    const expectedPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    await expectLater(
+      client.fetchMe(expectedPubkey: expectedPubkey),
+      throwsA(isA<SupporterApiException>()),
+    );
+    await expectLater(
+      client.updateRecognition(
+        expectedPubkey: expectedPubkey,
+        haloVisible: true,
+        discoveryVisible: false,
+        foundingHistoryVisible: false,
+      ),
+      throwsA(isA<SupporterApiException>()),
+    );
+    verifyNever(() => httpClient.get(any(), headers: any(named: 'headers')));
+    verifyNever(
+      () => httpClient.patch(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    );
+  });
+
   test('maps ownership conflict to a typed API failure', () async {
     when(
       () => httpClient.post(
@@ -130,7 +214,14 @@ void main() {
         headers: any(named: 'headers'),
         body: any(named: 'body'),
       ),
-    ).thenAnswer((_) async => http.Response('{}', 409));
+    ).thenAnswer(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'ownership_conflict'},
+        }),
+        409,
+      ),
+    );
 
     await expectLater(
       buildClient().claimPurchase(
@@ -140,12 +231,51 @@ void main() {
           idempotencyKey: 'attempt-1234567890',
           proof: {'purchase_token': 'opaque'},
         ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       ),
       throwsA(
         isA<SupporterApiException>().having(
           (error) => error.kind,
           'kind',
           SupporterApiFailureKind.ownershipConflict,
+        ),
+      ),
+    );
+  });
+
+  test('treats a claim already in progress as retryable', () async {
+    when(
+      () => httpClient.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'claim_in_progress'},
+        }),
+        409,
+      ),
+    );
+
+    await expectLater(
+      buildClient().claimPurchase(
+        const SupporterPurchaseClaim(
+          store: 'apple',
+          productId: 'divine.supporter.monthly',
+          idempotencyKey: 'attempt-1234567890',
+          proof: {'signed_payload': 'opaque-proof-material'},
+        ),
+        expectedPubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ),
+      throwsA(
+        isA<SupporterApiException>().having(
+          (error) => error.kind,
+          'kind',
+          SupporterApiFailureKind.unavailable,
         ),
       ),
     );

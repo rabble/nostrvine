@@ -59,6 +59,8 @@ class SupporterRepository {
   late SupporterEntitlement _current;
   StreamSubscription<SupporterEntitlement>? _subscription;
   StreamSubscription<SupporterPurchaseProof>? _proofSubscription;
+  Future<void>? _recoveryInFlight;
+  bool _recoveryCompleted = false;
   final StreamController<SupporterEntitlement> _controller =
       StreamController<SupporterEntitlement>.broadcast();
 
@@ -95,6 +97,48 @@ class SupporterRepository {
     );
   }
 
+  /// Starts a non-blocking restore for purchases that predate the canonical
+  /// entitlement service.
+  ///
+  /// The store redelivers the resulting proofs through [purchaseProofChanges],
+  /// where they are claimed with this account's NIP-98 identity. Calls made
+  /// while a restore is already underway share the same work; a later
+  /// foreground activation can retry after a store or network failure.
+  Future<void> recoverPurchases() {
+    if (!hasServerClient || _recoveryCompleted) return Future<void>.value();
+
+    final inFlight = _recoveryInFlight;
+    if (inFlight != null) return inFlight;
+
+    late final Future<void> recovery;
+    recovery = _recoverPurchases().whenComplete(() {
+      if (identical(_recoveryInFlight, recovery)) {
+        _recoveryInFlight = null;
+      }
+    });
+    _recoveryInFlight = recovery;
+    return recovery;
+  }
+
+  Future<void> _recoverPurchases() async {
+    try {
+      final snapshot = await refreshFromServer();
+      if (snapshot.entitlement.isSupporter) {
+        _recoveryCompleted = true;
+        return;
+      }
+      await _validator.restorePurchases(
+        capturedPubkey: _pubkey,
+        attemptId:
+            'supporter-recovery-${DateTime.now().microsecondsSinceEpoch}',
+        silent: true,
+      );
+      _recoveryCompleted = true;
+    } on Object {
+      // Background repair stays silent. A later foreground edge retries.
+    }
+  }
+
   /// Whether canonical Worker requests are configured for this build.
   bool get hasServerClient => _apiClient != null;
 
@@ -107,7 +151,7 @@ class SupporterRepository {
         'Supporter verification is not configured.',
       );
     }
-    final snapshot = await client.fetchMe();
+    final snapshot = await client.fetchMe(expectedPubkey: _pubkey);
     _handleChange(snapshot.entitlement);
     return snapshot;
   }
@@ -123,7 +167,7 @@ class SupporterRepository {
         'Supporter verification is not configured.',
       );
     }
-    final snapshot = await client.claimPurchase(claim);
+    final snapshot = await client.claimPurchase(claim, expectedPubkey: _pubkey);
     _handleChange(snapshot.entitlement);
     return snapshot;
   }
@@ -142,6 +186,7 @@ class SupporterRepository {
       );
     }
     final snapshot = await client.updateRecognition(
+      expectedPubkey: _pubkey,
       haloVisible: haloVisible,
       discoveryVisible: discoveryVisible,
       foundingHistoryVisible: foundingHistoryVisible,
@@ -210,14 +255,22 @@ class SupporterRepository {
           idempotencyKey: proof.attemptId,
           proof: proof.toJson(),
         ),
+        expectedPubkey: _pubkey,
       );
       _handleChange(snapshot.entitlement);
       await _validator.completePurchase(proof);
     } on Object catch (error, stackTrace) {
-      _handleValidatorError(error, stackTrace);
+      _recoveryCompleted = _isTerminalClaimFailure(error);
+      if (!proof.silent) _handleValidatorError(error, stackTrace);
       // Keep the purchase unacknowledged so the store can redeliver it after
       // the Worker or signer becomes available.
     }
+  }
+
+  bool _isTerminalClaimFailure(Object error) {
+    return error is SupporterApiException &&
+        (error.kind == SupporterApiFailureKind.ownershipConflict ||
+            error.statusCode == 400);
   }
 
   /// Mark the entitlement inactive locally (e.g. after a confirmed expiry or

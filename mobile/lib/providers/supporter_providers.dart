@@ -3,10 +3,13 @@
 // ABOUTME: stub elsewhere, owned by an account-scoped SupporterRepository.
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iap_repository/iap_repository.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/supporter_api_client.dart';
 import 'package:openvine/services/supporter_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -26,9 +29,7 @@ bool get hasInAppPurchaseStore =>
 ///
 /// Keeping this empty by default prevents the flag-gated client foundation
 /// from sending requests to an invented or undeployed endpoint.
-const supporterApiBaseUrl = String.fromEnvironment(
-  'SUPPORTERS_API_BASE_URL',
-);
+const supporterApiBaseUrl = String.fromEnvironment('SUPPORTERS_API_BASE_URL');
 
 /// The NIP-98 authenticated supporter Worker client, when configured.
 @riverpod
@@ -45,7 +46,11 @@ SupporterApiClient? supporterApiClient(Ref ref) {
         method: method,
         payload: payload,
       );
-      return token?.authorizationHeader;
+      if (token == null) return null;
+      return (
+        authorizationHeader: token.authorizationHeader,
+        pubkey: token.signedEvent.pubkey,
+      );
     },
   );
   ref.onDispose(client.dispose);
@@ -69,7 +74,7 @@ EntitlementValidator entitlementValidator(Ref ref) {
 }
 
 /// The account-scoped [SupporterRepository] that owns the cached entitlement.
-@riverpod
+@Riverpod(keepAlive: true)
 SupporterRepository supporterRepository(Ref ref) {
   ref.watch(currentAuthStateProvider);
   final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
@@ -82,3 +87,27 @@ SupporterRepository supporterRepository(Ref ref) {
   ref.onDispose(repository.dispose);
   return repository;
 }
+
+/// Repairs store purchases automatically after a signed-in app enters the
+/// foreground.
+///
+/// This deliberately does not depend on the Supporter screen or the feature
+/// flag: anyone whose store purchase succeeded before the Worker was wired
+/// must be able to claim it as soon as an authenticated build with the Worker
+/// URL opens. The repository first checks canonical state, coalesces overlapping
+/// calls, and retries failures on a later foreground edge.
+final supporterRecoveryProvider = Provider<Future<void>?>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final authState = ref.watch(currentAuthStateProvider);
+  ref.watch(currentAuthRpcCapabilityProvider);
+  final isForeground = ref.watch(appForegroundProvider);
+  if (authState != AuthState.authenticated ||
+      !authService.canPublishNostrWritesNow ||
+      !isForeground) {
+    return null;
+  }
+
+  final repository = ref.watch(supporterRepositoryProvider);
+  if (!repository.hasServerClient) return null;
+  return repository.recoverPurchases();
+});

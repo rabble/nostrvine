@@ -67,6 +67,7 @@ class _EmptyValidator extends Fake implements EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
+    bool silent = false,
   }) async => SupporterEntitlement.inactive;
 
   @override
