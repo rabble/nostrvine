@@ -46,9 +46,12 @@ class _FakeNotificationPreferencesStore
     implements NotificationPreferencesStore {
   final publishedSchemaVersions = <String, int>{};
   final registrationDirtyGenerations = <String, int>{};
+  bool failRegistrationMark = false;
+  bool failRegistrationClear = false;
 
   @override
   Future<int> markRegistrationDirty(String pubkey) async {
+    if (failRegistrationMark) return 0;
     final generation = (registrationDirtyGenerations[pubkey] ?? 0) + 1;
     registrationDirtyGenerations[pubkey] = generation;
     return generation;
@@ -59,13 +62,18 @@ class _FakeNotificationPreferencesStore
       registrationDirtyGenerations[pubkey];
 
   @override
-  Future<void> clearRegistrationDirtyIfMatches(
+  Future<PushRegistrationClearOutcome> clearRegistrationDirtyIfMatches(
     String pubkey,
     int generation,
   ) async {
+    if (failRegistrationClear) {
+      return PushRegistrationClearOutcome.failed;
+    }
     if (registrationDirtyGenerations[pubkey] == generation) {
       registrationDirtyGenerations.remove(pubkey);
+      return PushRegistrationClearOutcome.cleared;
     }
+    return PushRegistrationClearOutcome.changed;
   }
 
   @override
@@ -537,6 +545,82 @@ void main() {
 
         expect(registerCalls, 2);
         expect(preferenceStore.registrationDirtyGenerations[pubkeyA], isNull);
+        container.dispose();
+      });
+    });
+
+    test('publishes when durable registration storage is unavailable', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        preferenceStore.failRegistrationMark = true;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return true;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        container.dispose();
+      });
+    });
+
+    test('does not republish in a tight loop when marker clearing fails', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        preferenceStore.failRegistrationClear = true;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return true;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        expect(
+          preferenceStore.registrationDirtyGenerations[pubkeyA],
+          isNotNull,
+        );
         container.dispose();
       });
     });

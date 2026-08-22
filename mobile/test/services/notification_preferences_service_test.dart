@@ -235,13 +235,15 @@ class _MemoryNotificationPreferencesStore
       registrationDirtyGenerations[pubkey];
 
   @override
-  Future<void> clearRegistrationDirtyIfMatches(
+  Future<PushRegistrationClearOutcome> clearRegistrationDirtyIfMatches(
     String pubkey,
     int generation,
   ) async {
     if (registrationDirtyGenerations[pubkey] == generation) {
       registrationDirtyGenerations.remove(pubkey);
+      return PushRegistrationClearOutcome.cleared;
     }
+    return PushRegistrationClearOutcome.changed;
   }
 
   @override

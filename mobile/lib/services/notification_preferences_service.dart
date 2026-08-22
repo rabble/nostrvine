@@ -11,8 +11,13 @@ import 'package:unified_logger/unified_logger.dart';
 abstract interface class PushRegistrationRetryStore {
   Future<int> markRegistrationDirty(String pubkey);
   Future<int?> loadRegistrationDirtyGeneration(String pubkey);
-  Future<void> clearRegistrationDirtyIfMatches(String pubkey, int generation);
+  Future<PushRegistrationClearOutcome> clearRegistrationDirtyIfMatches(
+    String pubkey,
+    int generation,
+  );
 }
+
+enum PushRegistrationClearOutcome { cleared, changed, failed }
 
 abstract interface class NotificationPreferencesStore
     implements PushRegistrationRetryStore {
@@ -86,20 +91,25 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   }
 
   @override
-  Future<void> clearRegistrationDirtyIfMatches(
+  Future<PushRegistrationClearOutcome> clearRegistrationDirtyIfMatches(
     String pubkey,
     int generation,
   ) async {
     try {
       final box = await _openDirtyBox();
       final key = _registrationDirtyKey(pubkey);
-      if (box.get(key) == generation) await box.delete(key);
+      if (box.get(key) != generation) {
+        return PushRegistrationClearOutcome.changed;
+      }
+      await box.delete(key);
+      return PushRegistrationClearOutcome.cleared;
     } on Object catch (error) {
       Log.warning(
         'Failed to clear dirty push registration: $error',
         name: 'NotificationPreferencesService',
         category: LogCategory.system,
       );
+      return PushRegistrationClearOutcome.failed;
     }
   }
 

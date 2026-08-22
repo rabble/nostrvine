@@ -37,6 +37,7 @@ final class _PushRegistrationOperation {
   final NostrIdentity identity;
   Future<void>? future;
   String? pendingToken;
+  int? dirtyGeneration;
   Timer? retryTimer;
   Completer<void>? retryWaiter;
   int retryCount = 0;
@@ -214,8 +215,11 @@ class PushNotificationSessionCoordinator {
     _PushRegistrationOperation operation,
     String token,
   ) async {
-    await _registrationRetryStore.markRegistrationDirty(operation.pubkey);
+    final generation = await _registrationRetryStore.markRegistrationDirty(
+      operation.pubkey,
+    );
     if (!_isRegistrationCurrent(operation)) return;
+    operation.dirtyGeneration = generation;
     operation.pendingToken = token;
     operation.wakeRetry();
   }
@@ -223,7 +227,8 @@ class PushNotificationSessionCoordinator {
   Future<void> _markDirtyAndRegister(
     _PushRegistrationOperation operation,
   ) async {
-    await _registrationRetryStore.markRegistrationDirty(operation.pubkey);
+    operation.dirtyGeneration = await _registrationRetryStore
+        .markRegistrationDirty(operation.pubkey);
     if (!_isRegistrationCurrent(operation)) return;
     await _requestPermissionAndRegister(operation);
   }
@@ -434,8 +439,11 @@ class PushNotificationSessionCoordinator {
       operation.phase = _PushRegistrationPhase.mayPublish;
       bool isCurrent() => _isRegistrationCurrent(operation);
       while (_isRegistrationCurrent(operation)) {
-        final generation = await _registrationRetryStore
-            .loadRegistrationDirtyGeneration(operation.pubkey);
+        final generation =
+            operation.dirtyGeneration ??
+            await _registrationRetryStore.loadRegistrationDirtyGeneration(
+              operation.pubkey,
+            );
         if (generation == null) return;
 
         final token = operation.pendingToken;
@@ -462,10 +470,23 @@ class PushNotificationSessionCoordinator {
         if (!_isRegistrationCurrent(operation)) return;
         if (published) {
           operation.retryCount = 0;
-          await _registrationRetryStore.clearRegistrationDirtyIfMatches(
-            operation.pubkey,
-            generation,
-          );
+          if (generation == 0) return;
+          final clearOutcome = await _registrationRetryStore
+              .clearRegistrationDirtyIfMatches(
+                operation.pubkey,
+                generation,
+              );
+          switch (clearOutcome) {
+            case PushRegistrationClearOutcome.cleared:
+              if (operation.dirtyGeneration == generation) {
+                operation.dirtyGeneration = null;
+              }
+            case PushRegistrationClearOutcome.changed:
+              operation.dirtyGeneration ??= await _registrationRetryStore
+                  .loadRegistrationDirtyGeneration(operation.pubkey);
+            case PushRegistrationClearOutcome.failed:
+              return;
+          }
           continue;
         }
 

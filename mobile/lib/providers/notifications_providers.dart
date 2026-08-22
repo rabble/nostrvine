@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -51,7 +52,7 @@ final pushNotificationServiceProvider = Provider<PushNotificationService?>((
   ref,
 ) {
   // Firebase Messaging only supports Android, iOS, macOS, and web.
-  if (!isFirebaseSupported) {
+  if (!isFirebaseSupported || kIsWeb) {
     return null;
   }
 
