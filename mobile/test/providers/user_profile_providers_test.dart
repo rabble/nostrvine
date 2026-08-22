@@ -219,6 +219,104 @@ void main() {
     );
   });
 
+  group('blockedUserProfilesProvider', () {
+    late _MockProfileRepository profileRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      profileRepository = _MockProfileRepository();
+      container = ProviderContainer(
+        overrides: [
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test('fetches blocked pubkeys in one filter-bypassing batch', () async {
+      final blockedProfile = _profile(pubkey, name: 'blocked');
+      when(
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: [pubkey],
+          ignoreBlockFilter: true,
+        ),
+      ).thenAnswer((_) async => {pubkey: blockedProfile});
+
+      final result = await container.read(
+        blockedUserProfilesProvider({pubkey}).future,
+      );
+
+      expect(result, {pubkey: blockedProfile});
+      verify(
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: [pubkey],
+          ignoreBlockFilter: true,
+        ),
+      ).called(1);
+    });
+
+    test('chunks large blocklists into bounded batch requests', () async {
+      final pubkeys = {
+        for (var i = 0; i < 51; i++) i.toString().padLeft(64, '0'),
+      };
+      when(
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+          ignoreBlockFilter: true,
+        ),
+      ).thenAnswer((_) async => {});
+
+      await container.read(blockedUserProfilesProvider(pubkeys).future);
+
+      final captured = verify(
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: captureAny(named: 'pubkeys'),
+          ignoreBlockFilter: true,
+        ),
+      ).captured.cast<List<String>>();
+      expect(captured.map((chunk) => chunk.length), [50, 1]);
+    });
+  });
+
+  group('blockedUserProfileProvider', () {
+    test('streams cache updates without starting a per-user fetch', () async {
+      final profileRepository = _MockProfileRepository();
+      final updates = StreamController<UserProfile?>();
+      addTearDown(updates.close);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => updates.stream);
+      final container = ProviderContainer(
+        overrides: [
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final emitted = <UserProfile?>[];
+      final subscription = container.listen(
+        blockedUserProfileProvider(pubkey),
+        (_, next) {
+          if (next.hasValue) emitted.add(next.value);
+        },
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      final cachedProfile = _profile(pubkey, name: 'updated');
+
+      updates.add(cachedProfile);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emitted, [cachedProfile]);
+      verify(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).called(1);
+      verifyNever(
+        () => profileRepository.fetchFreshProfile(pubkey: any(named: 'pubkey')),
+      );
+    });
+  });
+
   group('fetchUserProfileProvider', () {
     late _MockProfileRepository profileRepository;
     late ProviderContainer container;

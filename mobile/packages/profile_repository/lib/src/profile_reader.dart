@@ -47,9 +47,7 @@ abstract interface class ProfileReader {
   /// guards. Pubkeys without a cached profile, or profiles filtered by the
   /// repository's block policy, are absent from the result, which is not
   /// order-aligned with [pubkeys].
-  Future<List<UserProfile>> getCachedProfiles({
-    required List<String> pubkeys,
-  });
+  Future<List<UserProfile>> getCachedProfiles({required List<String> pubkeys});
 
   /// Watches the cached profile for [pubkey], emitting on every cache write.
   Stream<UserProfile?> watchProfile({required String pubkey});
@@ -73,8 +71,10 @@ abstract interface class ProfileReader {
   /// Resolves many profiles at once, preferring the Drift cache.
   ///
   /// Partial results are returned rather than throwing.
+  /// Set [ignoreBlockFilter] only for a surface that manages blocked accounts.
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter,
   });
 
   /// Returns the cached NIP-39 `i` tag list for [pubkey] from local storage.

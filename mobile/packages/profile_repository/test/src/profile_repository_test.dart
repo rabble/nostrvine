@@ -5728,34 +5728,31 @@ void main() {
       // timeout does, on a fully keyed account. Nothing between here and the
       // signer catches, and this method's own handler is `on Exception`, so
       // without local containment the throw left claimUsername entirely.
-      test(
-        'returns UsernameClaimError when the signer throws',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenThrow(StateError('no signer'));
+      test('returns UsernameClaimError when the signer throws', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenThrow(StateError('no signer'));
 
-          final usernameClaimResult = await profileRepository.claimUsername(
-            username: 'username',
-          );
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
 
-          expect(
-            usernameClaimResult,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Signing failed',
-            ),
-          );
+        expect(
+          usernameClaimResult,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Signing failed',
+          ),
+        );
 
-          // The request never left the device, so no name was claimed.
-          verifyNever(() => mockHttpClient.post(any()));
-        },
-      );
+        // The request never left the device, so no name was claimed.
+        verifyNever(() => mockHttpClient.post(any()));
+      });
 
       test(
         'sends lowercase username in payload for mixed-case input',
@@ -5952,9 +5949,7 @@ void main() {
       }) {
         when(
           () => mockHttpClient.get(
-            Uri.parse(
-              '$_testNameServer/api/username/check/$username',
-            ),
+            Uri.parse('$_testNameServer/api/username/check/$username'),
           ),
         ).thenAnswer(
           (_) async => Response(
@@ -6353,9 +6348,7 @@ void main() {
         fakeAsync((async) {
           when(
             () => mockHttpClient.get(
-              Uri.parse(
-                '$_testNameServer/api/username/check/testuser',
-              ),
+              Uri.parse('$_testNameServer/api/username/check/testuser'),
             ),
           ).thenAnswer((_) async {
             // Simulates an unresponsive name server: never resolves within
@@ -6804,6 +6797,48 @@ void main() {
         expect(result[testPubkey2]?.displayName, equals('Allowed Cached'));
         verifyNever(() => mockNostrClient.fetchProfile(any()));
       });
+
+      test(
+        'returns uncached blocked profiles when the block filter is bypassed',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys([testPubkey]),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getBulkProfiles([testPubkey]),
+          ).thenAnswer(
+            (_) async => BulkProfilesResponse(
+              profiles: {
+                testPubkey: UserProfileFound(
+                  profile: UserProfileData.fromJson(testPubkey, const {
+                    'display_name': 'Blocked API User',
+                  }),
+                ),
+              },
+            ),
+          );
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: (pubkey) => pubkey == testPubkey,
+          );
+
+          final result = await repoWithBlockFilter.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+            ignoreBlockFilter: true,
+          );
+
+          expect(result[testPubkey]?.displayName, equals('Blocked API User'));
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
 
       test('fetches uncached from Funnelcake API', () async {
         when(

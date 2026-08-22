@@ -646,12 +646,9 @@ class ProfileRepository implements ProfileReader {
   /// Returns `null` when no event is found or the query fails.
   Future<Event?> _fetchIdentityEvent(String pubkey) async {
     try {
-      final events = await _nostrClient.queryEvents(
-        [
-          Filter(kinds: const [identityEventKind], authors: [pubkey], limit: 5),
-        ],
-        useCache: false,
-      );
+      final events = await _nostrClient.queryEvents([
+        Filter(kinds: const [identityEventKind], authors: [pubkey], limit: 5),
+      ], useCache: false);
       return newestIdentityEvent(
         events.where((e) => e.kind == identityEventKind).toList(),
       );
@@ -831,7 +828,10 @@ class ProfileRepository implements ProfileReader {
       if (delay > Duration.zero) {
         await Future<void>.delayed(delay);
       }
-      final retry = await _doFetchFreshProfile(pubkey, requireRawKind0: true);
+      final retry = await _doFetchFreshProfile(
+        pubkey,
+        requireRawKind0: true,
+      );
       if (retry != null) return retry;
     }
 
@@ -2441,6 +2441,7 @@ class ProfileRepository implements ProfileReader {
   @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter = false,
   }) async {
     if (pubkeys.isEmpty) return {};
 
@@ -2449,7 +2450,7 @@ class ProfileRepository implements ProfileReader {
 
     Map<String, UserProfile> filteredResults() {
       final blockFilter = _blockFilter;
-      if (blockFilter != null) {
+      if (!ignoreBlockFilter && blockFilter != null) {
         results.removeWhere((pubkey, _) => blockFilter(pubkey));
       }
       return results;

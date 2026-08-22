@@ -56,6 +56,7 @@ class _ExhaustiveReader implements ProfileReader {
   @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
+    bool ignoreBlockFilter = false,
   }) async => {};
 
   @override

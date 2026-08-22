@@ -12,6 +12,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
+const _blockedProfileFetchChunkSize = 50;
+
 final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
   return ref
       .watch(databaseProvider)
@@ -92,6 +94,44 @@ Stream<UserProfile?> _watchUserProfile(
   }
 
   yield* repo.watchProfile(pubkey: pubkey);
+}
+
+/// Resolves profiles for the accounts the viewer has blocked.
+///
+/// Fetching the set in bounded batches avoids starting a REST request plus two
+/// relay queries for every uncached row when a synced mute list is large.
+@riverpod
+Future<Map<String, UserProfile>> blockedUserProfiles(
+  Ref ref,
+  Set<String> pubkeys,
+) async {
+  final repo = ref.watch(profileReadRepositoryProvider);
+  if (repo == null || pubkeys.isEmpty) return const {};
+
+  final profiles = <String, UserProfile>{};
+  final pending = pubkeys.toList();
+  for (var i = 0; i < pending.length; i += _blockedProfileFetchChunkSize) {
+    final chunk = pending.skip(i).take(_blockedProfileFetchChunkSize).toList();
+    profiles.addAll(
+      await repo.fetchBatchProfiles(
+        pubkeys: chunk,
+        ignoreBlockFilter: true,
+      ),
+    );
+  }
+  return profiles;
+}
+
+/// Watches a blocked account's cached profile without starting another fetch.
+///
+/// [blockedUserProfiles] hydrates the cache in bounded batches; this provider
+/// keeps each tile reactive to that hydration and later profile updates.
+@riverpod
+Stream<UserProfile?> blockedUserProfile(Ref ref, String pubkey) {
+  final repo = ref.watch(profileReadRepositoryProvider);
+  if (repo == null) return Stream.value(null);
+
+  return repo.watchProfile(pubkey: pubkey);
 }
 
 /// One-shot provider: returns cached profile or fetches fresh.
