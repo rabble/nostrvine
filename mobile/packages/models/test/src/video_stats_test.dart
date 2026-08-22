@@ -177,7 +177,7 @@ void main() {
         );
       });
 
-      test('preserves file size from imeta for metadata editing', () {
+      test('standalone file size overrides imeta for metadata editing', () {
         final video = VideoStats.fromJson(const {
           'event': {
             'id': 'event-id',
@@ -192,6 +192,7 @@ void main() {
                 'url https://example.com/video.mp4',
                 'size 480000',
               ],
+              ['size', '640000'],
             ],
           },
           'stats': {
@@ -202,7 +203,7 @@ void main() {
           },
         }).toVideoEvent();
 
-        expect(video.fileSize, 480000);
+        expect(video.fileSize, 640000);
       });
 
       test(

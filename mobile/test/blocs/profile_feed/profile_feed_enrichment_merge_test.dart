@@ -16,6 +16,8 @@ VideoEvent _video({
   String? textTrackContent,
   int? eventCreatedAt,
   List<List<String>> nostrEventTags = const [],
+  List<String> hashtags = const [],
+  String? title,
 }) {
   return VideoEvent(
     id: id,
@@ -30,6 +32,8 @@ VideoEvent _video({
     textTrackContent: textTrackContent,
     eventCreatedAt: eventCreatedAt,
     nostrEventTags: nostrEventTags,
+    hashtags: hashtags,
+    title: title,
   );
 }
 
@@ -135,6 +139,8 @@ void main() {
           ['d', 'video-d-tag'],
           ['t', 'stale'],
         ],
+        hashtags: const ['stale'],
+        title: 'Stale title',
       );
       final enriched = _video(
         id: 'nostr',
@@ -144,6 +150,8 @@ void main() {
           ['d', 'video-d-tag'],
           ['t', 'current'],
         ],
+        hashtags: const ['current'],
+        title: 'Current title',
       );
 
       final merged = mergeProfileFeedEnrichment(
@@ -154,6 +162,9 @@ void main() {
       );
 
       expect(merged.single.nostrEventTags, enriched.nostrEventTags);
+      expect(merged.single.hashtags, enriched.hashtags);
+      expect(merged.single.title, enriched.title);
+      expect(merged.single.id, enriched.id);
     });
 
     test('keeps raw tags from a newer current event', () {
@@ -184,6 +195,7 @@ void main() {
       );
 
       expect(merged.single.nostrEventTags, current.nostrEventTags);
+      expect(merged.single.id, current.id);
     });
   });
 }
