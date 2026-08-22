@@ -84,6 +84,13 @@ class StartupSplashReleaseController {
     if (settled) _releaseOnce();
   }
 
+  /// Rechecks the release condition after startup state outside auth or
+  /// routing changes.
+  ///
+  /// The account-deletion lookup is one such state: its result can settle
+  /// without changing the current route when no recovery is required.
+  void reevaluate() => _maybeRelease();
+
   void _releaseOnce() {
     if (_released) return;
     _released = true;

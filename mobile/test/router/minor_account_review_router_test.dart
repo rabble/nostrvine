@@ -40,16 +40,16 @@ class _MockDeletionRepository extends Mock
 
 void main() {
   group('Account deletion recovery gate', () {
-    test('fails closed while the attempt is loading', () {
+    test('stays inactive while the attempt is loading', () {
       expect(
         accountDeletionRecoveryGateActive(
           const AsyncLoading<AccountDeletionAttempt?>(),
         ),
-        isTrue,
+        isFalse,
       );
     });
 
-    test('fails closed when the coordinator lookup errors', () {
+    test('fails open when the coordinator lookup errors', () {
       expect(
         accountDeletionRecoveryGateActive(
           AsyncError<AccountDeletionAttempt?>(
@@ -57,7 +57,7 @@ void main() {
             StackTrace.empty,
           ),
         ),
-        isTrue,
+        isFalse,
       );
     });
 
@@ -67,6 +67,54 @@ void main() {
           const AsyncData<AccountDeletionAttempt?>(null),
         ),
         isFalse,
+      );
+    });
+
+    test('reports only a cold load without a previous value as pending', () {
+      expect(
+        accountDeletionRecoveryLookupPending(
+          const AsyncLoading<AccountDeletionAttempt?>(),
+        ),
+        isTrue,
+      );
+      expect(
+        accountDeletionRecoveryLookupPending(
+          const AsyncData<AccountDeletionAttempt?>(null),
+        ),
+        isFalse,
+      );
+      expect(
+        accountDeletionRecoveryLookupPending(
+          AsyncError<AccountDeletionAttempt?>(
+            StateError('coordinator unavailable'),
+            StackTrace.empty,
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('settles only a terminal lookup for an authenticated session', () {
+      expect(
+        authenticatedDeletionLookupSettled(
+          AuthState.checking,
+          const AsyncData<AccountDeletionAttempt?>(null),
+        ),
+        isFalse,
+      );
+      expect(
+        authenticatedDeletionLookupSettled(
+          AuthState.authenticated,
+          const AsyncLoading<AccountDeletionAttempt?>(),
+        ),
+        isFalse,
+      );
+      expect(
+        authenticatedDeletionLookupSettled(
+          AuthState.authenticated,
+          const AsyncData<AccountDeletionAttempt?>(null),
+        ),
+        isTrue,
       );
     });
   });
