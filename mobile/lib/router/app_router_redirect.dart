@@ -11,7 +11,7 @@ bool _suppressNextAuthenticatedAuthRouteRedirect = false;
 bool accountDeletionRecoveryGateActive(
   AsyncValue<AccountDeletionAttempt?>? attempt,
 ) {
-  if (attempt == null || !attempt.hasValue) return true;
+  if (attempt == null || attempt.isLoading || !attempt.hasValue) return true;
   return attempt.value?.requiresRecoveryScreen ?? false;
 }
 

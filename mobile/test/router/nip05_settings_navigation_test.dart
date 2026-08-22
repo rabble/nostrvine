@@ -123,6 +123,9 @@ void main() {
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => MinorAccountReviewStatus.active(),
           ),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
           profileRepositoryProvider.overrideWithValue(profileRepository),
           profileReadRepositoryProvider.overrideWithValue(profileRepository),
           blossomUploadServiceProvider.overrideWithValue(blossomUploadService),
