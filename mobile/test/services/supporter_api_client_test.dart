@@ -67,7 +67,10 @@ void main() {
       ),
     );
 
-    final snapshot = await buildClient().fetchMe();
+    final snapshot = await buildClient().fetchMe(
+      expectedPubkey:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    );
 
     expect(snapshot.status, SupporterServerStatus.grace);
     expect(snapshot.entitlement.productId, 'divine.supporter.annual');
@@ -161,6 +164,42 @@ void main() {
     );
     verifyNever(
       () => httpClient.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    );
+  });
+
+  test('rejects reads and preference writes signed by another account', () async {
+    final client = SupporterApiClient(
+      baseUri: Uri.parse('https://supporters.test'),
+      httpClient: httpClient,
+      authHeaderProvider: ({required url, required method, payload}) async => (
+        authorizationHeader: 'Nostr stale-token',
+        pubkey:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      ),
+    );
+    const expectedPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    await expectLater(
+      client.fetchMe(expectedPubkey: expectedPubkey),
+      throwsA(isA<SupporterApiException>()),
+    );
+    await expectLater(
+      client.updateRecognition(
+        expectedPubkey: expectedPubkey,
+        haloVisible: true,
+        discoveryVisible: false,
+        foundingHistoryVisible: false,
+      ),
+      throwsA(isA<SupporterApiException>()),
+    );
+    verifyNever(() => httpClient.get(any(), headers: any(named: 'headers')));
+    verifyNever(
+      () => httpClient.patch(
         any(),
         headers: any(named: 'headers'),
         body: any(named: 'body'),

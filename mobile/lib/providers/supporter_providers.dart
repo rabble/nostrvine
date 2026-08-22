@@ -74,7 +74,7 @@ EntitlementValidator entitlementValidator(Ref ref) {
 }
 
 /// The account-scoped [SupporterRepository] that owns the cached entitlement.
-@riverpod
+@Riverpod(keepAlive: true)
 SupporterRepository supporterRepository(Ref ref) {
   ref.watch(currentAuthStateProvider);
   final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;

@@ -73,6 +73,7 @@ class _FakeValidator extends Fake implements EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
+    bool silent = false,
   }) async {
     if (restoreError != null) throw restoreError!;
     return SupporterEntitlement.inactive;

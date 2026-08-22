@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:iap_repository/iap_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/supporter_api_client.dart';
@@ -22,6 +24,8 @@ class _FakeValidator implements EntitlementValidator {
   SupporterEntitlement purchaseResult = SupporterEntitlement.inactive;
   int restoreCallCount = 0;
   String? restoredPubkey;
+  bool? restoredSilently;
+  Object? restoreError;
   Completer<void>? restoreCompleter;
 
   @override
@@ -44,9 +48,12 @@ class _FakeValidator implements EntitlementValidator {
   Future<SupporterEntitlement> restorePurchases({
     String? capturedPubkey,
     String? attemptId,
+    bool silent = false,
   }) async {
     restoreCallCount++;
     restoredPubkey = capturedPubkey;
+    restoredSilently = silent;
+    if (restoreError != null) throw restoreError!;
     await restoreCompleter?.future;
     return purchaseResult;
   }
@@ -80,6 +87,31 @@ void main() {
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   const pubkeyB =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+  SupporterApiClient buildApiClient({bool active = false}) {
+    return SupporterApiClient(
+      baseUri: Uri.parse('https://supporters.test'),
+      httpClient: MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'status': active ? 'active' : 'inactive',
+            'entitlement': {
+              if (active) 'productId': 'divine.supporter.monthly',
+              'source': 'server',
+              'isActive': active,
+            },
+            'recognition': <String, dynamic>{},
+          }),
+          200,
+        );
+      }),
+      authHeaderProvider: ({required url, required method, payload}) async => (
+        authorizationHeader: 'Nostr test-token',
+        pubkey: pubkeyA,
+      ),
+    );
+  }
+
   SharedPreferences.setMockInitialValues({});
 
   group(SupporterRepository, () {
@@ -270,14 +302,7 @@ void main() {
       'silently restores configured purchases for the signed-in account',
       () async {
         final prefs = await SharedPreferences.getInstance();
-        final apiClient = SupporterApiClient(
-          baseUri: Uri.parse('https://supporters.test'),
-          authHeaderProvider:
-              ({required url, required method, payload}) async => (
-                authorizationHeader: 'Nostr test-token',
-                pubkey: pubkeyA,
-              ),
-        );
+        final apiClient = buildApiClient();
         final repo = SupporterRepository(
           pubkey: pubkeyA,
           validator: validator,
@@ -291,19 +316,13 @@ void main() {
 
         expect(validator.restoreCallCount, 1);
         expect(validator.restoredPubkey, pubkeyA);
+        expect(validator.restoredSilently, isTrue);
       },
     );
 
     test('coalesces concurrent automatic recovery attempts', () async {
       final prefs = await SharedPreferences.getInstance();
-      final apiClient = SupporterApiClient(
-        baseUri: Uri.parse('https://supporters.test'),
-        authHeaderProvider: ({required url, required method, payload}) async =>
-            (
-              authorizationHeader: 'Nostr test-token',
-              pubkey: pubkeyA,
-            ),
-      );
+      final apiClient = buildApiClient();
       final repo = SupporterRepository(
         pubkey: pubkeyA,
         validator: validator,
@@ -322,5 +341,84 @@ void main() {
       validator.restoreCompleter!.complete();
       await Future.wait([first, second]);
     });
+
+    test(
+      'skips automatic recovery when no Worker client is configured',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final repo = SupporterRepository(
+          pubkey: pubkeyA,
+          validator: validator,
+          prefs: prefs,
+        );
+        addTearDown(repo.dispose);
+
+        await repo.recoverPurchases();
+
+        expect(validator.restoreCallCount, 0);
+      },
+    );
+
+    test('skips store restore when canonical entitlement is active', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final apiClient = buildApiClient(active: true);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+        apiClient: apiClient,
+      );
+      addTearDown(repo.dispose);
+      addTearDown(apiClient.dispose);
+
+      await repo.recoverPurchases();
+      await repo.recoverPurchases();
+
+      expect(repo.isSupporter, isTrue);
+      expect(validator.restoreCallCount, 0);
+    });
+
+    test('does not repeat a successful recovery in the same process', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final apiClient = buildApiClient();
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+        apiClient: apiClient,
+      );
+      addTearDown(repo.dispose);
+      addTearDown(apiClient.dispose);
+
+      await repo.recoverPurchases();
+      await repo.recoverPurchases();
+
+      expect(validator.restoreCallCount, 1);
+    });
+
+    test(
+      'retries a failed background restore without surfacing its error',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final apiClient = buildApiClient();
+        final repo = SupporterRepository(
+          pubkey: pubkeyA,
+          validator: validator,
+          prefs: prefs,
+          apiClient: apiClient,
+        );
+        addTearDown(repo.dispose);
+        addTearDown(apiClient.dispose);
+        validator.restoreError = const StoreUnavailableException();
+        final errors = <Object>[];
+        repo.changes.listen((_) {}, onError: errors.add);
+
+        await repo.recoverPurchases();
+        await repo.recoverPurchases();
+
+        expect(validator.restoreCallCount, 2);
+        expect(errors, isEmpty);
+      },
+    );
   });
 }

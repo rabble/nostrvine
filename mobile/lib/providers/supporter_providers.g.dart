@@ -148,7 +148,7 @@ final class SupporterRepositoryProvider
         argument: null,
         retry: null,
         name: r'supporterRepositoryProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -177,4 +177,4 @@ final class SupporterRepositoryProvider
 }
 
 String _$supporterRepositoryHash() =>
-    r'5064f725ec5fa201ef693a5eee13a95602360834';
+    r'3e2f3f1fa5ec502364222a5bf658af9ffee4f48b';

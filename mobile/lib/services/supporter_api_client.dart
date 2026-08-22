@@ -208,8 +208,14 @@ class SupporterApiClient {
   final Duration _timeout;
 
   /// Fetches canonical private state for the authenticated Divine account.
-  Future<SupporterAccountSnapshot> fetchMe() async {
-    final response = await _send(HttpMethod.get, '/v1/me');
+  Future<SupporterAccountSnapshot> fetchMe({
+    required String expectedPubkey,
+  }) async {
+    final response = await _send(
+      HttpMethod.get,
+      '/v1/me',
+      expectedPubkey: expectedPubkey,
+    );
     return _decodeSnapshot(response);
   }
 
@@ -230,6 +236,7 @@ class SupporterApiClient {
 
   /// Updates recognition preferences without changing payment state.
   Future<SupporterAccountSnapshot> updateRecognition({
+    required String expectedPubkey,
     required bool haloVisible,
     required bool discoveryVisible,
     required bool foundingHistoryVisible,
@@ -243,6 +250,7 @@ class SupporterApiClient {
       HttpMethod.patch,
       '/v1/me/recognition',
       body: body,
+      expectedPubkey: expectedPubkey,
     );
     return _decodeSnapshot(response);
   }

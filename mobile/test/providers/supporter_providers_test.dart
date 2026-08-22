@@ -15,6 +15,11 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockSupporterRepository extends Mock implements SupporterRepository {}
 
+class _BackgroundAppForeground extends AppForeground {
+  @override
+  bool build() => false;
+}
+
 void main() {
   group('supporterRecoveryProvider', () {
     late _MockAuthService authService;
@@ -61,6 +66,52 @@ void main() {
       final recovery = readyContainer.read(supporterRecoveryProvider);
       expect(recovery, isNotNull);
       await recovery;
+
+      verify(() => repository.recoverPurchases()).called(1);
+    });
+
+    test('does not restore while the app is backgrounded', () {
+      when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.rpcReady,
+          ),
+          appForegroundProvider.overrideWith(_BackgroundAppForeground.new),
+          supporterRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(supporterRecoveryProvider), isNull);
+      verifyNever(() => repository.recoverPurchases());
+    });
+
+    test('restores on a background to foreground transition', () async {
+      when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.rpcReady,
+          ),
+          appForegroundProvider.overrideWith(_BackgroundAppForeground.new),
+          supporterRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(
+        supporterRecoveryProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      verifyNever(() => repository.recoverPurchases());
+
+      container.read(appForegroundProvider.notifier).setForeground(true);
+      await Future<void>.delayed(Duration.zero);
 
       verify(() => repository.recoverPurchases()).called(1);
     });

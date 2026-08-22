@@ -60,6 +60,7 @@ class SupporterRepository {
   StreamSubscription<SupporterEntitlement>? _subscription;
   StreamSubscription<SupporterPurchaseProof>? _proofSubscription;
   Future<void>? _recoveryInFlight;
+  bool _recoveryCompleted = false;
   final StreamController<SupporterEntitlement> _controller =
       StreamController<SupporterEntitlement>.broadcast();
 
@@ -104,7 +105,7 @@ class SupporterRepository {
   /// while a restore is already underway share the same work; a later
   /// foreground activation can retry after a store or network failure.
   Future<void> recoverPurchases() {
-    if (!hasServerClient) return Future<void>.value();
+    if (!hasServerClient || _recoveryCompleted) return Future<void>.value();
 
     final inFlight = _recoveryInFlight;
     if (inFlight != null) return inFlight;
@@ -121,11 +122,20 @@ class SupporterRepository {
 
   Future<void> _recoverPurchases() async {
     try {
-      await restorePurchases();
-    } on Object catch (error, stackTrace) {
-      // Recovery is a background repair. Do not make app startup depend on a
-      // reachable store; retain the unacknowledged purchase for the next retry.
-      _handleValidatorError(error, stackTrace);
+      final snapshot = await refreshFromServer();
+      if (snapshot.entitlement.isSupporter) {
+        _recoveryCompleted = true;
+        return;
+      }
+      await _validator.restorePurchases(
+        capturedPubkey: _pubkey,
+        attemptId:
+            'supporter-recovery-${DateTime.now().microsecondsSinceEpoch}',
+        silent: true,
+      );
+      _recoveryCompleted = true;
+    } on Object {
+      // Background repair stays silent. A later foreground edge retries.
     }
   }
 
@@ -141,7 +151,7 @@ class SupporterRepository {
         'Supporter verification is not configured.',
       );
     }
-    final snapshot = await client.fetchMe();
+    final snapshot = await client.fetchMe(expectedPubkey: _pubkey);
     _handleChange(snapshot.entitlement);
     return snapshot;
   }
@@ -176,6 +186,7 @@ class SupporterRepository {
       );
     }
     final snapshot = await client.updateRecognition(
+      expectedPubkey: _pubkey,
       haloVisible: haloVisible,
       discoveryVisible: discoveryVisible,
       foundingHistoryVisible: foundingHistoryVisible,
@@ -249,7 +260,8 @@ class SupporterRepository {
       _handleChange(snapshot.entitlement);
       await _validator.completePurchase(proof);
     } on Object catch (error, stackTrace) {
-      _handleValidatorError(error, stackTrace);
+      _recoveryCompleted = false;
+      if (!proof.silent) _handleValidatorError(error, stackTrace);
       // Keep the purchase unacknowledged so the store can redeliver it after
       // the Worker or signer becomes available.
     }
