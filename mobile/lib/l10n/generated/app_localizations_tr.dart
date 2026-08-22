@@ -4106,6 +4106,29 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get notificationsTabBadges => 'Badges';
+
+  @override
+  String notificationsTabBadgesWithCount(int count) {
+    return 'Badges ($count)';
+  }
+
+  @override
+  String notificationsPendingBadges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count badges are waiting for you to accept them',
+      one: 'A badge is waiting for you to accept it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsBadgesEmpty =>
+      'No badges waiting. When someone awards you one, it lands here.';
+
+  @override
   String get notificationsVideoUnavailable => 'Video kullanılamıyor';
 
   @override

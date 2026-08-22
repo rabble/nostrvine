@@ -4,6 +4,7 @@
 
 // ignore_for_file: prefer_const_constructors
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +19,10 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
+import 'package:openvine/notifications/view/pending_badge_awards_view.dart';
+import 'package:openvine/providers/app_providers.dart';
 
+import '../../helpers/badge_fixtures.dart';
 import '../../helpers/invite_availability_harness.dart';
 import '../../helpers/test_provider_overrides.dart';
 
@@ -26,6 +30,8 @@ class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
@@ -35,11 +41,21 @@ void main() {
     late _MockNotificationRepository mockNotificationRepo;
     late _MockFollowRepository mockFollowRepo;
     late _MockInviteStatusCubit mockInviteCubit;
+    late _MockBadgeRepository mockBadgeRepo;
 
     setUp(() {
       mockNotificationRepo = _MockNotificationRepository();
       mockFollowRepo = _MockFollowRepository();
       mockInviteCubit = _MockInviteStatusCubit();
+      mockBadgeRepo = _MockBadgeRepository();
+
+      when(mockBadgeRepo.loadDashboard).thenAnswer(
+        (_) async => const BadgeDashboardData(
+          awarded: [],
+          issued: [],
+          created: [],
+        ),
+      );
 
       when(
         () => mockNotificationRepo.watchSnapshot(filter: any(named: 'filter')),
@@ -64,6 +80,7 @@ void main() {
           notificationRepositoryProvider.overrideWithValue(
             mockNotificationRepo,
           ),
+          badgeRepositoryProvider.overrideWithValue(mockBadgeRepo),
         ],
         home: Builder(
           builder: (context) => MediaQuery(
@@ -250,6 +267,74 @@ void main() {
 
         expect(controller(tester).index, equals(2));
         expect(controller(tester).animationDuration, equals(Duration.zero));
+      });
+    });
+
+    group('badges tab', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      void stubPending(int count) {
+        when(mockBadgeRepo.loadDashboard).thenAnswer(
+          (_) async => BadgeDashboardData(
+            awarded: [
+              for (var i = 0; i < count; i++)
+                badgeAwardFixture(
+                  isAccepted: false,
+                  name: 'Badge $i',
+                  dTag: 'badge-$i',
+                  seed: i + 1,
+                ),
+            ],
+            issued: const [],
+            created: const [],
+          ),
+        );
+      }
+
+      testWidgets('counts awards waiting on a decision in the tab label', (
+        tester,
+      ) async {
+        stubPending(2);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.notificationsTabBadgesWithCount(2)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('drops the count once nothing is waiting', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsTabBadges), findsOneWidget);
+        expect(find.textContaining('Badges ('), findsNothing);
+      });
+
+      testWidgets('banner on the All tab opens the badges queue', (
+        tester,
+      ) async {
+        stubPending(1);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsPendingBadges(1)), findsOneWidget);
+
+        await tester.tap(find.text(l10n.notificationsPendingBadges(1)));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PendingBadgeAwardsView), findsOneWidget);
+        expect(find.text('Badge 0'), findsOneWidget);
+      });
+
+      testWidgets('hides the banner when no award is waiting', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsPendingBadges(1)), findsNothing);
       });
     });
 

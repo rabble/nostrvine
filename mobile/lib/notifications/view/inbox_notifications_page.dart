@@ -2,6 +2,7 @@
 // ABOUTME: Follows/Reposts) + invites banner wrapping the BLoC-driven
 // ABOUTME: NotificationsView.
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,12 +11,14 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/blocs/badges/badges_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/reduced_motion_tab_controller_mixin.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
+import 'package:openvine/notifications/view/pending_badge_awards_view.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/widgets/signup_invites_availability_builder.dart';
@@ -44,24 +47,31 @@ class InboxNotificationsPage extends ConsumerWidget {
       );
     }
     final followRepository = ref.watch(followRepositoryProvider);
+    final badgeRepository = ref.watch(badgeRepositoryProvider);
 
     return _InboxNotificationsScaffold(
       notificationRepository: notificationRepository,
       followRepository: followRepository,
+      badgeRepository: badgeRepository,
       isVisible: isVisible,
     );
   }
 }
 
+/// Position of the Badges tab, last after the reaction filters.
+const _badgesTabIndex = 5;
+
 class _InboxNotificationsScaffold extends StatefulWidget {
   const _InboxNotificationsScaffold({
     required this.notificationRepository,
     required this.followRepository,
+    required this.badgeRepository,
     required this.isVisible,
   });
 
   final NotificationRepository notificationRepository;
   final FollowRepository followRepository;
+  final BadgeRepository badgeRepository;
   final bool isVisible;
 
   @override
@@ -73,15 +83,37 @@ class _InboxNotificationsScaffoldState
     extends State<_InboxNotificationsScaffold>
     with TickerProviderStateMixin, ReducedMotionTabControllerMixin {
   @override
-  int get tabCount => 5;
+  int get tabCount => 6;
+
+  /// Owned here rather than by a keyed `BlocProvider` so a repository swap
+  /// rebuilds the badge subtree only. Keying a provider above the tabs would
+  /// also tear down every notification feed and reset the open tab.
+  late BadgesCubit _badgesCubit;
 
   @override
   void initState() {
     super.initState();
+    _badgesCubit = BadgesCubit(repository: widget.badgeRepository)..load();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<InviteStatusCubit>().load();
     });
+  }
+
+  @override
+  void didUpdateWidget(_InboxNotificationsScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.badgeRepository == oldWidget.badgeRepository) return;
+    // A new repository is bound to a different signer, so in-flight accepts
+    // belong to the previous one and are dropped with the cubit.
+    _badgesCubit.close();
+    _badgesCubit = BadgesCubit(repository: widget.badgeRepository)..load();
+  }
+
+  @override
+  void dispose() {
+    _badgesCubit.close();
+    super.dispose();
   }
 
   @override
@@ -98,81 +130,92 @@ class _InboxNotificationsScaffoldState
       ),
       child: ColoredBox(
         color: context.vineColors.surfaceContainerHigh,
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Material(
-              type: MaterialType.transparency,
-              child: TabBar(
-                controller: tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                padding: const EdgeInsetsDirectional.only(start: 16),
-                indicatorColor: VineTheme.tabIndicatorGreen,
-                indicatorWeight: 4,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: VineTheme.transparent,
-                labelColor: context.vineColors.primaryText,
-                unselectedLabelColor: context.vineColors.onSurfaceMuted,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                labelStyle: VineTheme.titleMediumFont(
-                  color: context.vineColors.primaryText,
+        // One cubit for the tab label's pending count, the All-tab banner, and
+        // the Badges tab body, so accepting an award updates all three.
+        child: BlocProvider<BadgesCubit>.value(
+          value: _badgesCubit,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Material(
+                type: MaterialType.transparency,
+                child: TabBar(
+                  controller: tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  padding: const EdgeInsetsDirectional.only(start: 16),
+                  indicatorColor: VineTheme.tabIndicatorGreen,
+                  indicatorWeight: 4,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: VineTheme.transparent,
+                  labelColor: context.vineColors.primaryText,
+                  unselectedLabelColor: context.vineColors.onSurfaceMuted,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                  labelStyle: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  unselectedLabelStyle: VineTheme.titleMediumFont(
+                    color: context.vineColors.onSurfaceMuted,
+                  ),
+                  tabs: [
+                    Tab(text: context.l10n.notificationsTabAll),
+                    Tab(text: context.l10n.notificationsTabLikes),
+                    Tab(text: context.l10n.notificationsTabComments),
+                    Tab(text: context.l10n.notificationsTabFollows),
+                    Tab(text: context.l10n.notificationsTabReposts),
+                    const _BadgesTab(),
+                  ],
                 ),
-                unselectedLabelStyle: VineTheme.titleMediumFont(
-                  color: context.vineColors.onSurfaceMuted,
-                ),
-                tabs: [
-                  Tab(text: context.l10n.notificationsTabAll),
-                  Tab(text: context.l10n.notificationsTabLikes),
-                  Tab(text: context.l10n.notificationsTabComments),
-                  Tab(text: context.l10n.notificationsTabFollows),
-                  Tab(text: context.l10n.notificationsTabReposts),
-                ],
               ),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: tabController,
-                children: [
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    child: const Column(
-                      children: [
-                        _InvitesBanner(),
-                        Expanded(child: NotificationsView()),
-                      ],
+              Expanded(
+                child: TabBarView(
+                  controller: tabController,
+                  children: [
+                    _NotificationTab(
+                      notificationRepository: widget.notificationRepository,
+                      followRepository: widget.followRepository,
+                      isVisible: widget.isVisible,
+                      child: Column(
+                        children: [
+                          const _InvitesBanner(),
+                          _PendingBadgesBanner(
+                            onViewPending: () =>
+                                tabController.animateTo(_badgesTabIndex),
+                          ),
+                          const Expanded(child: NotificationsView()),
+                        ],
+                      ),
                     ),
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.like,
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.comment,
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.follow,
-                  ),
-                  _NotificationTab(
-                    notificationRepository: widget.notificationRepository,
-                    followRepository: widget.followRepository,
-                    isVisible: widget.isVisible,
-                    filter: NotificationKind.repost,
-                  ),
-                ],
+                    _NotificationTab(
+                      notificationRepository: widget.notificationRepository,
+                      followRepository: widget.followRepository,
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.like,
+                    ),
+                    _NotificationTab(
+                      notificationRepository: widget.notificationRepository,
+                      followRepository: widget.followRepository,
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.comment,
+                    ),
+                    _NotificationTab(
+                      notificationRepository: widget.notificationRepository,
+                      followRepository: widget.followRepository,
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.follow,
+                    ),
+                    _NotificationTab(
+                      notificationRepository: widget.notificationRepository,
+                      followRepository: widget.followRepository,
+                      isVisible: widget.isVisible,
+                      filter: NotificationKind.repost,
+                    ),
+                    const PendingBadgeAwardsView(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -266,6 +309,77 @@ class _NotificationVisibilityDispatcherState
   Widget build(BuildContext context) {
     _observeVisibility();
     return widget.child;
+  }
+}
+
+/// Tab label for pending badge awards, carrying their count.
+///
+/// The count is the point of the tab: a badge award is an offer waiting on a
+/// decision, and nothing else in the app says one is waiting.
+class _BadgesTab extends StatelessWidget {
+  const _BadgesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingCount = context.select(
+      (BadgesCubit cubit) => cubit.state.pending.length,
+    );
+    return Tab(
+      text: pendingCount == 0
+          ? context.l10n.notificationsTabBadges
+          : context.l10n.notificationsTabBadgesWithCount(pendingCount),
+    );
+  }
+}
+
+/// Points at waiting badge awards from the All tab.
+class _PendingBadgesBanner extends StatelessWidget {
+  const _PendingBadgesBanner({required this.onViewPending});
+
+  final VoidCallback onViewPending;
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingCount = context.select(
+      (BadgesCubit cubit) => cubit.state.pending.length,
+    );
+    if (pendingCount == 0) return const SizedBox.shrink();
+
+    return InkWell(
+      onTap: onViewPending,
+      child: Semantics(
+        button: true,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          color: context.vineColors.card,
+          child: Row(
+            spacing: 12,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: VineTheme.vineGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: DivineIcon(
+                  icon: DivineIconName.sealCheck,
+                  color: context.vineColors.background,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  context.l10n.notificationsPendingBadges(pendingCount),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

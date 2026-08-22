@@ -12,6 +12,7 @@
 // the BlocProvider element persists across rebuilds and the bloc stays
 // bound to stale repositories.
 
+import 'package:badge_repository/badge_repository.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,6 +36,19 @@ class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+/// The inbox page reads the badge repository for its Badges tab. These tests
+/// only swap the notification and follow repositories, so a stub keeps the
+/// real one — and its SharedPreferences dependency — out of the scope.
+class _MockBadgeRepository extends Mock implements BadgeRepository {}
+
+_MockBadgeRepository _stubBadgeRepository() {
+  final repository = _MockBadgeRepository();
+  when(repository.loadDashboard).thenAnswer(
+    (_) async => const BadgeDashboardData(awarded: [], issued: [], created: []),
+  );
+  return repository;
+}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
@@ -76,6 +90,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -114,6 +129,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -155,6 +171,7 @@ void main() {
         final rebuildKey = GlobalKey<_RebuildHostState>();
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -196,6 +213,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -297,6 +315,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
@@ -341,6 +360,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -388,6 +408,7 @@ void main() {
         final rebuildKey = GlobalKey<_RebuildHostState>();
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepoA,
             ),
@@ -426,6 +447,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            badgeRepositoryProvider.overrideWithValue(_stubBadgeRepository()),
             notificationRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
