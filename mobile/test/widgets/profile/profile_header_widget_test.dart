@@ -352,6 +352,7 @@ void main() {
       ThemeData? theme,
       bool disableAnimations = false,
       TextScaler? textScaler,
+      Locale locale = const Locale('en'),
       bool renderHeader = true,
       MockAuthService? authService,
       bool isVanished = false,
@@ -477,6 +478,7 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
           theme: theme,
           home: Builder(
             builder: (context) => MediaQuery(
@@ -2128,6 +2130,36 @@ void main() {
     });
 
     group('Action Label', () {
+      testWidgets('keeps localized label inside a narrow scaled viewport', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        const locale = Locale('it');
+        final l10n = lookupAppLocalizations(locale);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(displayName: 'Test User'),
+            isAnonymous: true,
+            textScaler: const TextScaler.linear(2),
+            locale: locale,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final label = find.text(l10n.profileSecureYourAccount);
+        final labelRect = tester.getRect(label);
+        expect(labelRect.left, greaterThanOrEqualTo(0));
+        expect(
+          labelRect.right,
+          lessThanOrEqualTo(tester.view.physicalSize.width),
+        );
+      });
+
       testWidgets('shows Secure label when anonymous with custom name', (
         tester,
       ) async {

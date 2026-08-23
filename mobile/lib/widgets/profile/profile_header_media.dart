@@ -568,11 +568,13 @@ class _ProfileActionLabel extends StatelessWidget {
     };
 
     final chip = context.vineColors.accentChipYellow;
+    final maxWidth = MediaQuery.sizeOf(context).width - 32;
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Container(
+          constraints: BoxConstraints(maxWidth: maxWidth),
           padding: const EdgeInsets.fromLTRB(12, 8, 16, 8),
           decoration: BoxDecoration(
             color: chip.container,
@@ -595,9 +597,13 @@ class _ProfileActionLabel extends StatelessWidget {
             spacing: 8,
             children: [
               DivineIcon(icon: icon, size: 16, color: chip.onContainer),
-              Text(
-                label,
-                style: VineTheme.titleSmallFont(color: chip.onContainer),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.titleSmallFont(color: chip.onContainer),
+                ),
               ),
             ],
           ),
