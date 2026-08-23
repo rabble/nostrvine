@@ -79,7 +79,7 @@ void main() {
       );
     });
 
-    test('opens only after a ready lookup definitively finds no attempt', () {
+    test('stays inactive when a ready lookup finds no attempt', () {
       expect(
         accountDeletionRecoveryGateActive(
           const AsyncData<AccountDeletionAttempt?>(null),
