@@ -34,17 +34,8 @@ class DivineMaterialApp extends ConsumerWidget {
       Intl.defaultLocale = locale.toLanguageTag();
     }
     final themeMode = resolveThemeMode(mode: appearanceMode);
-    final effectiveBrightness = themeMode == ThemeMode.system
-        ? WidgetsBinding.instance.platformDispatcher.platformBrightness
-        : themeMode == ThemeMode.light
-        ? Brightness.light
-        : Brightness.dark;
-    final statusBarStyle = effectiveBrightness == Brightness.light
-        ? VineTheme.lightStatusBarStyle
-        : VineTheme.statusBarStyle;
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: statusBarStyle,
+    return PlatformBrightnessStatusBar(
+      themeMode: themeMode,
       child: MaterialApp.router(
         title: 'Divine',
         debugShowCheckedModeBanner: false,
@@ -74,6 +65,63 @@ class DivineMaterialApp extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Keeps the root status-bar style synchronized with the effective appearance.
+class PlatformBrightnessStatusBar extends StatefulWidget {
+  const PlatformBrightnessStatusBar({
+    required this.child,
+    this.themeMode = ThemeMode.system,
+    super.key,
+  });
+
+  final Widget child;
+  final ThemeMode themeMode;
+
+  @override
+  State<PlatformBrightnessStatusBar> createState() =>
+      _PlatformBrightnessStatusBarState();
+}
+
+class _PlatformBrightnessStatusBarState
+    extends State<PlatformBrightnessStatusBar>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    if (widget.themeMode == ThemeMode.system) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveBrightness = switch (widget.themeMode) {
+      ThemeMode.system =>
+        WidgetsBinding.instance.platformDispatcher.platformBrightness,
+      ThemeMode.light => Brightness.light,
+      ThemeMode.dark => Brightness.dark,
+    };
+    final statusBarStyle = effectiveBrightness == Brightness.light
+        ? VineTheme.lightStatusBarStyle
+        : VineTheme.statusBarStyle;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: statusBarStyle,
+      child: widget.child,
     );
   }
 }

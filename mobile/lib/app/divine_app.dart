@@ -216,14 +216,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
   }
 
   @override
-  void didChangePlatformBrightness() {
-    super.didChangePlatformBrightness();
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
   void didHaveMemoryPressure() {
     _memoryPressureHandler.onMemoryPressure();
   }
