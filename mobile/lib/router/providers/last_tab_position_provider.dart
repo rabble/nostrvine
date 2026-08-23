@@ -53,6 +53,16 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
     return state[type] ?? 0;
   }
 
+  /// The index actually recorded for [type], with no default substituted.
+  ///
+  /// [getPosition] answers "where should this tab open", so it defaults to 0
+  /// for every route that always carries an index — including
+  /// [RouteType.notifications], which therefore never reads as null. Callers
+  /// that need to distinguish "never visited" from "visited at index 0" have
+  /// to ask for the raw value: tab 2 hosts both /inbox and
+  /// /notifications/:index, and only a genuine visit should resume the feed.
+  int? recordedPosition(RouteType type) => state[type];
+
   /// Records a tab position without forcing a route change.
   ///
   /// Home uses this while the user swipes between videos. Updating the URL for

@@ -54,7 +54,7 @@ class BackButtonHandler {
             ? null
             : ref
                   .read(lastTabPositionProvider.notifier)
-                  .getPosition(routeTypeForTab(previousTab)),
+                  .recordedPosition(routeTypeForTab(previousTab)),
         // Only the profile tab needs an identity, and materialising
         // AuthService on every back press is not worth it.
         currentUserNpub: previousTab == 3

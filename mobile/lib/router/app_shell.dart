@@ -156,7 +156,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
             ? null
             : ref
                   .read(lastTabPositionProvider.notifier)
-                  .getPosition(routeTypeForTab(previousTab)),
+                  .recordedPosition(routeTypeForTab(previousTab)),
         currentUserNpub: previousTab == 3 ? _currentUserNpub() : null,
       ),
       router: router,

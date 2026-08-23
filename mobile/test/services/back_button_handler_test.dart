@@ -29,8 +29,9 @@ void main() {
   /// platform channel and reports what the native side would receive.
   Future<({bool? handled, String location})> pressBackAfterVisiting(
     WidgetTester tester,
-    List<String> visitedPaths,
-  ) async {
+    List<String> visitedPaths, {
+    String? pushAfter,
+  }) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     final locations = StreamController<String>.broadcast();
     addTearDown(locations.close);
@@ -42,6 +43,7 @@ void main() {
         GoRoute(path: '/explore', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/notifications/:i', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/inbox', builder: (_, _) => const SizedBox()),
+        GoRoute(path: '/hashtag/:tag', builder: (_, _) => const SizedBox()),
       ],
     );
     addTearDown(router.dispose);
@@ -53,27 +55,42 @@ void main() {
         overrides: [
           routerLocationStreamProvider.overrideWithValue(locations.stream),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Consumer(
-            builder: (context, ref, _) {
-              capturedRef = ref;
-              container = ProviderScope.containerOf(context);
-              return const SizedBox();
-            },
-          ),
+        // Mount the router for real: GoRouter.canPop() reads live
+        // NavigatorStates, so a router that is never attached to a widget
+        // tree always reports false and the pop arms go untested.
+        child: Consumer(
+          builder: (context, ref, _) {
+            capturedRef = ref;
+            container = ProviderScope.containerOf(context);
+            return MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            );
+          },
         ),
       ),
     );
     await tester.pump();
+    // Both are lazy Notifiers whose ref.listen only arms on first read. The
+    // running app reads them early (the home feed and the bottom nav do), so
+    // arm them here too or the harness silently records nothing.
     container.read(tabHistoryProvider);
+    container.read(lastTabPositionProvider);
     container.listen(pageContextProvider, (_, _) {});
 
     for (final path in visitedPaths) {
       locations.add(path);
       await tester.pump(Duration.zero);
       await tester.pump(Duration.zero);
+    }
+
+    if (pushAfter != null) {
+      // Push on the real router *and* feed the mocked location stream, so the
+      // page context the handler reads matches the route that is on top.
+      router.push(pushAfter);
+      locations.add(pushAfter);
+      await tester.pumpAndSettle();
     }
 
     BackButtonHandler.initialize(router, capturedRef);
@@ -132,6 +149,12 @@ void main() {
         expect(result.location, equals('/home/0'));
       });
 
+      // Pins today's behaviour, which is not obviously the intended one:
+      // LastTabPosition records `ctx.videoIndex ?? 0`, so merely opening the
+      // Explore *grid* records index 0 and restoring the tab lands on the
+      // video feed rather than the grid. Identical on origin/main, whose back
+      // path resolves the same getPosition value through
+      // ExploreScreen.pathForIndex — out of scope here, but real.
       testWidgets('returns to the previously visited tab', (tester) async {
         final result = await pressBackAfterVisiting(tester, [
           '/home/0',
@@ -140,7 +163,60 @@ void main() {
         ]);
 
         expect(result.handled, isTrue);
-        expect(result.location, equals('/explore'));
+        expect(result.location, equals('/explore/0'));
+      });
+
+      // Regression for #3337: tab 2 hosts /inbox and /notifications/:index.
+      // The handler read lastTabPosition.getPosition, which defaults
+      // notifications to 0, so backing to the Inbox tab dropped the user into
+      // a notification video feed they had never opened. Only reachable once
+      // the inbox started being recorded in tab history.
+      testWidgets(
+        'returns to the inbox, not a notification feed never opened',
+        (tester) async {
+          final result = await pressBackAfterVisiting(tester, [
+            '/home/0',
+            '/inbox',
+            '/explore',
+          ]);
+
+          expect(result.handled, isTrue);
+          expect(result.location, equals('/inbox'));
+        },
+      );
+
+      testWidgets('resumes the notification feed the user actually opened', (
+        tester,
+      ) async {
+        final result = await pressBackAfterVisiting(tester, [
+          '/home/0',
+          '/notifications/3',
+          '/explore',
+        ]);
+
+        expect(result.handled, isTrue);
+        expect(result.location, equals('/notifications/3'));
+      });
+
+      // Proves the pop arm is reachable: GoRouter.canPop() is false at a
+      // branch root and true once a route is pushed, so a pushed hashtag grid
+      // pops back where it came from instead of replacing the stack with
+      // /explore (#3337 P2).
+      testWidgets('pops a pushed hashtag grid instead of jumping to explore', (
+        tester,
+      ) async {
+        final result = await pressBackAfterVisiting(
+          tester,
+          ['/home/0', '/explore'],
+          pushAfter: '/hashtag/dart',
+        );
+
+        expect(result.handled, isTrue);
+        // Popped back to whatever the router had underneath, rather than
+        // replacing the stack with /explore the way the pre-#3337 Android
+        // copy did.
+        expect(result.location, equals('/home/0'));
+        expect(result.location, isNot(equals('/explore')));
       });
 
       // The one case where reporting the press unhandled is correct: home,
