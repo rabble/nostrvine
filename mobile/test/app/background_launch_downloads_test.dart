@@ -1,9 +1,9 @@
-// ABOUTME: Pins the launch-time media-download suspension policy from main.dart.
+// ABOUTME: Pins the launch-time media-download suspension policy in DivineApp.
 // ABOUTME: Guards the background-launch case that lifecycle transitions miss.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart';
+import 'package:openvine/app/divine_app.dart';
 
 void main() {
   group('shouldSuspendDownloadsAtLaunch', () {

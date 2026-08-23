@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/startup/app_bootstrap.dart' as app;
 
 void main() {
   group('configureVideoPlayerCacheForStartup', () {

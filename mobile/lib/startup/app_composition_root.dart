@@ -102,7 +102,7 @@ class AppCompositionRoot extends ConsumerWidget {
         RepositoryProvider<InviteApiClient>.value(value: inviteApiClient),
       ],
       // The two app-shell badge cubits + their repository-sync listeners live
-      // in AppShellBadgeScope so main.dart and its test pump the exact same
+      // in AppShellBadgeScope so this tree and its test pump the exact same
       // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
       child: SavedSoundsScope(
         service: ref.watch(savedSoundsServiceProvider),
