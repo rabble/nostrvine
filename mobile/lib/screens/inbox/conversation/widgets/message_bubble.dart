@@ -22,6 +22,7 @@ import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/utils/emoji_only.dart';
 import 'package:openvine/utils/external_link_launcher.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
@@ -59,11 +60,12 @@ const double _videoCardRadius = 16;
 
 /// A single chat message bubble.
 ///
-/// Text bubbles — sent (right-aligned): primaryAccessible background;
-/// received (left-aligned): surfaceContainer background. Shared-video
-/// bubbles use a neutral dark frame (neutral10) in both directions so the
-/// thumbnail reads as a media card, matching the Figma
-/// `part/video thumbnail` share bubble.
+/// Text bubbles — sent (right-aligned): surfaceContainer background;
+/// received (left-aligned): mediaCard background. Shared-video bubbles
+/// use the mediaCard frame in both directions so the thumbnail reads as
+/// a media card. All three resolve through adaptive tokens, so light
+/// mode follows the palette. Matches the DM redesign's Figma
+/// `part/chat` bubbles.
 ///
 /// Grouping behaviour:
 /// - Only the first message in a group shows a timestamp (inside the bubble,
@@ -298,15 +300,13 @@ class MessageBubble extends StatelessWidget {
               // thumbnail and text sit in the same frame rhythm.
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                // Shared-video bubbles sit on a neutral frame in both
-                // directions so the thumbnail reads as a media card rather
-                // than a bright accent pill — matching the Figma
-                // `part/video thumbnail` share bubble.
-                // Text bubbles keep the sent/received accent split.
-                color: hasVideo
+                // Sent text bubbles sit on surfaceContainer, received text
+                // bubbles on the mediaCard neutral — the DM redesign's
+                // `part/chat` split. Shared-video bubbles keep the mediaCard
+                // frame in both directions so the thumbnail reads as a media
+                // card.
+                color: hasVideo || !isSent
                     ? context.vineColors.mediaCard
-                    : isSent
-                    ? VineTheme.primaryAccessible
                     : context.vineColors.surfaceContainer,
                 borderRadius: _borderRadiusFor(effectiveIsLastInGroup),
               ),
@@ -333,7 +333,6 @@ class MessageBubble extends StatelessWidget {
                       videoStableId: videoStableId,
                       authorPubkey: videoAuthorPubkey,
                       videoKind: videoKind,
-                      isSent: isSent,
                       enableTap: !isFailedOwnSend,
                       dmReplyContext: dmReplyContext,
                     ),
@@ -345,7 +344,6 @@ class MessageBubble extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8),
                         child: _MessageText(
                           message: personalMessage,
-                          isSent: isSent,
                           dmReplyContext: dmReplyContext,
                         ),
                       ),
@@ -354,7 +352,6 @@ class MessageBubble extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8),
                         child: _MessageText(
                           message: textAfterUrl,
-                          isSent: isSent,
                           dmReplyContext: dmReplyContext,
                         ),
                       ),
@@ -366,7 +363,6 @@ class MessageBubble extends StatelessWidget {
                         ),
                         child: _QuotedVideoPreview(
                           quotedVideoRef: quotedVideoRef!,
-                          isSent: isSent,
                           enableTap: !isFailedOwnSend,
                           dmReplyContext: dmReplyContext,
                         ),
@@ -374,7 +370,6 @@ class MessageBubble extends StatelessWidget {
                     if (quotedReplyText.isNotEmpty)
                       _MessageText(
                         message: quotedReplyText,
-                        isSent: isSent,
                         dmReplyContext: dmReplyContext,
                       ),
                   ],
@@ -417,14 +412,9 @@ class MessageBubble extends StatelessWidget {
 /// [LinkifiedTextSpanBuilder] so URLs / @mentions / #hashtags / nostr
 /// references inside, e.g., a `**bold**` run remain tappable.
 class _MessageText extends ConsumerStatefulWidget {
-  const _MessageText({
-    required this.message,
-    required this.isSent,
-    this.dmReplyContext,
-  });
+  const _MessageText({required this.message, this.dmReplyContext});
 
   final String message;
-  final bool isSent;
   final DmReplyContext? dmReplyContext;
 
   @override
@@ -436,28 +426,24 @@ class _MessageTextState extends ConsumerState<_MessageText> {
 
   @override
   Widget build(BuildContext context) {
-    // Sent bubbles keep the fixed primaryAccessible green in both appearance
-    // modes, so their text stays white; received bubbles sit on the themed
-    // surfaceContainer and follow the palette.
-    final defaultStyle = VineTheme.bodyMediumFont(
-      color: widget.isSent ? VineTheme.whiteText : context.vineColors.onSurface,
-    );
-    // The primary green reads cleanly on the received bubble; on the sent
-    // bubble it would sit green-on-green, so links there stay white.
-    final linkColor = widget.isSent
-        ? VineTheme.whiteText
-        : context.vineColors.accentPositive;
+    // Both bubble surfaces resolve through adaptive tokens, so the text
+    // follows the palette in both directions and appearance modes. An
+    // emoji-only message (up to three emoji, no text) renders at display
+    // size in its bubble, per the DM redesign.
+    final defaultStyle = isEmojiOnly(widget.message)
+        ? VineTheme.displaySmallFont(color: context.vineColors.onSurface)
+        : VineTheme.bodyMediumFont(color: context.vineColors.onSurface);
+    final linkColor = context.vineColors.accentPositive;
     final referenceStyle = defaultStyle.copyWith(
       color: linkColor,
       decoration: TextDecoration.underline,
       decorationColor: linkColor,
     );
-    // The sent bubble keeps the fixed green, so a translucent white wash
-    // reads there; the received bubble follows the palette and takes an
-    // on-surface wash so the code chip stays visible in both modes.
-    final codeBackground = widget.isSent
-        ? VineTheme.whiteText.withValues(alpha: 0.18)
-        : context.vineColors.onSurface.withValues(alpha: 0.10);
+    // An on-surface wash keeps the code chip visible on either bubble
+    // surface in both appearance modes.
+    final codeBackground = context.vineColors.onSurface.withValues(
+      alpha: 0.10,
+    );
     final codeStyle = VineTheme.codeFont(color: defaultStyle.color);
 
     final ast = const InlineMarkdownParser().parse(widget.message);
@@ -590,7 +576,6 @@ class _MessageTextState extends ConsumerState<_MessageText> {
 class _VideoLinkPreview extends ConsumerWidget {
   const _VideoLinkPreview({
     required this.videoStableId,
-    required this.isSent,
     required this.enableTap,
     this.authorPubkey,
     this.videoKind,
@@ -598,7 +583,6 @@ class _VideoLinkPreview extends ConsumerWidget {
   });
 
   final String videoStableId;
-  final bool isSent;
 
   /// Whether the resolved [_VideoCard] opens the reel on tap. False on a
   /// failed own send so the outer bubble's resend affordance owns the tap.
@@ -690,13 +674,11 @@ const double _quotedPlayGlyphSize = 11;
 class _QuotedVideoPreview extends ConsumerWidget {
   const _QuotedVideoPreview({
     required this.quotedVideoRef,
-    required this.isSent,
     required this.enableTap,
     this.dmReplyContext,
   });
 
   final DmSharedVideoRef quotedVideoRef;
-  final bool isSent;
 
   /// Whether the resolved [_QuotedVideoCard] opens the cited reel on tap.
   /// False on a failed own send so the outer bubble's resend tap wins.
@@ -721,11 +703,10 @@ class _QuotedVideoPreview extends ConsumerWidget {
       ),
       child: BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         builder: (context, state) => switch (state) {
-          VideoLinkPreviewLoading() => _QuotedVideoLoading(isSent: isSent),
-          VideoLinkPreviewNotFound() => _QuotedVideoUnavailable(isSent: isSent),
+          VideoLinkPreviewLoading() => const _QuotedVideoLoading(),
+          VideoLinkPreviewNotFound() => const _QuotedVideoUnavailable(),
           VideoLinkPreviewResolved(:final video) => _QuotedVideoCard(
             video: video,
-            isSent: isSent,
             enableTap: enableTap,
             dmReplyContext: dmReplyContext,
           ),
@@ -736,16 +717,14 @@ class _QuotedVideoPreview extends ConsumerWidget {
 }
 
 /// Accent-bar framed container that gives the quoted preview its WhatsApp-style
-/// "reply" affordance, readable on both sent and received bubble colors.
+/// "reply" affordance, readable on both sent and received bubble surfaces.
 class _QuotedVideoFrame extends StatelessWidget {
   const _QuotedVideoFrame({
-    required this.isSent,
     required this.child,
     this.onTap,
     this.semanticLabel,
   });
 
-  final bool isSent;
   final Widget child;
   final VoidCallback? onTap;
 
@@ -755,16 +734,12 @@ class _QuotedVideoFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isSent
-        ? VineTheme.whiteText
-        : context.vineColors.accentPositive;
+    final accent = context.vineColors.accentPositive;
     final frame = SizedBox(
       width: _quotedPreviewWidth,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: isSent
-              ? VineTheme.whiteText.withValues(alpha: 0.14)
-              : context.vineColors.onSurface.withValues(alpha: 0.07),
+          color: context.vineColors.onSurface.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(8),
           border: Border(left: BorderSide(color: accent, width: 3)),
         ),
@@ -786,26 +761,23 @@ class _QuotedVideoFrame extends StatelessWidget {
 /// card's thumbnail + two-line label layout so the fixed-width frame reads as
 /// content rather than an empty box while the cited reel resolves.
 class _QuotedVideoLoading extends StatelessWidget {
-  const _QuotedVideoLoading({required this.isSent});
-
-  final bool isSent;
+  const _QuotedVideoLoading();
 
   @override
   Widget build(BuildContext context) {
-    return _QuotedVideoFrame(
-      isSent: isSent,
+    return const _QuotedVideoFrame(
       child: Row(
         spacing: 8,
         children: [
-          const _QuotedThumbPlaceholder(),
+          _QuotedThumbPlaceholder(),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _QuotedSkeletonBar(widthFactor: 0.85, isSent: isSent),
-                const SizedBox(height: 6),
-                _QuotedSkeletonBar(widthFactor: 0.5, isSent: isSent),
+                _QuotedSkeletonBar(widthFactor: 0.85),
+                SizedBox(height: 6),
+                _QuotedSkeletonBar(widthFactor: 0.5),
               ],
             ),
           ),
@@ -834,13 +806,12 @@ class _QuotedThumbPlaceholder extends StatelessWidget {
 
 /// A single rounded skeleton bar for the quoted-preview loading state.
 ///
-/// Sent bubbles keep the fixed green, so a translucent white fill reads
-/// there; received bubbles follow the palette and take an on-surface wash.
+/// An on-surface wash reads on either bubble surface in both appearance
+/// modes.
 class _QuotedSkeletonBar extends StatelessWidget {
-  const _QuotedSkeletonBar({required this.widthFactor, required this.isSent});
+  const _QuotedSkeletonBar({required this.widthFactor});
 
   final double widthFactor;
-  final bool isSent;
 
   @override
   Widget build(BuildContext context) {
@@ -850,9 +821,7 @@ class _QuotedSkeletonBar extends StatelessWidget {
       child: Container(
         height: 10,
         decoration: BoxDecoration(
-          color: isSent
-              ? VineTheme.whiteText.withValues(alpha: 0.12)
-              : context.vineColors.onSurface.withValues(alpha: 0.12),
+          color: context.vineColors.onSurface.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(4),
         ),
       ),
@@ -865,13 +834,11 @@ class _QuotedSkeletonBar extends StatelessWidget {
 class _QuotedVideoCard extends ConsumerWidget {
   const _QuotedVideoCard({
     required this.video,
-    required this.isSent,
     required this.enableTap,
     this.dmReplyContext,
   });
 
   final VideoEvent video;
-  final bool isSent;
 
   /// When false (a failed own send) the frame is rendered with no tap
   /// recognizer and no button semantics, so the outer bubble's resend tap
@@ -890,18 +857,13 @@ class _QuotedVideoCard extends ConsumerWidget {
       AsyncError() => UserProfile.defaultDisplayNameFor(video.pubkey),
       AsyncLoading() => null,
     };
-    final primaryColor = isSent
-        ? VineTheme.whiteText
-        : context.vineColors.onSurface;
-    final secondaryColor = isSent
-        ? VineTheme.whiteText.withValues(alpha: 0.7)
-        : context.vineColors.onSurfaceMuted;
+    final primaryColor = context.vineColors.onSurface;
+    final secondaryColor = context.vineColors.onSurfaceMuted;
     final primaryLabel = hasTitle ? title : (authorName ?? '');
     final showSecondary =
         hasTitle && authorName != null && authorName.isNotEmpty;
 
     return _QuotedVideoFrame(
-      isSent: isSent,
       semanticLabel: enableTap
           ? context.l10n.dmMessageBubbleVideoReplyHint
           : null,
@@ -995,17 +957,12 @@ class _QuotedPlayBadge extends StatelessWidget {
 
 /// Compact non-tappable chip shown when the referenced video can't be resolved.
 class _QuotedVideoUnavailable extends StatelessWidget {
-  const _QuotedVideoUnavailable({required this.isSent});
-
-  final bool isSent;
+  const _QuotedVideoUnavailable();
 
   @override
   Widget build(BuildContext context) {
-    final color = isSent
-        ? VineTheme.whiteText
-        : context.vineColors.onSurfaceMuted;
+    final color = context.vineColors.onSurfaceMuted;
     return _QuotedVideoFrame(
-      isSent: isSent,
       child: Row(
         spacing: 8,
         children: [

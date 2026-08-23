@@ -57,6 +57,34 @@ void main() {
 
         expect(find.byType(DivineIcon), findsOneWidget);
       });
+
+      testWidgets('send button uses the redesign corner radius', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Hello');
+        await tester.pump();
+
+        // Nearest DecoratedBox above the icon is the send button itself
+        // (the composer pill sits further up the tree).
+        final button = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.byType(DivineIcon),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final decoration = button.decoration as BoxDecoration;
+        expect(decoration.borderRadius, BorderRadius.circular(16));
+      });
     });
 
     group('interactions', () {

@@ -79,6 +79,35 @@ Widget _routerTestApp(
   );
 }
 
+/// The text bubble's decorated container (the only BoxDecoration container
+/// in a text-only bubble).
+BoxDecoration _bubbleDecoration(WidgetTester tester) {
+  final bubble = tester.widget<Container>(
+    find.byWidgetPredicate(
+      (w) => w is Container && w.decoration is BoxDecoration,
+    ),
+  );
+  return bubble.decoration! as BoxDecoration;
+}
+
+/// Effective font size of the rendered message run matching [text].
+double? _messageFontSize(WidgetTester tester, String text) {
+  final richText = tester.widget<RichText>(
+    find.byWidgetPredicate(
+      (widget) => widget is RichText && widget.text.toPlainText() == text,
+    ),
+  );
+  double? fontSize;
+  richText.text.visitChildren((span) {
+    if (span is TextSpan && span.style?.fontSize != null) {
+      fontSize = span.style!.fontSize;
+      return false;
+    }
+    return true;
+  });
+  return fontSize;
+}
+
 TapGestureRecognizer _linkRecognizer(WidgetTester tester, String linkText) {
   final richText = tester.widget<RichText>(
     find.byWidgetPredicate(
@@ -238,6 +267,109 @@ void main() {
         final align = tester.widget<Align>(find.byType(Align));
 
         expect(align.alignment, equals(AlignmentDirectional.centerStart));
+      });
+
+      testWidgets('sent text bubble sits on surfaceContainer', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Sent message',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+
+        final decoration = _bubbleDecoration(tester);
+        expect(decoration.color, VineTheme.surfaceContainer);
+      });
+
+      testWidgets('received text bubble sits on the mediaCard neutral', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Received message',
+                timestamp: '2:30 PM',
+                isSent: false,
+              ),
+            ),
+          ),
+        );
+
+        final decoration = _bubbleDecoration(tester);
+        expect(decoration.color, VineTheme.neutral10);
+      });
+
+      testWidgets('emoji-only message renders at display size', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: '🥲',
+                timestamp: '2:30 PM',
+                isSent: false,
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          _messageFontSize(tester, '🥲'),
+          VineTheme.displaySmallFont().fontSize,
+        );
+      });
+
+      testWidgets('emoji mixed with text keeps the body size', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: '🥲 wow',
+                timestamp: '2:30 PM',
+                isSent: false,
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          _messageFontSize(tester, '🥲 wow'),
+          VineTheme.bodyMediumFont().fontSize,
+        );
+      });
+
+      testWidgets('four emoji keep the body size', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: '🥲🥲🥲🥲',
+                timestamp: '2:30 PM',
+                isSent: false,
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          _messageFontSize(tester, '🥲🥲🥲🥲'),
+          VineTheme.bodyMediumFont().fontSize,
+        );
       });
 
       testWidgets(
@@ -1009,9 +1141,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // The shared-video bubble uses VineTheme.neutral10 (#1B1C1C) — the
-        // Figma `part/video thumbnail` share frame — not the bright sent-text
-        // accent, so the thumbnail reads as a media card (isSent is true here).
+        // The shared-video bubble uses the mediaCard neutral (neutral10 in
+        // dark) — the Figma `part/video thumbnail` share frame — not the
+        // sent-text surface, so the thumbnail reads as a media card
+        // (isSent is true here).
         final bubble = tester.widget<Container>(
           find.ancestor(
             of: find.byType(VideoThumbnailWidget),
@@ -1966,7 +2099,7 @@ void main() {
         expect(style.background, isNotNull);
       });
 
-      testWidgets('received bubble uses a lighter code background', (
+      testWidgets('code background is a subtle on-surface wash', (
         tester,
       ) async {
         await tester.pumpWidget(bubble('try `x()`', isSent: false));
@@ -1976,8 +2109,8 @@ void main() {
           (span) => span.text == 'x()',
         ).single;
         final bgAlpha = codeSpan.style!.background!.color.a;
-        // Received variant uses 0.10 alpha; sent uses 0.18. Match the
-        // received bucket here.
+        // Both directions use the same 0.10-alpha on-surface wash now that
+        // sent and received bubbles share adaptive surfaces.
         expect(bgAlpha, closeTo(0.10, 0.02));
       });
 

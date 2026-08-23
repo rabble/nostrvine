@@ -122,7 +122,9 @@ class _MessageInputBarState extends State<MessageInputBar> {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: VineTheme.primary,
-                          borderRadius: BorderRadius.circular(12),
+                          // radius/20 scaled to the 40px button, per the DM
+                          // redesign's send-button spec.
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: IconButton(
                           onPressed: _handleSend,
