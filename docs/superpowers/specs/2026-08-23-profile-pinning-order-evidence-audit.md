@@ -27,7 +27,7 @@ protocol facts, engineering risks, and report recommendations.
 - [NIP-71](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/71.md)
   at the same commit.
 - `divine-mobile` `origin/main` at
-  `c6b70eb57cba372e04e9bfc978618aa826b2f629`.
+  `e358fbfb68ba3f6e8549abddfb2510087fde0ca5`.
 - `divine-web` `origin/main` at
   `bdc66278cd385df52a20576a28ee0ac05969e31a`.
 - `divine-funnelcake` `origin/main` at

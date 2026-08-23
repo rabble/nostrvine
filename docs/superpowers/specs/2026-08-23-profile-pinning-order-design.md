@@ -410,7 +410,10 @@ a 16 dp `VineTheme.primaryText` glyph inside a 24 dp circular
 `VineTheme.scrim65` background, inset 4 dp from `AlignmentDirectional.topEnd`.
 It must maintain at least 3:1 non-text contrast over thumbnail imagery and move
 to top-left in RTL layouts. Exclude the decorative glyph from semantics and add
-an enum-to-asset test plus widget and golden coverage.
+an enum-to-asset test plus widget and golden coverage. These static tokens are
+appropriate because the badge is fixed media chrome; the recovery screen must
+use adaptive `context.vineColors` surfaces and content in both light and dark
+appearances.
 
 Long-press is not the only invocation. Every eligible owner tile exposes a
 localized `CustomSemanticsAction` for Pin or Unpin, and the recovery rows expose
@@ -508,13 +511,15 @@ The report recommends coverage for:
   success alone does not prove the normal read path will surface pins.
 - Mirror every new ARB key into all locales or record it through the repository's
   explicit untranslated-debt mechanism, regenerate localization outputs, and
-  run `flutter test test/l10n/arb_consistency_test.dart` from `mobile/`.
+  run `flutter test test/l10n/arb_consistency_test.dart` from `mobile/`. Wire
+  every key through `context.l10n` in the same change and run the orphaned-ARB
+  floor check.
 - Run affected widget, BLoC, repository, route, accessibility, and icon tests,
   then `flutter analyze` from `mobile/`.
 - Because `videos_repository` behavior changes, run its full coverage workflow
   and confirm the package requirement remains satisfied.
 - Run `mobile/scripts/golden.sh verify` for the badge, recovery screen, action
-  states, RTL layout, and large accessibility text.
+  states, light and dark appearances, RTL layout, and large accessibility text.
 - If implementation creates a package, add its analyzer config, package CI
   workflow, measured coverage-floor entry, and Flutter-boundary compliance.
 - A new bundled SVG requires an App Store/Play Store build; do not plan to ship
