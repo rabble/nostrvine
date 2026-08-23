@@ -81,7 +81,11 @@ class _ProfileSetupScreenViewState
                 _isLeavingProfileSetup || !profileEditorState.hasUnsavedChanges,
             onPopInvokedWithResult: (didPop, result) {
               if (!didPop && profileEditorState.hasUnsavedChanges) {
-                _confirmLeaveWithUnsavedChanges(context, pubkey: pubkey);
+                _confirmLeaveWithUnsavedChanges(
+                  context,
+                  state: profileEditorState,
+                  pubkey: pubkey,
+                );
               }
             },
             child: Scaffold(
@@ -251,7 +255,7 @@ class _ProfileSetupScreenViewState
     required String? pubkey,
   }) {
     if (state.hasUnsavedChanges) {
-      _confirmLeaveWithUnsavedChanges(context, pubkey: pubkey);
+      _confirmLeaveWithUnsavedChanges(context, state: state, pubkey: pubkey);
       return;
     }
     _leaveProfileSetup(context);
@@ -259,17 +263,21 @@ class _ProfileSetupScreenViewState
 
   void _confirmLeaveWithUnsavedChanges(
     BuildContext context, {
+    required ProfileEditorState state,
     required String? pubkey,
   }) {
+    final canSave = pubkey != null && state.isSaveReady;
     VineBottomSheetPrompt.show<void>(
       context: context,
       sticker: .alert,
       title: context.l10n.profileSetupUnsavedChangesTitle,
       subtitle: context.l10n.profileSetupUnsavedChangesSubtitle,
-      primaryButtonText: context.l10n.profileSetupUnsavedChangesSaveButton,
+      primaryButtonText: canSave
+          ? context.l10n.profileSetupUnsavedChangesSaveButton
+          : null,
       secondaryButtonText: context.l10n.profileSetupUnsavedChangesDiscardButton,
       tertiaryButtonText: context.l10n.profileSetupUnsavedChangesKeepButton,
-      onPrimaryPressed: pubkey == null
+      onPrimaryPressed: !canSave
           ? null
           : () {
               context.pop();

@@ -894,7 +894,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Username (opsyonal)';
 
   @override
-  String get profileSetupUsernameHelper => 'Iyong unique na identity sa Divine';
+  String get profileSetupUsernameHelper =>
+      'Gumamit ng mga letra, numero, o gitling. Magiging divine.video address ang username mo. Gamitin ang display name para sa mga espasyo o simbolo.';
 
   @override
   String get profileSetupSaveButton => 'I-save';
@@ -1021,6 +1022,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Mga letra, numero, at gitling lang ang pwede';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Hindi puwedeng magsimula o magtapos sa gitling ang username';
 
   @override
   String get profileSetupUsernameInvalidLength =>

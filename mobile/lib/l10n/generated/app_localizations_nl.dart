@@ -916,7 +916,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Gebruikersnaam (optioneel)';
 
   @override
-  String get profileSetupUsernameHelper => 'Je unieke identiteit op Divine';
+  String get profileSetupUsernameHelper =>
+      'Gebruik letters, cijfers of koppeltekens. Je gebruikersnaam wordt een divine.video-adres. Gebruik je weergavenaam voor spaties of symbolen.';
 
   @override
   String get profileSetupSaveButton => 'Opslaan';
@@ -1042,6 +1043,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Alleen letters, cijfers en koppeltekens zijn toegestaan';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'De gebruikersnaam mag niet met een koppelteken beginnen of eindigen';
 
   @override
   String get profileSetupUsernameInvalidLength =>

@@ -812,7 +812,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupUsernameLabel => 'ユーザー名 (任意)';
 
   @override
-  String get profileSetupUsernameHelper => 'Divine での固有の ID だよ';
+  String get profileSetupUsernameHelper =>
+      '英数字とハイフンが使えるよ。ユーザー名は divine.video のアドレスになるよ。スペースや記号は表示名で使ってね。';
 
   @override
   String get profileSetupSaveButton => '保存';
@@ -933,6 +934,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidFormat => '使えるのは英数字とハイフンだけだよ';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'ユーザー名の最初や最後にハイフンは使えないよ';
 
   @override
   String get profileSetupUsernameInvalidLength => 'ユーザー名は3〜63文字にしてね';

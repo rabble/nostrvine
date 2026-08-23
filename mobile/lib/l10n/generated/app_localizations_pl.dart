@@ -937,7 +937,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Nazwa użytkownika (opcjonalnie)';
 
   @override
-  String get profileSetupUsernameHelper => 'Twoja unikalna tożsamość na Divine';
+  String get profileSetupUsernameHelper =>
+      'Użyj liter, cyfr lub myślników. Twoja nazwa użytkownika stanie się adresem divine.video. Spacji i symboli użyj w nazwie wyświetlanej.';
 
   @override
   String get profileSetupSaveButton => 'Zapisz';
@@ -1064,6 +1065,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Dozwolone są tylko litery, cyfry i myślniki';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Nazwa użytkownika nie może zaczynać się ani kończyć myślnikiem';
 
   @override
   String get profileSetupUsernameInvalidLength =>

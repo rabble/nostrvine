@@ -898,7 +898,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Användarnamn (valfritt)';
 
   @override
-  String get profileSetupUsernameHelper => 'Din unika identitet på Divine';
+  String get profileSetupUsernameHelper =>
+      'Använd bokstäver, siffror eller bindestreck. Ditt användarnamn blir en divine.video-adress. Använd visningsnamnet för mellanslag eller symboler.';
 
   @override
   String get profileSetupSaveButton => 'Spara';
@@ -1025,6 +1026,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Endast bokstäver, siffror och bindestreck är tillåtna';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Användarnamnet får inte börja eller sluta med ett bindestreck';
 
   @override
   String get profileSetupUsernameInvalidLength =>

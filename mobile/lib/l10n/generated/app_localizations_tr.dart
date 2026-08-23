@@ -852,7 +852,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Kullanıcı Adı (Opsiyonel)';
 
   @override
-  String get profileSetupUsernameHelper => 'Divine\'deki benzersiz kimliğin';
+  String get profileSetupUsernameHelper =>
+      'Harf, rakam veya tire kullan. Kullanıcı adın bir divine.video adresine dönüşür. Boşluk veya simgeler için görünen adını kullan.';
 
   @override
   String get profileSetupSaveButton => 'Kaydet';
@@ -978,6 +979,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Sadece harfler, rakamlar ve tire kullanılabilir';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Kullanıcı adı tireyle başlayamaz veya bitemez';
 
   @override
   String get profileSetupUsernameInvalidLength =>

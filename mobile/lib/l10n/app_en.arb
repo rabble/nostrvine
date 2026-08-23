@@ -581,7 +581,7 @@
     "description": "Label above the read-only npub row on the edit-profile screen."
   },
   "profileSetupUsernameLabel": "Username (Optional)",
-  "profileSetupUsernameHelper": "Your unique identity on Divine",
+  "profileSetupUsernameHelper": "Use letters, numbers, or hyphens. Your username becomes a divine.video address. Use your display name for spaces or symbols.",
   "profileSetupSaveButton": "Save",
   "profileSetupSavingButton": "Saving...",
   "profileSetupImageUrlTitle": "Add image URL",
@@ -681,6 +681,7 @@
   "profileSetupCheckAgain": "Check again",
   "profileSetupUsernameBurned": "This username is no longer available",
   "profileSetupUsernameInvalidFormat": "Only letters, numbers, and hyphens are allowed",
+  "profileSetupUsernameInvalidHyphenPlacement": "Username can't start or end with a hyphen",
   "profileSetupUsernameInvalidLength": "Username must be 3-63 characters",
   "profileSetupUsernameNetworkError": "Could not check availability. Please try again.",
   "profileSetupUsernameInvalidFormatGeneric": "Invalid username format",

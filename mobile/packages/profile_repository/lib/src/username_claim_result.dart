@@ -1,3 +1,5 @@
+import 'package:profile_repository/src/divine_username_policy.dart';
+
 /// Sealed class representing the result of a username claim attempt.
 sealed class UsernameClaimResult {
   /// Creates a username claim result.
@@ -28,6 +30,15 @@ class UsernameClaimReserved extends UsernameClaimResult {
 class UsernameClaimNetworkError extends UsernameClaimResult {
   /// Creates a network-error result.
   const UsernameClaimNetworkError();
+}
+
+/// Client-side username validation failed before a claim request was sent.
+class UsernameClaimInvalidFormat extends UsernameClaimResult {
+  /// Creates a validation failure with a machine-readable [failure].
+  const UsernameClaimInvalidFormat(this.failure);
+
+  /// The validation rule that rejected the username.
+  final DivineUsernameValidationFailure failure;
 }
 
 /// An error occurred during username claiming (server rejected the claim or the

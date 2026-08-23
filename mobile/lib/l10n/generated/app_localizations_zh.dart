@@ -833,7 +833,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupUsernameLabel => '用户名（可选）';
 
   @override
-  String get profileSetupUsernameHelper => '你在 Divine 上的唯一标识';
+  String get profileSetupUsernameHelper =>
+      '请使用字母、数字或连字符。你的用户名会成为 divine.video 地址。空格或符号请用在显示名称中。';
 
   @override
   String get profileSetupSaveButton => '保存';
@@ -950,6 +951,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidFormat => '仅允许字母、数字和连字符';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement => '用户名不能以连字符开头或结尾';
 
   @override
   String get profileSetupUsernameInvalidLength => '用户名长度须为 3-63 个字符';

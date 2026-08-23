@@ -31,10 +31,7 @@ void main() {
         about: 'Still making weird loops',
         picture: 'https://example.com/avatar.png',
         nip05: nip05,
-        rawData: {
-          'display_name': 'Test User',
-          'nip05': ?nip05,
-        },
+        rawData: {'display_name': 'Test User', 'nip05': ?nip05},
         createdAt: DateTime(2024),
         eventId:
             'event123456789012345678901234567890123456789012345678901234567890',
@@ -113,6 +110,29 @@ void main() {
       );
     }
 
+    testWidgets('keeps invalid username characters visible and explains them', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(profile: createProfile()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.profileSetupUsernameHelper), findsOneWidget);
+
+      final usernameField = find.byType(TextFormField).first;
+      await tester.enterText(usernameField, 'Last_Outlaw');
+      await tester.pump(const Duration(milliseconds: 600));
+
+      final field = tester.widget<TextFormField>(usernameField);
+      expect(field.controller?.text, 'last_outlaw');
+      expect(find.text(l10n.profileSetupUsernameInvalidFormat), findsOneWidget);
+      verifyNever(
+        () => mockProfileRepository.checkUsernameAvailability(
+          username: any(named: 'username'),
+          currentUserPubkey: any(named: 'currentUserPubkey'),
+        ),
+      );
+    });
+
     testWidgets('prefills an existing external NIP-05 value', (tester) async {
       const existingNip05 = 'alice@example.com';
 
@@ -169,9 +189,7 @@ void main() {
 
     testWidgets(
       'toggle off switches from external NIP-05 back to divine mode',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(
           buildSubject(profile: createProfile(nip05: 'alice@example.com')),
         );
@@ -306,9 +324,7 @@ void main() {
 
     testWidgets(
       'shows retry UI instead of spinning forever when profile load fails',
-      (
-        tester,
-      ) async {
+      (tester) async {
         when(
           () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => null);

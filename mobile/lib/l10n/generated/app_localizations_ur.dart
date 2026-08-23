@@ -915,7 +915,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupUsernameLabel => 'صارف نام (اختیاری)';
 
   @override
-  String get profileSetupUsernameHelper => 'Divine پر آپ کی منفرد شناخت';
+  String get profileSetupUsernameHelper =>
+      'حروف، ہندسے یا ہائفن استعمال کریں۔ آپ کا صارف نام divine.video پتہ بن جاتا ہے۔ خالی جگہ یا علامتوں کے لیے اپنا ظاہری نام استعمال کریں۔';
 
   @override
   String get profileSetupSaveButton => 'محفوظ کریں';
@@ -1041,6 +1042,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'صرف حروف، اعداد اور ہائفن کی اجازت ہے';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'صارف نام ہائفن سے شروع یا ختم نہیں ہو سکتا';
 
   @override
   String get profileSetupUsernameInvalidLength =>

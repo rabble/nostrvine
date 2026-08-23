@@ -924,7 +924,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Username (Optional)';
 
   @override
-  String get profileSetupUsernameHelper => 'Your unique identity on Divine';
+  String get profileSetupUsernameHelper =>
+      'Use letters, numbers, or hyphens. Your username becomes a divine.video address. Use your display name for spaces or symbols.';
 
   @override
   String get profileSetupSaveButton => 'Save';
@@ -1049,6 +1050,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Only letters, numbers, and hyphens are allowed';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Username can\'t start or end with a hyphen';
 
   @override
   String get profileSetupUsernameInvalidLength =>

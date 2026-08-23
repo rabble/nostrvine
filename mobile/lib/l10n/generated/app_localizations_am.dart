@@ -893,7 +893,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupUsernameLabel => 'የተጠቃሚ ስም (አማራጭ)';
 
   @override
-  String get profileSetupUsernameHelper => 'ልዩ ማንነትህ በDivine ላይ';
+  String get profileSetupUsernameHelper =>
+      'ፊደላትን፣ ቁጥሮችን ወይም ሀሰረ መስመሮችን ተጠቀም። የተጠቃሚ ስምህ የdivine.video አድራሻ ይሆናል። ለክፍተቶች ወይም ምልክቶች የማሳያ ስምህን ተጠቀም።';
 
   @override
   String get profileSetupSaveButton => 'አስቀምጥ';
@@ -1017,6 +1018,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'ፊደሎች፣ ቁጥሮች እና ሰረዞች ብቻ ይፈቀዳሉ።';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'የተጠቃሚ ስም በሀሰረ መስመር ሊጀምር ወይም ሊጨርስ አይችልም።';
 
   @override
   String get profileSetupUsernameInvalidLength =>

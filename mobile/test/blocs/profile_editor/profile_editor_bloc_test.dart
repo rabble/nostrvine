@@ -1587,13 +1587,7 @@ void main() {
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                equals(UsernameValidationError.invalidFormat),
-              )
-              .having(
-                (s) => s.usernameFormatMessage,
-                'usernameFormatMessage',
-                'Only letters, numbers, and hyphens are allowed '
-                    '(your username becomes username.divine.video)',
+                equals(UsernameValidationError.invalidCharacters),
               ),
         ],
       );
@@ -1614,7 +1608,7 @@ void main() {
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                equals(UsernameValidationError.invalidFormat),
+                equals(UsernameValidationError.invalidCharacters),
               ),
         ],
         verify: (_) {
@@ -1642,7 +1636,35 @@ void main() {
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                equals(UsernameValidationError.invalidFormat),
+                equals(UsernameValidationError.invalidCharacters),
+              ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'classifies a leading hyphen without relying on error copy',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('-alice')),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', '-alice')
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.invalidFormat,
+              )
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                UsernameValidationError.invalidHyphenPlacement,
               ),
         ],
         verify: (_) {
@@ -2658,11 +2680,7 @@ void main() {
                 'pendingBannerUrl',
                 'https://media.divine.video/staged-banner-hash',
               )
-              .having(
-                (s) => s.pendingBannerColor,
-                'pendingBannerColor',
-                isNull,
-              )
+              .having((s) => s.pendingBannerColor, 'pendingBannerColor', isNull)
               .having((s) => s.persistedBanner, 'persistedBanner', '0x33ccbf'),
         ],
       );
@@ -3213,11 +3231,7 @@ void main() {
               .having((s) => s.about, 'about', 'Initial bio')
               .having((s) => s.website, 'website', 'https://old.example')
               .having((s) => s.username, 'username', 'oldname')
-              .having(
-                (s) => s.pendingPictureUrl,
-                'pendingPictureUrl',
-                isNull,
-              )
+              .having((s) => s.pendingPictureUrl, 'pendingPictureUrl', isNull)
               .having((s) => s.pendingBannerUrl, 'pendingBannerUrl', isNull)
               .having((s) => s.hasUnsavedChanges, 'hasUnsavedChanges', isFalse),
         ],
@@ -3599,9 +3613,8 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfileBannerUrlSet stages the trimmed URL and drops a staged color',
         build: createBloc,
-        seed: () => const ProfileEditorState(
-          pendingBannerColor: VineTheme.vineGreen,
-        ),
+        seed: () =>
+            const ProfileEditorState(pendingBannerColor: VineTheme.vineGreen),
         act: (bloc) =>
             bloc.add(const ProfileBannerUrlSet('  $testStagedUrl  ')),
         expect: () => [

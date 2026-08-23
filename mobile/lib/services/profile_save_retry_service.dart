@@ -76,8 +76,9 @@ class ProfileSaveRetryConfig {
 /// in the future is skipped this pass.
 ///
 /// **Terminal state:** once [ProfileSaveRetryConfig.maxRetries] is reached, or
-/// the divine.video username claim fails permanently (taken/reserved), the slot
-/// is marked `failed` and left for the user to retry manually via [retryNow].
+/// the divine.video username claim fails permanently (taken, reserved, or
+/// invalid format), the slot is marked `failed` and left for the user to retry
+/// manually via [retryNow].
 class ProfileSaveRetryService {
   ProfileSaveRetryService({
     required ProfileRepository profileRepository,
@@ -330,7 +331,9 @@ class ProfileSaveRetryService {
         await _dao.markStatus(
           userPubkey: _userPubkey,
           status: PendingProfileSaveStatus.failed,
-          lastError: 'Username claim failed permanently (taken/reserved)',
+          lastError:
+              'Username claim failed permanently '
+              '(taken, reserved, or invalid format)',
           generation: generation,
           attemptAt: _now(),
         );

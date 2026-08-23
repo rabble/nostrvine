@@ -951,7 +951,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupUsernameLabel => 'Nume de utilizator (opțional)';
 
   @override
-  String get profileSetupUsernameHelper => 'Identitatea ta unică pe Divine';
+  String get profileSetupUsernameHelper =>
+      'Folosește litere, cifre sau cratime. Numele tău devine o adresă divine.video. Folosește numele afișat pentru spații sau simboluri.';
 
   @override
   String get profileSetupSaveButton => 'Salvează';
@@ -1076,6 +1077,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileSetupUsernameInvalidFormat =>
       'Sunt permise doar litere, cifre și cratime';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      'Numele nu poate începe sau termina cu o cratimă';
 
   @override
   String get profileSetupUsernameInvalidLength =>

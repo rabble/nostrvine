@@ -814,7 +814,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupUsernameLabel => '사용자명 (선택)';
 
   @override
-  String get profileSetupUsernameHelper => 'Divine에서의 고유한 당신의 이름';
+  String get profileSetupUsernameHelper =>
+      '영문, 숫자, 하이픈을 사용하세요. 사용자 이름은 divine.video 주소가 됩니다. 공백이나 기호는 표시 이름에 사용하세요.';
 
   @override
   String get profileSetupSaveButton => '저장';
@@ -936,6 +937,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidFormat => '문자, 숫자, 하이픈만 쓸 수 있어요';
+
+  @override
+  String get profileSetupUsernameInvalidHyphenPlacement =>
+      '사용자 이름은 하이픈으로 시작하거나 끝날 수 없어요';
 
   @override
   String get profileSetupUsernameInvalidLength => '사용자명은 3~63자 사이여야 해요';
