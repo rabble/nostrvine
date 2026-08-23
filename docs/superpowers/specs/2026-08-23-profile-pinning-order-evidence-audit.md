@@ -66,9 +66,11 @@ risks:
 This makes kind `10001` plus kind-`34236` `a` tags an existing Divine
 convention. It does not make that combination standard NIP-51 behavior.
 
-The current Funnelcake code policy auto-allows the NIP-01 replaceable range
-`10000..19999` and addressable range `30000..39999` unless a NIP-86
-`disallowkind` record explicitly blocks the kind. That policy landed in commit
+The current Funnelcake code policy automatically passes the kind-allowlist gate
+for the NIP-01 replaceable range `10000..19999` and addressable range
+`30000..39999` unless a NIP-86 `disallowkind` record explicitly blocks the kind.
+Signature, timestamp, size, moderation, schema, rate-limit, and write-queue
+checks can still reject an event. The kind policy landed in commit
 [`7dcb41c6`](https://github.com/divinevideo/divine-funnelcake/commit/7dcb41c6e5e3f112ff699901743fbe5291c7e647)
 on 2026-07-29. An older Divine Web issue reporting that kind `10001` was
 rejected by `relay.divine.video` predates this policy and is not a description
@@ -103,13 +105,13 @@ enforce these validity rules.
 ### NIP-51 recommends chronological storage order
 
 NIP-51 says clients SHOULD append new list items so the stored order remains
-chronological. The approved mobile design instead prepends and displays newest
+chronological. The recommended mobile design instead prepends and displays newest
 pin first. That is a deliberate SHOULD-level interoperability deviation, not a
-claim about standard NIP-51 behavior. Divine Web currently appends. Both clients
-preserve stored tag order, but render different subsets; among coordinates both
-display, order follows the stored sequence. A pin action inserts at opposite
-ends. A Web-written or mixed-client list has no per-item timestamps, so mobile
-cannot reconstruct a globally newest-first chronology.
+claim about standard NIP-51 behavior. Divine Web currently appends and preserves
+stored tag order. The recommended Mobile design would preserve order but render
+a different subset and insert at the opposite end. A Web-written or
+mixed-client list has no per-item timestamps, so Mobile cannot reconstruct a
+globally newest-first chronology.
 
 ### Replaceable winners need a complete comparator
 
@@ -222,7 +224,7 @@ updates.
     publish competing replacements. New events normally need
     `max(now, selectedBase.createdAt + 1,
     lastLocallyIssuedOrAcceptedCreatedAt + 1)` for same-process ordering, because
-    the next configured-relay read may not return the process's last accepted
+    the next network-participating read may not return the process's last accepted
     write. The repository must fail or defer safely if that timestamp exceeds
     the relay's accepted future-skew boundary. Cross-device writes still follow
     NIP-01 replaceable-winner behavior.
@@ -239,21 +241,88 @@ updates.
 15. **Mobile has no sanctioned pin glyph yet.** `DivineIcon` accepts only
     `DivineIconName`, whose current enum has no pin entry, and Mobile has no
     Phosphor dependency or pin asset. Reusing Web's Phosphor `PushPin` visual
-    requires an approved SVG asset, enum/mapping entry, and mapping test; it
-    cannot be requested as though the glyph already exists
+    requires adding the selected SVG asset, enum/mapping entry, and mapping
+    test; it cannot be requested as though the glyph already exists
     (`mobile/packages/divine_ui/lib/src/icon/divine_icon.dart:9-256`).
+16. **Cache participation cannot satisfy a destructive read gate.**
+    `queryEventsDetailed` defaults to all relay types, and the SDK counts a
+    cache relay as a participant. A full-settlement result can therefore lack
+    any network participant. Mutation reads must use
+    `relayTypes: RelayType.network`, `requireAllRelaysSettled: true`, and refuse
+    both `timedOut` and `noRelays`. DAO rows may add candidates but cannot
+    satisfy network participation
+    (`nostr_client.dart:833-1001`,
+    `mobile/packages/nostr_sdk/lib/relay/relay_pool.dart:2054-2168`,
+    `mobile/packages/nostr_sdk/lib/relay/relay_type.dart:13-21`).
+17. **The base feed can reintroduce a hidden canonical version.** Current
+    profile merging keys through helpers based on `stableId` and compares
+    `createdAt`, which may come from `published_at`. An older visible copy can
+    survive in the base feed even after the canonical pinned version is hidden.
+    Suppress every base representation of an active candidate coordinate, not
+    only Funnelcake fallback
+    (`mobile/packages/videos_repository/lib/src/profile_video_merge.dart:11-35`,
+    `mobile/packages/models/lib/src/video_event.dart:1085-1097,1370-1375`).
+18. **Signing belongs to the configured signer.** The repository may validate
+    and construct the event and orchestrate publication, but `NostrClient` and
+    the configured signer own signing. Re-check current-account/owner equality
+    immediately before publish and never pass private key material into the
+    repository (`nostr_client.dart:470,661-667,765-773`).
+19. **Empty and inconclusive mutation reads are different states.** A genuinely
+    empty network-participating settled result can start from empty tags and
+    content. Timeout, no participating relay, disposal, or incomplete
+    settlement must refuse mutation rather than infer an empty list
+    (`nostr_client.dart:833-1001`).
+20. **Existing identity helpers are unsafe for exact pin coordinates.**
+    `stableId` can omit the author, while profile-feed helpers lowercase the
+    entire `d` value. Pin identity needs a dedicated type that requires the
+    canonical lowercase pubkey and preserves case- and colon-sensitive `d`
+    data byte-for-byte
+    (`profile_video_merge.dart:11-16`,
+    `video_event.dart:1085-1088,1359-1375`).
+21. **Separate query and subscription setup creates a lost-update window, and
+    current `subscribe()` has no readiness contract.** It returns synchronously
+    while SDK relay setup continues asynchronously and exposes no participant
+    set. Simply calling subscribe first cannot prove that every query relay was
+    covered. Add an awaited combined network snapshot/live primitive that
+    attaches buffering before send, reports participating relays, settles the
+    initial snapshot across that same set, and then remains live. If an event
+    becomes the winner before publication, restart reconciliation rather than
+    knowingly signing against a stale base
+    (`nostr_client.dart:873-884,1180-1294`,
+    `mobile/packages/nostr_sdk/lib/relay/relay_pool.dart:1834-1962`).
+22. **The last accepted revision is content state, not only a timestamp floor.**
+    Funnelcake can acknowledge before storage, so an immediate network read may
+    return the prior revision. The repository must retain the complete last
+    locally accepted event as a base candidate; otherwise a second mutation can
+    use a higher timestamp while still losing the first mutation's tags or
+    opaque content (`nostr_client.dart:724-830`; current Funnelcake
+    `crates/relay/src/relay.rs:1912-1915,2581-2594,2787`).
+23. **Current routing cannot prove fullscreen launch identity.** Profile grid
+    routes primarily carry index or event/stable IDs, and current fullscreen
+    reconciliation can replace the seed as soon as the target merely appears.
+    Exact coordinate plus a sequence generation must travel in route state;
+    the launch prefix needs an explicit session lifetime
+    (`mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart:119-142`,
+    `mobile/lib/router/pooled_fullscreen_feed_route.dart:13-69`,
+    `mobile/lib/router/profile_screen_router.dart:566-578`,
+    `mobile/lib/widgets/profile/profile_video_feed_view.dart:113-153`).
+24. **Code policy is not a release compatibility check.** The audit did not
+    verify production `disallowed_kinds` or every target environment's normal
+    read/write path. Release requires a disposable kind-`10001` publish and
+    readback through each target Divine environment; a minority-relay `OK` is
+    insufficient evidence that ordinary Mobile reads will surface the list.
 
-## Approved mobile decisions and known divergence
+## Recommended mobile decisions and known divergence
 
-The consolidated report retains these approved mobile product choices:
+The consolidated report recommends these Mobile product choices:
 
 - mobile prepends new pins and displays newest pin first;
 - mobile caps creator-managed pins at 12;
 - mobile manages and displays only owner-authored video coordinates;
 - foreign and otherwise unrelated tags remain preserved as unrelated data.
 
-The evidence audit does not revoke those choices. It records their consequences:
-Divine Web currently appends, limits adding at three, and displays
+The audit records their consequences: Divine Web currently appends, limits
+adding at three, and displays
 foreign-authored coordinates. Web will read more than three but refuses another
 addition whenever the list already contains at least three video tags. Any Web
 convergence is separate cross-repo work, not a hidden prerequisite of this
@@ -263,11 +332,12 @@ mobile task.
 
 ### 1. Web-written or mixed-client order
 
-Both clients preserve stored tag order for the coordinate subset they display,
-but mobile prepends while Web appends. Without per-item timestamps, mobile
-cannot infer a global pin chronology for an existing Web-written or mixed-client
-sequence. Treat stored order as authoritative and guarantee only that a Mobile
-Pin action moves that video to the front.
+Web preserves stored tag order for the coordinate subset it displays. The
+recommended Mobile design would also preserve stored order, but Mobile prepends
+while Web appends. Without per-item timestamps, Mobile cannot infer a global pin
+chronology for an existing Web-written or mixed-client sequence. Treat stored
+order as authoritative and guarantee only that a Mobile Pin action moves that
+video to the front.
 
 ### 2. Cap counting and imported lists over 12
 
@@ -275,6 +345,12 @@ Open Nostr data can exceed a local creator cap. Count every unique valid
 owner-authored stored reference, including unresolved or hidden references.
 Display from the first 12 candidates, preserve the complete event, permit
 Unpin, and reject new Pin actions while the managed count is at or above 12.
+Because invisible rows otherwise create a permanent cap lockout, an owner-only
+recovery screen must list every managed coordinate independently of resolution
+and allow exact removal without exposing or truncating the raw coordinate. A
+resolved-but-hidden entry must use the same neutral placeholder as an unresolved
+entry and expose no filtered metadata. Status is two-dimensional: visibility
+takes precedence, then active-candidate versus overflow position.
 Only visible videos resolved from those first 12 candidates are active displayed
 pins and receive the badge, pin-rank semantics, and pinned-first position. A
 stored overflow member can appear later through the base feed without the badge
@@ -290,6 +366,29 @@ and count. Do not guess or publish from an unknown base.
 Omit Pin for a legacy/non-addressable video. Eligibility must use the source
 event kind plus a nonempty `d` value, not `addressableId != null` alone.
 
+### 5. Explicit actions and uncertain outcomes
+
+Pin and Unpin remain idempotent intents after reconciliation; stale UI must
+never turn one into the other. Definite failure may offer Retry, but timeout or
+a lost acknowledgement offers Check again. Both actions perform a fresh
+network-participating read before any publish, and an already-satisfied intent
+finishes as a no-op.
+
+### 6. Fullscreen session order
+
+Freeze the grid's published-video launch snapshot for the fullscreen session.
+Append unseen base pages without re-sorting the prefix, update canonical
+metadata in place, and defer pin-order revalidation until the next grid or
+fullscreen opening. Carry exact coordinate and sequence generation in in-app
+route state; keep index-only URL restoration explicitly best-effort.
+
+### 7. Accessible invocation and semantic position
+
+Expose Pin/Unpin as custom semantics actions in addition to long-press. Define
+pin rank as rank among visible active pins and grid position as the actual
+rendered position, including owner-only upload placeholders. Preserve focus by
+exact coordinate and announce a material revalidation reorder once.
+
 ## Implementation choices, not product facts
 
 The following may be reasonable, but they must be justified as implementation
@@ -302,35 +401,37 @@ facts:
 - preserving extra fields on surviving managed tags;
 - serializing mutations per owner;
 - the exact cache backend, schema, expiry, and corruption behavior;
-- the exact mutation result enums and retry state shape;
-- exact semantics wording and whether it includes overall position, pin rank,
-  or total pin count.
+- the exact mutation result enums and internal retry state shape.
 
 The Phosphor `PushPin` glyph has a current Divine Web precedent. Reusing it in
-mobile is a cross-client design-system proposal, not a Nostr requirement.
+Mobile is the report's cross-client design recommendation, not a Nostr
+requirement; implementation still has to add and verify the bundled asset.
 
 ## Evidence matrix
 
 | Claim | Evidence | Verdict | Required treatment |
 |---|---|---|---|
 | Kind `10001` standardizes pinned kind-1 notes with `e` tags | [NIP-51 lines 19-29](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md#L19-L29) | Verified NIP fact | Describe video `a` tags as a Divine extension. |
-| NIP-51 recommends append order | [NIP-51 lines 9-13](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md#L9-L13) | Verified SHOULD-level recommendation | Keep approved mobile prepend, but document the deviation. |
+| NIP-51 recommends append order | [NIP-51 lines 9-13](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md#L9-L13) | Verified SHOULD-level recommendation | Keep the recommended Mobile prepend, but document the deviation. |
 | Kind `34236` is addressable short video | [NIP-71 lines 23-32](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/71.md#L23-L32) | Verified NIP fact | Use full `a` coordinates; qualify stability by unchanged author and `d`. |
-| Equal-timestamp replaceable winner uses lower event ID | [NIP-01 lines 97-103](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L97-L103) | Verified SHOULD-level rule | Fix limiting/selection in reads and subscriptions. |
+| Equal-timestamp replaceable winner uses lower event ID | [NIP-01 lines 97-103](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L97-L103) | Verified NIP-01 tie-break convention | Make it Mobile's mandatory internal comparator for deterministic behavior. |
 | Divine already uses kind `10001` plus video `a` tags | Divine Web commit [`0058e2f5`](https://github.com/divinevideo/divine-web/commit/0058e2f51091501e0cf04fe3018f05fff0460eb9) | Verified Divine precedent | Cite it; do not call it standard NIP-51. |
-| Current relay code accepts replaceable-range kinds automatically | Funnelcake commit [`7dcb41c6`](https://github.com/divinevideo/divine-funnelcake/commit/7dcb41c6e5e3f112ff699901743fbe5291c7e647), `crates/relay/src/relay.rs:2159-2208` | Verified code policy, not production state | Qualify explicit disallow override. |
+| Replaceable-range kinds automatically pass Funnelcake's kind-allowlist gate | Funnelcake commit [`7dcb41c6`](https://github.com/divinevideo/divine-funnelcake/commit/7dcb41c6e5e3f112ff699901743fbe5291c7e647), `crates/relay/src/relay.rs:1950-2015,2159-2225` | Verified gate policy, not production state or final admission | Qualify explicit disallow and every later admission check. |
 | `limit: 1` can hide the expected tie winner | `mobile/packages/nostr_client/lib/src/nostr_client.dart:1865-1912` | Verified current defect | Query without the limit or fix the client comparator first. |
 | Cubit updates can drop the pin overlay or corrupt pagination boundaries | `mobile/lib/blocs/profile_feed/profile_feed_cubit.dart:204-207,255-258,299-302,404-460,510-516,536-538,576-579,631-633,648-659,678,727-744`; `mobile/packages/models/lib/src/video_event.dart:1090-1097` | Verified current integration risk | Centralize base-to-displayed derivation for all emits/comparisons; use normally filtered base counts and the oldest raw `nostrCreatedAt` cursor. |
 | Addressable resolution is arrival-order dependent and can reintroduce a filtered winner through fallback | `mobile/packages/videos_repository/lib/src/videos_repository.dart:1529-1629` | Verified current defect | Canonicalize raw candidates across sources before applying visibility once, or separately track raw-resolved coordinates so fallback cannot replace a hidden canonical winner. |
 | Grid tap navigation can discard the sequence actually rendered | `mobile/lib/widgets/profile/profile_videos_grid.dart:249-252,315-339,425-430` | Verified current integration risk | Use the rendered published list for index, prefetch, and fullscreen seed, and thread the exact addressable coordinate. |
-| Mobile has no sanctioned pin icon | `mobile/packages/divine_ui/lib/src/icon/divine_icon.dart:9-256` and `mobile/assets/icon/` at pinned `origin/main` | Verified current design-system gap | Add an approved SVG asset, `DivineIconName` mapping, and mapping test rather than assuming a Phosphor dependency. |
+| Mobile has no sanctioned pin icon | `mobile/packages/divine_ui/lib/src/icon/divine_icon.dart:9-256` and `mobile/assets/icon/` at pinned `origin/main` | Verified current design-system gap | Add the selected Phosphor SVG asset, `DivineIconName` mapping, and mapping test rather than assuming a dependency. |
 | Snackbar-only announcement violates repo policy | `.claude/rules/accessibility.md:83-111` | Verified policy conflict | Use `SemanticsService.sendAnnouncement` and test it. |
 | `e` identifies an event and `a` identifies an addressable coordinate | [NIP-01 lines 78-82](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L78-L82) | Verified NIP fact | Store full kind/pubkey/`d` coordinates for replaceable videos. |
 | NIP-51 public items live in tags and private items may live in encrypted `content` | [NIP-51 lines 9-13](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/51.md#L9-L13) | Verified NIP fact | Preserve selected-base unrelated tags and `content` byte-for-byte. |
 | `OK true` means accepted by that relay, not durable everywhere | [NIP-01 lines 156-168](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L156-L168), `mobile/packages/nostr_client/lib/src/nostr_client.dart:742-761` | Verified protocol/client fact | Gate local progress on `acceptedByAny`; never tell the user it is durably saved. |
-| Full settlement covers the configured query fan-out, not every relay | `mobile/packages/nostr_client/lib/src/nostr_client.dart:847-872` | Verified current client scope | Say “fully settled configured-relay read,” not “authoritative global read.” |
+| Default full settlement can count cache participation, while current subscribe exposes no readiness/participants | `mobile/packages/nostr_client/lib/src/nostr_client.dart:833-1001,1180-1294`; `mobile/packages/nostr_sdk/lib/relay/relay_pool.dart:1834-1962,2054-2168`; `relay_type.dart:13-21` | Verified current client limitation | Add an awaited combined snapshot/live primitive over `RelayType.network`; require same-set settlement and refuse timeout/no participants. Cache may add candidates but cannot satisfy the gate. |
 | Same-second replacement writes need monotonic time, subject to relay future-skew rejection | [NIP-01 lines 97-103](https://github.com/nostr-protocol/nips/blob/656cecc7c0a815b6a2b218d3b5d6f078b3f4dbab/01.md#L97-L103), `mobile/lib/utils/nostr_replacement_timestamp.dart:7-16`, current Funnelcake `crates/relay/src/relay.rs:1989` | Verified integration constraint | Floor against the selected base and the process-local last issued/accepted time; otherwise fail/defer safely. |
 | Web pin mutations erase opaque `content` | Divine Web `src/hooks/usePinnedVideos.ts:101-108,143-152` at pinned `origin/main` | Verified current Web defect | Do not copy this behavior into mobile; track Web correction separately. |
 | Web kind-10001 reads limit before applying the ID tie-break | Divine Web `src/hooks/usePinnedVideos.ts:41-51,73-84,131-141` at pinned `origin/main` | Verified current Web defect | Record cross-client divergence; Web correction is separate scope. |
 | Filter changes do not re-resolve omitted pins | `mobile/lib/blocs/profile_feed/profile_feed_cubit.dart:671-678`, `mobile/packages/videos_repository/lib/src/videos_repository.dart:1688-1730` | Verified current integration risk | Re-resolve on filter-policy changes or retain canonical raw winners below visibility filtering. |
 | `addressableId` alone does not prove source kind 34236 | `mobile/packages/models/lib/src/video_event.dart:528-531,812,1359-1368` | Verified model limitation | Check `eventKind` and nonempty `d` for pin eligibility. |
+| Existing profile identity helpers alter exact coordinate semantics | `mobile/packages/videos_repository/lib/src/profile_video_merge.dart:11-16`; `mobile/packages/models/lib/src/video_event.dart:1085-1088,1359-1375` | Verified current integration risk | Use a dedicated coordinate type; require canonical lowercase pubkey and preserve `d` byte-for-byte. |
+| Invisible stored members can permanently consume the cap | Prior design ordering/cap rules plus tile-only ordinary Unpin entry point | Verified prior-draft product deadlock | Require recovery removal independent of video resolution and test 12 unresolved members. |
+| A last accepted event may not appear in an immediate read | `mobile/packages/nostr_client/lib/src/nostr_client.dart:724-830`; current Funnelcake enqueue/OK/storage paths | Verified integration constraint | Retain the complete accepted revision as a base candidate, not only its timestamp. |
