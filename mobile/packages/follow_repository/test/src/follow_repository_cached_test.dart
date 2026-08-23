@@ -14,6 +14,20 @@ import '../../../cache_sync/test/fake_cache_dao.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+class _RecordingCacheDao extends FakeCacheDao {
+  Duration? lastTtl;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    lastTtl = ttl;
+    await super.write(key: key, payload: payload, ttl: ttl);
+  }
+}
+
 /// Subclass that overrides the data-source methods wrapped by the cached
 /// watchers, so tests can drive deterministic input without standing up a
 /// full Nostr stack.
@@ -109,17 +123,32 @@ class _TestableFollowRepository extends FollowRepository {
 }
 
 void main() {
-  late FakeCacheDao dao;
+  late _RecordingCacheDao dao;
   late _MockNostrClient mockNostrClient;
 
   setUp(() async {
-    dao = FakeCacheDao();
+    dao = _RecordingCacheDao();
     await CacheSync.init(dao: dao);
     mockNostrClient = _MockNostrClient();
     when(() => mockNostrClient.publicKey).thenReturn('current-user');
   });
 
   group('FollowRepository.watchMyFollowersCached', () {
+    test('writes the cache with the profile-list TTL', () async {
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowersResult: const ['a'],
+        myFollowerCountResult: 1,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
+      );
+
+      await repo.watchMyFollowersCached().drain<void>();
+
+      expect(dao.lastTtl, const Duration(seconds: 30));
+    });
+
     test('emits live result when cache is empty', () async {
       final repo = _TestableFollowRepository(
         nostrClient: mockNostrClient,
@@ -246,6 +275,22 @@ void main() {
   });
 
   group('FollowRepository.watchMyFollowingCached', () {
+    test('writes the cache with the profile-list TTL', () async {
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: ['network'],
+          count: 1,
+        ),
+      );
+
+      await repo.watchMyFollowingCached().drain<void>();
+
+      expect(dao.lastTtl, const Duration(seconds: 30));
+    });
+
     test('emits live result from a fresh getOthersFollowing fetch, '
         'NOT from the watchMyFollowing BehaviorSubject replay', () async {
       final repo = _TestableFollowRepository(
