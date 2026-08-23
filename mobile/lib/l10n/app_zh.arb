@@ -3750,10 +3750,8 @@
   "inboxRequestsMarkAllRead": "将所有请求标为已读",
   "inboxRequestsRemoveAll": "移除所有请求",
   "messageRequestDeclineAndRemoveButton": "拒绝并移除",
-  "messageRequestBlockButton": "屏蔽",
   "messageRequestDeclinedSnackbar": "已拒绝 {displayName} 的请求",
   "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
-  "messageRequestBlockConfirmBody": "这会移除该请求，并让对方的消息不再进入你的收件箱。他们发来的内容仍可在已屏蔽中查看。",
   "messageRequestLoadFailed": "无法加载此请求。",
   "messageRequestFollowersCount": "{count} 位粉丝",
   "@messageRequestFollowersCount": {

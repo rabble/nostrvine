@@ -1,8 +1,7 @@
-// ABOUTME: Cubit for message request actions (decline, block, mark-all-read,
+// ABOUTME: Cubit for message request actions (decline, mark-all-read,
 // ABOUTME: remove-all). Used by the Message Requests inbox and preview screens.
 
 import 'package:bloc/bloc.dart';
-import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 
@@ -24,15 +23,11 @@ class MessageRequestActionsState extends Equatable {
 }
 
 class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
-  MessageRequestActionsCubit({
-    required DmRepository dmRepository,
-    required ContentBlocklistRepository blocklistRepository,
-  }) : _dmRepository = dmRepository,
-       _blocklistRepository = blocklistRepository,
-       super(const MessageRequestActionsState());
+  MessageRequestActionsCubit({required DmRepository dmRepository})
+    : _dmRepository = dmRepository,
+      super(const MessageRequestActionsState());
 
   final DmRepository _dmRepository;
-  final ContentBlocklistRepository _blocklistRepository;
 
   /// Decline and remove a single message request.
   ///
@@ -51,43 +46,6 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
       return true;
     } catch (e, stackTrace) {
       // Drift IO failures are expected. Per
-      // .claude/rules/error_handling.md they are NOT Reportable.
-      addError(e, stackTrace);
-      if (!isClosed) {
-        emit(state.copyWith(status: MessageRequestActionsStatus.error));
-      }
-      return false;
-    }
-  }
-
-  /// Block the sender of a request, then remove the conversation.
-  ///
-  /// Blocking runs through the same blocklist the conversation-list filter
-  /// reads, so the request drops out of the inbox; removal clears the local
-  /// history behind an owner-scoped tombstone. A later message from the
-  /// blocked sender is still received and retained (readable behind the
-  /// Blocked filter, per #7026) but the filter keeps it out of the inbox.
-  ///
-  /// Returns `true` when both the block and removal completed, `false` when
-  /// either threw. As with [declineRequest], the caller must consume this
-  /// result rather than reading [state] after the await.
-  Future<bool> blockAndRemoveRequest(
-    String conversationId,
-    String pubkey,
-  ) async {
-    emit(state.copyWith(status: MessageRequestActionsStatus.processing));
-    try {
-      await _blocklistRepository.blockUser(
-        pubkey,
-        ourPubkey: _dmRepository.userPubkey,
-      );
-      await _dmRepository.removeConversation(conversationId);
-      if (!isClosed) {
-        emit(state.copyWith(status: MessageRequestActionsStatus.success));
-      }
-      return true;
-    } catch (e, stackTrace) {
-      // Blocklist / Drift IO failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
       if (!isClosed) {

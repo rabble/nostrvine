@@ -4369,7 +4369,6 @@
   "inboxRequestsMarkAllRead": "Mark all requests as read",
   "inboxRequestsRemoveAll": "Remove all requests",
   "messageRequestDeclineAndRemoveButton": "Decline and remove",
-  "messageRequestBlockButton": "Block",
   "messageRequestDeclinedSnackbar": "Declined {displayName}'s request",
   "@messageRequestDeclinedSnackbar": {
     "placeholders": {
@@ -4377,10 +4376,6 @@
         "type": "String"
       }
     }
-  },
-  "messageRequestBlockConfirmBody": "This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.",
-  "@messageRequestBlockConfirmBody": {
-    "description": "Body of the confirmation shown before blocking the sender of a message request (#7881). The title reuses profileBlockTitle. Blocking does not stop the sender from sending — their messages are still received and retained, the inbox filter just hides them — so this copy must promise inbox hiding, not delivery prevention, and must say the messages stay readable under the Blocked filter (#7026)."
   },
   "messageRequestLoadFailed": "Couldn't load this request.",
   "@messageRequestLoadFailed": {

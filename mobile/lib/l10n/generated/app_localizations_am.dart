@@ -6603,16 +6603,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'አትቀበል እና አስወግድ';
 
   @override
-  String get messageRequestBlockButton => 'አግድ';
-
-  @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'የ$displayName ጥያቄ ውድቅ ተደርጓል';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'ይህ ጥያቄውን ያስወግዳል፣ መልእክቶቻቸውም ወደ መልእክት ሳጥንህ አይገቡም። የሚልኩት ሁሉ አሁንም በታገዱ ክፍል ውስጥ ይነበባል።';
 
   @override
   String get messageRequestLoadFailed => 'ይህን ጥያቄ መጫን አልተቻለም።';

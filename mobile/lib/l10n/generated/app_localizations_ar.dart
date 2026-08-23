@@ -6701,16 +6701,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'رفض وإزالة';
 
   @override
-  String get messageRequestBlockButton => 'حظر';
-
-  @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'تم رفض طلب $displayName';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'يزيل هذا الطلب ويمنع رسائلهم من الوصول إلى صندوق الوارد. ويبقى كل ما يرسلونه قابلاً للقراءة ضمن قسم محظور.';
 
   @override
   String get messageRequestLoadFailed => 'تعذّر تحميل هذا الطلب.';
