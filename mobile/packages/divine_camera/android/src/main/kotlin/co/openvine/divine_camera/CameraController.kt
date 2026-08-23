@@ -16,6 +16,7 @@ import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -877,6 +878,7 @@ class CameraController(
      * target is a bounded overshoot for that tier (never above the requested
      * one) — still far below the uncapped device default, so acceptable.
      */
+    @SuppressLint("RestrictedApi")
     private fun buildRecorder(aspectRatio: Int): Recorder = Recorder.Builder()
         .setQualitySelector(
             QualitySelector.from(
@@ -887,7 +889,55 @@ class CameraController(
         .setAspectRatio(aspectRatio)
         .setExecutor(cameraExecutor)
         .setTargetVideoEncodingBitRate(videoEncodingBitRate(videoQuality))
+        // setAudioSource is @RestrictTo(LIBRARY): CameraX 1.5.3 publishes no
+        // supported way to choose the source, and no way at all to route
+        // capture to a specific AudioDeviceInfo. Pinned by
+        // AudioInputSourceTest so a CameraX bump that drops it fails the build.
+        .setAudioSource(resolveAudioSource())
         .build()
+
+    /**
+     * Resolves the audio source for a new Recorder from the input devices
+     * connected right now. Falls back to the CameraX default when the
+     * AudioManager is unavailable.
+     *
+     * Evaluated per Recorder build, so initial bind and both lens switches pick
+     * up a microphone attached since the last build; a mic plugged in while the
+     * camera stays bound is picked up on the next switch or re-entry.
+     *
+     * Logs the decision and the inputs it was made from either way. A report
+     * that the external mic was still ignored is only actionable if it says
+     * which inputs the device reported, and a device naming its mic something
+     * we do not route on leaves no other trace (#6171).
+     */
+    private fun resolveAudioSource(): Int {
+        val audioManager =
+            context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                ?: run {
+                    DivineCameraLog.warning(
+                        "AudioManager unavailable — camera-default audio source",
+                        name = "DivineCamera.Audio"
+                    )
+                    return AudioSpec.SOURCE_AUTO
+                }
+        val types = audioManager
+            .getDevices(AudioManager.GET_DEVICES_INPUTS)
+            .map { it.type }
+            .toIntArray()
+        val source = audioSourceForInputDeviceTypes(types)
+        val inputs = types
+            .joinToString(", ") { audioInputTypeName(it) }
+            .ifEmpty { "none" }
+        DivineCameraLog.info(
+            if (source == AudioSpec.SOURCE_AUTO) {
+                "Audio source: camera default (inputs: $inputs)"
+            } else {
+                "Audio source: MIC, external input attached (inputs: $inputs)"
+            },
+            name = "DivineCamera.Audio"
+        )
+        return source
+    }
 
     /**
      * Starts the camera with preview and video capture use cases.
