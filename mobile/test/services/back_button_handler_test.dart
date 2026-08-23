@@ -149,12 +149,13 @@ void main() {
         expect(result.location, equals('/home/0'));
       });
 
-      // Pins today's behaviour, which is not obviously the intended one:
-      // LastTabPosition records `ctx.videoIndex ?? 0`, so merely opening the
-      // Explore *grid* records index 0 and restoring the tab lands on the
-      // video feed rather than the grid. Identical on origin/main, whose back
-      // path resolves the same getPosition value through
-      // ExploreScreen.pathForIndex — out of scope here, but real.
+      // Pins today's behaviour, which is not the intended one — tracked in
+      // #8084. LastTabPosition records `ctx.videoIndex ?? 0`, so merely
+      // opening the Explore *grid* records index 0 and restoring the tab
+      // lands on the video feed rather than the grid. Identical on
+      // origin/main, whose back path resolves the same getPosition value
+      // through ExploreScreen.pathForIndex, so this PR does not change it.
+      // Fixing #8084 should flip this expectation to '/explore'.
       testWidgets('returns to the previously visited tab', (tester) async {
         final result = await pressBackAfterVisiting(tester, [
           '/home/0',
