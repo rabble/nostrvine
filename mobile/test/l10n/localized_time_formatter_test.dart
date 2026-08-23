@@ -252,7 +252,7 @@ void main() {
     });
 
     group('formatConversationTimestamp', () {
-      testWidgets('returns localized "now" for <1 minute', (tester) async {
+      testWidgets('floors <1 minute at "1m" instead of "now"', (tester) async {
         final en = await _loadL10n(tester, const Locale('en'));
         final de = await _loadL10n(tester, const Locale('de'));
         final ts = _unixSecondsAgo(const Duration(seconds: 10));
@@ -260,11 +260,11 @@ void main() {
         _withFixedClock(() {
           expect(
             LocalizedTimeFormatter.formatConversationTimestamp(en, ts),
-            equals('now'),
+            equals('1m'),
           );
           expect(
             LocalizedTimeFormatter.formatConversationTimestamp(de, ts),
-            equals('jetzt'),
+            equals('1 Min'),
           );
         });
       });
@@ -294,7 +294,9 @@ void main() {
         expect(result, endsWith('h'));
       });
 
-      testWidgets('returns "Yesterday" for previous day', (tester) async {
+      testWidgets('returns abbreviated weekday for the previous day', (
+        tester,
+      ) async {
         final en = await _loadL10n(tester, const Locale('en'));
         final de = await _loadL10n(tester, const Locale('de'));
         final now = _fixedNow;
@@ -303,12 +305,75 @@ void main() {
 
         _withFixedClock(() {
           expect(
-            LocalizedTimeFormatter.formatConversationTimestamp(en, ts),
-            equals('Yesterday'),
+            LocalizedTimeFormatter.formatConversationTimestamp(
+              en,
+              ts,
+              locale: 'en',
+            ),
+            equals(DateFormat.E('en').format(yesterday)),
           );
           expect(
-            LocalizedTimeFormatter.formatConversationTimestamp(de, ts),
-            equals('Gestern'),
+            LocalizedTimeFormatter.formatConversationTimestamp(
+              de,
+              ts,
+              locale: 'de',
+            ),
+            equals(DateFormat.E('de').format(yesterday)),
+          );
+        });
+      });
+
+      testWidgets('returns abbreviated weekday for 2-6 days ago', (
+        tester,
+      ) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final now = _fixedNow;
+        final date = DateTime(now.year, now.month, now.day - 4, 12);
+        final ts = date.millisecondsSinceEpoch ~/ 1000;
+
+        _withFixedClock(() {
+          expect(
+            LocalizedTimeFormatter.formatConversationTimestamp(
+              en,
+              ts,
+              locale: 'en',
+            ),
+            equals(DateFormat.E('en').format(date)),
+          );
+        });
+      });
+
+      testWidgets('returns "MMM d" for older same-year dates', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final now = _fixedNow;
+        final date = DateTime(now.year, now.month, now.day - 15, 12);
+        final ts = date.millisecondsSinceEpoch ~/ 1000;
+
+        _withFixedClock(() {
+          expect(
+            LocalizedTimeFormatter.formatConversationTimestamp(
+              en,
+              ts,
+              locale: 'en',
+            ),
+            equals(DateFormat.MMMd('en').format(date)),
+          );
+        });
+      });
+
+      testWidgets('carries the year for previous-year dates', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final date = DateTime(_fixedNow.year - 1, 12, 24, 12);
+        final ts = date.millisecondsSinceEpoch ~/ 1000;
+
+        _withFixedClock(() {
+          expect(
+            LocalizedTimeFormatter.formatConversationTimestamp(
+              en,
+              ts,
+              locale: 'en',
+            ),
+            equals(DateFormat.yMMMd('en').format(date)),
           );
         });
       });

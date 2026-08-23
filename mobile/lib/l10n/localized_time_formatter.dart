@@ -91,6 +91,12 @@ abstract class LocalizedTimeFormatter {
 
   /// Formats a Unix timestamp (seconds) for conversation list
   /// timestamps with localized labels.
+  ///
+  /// Ladder (per the DM redesign): "1m" floor for anything under a
+  /// minute, minutes under an hour, hours for the same calendar day,
+  /// an abbreviated weekday ("Thu") within the previous six days, and
+  /// a localized "MMM d" beyond — with the year appended once the date
+  /// leaves the current year.
   static String formatConversationTimestamp(
     AppLocalizations l10n,
     int unixSeconds, {
@@ -103,14 +109,20 @@ abstract class LocalizedTimeFormatter {
     ).toLocal();
     final diff = now.difference(date);
 
-    if (diff.inMinutes < 1) return l10n.timeNow;
+    if (diff.inMinutes < 1) return l10n.timeShortMinutes(1);
     if (diff.inMinutes < 60) {
       return l10n.timeShortMinutes(diff.inMinutes);
     }
 
     final dayDiff = _calendarDayDiff(now, date);
     if (dayDiff == 0) return l10n.timeShortHours(diff.inHours);
-    return _formatByDayDiff(l10n, dayDiff, date, now, locale: locale);
+    if (dayDiff >= 1 && dayDiff <= 6) {
+      return DateFormat.E(locale).format(date);
+    }
+    if (date.year == now.year) {
+      return DateFormat.MMMd(locale).format(date);
+    }
+    return DateFormat.yMMMd(locale).format(date);
   }
 
   /// Formats a Unix timestamp (seconds) for message bubble
