@@ -34,7 +34,15 @@ BackAction resolveBackAction({
 }) {
   if (context == null) return const BackUnhandled();
 
-  if (_pushedEditorFlows.contains(context.type)) return const BackPop();
+  if (_pushedEditorFlows.contains(context.type)) {
+    // These are always pushed, so popping is the normal answer. Reaching one
+    // with nothing beneath it takes a cold entry the deep-link parser cannot
+    // produce, but reporting the press unhandled there would close the app on
+    // Android — the failure this policy exists to prevent — so fall back to
+    // home instead. (The previous code popped unconditionally and threw
+    // GoError('There is nothing to pop').)
+    return canPop ? const BackPop() : BackGoTo(RoutePaths.videoFeedForIndex(0));
+  }
 
   if (context.type == RouteType.categoryGallery) {
     return canPop ? const BackPop() : const BackGoTo(RoutePaths.explore);

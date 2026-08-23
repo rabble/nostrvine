@@ -44,6 +44,7 @@ void main() {
         GoRoute(path: '/notifications/:i', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/inbox', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/hashtag/:tag', builder: (_, _) => const SizedBox()),
+        GoRoute(path: '/video-editor', builder: (_, _) => const SizedBox()),
       ],
     );
     addTearDown(router.dispose);
@@ -218,6 +219,27 @@ void main() {
         // copy did.
         expect(result.location, equals('/home/0'));
         expect(result.location, isNot(equals('/explore')));
+      });
+
+      // Raised in review on #8083: an editor reached with nothing beneath it
+      // used to report the press unhandled, which on Android finishes the
+      // activity. Unreachable via any deep link the parser emits, but the
+      // whole point of this policy is that "unhandled" must mean "genuinely
+      // nowhere to go".
+      testWidgets('consumes the press in an editor with nothing to pop', (
+        tester,
+      ) async {
+        final result = await pressBackAfterVisiting(tester, [
+          '/home/0',
+          '/video-editor',
+        ]);
+
+        expect(
+          result.handled,
+          isTrue,
+          reason: 'false would let Android close the app from the editor',
+        );
+        expect(result.location, equals('/home/0'));
       });
 
       // The one case where reporting the press unhandled is correct: home,

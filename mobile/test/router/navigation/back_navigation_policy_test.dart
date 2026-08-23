@@ -47,6 +47,27 @@ void main() {
       }
     });
 
+    group('pushed editor flows with nothing beneath them', () {
+      // Not reachable through any link the deep-link parser produces — it
+      // emits no editor DeepLinkType — but returning "unhandled" here would
+      // close the app on Android, which is the exact failure this policy
+      // exists to prevent. Raised in review on #8083.
+      for (final type in const [
+        RouteType.videoRecorder,
+        RouteType.videoEditor,
+        RouteType.videoMetadata,
+        RouteType.videoEdit,
+        RouteType.subtitleEdit,
+      ]) {
+        test('sends $type home rather than off the end of the stack', () {
+          expect(
+            resolve(RouteContext(type: type)),
+            equals(const BackGoTo('/home/0')),
+          );
+        });
+      }
+    });
+
     group('category gallery', () {
       test('pops when there is a stack to pop', () {
         expect(
