@@ -3,7 +3,7 @@
 // ABOUTME: caused reply notification taps to no-op when already on the video.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/router/deep_link_coordinator.dart' as app;
 import 'package:openvine/screens/video_detail_screen.dart';
 
 void main() {
