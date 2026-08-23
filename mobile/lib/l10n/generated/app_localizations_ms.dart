@@ -6741,16 +6741,12 @@ class AppLocalizationsMs extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Tolak dan alih keluar';
 
   @override
-  String get messageRequestBlockButton => 'Sekat';
+  String get messageRequestAcceptButton => 'Terima';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Permintaan $displayName ditolak';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Ini mengalih keluar permintaan dan menghalang mesej mereka daripada masuk ke peti masuk anda. Apa sahaja yang mereka hantar masih boleh dibaca di Disekat.';
 
   @override
   String get messageRequestLoadFailed =>
@@ -6776,9 +6772,6 @@ class AppLocalizationsMs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Lihat mesej';
 
   @override
   String get messageRequestViewProfileButton => 'Lihat profil';

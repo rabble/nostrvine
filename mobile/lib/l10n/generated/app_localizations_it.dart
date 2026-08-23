@@ -6798,16 +6798,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Rifiuta e rimuovi';
 
   @override
-  String get messageRequestBlockButton => 'Blocca';
+  String get messageRequestAcceptButton => 'Accetta';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Richiesta di $displayName rifiutata';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Questo rimuove la richiesta e tiene i loro messaggi fuori dalla tua posta in arrivo. Tutto ciò che inviano resta leggibile in Bloccati.';
 
   @override
   String get messageRequestLoadFailed =>
@@ -6833,9 +6829,6 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Visualizza messaggi';
 
   @override
   String get messageRequestViewProfileButton => 'Visualizza profilo';

@@ -6659,16 +6659,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Reddet ve kaldır';
 
   @override
-  String get messageRequestBlockButton => 'Engelle';
+  String get messageRequestAcceptButton => 'Kabul et';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return '$displayName kişisinin isteği reddedildi';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Bu, isteği kaldırır ve mesajlarının gelen kutuna düşmesini engeller. Gönderdikleri her şeyi Engellenenler bölümünden okuyabilirsin.';
 
   @override
   String get messageRequestLoadFailed => 'Bu istek yüklenemedi.';
@@ -6693,9 +6689,6 @@ class AppLocalizationsTr extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Mesajları görüntüle';
 
   @override
   String get messageRequestViewProfileButton => 'Profili görüntüle';

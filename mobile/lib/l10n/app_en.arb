@@ -4340,7 +4340,7 @@
   "inboxRequestsMarkAllRead": "Mark all requests as read",
   "inboxRequestsRemoveAll": "Remove all requests",
   "messageRequestDeclineAndRemoveButton": "Decline and remove",
-  "messageRequestBlockButton": "Block",
+  "messageRequestAcceptButton": "Accept",
   "messageRequestDeclinedSnackbar": "Declined {displayName}'s request",
   "@messageRequestDeclinedSnackbar": {
     "placeholders": {
@@ -4348,10 +4348,6 @@
         "type": "String"
       }
     }
-  },
-  "messageRequestBlockConfirmBody": "This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.",
-  "@messageRequestBlockConfirmBody": {
-    "description": "Body of the confirmation shown before blocking the sender of a message request (#7881). The title reuses profileBlockTitle. Blocking does not stop the sender from sending — their messages are still received and retained, the inbox filter just hides them — so this copy must promise inbox hiding, not delivery prevention, and must say the messages stay readable under the Blocked filter (#7026)."
   },
   "messageRequestLoadFailed": "Couldn't load this request.",
   "@messageRequestLoadFailed": {
@@ -4387,11 +4383,10 @@
       }
     }
   },
-  "messageRequestViewMessagesButton": "View messages",
   "messageRequestViewProfileButton": "View profile",
   "messageRequestAcceptPrompt": "Accept {messageText} from {displayName}?",
   "@messageRequestAcceptPrompt": {
-    "description": "Question above the request-preview actions. messageText is the already-localized count from messageRequestMessageCount (e.g. '3 messages'); the UI renders both placeholders bold.",
+    "description": "Question above the request-preview actions. messageText is the already-localized count from messageRequestMessageCount (e.g. '3 messages'); the UI renders displayName bold and the count plain.",
     "placeholders": {
       "displayName": {
         "type": "String"

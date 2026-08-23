@@ -6388,16 +6388,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => '拒否して削除';
 
   @override
-  String get messageRequestBlockButton => 'ブロック';
+  String get messageRequestAcceptButton => '受け取る';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return '$displayNameのリクエストを拒否したよ';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'リクエストが消えて、相手のメッセージは受信トレイに届かなくなるよ。送られてきたものはブロック済みでいつでも読めるよ。';
 
   @override
   String get messageRequestLoadFailed => 'このリクエストを読み込めませんでした。';
@@ -6422,9 +6418,6 @@ class AppLocalizationsJa extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'メッセージを表示';
 
   @override
   String get messageRequestViewProfileButton => 'プロフィールを表示';

@@ -6900,16 +6900,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Refuză și elimină';
 
   @override
-  String get messageRequestBlockButton => 'Blochează';
+  String get messageRequestAcceptButton => 'Acceptă';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Cererea lui $displayName a fost refuzată';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Astfel, cererea este eliminată, iar mesajele lor nu mai ajung în inbox. Tot ce trimit rămâne de citit în Blocate.';
 
   @override
   String get messageRequestLoadFailed => 'Nu am putut încărca această cerere.';
@@ -6935,9 +6931,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Vezi mesajele';
 
   @override
   String get messageRequestViewProfileButton => 'Vezi profilul';

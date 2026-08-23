@@ -3737,10 +3737,9 @@
   "inboxRequestsMarkAllRead": "تمام درخواستیں پڑھی ہوئی قرار دیں",
   "inboxRequestsRemoveAll": "تمام درخواستیں ہٹائیں",
   "messageRequestDeclineAndRemoveButton": "انکار کر کے ہٹائیں",
-  "messageRequestBlockButton": "بلاک کریں",
+  "messageRequestAcceptButton": "قبول کریں",
   "messageRequestDeclinedSnackbar": "{displayName} کی درخواست مسترد کر دی",
   "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
-  "messageRequestBlockConfirmBody": "اس سے درخواست ہٹ جائے گی اور ان کے پیغامات آپ کے ان باکس میں نہیں آئیں گے۔ وہ جو کچھ بھی بھیجیں، اسے آپ مسدود میں پڑھ سکتے ہیں۔",
   "messageRequestLoadFailed": "یہ درخواست لوڈ نہیں ہو سکی۔",
   "messageRequestFollowersCount": "{count} فالوورز",
   "@messageRequestFollowersCount": {
@@ -3766,7 +3765,6 @@
       }
     }
   },
-  "messageRequestViewMessagesButton": "پیغامات دیکھیں",
   "messageRequestViewProfileButton": "پروفائل دیکھیں",
   "messageRequestAcceptPrompt": "کیا آپ {displayName} کی طرف سے {messageText} قبول کریں گے؟",
   "@messageRequestAcceptPrompt": {

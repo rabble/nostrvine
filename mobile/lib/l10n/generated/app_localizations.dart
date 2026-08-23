@@ -11561,23 +11561,17 @@ abstract class AppLocalizations {
   /// **'Decline and remove'**
   String get messageRequestDeclineAndRemoveButton;
 
-  /// No description provided for @messageRequestBlockButton.
+  /// No description provided for @messageRequestAcceptButton.
   ///
   /// In en, this message translates to:
-  /// **'Block'**
-  String get messageRequestBlockButton;
+  /// **'Accept'**
+  String get messageRequestAcceptButton;
 
   /// No description provided for @messageRequestDeclinedSnackbar.
   ///
   /// In en, this message translates to:
   /// **'Declined {displayName}\'s request'**
   String messageRequestDeclinedSnackbar(String displayName);
-
-  /// Body of the confirmation shown before blocking the sender of a message request (#7881). The title reuses profileBlockTitle. Blocking does not stop the sender from sending — their messages are still received and retained, the inbox filter just hides them — so this copy must promise inbox hiding, not delivery prevention, and must say the messages stay readable under the Blocked filter (#7026).
-  ///
-  /// In en, this message translates to:
-  /// **'This clears the request and keeps their messages out of your inbox. Anything they send is still readable under Blocked.'**
-  String get messageRequestBlockConfirmBody;
 
   /// Shown in place of the request preview when its database read fails (#7335), next to a `commonRetry` button. The screen previously fell through to the loaded layout, so a failed read rendered a generated placeholder name, a count of 0, and live accept/decline buttons over an unknown sender.
   ///
@@ -11603,19 +11597,13 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 message} other{{count} messages}}'**
   String messageRequestMessageCount(int count);
 
-  /// No description provided for @messageRequestViewMessagesButton.
-  ///
-  /// In en, this message translates to:
-  /// **'View messages'**
-  String get messageRequestViewMessagesButton;
-
   /// No description provided for @messageRequestViewProfileButton.
   ///
   /// In en, this message translates to:
   /// **'View profile'**
   String get messageRequestViewProfileButton;
 
-  /// Question above the request-preview actions. messageText is the already-localized count from messageRequestMessageCount (e.g. '3 messages'); the UI renders both placeholders bold.
+  /// Question above the request-preview actions. messageText is the already-localized count from messageRequestMessageCount (e.g. '3 messages'); the UI renders displayName bold and the count plain.
   ///
   /// In en, this message translates to:
   /// **'Accept {messageText} from {displayName}?'**

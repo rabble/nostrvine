@@ -3737,10 +3737,9 @@
   "inboxRequestsMarkAllRead": "Đánh dấu tất cả yêu cầu là đã đọc",
   "inboxRequestsRemoveAll": "Xóa tất cả yêu cầu",
   "messageRequestDeclineAndRemoveButton": "Từ chối và xóa",
-  "messageRequestBlockButton": "Chặn",
+  "messageRequestAcceptButton": "Chấp nhận",
   "messageRequestDeclinedSnackbar": "Đã từ chối yêu cầu của {displayName}",
   "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
-  "messageRequestBlockConfirmBody": "Thao tác này xóa yêu cầu và giữ tin nhắn của họ khỏi hộp thư đến. Mọi thứ họ gửi vẫn đọc được trong Đã chặn.",
   "messageRequestLoadFailed": "Không tải được yêu cầu này.",
   "messageRequestFollowersCount": "{count} người theo dõi",
   "@messageRequestFollowersCount": {
@@ -3766,7 +3765,6 @@
       }
     }
   },
-  "messageRequestViewMessagesButton": "Xem tin nhắn",
   "messageRequestViewProfileButton": "Xem hồ sơ",
   "messageRequestAcceptPrompt": "Chấp nhận {messageText} từ {displayName}?",
   "@messageRequestAcceptPrompt": {

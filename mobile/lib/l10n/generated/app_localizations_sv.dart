@@ -6725,16 +6725,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Avböj och ta bort';
 
   @override
-  String get messageRequestBlockButton => 'Blockera';
+  String get messageRequestAcceptButton => 'Acceptera';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Förfrågan från $displayName avvisad';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Det här tar bort förfrågan och håller personens meddelanden borta från din inkorg. Allt som skickas går fortfarande att läsa under Blockerade.';
 
   @override
   String get messageRequestLoadFailed =>
@@ -6760,9 +6756,6 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Visa meddelanden';
 
   @override
   String get messageRequestViewProfileButton => 'Visa profil';

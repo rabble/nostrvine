@@ -6820,16 +6820,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Refuser et supprimer';
 
   @override
-  String get messageRequestBlockButton => 'Bloquer';
+  String get messageRequestAcceptButton => 'Accepter';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Demande de $displayName refusée';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Cela retire la demande et garde leurs messages hors de votre boîte de réception. Tout ce qu\'ils envoient reste lisible dans Bloqués.';
 
   @override
   String get messageRequestLoadFailed => 'Impossible de charger cette demande.';
@@ -6854,9 +6850,6 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Voir les messages';
 
   @override
   String get messageRequestViewProfileButton => 'Voir le profil';

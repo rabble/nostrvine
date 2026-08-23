@@ -6356,16 +6356,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => '拒绝并移除';
 
   @override
-  String get messageRequestBlockButton => '屏蔽';
+  String get messageRequestAcceptButton => '接受';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return '已拒绝 $displayName 的请求';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      '这会移除该请求，并让对方的消息不再进入你的收件箱。他们发来的内容仍可在已屏蔽中查看。';
 
   @override
   String get messageRequestLoadFailed => '无法加载此请求。';
@@ -6390,9 +6386,6 @@ class AppLocalizationsZh extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => '查看消息';
 
   @override
   String get messageRequestViewProfileButton => '查看主页';

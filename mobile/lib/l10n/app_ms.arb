@@ -3737,10 +3737,9 @@
   "inboxRequestsMarkAllRead": "Tandakan semua permintaan sebagai dibaca",
   "inboxRequestsRemoveAll": "Alih keluar semua permintaan",
   "messageRequestDeclineAndRemoveButton": "Tolak dan alih keluar",
-  "messageRequestBlockButton": "Sekat",
+  "messageRequestAcceptButton": "Terima",
   "messageRequestDeclinedSnackbar": "Permintaan {displayName} ditolak",
   "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
-  "messageRequestBlockConfirmBody": "Ini mengalih keluar permintaan dan menghalang mesej mereka daripada masuk ke peti masuk anda. Apa sahaja yang mereka hantar masih boleh dibaca di Disekat.",
   "messageRequestLoadFailed": "Permintaan ini tidak dapat dimuatkan.",
   "messageRequestFollowersCount": "{count} Pengikut",
   "@messageRequestFollowersCount": {
@@ -3766,7 +3765,6 @@
       }
     }
   },
-  "messageRequestViewMessagesButton": "Lihat mesej",
   "messageRequestViewProfileButton": "Lihat profil",
   "messageRequestAcceptPrompt": "Terima {messageText} daripada {displayName}?",
   "@messageRequestAcceptPrompt": {

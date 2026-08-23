@@ -6887,16 +6887,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Odrzuć i usuń';
 
   @override
-  String get messageRequestBlockButton => 'Zablokuj';
+  String get messageRequestAcceptButton => 'Przyjmij';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Odrzucono prośbę od $displayName';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'To usuwa prośbę i sprawia, że ich wiadomości nie trafiają do Twojej skrzynki odbiorczej. Wszystko, co wyślą, nadal możesz przeczytać w Zablokowane.';
 
   @override
   String get messageRequestLoadFailed => 'Nie udało się wczytać tej prośby.';
@@ -6923,9 +6919,6 @@ class AppLocalizationsPl extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Zobacz wiadomości';
 
   @override
   String get messageRequestViewProfileButton => 'Zobacz profil';

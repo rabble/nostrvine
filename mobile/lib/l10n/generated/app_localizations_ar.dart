@@ -6677,16 +6677,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'رفض وإزالة';
 
   @override
-  String get messageRequestBlockButton => 'حظر';
+  String get messageRequestAcceptButton => 'قبول';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'تم رفض طلب $displayName';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'يزيل هذا الطلب ويمنع رسائلهم من الوصول إلى صندوق الوارد. ويبقى كل ما يرسلونه قابلاً للقراءة ضمن قسم محظور.';
 
   @override
   String get messageRequestLoadFailed => 'تعذّر تحميل هذا الطلب.';
@@ -6715,9 +6711,6 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'عرض الرسائل';
 
   @override
   String get messageRequestViewProfileButton => 'عرض الملف الشخصي';

@@ -6703,16 +6703,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Từ chối và xóa';
 
   @override
-  String get messageRequestBlockButton => 'Chặn';
+  String get messageRequestAcceptButton => 'Chấp nhận';
 
   @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Đã từ chối yêu cầu của $displayName';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Thao tác này xóa yêu cầu và giữ tin nhắn của họ khỏi hộp thư đến. Mọi thứ họ gửi vẫn đọc được trong Đã chặn.';
 
   @override
   String get messageRequestLoadFailed => 'Không tải được yêu cầu này.';
@@ -6737,9 +6733,6 @@ class AppLocalizationsVi extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get messageRequestViewMessagesButton => 'Xem tin nhắn';
 
   @override
   String get messageRequestViewProfileButton => 'Xem hồ sơ';

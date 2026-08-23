@@ -277,11 +277,11 @@ void main() {
         expect(find.text('View profile'), findsOneWidget);
       });
 
-      testWidgets('renders "View messages" button', (tester) async {
+      testWidgets('renders "Accept" button', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        expect(find.text('View messages'), findsOneWidget);
+        expect(find.text(l10n.messageRequestAcceptButton), findsOneWidget);
       });
 
       testWidgets('renders "Decline and remove" button', (tester) async {
@@ -291,13 +291,6 @@ void main() {
         expect(find.text('Decline and remove'), findsOneWidget);
       });
 
-      testWidgets('renders "Block" button', (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        expect(find.text(l10n.messageRequestBlockButton), findsOneWidget);
-      });
-
       testWidgets('renders message count description', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
@@ -305,7 +298,7 @@ void main() {
         expect(find.textContaining('3 messages'), findsOneWidget);
       });
 
-      testWidgets('bolds the count and the name inside the accept prompt', (
+      testWidgets('bolds only the name inside the accept prompt', (
         tester,
       ) async {
         await tester.pumpWidget(buildSubject());
@@ -331,7 +324,50 @@ void main() {
           }
           return true;
         });
-        expect(boldRuns, containsAll(['3 messages', 'TestUser']));
+        // v2: the name is the only bold run — the count stays plain.
+        expect(boldRuns, equals(['TestUser']));
+      });
+
+      testWidgets('renders the accept prompt above the blurred capsule', (
+        tester,
+      ) async {
+        const message = DmMessage(
+          id: '3333333333333333333333333333333333333333333333333333333333333333',
+          conversationId: conversationId,
+          senderPubkey: otherPubkey,
+          content: 'hello there',
+          createdAt: 1700000000,
+          giftWrapId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            previewState: const RequestPreviewState(
+              status: RequestPreviewStatus.loaded,
+              messageCount: 1,
+              participantPubkeys: [otherPubkey],
+              messages: [message],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final expected = l10n.messageRequestAcceptPrompt(
+          'TestUser',
+          l10n.messageRequestMessageCount(1),
+        );
+        final promptTop = tester
+            .getTopLeft(find.text(expected, findRichText: true))
+            .dy;
+        final capsuleTop = tester
+            .getTopLeft(
+              find.ancestor(
+                of: find.text('hello there'),
+                matching: find.byType(ImageFiltered),
+              ),
+            )
+            .dy;
+        expect(promptTop, lessThan(capsuleTop));
       });
 
       testWidgets('blurs the newest text message in the preview capsule', (
@@ -523,7 +559,7 @@ void main() {
         ).called(1);
       });
 
-      testWidgets('navigates to conversation when "View messages" tapped', (
+      testWidgets('navigates to conversation when "Accept" tapped', (
         tester,
       ) async {
         when(
@@ -537,7 +573,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('View messages'));
+        await tester.tap(find.text(l10n.messageRequestAcceptButton));
         await tester.pump();
 
         verify(
@@ -608,87 +644,7 @@ void main() {
       });
     });
 
-    group('block and decline feedback', () {
-      // The screen's Block affordance opens a confirmation sheet; the sheet's
-      // own Block button (a DivineButton, distinct from the screen's custom
-      // action button) is what actually triggers the block.
-      Future<void> tapBlockAndConfirm(WidgetTester tester) async {
-        await tester.tap(find.text(l10n.messageRequestBlockButton));
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.widgetWithText(DivineButton, l10n.messageRequestBlockButton),
-        );
-        await tester.pumpAndSettle();
-      }
-
-      testWidgets('Block opens a confirmation before blocking', (
-        tester,
-      ) async {
-        when(
-          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
-        ).thenAnswer((_) async => true);
-
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text(l10n.messageRequestBlockButton));
-        await tester.pumpAndSettle();
-
-        expect(
-          find.text(l10n.profileBlockTitle('TestUser')),
-          findsOneWidget,
-        );
-        expect(
-          find.text(l10n.messageRequestBlockConfirmBody),
-          findsOneWidget,
-        );
-        // The block has not run yet — only the confirmation is showing.
-        verifyNever(() => mockActionsCubit.blockAndRemoveRequest(any(), any()));
-      });
-
-      testWidgets('cancelling the confirmation does not block', (
-        tester,
-      ) async {
-        when(
-          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
-        ).thenAnswer((_) async => true);
-
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text(l10n.messageRequestBlockButton));
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.widgetWithText(DivineButton, l10n.commonCancel),
-        );
-        await tester.pumpAndSettle();
-
-        verifyNever(() => mockActionsCubit.blockAndRemoveRequest(any(), any()));
-      });
-
-      testWidgets('blocks the sender and pops after confirming', (
-        tester,
-      ) async {
-        when(
-          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
-        ).thenAnswer((_) async => true);
-        when(mockGoRouter.canPop).thenReturn(true);
-        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
-
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        await tapBlockAndConfirm(tester);
-
-        verify(
-          () => mockActionsCubit.blockAndRemoveRequest(
-            conversationId,
-            otherPubkey,
-          ),
-        ).called(1);
-        verify(() => mockGoRouter.pop()).called(1);
-      });
-
+    group('decline feedback', () {
       testWidgets('confirms with a snackbar after declining', (tester) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
@@ -707,47 +663,6 @@ void main() {
           findsOneWidget,
         );
       });
-
-      testWidgets('confirms with a snackbar after blocking', (tester) async {
-        when(
-          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
-        ).thenAnswer((_) async => true);
-        when(mockGoRouter.canPop).thenReturn(true);
-        when(() => mockGoRouter.pop()).thenAnswer((_) async {});
-
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        await tapBlockAndConfirm(tester);
-
-        expect(
-          find.text(l10n.inboxBlockedUser('TestUser')),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets(
-        'when the block fails, warns and keeps the user on the request',
-        (tester) async {
-          when(
-            () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
-          ).thenAnswer((_) async => false);
-          when(mockGoRouter.canPop).thenReturn(true);
-          when(() => mockGoRouter.pop()).thenAnswer((_) async {});
-
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
-
-          await tapBlockAndConfirm(tester);
-
-          expect(find.text(l10n.commonSomethingWentWrong), findsOneWidget);
-          expect(
-            find.text(l10n.inboxBlockedUser('TestUser')),
-            findsNothing,
-          );
-          verifyNever(() => mockGoRouter.pop());
-        },
-      );
 
       testWidgets(
         'when the decline fails, warns and does not claim success',
@@ -784,41 +699,17 @@ void main() {
           ),
         );
         when(
-          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
+          () => mockActionsCubit.declineRequest(any()),
         ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        // The in-flight guard returns before the confirmation sheet opens.
-        await tester.tap(find.text(l10n.messageRequestBlockButton));
+        // The in-flight guard returns before the decline runs.
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.messageRequestBlockConfirmBody), findsNothing);
-        verifyNever(
-          () => mockActionsCubit.blockAndRemoveRequest(any(), any()),
-        );
-      });
-
-      testWidgets('hides Block for a group request with two counterparties', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            previewState: const RequestPreviewState(
-              status: RequestPreviewStatus.loaded,
-              messageCount: 3,
-              participantPubkeys: [otherPubkey, currentPubkey],
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          find.text(l10n.messageRequestDeclineAndRemoveButton),
-          findsOneWidget,
-        );
-        expect(find.text(l10n.messageRequestBlockButton), findsNothing);
+        verifyNever(() => mockActionsCubit.declineRequest(any()));
       });
     });
 
@@ -920,7 +811,7 @@ void main() {
         );
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
+        expect(find.text(l10n.messageRequestAcceptButton), findsNothing);
       });
 
       testWidgets('error offers a retry instead of accept', (tester) async {
@@ -932,7 +823,7 @@ void main() {
         );
 
         expect(find.text(l10n.messageRequestLoadFailed), findsOneWidget);
-        expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
+        expect(find.text(l10n.messageRequestAcceptButton), findsNothing);
 
         await tester.tap(find.text(l10n.commonRetry));
         await tester.pump();
@@ -1058,7 +949,7 @@ void main() {
         );
 
         expect(find.text(l10n.messageRequestLoadFailed), findsOneWidget);
-        expect(find.text(l10n.messageRequestViewMessagesButton), findsNothing);
+        expect(find.text(l10n.messageRequestAcceptButton), findsNothing);
       });
 
       for (final entry in const {
