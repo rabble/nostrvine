@@ -189,7 +189,7 @@ enum UsernameStatus {
 ///
 /// The UI layer should map these to localized strings.
 enum UsernameValidationError {
-  /// The server rejected the username format without a recognized reason.
+  /// The username format was rejected without a more specific UI category.
   invalidFormat,
 
   /// Username contains characters that are not valid in a DNS label.

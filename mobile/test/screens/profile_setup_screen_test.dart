@@ -1262,6 +1262,35 @@ void main() {
         expect(captured.whereType<ProfileSaved>().last.displayName, 'Edited');
       });
 
+      testWidgets('prompt does not offer save for an invalid username', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            displayName: 'Edited',
+            initialDisplayName: 'Original',
+            username: 'last_outlaw',
+            usernameStatus: UsernameStatus.invalidFormat,
+            usernameError: UsernameValidationError.invalidCharacters,
+          ),
+        );
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.profileSetupUnsavedChangesSaveButton),
+          findsNothing,
+        );
+        verifyNever(
+          () => mockEditorBloc.add(any(that: isA<ProfileSaved>())),
+        );
+      });
+
       testWidgets('clean cancel leaves without showing prompt', (tester) async {
         when(() => mockEditorBloc.state).thenReturn(const ProfileEditorState());
 

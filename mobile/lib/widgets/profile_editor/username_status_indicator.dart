@@ -56,10 +56,9 @@ class UsernameStatusIndicator extends StatelessWidget {
 
 /// Lowercases input text on every edit.
 ///
-/// Composes with `FilteringTextInputFormatter` on the username field so that
-/// typed capital letters are normalized in place rather than triggering the
-/// lowercase-only validator. Lowercasing ASCII is a 1:1 character mapping so
-/// the existing selection offsets remain valid.
+/// Keeps invalid characters visible for validation feedback while normalizing
+/// typed capital letters in place. Lowercasing ASCII is a 1:1 character mapping
+/// so the existing selection offsets remain valid.
 class LowercaseTextInputFormatter extends TextInputFormatter {
   const LowercaseTextInputFormatter();
 
