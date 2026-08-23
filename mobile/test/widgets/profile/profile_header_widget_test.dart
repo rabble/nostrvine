@@ -2266,6 +2266,40 @@ void main() {
 
         expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
       });
+
+      testWidgets('Maybe Later leaves the complete-profile action pending', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            // Default name and no picture/bio/NIP-05, so both actions pend.
+            profile: createTestProfile(),
+            isAnonymous: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('2'), findsOneWidget);
+
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
+        await tester.pumpAndSettle();
+
+        // Dismiss secure-account, then the complete-profile prompt behind it.
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsOneWidget);
+        expect(find.text('1'), findsOneWidget);
+      });
     });
 
     group('Session Expired', () {
