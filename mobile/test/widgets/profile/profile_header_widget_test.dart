@@ -43,6 +43,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -322,6 +323,8 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
+    final enL10n = lookupAppLocalizations(const Locale('en'));
+
     Widget buildTestWidget({
       required String userIdHex,
       required bool isOwnProfile,
@@ -349,6 +352,7 @@ void main() {
       ThemeData? theme,
       bool disableAnimations = false,
       TextScaler? textScaler,
+      Locale locale = const Locale('en'),
       bool renderHeader = true,
       MockAuthService? authService,
       bool isVanished = false,
@@ -474,6 +478,7 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
           theme: theme,
           home: Builder(
             builder: (context) => MediaQuery(
@@ -643,9 +648,7 @@ void main() {
       // so this is the default state for Divine team accounts rather than an
       // edge case. Without the guard the header renders two explainer
       // buttons side by side.
-      final dualPubkey = kDivineTeamPubkeys.firstWhere(
-        isOgBetaTesterPubkey,
-      );
+      final dualPubkey = kDivineTeamPubkeys.firstWhere(isOgBetaTesterPubkey);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -1834,7 +1837,7 @@ void main() {
     });
 
     testWidgets(
-      'shows Complete your profile label for own profile without custom name',
+      'shows Complete Your Profile label for own profile without custom name',
       (tester) async {
         final profileWithDefaultName = createTestProfile();
 
@@ -1847,7 +1850,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Complete your profile'), findsOneWidget);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsOneWidget);
       },
     );
 
@@ -1866,7 +1869,7 @@ void main() {
 
       // Action label is replaced with SizedBox.shrink() during the loading
       // window so the prompt doesn't flicker between states (#4183 review).
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('hides action label when profile has custom name', (
@@ -1883,7 +1886,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('hides action label for other profiles', (tester) async {
@@ -1898,7 +1901,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete your profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('renders PeopleListMembershipIndicator for other users', (
@@ -2127,6 +2130,36 @@ void main() {
     });
 
     group('Action Label', () {
+      testWidgets('keeps localized label inside a narrow scaled viewport', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        const locale = Locale('it');
+        final l10n = lookupAppLocalizations(locale);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(displayName: 'Test User'),
+            isAnonymous: true,
+            textScaler: const TextScaler.linear(2),
+            locale: locale,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final label = find.text(l10n.profileSecureYourAccount);
+        final labelRect = tester.getRect(label);
+        expect(labelRect.left, greaterThanOrEqualTo(0));
+        expect(
+          labelRect.right,
+          lessThanOrEqualTo(tester.view.physicalSize.width),
+        );
+      });
+
       testWidgets('shows Secure label when anonymous with custom name', (
         tester,
       ) async {
@@ -2142,7 +2175,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsOneWidget);
+        expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
         // 1 action — badge shows "1"
         expect(find.text('1'), findsOneWidget);
       });
@@ -2163,7 +2196,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Secure takes precedence
-          expect(find.text('Secure your account'), findsOneWidget);
+          expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
           // 2 actions — red badge with "2"
           expect(find.text('2'), findsOneWidget);
         },
@@ -2183,8 +2216,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsNothing);
-        expect(find.text('Complete your profile'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
       });
 
       testWidgets('hides label for other profiles even when anonymous', (
@@ -2202,7 +2235,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure your account'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
       });
 
       testWidgets('tapping label opens actions bottom sheet', (tester) async {
@@ -2219,13 +2252,85 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap on the action label
-        await tester.tap(find.text('Secure your account'));
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
         await tester.pumpAndSettle();
 
-        // The bottom sheet should show the first action
-        expect(find.text('Secure Your Account'), findsOneWidget);
-        expect(find.text('Add Email & Password'), findsOneWidget);
-        expect(find.text('Maybe Later'), findsOneWidget);
+        // The pill and the sheet title share one ARB key, so scope the
+        // title to the sheet rather than counting matches.
+        expect(
+          find.descendant(
+            of: find.byType(ProfileActionsSheetContent),
+            matching: find.text(enL10n.profileSecureYourAccount),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(enL10n.profileSecurePrimaryButton), findsOneWidget);
+        expect(find.text(enL10n.profileMaybeLaterLabel), findsOneWidget);
+      });
+
+      testWidgets('Maybe Later permanently hides the secure-account action', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final testProfile = createTestProfile(displayName: 'Test User');
+
+        Widget buildHeader() => buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+          isAnonymous: true,
+          sharedPreferences: prefs,
+        );
+
+        await tester.pumpWidget(buildHeader());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(buildHeader());
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+      });
+
+      testWidgets('Maybe Later leaves the complete-profile action pending', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            // Default name and no picture/bio/NIP-05, so both actions pend.
+            profile: createTestProfile(),
+            isAnonymous: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('2'), findsOneWidget);
+
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
+        await tester.pumpAndSettle();
+
+        // Dismiss secure-account, then the complete-profile prompt behind it.
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsOneWidget);
+        expect(find.text('1'), findsOneWidget);
       });
     });
 
@@ -2426,9 +2531,8 @@ void main() {
           await tester.pumpAndSettle();
 
           // Anonymous users see the action label pill, not session expired
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text('Secure your account'), findsOneWidget);
-          expect(find.text(l10n.profileSessionExpired), findsNothing);
+          expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
+          expect(find.text(enL10n.profileSessionExpired), findsNothing);
         },
       );
 
