@@ -1283,6 +1283,10 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
+          find.text(l10n.profileSetupUnsavedChangesTitle),
+          findsOneWidget,
+        );
+        expect(
           find.text(l10n.profileSetupUnsavedChangesSaveButton),
           findsNothing,
         );
