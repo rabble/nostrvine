@@ -5519,37 +5519,11 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Провери връзката си и опитай отново.';
 
   @override
-  String get inboxFilterAll => 'Всички';
-
-  @override
-  String get inboxFilterUnread => 'Непрочетени';
-
-  @override
   String get dmBlockedThreadTitle => 'Блокирахте този акаунт';
 
   @override
   String get dmBlockedThreadBody =>
       'Съобщенията остават тук, за да можете да ги прочетете или да направите екранна снимка. Отблокирайте, за да отговорите.';
-
-  @override
-  String get inboxFilterBlocked => 'Блокирани';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Няма блокирани чатове';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Акаунтите, които блокирате, се показват тук.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Няма съобщения';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'В крак си с всичко';
-
-  @override
-  String get inboxUnreadEmptySubtitle =>
-      'Няма непрочетени съобщения в момента.';
 
   @override
   String get inboxSearchHint => 'Търсене в съобщенията';

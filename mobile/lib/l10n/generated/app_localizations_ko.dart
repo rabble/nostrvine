@@ -5189,35 +5189,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxLoadErrorSubtitle => '연결을 확인하고 다시 시도해 주세요.';
 
   @override
-  String get inboxFilterAll => '전체';
-
-  @override
-  String get inboxFilterUnread => '안 읽음';
-
-  @override
   String get dmBlockedThreadTitle => '이 계정을 차단했습니다';
 
   @override
   String get dmBlockedThreadBody =>
       '메시지는 여기에 남아 있어 읽거나 스크린샷을 찍을 수 있습니다. 답장하려면 차단을 해제하세요.';
-
-  @override
-  String get inboxFilterBlocked => '차단됨';
-
-  @override
-  String get inboxBlockedEmptyTitle => '차단된 대화가 없습니다';
-
-  @override
-  String get inboxBlockedEmptySubtitle => '차단한 계정이 여기에 표시됩니다.';
-
-  @override
-  String get inboxBlockedNoMessages => '메시지 없음';
-
-  @override
-  String get inboxUnreadEmptyTitle => '모두 확인했어요';
-
-  @override
-  String get inboxUnreadEmptySubtitle => '읽지 않은 메시지가 없어요.';
 
   @override
   String get inboxSearchHint => '메시지 검색';

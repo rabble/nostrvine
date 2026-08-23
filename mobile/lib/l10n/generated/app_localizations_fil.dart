@@ -5501,36 +5501,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'Suriin ang koneksyon mo at subukan ulit.';
 
   @override
-  String get inboxFilterAll => 'Lahat';
-
-  @override
-  String get inboxFilterUnread => 'Hindi pa nababasa';
-
-  @override
   String get dmBlockedThreadTitle => 'Na-block mo ang account na ito';
 
   @override
   String get dmBlockedThreadBody =>
       'Nananatili rito ang mga mensahe para mabasa o ma-screenshot mo. Mag-unblock para makasagot.';
-
-  @override
-  String get inboxFilterBlocked => 'Naka-block';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Walang naka-block na chat';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Lumalabas dito ang mga account na bina-block mo.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Walang mensahe';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Nabasa mo na lahat';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Walang hindi pa nababasang mensahe.';
 
   @override
   String get inboxSearchHint => 'Maghanap ng mga mensahe';

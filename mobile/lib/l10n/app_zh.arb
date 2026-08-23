@@ -2871,19 +2871,6 @@
   "inboxEmptySubtitle": "那个 + 按钮又不会咬人。",
   "inboxLoadErrorTitle": "消息加载失败",
   "inboxLoadErrorSubtitle": "检查网络连接，再试一次。",
-  "inboxFilterAll": "全部",
-  "@inboxFilterAll": {
-    "description": "Filter chip label showing all conversations in the Messages inbox."
-  },
-  "inboxFilterUnread": "未读",
-  "@inboxFilterUnread": {
-    "description": "Filter chip label showing only unread conversations in the Messages inbox."
-  },
-  "inboxUnreadEmptyTitle": "都看完啦",
-  "@inboxUnreadEmptyTitle": {
-    "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
-  },
-  "inboxUnreadEmptySubtitle": "现在没有未读消息。",
   "inboxSearchHint": "搜索消息",
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
@@ -6490,10 +6477,6 @@
   "videoEditorRemoveAudioSemanticLabel": "移除音频",
   "rgbColorSemanticLabel": "RGB {red}、{green}、{blue}",
   "videoEditorColorPickerSwatchSemanticLabel": "{picker}、{color}",
-  "inboxFilterBlocked": "已屏蔽",
-  "inboxBlockedEmptyTitle": "没有已屏蔽的聊天",
-  "inboxBlockedEmptySubtitle": "你屏蔽的账号会显示在这里。",
-  "inboxBlockedNoMessages": "暂无消息",
   "dmBlockedThreadTitle": "你已屏蔽此账号",
   "dmBlockedThreadBody": "消息会保留在这里，方便你查看或截图。解除屏蔽后即可回复。",
   "verifyTitle": "已验证账号",

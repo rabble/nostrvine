@@ -2871,19 +2871,6 @@
   "inboxEmptySubtitle": "Butang + itu tidak menggigit.",
   "inboxLoadErrorTitle": "Mesej tidak dimuatkan",
   "inboxLoadErrorSubtitle": "Semak sambungan anda dan cuba sekali lagi.",
-  "inboxFilterAll": "Semua",
-  "@inboxFilterAll": {
-    "description": "Filter chip label showing all conversations in the Messages inbox."
-  },
-  "inboxFilterUnread": "Belum dibaca",
-  "@inboxFilterUnread": {
-    "description": "Filter chip label showing only unread conversations in the Messages inbox."
-  },
-  "inboxUnreadEmptyTitle": "Anda sudah baca semuanya",
-  "@inboxUnreadEmptyTitle": {
-    "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
-  },
-  "inboxUnreadEmptySubtitle": "Tiada mesej belum dibaca sekarang.",
   "inboxSearchHint": "Cari mesej",
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
@@ -6490,10 +6477,6 @@
   "videoEditorRemoveAudioSemanticLabel": "Alih keluar audio",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
   "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
-  "inboxFilterBlocked": "Disekat",
-  "inboxBlockedEmptyTitle": "Tiada sembang disekat",
-  "inboxBlockedEmptySubtitle": "Akaun yang anda sekat akan muncul di sini.",
-  "inboxBlockedNoMessages": "Tiada mesej",
   "dmBlockedThreadTitle": "Anda menyekat akaun ini",
   "dmBlockedThreadBody": "Mesej kekal di sini supaya anda boleh membacanya atau mengambil tangkap layar. Nyahsekat untuk membalas.",
   "verifyTitle": "Akaun disahkan",

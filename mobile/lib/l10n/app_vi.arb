@@ -2871,19 +2871,6 @@
   "inboxEmptySubtitle": "Nút + kia không cắn đâu.",
   "inboxLoadErrorTitle": "Tin nhắn không tải được",
   "inboxLoadErrorSubtitle": "Kiểm tra kết nối rồi thử lại nhé.",
-  "inboxFilterAll": "Tất cả",
-  "@inboxFilterAll": {
-    "description": "Filter chip label showing all conversations in the Messages inbox."
-  },
-  "inboxFilterUnread": "Chưa đọc",
-  "@inboxFilterUnread": {
-    "description": "Filter chip label showing only unread conversations in the Messages inbox."
-  },
-  "inboxUnreadEmptyTitle": "Bạn đã đọc hết rồi",
-  "@inboxUnreadEmptyTitle": {
-    "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
-  },
-  "inboxUnreadEmptySubtitle": "Hiện không có tin nhắn chưa đọc.",
   "inboxSearchHint": "Tìm tin nhắn",
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
@@ -6490,10 +6477,6 @@
   "videoEditorRemoveAudioSemanticLabel": "Xóa âm thanh",
   "rgbColorSemanticLabel": "RGB {red}, {green}, {blue}",
   "videoEditorColorPickerSwatchSemanticLabel": "{picker}, {color}",
-  "inboxFilterBlocked": "Đã chặn",
-  "inboxBlockedEmptyTitle": "Không có cuộc trò chuyện bị chặn",
-  "inboxBlockedEmptySubtitle": "Các tài khoản bạn chặn sẽ xuất hiện ở đây.",
-  "inboxBlockedNoMessages": "Không có tin nhắn",
   "dmBlockedThreadTitle": "Bạn đã chặn tài khoản này",
   "dmBlockedThreadBody": "Tin nhắn vẫn ở đây để bạn có thể đọc hoặc chụp màn hình. Bỏ chặn để trả lời.",
   "verifyTitle": "Tài khoản đã xác minh",

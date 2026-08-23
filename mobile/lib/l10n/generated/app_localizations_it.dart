@@ -5519,37 +5519,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Controlla la connessione e riprova.';
 
   @override
-  String get inboxFilterAll => 'Tutti';
-
-  @override
-  String get inboxFilterUnread => 'Non letti';
-
-  @override
   String get dmBlockedThreadTitle => 'Hai bloccato questo account';
 
   @override
   String get dmBlockedThreadBody =>
       'I messaggi restano qui così puoi leggerli o farne uno screenshot. Sblocca per rispondere.';
-
-  @override
-  String get inboxFilterBlocked => 'Bloccati';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Nessuna chat bloccata';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Gli account che blocchi compaiono qui.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Nessun messaggio';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Sei in pari';
-
-  @override
-  String get inboxUnreadEmptySubtitle =>
-      'Nessun messaggio non letto al momento.';
 
   @override
   String get inboxSearchHint => 'Cerca nei messaggi';

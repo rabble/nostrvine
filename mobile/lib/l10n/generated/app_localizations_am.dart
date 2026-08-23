@@ -5341,35 +5341,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'ግንኙነትህን አረጋግጠህ እንደገና ሞክር።';
 
   @override
-  String get inboxFilterAll => 'ሁሉም';
-
-  @override
-  String get inboxFilterUnread => 'ያልተነበቡ';
-
-  @override
   String get dmBlockedThreadTitle => 'ይህን መለያ አግደዋል';
 
   @override
   String get dmBlockedThreadBody =>
       'መልእክቶቹ እዚህ ይቆያሉ፣ ስለዚህ ማንበብ ወይም ቅጽበታዊ ገጽ እይታ ማንሳት ይችላሉ። ለመመለስ እገዳውን ያንሱ።';
-
-  @override
-  String get inboxFilterBlocked => 'የታገዱ';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'የታገዱ ውይይቶች የሉም';
-
-  @override
-  String get inboxBlockedEmptySubtitle => 'የሚያግዷቸው መለያዎች እዚህ ይታያሉ።';
-
-  @override
-  String get inboxBlockedNoMessages => 'መልእክቶች የሉም';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'ሁሉንም አንብበሃል';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'አሁን ያልተነበበ መልዕክት የለም።';
 
   @override
   String get inboxSearchHint => 'መልዕክቶችን ፈልግ';

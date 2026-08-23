@@ -5562,35 +5562,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check your connection and give it another go.';
 
   @override
-  String get inboxFilterAll => 'All';
-
-  @override
-  String get inboxFilterUnread => 'Unread';
-
-  @override
   String get dmBlockedThreadTitle => 'You blocked this account';
 
   @override
   String get dmBlockedThreadBody =>
       'Messages stay here so you can read or screenshot them. Unblock to reply.';
-
-  @override
-  String get inboxFilterBlocked => 'Blocked';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'No blocked chats';
-
-  @override
-  String get inboxBlockedEmptySubtitle => 'Accounts you block show up here.';
-
-  @override
-  String get inboxBlockedNoMessages => 'No messages';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'You\'re all caught up';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'No unread messages right now.';
 
   @override
   String get inboxSearchHint => 'Search messages';

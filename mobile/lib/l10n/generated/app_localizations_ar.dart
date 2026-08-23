@@ -5417,35 +5417,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'تحقّق من اتصالك وحاول مرة أخرى.';
 
   @override
-  String get inboxFilterAll => 'الكل';
-
-  @override
-  String get inboxFilterUnread => 'غير المقروءة';
-
-  @override
   String get dmBlockedThreadTitle => 'لقد حظرت هذا الحساب';
 
   @override
   String get dmBlockedThreadBody =>
       'تبقى الرسائل هنا لتتمكن من قراءتها أو التقاط صورة لها. ألغِ الحظر للرد.';
-
-  @override
-  String get inboxFilterBlocked => 'محظور';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'لا توجد محادثات محظورة';
-
-  @override
-  String get inboxBlockedEmptySubtitle => 'تظهر هنا الحسابات التي تحظرها.';
-
-  @override
-  String get inboxBlockedNoMessages => 'لا توجد رسائل';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'أنت على اطلاع بكل شيء';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'لا توجد رسائل غير مقروءة حاليًا.';
 
   @override
   String get inboxSearchHint => 'البحث في الرسائل';

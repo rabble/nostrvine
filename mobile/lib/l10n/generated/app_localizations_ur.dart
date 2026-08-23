@@ -5468,36 +5468,11 @@ class AppLocalizationsUr extends AppLocalizations {
       'اپنا کنکشن چیک کریں اور ایک بار پھر کوشش کریں۔';
 
   @override
-  String get inboxFilterAll => 'سب';
-
-  @override
-  String get inboxFilterUnread => 'غیر پڑھی ہوئی';
-
-  @override
   String get dmBlockedThreadTitle => 'آپ نے یہ اکاؤنٹ مسدود کیا ہے';
 
   @override
   String get dmBlockedThreadBody =>
       'پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔';
-
-  @override
-  String get inboxFilterBlocked => 'مسدود';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'کوئی مسدود چیٹ نہیں';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔';
-
-  @override
-  String get inboxBlockedNoMessages => 'کوئی پیغام نہیں';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'آپ سب پڑھ چکے ہیں';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'ابھی کوئی غیر پڑھا پیغام نہیں۔';
 
   @override
   String get inboxSearchHint => 'پیغامات تلاش کریں';

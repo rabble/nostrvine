@@ -5401,36 +5401,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Bağlantını kontrol edip tekrar dene.';
 
   @override
-  String get inboxFilterAll => 'Tümü';
-
-  @override
-  String get inboxFilterUnread => 'Okunmamış';
-
-  @override
   String get dmBlockedThreadTitle => 'Bu hesabı engelledin';
 
   @override
   String get dmBlockedThreadBody =>
       'Mesajlar burada kalır, böylece okuyabilir veya ekran görüntüsü alabilirsin. Yanıtlamak için engeli kaldır.';
-
-  @override
-  String get inboxFilterBlocked => 'Engellenenler';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Engellenmiş sohbet yok';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Engellediğin hesaplar burada görünür.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Mesaj yok';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Her şeyi okudun';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Şu anda okunmamış mesaj yok.';
 
   @override
   String get inboxSearchHint => 'Mesajlarda ara';

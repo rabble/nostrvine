@@ -5395,36 +5395,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Periksa koneksimu dan coba lagi.';
 
   @override
-  String get inboxFilterAll => 'Semua';
-
-  @override
-  String get inboxFilterUnread => 'Belum dibaca';
-
-  @override
   String get dmBlockedThreadTitle => 'Kamu memblokir akun ini';
 
   @override
   String get dmBlockedThreadBody =>
       'Pesan tetap ada di sini agar kamu bisa membacanya atau membuat tangkapan layar. Buka blokir untuk membalas.';
-
-  @override
-  String get inboxFilterBlocked => 'Diblokir';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Tidak ada obrolan yang diblokir';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Akun yang kamu blokir muncul di sini.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Tidak ada pesan';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Semua sudah kamu baca';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Tidak ada pesan yang belum dibaca.';
 
   @override
   String get inboxSearchHint => 'Cari pesan';

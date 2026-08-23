@@ -5499,36 +5499,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Verifique sua conexão e tente de novo.';
 
   @override
-  String get inboxFilterAll => 'Todas';
-
-  @override
-  String get inboxFilterUnread => 'Não lidas';
-
-  @override
   String get dmBlockedThreadTitle => 'Você bloqueou esta conta';
 
   @override
   String get dmBlockedThreadBody =>
       'As mensagens ficam aqui para você ler ou capturar a tela. Desbloqueie para responder.';
-
-  @override
-  String get inboxFilterBlocked => 'Bloqueados';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Nenhuma conversa bloqueada';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'As contas que você bloquear aparecem aqui.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Sem mensagens';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Você está em dia';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Sem mensagens não lidas no momento.';
 
   @override
   String get inboxSearchHint => 'Pesquisar mensagens';

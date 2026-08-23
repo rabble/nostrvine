@@ -2871,19 +2871,6 @@
   "inboxEmptySubtitle": "وہ + بٹن کاٹ نہیں کھائے گا۔",
   "inboxLoadErrorTitle": "پیغامات لوڈ نہیں ہوئے",
   "inboxLoadErrorSubtitle": "اپنا کنکشن چیک کریں اور ایک بار پھر کوشش کریں۔",
-  "inboxFilterAll": "سب",
-  "@inboxFilterAll": {
-    "description": "Filter chip label showing all conversations in the Messages inbox."
-  },
-  "inboxFilterUnread": "غیر پڑھی ہوئی",
-  "@inboxFilterUnread": {
-    "description": "Filter chip label showing only unread conversations in the Messages inbox."
-  },
-  "inboxUnreadEmptyTitle": "آپ سب پڑھ چکے ہیں",
-  "@inboxUnreadEmptyTitle": {
-    "description": "Shown in place of the conversation list when the Unread filter is on and every conversation has been read."
-  },
-  "inboxUnreadEmptySubtitle": "ابھی کوئی غیر پڑھا پیغام نہیں۔",
   "inboxSearchHint": "پیغامات تلاش کریں",
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
@@ -6490,10 +6477,6 @@
   "videoEditorRemoveAudioSemanticLabel": "آڈیو ہٹائیں",
   "rgbColorSemanticLabel": "RGB {red}، {green}، {blue}",
   "videoEditorColorPickerSwatchSemanticLabel": "{picker}، {color}",
-  "inboxFilterBlocked": "مسدود",
-  "inboxBlockedEmptyTitle": "کوئی مسدود چیٹ نہیں",
-  "inboxBlockedEmptySubtitle": "آپ جن اکاؤنٹس کو مسدود کرتے ہیں وہ یہاں دکھائی دیتے ہیں۔",
-  "inboxBlockedNoMessages": "کوئی پیغام نہیں",
   "dmBlockedThreadTitle": "آپ نے یہ اکاؤنٹ مسدود کیا ہے",
   "dmBlockedThreadBody": "پیغامات یہیں رہتے ہیں تاکہ آپ انہیں پڑھ سکیں یا اسکرین شاٹ لے سکیں۔ جواب دینے کے لیے بلاک ہٹائیں۔",
   "verifyTitle": "تصدیق شدہ اکاؤنٹس",

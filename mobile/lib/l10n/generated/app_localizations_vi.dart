@@ -5435,36 +5435,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Kiểm tra kết nối rồi thử lại nhé.';
 
   @override
-  String get inboxFilterAll => 'Tất cả';
-
-  @override
-  String get inboxFilterUnread => 'Chưa đọc';
-
-  @override
   String get dmBlockedThreadTitle => 'Bạn đã chặn tài khoản này';
 
   @override
   String get dmBlockedThreadBody =>
       'Tin nhắn vẫn ở đây để bạn có thể đọc hoặc chụp màn hình. Bỏ chặn để trả lời.';
-
-  @override
-  String get inboxFilterBlocked => 'Đã chặn';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Không có cuộc trò chuyện bị chặn';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Các tài khoản bạn chặn sẽ xuất hiện ở đây.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Không có tin nhắn';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Bạn đã đọc hết rồi';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Hiện không có tin nhắn chưa đọc.';
 
   @override
   String get inboxSearchHint => 'Tìm tin nhắn';

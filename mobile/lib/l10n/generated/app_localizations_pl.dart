@@ -5604,36 +5604,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxLoadErrorSubtitle => 'Sprawdź połączenie i spróbuj ponownie.';
 
   @override
-  String get inboxFilterAll => 'Wszystkie';
-
-  @override
-  String get inboxFilterUnread => 'Nieprzeczytane';
-
-  @override
   String get dmBlockedThreadTitle => 'Zablokowano to konto';
 
   @override
   String get dmBlockedThreadBody =>
       'Wiadomości pozostają tutaj, żebyś mógł je przeczytać lub zrobić zrzut ekranu. Odblokuj, aby odpowiedzieć.';
-
-  @override
-  String get inboxFilterBlocked => 'Zablokowane';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Brak zablokowanych czatów';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Konta, które zablokujesz, pojawią się tutaj.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Brak wiadomości';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Wszystko nadrobione';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Brak nieprzeczytanych wiadomości.';
 
   @override
   String get inboxSearchHint => 'Szukaj wiadomości';

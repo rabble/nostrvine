@@ -5620,36 +5620,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Verifică conexiunea și încearcă din nou.';
 
   @override
-  String get inboxFilterAll => 'Toate';
-
-  @override
-  String get inboxFilterUnread => 'Necitite';
-
-  @override
   String get dmBlockedThreadTitle => 'Ai blocat acest cont';
 
   @override
   String get dmBlockedThreadBody =>
       'Mesajele rămân aici ca să le poți citi sau captura. Deblochează pentru a răspunde.';
-
-  @override
-  String get inboxFilterBlocked => 'Blocate';
-
-  @override
-  String get inboxBlockedEmptyTitle => 'Nicio conversație blocată';
-
-  @override
-  String get inboxBlockedEmptySubtitle =>
-      'Conturile pe care le blochezi apar aici.';
-
-  @override
-  String get inboxBlockedNoMessages => 'Niciun mesaj';
-
-  @override
-  String get inboxUnreadEmptyTitle => 'Ești la zi';
-
-  @override
-  String get inboxUnreadEmptySubtitle => 'Niciun mesaj necitit momentan.';
 
   @override
   String get inboxSearchHint => 'Caută mesaje';
