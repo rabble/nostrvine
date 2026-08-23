@@ -60,8 +60,16 @@ import 'package:window_manager/window_manager.dart';
 
 /// Top-level background message handler required by Firebase.
 ///
-/// Registered below via [FirebaseMessaging.onBackgroundMessage]; the pragma
-/// keeps it out of the tree shaker so the background isolate can find it.
+/// Registered by the PushNotifications phase in
+/// `startup/startup_coordinator_factory.dart`, a different library — which is
+/// exactly why the pragma matters. On Android the plugin resolves this
+/// function through `PluginUtilities.getCallbackHandle(handler)!`, and that
+/// bang throws if AOT tree-shakes it away. `vm:entry-point` keeps it in the
+/// snapshot and in the callback table; the callback table is keyed on the
+/// function, not on which library declares it, so living here rather than in
+/// main.dart is safe. (The iOS path returns before that lookup — see
+/// `registerBackgroundMessageHandler` — so a regression here would only ever
+/// show up on Android.)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await handleFirebaseMessagingBackgroundMessage(message);
