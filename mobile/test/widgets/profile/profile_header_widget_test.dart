@@ -2499,9 +2499,8 @@ void main() {
           await tester.pumpAndSettle();
 
           // Anonymous users see the action label pill, not session expired
-          final l10n = lookupAppLocalizations(const Locale('en'));
           expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
-          expect(find.text(l10n.profileSessionExpired), findsNothing);
+          expect(find.text(enL10n.profileSessionExpired), findsNothing);
         },
       );
 

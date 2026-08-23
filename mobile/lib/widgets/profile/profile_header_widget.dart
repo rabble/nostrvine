@@ -561,6 +561,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         actions: actions,
         onMaybeLater: (action) {
           if (action != ProfileActionType.secureAccount) return;
+          // The write lands in the in-memory SharedPreferences cache before
+          // the future completes, so an empty setState is enough to drop the
+          // action from the next build.
           unawaited(secureAccountPromptDismissal.dismiss());
           if (mounted) setState(() {});
         },
