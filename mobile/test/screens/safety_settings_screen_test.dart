@@ -4,6 +4,7 @@
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -26,6 +28,17 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_provenance_filter_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/go_router.dart';
+import '../helpers/test_provider_overrides.dart';
+
+class _MockAuthService extends MockAuthService {
+  _MockAuthService(this._pubkey);
+  final String _pubkey;
+
+  @override
+  String? get currentPublicKeyHex => _pubkey;
+}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {
@@ -116,6 +129,8 @@ void main() {
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
     const labelerPubkey =
         'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+    const currentUserPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -171,9 +186,13 @@ void main() {
     Widget createTestWidget({
       bool isProtectedMinor = false,
       Map<String, UserProfile?> profiles = const {},
+      MockGoRouter? goRouter,
     }) {
       final container = ProviderContainer(
         overrides: [
+          authServiceProvider.overrideWithValue(
+            _MockAuthService(currentUserPubkey),
+          ),
           contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistRepository,
           ),
@@ -222,7 +241,10 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
-          home: const SafetySettingsScreen(),
+          home: MockGoRouterProvider(
+            goRouter: goRouter ?? MockGoRouter(),
+            child: const SafetySettingsScreen(),
+          ),
         ),
       );
     }
@@ -266,6 +288,33 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(npub), findsOneWidget);
+    });
+
+    testWidgets('tapping a blocked user opens the conversation read-only', (
+      tester,
+    ) async {
+      // #7025 evidence path: with the inbox's Blocked slice gone, this row
+      // is the way back into a blocked thread without unblocking.
+      await mockBlocklistRepository.blockUser(blockedPubkey);
+      final goRouter = MockGoRouter();
+      when(
+        () => goRouter.push<Object?>(any(), extra: any(named: 'extra')),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(createTestWidget(goRouter: goRouter));
+      await tester.pumpAndSettle();
+
+      final rowName = UserProfile.defaultDisplayNameFor(blockedPubkey);
+      await tester.scrollUntilVisible(find.text(rowName), 200);
+      await tester.tap(find.text(rowName));
+      await tester.pump();
+
+      final expectedPath = ConversationPage.pathForId(
+        DmRepository.computeConversationId([currentUserPubkey, blockedPubkey]),
+      );
+      verify(
+        () => goRouter.push<Object?>(expectedPath, extra: [blockedPubkey]),
+      ).called(1);
     });
 
     testWidgets('blocked users show their real name and nip05', (

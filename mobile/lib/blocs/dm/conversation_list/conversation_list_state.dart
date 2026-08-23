@@ -4,13 +4,18 @@ part of 'conversation_list_bloc.dart';
 
 enum ConversationListStatus { initial, loading, loaded, error }
 
-/// Which slice of the Messages tab the chip row is showing.
+// TODO(#8088): No UI dispatches ConversationListFilterChanged since the DM
+// redesign removed the filter chips — the filter is pinned to `all`. This
+// plumbing is kept deliberately for a future filters surface; #8088 tracks
+// reusing or removing it.
+
+/// Which slice of the conversation list is visible.
 ///
 /// An enum rather than a pair of bools because the set is expected to grow:
 /// a Muted filter is the anticipated next case once muting exists as a user
 /// action (today `ContentBlocklistRepository.isMutedByUs` only reflects mutes
 /// authored from other Nostr clients). Adding a case means a new source list
-/// in `_computeVisible` and a new chip — no call-site churn.
+/// in `_computeVisible`.
 enum InboxFilter {
   /// Every conversation except those with accounts the viewer blocked.
   all,

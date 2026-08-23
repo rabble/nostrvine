@@ -2,6 +2,7 @@
 // ABOUTME: Provides age verification gate and navigation to sub-screens
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart' show DmRepository;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -442,9 +444,35 @@ class _BlockedUsersSection extends ConsumerWidget {
             (pubkey) => _BlockedUserTile(
               pubkey: pubkey,
               onUnblock: () => _unblockUser(context, pubkey),
+              onOpenConversation: () =>
+                  _openBlockedConversation(context, ref, pubkey),
             ),
           )
           .toList(),
+    );
+  }
+
+  /// Opens the blocked account's DM thread read-only.
+  ///
+  /// This is the evidence path from #7025: someone who blocked an abusive
+  /// sender must be able to read and screenshot the conversation without
+  /// unblocking, which would re-expose them. The thread renders with the
+  /// blocked notice in place of the composer (#7026); since the DM redesign
+  /// removed the inbox's Blocked slice, this row is the way back in.
+  void _openBlockedConversation(
+    BuildContext context,
+    WidgetRef ref,
+    String pubkey,
+  ) {
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (currentPubkey == null || currentPubkey.isEmpty) return;
+    // The route id must be the canonical sha256 of the sorted participants —
+    // the same id the DM pipeline persists under (see other_profile_screen).
+    context.push(
+      ConversationPage.pathForId(
+        DmRepository.computeConversationId([currentPubkey, pubkey]),
+      ),
+      extra: [pubkey],
     );
   }
 
@@ -462,15 +490,18 @@ class _BlockedUsersSection extends ConsumerWidget {
   }
 }
 
-/// Tile widget for displaying a blocked user with unblock option.
+/// Tile widget for displaying a blocked user with unblock option. Tapping
+/// the row opens the conversation read-only (#7025 evidence path).
 class _BlockedUserTile extends ConsumerWidget {
   const _BlockedUserTile({
     required this.pubkey,
     required this.onUnblock,
+    required this.onOpenConversation,
   });
 
   final String pubkey;
   final VoidCallback onUnblock;
+  final VoidCallback onOpenConversation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -483,6 +514,7 @@ class _BlockedUserTile extends ConsumerWidget {
         profile?.shortDisplayNip05 ?? NostrKeyUtils.npubOrHex(pubkey);
 
     return ListTile(
+      onTap: onOpenConversation,
       leading: Container(
         width: 40,
         height: 40,
