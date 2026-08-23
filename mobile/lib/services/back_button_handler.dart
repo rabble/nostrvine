@@ -5,13 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/navigation/back_navigation_executor.dart';
+import 'package:openvine/router/navigation/back_navigation_policy.dart';
 import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
 
 class BackButtonHandler {
   static const MethodChannel _channel = MethodChannel(
@@ -35,115 +33,36 @@ class BackButtonHandler {
     }
   }
 
+  /// Returns whether the press was consumed. A `false` return lets Android
+  /// finish the activity, so it must mean there is genuinely nowhere left
+  /// to go back to.
   static Future<bool> _handleBackButton() async {
-    if (_router == null || _ref == null) {
-      return false;
-    }
+    final router = _router;
+    final ref = _ref;
+    if (router == null || ref == null) return false;
 
-    // Get current route context
-    final ctxAsync = _ref!.read(pageContextProvider);
-    final ctx = ctxAsync.value;
-    if (ctx == null) {
-      return false;
-    }
-
-    // First, check if we're in a sub-route (hashtag, search, etc.)
-    // If so, navigate back to parent route
-    switch (ctx.type) {
-      case RouteType.categoryGallery:
-        if (_router!.canPop()) {
-          _router!.pop();
-        } else {
-          _router!.go(ExploreScreen.path);
-        }
-        return true; // Handled
-      case RouteType.hashtag:
-        // Hashtag is part of the Explore tab
-        _router!.go(ExploreScreen.path);
-        return true; // Handled
-      case RouteType.videoRecorder:
-      case RouteType.videoEditor:
-      case RouteType.videoMetadata:
-      case RouteType.videoEdit:
-      case RouteType.subtitleEdit:
-        // Pop the video editing flow screens
-        _router!.pop();
-        return true; // Handled
-      default:
-        break;
-    }
-
-    // For routes with videoIndex (feed mode), go to grid mode first
-    // This handles page-internal navigation before tab switching
-    // For explore: go to grid mode (null index)
-    // For notifications: go to index 0 (notifications always has an index)
-    // For other routes: go to grid mode (null index)
-    if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-      // For explore, profile, and other routes, go to grid mode (null index)
-      final newRoute = switch (ctx.type) {
-        RouteType.notifications => NotificationsPage.pathForIndex(0),
-        RouteType.explore => ExploreScreen.path,
-        RouteType.profile => ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
-        RouteType.home => VideoFeedPage.pathForIndex(0),
-        _ => ExploreScreen.path,
-      };
-
-      _router!.go(newRoute);
-      return true; // Handled
-    }
-
-    // Check tab history for navigation
-    final tabHistory = _ref!.read(tabHistoryProvider.notifier);
+    final routeContext = ref.read(pageContextProvider).value;
+    final tabHistory = ref.read(tabHistoryProvider.notifier);
     final previousTab = tabHistory.getPreviousTab();
 
-    // If there's a previous tab in history, navigate to it
-    if (previousTab != null) {
-      // Remove current tab from history before navigating
-      tabHistory.navigateBack();
-
-      _navigateToTab(previousTab);
-      return true; // Handled
-    }
-
-    // No previous tab - check if we're on a non-home tab
-    // If so, go to home first before exiting
-    final currentTab = tabIndexFromRouteType(ctx.type);
-    if (currentTab != null && currentTab != 0) {
-      // Go to home first
-      _router!.go(VideoFeedPage.pathForIndex(0));
-      return true; // Handled
-    }
-
-    // Already at home with no history - let system exit app
-    return false; // Not handled - let Android exit app
-  }
-
-  /// Navigates to the given tab at its last known position.
-  static void _navigateToTab(int tabIndex) {
-    final routeType = routeTypeForTab(tabIndex);
-    final lastIndex = _ref!
-        .read(lastTabPositionProvider.notifier)
-        .getPosition(routeType);
-
-    switch (tabIndex) {
-      case 0:
-        _router!.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-      case 1:
-        if (lastIndex != null) {
-          _router!.go(ExploreScreen.pathForIndex(lastIndex));
-        } else {
-          _router!.go(ExploreScreen.path);
-        }
-      case 2:
-        _router!.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
-      case 3:
-        final authService = _ref!.read(authServiceProvider);
-        final currentNpub = authService.currentNpub;
-        if (currentNpub != null) {
-          _router!.go(ProfileScreenRouter.pathForNpub(currentNpub));
-        } else {
-          _router!.go(VideoFeedPage.pathForIndex(0));
-        }
-    }
+    return executeBackAction(
+      resolveBackAction(
+        context: routeContext,
+        canPop: router.canPop(),
+        previousTab: previousTab,
+        lastIndexForPreviousTab: previousTab == null
+            ? null
+            : ref
+                  .read(lastTabPositionProvider.notifier)
+                  .getPosition(routeTypeForTab(previousTab)),
+        // Only the profile tab needs an identity, and materialising
+        // AuthService on every back press is not worth it.
+        currentUserNpub: previousTab == 3
+            ? ref.read(authServiceProvider).currentNpub
+            : null,
+      ),
+      router: router,
+      tabHistory: tabHistory,
+    );
   }
 }

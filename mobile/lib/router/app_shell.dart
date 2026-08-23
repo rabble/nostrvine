@@ -9,18 +9,17 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/navigation/back_navigation_executor.dart';
+import 'package:openvine/router/navigation/back_navigation_policy.dart';
 import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/explore/explore_tab_labels.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
@@ -180,32 +179,36 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     }
   }
 
-  /// Navigates to the given tab at its last known position.
-  void _navigateToTab(BuildContext context, WidgetRef ref, int tabIndex) {
-    final routeType = routeTypeForTab(tabIndex);
-    final lastIndex = ref
-        .read(lastTabPositionProvider.notifier)
-        .getPosition(routeType);
+  String? _currentUserNpub() {
+    final hex = ref.read(authServiceProvider).currentPublicKeyHex;
+    return hex == null ? null : NostrKeyUtils.encodePubKey(hex);
+  }
 
-    switch (tabIndex) {
-      case 0:
-        context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-      case 1:
-        if (lastIndex != null) {
-          context.go(ExploreScreen.pathForIndex(lastIndex));
-        } else {
-          context.go(ExploreScreen.path);
-        }
-      case 2:
-        context.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
-      case 3:
-        final authService = ref.read(authServiceProvider);
-        final currentUserHex = authService.currentPublicKeyHex;
-        if (currentUserHex != null) {
-          final npub = NostrKeyUtils.encodePubKey(currentUserHex);
-          context.go(ProfileScreenRouter.pathForNpub(npub));
-        }
-    }
+  /// Runs the shared back policy for the app-bar back button.
+  void _handleAppBarBack() {
+    Log.info(
+      '👆 User tapped back button',
+      name: 'Navigation',
+      category: LogCategory.ui,
+    );
+    final router = GoRouter.of(context);
+    final tabHistory = ref.read(tabHistoryProvider.notifier);
+    final previousTab = tabHistory.getPreviousTab();
+    executeBackAction(
+      resolveBackAction(
+        context: ref.read(pageContextProvider).asData?.value,
+        canPop: router.canPop(),
+        previousTab: previousTab,
+        lastIndexForPreviousTab: previousTab == null
+            ? null
+            : ref
+                  .read(lastTabPositionProvider.notifier)
+                  .getPosition(routeTypeForTab(previousTab)),
+        currentUserNpub: previousTab == 3 ? _currentUserNpub() : null,
+      ),
+      router: router,
+      tabHistory: tabHistory,
+    );
   }
 
   /// Whether the shell app bar should show a back button for [ctx].
@@ -365,79 +368,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
               titleWidget: _buildTappableTitle(context, ref, title, chromeCtx),
               titleSuffix: const EnvironmentBadge(),
               showBackButton: showBackButton,
-              onBackPressed: showBackButton
-                  ? () {
-                      Log.info(
-                        '👆 User tapped back button',
-                        name: 'Navigation',
-                        category: LogCategory.ui,
-                      );
-
-                      // First, try to pop if there's something on the navigation stack
-                      // This handles pushed routes (e.g., list → profile → back to list)
-                      if (context.canPop()) {
-                        Log.info(
-                          '👈 Popping navigation stack',
-                          name: 'Navigation',
-                          category: LogCategory.ui,
-                        );
-                        context.pop();
-                        return;
-                      }
-
-                      // Get current route context
-                      final ctx = ref.read(pageContextProvider).asData?.value;
-                      if (ctx == null) return;
-
-                      // For routes with videoIndex (feed mode), go to grid mode first
-                      // This handles page-internal navigation before tab switching
-                      // For explore/profile: any videoIndex (including 0) should go to grid (null)
-                      // For notifications: videoIndex > 0 should go to index 0
-
-                      if (ctx.videoIndex != null) {
-                        switch (ctx.type) {
-                          case RouteType.explore:
-                            // For Explore, grid mode is null
-                            return context.go(ExploreScreen.path);
-                          // For Profile, grid mode is null
-                          case RouteType.profile:
-                            return context.go(
-                              ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
-                            );
-                          // For Notifications, index 0 is the base state
-                          case RouteType.notifications when ctx.videoIndex != 0:
-                            return context.go(
-                              NotificationsPage.pathForIndex(0),
-                            );
-                          default:
-                            break;
-                        }
-                      }
-
-                      // Check tab history for navigation
-                      final tabHistory = ref.read(tabHistoryProvider.notifier);
-                      final previousTab = tabHistory.getPreviousTab();
-
-                      // If there's a previous tab in history, navigate to it
-                      if (previousTab != null) {
-                        // Remove current tab from history before navigating
-                        tabHistory.navigateBack();
-
-                        _navigateToTab(context, ref, previousTab);
-                        return;
-                      }
-
-                      // No previous tab - check if we're on a non-home tab
-                      // If so, go to home first before exiting
-                      final currentTab = tabIndexFromRouteType(ctx.type);
-                      if (currentTab != null && currentTab != 0) {
-                        // Go to home first
-                        return context.go(VideoFeedPage.pathForIndex(0));
-                      }
-
-                      // Already at home with no history - let system handle exit
-                    }
-                  : null,
+              onBackPressed: showBackButton ? _handleAppBarBack : null,
             ),
       // Keep the branch container in the same slot regardless of tab so
       // switching to/from home never reparents it (which would relayout all

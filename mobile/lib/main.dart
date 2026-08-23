@@ -88,8 +88,6 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -2730,152 +2728,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
       BackButtonHandler.initialize(router, ref);
     }
 
-    // Helper functions for tab navigation
-    RouteType routeTypeForTab(int index) {
-      switch (index) {
-        case 0:
-          return RouteType.home;
-        case 1:
-          return RouteType.explore;
-        case 2:
-          return RouteType.notifications;
-        case 3:
-          return RouteType.profile;
-        default:
-          return RouteType.home;
-      }
-    }
-
-    int? tabIndexFromRouteType(RouteType type) {
-      switch (type) {
-        case RouteType.home:
-          return 0;
-        case RouteType.explore:
-        case RouteType.hashtag: // Hashtag is part of explore tab
-          return 1;
-        case RouteType.notifications:
-          return 2;
-        case RouteType.profile:
-          return 3;
-        default:
-          return null; // Not a main tab route
-      }
-    }
-
-    // Helper function to handle back navigation (iOS/macOS/Windows use PopScope)
-    Future<bool> handleBackNavigation(GoRouter router, WidgetRef ref) async {
-      // Get current route context
-      final ctxAsync = ref.read(pageContextProvider);
-      final ctx = ctxAsync.value;
-      if (ctx == null) {
-        return false; // Not handled - let PopScope handle it
-      }
-
-      // First, check if we're in a sub-route (hashtag, search, etc.)
-      // If so, navigate back to parent route
-      switch (ctx.type) {
-        case RouteType.hashtag:
-          // Hashtag is a standalone screen — pop back
-          router.pop();
-          return true; // Handled
-        case RouteType.categoryGallery:
-          if (router.canPop()) {
-            router.pop();
-          } else {
-            router.go(ExploreScreen.path);
-          }
-          return true; // Handled
-        case RouteType.videoRecorder:
-        case RouteType.videoEditor:
-        case RouteType.videoMetadata:
-        case RouteType.videoEdit:
-        case RouteType.subtitleEdit:
-          // Pop the video editing flow screens
-          router.pop();
-          return true; // Handled
-        default:
-          break;
-      }
-
-      // For routes with videoIndex (feed mode), go to grid mode first
-      // This handles page-internal navigation before tab switching
-      // For explore: go to grid mode (null index)
-      // For notifications: go to index 0 (notifications always has an index)
-      // For other routes: go to grid mode (null index)
-      if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        final newRoute = switch (ctx.type) {
-          // Notifications always has an index, go to index 0
-          RouteType.notifications => NotificationsPage.pathForIndex(0),
-          RouteType.explore => ExploreScreen.path,
-          RouteType.profile => ProfileScreenRouter.pathForNpub(
-            ctx.npub ?? 'me',
-          ),
-          RouteType.hashtag => HashtagScreenRouter.pathForTag(
-            ctx.hashtag ?? '',
-          ),
-          RouteType.home => VideoFeedPage.pathForIndex(0),
-          _ => ExploreScreen.path,
-        };
-
-        router.go(newRoute);
-        return true; // Handled
-      }
-
-      // Check tab history for navigation
-      final tabHistory = ref.read(tabHistoryProvider.notifier);
-      final previousTab = tabHistory.getPreviousTab();
-
-      // If there's a previous tab in history, navigate to it
-      if (previousTab != null) {
-        // Navigate to previous tab
-        final previousRouteType = routeTypeForTab(previousTab);
-        final lastIndex = ref
-            .read(lastTabPositionProvider.notifier)
-            .getPosition(previousRouteType);
-
-        // Remove current tab from history before navigating
-        tabHistory.navigateBack();
-
-        // Navigate to previous tab using BuildContext extension methods
-        // We need a BuildContext for this, but we don't have one here
-        // So we'll use router.go directly
-        switch (previousTab) {
-          case 0:
-            router.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-          case 1:
-            if (lastIndex != null) {
-              router.go(ExploreScreen.pathForIndex(lastIndex));
-            } else {
-              router.go(ExploreScreen.path);
-            }
-          case 2:
-            router.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
-          case 3:
-            // Get current user's npub for profile
-            final authService = ref.read(authServiceProvider);
-            final currentNpub = authService.currentNpub;
-            if (currentNpub != null) {
-              router.go(ProfileScreenRouter.pathForNpub(currentNpub));
-            } else {
-              router.go(VideoFeedPage.pathForIndex(0));
-            }
-        }
-        return true; // Handled
-      }
-
-      // No previous tab - check if we're on a non-home tab
-      // If so, go to home first before exiting
-      final currentTab = tabIndexFromRouteType(ctx.type);
-      if (currentTab != null && currentTab != 0) {
-        // Go to home first
-        router.go(VideoFeedPage.pathForIndex(0));
-        return true; // Handled
-      }
-
-      // Already at home with no history - let PopScope handle exit
-      return false; // Not handled - let PopScope handle it (may exit app)
-    }
-
     // One gate above every route: once the local database reports corruption
     // there is no screen left that can work, so ask for the restart that
     // repairs it instead of failing route by route. The review coordinator
@@ -2910,45 +2762,20 @@ class _DivineAppState extends ConsumerState<DivineApp>
       final statusBarStyle = effectiveBrightness == Brightness.light
           ? VineTheme.lightStatusBarStyle
           : VineTheme.statusBarStyle;
-      if (!kIsWeb && io.Platform.isAndroid) {
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: statusBarStyle,
-          child: MaterialApp.router(
-            title: 'Divine',
-            debugShowCheckedModeBanner: false,
-            theme: VineTheme.lightTheme,
-            darkTheme: VineTheme.theme,
-            themeMode: themeMode,
-            routerConfig: router,
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localeListResolutionCallback: resolveAppUiLocale,
-            builder: buildAppShell,
-          ),
-        );
-      }
-      return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          if (didPop) return;
-          await handleBackNavigation(router, ref);
-        },
-        child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: statusBarStyle,
-          child: MaterialApp.router(
-            title: 'Divine',
-            debugShowCheckedModeBanner: false,
-            theme: VineTheme.lightTheme,
-            darkTheme: VineTheme.theme,
-            themeMode: themeMode,
-            routerConfig: router,
-            locale: locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localeListResolutionCallback: resolveAppUiLocale,
-            builder: buildAppShell,
-          ),
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: statusBarStyle,
+        child: MaterialApp.router(
+          title: 'Divine',
+          debugShowCheckedModeBanner: false,
+          theme: VineTheme.lightTheme,
+          darkTheme: VineTheme.theme,
+          themeMode: themeMode,
+          routerConfig: router,
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: resolveAppUiLocale,
+          builder: buildAppShell,
         ),
       );
     }
