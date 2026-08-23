@@ -38,6 +38,24 @@ class _NotReadyNostrSession extends NostrSession {
 class _MockDeletionRepository extends Mock
     implements AccountDeletionRecoveryRepository {}
 
+/// The `AsyncLoading` that retains the pre-auth `AsyncData(null)` — the state
+/// `currentAccountDeletionAttemptProvider` enters on its first refetch after
+/// auth settles. Built through a container so it uses only public Riverpod API
+/// (`AsyncValue.copyWithPrevious` is an internal member).
+Future<AsyncValue<AccountDeletionAttempt?>> _retainedNullRefetch() async {
+  var authenticated = false;
+  final lookup = FutureProvider<AccountDeletionAttempt?>((ref) {
+    if (!authenticated) return null;
+    return Completer<AccountDeletionAttempt?>().future;
+  });
+  final container = ProviderContainer();
+  addTearDown(container.dispose);
+  await container.read(lookup.future);
+  authenticated = true;
+  container.invalidate(lookup);
+  return container.read(lookup);
+}
+
 void main() {
   group('Account deletion recovery gate', () {
     test('stays inactive while the attempt is loading', () {
@@ -70,53 +88,78 @@ void main() {
       );
     });
 
-    test('reports only a cold load without a previous value as pending', () {
-      expect(
-        accountDeletionRecoveryLookupPending(
-          const AsyncLoading<AccountDeletionAttempt?>(),
-        ),
-        isTrue,
-      );
-      expect(
-        accountDeletionRecoveryLookupPending(
-          const AsyncData<AccountDeletionAttempt?>(null),
-        ),
-        isFalse,
-      );
-      expect(
-        accountDeletionRecoveryLookupPending(
-          AsyncError<AccountDeletionAttempt?>(
-            StateError('coordinator unavailable'),
-            StackTrace.empty,
+    test(
+      'reports any in-flight lookup as pending, retained value included',
+      () async {
+        expect(
+          accountDeletionRecoveryLookupPending(
+            const AsyncLoading<AccountDeletionAttempt?>(),
           ),
-        ),
-        isFalse,
-      );
-    });
+          isTrue,
+        );
+        // The first post-auth refetch retains the pre-auth AsyncData(null), so
+        // it is isLoading while hasValue is true. It must still count as
+        // pending, or the splash releases against the stale null before the
+        // real attempt is known (#8058).
+        expect(
+          accountDeletionRecoveryLookupPending(await _retainedNullRefetch()),
+          isTrue,
+        );
+        expect(
+          accountDeletionRecoveryLookupPending(
+            const AsyncData<AccountDeletionAttempt?>(null),
+          ),
+          isFalse,
+        );
+        expect(
+          accountDeletionRecoveryLookupPending(
+            AsyncError<AccountDeletionAttempt?>(
+              StateError('coordinator unavailable'),
+              StackTrace.empty,
+            ),
+          ),
+          isFalse,
+        );
+      },
+    );
 
-    test('settles only a terminal lookup for an authenticated session', () {
-      expect(
-        authenticatedDeletionLookupSettled(
-          AuthState.checking,
-          const AsyncData<AccountDeletionAttempt?>(null),
-        ),
-        isFalse,
-      );
-      expect(
-        authenticatedDeletionLookupSettled(
-          AuthState.authenticated,
-          const AsyncLoading<AccountDeletionAttempt?>(),
-        ),
-        isFalse,
-      );
-      expect(
-        authenticatedDeletionLookupSettled(
-          AuthState.authenticated,
-          const AsyncData<AccountDeletionAttempt?>(null),
-        ),
-        isTrue,
-      );
-    });
+    test(
+      'settles only a terminal lookup for an authenticated session',
+      () async {
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.checking,
+            const AsyncData<AccountDeletionAttempt?>(null),
+          ),
+          isFalse,
+        );
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            const AsyncLoading<AccountDeletionAttempt?>(),
+          ),
+          isFalse,
+        );
+        // The post-auth refetch that retains the pre-auth null must not settle,
+        // or the splash releases against the stale null and a recovery user
+        // briefly sees the feed (#8058: stay fail-closed until the lookup
+        // resolves).
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            await _retainedNullRefetch(),
+          ),
+          isFalse,
+        );
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            const AsyncData<AccountDeletionAttempt?>(null),
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('Minor account review router gating', () {

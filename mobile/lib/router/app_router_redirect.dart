@@ -15,15 +15,22 @@ bool accountDeletionRecoveryGateActive(
   return attempt.value?.requiresRecoveryScreen ?? false;
 }
 
-/// Whether cold-start navigation is still waiting for the deletion lookup.
+/// Whether the deletion lookup is still in flight for cold-start routing.
 ///
-/// The router itself fails open during this state so it never paints the
-/// recovery screen without evidence of an interrupted deletion. The native
-/// startup splash waits on this predicate separately, preventing both a false
-/// recovery screen for ordinary users and a feed flash for recovery users.
+/// The router fails open while this is true so it never paints the recovery
+/// screen without evidence of an interrupted deletion. Separately, the native
+/// startup splash is held (via [authenticatedDeletionLookupSettled]) until this
+/// is false, so an authenticated user sees neither a false recovery screen nor
+/// a feed flash before the lookup resolves.
+///
+/// Any in-flight load counts as pending, including the first post-auth refetch:
+/// that re-run retains the pre-auth `AsyncData(null)`, so it is `isLoading`
+/// while `hasValue` is true. Excluding it would settle against the stale null
+/// and release the splash early (#8058: stay fail-closed until the lookup
+/// resolves).
 bool accountDeletionRecoveryLookupPending(
   AsyncValue<AccountDeletionAttempt?>? attempt,
-) => attempt == null || (attempt.isLoading && !attempt.hasValue);
+) => attempt == null || attempt.isLoading;
 
 bool authenticatedDeletionLookupSettled(
   AuthState authState,
