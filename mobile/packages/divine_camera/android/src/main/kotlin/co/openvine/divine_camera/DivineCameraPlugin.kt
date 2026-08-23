@@ -117,7 +117,8 @@ class DivineCameraPlugin :
                 val enableScreenFlash = call.argument<Boolean>("enableScreenFlash") ?: true
                 val mirrorFrontCameraOutput = call.argument<Boolean>("mirrorFrontCameraOutput") ?: true
                 val enableAutoLensSwitch = call.argument<Boolean>("enableAutoLensSwitch") ?: true
-                initializeCamera(lens, videoQuality, enableScreenFlash, mirrorFrontCameraOutput, enableAutoLensSwitch, oneShotResult)
+                val preferUnprocessedAudio = call.argument<Boolean>("preferUnprocessedAudio") ?: false
+                initializeCamera(lens, videoQuality, enableScreenFlash, mirrorFrontCameraOutput, enableAutoLensSwitch, preferUnprocessedAudio, oneShotResult)
             }
 
             "disposeCamera" -> {
@@ -209,7 +210,7 @@ class DivineCameraPlugin :
         }
     }
 
-    private fun initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Boolean, mirrorFrontCameraOutput: Boolean, enableAutoLensSwitch: Boolean, result: Result) {
+    private fun initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Boolean, mirrorFrontCameraOutput: Boolean, enableAutoLensSwitch: Boolean, preferUnprocessedAudio: Boolean, result: Result) {
         val currentActivity = activity
         if (currentActivity == null) {
             result.error("NO_ACTIVITY", "Activity not available", null)
@@ -229,7 +230,7 @@ class DivineCameraPlugin :
                 channel.invokeMethod("onRecordingAutoStopped", recordingResult)
             }
 
-            cameraController?.initialize(lens, videoQuality, enableScreenFlash, mirrorFrontCameraOutput, enableAutoLensSwitch) { state, error ->
+            cameraController?.initialize(lens, videoQuality, enableScreenFlash, mirrorFrontCameraOutput, enableAutoLensSwitch, preferUnprocessedAudio) { state, error ->
                 if (error != null) {
                     result.error("INIT_ERROR", error, null)
                 } else {
