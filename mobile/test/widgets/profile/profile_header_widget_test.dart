@@ -43,6 +43,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -321,6 +322,8 @@ void main() {
     setUpAll(() async {
       SharedPreferences.setMockInitialValues({});
     });
+
+    final enL10n = lookupAppLocalizations(const Locale('en'));
 
     Widget buildTestWidget({
       required String userIdHex,
@@ -1832,7 +1835,7 @@ void main() {
     });
 
     testWidgets(
-      'shows Complete your profile label for own profile without custom name',
+      'shows Complete Your Profile label for own profile without custom name',
       (tester) async {
         final profileWithDefaultName = createTestProfile();
 
@@ -1845,7 +1848,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Complete Your Profile'), findsOneWidget);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsOneWidget);
       },
     );
 
@@ -1864,7 +1867,7 @@ void main() {
 
       // Action label is replaced with SizedBox.shrink() during the loading
       // window so the prompt doesn't flicker between states (#4183 review).
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('hides action label when profile has custom name', (
@@ -1881,7 +1884,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('hides action label for other profiles', (tester) async {
@@ -1896,7 +1899,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
     });
 
     testWidgets('renders PeopleListMembershipIndicator for other users', (
@@ -2140,7 +2143,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
         // 1 action — badge shows "1"
         expect(find.text('1'), findsOneWidget);
       });
@@ -2161,7 +2164,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Secure takes precedence
-          expect(find.text('Secure Your Account'), findsOneWidget);
+          expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
           // 2 actions — red badge with "2"
           expect(find.text('2'), findsOneWidget);
         },
@@ -2181,8 +2184,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure Your Account'), findsNothing);
-        expect(find.text('Complete Your Profile'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+        expect(find.text(enL10n.profileCompleteYourProfile), findsNothing);
       });
 
       testWidgets('hides label for other profiles even when anonymous', (
@@ -2200,7 +2203,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure Your Account'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
       });
 
       testWidgets('tapping label opens actions bottom sheet', (tester) async {
@@ -2217,13 +2220,20 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap on the action label
-        await tester.tap(find.text('Secure Your Account'));
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
         await tester.pumpAndSettle();
 
-        // The bottom sheet should show the first action
-        expect(find.text('Secure Your Account'), findsNWidgets(2));
-        expect(find.text('Add Email & Password'), findsOneWidget);
-        expect(find.text('Maybe Later'), findsOneWidget);
+        // The pill and the sheet title share one ARB key, so scope the
+        // title to the sheet rather than counting matches.
+        expect(
+          find.descendant(
+            of: find.byType(ProfileActionsSheetContent),
+            matching: find.text(enL10n.profileSecureYourAccount),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(enL10n.profileSecurePrimaryButton), findsOneWidget);
+        expect(find.text(enL10n.profileMaybeLaterLabel), findsOneWidget);
       });
 
       testWidgets('Maybe Later permanently hides the secure-account action', (
@@ -2243,18 +2253,18 @@ void main() {
 
         await tester.pumpWidget(buildHeader());
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Secure Your Account'));
+        await tester.tap(find.text(enL10n.profileSecureYourAccount));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Maybe Later'));
+        await tester.tap(find.text(enL10n.profileMaybeLaterLabel));
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure Your Account'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpWidget(buildHeader());
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure Your Account'), findsNothing);
+        expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
       });
     });
 
@@ -2456,7 +2466,7 @@ void main() {
 
           // Anonymous users see the action label pill, not session expired
           final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text('Secure Your Account'), findsOneWidget);
+          expect(find.text(enL10n.profileSecureYourAccount), findsOneWidget);
           expect(find.text(l10n.profileSessionExpired), findsNothing);
         },
       );
