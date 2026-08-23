@@ -44,7 +44,9 @@ class ContentPreferencesScreen extends ConsumerWidget {
               const _ContentFiltersTile(),
               const AccountContentLabelsTile(),
               const _AudioSharingToggle(),
-              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
+              if (!kIsWeb &&
+                  (defaultTargetPlatform == TargetPlatform.iOS ||
+                      defaultTargetPlatform == TargetPlatform.android))
                 const _MusicModeToggle(),
               if (!kIsWeb && defaultTargetPlatform != TargetPlatform.linux)
                 const _AudioDeviceSelector(),

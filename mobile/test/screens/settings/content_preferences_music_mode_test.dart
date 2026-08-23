@@ -1,5 +1,5 @@
 // ABOUTME: Tests the Music mode toggle in content preferences (#7796).
-// ABOUTME: Covers the iOS-only gate and that a tap reaches the preference.
+// ABOUTME: Covers the iOS/Android gate and that a tap reaches the preference.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
@@ -116,10 +116,24 @@ void main() {
       await disposeTree(tester);
     });
 
-    testWidgets('hides the toggle where nothing acts on it', (tester) async {
-      // Android resolves its recording audio source separately (#7652), so a
-      // switch there would be a control that does nothing.
+    testWidgets('shows the toggle on Android too', (tester) async {
+      // Android honours the preference when it resolves the recording audio
+      // source (#8079), so the switch has to be reachable there as well —
+      // until it was, the setting could not be turned on at all on Android.
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(musicModeTile(), findsOneWidget);
+
+      await disposeTree(tester);
+    });
+
+    testWidgets('hides the toggle where nothing acts on it', (tester) async {
+      // macOS captures through its own controller, which never reads the
+      // flag, so a switch there would be a control that does nothing.
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();

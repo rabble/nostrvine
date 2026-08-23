@@ -53,7 +53,8 @@ abstract class CameraService {
   /// level (default: true).
   /// [preferUnprocessedAudio] captures the microphone without the platform's
   /// speech-tuned noise suppression, so instruments survive at their real
-  /// level (default: false). iOS only — see `MusicModePreferenceService`.
+  /// level (default: false). iOS and Android — see
+  /// `MusicModePreferenceService`.
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,

@@ -149,8 +149,9 @@ void main() {
     );
 
     test('initializeCamera forwards the unprocessed-audio request', () async {
-      // iOS reads this key to pick the recording audio-session mode (#7796);
-      // dropping it here silently strands the Music mode setting.
+      // iOS reads this key to pick the recording audio-session mode (#7796)
+      // and Android to pick the recording audio source (#8079); dropping it
+      // here silently strands the Music mode setting.
       await platform.initializeCamera(preferUnprocessedAudio: true);
 
       expect(lastInitializeArgs?['preferUnprocessedAudio'], isTrue);

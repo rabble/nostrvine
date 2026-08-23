@@ -42,8 +42,8 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   /// Initializes the camera with the specified lens.
   ///
   /// [preferUnprocessedAudio] asks the platform to capture the microphone
-  /// without the speech-tuned processing it applies by default. iOS only —
-  /// other platforms ignore it.
+  /// without the speech-tuned processing it applies by default. iOS and
+  /// Android act on it; other platforms ignore it.
   ///
   /// Returns the initial camera state.
   Future<CameraState> initializeCamera({
