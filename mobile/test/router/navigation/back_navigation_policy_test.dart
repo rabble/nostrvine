@@ -275,7 +275,7 @@ void main() {
             previousTab: 3,
             currentUserNpub: _npub,
           ),
-          equals(BackGoTo('/profile/$_npub', consumesTabHistory: true)),
+          equals(const BackGoTo('/profile/$_npub', consumesTabHistory: true)),
         );
       });
 
