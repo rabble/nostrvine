@@ -55,6 +55,7 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
+import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
@@ -1966,6 +1967,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
   bool _backgroundInitDone = false;
   StreamSubscription<void>? _shakeSubscription;
   StreamSubscription<NotificationTapEvent>? _notificationTapSubscription;
+  ProviderSubscription<AsyncValue<AccountDeletionAttempt?>>?
+  _deletionAttemptSubscription;
+  bool _authenticatedDeletionLookupSettled = false;
   QuickActionsCoordinator? _quickActionsCoordinator;
   late final StartupSplashReleaseController _splashReleaseController;
   late final MemoryPressureHandler _memoryPressureHandler;
@@ -2005,6 +2009,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
     // notifies after redirect configuration changes (#5242).
     final router = ref.read(goRouterProvider);
     final authService = ref.read(authServiceProvider);
+    final initialDeletionAttempt = ref.read(
+      currentAccountDeletionAttemptProvider,
+    );
+    _authenticatedDeletionLookupSettled = authenticatedDeletionLookupSettled(
+      authService.authState,
+      initialDeletionAttempt,
+    );
     _splashReleaseController = StartupSplashReleaseController(
       authStateStream: authService.authStateStream,
       currentAuthState: () => authService.authState,
@@ -2016,7 +2027,16 @@ class _DivineAppState extends ConsumerState<DivineApp>
             location,
             hasExpiredOAuthSession: authService.hasExpiredOAuthSession,
             isAnonymous: authService.isAnonymous,
-          ),
+          ) ||
+          !_authenticatedDeletionLookupSettled,
+    );
+    _deletionAttemptSubscription = ref.listenManual(
+      currentAccountDeletionAttemptProvider,
+      (_, next) {
+        _authenticatedDeletionLookupSettled =
+            authenticatedDeletionLookupSettled(authService.authState, next);
+        _splashReleaseController.reevaluate();
+      },
     );
     // Start deferred startup after the first frame so the shell can paint first.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2037,6 +2057,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
     WidgetsBinding.instance.removeObserver(this);
     _memoryTelemetry.stop();
     _splashReleaseController.dispose();
+    _deletionAttemptSubscription?.close();
     _notificationTapSubscription?.cancel();
     unawaited(_quickActionsCoordinator?.dispose());
     _shakeSubscription?.cancel();

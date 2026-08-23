@@ -69,6 +69,35 @@ void main() {
       });
     });
 
+    test('authenticated can recheck a non-routing startup gate', () {
+      fakeAsync((async) {
+        final auth = StreamController<AuthState>.broadcast();
+        final location = ValueNotifier<String>('/home');
+        var deletionLookupPending = true;
+        var releases = 0;
+
+        final controller = StartupSplashReleaseController(
+          authStateStream: auth.stream,
+          currentAuthState: () => AuthState.authenticated,
+          locationListenable: location,
+          currentLocation: () => location.value,
+          authenticatedRedirectPending: (_) => deletionLookupPending,
+          timeout: timeout,
+          release: () => releases++,
+        );
+
+        expect(releases, 0, reason: 'unresolved lookup holds the splash');
+
+        deletionLookupPending = false;
+        controller.reevaluate();
+        expect(releases, 1, reason: 'settled lookup releases the splash');
+
+        controller.dispose();
+        location.dispose();
+        unawaited(auth.close());
+      });
+    });
+
     test(
       'authenticated release follows delegate-style redirect notification',
       () {
