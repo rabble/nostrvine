@@ -918,12 +918,35 @@ class _MessageList extends StatelessWidget {
       itemBuilder: (context, index) {
         final message = messages[index];
         final isSent = message.senderPubkey == currentPubkey;
+
+        // The first message of each local calendar day carries the "Today" /
+        // "Yesterday" / weekday / date pill above it. In a reversed list the
+        // older neighbour is index + 1, so a day starts where that neighbour
+        // is missing (oldest message) or falls on a different day. Wrapping
+        // happens at every return path — including the suppressed legacy
+        // invite plaintext, whose day header must survive even though its
+        // bubble renders as nothing.
+        final startsDay =
+            index == messages.length - 1 ||
+            !_isSameLocalDay(messages[index + 1].createdAt, message.createdAt);
+        Widget withDayDivider(Widget child) {
+          if (!startsDay) return child;
+          return Column(
+            children: [
+              MessageDayDivider(unixSeconds: message.createdAt),
+              child,
+            ],
+          );
+        }
+
         final invite = CollaboratorInviteParser.parse(message);
         if (invite != null) {
-          return CollaboratorInviteCard(
-            invite: invite,
-            isSent: isSent,
-            senderDisplayName: isSent ? null : senderDisplayName,
+          return withDayDivider(
+            CollaboratorInviteCard(
+              invite: invite,
+              isSent: isSent,
+              senderDisplayName: isSent ? null : senderDisplayName,
+            ),
           );
         }
 
@@ -937,17 +960,21 @@ class _MessageList extends StatelessWidget {
         if (CollaboratorInviteService.hasInvitePlaintextSuffix(
           message.content,
         )) {
-          return const SizedBox.shrink();
+          return withDayDivider(const SizedBox.shrink());
         }
 
         // Grouping: in a reversed list, index 0 is newest (bottom of screen).
-        // "Above" = index + 1 (older), "below" = index - 1 (newer).
+        // "Above" = index + 1 (older), "below" = index - 1 (newer). A day
+        // boundary also restarts the group, so the first bubble under a date
+        // pill regains its timestamp and the last bubble before midnight
+        // regains its tail corner.
         final isFirstInGroup =
-            index == messages.length - 1 ||
+            startsDay ||
             messages[index + 1].senderPubkey != message.senderPubkey;
         final isLastInGroup =
             index == 0 ||
-            messages[index - 1].senderPubkey != message.senderPubkey;
+            messages[index - 1].senderPubkey != message.senderPubkey ||
+            !_isSameLocalDay(messages[index - 1].createdAt, message.createdAt);
 
         // participantPubkeys excludes self, so a length > 1 is a group.
         final isGroup = participantPubkeys.length > 1;
@@ -1036,17 +1063,30 @@ class _MessageList extends StatelessWidget {
         // outgoing queue, so they bypass the selector and short-circuit
         // to `delivered`.
         if (!isSent) {
-          return buildBubbleWithReactions(DmDeliveryStatus.delivered);
+          return withDayDivider(
+            buildBubbleWithReactions(DmDeliveryStatus.delivered),
+          );
         }
-        return BlocSelector<
-          ConversationBloc,
-          ConversationState,
-          DmDeliveryStatus
-        >(
-          selector: (state) => state.statusFor(message.id),
-          builder: (_, status) => buildBubbleWithReactions(status),
+        return withDayDivider(
+          BlocSelector<ConversationBloc, ConversationState, DmDeliveryStatus>(
+            selector: (state) => state.statusFor(message.id),
+            builder: (_, status) => buildBubbleWithReactions(status),
+          ),
         );
       },
     );
+  }
+
+  /// Whether two Unix-seconds timestamps fall on the same local calendar day.
+  static bool _isSameLocalDay(int aUnixSeconds, int bUnixSeconds) {
+    final a = DateTime.fromMillisecondsSinceEpoch(
+      aUnixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
+    final b = DateTime.fromMillisecondsSinceEpoch(
+      bUnixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

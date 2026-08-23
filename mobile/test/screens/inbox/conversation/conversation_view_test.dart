@@ -252,6 +252,107 @@ void main() {
           : MockGoRouterProvider(goRouter: goRouter, child: app);
     }
 
+    group('day dividers', () {
+      DmMessage messageAt({
+        required String idFill,
+        required DateTime time,
+        String content = 'hi',
+      }) => DmMessage(
+        id: idFill * 64,
+        conversationId:
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        senderPubkey: otherPubkey,
+        content: content,
+        createdAt: time.millisecondsSinceEpoch ~/ 1000,
+        giftWrapId:
+            'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+      );
+
+      testWidgets('renders a single Today pill for a same-day thread', (
+        tester,
+      ) async {
+        final morning = DateTime(now.year, now.month, now.day, 9);
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              // Newest first, matching the reversed list.
+              messages: [
+                messageAt(
+                  idFill: '1',
+                  time: morning.add(const Duration(hours: 1)),
+                ),
+                messageAt(idFill: '2', time: morning),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(MessageDayDivider), findsOneWidget);
+        expect(find.text(l10n.timeToday), findsOneWidget);
+      });
+
+      testWidgets('renders one pill per calendar day', (tester) async {
+        final today = DateTime(now.year, now.month, now.day, 9);
+        final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              messages: [
+                messageAt(idFill: '1', time: today),
+                messageAt(idFill: '2', time: yesterday),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(MessageDayDivider), findsNWidgets(2));
+        expect(
+          find.descendant(
+            of: find.byType(MessageDayDivider),
+            matching: find.text(l10n.timeToday),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(MessageDayDivider),
+            matching: find.text(l10n.timeYesterday),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a day boundary restarts the bubble group', (tester) async {
+        final today = DateTime(now.year, now.month, now.day, 9);
+        final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationState(
+              status: ConversationStatus.loaded,
+              // Same sender across midnight: without the day boundary these
+              // two would fuse into one visual group with one timestamp.
+              messages: [
+                messageAt(idFill: '1', time: today),
+                messageAt(idFill: '2', time: yesterday),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final bubbles = tester.widgetList<MessageBubble>(
+          find.byType(MessageBubble),
+        );
+        expect(bubbles, hasLength(2));
+        expect(bubbles.every((b) => b.isFirstInGroup), isTrue);
+        expect(bubbles.every((b) => b.isLastInGroup), isTrue);
+      });
+    });
+
     group('double-tap to like', () {
       DmMessage reactableMessage({required bool sent}) => DmMessage(
         id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
