@@ -6723,11 +6723,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get messageRequestViewProfileButton => 'عرض الملف الشخصي';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName يريد مراسلتك، وقد أرسل $messageText.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'قبول $messageText من $displayName؟';
   }
 
   @override

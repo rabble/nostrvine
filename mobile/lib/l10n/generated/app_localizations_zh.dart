@@ -6398,11 +6398,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageRequestViewProfileButton => '查看主页';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName 想给你发消息，TA 发送了$messageText。';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return '接受 $displayName 发来的 $messageText吗？';
   }
 
   @override

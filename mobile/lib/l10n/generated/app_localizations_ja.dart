@@ -6430,11 +6430,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get messageRequestViewProfileButton => 'プロフィールを表示';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayNameがあなたにメッセージを送りたがってるよ。$messageTextを送信済みだよ。';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return '$displayNameからの$messageTextを受け取りますか？';
   }
 
   @override

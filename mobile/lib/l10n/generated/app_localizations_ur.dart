@@ -6771,11 +6771,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get messageRequestViewProfileButton => 'پروفائل دیکھیں';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName آپ کو پیغام بھیجنا چاہتا ہے، انہوں نے $messageText بھیجا ہے۔';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'کیا آپ $displayName کی طرف سے $messageText قبول کریں گے؟';
   }
 
   @override

@@ -3768,8 +3768,8 @@
   },
   "messageRequestViewMessagesButton": "Lihat mesej",
   "messageRequestViewProfileButton": "Lihat profil",
-  "messageRequestWantsToMessageYou": "{displayName} mahu menghantar mesej kepada anda, mereka telah menghantar {messageText}.",
-  "@messageRequestWantsToMessageYou": {
+  "messageRequestAcceptPrompt": "Terima {messageText} daripada {displayName}?",
+  "@messageRequestAcceptPrompt": {
     "placeholders": {
       "displayName": {
         "type": "String"

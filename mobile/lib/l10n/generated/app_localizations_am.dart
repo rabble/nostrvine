@@ -6621,11 +6621,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageRequestViewProfileButton => 'መገለጫ ይመልከቱ';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName ሊልክልህ ይፈልጋል፣ $messageText ልከዋል።';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'ከ$displayName $messageText ይቀበሉ?';
   }
 
   @override

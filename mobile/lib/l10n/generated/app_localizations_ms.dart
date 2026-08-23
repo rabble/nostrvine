@@ -6784,11 +6784,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Lihat profil';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName mahu menghantar mesej kepada anda, mereka telah menghantar $messageText.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'Terima $messageText daripada $displayName?';
   }
 
   @override

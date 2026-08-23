@@ -6745,11 +6745,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Xem hồ sơ';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName muốn nhắn tin cho bạn, họ đã gửi $messageText.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'Chấp nhận $messageText từ $displayName?';
   }
 
   @override

@@ -6857,11 +6857,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Profil ansehen';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName möchte dir schreiben und hat $messageText gesendet.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return '$messageText von $displayName annehmen?';
   }
 
   @override

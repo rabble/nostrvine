@@ -6701,11 +6701,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Profili görüntüle';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName sana mesaj göndermek istiyor, $messageText gönderdi.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return '$displayName kişisinden gelen $messageText kabul edilsin mi?';
   }
 
   @override

@@ -6842,11 +6842,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Виж профила';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName иска да ти пише, изпрати ти $messageText.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'Приемаш ли $messageText от $displayName?';
   }
 
   @override

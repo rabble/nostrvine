@@ -6943,11 +6943,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Vezi profilul';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName vrea să-ți trimită un mesaj, a trimis $messageText.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'Accepți $messageText de la $displayName?';
   }
 
   @override

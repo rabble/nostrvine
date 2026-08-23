@@ -3768,8 +3768,8 @@
   },
   "messageRequestViewMessagesButton": "پیغامات دیکھیں",
   "messageRequestViewProfileButton": "پروفائل دیکھیں",
-  "messageRequestWantsToMessageYou": "{displayName} آپ کو پیغام بھیجنا چاہتا ہے، انہوں نے {messageText} بھیجا ہے۔",
-  "@messageRequestWantsToMessageYou": {
+  "messageRequestAcceptPrompt": "کیا آپ {displayName} کی طرف سے {messageText} قبول کریں گے؟",
+  "@messageRequestAcceptPrompt": {
     "placeholders": {
       "displayName": {
         "type": "String"

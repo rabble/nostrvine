@@ -305,6 +305,93 @@ void main() {
         expect(find.textContaining('3 messages'), findsOneWidget);
       });
 
+      testWidgets('bolds the count and the name inside the accept prompt', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        final expected = l10n.messageRequestAcceptPrompt(
+          'TestUser',
+          l10n.messageRequestMessageCount(3),
+        );
+        expect(find.text(expected, findRichText: true), findsOneWidget);
+
+        final richText = tester.widget<RichText>(
+          find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText() == expected,
+          ),
+        );
+        final boldRuns = <String>[];
+        richText.text.visitChildren((span) {
+          if (span is TextSpan &&
+              span.style?.fontWeight == FontWeight.w800 &&
+              span.text != null) {
+            boldRuns.add(span.text!);
+          }
+          return true;
+        });
+        expect(boldRuns, containsAll(['3 messages', 'TestUser']));
+      });
+
+      testWidgets('blurs the newest text message in the preview capsule', (
+        tester,
+      ) async {
+        const older = DmMessage(
+          id: '1111111111111111111111111111111111111111111111111111111111111111',
+          conversationId: conversationId,
+          senderPubkey: otherPubkey,
+          content: 'first hello',
+          createdAt: 1700000000,
+          giftWrapId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        );
+        const newest = DmMessage(
+          id: '2222222222222222222222222222222222222222222222222222222222222222',
+          conversationId: conversationId,
+          senderPubkey: otherPubkey,
+          content: 'second hello',
+          createdAt: 1700000500,
+          giftWrapId:
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            previewState: const RequestPreviewState(
+              status: RequestPreviewStatus.loaded,
+              messageCount: 2,
+              participantPubkeys: [otherPubkey],
+              messages: [older, newest],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final blurred = find.ancestor(
+          of: find.text('second hello'),
+          matching: find.byType(ImageFiltered),
+        );
+        expect(blurred, findsOneWidget);
+        expect(find.text('first hello'), findsNothing);
+        // Hidden-by-design content must not leak through assistive tech.
+        expect(
+          find.ancestor(
+            of: find.text('second hello'),
+            matching: find.byType(ExcludeSemantics),
+          ),
+          findsWidgets,
+        );
+      });
+
+      testWidgets('renders no capsule when the request has no text message', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ImageFiltered), findsNothing);
+      });
+
       testWidgets('renders collaborator invite actions without plaintext', (
         tester,
       ) async {

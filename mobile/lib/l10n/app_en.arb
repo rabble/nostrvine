@@ -4389,8 +4389,9 @@
   },
   "messageRequestViewMessagesButton": "View messages",
   "messageRequestViewProfileButton": "View profile",
-  "messageRequestWantsToMessageYou": "{displayName} wants to message you, they've sent {messageText}.",
-  "@messageRequestWantsToMessageYou": {
+  "messageRequestAcceptPrompt": "Accept {messageText} from {displayName}?",
+  "@messageRequestAcceptPrompt": {
+    "description": "Question above the request-preview actions. messageText is the already-localized count from messageRequestMessageCount (e.g. '3 messages'); the UI renders both placeholders bold.",
     "placeholders": {
       "displayName": {
         "type": "String"

@@ -3768,8 +3768,8 @@
   },
   "messageRequestViewMessagesButton": "Xem tin nhắn",
   "messageRequestViewProfileButton": "Xem hồ sơ",
-  "messageRequestWantsToMessageYou": "{displayName} muốn nhắn tin cho bạn, họ đã gửi {messageText}.",
-  "@messageRequestWantsToMessageYou": {
+  "messageRequestAcceptPrompt": "Chấp nhận {messageText} từ {displayName}?",
+  "@messageRequestAcceptPrompt": {
     "placeholders": {
       "displayName": {
         "type": "String"

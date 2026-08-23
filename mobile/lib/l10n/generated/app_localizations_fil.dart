@@ -6821,11 +6821,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get messageRequestViewProfileButton => 'Tingnan ang profile';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return 'Gustong mag-message sa iyo ni $displayName, nagpadala sila ng $messageText.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return 'I-accept ang $messageText mula kay $displayName?';
   }
 
   @override

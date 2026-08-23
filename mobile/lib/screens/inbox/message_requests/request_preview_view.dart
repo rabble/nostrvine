@@ -1,6 +1,8 @@
 // ABOUTME: View for the message request preview screen.
 // ABOUTME: Shows sender profile info, message count, and accept/decline actions.
 
+import 'dart:ui' show ImageFilter;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -308,7 +310,8 @@ class _ProfileContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              _MessageCountDescription(
+              _BlurredMessagePreview(messages: messages),
+              _AcceptPrompt(
                 displayName: displayName,
                 messageCount: messageCount,
               ),
@@ -396,27 +399,122 @@ class _StatsLine extends StatelessWidget {
   }
 }
 
-class _MessageCountDescription extends StatelessWidget {
-  const _MessageCountDescription({
-    required this.displayName,
-    required this.messageCount,
-  });
+/// Marks the start of a bold segment while parsing the localized prompt.
+///
+/// Private-use code points survive any translation's word order, so the
+/// bold spans always land on the placeholder values wherever the locale
+/// puts them. The same characters are stripped from the interpolated
+/// values first, so sender-controlled display names cannot forge a
+/// marker.
+const _emphasisStart = '\u{E000}';
+
+/// Marks the end of a bold segment. See [_emphasisStart].
+const _emphasisEnd = '\u{E001}';
+
+/// The redesign's "Accept **3 messages** from **Name**?" line, with the
+/// count and the sender's name bolded in every locale.
+class _AcceptPrompt extends StatelessWidget {
+  const _AcceptPrompt({required this.displayName, required this.messageCount});
 
   final String displayName;
   final int messageCount;
 
   @override
   Widget build(BuildContext context) {
-    final msgText = context.l10n.messageRequestMessageCount(messageCount);
+    final l10n = context.l10n;
+    final color = context.vineColors.onSurfaceVariant;
+    final baseStyle = VineTheme.bodyLargeFont(color: color);
+    final boldStyle = VineTheme.titleMediumFont(color: color);
+
+    String sanitize(String value) =>
+        value.replaceAll(_emphasisStart, '').replaceAll(_emphasisEnd, '');
+
+    final messageText = sanitize(l10n.messageRequestMessageCount(messageCount));
+    final template = l10n.messageRequestAcceptPrompt(
+      '$_emphasisStart${sanitize(displayName)}$_emphasisEnd',
+      '$_emphasisStart$messageText$_emphasisEnd',
+    );
+
+    final spans = <TextSpan>[];
+    for (final (index, part) in template.split(_emphasisStart).indexed) {
+      if (index == 0) {
+        if (part.isNotEmpty) spans.add(TextSpan(text: part));
+        continue;
+      }
+      final closeAt = part.indexOf(_emphasisEnd);
+      spans.add(
+        TextSpan(text: part.substring(0, closeAt), style: boldStyle),
+      );
+      final rest = part.substring(closeAt + _emphasisEnd.length);
+      if (rest.isNotEmpty) spans.add(TextSpan(text: rest));
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        context.l10n.messageRequestWantsToMessageYou(displayName, msgText),
-        style: VineTheme.bodyLargeFont(
-          color: context.vineColors.onSurfaceVariant,
-        ),
+      child: Text.rich(
+        TextSpan(style: baseStyle, children: spans),
         textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+/// The newest text message of the request, rendered blurred inside the
+/// redesign's dark capsule: readable enough to prove there is a message,
+/// unreadable until the request is accepted.
+class _BlurredMessagePreview extends StatelessWidget {
+  const _BlurredMessagePreview({required this.messages});
+
+  final List<DmMessage> messages;
+
+  /// Newest plain text message; collaborator invites render their own
+  /// card below the prompt, and file messages carry no readable text.
+  DmMessage? get _previewMessage {
+    DmMessage? newest;
+    for (final message in messages) {
+      if (message.isFileMessage) continue;
+      if (CollaboratorInviteParser.parse(message) != null) continue;
+      if (message.content.trim().isEmpty) continue;
+      if (newest == null || message.createdAt > newest.createdAt) {
+        newest = message;
+      }
+    }
+    return newest;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final message = _previewMessage;
+    if (message == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 96),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        // Deliberately static: the capsule is a redaction scrim, dark in
+        // both appearance modes, so its ink stays white.
+        decoration: BoxDecoration(
+          color: VineTheme.scrim65,
+          borderRadius: BorderRadius.circular(56),
+          border: Border.all(color: VineTheme.outlineMuted),
+        ),
+        // Hidden-by-design: the blur must not leak through a screen
+        // reader, so the capsule is decorative until accepted.
+        child: ExcludeSemantics(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+            child: Text(
+              message.content,
+              style: VineTheme.bodyLargeFont(color: VineTheme.whiteText),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
       ),
     );
   }

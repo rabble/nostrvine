@@ -6449,11 +6449,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get messageRequestViewProfileButton => '프로필 보기';
 
   @override
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  ) {
-    return '$displayName님이 메시지를 보내고 싶어 해요. $messageText을(를) 보냈어요.';
+  String messageRequestAcceptPrompt(String displayName, String messageText) {
+    return '$displayName님이 보낸 $messageText을(를) 수락할까요?';
   }
 
   @override

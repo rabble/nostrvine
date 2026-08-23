@@ -11615,14 +11615,11 @@ abstract class AppLocalizations {
   /// **'View profile'**
   String get messageRequestViewProfileButton;
 
-  /// No description provided for @messageRequestWantsToMessageYou.
+  /// Question above the request-preview actions. messageText is the already-localized count from messageRequestMessageCount (e.g. '3 messages'); the UI renders both placeholders bold.
   ///
   /// In en, this message translates to:
-  /// **'{displayName} wants to message you, they\'ve sent {messageText}.'**
-  String messageRequestWantsToMessageYou(
-    String displayName,
-    String messageText,
-  );
+  /// **'Accept {messageText} from {displayName}?'**
+  String messageRequestAcceptPrompt(String displayName, String messageText);
 
   /// Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted.
   ///
