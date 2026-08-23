@@ -291,11 +291,36 @@ void main() {
         expect(find.text('Decline and remove'), findsOneWidget);
       });
 
-      testWidgets('does not render a Block action', (tester) async {
+      testWidgets('renders only the approved request actions', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        expect(find.text('Block'), findsNothing);
+        final actionBar = find.byWidgetPredicate(
+          (widget) => widget is SafeArea && !widget.top,
+        );
+        final actions = find.descendant(
+          of: actionBar,
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Semantics && widget.properties.button == true,
+          ),
+        );
+
+        expect(actionBar, findsOneWidget);
+        expect(actions, findsNWidgets(2));
+        expect(
+          find.descendant(
+            of: actionBar,
+            matching: find.text(l10n.messageRequestViewMessagesButton),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: actionBar,
+            matching: find.text(l10n.messageRequestDeclineAndRemoveButton),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders message count description', (tester) async {
@@ -522,6 +547,24 @@ void main() {
     });
 
     group('decline feedback', () {
+      testWidgets('ignores decline while an action is in flight', (
+        tester,
+      ) async {
+        when(() => mockActionsCubit.state).thenReturn(
+          const MessageRequestActionsState(
+            status: MessageRequestActionsStatus.processing,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        verifyNever(() => mockActionsCubit.declineRequest(any()));
+      });
+
       testWidgets('confirms with a snackbar after declining', (tester) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
