@@ -16,7 +16,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/features/post_publish/post_publish_experiment.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/main.dart' as app;
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/post_publish_providers.dart';
@@ -25,6 +24,7 @@ import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/startup/upload_failure_listener.dart' as app;
 import 'package:openvine/utils/nostr_key_utils.dart';
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,6 @@ import 'dart:io'
     as io;
 
 import 'package:app_update_repository/app_update_repository.dart';
-import 'package:app_version_client/app_version_client.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -24,67 +23,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart' show Intl;
-import 'package:invite_api_client/invite_api_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/app_update/app_update.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
-import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
-import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
-import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
-import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
-import 'package:openvine/blocs/locale/locale_cubit.dart';
-import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
-import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/bootstrap/font_licenses.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/features/app_review/app_review_coordinator.dart';
-import 'package:openvine/features/appearance/bloc/appearance_cubit.dart';
-import 'package:openvine/features/appearance/models/appearance_mode.dart';
-import 'package:openvine/features/appearance/providers/appearance_providers.dart';
-import 'package:openvine/features/people_lists/curated_lists_gate.dart';
-import 'package:openvine/features/people_lists/people_lists.dart';
-import 'package:openvine/features/post_publish/post_publish_experiment.dart';
-import 'package:openvine/features/post_publish/view/post_publish_confirmation_sheet.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
-import 'package:openvine/l10n/email_verification_error_l10n.dart';
-import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
-import 'package:openvine/providers/account_enforcement_providers.dart';
-import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
-import 'package:openvine/providers/creator_sync_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
-import 'package:openvine/providers/install_source_provider.dart';
-import 'package:openvine/providers/invite_availability_providers.dart';
-import 'package:openvine/providers/invite_status_auth_sessions.dart';
-import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/post_publish_providers.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/shorebird_patch_repository.dart';
 import 'package:openvine/router/deep_link_coordinator.dart';
 import 'package:openvine/router/providers/deep_link_listeners.dart';
-import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
@@ -98,7 +64,6 @@ import 'package:openvine/services/build_provenance_service.dart';
 import 'package:openvine/services/c2pa_debris_janitor.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/classic_viner_seed_preload_service.dart';
-import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/database_corruption_service.dart';
@@ -110,7 +75,6 @@ import 'package:openvine/services/install_source_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/memory_pressure_handler.dart';
 import 'package:openvine/services/memory_telemetry_service.dart';
-import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/notification_helpers.dart'
     show localNotificationTapPayload, parseFcmPayload;
 import 'package:openvine/services/notification_service.dart'
@@ -125,13 +89,11 @@ import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_cleanup_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
-import 'package:openvine/services/video_publish/publish_error_kind.dart';
-import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/startup/app_composition_root.dart';
 import 'package:openvine/startup/app_side_effects.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
-import 'package:openvine/startup/database_corruption_gate.dart';
+import 'package:openvine/startup/divine_material_app.dart';
 import 'package:openvine/startup/startup_splash_release_controller.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/expected_network_error.dart';
@@ -140,17 +102,9 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
-import 'package:openvine/utils/share_sheet.dart';
-import 'package:openvine/widgets/app_lifecycle_handler.dart';
-import 'package:openvine/widgets/app_shell_badge_scope.dart';
-import 'package:openvine/widgets/geo_blocking_gate.dart';
-import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permissions_service/permissions_service.dart';
-import 'package:pro_image_editor/pro_image_editor.dart'
-    show LayerRasterizerHost;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -2233,273 +2187,9 @@ class _DivineAppState extends ConsumerState<DivineApp>
       BackButtonHandler.initialize(router, ref);
     }
 
-    // One gate above every route: once the local database reports corruption
-    // there is no screen left that can work, so ask for the restart that
-    // repairs it instead of failing route by route. The review coordinator
-    // lives inside that gate so the recovery screen cannot be interrupted by
-    // an OS-native review card.
-    //
-    // The rasterizer host sits above both: baking a draft's editor layers
-    // needs them mounted somewhere, and that has to keep working while the
-    // corruption gate swaps out everything below it.
-    Widget buildAppShell(BuildContext context, Widget? child) {
-      return LayerRasterizerHost(
-        rasterizer: ref.read(layerRasterizerProvider),
-        child: DatabaseCorruptionGate(
-          child: AppReviewCoordinator(child: child ?? const SizedBox.shrink()),
-        ),
-      );
-    }
-
-    // Build MaterialApp with locale from LocaleCubit.
-    // The BlocBuilder is used because the cubit is provided further down
-    // in the widget tree by MultiBlocProvider.
-    Widget buildApp(Locale? locale, AppearanceMode appearanceMode) {
-      if (locale != null) {
-        Intl.defaultLocale = locale.toLanguageTag();
-      }
-      final themeMode = resolveThemeMode(mode: appearanceMode);
-      final effectiveBrightness = themeMode == ThemeMode.system
-          ? WidgetsBinding.instance.platformDispatcher.platformBrightness
-          : themeMode == ThemeMode.light
-          ? Brightness.light
-          : Brightness.dark;
-      final statusBarStyle = effectiveBrightness == Brightness.light
-          ? VineTheme.lightStatusBarStyle
-          : VineTheme.statusBarStyle;
-      return AnnotatedRegion<SystemUiOverlayStyle>(
-        value: statusBarStyle,
-        child: MaterialApp.router(
-          title: 'Divine',
-          debugShowCheckedModeBanner: false,
-          theme: VineTheme.lightTheme,
-          darkTheme: VineTheme.theme,
-          themeMode: themeMode,
-          routerConfig: router,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localeListResolutionCallback: resolveAppUiLocale,
-          builder: buildAppShell,
-        ),
-      );
-    }
-
-    /// Creates the publish service with callbacks wired to this notifier.
-    Future<VideoPublishService> createPublishService({
-      required OnProgressChanged onProgress,
-    }) async {
-      final profileRepository = ref.read(profileRepositoryProvider);
-      return VideoPublishService(
-        uploadManager: ref.read(uploadManagerProvider),
-        authService: ref.read(authServiceProvider),
-        videoEventPublisher: ref.read(videoEventPublisherProvider),
-        blossomService: ref.read(blossomUploadServiceProvider),
-        draftService: ref.read(draftStorageServiceProvider),
-        mentionResolutionService: profileRepository == null
-            ? null
-            : MentionResolutionService(profileRepository: profileRepository),
-        collaboratorInviteService: CollaboratorInviteService(
-          dmRepository: ref.read(dmRepositoryProvider),
-          l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
-        ),
-        performanceMonitor: ref.read(performanceMonitoringServiceProvider),
-        onProgressChanged:
-            ({required String draftId, required double progress}) {
-              onProgress(draftId: draftId, progress: progress);
-            },
-      );
-    }
-
-    final inviteApiClient = ref.watch(inviteApiClientProvider);
-    final inviteAvailabilityRepository = ref.watch(
-      inviteAvailabilityRepositoryProvider,
-    );
-    final inviteAvailabilityCubit = ref.watch(inviteAvailabilityCubitProvider)
-      ..load();
-
-    // Wrap with geo-blocking check first, then lifecycle handler
-    Widget wrapped = MultiRepositoryProvider(
-      providers: [
-        RepositoryProvider<InviteApiClient>.value(value: inviteApiClient),
-      ],
-      // The two app-shell badge cubits + their repository-sync listeners live
-      // in AppShellBadgeScope so main.dart and its test pump the exact same
-      // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
-      child: SavedSoundsScope(
-        service: ref.watch(savedSoundsServiceProvider),
-        // A stream, not a watched value: SavedSoundsScope sits above
-        // MaterialApp.router, so keying its BlocProvider on the resolved
-        // repository would re-inflate the whole app shell every time it
-        // resolves (#6477/#6480). The bloc subscribes and re-points itself.
-        syncRepositoryStream: ref.read(soundSyncRepositoryStreamProvider),
-        child: AppShellBadgeScope(
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                lazy: false,
-                create: (_) => VideoVolumeCubit(
-                  sharedPreferences: ref.read(sharedPreferencesProvider),
-                ),
-              ),
-              // App-global signal: a codec-heavy surface (camera/editor/exporter)
-              // is open, so background feeds must release their hardware decoders.
-              BlocProvider(create: (_) => CodecHeavySurfaceCubit()),
-              BlocProvider(
-                create: (_) => LocaleCubit(
-                  localePreferenceService: LocalePreferenceService(
-                    sharedPreferences: ref.read(sharedPreferencesProvider),
-                  ),
-                ),
-              ),
-              BlocProvider.value(value: ref.read(appearanceCubitProvider)),
-              BlocProvider(
-                create: (_) => BackgroundPublishBloc(
-                  videoPublishServiceFactory: createPublishService,
-                  draftStorageService: ref.read(draftStorageServiceProvider),
-                  foregroundSession: ref.read(publishForegroundSessionProvider),
-                ),
-              ),
-              BlocProvider(
-                create: (_) => CameraPermissionBloc(
-                  permissionsService:
-                      const PermissionHandlerPermissionsService(),
-                )..add(const CameraPermissionRefresh()),
-              ),
-              BlocProvider.value(
-                key: ValueKey(inviteAvailabilityCubit),
-                value: inviteAvailabilityCubit,
-              ),
-              BlocProvider(
-                key: ValueKey(('inviteGateBloc', inviteApiClient)),
-                create: (context) => InviteGateBloc(
-                  inviteApiClient: context.read<InviteApiClient>(),
-                ),
-              ),
-              BlocProvider(
-                key: ValueKey(('emailVerificationCubit', inviteApiClient)),
-                create: (context) => EmailVerificationCubit(
-                  oauthClient: ref.read(oauthClientProvider),
-                  authService: ref.read(authServiceProvider),
-                  inviteApiClient: context.read<InviteApiClient>(),
-                  analytics: ref.read(analyticsEventSinkProvider),
-                ),
-              ),
-              BlocProvider(
-                key: ValueKey((inviteApiClient, inviteAvailabilityRepository)),
-                lazy: false,
-                create: (context) => InviteStatusCubit(
-                  inviteApiClient: context.read<InviteApiClient>(),
-                  initialAuthSession: ref.read(inviteStatusAuthSessionProvider),
-                  authSessionStream: ref.read(inviteStatusAuthSessionsProvider),
-                  availabilityRepository: inviteAvailabilityRepository,
-                )..start(),
-              ),
-              BlocProvider(
-                create: (_) => AppUpdateBloc(
-                  repository: AppUpdateRepository(
-                    appVersionClient: AppVersionClient(),
-                    sharedPreferences: ref.read(sharedPreferencesProvider),
-                    currentVersion: widget.packageInfo.version,
-                    // Real install source resolved at startup (Play / App Store
-                    // / TestFlight / Zapstore / sideload) — drives the correct
-                    // download URL for update nudges. Was hardcoded `sideload`.
-                    installSource: ref.read(installSourceProvider),
-                  ),
-                )..add(const AppUpdateCheckRequested()),
-              ),
-              // Provisioned above MaterialApp.router so every route (including
-              // ones outside AppShell) sees the same lists state.
-              //
-              // Deliberately not wrapped in `if (curatedLists enabled)`: a
-              // conditional entry changes this provider chain's shape, so
-              // flipping the flag re-inflated everything below it — the whole
-              // MaterialApp.router subtree, feed state, video controllers, and
-              // the upload-listener dedupe sets with it. Users were thrown back
-              // to Settings from the imperatively pushed feature-flag screen;
-              // both the symptom and its disappearance under this shape are
-              // verified on device (#6477). What is not pinned is the
-              // Navigator-level step in between — a synthetic probe of the same
-              // shape kept the pushed route — so do not read the chain below
-              // re-inflation as established.
-              //
-              // Laziness does the creation gate instead: every entry point into
-              // the people-lists UI checks FeatureFlag.curatedLists before
-              // reading the bloc — the lists routes redirect home, the profile
-              // and search affordances stay hidden, and both sheets refuse to
-              // open — so a disabled feature does not construct the bloc.
-              //
-              // Once constructed while the flag is on, the bloc remains session-
-              // lifetime even if the flag flips off — laziness gates construction,
-              // not teardown. enabledStream is how it stands down instead: on a
-              // flag-off it drops its cache subscription and stops syncing, and on
-              // a flag-on it rewires to whoever is signed in then (#6494).
-              //
-              // peopleListsRepositoryProvider is keepAlive but not identity-
-              // stable: it watches nostrServiceProvider, which recreates its
-              // client on auth change. This provider is intentionally still not
-              // keyed; repositoryStream keeps the app-lifetime bloc pointed at
-              // the current repository without re-inflating MaterialApp.router
-              // (#6480, #6482).
-              BlocProvider(
-                create: (_) {
-                  final authService = ref.read(authServiceProvider);
-                  final ownerPubkeyStream = authService.authStateStream
-                      .map((_) => authService.currentPublicKeyHex)
-                      .distinct();
-                  return PeopleListsBloc(
-                    repository: ref.read(peopleListsRepositoryProvider),
-                    repositoryStream: ref.read(
-                      peopleListsRepositoryIdentityStreamProvider,
-                    ),
-                    enabledStream: ref.read(curatedListsEnabledStreamProvider),
-                    ownerPubkeyStream: ownerPubkeyStream,
-                    initialOwnerPubkey: authService.currentPublicKeyHex,
-                  )..add(const PeopleListsStarted());
-                },
-              ),
-            ],
-            // Global listener for email verification failures - shows snackbar
-            // when verification times out or fails while user is elsewhere in app
-            child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
-              listenWhen: (previous, current) =>
-                  current.status == EmailVerificationStatus.failure &&
-                  previous.status != EmailVerificationStatus.failure,
-              listener: (context, state) {
-                final messenger = ScaffoldMessenger.maybeOf(context);
-                final errorCode = state.errorCode;
-                if (messenger != null && errorCode != null) {
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        context.l10n.emailVerificationErrorMessage(errorCode),
-                      ),
-                      backgroundColor: VineTheme.error,
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 5),
-                    ),
-                  );
-                }
-              },
-              child: UpdateDialogListener(
-                child: UploadFailureListener(
-                  child: GeoBlockingGate(
-                    child: AppLifecycleHandler(
-                      child: BlocBuilder<LocaleCubit, LocaleState>(
-                        builder: (context, localeState) =>
-                            BlocBuilder<AppearanceCubit, AppearanceMode>(
-                              builder: (context, appearanceMode) =>
-                                  buildApp(localeState.locale, appearanceMode),
-                            ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    Widget wrapped = AppCompositionRoot(
+      packageInfo: widget.packageInfo,
+      child: const DivineMaterialApp(),
     );
 
     if (crashProbe) {
@@ -2524,262 +2214,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
     return AppRootSideEffects(
       child: wrapped, // ProviderScope now wraps DivineApp from outside
     );
-  }
-}
-
-/// Listens for background upload completions and shows the appropriate UI.
-///
-/// Uses [NavigatorKeys.root] to obtain a [BuildContext] inside the
-/// [Navigator] tree, which [showModalBottomSheet] and [ScaffoldMessenger]
-/// require.
-///
-/// **Failure tracking:** Tracks the set of currently-failed draft IDs so that
-/// only *new* failures trigger a sheet. When a draft is retried or dismissed
-/// its ID leaves the failed set, so a subsequent failure is detected as new.
-///
-/// **Success tracking (publish-flow continuity, #4626):** Reads
-/// [BackgroundPublishState.recentlySucceededIds] — populated by the bloc only
-/// on a true [PublishSuccess], never on [BackgroundPublishVanished] — so a
-/// vanished upload cannot produce a false "published" snackbar. If the user is
-/// not yet authenticated at the moment of success (mid re-auth redirect), the
-/// count is buffered and shown once authentication is restored.
-@visibleForTesting
-class UploadFailureListener extends StatefulWidget {
-  const UploadFailureListener({required this.child, super.key});
-
-  final Widget child;
-
-  @override
-  State<UploadFailureListener> createState() => _UploadFailureListenerState();
-}
-
-class _UploadFailureListenerState extends State<UploadFailureListener> {
-  var _lastKnownFailedIds = <String>{};
-  var _lastKnownSucceededIds = <String>{};
-  var _pendingSuccessCount = 0;
-  PostPublishConfirmationOffer? _pendingConfirmationOffer;
-  PublishedVideo? _pendingPublishedVideo;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
-      listener: (context, state) {
-        final container = ProviderScope.containerOf(context);
-        final authService = container.read(authServiceProvider);
-
-        // Use the bloc's own recentlyPublished so we never confuse a
-        // BackgroundPublishVanished removal with a true publish success.
-        final newlyPublished = state.recentlyPublished
-            .where((video) => !_lastKnownSucceededIds.contains(video.draftId))
-            .toList();
-        _lastKnownSucceededIds = state.recentlySucceededIds;
-        final succeededCount = newlyPublished.length;
-        final confirmationOffer = container
-            .read(postPublishExperimentProvider)
-            .completed(newlyPublished.map((video) => video.draftId).toSet());
-        // The confirmation navigates to and shares one video, so it only
-        // applies when exactly one landed.
-        final publishedVideo = succeededCount == 1
-            ? newlyPublished.single
-            : null;
-
-        if (succeededCount > 0) {
-          if (authService.isAuthenticated) {
-            // Show immediately — user is still in-app. If the root navigator
-            // context is unavailable the snackbar would be silently dropped,
-            // so buffer it and replay once the context is ready.
-            if (!_showPublishSuccess(
-              succeededCount,
-              offer: confirmationOffer,
-              video: publishedVideo,
-              container: container,
-            )) {
-              _pendingSuccessCount += succeededCount;
-              _pendingConfirmationOffer ??= confirmationOffer;
-              _pendingPublishedVideo ??= publishedVideo;
-            }
-          } else {
-            // Buffer for when auth is restored after re-auth redirect.
-            _pendingSuccessCount += succeededCount;
-            _pendingConfirmationOffer ??= confirmationOffer;
-            _pendingPublishedVideo ??= publishedVideo;
-          }
-        }
-
-        final currentFailedIds = state.uploads
-            .where((u) => u.result is PublishError)
-            .map((u) => u.draft.id)
-            .toSet();
-
-        // Don't show failure sheets while the user is not authenticated
-        // (e.g. still on the login screen after a cold start).
-        // Also don't update _lastKnownFailedIds so these failures are
-        // detected as "new" once the user eventually authenticates.
-        if (!authService.isAuthenticated) {
-          return;
-        }
-
-        // Auth is now confirmed — flush buffered successes from re-auth window.
-        if (_pendingSuccessCount > 0 &&
-            _showPublishSuccess(
-              _pendingSuccessCount,
-              offer: _pendingConfirmationOffer,
-              video: _pendingPublishedVideo,
-              container: container,
-            )) {
-          _pendingSuccessCount = 0;
-          _pendingConfirmationOffer = null;
-          _pendingPublishedVideo = null;
-        }
-
-        final newFailedIds = currentFailedIds.difference(_lastKnownFailedIds);
-        container.read(postPublishExperimentProvider).failed(newFailedIds);
-        _lastKnownFailedIds = currentFailedIds;
-
-        if (newFailedIds.isEmpty) return;
-
-        final navContext = NavigatorKeys.root.currentContext;
-        if (navContext == null || !navContext.mounted) return;
-
-        final newFailures = state.uploads
-            .where((u) => newFailedIds.contains(u.draft.id))
-            .toList();
-
-        _showFailureSheetsSequentially(container, navContext, newFailures);
-      },
-      child: widget.child,
-    );
-  }
-}
-
-/// Confirms that [count] background uploads completed.
-///
-/// Returns `true` when something was shown.
-///
-/// A single video published by the treatment arm, while the user is still
-/// standing on their own profile, gets the full confirmation sheet: a preview
-/// plus View and Share. Everything else — the control arm, a batch, a video
-/// with no `d` tag, or a user who has already navigated on — gets the plain
-/// snackbar. A modal sheet is fine as a payoff for the screen you are looking
-/// at and an ambush anywhere else, since the publish finishes in the
-/// background and can land minutes later.
-///
-/// Uses [NavigatorKeys.root] to resolve both localization and
-/// [ScaffoldMessenger] from inside the app tree. The listener itself is mounted
-/// above [MaterialApp], so its own [BuildContext] does not have localization or
-/// scaffold ancestors in production — reading l10n from it is what threw the
-/// null check in #7289 before the root context was adopted.
-///
-/// Both ancestors are resolved nullably: `mounted` only says the element still
-/// exists, not that it can still reach its inherited ancestors — a deactivated
-/// element reports `mounted` while every ancestor lookup returns null. Failing
-/// closed here hands the count back to the caller's buffer/replay path instead
-/// of throwing out of the bloc listener.
-bool _showPublishSuccess(
-  int count, {
-  required ProviderContainer container,
-  PostPublishConfirmationOffer? offer,
-  PublishedVideo? video,
-}) {
-  final navContext = NavigatorKeys.root.currentContext;
-  if (navContext == null || !navContext.mounted) return false;
-  final l10n = Localizations.of<AppLocalizations>(navContext, AppLocalizations);
-  final messenger = ScaffoldMessenger.maybeOf(navContext);
-  if (l10n == null || messenger == null) return false;
-
-  final stableId = video?.stableId;
-  // Router state is consulted last so the control arm never builds it.
-  if (count == 1 &&
-      offer != null &&
-      stableId != null &&
-      _isOnOwnProfile(container)) {
-    unawaited(
-      PostPublishConfirmationSheet.show(
-        context: navContext,
-        thumbnailBytes: video!.thumbnailBytes,
-        onView: () => _onConfirmationView(container, offer, stableId),
-        onShare: () =>
-            _onConfirmationShare(navContext, container, offer, stableId),
-      ),
-    );
-    return true;
-  }
-
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text(
-        l10n.uploadPublishedCountMessage(count),
-        style: VineTheme.bodyMediumFont(color: navContext.vineColors.onNav),
-      ),
-      backgroundColor: navContext.vineColors.nav,
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-  return true;
-}
-
-/// Whether the router is currently showing the signed-in user's own profile.
-bool _isOnOwnProfile(ProviderContainer container) {
-  final pubkeyHex = container.read(authServiceProvider).currentPublicKeyHex;
-  if (pubkeyHex == null) return false;
-  // Same primitive routerLocationStreamProvider reads, and unlike
-  // routerDelegate.currentConfiguration it cannot assert on an empty stack.
-  final location = container
-      .read(goRouterProvider)
-      .routeInformationProvider
-      .value
-      .uri;
-  return isOwnProfileLocation(location.path, pubkeyHex);
-}
-
-void _onConfirmationView(
-  ProviderContainer container,
-  PostPublishConfirmationOffer offer,
-  String stableId,
-) {
-  unawaited(container.read(postPublishExperimentProvider).viewTapped(offer));
-  // Push, not go: closing the video has to pop back to the profile the
-  // creator was standing on rather than resetting to the feed.
-  unawaited(
-    container
-        .read(goRouterProvider)
-        .push<void>(RoutePaths.videoDetailForId(stableId)),
-  );
-}
-
-void _onConfirmationShare(
-  BuildContext context,
-  ProviderContainer container,
-  PostPublishConfirmationOffer offer,
-  String stableId,
-) {
-  unawaited(container.read(postPublishExperimentProvider).shareTapped(offer));
-  // The platform sheet rather than the in-app one: that needs a hydrated
-  // VideoEvent, and seconds after publish the event is often not yet
-  // resolvable from Funnelcake or any relay. The rich sheet stays one tap
-  // away on the video detail screen.
-  unawaited(
-    showShareSheet(
-      context,
-      ShareParams(text: VideoSharingService.shareUrlForStableId(stableId)),
-    ),
-  );
-}
-
-/// Shows failure bottom sheets one after another for each failed upload.
-Future<void> _showFailureSheetsSequentially(
-  ProviderContainer container,
-  BuildContext context,
-  List<BackgroundUpload> failedUploads,
-) async {
-  for (final upload in failedUploads) {
-    if (!context.mounted) return;
-    if (upload.result case PublishError(
-      kind: PublishErrorKind.accountRestricted,
-    )) {
-      refreshAccountEnforcementAfterRestriction(container);
-    }
-    await showUploadFailureSheet(context, upload);
   }
 }
 
