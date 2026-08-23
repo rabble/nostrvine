@@ -15,6 +15,7 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/explore/explore_tab_labels.dart';
@@ -149,8 +150,8 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       case RouteType.explore:
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
-          final tabName = ref.watch(exploreTabNameProvider);
-          return labelForExploreTabName(l10n, tabName, shellTitle: true);
+          final exploreTabName = ref.watch(exploreTabNameProvider);
+          return labelForExploreTabName(l10n, exploreTabName, shellTitle: true);
         }
         return l10n.navExplore;
       case RouteType.categoryGallery:
@@ -179,33 +180,9 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     }
   }
 
-  /// Maps tab index to RouteType
-  RouteType _routeTypeForTab(int index) {
-    return switch (index) {
-      0 => RouteType.home,
-      1 => RouteType.explore,
-      2 => RouteType.notifications,
-      3 => RouteType.profile,
-      _ => RouteType.home,
-    };
-  }
-
-  /// Maps RouteType to tab index
-  /// Returns null if not a main tab route
-  int? _tabIndexFromRouteType(RouteType type) {
-    return switch (type) {
-      RouteType.home => 0,
-      RouteType.explore => 1,
-      RouteType.notifications || RouteType.inbox => 2,
-      RouteType.profile => 3,
-      // Not a main tab route
-      _ => null,
-    };
-  }
-
   /// Navigates to the given tab at its last known position.
   void _navigateToTab(BuildContext context, WidgetRef ref, int tabIndex) {
-    final routeType = _routeTypeForTab(tabIndex);
+    final routeType = routeTypeForTab(tabIndex);
     final lastIndex = ref
         .read(lastTabPositionProvider.notifier)
         .getPosition(routeType);
@@ -452,7 +429,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
 
                       // No previous tab - check if we're on a non-home tab
                       // If so, go to home first before exiting
-                      final currentTab = _tabIndexFromRouteType(ctx.type);
+                      final currentTab = tabIndexFromRouteType(ctx.type);
                       if (currentTab != null && currentTab != 0) {
                         // Go to home first
                         return context.go(VideoFeedPage.pathForIndex(0));

@@ -16,6 +16,7 @@ import 'package:openvine/constants/text_scale_limits.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/home_feed_retap_cubit.dart';
@@ -36,27 +37,16 @@ class VineBottomNav extends ConsumerWidget {
   /// Currently selected tab index (0-3), or -1 if no tab is selected.
   final int currentIndex;
 
-  /// Maps tab index to RouteType
-  RouteType _routeTypeForTab(int index) {
-    return switch (index) {
-      0 => RouteType.home,
-      1 => RouteType.explore,
-      2 => RouteType.notifications,
-      3 => RouteType.profile,
-      _ => RouteType.home,
-    };
-  }
-
   /// Handles tab tap - navigates to last known position in that tab
   void _handleTabTap(BuildContext context, WidgetRef ref, int tabIndex) {
-    final routeType = _routeTypeForTab(tabIndex);
+    final routeType = routeTypeForTab(tabIndex);
     final lastIndex = ref
         .read(lastTabPositionProvider.notifier)
         .getPosition(routeType);
 
     // Log user interaction
     Log.info(
-      '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(tabIndex)})',
+      '👆 User tapped bottom nav: tab=$tabIndex (${tabName(tabIndex)})',
       name: 'Navigation',
       category: LogCategory.ui,
     );
@@ -91,16 +81,6 @@ class VineBottomNav extends ConsumerWidget {
       1 => context.go(ExploreScreen.path),
       2 => context.go(InboxPage.path),
       _ => context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0)),
-    };
-  }
-
-  String _tabName(int index) {
-    return switch (index) {
-      0 => 'Home',
-      1 => 'Explore',
-      2 => 'Inbox',
-      3 => 'Profile',
-      _ => 'Unknown',
     };
   }
 

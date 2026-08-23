@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/navigation/tab_identity.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -106,7 +107,7 @@ class BackButtonHandler {
 
     // No previous tab - check if we're on a non-home tab
     // If so, go to home first before exiting
-    final currentTab = _tabIndexFromRouteType(ctx.type);
+    final currentTab = tabIndexFromRouteType(ctx.type);
     if (currentTab != null && currentTab != 0) {
       // Go to home first
       _router!.go(VideoFeedPage.pathForIndex(0));
@@ -119,7 +120,7 @@ class BackButtonHandler {
 
   /// Navigates to the given tab at its last known position.
   static void _navigateToTab(int tabIndex) {
-    final routeType = _routeTypeForTab(tabIndex);
+    final routeType = routeTypeForTab(tabIndex);
     final lastIndex = _ref!
         .read(lastTabPositionProvider.notifier)
         .getPosition(routeType);
@@ -144,30 +145,5 @@ class BackButtonHandler {
           _router!.go(VideoFeedPage.pathForIndex(0));
         }
     }
-  }
-
-  /// Maps tab index to RouteType
-  static RouteType _routeTypeForTab(int index) {
-    return switch (index) {
-      0 => RouteType.home,
-      1 => RouteType.explore,
-      2 => RouteType.notifications,
-      3 => RouteType.profile,
-      _ => RouteType.home,
-    };
-  }
-
-  /// Maps RouteType to tab index
-  /// Returns null if not a main tab route
-  static int? _tabIndexFromRouteType(RouteType type) {
-    return switch (type) {
-      RouteType.home => 0,
-      // Hashtag is part of explore tab
-      RouteType.explore || RouteType.hashtag => 1,
-      RouteType.notifications => 2,
-      RouteType.profile => 3,
-      // Not a main tab route
-      _ => null,
-    };
   }
 }
