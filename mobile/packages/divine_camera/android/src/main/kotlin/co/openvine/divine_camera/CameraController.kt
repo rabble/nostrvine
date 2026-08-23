@@ -93,6 +93,11 @@ class CameraController(
     // continuously). Reset to the sentinel on each recording Start.
     private var lastAudioState: Int = Int.MIN_VALUE
 
+    // Whether the user asked for capture without the platform's speech-tuned
+    // processing (Music mode, #7796). Set per initialize like every other
+    // session flag, and read when a Recorder picks its audio source.
+    private var prefersUnprocessedAudio: Boolean = false
+
     // Callback for startRecording - called when recording truly starts or is aborted
     private var startRecordingCallback: ((String?) -> Unit)? = null
     private var isPaused: Boolean = false
@@ -365,13 +370,15 @@ class CameraController(
         enableScreenFlash: Boolean = true,
         mirrorFrontCameraOutput: Boolean = true,
         enableAutoLensSwitch: Boolean = true,
+        preferUnprocessedAudio: Boolean = false,
         callback: (Map<String, Any?>?, String?) -> Unit
     ) {
-        DivineCameraLog.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch (portrait mode 1080x1920)")
+        DivineCameraLog.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch, unprocessedAudio: $preferUnprocessedAudio (portrait mode 1080x1920)")
 
         screenFlashFeatureEnabled = enableScreenFlash
         this.mirrorFrontCameraOutput = mirrorFrontCameraOutput
         this.autoLensSwitchRequested = enableAutoLensSwitch
+        this.prefersUnprocessedAudio = preferUnprocessedAudio
 
         // Map lens string to lens type and facing
         currentLensType = lens
@@ -905,10 +912,16 @@ class CameraController(
      * up a microphone attached since the last build; a mic plugged in while the
      * camera stays bound is picked up on the next switch or re-entry.
      *
-     * Logs the decision and the inputs it was made from either way. A report
-     * that the external mic was still ignored is only actionable if it says
-     * which inputs the device reported, and a device naming its mic something
-     * we do not route on leaves no other trace (#6171).
+     * Also honours the user's Music mode preference (#8079), which asks for
+     * capture without the platform's speech-tuned processing. iOS answers that
+     * with an audio-session mode; the audio source is Android's equivalent
+     * lever, and this is the only place Android picks one.
+     *
+     * Logs the decision, both inputs to it, and the inputs the device
+     * reported. A report that the external mic or Music mode was ignored is
+     * only actionable if it says which source was chosen and from what, and a
+     * device naming its mic something we do not route on leaves no other
+     * trace (#6171).
      */
     private fun resolveAudioSource(): Int {
         val audioManager =
@@ -924,16 +937,26 @@ class CameraController(
             .getDevices(AudioManager.GET_DEVICES_INPUTS)
             .map { it.type }
             .toIntArray()
-        val source = audioSourceForInputDeviceTypes(types)
+        // Only the exact string "true" means supported. The CDD requires an
+        // unsupporting device to return null (§5.11 [C-2-1]) while AOSP's own
+        // getProperty returns String.valueOf(false) and never null, so both
+        // answers are in the field and both must read as unsupported.
+        val unprocessedSupported = audioManager
+            .getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED)
+            .toBoolean()
+        val source = audioSourceForInputDeviceTypes(
+            types,
+            preferUnprocessedAudio = prefersUnprocessedAudio,
+            unprocessedSourceSupported = unprocessedSupported
+        )
         val inputs = types
             .joinToString(", ") { audioInputTypeName(it) }
             .ifEmpty { "none" }
         DivineCameraLog.info(
-            if (source == AudioSpec.SOURCE_AUTO) {
-                "Audio source: camera default (inputs: $inputs)"
-            } else {
-                "Audio source: MIC, external input attached (inputs: $inputs)"
-            },
+            "Audio source: ${audioSourceName(source)} " +
+                "(music mode: $prefersUnprocessedAudio, " +
+                "unprocessed supported: $unprocessedSupported, " +
+                "inputs: $inputs)",
             name = "DivineCamera.Audio"
         )
         return source

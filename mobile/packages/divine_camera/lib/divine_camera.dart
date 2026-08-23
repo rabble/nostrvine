@@ -107,8 +107,8 @@ class DivineCamera {
   /// The preview is always mirrored.
   /// [preferUnprocessedAudio] captures the microphone without the
   /// speech-tuned noise suppression the platform applies by default, so
-  /// instruments and music survive at their real level. iOS only — every
-  /// other platform ignores it.
+  /// instruments and music survive at their real level. iOS and Android
+  /// act on it; every other platform ignores it.
   ///
   /// Returns the initialized camera state.
   Future<CameraState> initialize({

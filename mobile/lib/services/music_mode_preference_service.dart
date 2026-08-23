@@ -1,4 +1,4 @@
-// ABOUTME: Service for the Music mode recording preference (iOS)
+// ABOUTME: Service for the Music mode recording preference (iOS/Android)
 // ABOUTME: Controls whether the mic is captured without speech-tuned cleanup
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +11,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// instrument as noise and gates it away (#7796). Off by default: the
 /// processing is what keeps ordinary talking clips clean.
 ///
-/// iOS is the only platform that acts on this today — see
+/// iOS swaps the capture session's audio mode; Android picks a recording
+/// audio source that skips the processing — see
 /// `DivineCamera.initialize(preferUnprocessedAudio:)`.
 class MusicModePreferenceService {
   MusicModePreferenceService(this._prefs)

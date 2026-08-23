@@ -170,6 +170,169 @@ internal class AudioInputSourceTest {
     }
 
     @Test
+    fun musicMode_capturesWithoutProcessingWhereSupported() {
+        // The whole point of the preference: UNPROCESSED is the source Android
+        // documents for capture with no AGC and no noise suppression.
+        assertEquals(
+            MediaRecorder.AudioSource.UNPROCESSED,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_fallsBackToVoiceRecognitionWhereUnprocessedIsUnsupported() {
+        // Not every device supports UNPROCESSED. VOICE_RECOGNITION is
+        // Android's own documented fallback, and drops AGC and noise
+        // suppression — less than UNPROCESSED promises, more than doing
+        // nothing, which is what Android did before #8079.
+        assertEquals(
+            MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = false
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_alongsideAUsbMicKeepsBoth() {
+        // A musician with an external mic wants the mic AND the processing
+        // gone. AOSP hands MIC, VOICE_RECOGNITION and UNPROCESSED the same
+        // device list, so moving to UNPROCESSED for the processing does not
+        // cost the USB device that #6171 was about.
+        assertEquals(
+            MediaRecorder.AudioSource.UNPROCESSED,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_USB_DEVICE
+                ),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_withAWiredHeadsetKeepsCameraXDefault() {
+        // A wired headset outranks everything under the unprocessed sources
+        // just as it does under MIC, and CAMCORDER will not route to it at
+        // all — so honouring Music mode here would move the recording onto
+        // the earbud mic. Giving up on the processing is the smaller loss.
+        assertEquals(
+            AudioSpec.SOURCE_AUTO,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_WIRED_HEADSET
+                ),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_withBluetoothEarbudsKeepsCameraXDefault() {
+        // Same rule over the air. BLUETOOTH_BLE sits above the built-in mic
+        // in the shared ordering but is absent from CAMCORDER's, so a switch
+        // made purely for the processing would silently hand the recording to
+        // the user's earbuds. That is the trade #7652 already refused.
+        assertEquals(
+            AudioSpec.SOURCE_AUTO,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_BLE_HEADSET
+                ),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_withEarbudsAndAPluggedInMicStillSwitches() {
+        // Monitoring on earbuds while an external mic records is the setup
+        // Music mode exists for. USB outranks BLUETOOTH_BLE, so the mic wins
+        // the device race and the switch is safe to make.
+        assertEquals(
+            MediaRecorder.AudioSource.UNPROCESSED,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_BLE_HEADSET,
+                    AudioDeviceInfo.TYPE_USB_DEVICE
+                ),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_offLeavesTheSupportPropertyIrrelevant() {
+        // A device that supports UNPROCESSED must not drift off the
+        // camera-tuned path for users who never asked for Music mode.
+        assertEquals(
+            AudioSpec.SOURCE_AUTO,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC),
+                preferUnprocessedAudio = false,
+                unprocessedSourceSupported = true
+            )
+        )
+        assertEquals(
+            MediaRecorder.AudioSource.MIC,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(
+                    AudioDeviceInfo.TYPE_BUILTIN_MIC,
+                    AudioDeviceInfo.TYPE_USB_DEVICE
+                ),
+                preferUnprocessedAudio = false,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun musicMode_withNoReportedInputsStillSwitches() {
+        // Music mode is a request about processing, not about devices, and an
+        // empty input list is not evidence of earbuds. Nothing is captured
+        // either way here, so the honest reading is to honour the setting.
+        assertEquals(
+            MediaRecorder.AudioSource.UNPROCESSED,
+            audioSourceForInputDeviceTypes(
+                intArrayOf(),
+                preferUnprocessedAudio = true,
+                unprocessedSourceSupported = true
+            )
+        )
+    }
+
+    @Test
+    fun sourceNames_stayReadableAndKeepUnmappedSourcesVisible() {
+        // These land in bug reports next to the input list; "Music mode did
+        // nothing" is only diagnosable if the chosen source is named.
+        assertEquals("camera default", audioSourceName(AudioSpec.SOURCE_AUTO))
+        assertEquals("MIC", audioSourceName(MediaRecorder.AudioSource.MIC))
+        assertEquals(
+            "UNPROCESSED",
+            audioSourceName(MediaRecorder.AudioSource.UNPROCESSED)
+        )
+        assertEquals(
+            "VOICE_RECOGNITION",
+            audioSourceName(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+        )
+        assertEquals("SOURCE_9999", audioSourceName(9999))
+    }
+
+    @Test
     fun inputTypeNames_stayReadableAndKeepUnmappedTypesVisible() {
         // The names land in user bug reports, and an unmapped type is the case
         // worth reading: a device that calls its external mic something we do
@@ -189,14 +352,25 @@ internal class AudioInputSourceTest {
      */
     @SuppressLint("RestrictedApi")
     @Test
-    fun recorderRetainsTheConfiguredAudioSource() {
-        assertEquals(
-            MediaRecorder.AudioSource.MIC,
-            Recorder.Builder()
-                .setAudioSource(MediaRecorder.AudioSource.MIC)
-                .build()
-                .audioSource
+    fun recorderRetainsEveryAudioSourceWeCanResolve() {
+        // Every one of these is outside AudioSpec's declared domain
+        // (SOURCE_AUTO and SOURCE_CAMCORDER), so all three depend on the
+        // setter passing the value through unvalidated.
+        val sources = mapOf(
+            "MIC" to MediaRecorder.AudioSource.MIC,
+            "VOICE_RECOGNITION" to MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            "UNPROCESSED" to MediaRecorder.AudioSource.UNPROCESSED
         )
+        for ((name, source) in sources) {
+            assertEquals(
+                source,
+                Recorder.Builder()
+                    .setAudioSource(source)
+                    .build()
+                    .audioSource,
+                "$name should survive into the built Recorder"
+            )
+        }
     }
 
     @SuppressLint("RestrictedApi")
