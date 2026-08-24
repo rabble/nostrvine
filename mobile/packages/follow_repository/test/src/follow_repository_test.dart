@@ -5724,7 +5724,7 @@ void main() {
         );
 
         test(
-          'rejects one high outlier across REST and complete indexers',
+          'keeps the highest count across REST and complete indexers',
           () async {
             final mockFunnelcakeClient = _MockFunnelcakeApiClient();
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -5767,12 +5767,12 @@ void main() {
 
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
-            expect(stats.followers, equals(55));
+            expect(stats.followers, equals(500));
           },
         );
 
         test(
-          'corrects a high REST outlier with two lower indexers',
+          'keeps a higher REST count over two lower indexers',
           () async {
             final mockFunnelcakeClient = _MockFunnelcakeApiClient();
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -5815,18 +5815,19 @@ void main() {
 
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
-            expect(stats.followers, equals(90));
+            expect(stats.followers, equals(500));
           },
         );
 
         test(
-          'rejects one high outlier when all sources are partial',
+          'keeps the highest lower bound when all sources are partial',
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
               isCacheInitialized: () => cacheIsInitialized,
               getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
               cacheUserEvent: cachedUserEvents.add,
+              indexerQueryTimeout: Duration.zero,
               indexerRelayUrls: const [
                 'wss://indexer1.test',
                 'wss://indexer2.test',
@@ -5852,13 +5853,12 @@ void main() {
 
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
-            expect(stats.followers, equals(2));
+            expect(stats.followers, equals(200));
           },
-          timeout: const Timeout(Duration(seconds: 20)),
         );
 
         test(
-          'uses conservative fallback for REST and two partial indexers',
+          'does not let partial indexers lower the REST count',
           () async {
             final mockFunnelcakeClient = _MockFunnelcakeApiClient();
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -5878,6 +5878,7 @@ void main() {
               getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
               cacheUserEvent: cachedUserEvents.add,
               funnelcakeApiClient: mockFunnelcakeClient,
+              indexerQueryTimeout: Duration.zero,
               indexerRelayUrls: const [
                 'wss://indexer1.test',
                 'wss://indexer2.test',
@@ -5898,9 +5899,8 @@ void main() {
 
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
-            expect(stats.followers, equals(5));
+            expect(stats.followers, equals(1000));
           },
-          timeout: const Timeout(Duration(seconds: 20)),
         );
 
         test(
@@ -5950,6 +5950,7 @@ void main() {
               isCacheInitialized: () => cacheIsInitialized,
               getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
               cacheUserEvent: cachedUserEvents.add,
+              indexerQueryTimeout: Duration.zero,
               indexerRelayUrls: const [
                 'wss://indexer1.test',
                 'wss://indexer2.test',
@@ -5986,7 +5987,6 @@ void main() {
 
             expect(stats.followers, equals(10));
           },
-          timeout: const Timeout(Duration(seconds: 20)),
         );
       });
 
@@ -6389,6 +6389,7 @@ void main() {
               isCacheInitialized: () => cacheIsInitialized,
               getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
               cacheUserEvent: cachedUserEvents.add,
+              indexerQueryTimeout: Duration.zero,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: (url, status) {
                 final relay = _FakeRelay(url, status)
@@ -6416,7 +6417,6 @@ void main() {
             // Should get partial result from timeout
             expect(stats.followers, greaterThanOrEqualTo(0));
           },
-          timeout: const Timeout(Duration(seconds: 20)),
         );
 
         test(
@@ -6610,6 +6610,7 @@ void main() {
             getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
             cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
+            indexerQueryTimeout: Duration.zero,
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               return _FakeRelay(url, status)
@@ -6628,7 +6629,6 @@ void main() {
 
           expect(stats.followers, equals(1000));
         },
-        timeout: const Timeout(Duration(seconds: 20)),
       );
     });
 

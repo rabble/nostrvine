@@ -65,6 +65,7 @@ class FollowRepository {
     RelayFactory? relayFactory,
     BlockedPubkeysCallback? blockedPubkeys,
     DateTime Function()? now,
+    Duration indexerQueryTimeout = const Duration(seconds: 8),
   }) : _nostrClient = nostrClient,
        _blockedPubkeys = blockedPubkeys,
        _isCacheInitialized = isCacheInitialized,
@@ -77,7 +78,8 @@ class FollowRepository {
        _indexerRelayUrls = indexerRelayUrls,
        _queryContactList = queryContactList ?? _defaultQueryContactList,
        _relayFactory = relayFactory ?? _defaultRelayFactory,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _indexerQueryTimeout = indexerQueryTimeout;
 
   final NostrClient _nostrClient;
   final IsCacheInitializedCallback? _isCacheInitialized;
@@ -111,6 +113,9 @@ class FollowRepository {
 
   /// Clock used by expiring caches and persisted-stat stabilization.
   final DateTime Function() _now;
+
+  /// Maximum time to wait for an indexer relay to finish a count query.
+  final Duration _indexerQueryTimeout;
 
   /// Default relay factory — creates a real [RelayBase].
   static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
@@ -965,23 +970,20 @@ class FollowRepository {
 
   /// Fetch follower stats from the network.
   ///
-  /// Runs REST API and WebSocket queries in parallel, then corroborates the
-  /// follower count across the usable source observations.
+  /// Runs REST API and WebSocket queries in parallel, records each source's
+  /// completion state, then selects the highest observed follower count.
   Future<FollowerStats> _fetchFollowerStats(String pubkey) async {
     // Run REST and WebSocket queries in parallel for best coverage
-    final results = await Future.wait([
+    final (restResult, wsResult) = await (
       _fetchFollowerStatsViaRest(pubkey),
       _fetchFollowerStatsViaWebSocket(pubkey),
-    ]);
-
-    final restResult = results[0] as FollowerStats?;
-    final wsResult = results[1]! as _WebSocketFollowerStats;
+    ).wait;
     final followerCounts = [
       if (restResult != null)
-        (count: restResult.followers, isComplete: false, source: 'REST'),
+        (count: restResult.followers, isComplete: true, source: 'REST'),
       ...wsResult.followerCounts,
     ];
-    final followers = _corroborateFollowerCount(followerCounts);
+    final followers = _selectFollowerCount(followerCounts);
     final following = restResult == null
         ? wsResult.following
         : max(restResult.following, wsResult.following);
@@ -1005,31 +1007,18 @@ class FollowRepository {
     return FollowerStats(followers: followers, following: following);
   }
 
-  /// Selects a robust follower count across all usable observations.
+  /// Selects the best-covered follower count across all observations.
   ///
-  /// Three or more positive observations use their second-highest count so one
-  /// high outlier cannot win. With only one or two positives there is not enough
-  /// evidence to identify an outlier, so the highest observed lower bound wins.
-  /// Zero observations are ignored beside positive evidence. EOSE completion is
-  /// intentionally diagnostic only: it proves the response finished, not that
-  /// the relay holds every relevant kind 3 event. Consequently, two low partial
-  /// observations can conservatively reject one high source in the 3+ fallback.
-  static int _corroborateFollowerCount(
+  /// Aggregate counts cannot distinguish a stale over-count from a source with
+  /// broader relay coverage. Completion only means that source finished
+  /// answering; it does not make its holdings globally authoritative. Until
+  /// reconciliation can compare event identities, a lower observation must not
+  /// discard a potentially better-covered source.
+  static int _selectFollowerCount(
     List<_FollowerCountObservation> observations,
   ) {
     if (observations.isEmpty) return 0;
-
-    int secondHighest(List<int> counts) {
-      counts.sort();
-      return counts[counts.length - 2];
-    }
-
-    final hasPositiveCount = observations.any((result) => result.count > 0);
-    final usable = hasPositiveCount
-        ? observations.where((result) => result.count > 0)
-        : observations;
-    final counts = usable.map((result) => result.count).toList();
-    return counts.length >= 3 ? secondHighest(counts) : counts.reduce(max);
+    return observations.map((result) => result.count).reduce(max);
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -1073,14 +1062,14 @@ class FollowRepository {
     String pubkey,
   ) async {
     try {
-      final results = await Future.wait([
+      final (following, followerCounts) = await (
         _fetchFollowingCountViaWebSocket(pubkey),
         _fetchFollowersCountViaIndexers(pubkey),
-      ]);
+      ).wait;
 
       return (
-        following: results[0] as int,
-        followerCounts: results[1] as List<_FollowerCountObservation>,
+        following: following,
+        followerCounts: followerCounts,
       );
     } catch (e) {
       Log.error(
@@ -1121,7 +1110,7 @@ class FollowRepository {
     return 0;
   }
 
-  /// Get followers count by querying indexer relays directly.
+  /// Get follower-count observations by querying indexer relays directly.
   Future<List<_FollowerCountObservation>> _fetchFollowersCountViaIndexers(
     String pubkey,
   ) async {
@@ -1187,7 +1176,7 @@ class FollowRepository {
       }
 
       final result = await completer.future.timeout(
-        const Duration(seconds: 8),
+        _indexerQueryTimeout,
         onTimeout: () => followerPubkeys.length,
       );
 
