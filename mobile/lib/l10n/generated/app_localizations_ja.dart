@@ -9778,7 +9778,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsInviteAvailabilityServerDisabled => 'サーバー値: 無効';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown => 'サーバー値: 不明（既定で有効）';
+  String get devOptionsInviteAvailabilityServerUnknown => 'サーバー値: 不明';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone => '上書き: サーバー値を使う';

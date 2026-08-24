@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Valor del servidor: cargando",
   "devOptionsInviteAvailabilityServerEnabled": "Valor del servidor: activado",
   "devOptionsInviteAvailabilityServerDisabled": "Valor del servidor: desactivado",
-  "devOptionsInviteAvailabilityServerUnknown": "Valor del servidor: desconocido (activado por defecto)",
+  "devOptionsInviteAvailabilityServerUnknown": "Valor del servidor: desconocido",
   "devOptionsInviteAvailabilityOverrideNone": "Anulación: usar el valor del servidor",
   "devOptionsInviteAvailabilityOverrideEnabled": "Anulación: forzar activado",
   "devOptionsInviteAvailabilityOverrideDisabled": "Anulación: forzar desactivado",

@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Valoare server: se încarcă",
   "devOptionsInviteAvailabilityServerEnabled": "Valoare server: activat",
   "devOptionsInviteAvailabilityServerDisabled": "Valoare server: dezactivat",
-  "devOptionsInviteAvailabilityServerUnknown": "Valoare server: necunoscută (implicit activat)",
+  "devOptionsInviteAvailabilityServerUnknown": "Valoare server: necunoscută",
   "devOptionsInviteAvailabilityOverrideNone": "Suprascriere: folosește valoarea serverului",
   "devOptionsInviteAvailabilityOverrideEnabled": "Suprascriere: forțează activarea",
   "devOptionsInviteAvailabilityOverrideDisabled": "Suprascriere: forțează dezactivarea",

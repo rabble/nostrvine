@@ -3510,7 +3510,7 @@
   "devOptionsInviteAvailabilityServerLoading": "서버 값: 불러오는 중",
   "devOptionsInviteAvailabilityServerEnabled": "서버 값: 켜짐",
   "devOptionsInviteAvailabilityServerDisabled": "서버 값: 꺼짐",
-  "devOptionsInviteAvailabilityServerUnknown": "서버 값: 알 수 없음 (기본값 켜짐)",
+  "devOptionsInviteAvailabilityServerUnknown": "서버 값: 알 수 없음",
   "devOptionsInviteAvailabilityOverrideNone": "재정의: 서버 값 사용",
   "devOptionsInviteAvailabilityOverrideEnabled": "재정의: 켜기 강제",
   "devOptionsInviteAvailabilityOverrideDisabled": "재정의: 끄기 강제",

@@ -10026,8 +10026,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsInviteAvailabilityServerDisabled => 'የአገልጋይ እሴት፦ ጠፍቷል';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown =>
-      'የአገልጋይ እሴት፦ አይታወቅም (በነባሪ በርቷል)';
+  String get devOptionsInviteAvailabilityServerUnknown => 'የአገልጋይ እሴት፦ አይታወቅም';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

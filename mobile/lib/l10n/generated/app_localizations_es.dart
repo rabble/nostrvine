@@ -10400,7 +10400,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Valor del servidor: desconocido (activado por defecto)';
+      'Valor del servidor: desconocido';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

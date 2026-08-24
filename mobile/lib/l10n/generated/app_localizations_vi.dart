@@ -10257,7 +10257,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Giá trị máy chủ: không rõ (mặc định bật)';
+      'Giá trị máy chủ: không rõ';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

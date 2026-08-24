@@ -10214,7 +10214,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Nilai server: tidak diketahui (bawaan aktif)';
+      'Nilai server: tidak diketahui';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

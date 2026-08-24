@@ -5805,7 +5805,7 @@
   "devOptionsInviteAvailabilityServerLoading": "سرور ویلیو: لوڈ ہو رہی ہے",
   "devOptionsInviteAvailabilityServerEnabled": "سرور ویلیو: فعال",
   "devOptionsInviteAvailabilityServerDisabled": "سرور ویلیو: غیر فعال",
-  "devOptionsInviteAvailabilityServerUnknown": "سرور ویلیو: نامعلوم (بطور ڈیفالٹ فعال)",
+  "devOptionsInviteAvailabilityServerUnknown": "سرور ویلیو: نامعلوم",
   "devOptionsInviteAvailabilityOverrideNone": "اوور رائیڈ: سرور ویلیو استعمال کریں",
   "devOptionsInviteAvailabilityOverrideEnabled": "اوور رائیڈ: زبردستی فعال",
   "devOptionsInviteAvailabilityOverrideDisabled": "اوور رائیڈ: زبردستی غیر فعال",

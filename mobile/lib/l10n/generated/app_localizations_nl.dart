@@ -10346,7 +10346,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Serverwaarde: onbekend (standaard aan)';
+      'Serverwaarde: onbekend';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

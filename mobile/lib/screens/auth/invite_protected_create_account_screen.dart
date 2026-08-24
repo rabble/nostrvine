@@ -48,12 +48,12 @@ class _InviteProtectedCreateAccountScreenState
               });
             }
 
-            if (!availability.hasResolved) {
-              return const _InviteGuardLoadingPage();
-            }
-
             if (!availability.isEnabled || state.hasAccessGrant) {
               return const CreateAccountScreen();
+            }
+
+            if (!availability.hasResolved) {
+              return const _InviteGuardLoadingPage();
             }
 
             _redirectToInvite(context);

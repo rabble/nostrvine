@@ -10491,7 +10491,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Wartość serwera: nieznana (domyślnie włączone)';
+      'Wartość serwera: nieznana';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

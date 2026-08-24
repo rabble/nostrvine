@@ -10214,7 +10214,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'قيمة الخادم: غير معروفة (مفعّلة افتراضيًا)';
+      'قيمة الخادم: غير معروفة';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

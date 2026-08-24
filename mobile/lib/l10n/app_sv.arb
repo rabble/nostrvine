@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Servervärde: läser in",
   "devOptionsInviteAvailabilityServerEnabled": "Servervärde: på",
   "devOptionsInviteAvailabilityServerDisabled": "Servervärde: av",
-  "devOptionsInviteAvailabilityServerUnknown": "Servervärde: okänt (på som standard)",
+  "devOptionsInviteAvailabilityServerUnknown": "Servervärde: okänt",
   "devOptionsInviteAvailabilityOverrideNone": "Överstyrning: använd servervärdet",
   "devOptionsInviteAvailabilityOverrideEnabled": "Överstyrning: tvinga på",
   "devOptionsInviteAvailabilityOverrideDisabled": "Överstyrning: tvinga av",

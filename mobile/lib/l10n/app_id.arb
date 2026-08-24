@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Nilai server: memuat",
   "devOptionsInviteAvailabilityServerEnabled": "Nilai server: aktif",
   "devOptionsInviteAvailabilityServerDisabled": "Nilai server: nonaktif",
-  "devOptionsInviteAvailabilityServerUnknown": "Nilai server: tidak diketahui (bawaan aktif)",
+  "devOptionsInviteAvailabilityServerUnknown": "Nilai server: tidak diketahui",
   "devOptionsInviteAvailabilityOverrideNone": "Penggantian: pakai nilai server",
   "devOptionsInviteAvailabilityOverrideEnabled": "Penggantian: paksa aktif",
   "devOptionsInviteAvailabilityOverrideDisabled": "Penggantian: paksa nonaktif",

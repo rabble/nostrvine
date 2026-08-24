@@ -10293,8 +10293,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsInviteAvailabilityServerDisabled => 'Servervärde: av';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown =>
-      'Servervärde: okänt (på som standard)';
+  String get devOptionsInviteAvailabilityServerUnknown => 'Servervärde: okänt';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

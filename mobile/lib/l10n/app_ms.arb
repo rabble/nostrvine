@@ -5805,7 +5805,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Nilai pelayan: sedang dimuatkan",
   "devOptionsInviteAvailabilityServerEnabled": "Nilai pelayan: dihidupkan",
   "devOptionsInviteAvailabilityServerDisabled": "Nilai pelayan: dimatikan",
-  "devOptionsInviteAvailabilityServerUnknown": "Nilai pelayan: tidak diketahui (lalai dihidupkan)",
+  "devOptionsInviteAvailabilityServerUnknown": "Nilai pelayan: tidak diketahui",
   "devOptionsInviteAvailabilityOverrideNone": "Tulis ganti: guna nilai pelayan",
   "devOptionsInviteAvailabilityOverrideEnabled": "Tulis ganti: paksa hidup",
   "devOptionsInviteAvailabilityOverrideDisabled": "Tulis ganti: paksa mati",

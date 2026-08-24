@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -160,6 +161,20 @@ void main() {
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(DivineAuthTextField, 'Email'), findsOneWidget);
+    });
+
+    testWidgets('allows create-account while client config is unresolved', (
+      tester,
+    ) async {
+      final pendingConfig = Completer<InviteClientConfig>();
+      when(
+        () => mockInviteApiClient.getClientConfig(),
+      ).thenAnswer((_) => pendingConfig.future);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
       expect(find.widgetWithText(DivineAuthTextField, 'Email'), findsOneWidget);
     });

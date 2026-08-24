@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "قيمة الخادم: جارٍ التحميل",
   "devOptionsInviteAvailabilityServerEnabled": "قيمة الخادم: مفعّلة",
   "devOptionsInviteAvailabilityServerDisabled": "قيمة الخادم: معطّلة",
-  "devOptionsInviteAvailabilityServerUnknown": "قيمة الخادم: غير معروفة (مفعّلة افتراضيًا)",
+  "devOptionsInviteAvailabilityServerUnknown": "قيمة الخادم: غير معروفة",
   "devOptionsInviteAvailabilityOverrideNone": "تجاوز: استخدم قيمة الخادم",
   "devOptionsInviteAvailabilityOverrideEnabled": "تجاوز: فرض التفعيل",
   "devOptionsInviteAvailabilityOverrideDisabled": "تجاوز: فرض التعطيل",

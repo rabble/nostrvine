@@ -4180,7 +4180,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Стойност от сървъра: зарежда се",
   "devOptionsInviteAvailabilityServerEnabled": "Стойност от сървъра: включено",
   "devOptionsInviteAvailabilityServerDisabled": "Стойност от сървъра: изключено",
-  "devOptionsInviteAvailabilityServerUnknown": "Стойност от сървъра: неизвестна (по подразбиране включено)",
+  "devOptionsInviteAvailabilityServerUnknown": "Стойност от сървъра: неизвестна",
   "devOptionsInviteAvailabilityOverrideNone": "Замяна: използвай стойността от сървъра",
   "devOptionsInviteAvailabilityOverrideEnabled": "Замяна: наложено включено",
   "devOptionsInviteAvailabilityOverrideDisabled": "Замяна: наложено изключено",

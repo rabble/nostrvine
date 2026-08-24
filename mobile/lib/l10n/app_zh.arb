@@ -5805,7 +5805,7 @@
   "devOptionsInviteAvailabilityServerLoading": "服务器值：加载中",
   "devOptionsInviteAvailabilityServerEnabled": "服务器值：已启用",
   "devOptionsInviteAvailabilityServerDisabled": "服务器值：已禁用",
-  "devOptionsInviteAvailabilityServerUnknown": "服务器值：未知（默认启用）",
+  "devOptionsInviteAvailabilityServerUnknown": "服务器值：未知",
   "devOptionsInviteAvailabilityOverrideNone": "覆盖：使用服务器值",
   "devOptionsInviteAvailabilityOverrideEnabled": "覆盖：强制启用",
   "devOptionsInviteAvailabilityOverrideDisabled": "覆盖：强制禁用",

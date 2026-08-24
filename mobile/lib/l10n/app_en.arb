@@ -6670,7 +6670,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Server value: loading",
   "devOptionsInviteAvailabilityServerEnabled": "Server value: enabled",
   "devOptionsInviteAvailabilityServerDisabled": "Server value: disabled",
-  "devOptionsInviteAvailabilityServerUnknown": "Server value: unknown (defaults enabled)",
+  "devOptionsInviteAvailabilityServerUnknown": "Server value: unknown",
   "devOptionsInviteAvailabilityOverrideNone": "Override: use server value",
   "devOptionsInviteAvailabilityOverrideEnabled": "Override: force enabled",
   "devOptionsInviteAvailabilityOverrideDisabled": "Override: force disabled",

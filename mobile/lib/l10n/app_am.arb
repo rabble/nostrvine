@@ -4174,7 +4174,7 @@
   "devOptionsInviteAvailabilityServerLoading": "የአገልጋይ እሴት፦ በመጫን ላይ",
   "devOptionsInviteAvailabilityServerEnabled": "የአገልጋይ እሴት፦ በርቷል",
   "devOptionsInviteAvailabilityServerDisabled": "የአገልጋይ እሴት፦ ጠፍቷል",
-  "devOptionsInviteAvailabilityServerUnknown": "የአገልጋይ እሴት፦ አይታወቅም (በነባሪ በርቷል)",
+  "devOptionsInviteAvailabilityServerUnknown": "የአገልጋይ እሴት፦ አይታወቅም",
   "devOptionsInviteAvailabilityOverrideNone": "ሽፋን፦ የአገልጋዩን እሴት ተጠቀም",
   "devOptionsInviteAvailabilityOverrideEnabled": "ሽፋን፦ ማብራት አስገድድ",
   "devOptionsInviteAvailabilityOverrideDisabled": "ሽፋን፦ ማጥፋት አስገድድ",

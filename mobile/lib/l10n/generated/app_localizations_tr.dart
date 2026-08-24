@@ -10215,7 +10215,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Sunucu değeri: bilinmiyor (varsayılan açık)';
+      'Sunucu değeri: bilinmiyor';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>
