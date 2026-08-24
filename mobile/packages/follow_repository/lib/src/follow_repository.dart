@@ -978,7 +978,7 @@ class FollowRepository {
     final wsResult = results[1]! as _WebSocketFollowerStats;
     final followerCounts = [
       if (restResult != null)
-        (count: restResult.followers, isComplete: true, source: 'REST'),
+        (count: restResult.followers, isComplete: false, source: 'REST'),
       ...wsResult.followerCounts,
     ];
     final followers = _corroborateFollowerCount(followerCounts);
@@ -1005,14 +1005,14 @@ class FollowRepository {
     return FollowerStats(followers: followers, following: following);
   }
 
-  /// Selects the highest follower count corroborated by another observation.
+  /// Selects a follower count from the highest-confidence usable observations.
   ///
-  /// Complete observations establish that a source finished answering, but
-  /// EOSE only covers that relay's own holdings. Two complete observations use
-  /// their second-highest count. A single complete observation is capped by the
-  /// best partial lower bound, while an all-partial result also uses its
-  /// second-highest count. A lone high value therefore cannot win any
-  /// multi-source result.
+  /// Complete observations establish that an indexer finished answering, but
+  /// EOSE only covers that relay's own holdings. Positive complete observations
+  /// form the preferred confidence tier and partial lower bounds never cap
+  /// them. Conflicts within a tier use the second-highest value so a lone high
+  /// source cannot win. Zero observations are ignored when any source found
+  /// followers because an empty index is not evidence against positive data.
   static int _corroborateFollowerCount(
     List<_FollowerCountObservation> observations,
   ) {
@@ -1023,20 +1023,21 @@ class FollowRepository {
       return counts[counts.length - 2];
     }
 
-    final completeCounts = observations
+    final hasPositiveCount = observations.any((result) => result.count > 0);
+    final usable = hasPositiveCount
+        ? observations.where((result) => result.count > 0)
+        : observations;
+    final completeCounts = usable
         .where((result) => result.isComplete)
         .map((result) => result.count)
         .toList();
     if (completeCounts.length >= 2) return secondHighest(completeCounts);
+    if (completeCounts.length == 1) return completeCounts.single;
 
-    final partialCounts = observations
+    final partialCounts = usable
         .where((result) => !result.isComplete)
         .map((result) => result.count)
         .toList();
-    if (completeCounts.length == 1) {
-      if (partialCounts.isEmpty) return completeCounts.single;
-      return min(completeCounts.single, partialCounts.reduce(max));
-    }
 
     return partialCounts.length == 1
         ? partialCounts.single

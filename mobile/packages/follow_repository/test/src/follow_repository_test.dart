@@ -5677,7 +5677,7 @@ void main() {
         );
 
         test(
-          'uses the highest count corroborated by another complete source',
+          'uses second-highest count across complete indexers',
           () async {
             var callCount = 0;
             repository = FollowRepository(
@@ -5808,6 +5808,44 @@ void main() {
             expect(stats.followers, equals(2));
           },
           timeout: const Timeout(Duration(seconds: 20)),
+        );
+
+        test(
+          'ignores empty EOSE indexers when REST has a positive count',
+          () async {
+            final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+            ).thenAnswer(
+              (_) async => const SocialCounts(
+                pubkey: testTargetPubkey,
+                followerCount: 1000,
+                followingCount: 10,
+              ),
+            );
+
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              indexerRelayUrls: const [
+                'wss://indexer1.test',
+                'wss://indexer2.test',
+              ],
+              relayFactory: fakeRelayFactory(
+                responses: const [
+                  ['EOSE', 's'],
+                ],
+              ),
+            );
+
+            final stats = await repository.getFollowerStats(testTargetPubkey);
+
+            expect(stats.followers, equals(1000));
+          },
         );
       });
 
@@ -6318,9 +6356,9 @@ void main() {
       });
     });
 
-    group('getFollowerStats - conflicting complete follower sources', () {
+    group('getFollowerStats - source confidence', () {
       test(
-        'does not let a lone higher indexer count beat REST',
+        'prefers a complete indexer count over partial REST',
         () async {
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -6365,16 +6403,14 @@ void main() {
 
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          // The lower of two complete observations is the highest count both
-          // sources support.
-          expect(stats.followers, equals(5));
+          expect(stats.followers, equals(10));
           // following: max(REST 10, WS 0) = 10
           expect(stats.following, equals(10));
         },
       );
 
       test(
-        'caps one complete count at the best partial lower bound',
+        'does not let partial REST cap one complete indexer',
         () async {
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -6383,7 +6419,7 @@ void main() {
           ).thenAnswer(
             (_) async => const SocialCounts(
               pubkey: testTargetPubkey,
-              followerCount: 50,
+              followerCount: 40,
               followingCount: 10,
             ),
           );
@@ -6397,22 +6433,24 @@ void main() {
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               return _FakeRelay(url, status)
-                ..fakeResponses = List.generate(
-                  40,
-                  (i) => <dynamic>[
-                    'EVENT',
-                    's',
-                    {'pubkey': i.toRadixString(16).padLeft(64, '0')},
-                  ],
-                );
+                ..fakeResponses = [
+                  ...List.generate(
+                    50,
+                    (i) => <dynamic>[
+                      'EVENT',
+                      's',
+                      {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                    ],
+                  ),
+                  <dynamic>['EOSE', 's'],
+                ];
             },
           );
 
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          expect(stats.followers, equals(40));
+          expect(stats.followers, equals(50));
         },
-        timeout: const Timeout(Duration(seconds: 20)),
       );
     });
 
