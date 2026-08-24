@@ -465,7 +465,7 @@ jobs:
         # Native-asset hooks store downloaded libs under this tree.
         # flutter-action cache: true does not keep it. merge_group can restore
         # but not save (#7197), so only push-to-main warms the cache.
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
@@ -477,7 +477,7 @@ jobs:
         run: bash scripts/ci/warmup_sqlite3mc.sh
       - name: Save dart hook downloads
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && strategy.job-index == 0
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
@@ -588,7 +588,7 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: Restore dart hook downloads
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: mobile/.dart_tool/hooks_runner/shared
           key: ${{ runner.os }}-dart-hooks-${{ hashFiles('mobile/pubspec.lock') }}
