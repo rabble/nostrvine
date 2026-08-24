@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -12,6 +13,7 @@ import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dar
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/repositories/invite_availability_repository.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -21,6 +23,15 @@ class _MockInviteApiClient extends Mock implements InviteApiClient {}
 class _MockHttpClient extends Mock implements http.Client {}
 
 class _MockResponse extends Mock implements http.Response {}
+
+const _resolvedInviteRequired = InviteAvailabilityState(
+  hasResolved: true,
+  serverMode: OnboardingMode.inviteCodeRequired,
+  config: InviteClientConfig(
+    mode: OnboardingMode.inviteCodeRequired,
+    supportEmail: 'support@divine.video',
+  ),
+);
 
 void main() {
   late _MockInviteApiClient mockInviteApiClient;
@@ -35,7 +46,10 @@ void main() {
     mockInviteApiClient = _MockInviteApiClient();
   });
 
-  Widget createTestWidget({InviteApiClient? inviteApiClient}) {
+  Widget createTestWidget({
+    InviteApiClient? inviteApiClient,
+    InviteAvailabilityState? availabilitySeed = _resolvedInviteRequired,
+  }) {
     final client = inviteApiClient ?? mockInviteApiClient;
 
     return RepositoryProvider<InviteApiClient>.value(
@@ -44,7 +58,10 @@ void main() {
         providers: [
           BlocProvider(
             create: (_) => InviteAvailabilityCubit(
-              repository: InviteAvailabilityRepository(client: client),
+              repository: InviteAvailabilityRepository(
+                client: client,
+                seed: availabilitySeed,
+              ),
             )..load(),
           ),
           BlocProvider(create: (_) => InviteGateBloc(inviteApiClient: client)),
@@ -95,7 +112,18 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(
+        createTestWidget(
+          availabilitySeed: InviteAvailabilityState(
+            hasResolved: true,
+            serverMode: parseOnboardingMode('waitlist_only'),
+            config: InviteClientConfig(
+              mode: parseOnboardingMode('waitlist_only'),
+              supportEmail: 'support@divine.video',
+            ),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Add your invite code'), findsOneWidget);
@@ -109,8 +137,24 @@ void main() {
         () => mockInviteApiClient.getClientConfig(),
       ).thenThrow(const InviteApiException('unavailable'));
 
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(createTestWidget(availabilitySeed: null));
       await tester.pumpAndSettle();
+
+      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Add your invite code'), findsNothing);
+    });
+
+    testWidgets('bypasses the gate while client config is unresolved', (
+      tester,
+    ) async {
+      final pendingConfig = Completer<InviteClientConfig>();
+      when(
+        () => mockInviteApiClient.getClientConfig(),
+      ).thenAnswer((_) => pendingConfig.future);
+
+      await tester.pumpWidget(createTestWidget(availabilitySeed: null));
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('Create Account'), findsOneWidget);
       expect(find.text('Add your invite code'), findsNothing);
@@ -126,7 +170,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(createTestWidget(availabilitySeed: null));
       await tester.pumpAndSettle();
 
       expect(find.text('Create Account'), findsOneWidget);
@@ -156,7 +200,10 @@ void main() {
         );
 
         await tester.pumpWidget(
-          createTestWidget(inviteApiClient: previewInviteApiClient),
+          createTestWidget(
+            inviteApiClient: previewInviteApiClient,
+            availabilitySeed: null,
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -255,6 +302,7 @@ void main() {
                 create: (_) => InviteAvailabilityCubit(
                   repository: InviteAvailabilityRepository(
                     client: mockInviteApiClient,
+                    seed: _resolvedInviteRequired,
                   ),
                 )..load(),
               ),
@@ -330,6 +378,7 @@ void main() {
                 create: (_) => InviteAvailabilityCubit(
                   repository: InviteAvailabilityRepository(
                     client: mockInviteApiClient,
+                    seed: _resolvedInviteRequired,
                   ),
                 )..load(),
               ),
@@ -417,6 +466,7 @@ void main() {
                 create: (_) => InviteAvailabilityCubit(
                   repository: InviteAvailabilityRepository(
                     client: mockInviteApiClient,
+                    seed: _resolvedInviteRequired,
                   ),
                 )..load(),
               ),

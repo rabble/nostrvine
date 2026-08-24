@@ -120,7 +120,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
 
   void _redirectToCreateAccount() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && !context.read<InviteAvailabilityCubit>().state.isEnabled) {
         context.go(WelcomeScreen.createAccountPath);
       }
     });
@@ -156,11 +156,11 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
 
     return BlocBuilder<InviteAvailabilityCubit, InviteAvailabilityState>(
       builder: (context, availability) {
-        if (!availability.hasResolved) {
-          return const _InviteLoadingPage();
-        }
         if (!availability.isEnabled) {
           _redirectToCreateAccount();
+          return const _InviteLoadingPage();
+        }
+        if (!availability.hasResolved) {
           return const _InviteLoadingPage();
         }
 
