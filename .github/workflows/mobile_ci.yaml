@@ -96,6 +96,8 @@ jobs:
           fetch-depth: 0
       - name: Run CI configuration unit tests
         run: python3 -m unittest discover -s .github/scripts/tests
+      - name: 🛍️ Verify update URLs match shipped store identifiers
+        run: bash mobile/scripts/check_store_url_identifiers.sh
 
   generated-files:
     name: Generated Files
@@ -141,8 +143,6 @@ jobs:
         run: bash scripts/check_ios_shipping_versions.sh
       - name: 🌐 Verify backend-host defaults stay on *.divine.video
         run: bash scripts/check_backend_host_defaults.sh
-      - name: 🛍️ Verify update URLs match shipped store identifiers
-        run: bash scripts/check_store_url_identifiers.sh
       - name: 🪵 Verify no raw logging in production code
         run: bash scripts/check_raw_logging.sh
       - name: 🌐 Verify no untagged test mutates HttpOverrides.global
