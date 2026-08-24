@@ -279,21 +279,31 @@ class ZendeskSupportService {
   ///
   /// Sets a plain anonymous identity without name/email so Zendesk widget works.
   /// Should be called before showing ticket screens if user is not logged in.
-  static Future<void> setAnonymousIdentity() async {
-    if (_initialized) {
-      try {
-        await _channel.invokeMethod('setAnonymousIdentity');
-        Log.info(
-          'Zendesk anonymous identity set',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          'Error setting Zendesk anonymous identity: $e',
-          category: LogCategory.system,
-        );
-      }
+  static Future<bool> setAnonymousIdentity() async {
+    await _awaitInitialization();
+    if (!_initialized) return false;
+    try {
+      await _channel.invokeMethod('setAnonymousIdentity');
+      Log.info(
+        'Zendesk anonymous identity set',
+        category: LogCategory.system,
+      );
+      return true;
+    } catch (e) {
+      Log.warning(
+        'Error setting Zendesk anonymous identity: $e',
+        category: LogCategory.system,
+      );
+      return false;
     }
+  }
+
+  // Ticket history may open signed out; ticket creation still needs requester info.
+  static Future<bool> _setAvailableAnonymousIdentity() {
+    if (_userName != null && _userEmail != null) {
+      return setAnonymousIdentityWithUserInfo();
+    }
+    return setAnonymousIdentity();
   }
 
   // ==========================================================================
@@ -564,7 +574,7 @@ class ZendeskSupportService {
 
     final jwtReady = await _ensureFreshJwt();
     if (!jwtReady) {
-      await setAnonymousIdentityWithUserInfo();
+      await _setAvailableAnonymousIdentity();
     }
 
     try {
@@ -584,7 +594,7 @@ class ZendeskSupportService {
           'Retrying ticket list with anonymous identity fallback',
           category: LogCategory.system,
         );
-        final identitySet = await setAnonymousIdentityWithUserInfo();
+        final identitySet = await _setAvailableAnonymousIdentity();
         if (identitySet) {
           try {
             await _channel.invokeMethod('showTicketList');

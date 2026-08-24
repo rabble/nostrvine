@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -88,6 +89,10 @@ void main() {
               path: '/verify-email',
               builder: (_, _) =>
                   const Scaffold(body: Text('Email Verification')),
+            ),
+            GoRoute(
+              path: SupportCenterScreen.path,
+              builder: (_, _) => const Scaffold(body: Text('Support Center')),
             ),
           ],
         ),
@@ -209,6 +214,16 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Forgot password?'), findsOneWidget);
+      });
+
+      testWidgets('displays contact support link', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.widgetWithText(DivineButton, 'Contact support'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('displays Import Nostr key button', (tester) async {
@@ -352,6 +367,18 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Reset Password'), findsOneWidget);
+      });
+
+      testWidgets('tapping contact support opens the Support Center', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Contact support'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Support Center'), findsOneWidget);
       });
 
       testWidgets('failed password reset keeps dialog open without success', (

@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
@@ -22,7 +25,14 @@ class SupportCenterScreen extends ConsumerWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
-  const SupportCenterScreen({super.key});
+  const SupportCenterScreen({
+    this.composeEmail,
+    this.openZendeskSupport,
+    super.key,
+  });
+
+  final SupportEmailCompose? composeEmail;
+  final Future<bool> Function()? openZendeskSupport;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +47,7 @@ class SupportCenterScreen extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: l10n.supportTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () => context.safePop(fallback: WelcomeScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Align(
@@ -46,26 +56,27 @@ class SupportCenterScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              if (ZendeskSupportService.isAvailable)
+              _SupportTile(
+                icon: DivineIconName.chat,
+                title: l10n.supportContactSupport,
+                subtitle: l10n.supportContactSupportSubtitle,
+                onTap: () => _contactSupport(context),
+              ),
+              if (isAuthenticated)
                 _SupportTile(
-                  icon: DivineIconName.chat,
-                  title: l10n.supportContactSupport,
-                  subtitle: l10n.supportContactSupportSubtitle,
-                  onTap: () => _viewSupportMessages(context),
+                  icon: DivineIconName.warningCircle,
+                  title: l10n.supportReportBug,
+                  subtitle: l10n.supportReportBugSubtitle,
+                  onTap: () =>
+                      _showBugReport(context, bugReportService, userPubkey),
                 ),
-              _SupportTile(
-                icon: DivineIconName.warningCircle,
-                title: l10n.supportReportBug,
-                subtitle: l10n.supportReportBugSubtitle,
-                onTap: () =>
-                    _showBugReport(context, bugReportService, userPubkey),
-              ),
-              _SupportTile(
-                icon: DivineIconName.sparkle,
-                title: l10n.supportRequestFeature,
-                subtitle: l10n.supportRequestFeatureSubtitle,
-                onTap: () => _showFeatureRequest(context),
-              ),
+              if (isAuthenticated)
+                _SupportTile(
+                  icon: DivineIconName.sparkle,
+                  title: l10n.supportRequestFeature,
+                  subtitle: l10n.supportRequestFeatureSubtitle,
+                  onTap: () => _showFeatureRequest(context),
+                ),
               _SupportTile(
                 icon: DivineIconName.save,
                 title: l10n.supportSaveLogs,
@@ -216,23 +227,38 @@ class SupportCenterScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _viewSupportMessages(BuildContext context) async {
-    if (!ZendeskSupportService.isAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportChatNotAvailable,
-          error: true,
-        ),
-      );
-      return;
-    }
-
+  Future<bool> _viewSupportMessages() async {
     // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
-    final shown = await ZendeskSupportService.showTicketListScreen();
-    if (!shown && context.mounted) {
+    return ZendeskSupportService.showTicketListScreen();
+  }
+
+  Future<void> _contactSupport(BuildContext context) async {
+    final l10n = context.l10n;
+    var emailBody = l10n.supportContactSupportSubtitle;
+    final openZendesk =
+        openZendeskSupport ??
+        (ZendeskSupportService.isAvailable ? _viewSupportMessages : null);
+    if (openZendesk != null) {
+      if (await openZendesk()) return;
+      emailBody = '${l10n.supportCouldNotOpenMessages}\n\n$emailBody';
+    } else {
+      emailBody = '${l10n.supportChatNotAvailable}\n\n$emailBody';
+    }
+    if (!context.mounted) return;
+
+    final sharePositionOrigin = shareAnchorForContext(context);
+    try {
+      await (composeEmail ?? SupportEmailComposer().compose)(
+        toEmail: AppConstants.supportEmail,
+        subject: l10n.supportContactSupport,
+        body: emailBody,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          context.l10n.supportCouldNotOpenMessages,
+          l10n.authCouldNotOpenEmail(AppConstants.supportEmail),
           error: true,
         ),
       );
