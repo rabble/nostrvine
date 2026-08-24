@@ -254,6 +254,23 @@ jobs:
         run: bash scripts/check_service_sentinel_ceiling.sh
       - name: 🧯 Verify ARB {error}-interpolation count does not increase (reliability ratchet)
         run: bash scripts/check_arb_error_ceiling.sh
+      - name: 🧭 Verify Maestro suite copy stays aligned (e2e drift guard)
+        run: |
+          # BLOCKING by decision (review on #6978): a copy change that breaks
+          # the E2E suite is real breakage, so this fails the job like every
+          # sibling ratchet above. Unrelated ARB edits that trip it are fixed
+          # by regenerating the baseline in the same PR (UPDATE_BASELINE=1).
+          # Copy drift rotted the Maestro suite silently between 2026-03 and
+          # 2026-08 (#6948): copy in lib/l10n/app_en.arb and the flows diverged
+          # with nothing failing. The guard binds every asserted literal to its
+          # ARB key.
+          bash scripts/check_maestro_copy_drift.sh
+      - name: 🧭 Verify Maestro flow references resolve (e2e drift guard)
+        run: |
+          # Keep this independent from copy drift so contributors see both
+          # failures in one CI run. macOS hides case errors the linux_x2 runner
+          # hard-fails on.
+          bash e2e/maestro/scripts/check_refs.sh
       - name: 📏 Report oversized files (advisory — does not block CI)
         run: |
           # The 800-line file-size ceiling is advisory (team decision): it
