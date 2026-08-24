@@ -6830,16 +6830,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'Откажи и премахни';
 
   @override
-  String get messageRequestBlockButton => 'Блокирай';
-
-  @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return 'Заявката на $displayName е отхвърлена';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'Това премахва заявката и държи съобщенията им извън входящата ти кутия. Всичко, което изпратят, остава четимо в раздел Блокирани.';
 
   @override
   String get messageRequestLoadFailed => 'Заявката не можа да се зареди.';

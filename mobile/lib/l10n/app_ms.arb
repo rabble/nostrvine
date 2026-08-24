@@ -3751,10 +3751,8 @@
   "inboxRequestsMarkAllRead": "Tandakan semua permintaan sebagai dibaca",
   "inboxRequestsRemoveAll": "Alih keluar semua permintaan",
   "messageRequestDeclineAndRemoveButton": "Tolak dan alih keluar",
-  "messageRequestBlockButton": "Sekat",
   "messageRequestDeclinedSnackbar": "Permintaan {displayName} ditolak",
   "@messageRequestDeclinedSnackbar": {"placeholders": {"displayName": {"type": "String"}}},
-  "messageRequestBlockConfirmBody": "Ini mengalih keluar permintaan dan menghalang mesej mereka daripada masuk ke peti masuk anda. Apa sahaja yang mereka hantar masih boleh dibaca di Disekat.",
   "messageRequestLoadFailed": "Permintaan ini tidak dapat dimuatkan.",
   "messageRequestFollowersCount": "{count} Pengikut",
   "@messageRequestFollowersCount": {

@@ -6436,16 +6436,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => '거절하고 삭제';
 
   @override
-  String get messageRequestBlockButton => '차단';
-
-  @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return '$displayName님의 요청을 거절했어요';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      '요청이 사라지고 상대방의 메시지가 받은 편지함에 들어오지 않아요. 보낸 메시지는 차단됨에서 계속 읽을 수 있어요.';
 
   @override
   String get messageRequestLoadFailed => '이 요청을 불러오지 못했어요.';

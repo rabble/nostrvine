@@ -6759,16 +6759,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get messageRequestDeclineAndRemoveButton => 'انکار کر کے ہٹائیں';
 
   @override
-  String get messageRequestBlockButton => 'بلاک کریں';
-
-  @override
   String messageRequestDeclinedSnackbar(String displayName) {
     return '$displayName کی درخواست مسترد کر دی';
   }
-
-  @override
-  String get messageRequestBlockConfirmBody =>
-      'اس سے درخواست ہٹ جائے گی اور ان کے پیغامات آپ کے ان باکس میں نہیں آئیں گے۔ وہ جو کچھ بھی بھیجیں، اسے آپ مسدود میں پڑھ سکتے ہیں۔';
 
   @override
   String get messageRequestLoadFailed => 'یہ درخواست لوڈ نہیں ہو سکی۔';
