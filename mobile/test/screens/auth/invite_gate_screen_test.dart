@@ -49,6 +49,7 @@ void main() {
   Widget createTestWidget({
     InviteApiClient? inviteApiClient,
     InviteAvailabilityState? availabilitySeed = _resolvedInviteRequired,
+    String initialLocation = WelcomeScreen.inviteGatePath,
   }) {
     final client = inviteApiClient ?? mockInviteApiClient;
 
@@ -71,7 +72,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           routerConfig: GoRouter(
-            initialLocation: WelcomeScreen.inviteGatePath,
+            initialLocation: initialLocation,
             routes: [
               GoRoute(
                 path: WelcomeScreen.path,
@@ -89,8 +90,22 @@ void main() {
                   ),
                   GoRoute(
                     path: 'create-account',
-                    builder: (context, state) =>
-                        const Scaffold(body: Text('Create Account')),
+                    builder: (context, state) => Scaffold(
+                      body: Column(
+                        children: [
+                          const Text('Create Account'),
+                          if (state.uri.queryParameters['code']
+                              case final code?)
+                            Text('Code: $code'),
+                          if (state.uri.queryParameters['error']
+                              case final error?)
+                            Text('Error: $error'),
+                          if (state.uri.queryParameters['sourceSlug']
+                              case final sourceSlug?)
+                            Text('Source: $sourceSlug'),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -152,11 +167,21 @@ void main() {
         () => mockInviteApiClient.getClientConfig(),
       ).thenAnswer((_) => pendingConfig.future);
 
-      await tester.pumpWidget(createTestWidget(availabilitySeed: null));
+      await tester.pumpWidget(
+        createTestWidget(
+          availabilitySeed: null,
+          initialLocation:
+              '${WelcomeScreen.inviteGatePath}?code=AB12-EF34'
+              '&error=Invite%20problem&sourceSlug=creator',
+        ),
+      );
       await tester.pump();
       await tester.pump();
 
       expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Code: AB12-EF34'), findsOneWidget);
+      expect(find.text('Error: Invite problem'), findsOneWidget);
+      expect(find.text('Source: creator'), findsOneWidget);
       expect(find.text('Add your invite code'), findsNothing);
     });
 

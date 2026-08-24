@@ -121,7 +121,20 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
   void _redirectToCreateAccount() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !context.read<InviteAvailabilityCubit>().state.isEnabled) {
-        context.go(WelcomeScreen.createAccountPath);
+        final queryParameters = <String, String>{
+          if (widget.initialCode?.isNotEmpty ?? false)
+            'code': widget.initialCode!,
+          if (widget.initialError?.isNotEmpty ?? false)
+            'error': widget.initialError!,
+          if (widget.initialSourceSlug?.isNotEmpty ?? false)
+            'sourceSlug': widget.initialSourceSlug!,
+        };
+        context.go(
+          Uri(
+            path: WelcomeScreen.createAccountPath,
+            queryParameters: queryParameters.isEmpty ? null : queryParameters,
+          ).toString(),
+        );
       }
     });
   }
