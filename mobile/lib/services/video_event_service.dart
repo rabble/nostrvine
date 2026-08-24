@@ -734,7 +734,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
       if (decision.preference == ContentFilterPreference.hide) continue;
       result.add(
-        video.warnLabels == decision.warnLabels
+        _listEquals(video.warnLabels, decision.warnLabels)
             ? video
             : video.copyWith(warnLabels: decision.warnLabels),
       );

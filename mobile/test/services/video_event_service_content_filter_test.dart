@@ -321,7 +321,7 @@ void main() {
     test('owner remains hidden by a trusted kind-1985 label', () async {
       await seedModerationLabels([
         ['L', 'content-warning'],
-        ['l', 'violence', 'content-warning'],
+        ['l', 'profanity', 'content-warning'],
         ['e', 'owner-trusted-moderation'],
       ]);
 
