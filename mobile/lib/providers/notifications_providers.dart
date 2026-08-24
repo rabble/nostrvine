@@ -255,7 +255,6 @@ PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
   final coordinator = PushNotificationSessionCoordinator(
     authService: authService,
     firebaseMessaging: ref.read(firebaseMessagingProvider),
-    registrationRetryStore: ref.read(notificationPreferencesStoreProvider),
     readReadiness: () => ref.read(nostrSessionProvider),
     readPushService: () => ref.read(pushNotificationServiceProvider),
     readCleanupClientFactory: () {

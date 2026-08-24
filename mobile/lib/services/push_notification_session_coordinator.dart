@@ -10,7 +10,6 @@ import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -37,7 +36,7 @@ final class _PushRegistrationOperation {
   final NostrIdentity identity;
   Future<void>? future;
   String? pendingToken;
-  int? dirtyGeneration;
+  int generation = 0;
   Timer? retryTimer;
   Completer<void>? retryWaiter;
   int retryCount = 0;
@@ -60,20 +59,17 @@ class PushNotificationSessionCoordinator {
   PushNotificationSessionCoordinator({
     required AuthService authService,
     required FirebaseMessaging firebaseMessaging,
-    required PushRegistrationRetryStore registrationRetryStore,
     required PushReadinessReader readReadiness,
     required PushServiceReader readPushService,
     required CleanupClientFactoryReader readCleanupClientFactory,
   }) : _authService = authService,
        _firebaseMessaging = firebaseMessaging,
-       _registrationRetryStore = registrationRetryStore,
        _readReadiness = readReadiness,
        _readPushService = readPushService,
        _readCleanupClientFactory = readCleanupClientFactory;
 
   final AuthService _authService;
   final FirebaseMessaging _firebaseMessaging;
-  final PushRegistrationRetryStore _registrationRetryStore;
   final PushReadinessReader _readReadiness;
   final PushServiceReader _readPushService;
   final CleanupClientFactoryReader _readCleanupClientFactory;
@@ -189,7 +185,9 @@ class PushNotificationSessionCoordinator {
     if (existing.isNotEmpty) {
       final operation = existing.single;
       if (token != null) {
-        unawaited(_markDirtyAndWakeRegistration(operation, token));
+        operation.generation += 1;
+        operation.pendingToken = token;
+        operation.wakeRetry();
       }
       return;
     }
@@ -202,38 +200,13 @@ class PushNotificationSessionCoordinator {
       identity: identity,
     )..pendingToken = token;
     _activeRegistrations.add(operation);
-    final registrationFuture = _markDirtyAndRegister(operation);
+    final registrationFuture = _requestPermissionAndRegister(operation);
     operation.future = registrationFuture;
     unawaited(
       registrationFuture.whenComplete(() {
         _activeRegistrations.remove(operation);
       }),
     );
-  }
-
-  Future<void> _markDirtyAndWakeRegistration(
-    _PushRegistrationOperation operation,
-    String token,
-  ) async {
-    final generation = await _registrationRetryStore.markRegistrationDirty(
-      operation.pubkey,
-    );
-    if (!_isRegistrationCurrent(operation)) return;
-    operation.dirtyGeneration = generation;
-    operation.pendingToken = token;
-    operation.wakeRetry();
-  }
-
-  Future<void> _markDirtyAndRegister(
-    _PushRegistrationOperation operation,
-  ) async {
-    operation.dirtyGeneration =
-        await _registrationRetryStore.loadRegistrationDirtyGeneration(
-          operation.pubkey,
-        ) ??
-        await _registrationRetryStore.markRegistrationDirty(operation.pubkey);
-    if (!_isRegistrationCurrent(operation)) return;
-    await _requestPermissionAndRegister(operation);
   }
 
   void _ensureTokenRefreshSubscription() {
@@ -426,14 +399,6 @@ class PushNotificationSessionCoordinator {
           name: 'PushNotificationSync',
           category: LogCategory.system,
         );
-        final generation = await _registrationRetryStore
-            .loadRegistrationDirtyGeneration(operation.pubkey);
-        if (generation != null) {
-          await _registrationRetryStore.clearRegistrationDirtyIfMatches(
-            operation.pubkey,
-            generation,
-          );
-        }
         return;
       }
 
@@ -442,18 +407,12 @@ class PushNotificationSessionCoordinator {
       operation.phase = _PushRegistrationPhase.mayPublish;
       bool isCurrent() => _isRegistrationCurrent(operation);
       while (_isRegistrationCurrent(operation)) {
-        final generation =
-            operation.dirtyGeneration ??
-            await _registrationRetryStore.loadRegistrationDirtyGeneration(
-              operation.pubkey,
-            );
-        if (generation == null) return;
-
+        final generation = operation.generation;
         final token = operation.pendingToken;
         operation.pendingToken = null;
-        var published = false;
+        var result = PushRegistrationResult.retryableFailure;
         try {
-          published = token == null
+          result = token == null
               ? await operation.pushService.register(
                   operation.pubkey,
                   isCurrent: isCurrent,
@@ -471,31 +430,17 @@ class PushNotificationSessionCoordinator {
           );
         }
         if (!_isRegistrationCurrent(operation)) return;
-        if (published) {
+        if (result == PushRegistrationResult.published) {
           operation.retryCount = 0;
-          if (generation == 0) return;
-          final clearOutcome = await _registrationRetryStore
-              .clearRegistrationDirtyIfMatches(
-                operation.pubkey,
-                generation,
-              );
-          switch (clearOutcome) {
-            case PushRegistrationClearOutcome.cleared:
-              if (operation.dirtyGeneration == generation) {
-                operation.dirtyGeneration = null;
-              }
-            case PushRegistrationClearOutcome.changed:
-              operation.dirtyGeneration = await _registrationRetryStore
-                  .loadRegistrationDirtyGeneration(operation.pubkey);
-              if (operation.dirtyGeneration == null) return;
-            case PushRegistrationClearOutcome.failed:
-              if (operation.pendingToken == null) return;
-              await _waitForRegistrationRetry(operation);
-          }
-          continue;
         }
-
-        await _waitForRegistrationRetry(operation);
+        if (operation.generation != generation) continue;
+        switch (result) {
+          case PushRegistrationResult.published:
+          case PushRegistrationResult.terminalFailure:
+            return;
+          case PushRegistrationResult.retryableFailure:
+            await _waitForRegistrationRetry(operation);
+        }
       }
     } catch (e) {
       Log.warning(

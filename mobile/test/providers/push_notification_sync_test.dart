@@ -45,48 +45,6 @@ class _MockEvent extends Mock implements Event {}
 class _FakeNotificationPreferencesStore
     implements NotificationPreferencesStore {
   final publishedSchemaVersions = <String, int>{};
-  final registrationDirtyGenerations = <String, int>{};
-  int registrationMarkCalls = 0;
-  bool failRegistrationMark = false;
-  bool failRegistrationClear = false;
-  bool changeRegistrationOnNextClear = false;
-  bool _registrationClearChanged = false;
-
-  @override
-  Future<int> markRegistrationDirty(String pubkey) async {
-    registrationMarkCalls += 1;
-    if (failRegistrationMark) return 0;
-    final generation = (registrationDirtyGenerations[pubkey] ?? 0) + 1;
-    registrationDirtyGenerations[pubkey] = generation;
-    return generation;
-  }
-
-  @override
-  Future<int?> loadRegistrationDirtyGeneration(String pubkey) async =>
-      registrationDirtyGenerations[pubkey];
-
-  @override
-  Future<PushRegistrationClearOutcome> clearRegistrationDirtyIfMatches(
-    String pubkey,
-    int generation,
-  ) async {
-    if (failRegistrationClear) {
-      return PushRegistrationClearOutcome.failed;
-    }
-    if (changeRegistrationOnNextClear) {
-      if (_registrationClearChanged) {
-        throw StateError('stale generation was cleared twice');
-      }
-      _registrationClearChanged = true;
-      registrationDirtyGenerations.remove(pubkey);
-      return PushRegistrationClearOutcome.changed;
-    }
-    if (registrationDirtyGenerations[pubkey] == generation) {
-      registrationDirtyGenerations.remove(pubkey);
-      return PushRegistrationClearOutcome.cleared;
-    }
-    return PushRegistrationClearOutcome.changed;
-  }
 
   @override
   Future<int?> loadPublishedSchemaVersion(String pubkey) async =>
@@ -269,7 +227,7 @@ void main() {
 
     when(
       () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => PushRegistrationResult.published);
     when(
       () => pushService.deregister(any(), isCurrent: any(named: 'isCurrent')),
     ).thenAnswer((_) async {});
@@ -511,7 +469,7 @@ void main() {
       ).called(1);
     });
 
-    test('retries a failed registration and clears its durable marker', () {
+    test('retries a retryable registration failure', () {
       fakeAsync((async) {
         var registerCalls = 0;
         when(
@@ -519,7 +477,11 @@ void main() {
         ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
         when(
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((_) async => ++registerCalls > 1);
+        ).thenAnswer(
+          (_) async => ++registerCalls > 1
+              ? PushRegistrationResult.published
+              : PushRegistrationResult.retryableFailure,
+        );
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -537,11 +499,6 @@ void main() {
         async.flushMicrotasks();
 
         expect(registerCalls, 1);
-        expect(
-          preferenceStore.registrationDirtyGenerations[pubkeyA],
-          isNotNull,
-        );
-
         // Repeated readiness must not create a concurrent or immediate drain.
         nostrSession.setReadiness(
           NostrSessionReadiness.nostrReady(
@@ -556,7 +513,41 @@ void main() {
         async.flushMicrotasks();
 
         expect(registerCalls, 2);
-        expect(preferenceStore.registrationDirtyGenerations[pubkeyA], isNull);
+        container.dispose();
+      });
+    });
+
+    test('does not retry a terminal registration failure', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return PushRegistrationResult.terminalFailure;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
         container.dispose();
       });
     });
@@ -574,7 +565,7 @@ void main() {
           when(
             () =>
                 pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => PushRegistrationResult.retryableFailure);
 
           final nostrSession = _TestNostrSession(
             const NostrSessionReadiness.signedOut(),
@@ -614,159 +605,11 @@ void main() {
       },
     );
 
-    test('resumes a durable registration marker from a previous session', () {
+    test('publishes a refreshed token received during registration', () {
       fakeAsync((async) {
-        var registerCalls = 0;
-        preferenceStore.registrationDirtyGenerations[pubkeyA] = 7;
-        when(
-          () => messaging.getNotificationSettings(),
-        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-        when(
-          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((_) async {
-          registerCalls += 1;
-          return true;
-        });
-
-        final nostrSession = _TestNostrSession(
-          const NostrSessionReadiness.signedOut(),
-        );
-        final container = buildContainer(nostrSession: nostrSession);
-        container.read(pushNotificationSyncProvider);
-        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
-        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-        nostrSession.setReadiness(
-          NostrSessionReadiness.nostrReady(
-            pubkey: pubkeyA,
-            client: nostrClient,
-          ),
-        );
-        async.flushMicrotasks();
-
-        expect(registerCalls, 1);
-        expect(preferenceStore.registrationMarkCalls, 0);
-        expect(preferenceStore.registrationDirtyGenerations[pubkeyA], isNull);
-        container.dispose();
-      });
-    });
-
-    test('publishes when durable registration storage is unavailable', () {
-      fakeAsync((async) {
-        var registerCalls = 0;
-        preferenceStore.failRegistrationMark = true;
-        when(
-          () => messaging.getNotificationSettings(),
-        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-        when(
-          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((_) async {
-          registerCalls += 1;
-          return true;
-        });
-
-        final nostrSession = _TestNostrSession(
-          const NostrSessionReadiness.signedOut(),
-        );
-        final container = buildContainer(nostrSession: nostrSession);
-        container.read(pushNotificationSyncProvider);
-        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
-        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-        nostrSession.setReadiness(
-          NostrSessionReadiness.nostrReady(
-            pubkey: pubkeyA,
-            client: nostrClient,
-          ),
-        );
-        async.flushMicrotasks();
-        async.elapse(const Duration(minutes: 2));
-        async.flushMicrotasks();
-
-        expect(registerCalls, 1);
-        container.dispose();
-      });
-    });
-
-    test('does not republish in a tight loop when marker clearing fails', () {
-      fakeAsync((async) {
-        var registerCalls = 0;
-        preferenceStore.failRegistrationClear = true;
-        when(
-          () => messaging.getNotificationSettings(),
-        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-        when(
-          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((_) async {
-          registerCalls += 1;
-          return true;
-        });
-
-        final nostrSession = _TestNostrSession(
-          const NostrSessionReadiness.signedOut(),
-        );
-        final container = buildContainer(nostrSession: nostrSession);
-        container.read(pushNotificationSyncProvider);
-        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
-        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-        nostrSession.setReadiness(
-          NostrSessionReadiness.nostrReady(
-            pubkey: pubkeyA,
-            client: nostrClient,
-          ),
-        );
-        async.flushMicrotasks();
-        async.elapse(const Duration(minutes: 2));
-        async.flushMicrotasks();
-
-        expect(registerCalls, 1);
-        expect(
-          preferenceStore.registrationDirtyGenerations[pubkeyA],
-          isNotNull,
-        );
-        container.dispose();
-      });
-    });
-
-    test('stops after a changed marker is no longer dirty', () {
-      fakeAsync((async) {
-        var registerCalls = 0;
-        preferenceStore.changeRegistrationOnNextClear = true;
-        when(
-          () => messaging.getNotificationSettings(),
-        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-        when(
-          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((_) async {
-          registerCalls += 1;
-          return true;
-        });
-
-        final nostrSession = _TestNostrSession(
-          const NostrSessionReadiness.signedOut(),
-        );
-        final container = buildContainer(nostrSession: nostrSession);
-        container.read(pushNotificationSyncProvider);
-        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
-        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-        nostrSession.setReadiness(
-          NostrSessionReadiness.nostrReady(
-            pubkey: pubkeyA,
-            client: nostrClient,
-          ),
-        );
-        async.flushMicrotasks();
-
-        expect(registerCalls, 1);
-        expect(preferenceStore.registrationDirtyGenerations[pubkeyA], isNull);
-        container.dispose();
-      });
-    });
-
-    test('retries a refreshed token after marker clearing fails', () {
-      fakeAsync((async) {
-        final firstPublish = Completer<bool>();
+        final firstPublish = Completer<PushRegistrationResult>();
         var registerCalls = 0;
         var refreshedTokenCalls = 0;
-        preferenceStore.failRegistrationClear = true;
         when(
           () => messaging.getNotificationSettings(),
         ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
@@ -784,7 +627,7 @@ void main() {
           ),
         ).thenAnswer((_) async {
           refreshedTokenCalls += 1;
-          return true;
+          return PushRegistrationResult.published;
         });
 
         final nostrSession = _TestNostrSession(
@@ -805,9 +648,7 @@ void main() {
 
         defaultTokenRefreshController.add('refreshed-token');
         async.flushMicrotasks();
-        firstPublish.complete(true);
-        async.flushMicrotasks();
-        async.elapse(const Duration(seconds: 5));
+        firstPublish.complete(PushRegistrationResult.published);
         async.flushMicrotasks();
 
         expect(refreshedTokenCalls, 1);
@@ -826,7 +667,9 @@ void main() {
         ).thenAnswer((invocation) async {
           final pubkey = invocation.positionalArguments.single as String;
           registeredPubkeys.add(pubkey);
-          return pubkey == pubkeyB;
+          return pubkey == pubkeyB
+              ? PushRegistrationResult.published
+              : PushRegistrationResult.retryableFailure;
         });
 
         final nostrSession = _TestNostrSession(
@@ -860,11 +703,6 @@ void main() {
         async.flushMicrotasks();
 
         expect(registeredPubkeys, [pubkeyA, pubkeyB]);
-        expect(
-          preferenceStore.registrationDirtyGenerations[pubkeyA],
-          isNotNull,
-        );
-        expect(preferenceStore.registrationDirtyGenerations[pubkeyB], isNull);
         container.dispose();
       });
     });
@@ -985,7 +823,7 @@ void main() {
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
-          return true;
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
 
@@ -1039,7 +877,7 @@ void main() {
           if (await isCurrent()) {
             await publishCompleter.future;
           }
-          return true;
+          return PushRegistrationResult.published;
         });
         when(
           () => pushService.updatePreferences(prefs),
@@ -1083,7 +921,7 @@ void main() {
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
           await registerCompleter.future;
-          return true;
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
 
@@ -1123,7 +961,7 @@ void main() {
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
           await registerCompleter.future;
-          return true;
+          return PushRegistrationResult.published;
         });
         when(
           () => pushService.createSignedDeregistrationEvent(
@@ -1226,7 +1064,7 @@ void main() {
           ).thenAnswer((invocation) async {
             events.add('register ${invocation.positionalArguments.single}');
             await registerCompleter.future;
-            return true;
+            return PushRegistrationResult.published;
           });
           recordMockDeregistration(events);
           // ignore: unnecessary_lambdas
@@ -1297,7 +1135,7 @@ void main() {
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
           await registerCompleter.future;
-          return true;
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
         // ignore: unnecessary_lambdas
@@ -1365,7 +1203,7 @@ void main() {
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
           await registerCompleter.future;
-          return true;
+          return PushRegistrationResult.published;
         });
         // ignore: unnecessary_lambdas
         when(() => cleanupClient.initialize()).thenAnswer((_) async {});
@@ -2326,7 +2164,7 @@ void main() {
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
-          return true;
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
 
@@ -3110,7 +2948,7 @@ void main() {
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
-          return true;
+          return PushRegistrationResult.published;
         });
 
         final container = buildContainer();

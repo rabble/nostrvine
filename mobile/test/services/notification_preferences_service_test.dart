@@ -51,44 +51,6 @@ void main() {
     expect(notificationStorage, isEmpty);
   });
 
-  group('registration dirty marker', () {
-    test('is durable and generation-safe', () async {
-      const pubkey =
-          '1111111111111111111111111111111111111111111111111111111111111111';
-      final dirtyBox = _MockHiveBox();
-      final dirtyStorage = <dynamic, dynamic>{};
-      final store = HiveNotificationPreferencesStore(
-        openBox: () async => _MockHiveBox(),
-        openDirtyBox: () async => dirtyBox,
-      );
-      when(() => dirtyBox.put(any(), any())).thenAnswer((invocation) {
-        dirtyStorage[invocation.positionalArguments[0]] =
-            invocation.positionalArguments[1];
-        return Future<void>.value();
-      });
-      when(() => dirtyBox.get(any())).thenAnswer(
-        (invocation) => dirtyStorage[invocation.positionalArguments[0]],
-      );
-      when(() => dirtyBox.delete(any())).thenAnswer((invocation) {
-        dirtyStorage.remove(invocation.positionalArguments[0]);
-        return Future<void>.value();
-      });
-
-      final firstGeneration = await store.markRegistrationDirty(pubkey);
-      final secondGeneration = await store.markRegistrationDirty(pubkey);
-      await store.clearRegistrationDirtyIfMatches(pubkey, firstGeneration);
-
-      expect(secondGeneration, firstGeneration + 1);
-      expect(
-        await store.loadRegistrationDirtyGeneration(pubkey),
-        secondGeneration,
-      );
-
-      await store.clearRegistrationDirtyIfMatches(pubkey, secondGeneration);
-      expect(await store.loadRegistrationDirtyGeneration(pubkey), isNull);
-    });
-  });
-
   test(
     'syncs and clears matching dirty preferences after publish succeeds',
     () async {
@@ -223,30 +185,6 @@ void main() {
 class _MemoryNotificationPreferencesStore
     implements NotificationPreferencesStore {
   final publishedSchemaVersions = <String, int>{};
-  final registrationDirtyGenerations = <String, int>{};
-
-  @override
-  Future<int> markRegistrationDirty(String pubkey) async {
-    final generation = (registrationDirtyGenerations[pubkey] ?? 0) + 1;
-    registrationDirtyGenerations[pubkey] = generation;
-    return generation;
-  }
-
-  @override
-  Future<int?> loadRegistrationDirtyGeneration(String pubkey) async =>
-      registrationDirtyGenerations[pubkey];
-
-  @override
-  Future<PushRegistrationClearOutcome> clearRegistrationDirtyIfMatches(
-    String pubkey,
-    int generation,
-  ) async {
-    if (registrationDirtyGenerations[pubkey] == generation) {
-      registrationDirtyGenerations.remove(pubkey);
-      return PushRegistrationClearOutcome.cleared;
-    }
-    return PushRegistrationClearOutcome.changed;
-  }
 
   @override
   Future<int?> loadPublishedSchemaVersion(String pubkey) async =>
