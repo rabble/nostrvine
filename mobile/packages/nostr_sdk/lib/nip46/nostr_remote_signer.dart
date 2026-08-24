@@ -153,8 +153,9 @@ class NostrRemoteSigner extends NostrSigner {
       log('[NIP46] pullPubkey: dropping non-hex get_public_key result');
       return null;
     }
-    info.userPubkey = pubkey;
-    return pubkey;
+    final normalizedPubkey = pubkey.toLowerCase();
+    info.userPubkey = normalizedPubkey;
+    return normalizedPubkey;
   }
 
   Future<void> onMessage(Relay relay, List<dynamic> json) async {

@@ -262,22 +262,25 @@ void main() {
         expect(signer.info.userPubkey, isNull);
       });
 
-      test('accepts a valid hex get_public_key result', () async {
-        final server = await TestRelayServer.start();
-        addTearDown(server.close);
-        final signer = await connectedSigner(server);
+      test(
+        'accepts and normalizes a valid hex get_public_key result',
+        () async {
+          final server = await TestRelayServer.start();
+          addTearDown(server.close);
+          final signer = await connectedSigner(server);
 
-        final pending = signer.pullPubkey();
-        final id = await awaitRequestId(server);
-        final response = await buildResponse(
-          bunkerPriv,
-          payload: {'id': id, 'result': bunkerPub},
-        );
-        server.push(['EVENT', 'sub', response.toJson()]);
+          final pending = signer.pullPubkey();
+          final id = await awaitRequestId(server);
+          final response = await buildResponse(
+            bunkerPriv,
+            payload: {'id': id, 'result': bunkerPub.toUpperCase()},
+          );
+          server.push(['EVENT', 'sub', response.toJson()]);
 
-        expect(await pending, bunkerPub);
-        expect(signer.info.userPubkey, bunkerPub);
-      });
+          expect(await pending, bunkerPub);
+          expect(signer.info.userPubkey, bunkerPub);
+        },
+      );
     });
 
     group('response correlation (#7344)', () {
