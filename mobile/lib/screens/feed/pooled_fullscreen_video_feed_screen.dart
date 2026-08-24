@@ -1027,6 +1027,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           ),
                       ],
                     ),
+                    // Deliberately not wrapped in [FeedImmersiveChrome]: every
+                    // other chrome layer fades while the viewer holds the
+                    // video, but a commercial disclosure has to stay up for
+                    // the whole reel. It keeps the app bar's slot height as
+                    // its offset even once that bar has faded, so the pill
+                    // does not jump when immersive mode toggles.
                     if (widget.sponsorName case final sponsorName?)
                       PositionedDirectional(
                         top:
@@ -1035,11 +1041,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                             8,
                         start: 16,
                         end: 16,
-                        child: FeedImmersiveChrome(
-                          child: TextFieldTapRegion(
-                            child: FullscreenSponsorDisclosure(
-                              sponsorName: sponsorName,
-                            ),
+                        child: TextFieldTapRegion(
+                          child: FullscreenSponsorDisclosure(
+                            sponsorName: sponsorName,
                           ),
                         ),
                       ),

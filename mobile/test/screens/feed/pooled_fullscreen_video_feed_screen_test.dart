@@ -40,6 +40,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/fullscreen_sponsor_disclosure.dart';
 import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
@@ -357,21 +358,57 @@ void main() {
 
         expect(find.text(expected), findsOneWidget);
         expect(find.byType(FullscreenSponsorDisclosure), findsOneWidget);
+      });
 
-        final disclosureContext = tester.element(
-          find.byType(FullscreenSponsorDisclosure),
+      testWidgets('keeps the disclosure up while the viewer holds the video', (
+        tester,
+      ) async {
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+        final expected = lookupAppLocalizations(
+          const Locale('en'),
+        ).exploreFeaturedSponsoredBy('Acme Bikes');
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: createTestVideos(count: 1),
+            ),
+            sponsorName: 'Acme Bikes',
+          ),
         );
-        disclosureContext.read<FeedImmersiveCubit>().enter();
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 180));
 
-        final opacity = tester.widget<AnimatedOpacity>(
+        tester
+            .element(find.byType(FullscreenSponsorDisclosure))
+            .read<FeedImmersiveCubit>()
+            .enter();
+        await tester.pump();
+        await tester.pump(kFeedImmersiveFadeDuration);
+
+        // The app bar fading proves immersive mode actually engaged, so the
+        // disclosure assertion below cannot pass by never entering it.
+        final appBarFade = tester.widget<AnimatedOpacity>(
           find.ancestor(
-            of: find.byType(FullscreenSponsorDisclosure),
+            of: find.byType(DiVineAppBar),
             matching: find.byType(AnimatedOpacity),
           ),
         );
-        expect(opacity.opacity, 0);
+        expect(appBarFade.opacity, isZero);
+
+        expect(find.text(expected), findsOneWidget);
+        expect(
+          tester
+              .widgetList<AnimatedOpacity>(
+                find.ancestor(
+                  of: find.byType(FullscreenSponsorDisclosure),
+                  matching: find.byType(AnimatedOpacity),
+                ),
+              )
+              .every((fade) => fade.opacity == 1.0),
+          isTrue,
+        );
       });
 
       testWidgets('omits the disclosure for an unsponsored feed', (
