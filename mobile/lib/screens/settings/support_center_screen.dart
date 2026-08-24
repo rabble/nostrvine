@@ -55,13 +55,14 @@ class SupportCenterScreen extends ConsumerWidget {
                   subtitle: l10n.supportContactSupportSubtitle,
                   onTap: () => _viewSupportMessages(context),
                 ),
-              _SupportTile(
-                icon: DivineIconName.warningCircle,
-                title: l10n.supportReportBug,
-                subtitle: l10n.supportReportBugSubtitle,
-                onTap: () =>
-                    _showBugReport(context, bugReportService, userPubkey),
-              ),
+              if (isAuthenticated)
+                _SupportTile(
+                  icon: DivineIconName.warningCircle,
+                  title: l10n.supportReportBug,
+                  subtitle: l10n.supportReportBugSubtitle,
+                  onTap: () =>
+                      _showBugReport(context, bugReportService, userPubkey),
+                ),
               if (isAuthenticated)
                 _SupportTile(
                   icon: DivineIconName.sparkle,

@@ -132,13 +132,16 @@ void main() {
       expect(find.text(en.nostrSettingsDeleteAccount), findsNothing);
       // The screen itself still renders, so the assertion above is about the
       // auth gate rather than a failed pump.
-      expect(find.text(en.supportReportBug), findsOneWidget);
+      expect(find.text(en.supportTitle), findsOneWidget);
     });
 
-    testWidgets('hides feature requests when signed out', (tester) async {
+    testWidgets('hides authenticated support forms when signed out', (
+      tester,
+    ) async {
       await pump(tester, authState: AuthState.unauthenticated);
       await scrollToBottom(tester);
 
+      expect(find.text(en.supportReportBug), findsNothing);
       expect(find.text(en.supportRequestFeature), findsNothing);
     });
 

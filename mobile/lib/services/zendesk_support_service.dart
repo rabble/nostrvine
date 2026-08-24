@@ -235,9 +235,7 @@ class ZendeskSupportService {
     await _awaitInitialization();
 
     if (!_initialized) return false;
-    if (_userName == null || _userEmail == null) {
-      return setAnonymousIdentity();
-    }
+    if (_userName == null || _userEmail == null) return false;
 
     try {
       await _channel.invokeMethod('setUserIdentity', {
@@ -282,6 +280,7 @@ class ZendeskSupportService {
   /// Sets a plain anonymous identity without name/email so Zendesk widget works.
   /// Should be called before showing ticket screens if user is not logged in.
   static Future<bool> setAnonymousIdentity() async {
+    await _awaitInitialization();
     if (!_initialized) return false;
     try {
       await _channel.invokeMethod('setAnonymousIdentity');
@@ -297,6 +296,13 @@ class ZendeskSupportService {
       );
       return false;
     }
+  }
+
+  static Future<bool> _setAvailableAnonymousIdentity() {
+    if (_userName != null && _userEmail != null) {
+      return setAnonymousIdentityWithUserInfo();
+    }
+    return setAnonymousIdentity();
   }
 
   // ==========================================================================
@@ -567,7 +573,7 @@ class ZendeskSupportService {
 
     final jwtReady = await _ensureFreshJwt();
     if (!jwtReady) {
-      await setAnonymousIdentityWithUserInfo();
+      await _setAvailableAnonymousIdentity();
     }
 
     try {
@@ -587,7 +593,7 @@ class ZendeskSupportService {
           'Retrying ticket list with anonymous identity fallback',
           category: LogCategory.system,
         );
-        final identitySet = await setAnonymousIdentityWithUserInfo();
+        final identitySet = await _setAvailableAnonymousIdentity();
         if (identitySet) {
           try {
             await _channel.invokeMethod('showTicketList');

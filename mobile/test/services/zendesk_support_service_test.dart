@@ -182,6 +182,37 @@ void main() {
         expect(userIdentityCalls, 1);
       },
     );
+
+    test(
+      'setAnonymousIdentity waits for an in-flight initialization',
+      () async {
+        var anonymousIdentityCalls = 0;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'initialize') {
+                await Future<void>.delayed(const Duration(milliseconds: 20));
+                return true;
+              }
+              if (call.method == 'setAnonymousIdentity') {
+                anonymousIdentityCalls++;
+                return true;
+              }
+              return null;
+            });
+
+        final initialization = ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
+
+        final identitySet = await ZendeskSupportService.setAnonymousIdentity();
+        await initialization;
+
+        expect(identitySet, true);
+        expect(anonymousIdentityCalls, 1);
+      },
+    );
   });
 
   group('ZendeskSupportService.showNewTicketScreen', () {
