@@ -96,6 +96,8 @@ jobs:
           fetch-depth: 0
       - name: Run CI configuration unit tests
         run: python3 -m unittest discover -s .github/scripts/tests
+      - name: 🛍️ Verify update URLs match shipped store identifiers
+        run: bash mobile/scripts/check_store_url_identifiers.sh
 
   generated-files:
     name: Generated Files
