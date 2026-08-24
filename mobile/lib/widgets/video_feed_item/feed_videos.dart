@@ -19,7 +19,6 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart'
     show ViewTrafficSource;
 import 'package:openvine/providers/app_foreground_provider.dart';
@@ -45,6 +44,7 @@ import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/player_gesture_surface.dart';
 import 'package:openvine/widgets/video_feed_item/player_tap_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_overlay.dart';
@@ -1013,154 +1013,109 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   ..add(const VideoInteractionsFetchRequested()),
             child: Builder(
               builder: (context) {
-                return Semantics(
-                  // The label and hint live on the GESTURE SURFACE below, not
-                  // here. This node carries no tap action, so a label on it
-                  // left the actual tappable node unlabeled — a screen reader
-                  // announced a full-screen button with no name, and
-                  // labeledTapTargetGuideline failed on a real device.
-                  // The chrome layers are SIBLINGS above the gesture surface,
-                  // never descendants of it. As descendants, any press held
-                  // past `kLongPressTimeout` anywhere on the action rail was
-                  // claimed by the video's long-press: the rail's own tap
-                  // recognizer only accepts on pointer-up, so it lost the
-                  // arena, and Report/More/Share swallowed the tap and faded
-                  // out under the viewer's finger. Keeping them siblings lets
-                  // an opaque button win the hit test outright, so the peek
-                  // never sees that pointer.
-                  child: Stack(
-                    children: [
-                      // The raw [Listener] owns immersive mode's release: it
-                      // counts the pointers over the item and exits once the
-                      // last lifts. `onLongPressEnd` alone would not do —
-                      // it does not fire for a pointer cancelled after the
-                      // press was accepted (`onLongPressCancel` does), and
-                      // neither callback can tell an incidental second finger
-                      // lifting from the hold finger lifting. A Listener also
-                      // sits outside the gesture arena, so it can't steal the
-                      // press.
-                      Positioned.fill(
-                        child: Listener(
-                          // Must match the translucent child below: with
-                          // `deferToChild` a press on empty video area never
-                          // adds this Listener to the hit-test path (the
-                          // translucent GestureDetector adds itself but still
-                          // reports a miss), so the pointer events would never
-                          // arrive.
-                          behavior: HitTestBehavior.translucent,
-                          onPointerDown: (event) {
-                            // An empty set means nothing is down, so any hold
-                            // this item still believes it owns is stale — its
-                            // terminal event was lost (a touch dropped on
-                            // backgrounding, a platform view taking over).
-                            // Without this the item could never peek again.
-                            if (_immersivePointers.isEmpty) _exitImmersive();
-                            _immersivePointers.add(event.pointer);
-                          },
-                          onPointerUp: (event) =>
-                              _handleImmersivePointerEnd(event.pointer),
-                          onPointerCancel: (event) =>
-                              _handleImmersivePointerEnd(event.pointer),
-                          // MergeSemantics, not a bare Semantics: with
-                          // `container: false` the annotation lands on its own
-                          // node while GestureDetector publishes the tap action
-                          // on a DIFFERENT one, which is exactly the shipped
-                          // bug — a 440x850 tappable with no label. Merging is
-                          // safe here because the chrome layers are Stack
-                          // SIBLINGS, not descendants, so nothing else is
-                          // flattened into this node.
-                          child: MergeSemantics(
-                            child: Semantics(
-                              button: true,
-                              label: context.l10n.videoPlayerPlayVideo,
-                              hint: isOwnVideo
-                                  ? null
-                                  : context.l10n.videoPlayerTapHint,
-                              child: GestureDetector(
-                                behavior: .translucent,
-                                onTap: interactiveReady
-                                    ? _handlePlayerTap
-                                    : null,
-                                onDoubleTapDown: interactiveReady
-                                    ? (details) => _handleDoubleTapLike(
-                                        context,
-                                        details,
-                                        isOwnVideo: isOwnVideo,
-                                      )
-                                    : null,
-                                child: GestureDetector(
-                                  behavior: .translucent,
-                                  // Press and hold to peek at the unobstructed
-                                  // frame. Deliberately not gated on
-                                  // [interactiveReady] the way tap and double-tap
-                                  // are: those mutate the player or publish a
-                                  // like, while this only hides chrome, which is
-                                  // just as valid over a still-loading frame.
-                                  //
-                                  // Excluded from semantics, and kept on its own
-                                  // detector so the tap action above still is
-                                  // published. A `GestureDetector` publishes
-                                  // `SemanticsAction.longPress` for ANY long-press
-                                  // callback, `onLongPressStart` included — and
-                                  // firing that action delivers no pointer events,
-                                  // so the release path below would never run and
-                                  // a screen-reader user would be left with every
-                                  // control hidden and pointer-blocked until the
-                                  // item was disposed.
-                                  excludeFromSemantics: true,
-                                  onLongPressStart: (_) => _enterImmersive(),
-                                  child: const SizedBox.expand(),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (widget.controller != null)
-                        // The paused play indicator is chrome too — it
-                        // covers the frame the peek is meant to reveal,
-                        // and holding never resumes playback, so leaving
-                        // it up would contradict the gesture.
-                        FeedImmersiveChrome(
-                          child: PausedVideoOverlay(
-                            controller: widget.controller!,
-                            videoId: video.id,
-                            // Only a pause the user can undo gets the
-                            // affordance. A comments/share sheet, a pushed
-                            // route or a backgrounded app pauses the player
-                            // too, but resumes it on its own — showing a play
-                            // button behind the sheet just reads as broken.
-                            isVisible: widget.isActive && widget.isFeedActive,
-                          ),
-                        ),
-                      FeedImmersiveChrome(
-                        child: _FeedItemActions(
-                          video: video,
-                          index: widget.index,
-                          contextTitle: widget.contextTitle,
+                // The chrome layers are SIBLINGS above the gesture surface,
+                // never descendants of it. As descendants, any press held past
+                // `kLongPressTimeout` anywhere on the action rail was claimed
+                // by the video's long-press: the rail's own tap recognizer only
+                // accepts on pointer-up, so it lost the arena, and
+                // Report/More/Share swallowed the tap and faded out under the
+                // viewer's finger. Keeping them siblings lets an opaque button
+                // win the hit test outright, so the peek never sees that
+                // pointer.
+                //
+                // The player's label and hint live on the gesture surface
+                // below, not on a wrapper here: a node with no tap action
+                // cannot name the one a screen reader activates.
+                return Stack(
+                  children: [
+                    // The raw [Listener] owns immersive mode's release: it
+                    // counts the pointers over the item and exits once the
+                    // last lifts. `onLongPressEnd` alone would not do —
+                    // it does not fire for a pointer cancelled after the
+                    // press was accepted (`onLongPressCancel` does), and
+                    // neither callback can tell an incidental second finger
+                    // lifting from the hold finger lifting. A Listener also
+                    // sits outside the gesture arena, so it can't steal the
+                    // press.
+                    Positioned.fill(
+                      child: Listener(
+                        // Must match the translucent child below: with
+                        // `deferToChild` a press on empty video area never
+                        // adds this Listener to the hit-test path (the
+                        // translucent GestureDetector adds itself but still
+                        // reports a miss), so the pointer events would never
+                        // arrive.
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (event) {
+                          // An empty set means nothing is down, so any hold
+                          // this item still believes it owns is stale — its
+                          // terminal event was lost (a touch dropped on
+                          // backgrounding, a platform view taking over).
+                          // Without this the item could never peek again.
+                          if (_immersivePointers.isEmpty) _exitImmersive();
+                          _immersivePointers.add(event.pointer);
+                        },
+                        onPointerUp: (event) =>
+                            _handleImmersivePointerEnd(event.pointer),
+                        onPointerCancel: (event) =>
+                            _handleImmersivePointerEnd(event.pointer),
+                        child: PlayerGestureSurface(
+                          interactiveReady: interactiveReady,
                           isOwnVideo: isOwnVideo,
-                          onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
-                          // Captions fade with the rest of the chrome, by
-                          // design: the hold reveals the frame the UI covers,
-                          // and the caption is an overlay over that same frame,
-                          // so keeping it up would re-cover exactly what the
-                          // peek exposes. It is gone only while the viewer
-                          // holds, and returns the instant they release.
-                          subtitleLayer:
-                              video.hasSubtitles && widget.controller != null
-                              ? _SubtitleLayer(
-                                  video: video,
-                                  controller: widget.controller!,
-                                )
-                              : null,
-                          pagePositionListenable: pagePositionListenable,
+                          onTap: _handlePlayerTap,
+                          onDoubleTapDown: (details) => _handleDoubleTapLike(
+                            context,
+                            details,
+                            isOwnVideo: isOwnVideo,
+                          ),
+                          onLongPressStart: _enterImmersive,
                         ),
                       ),
-                      Positioned.fill(
-                        child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                    ),
+                    if (widget.controller != null)
+                      // The paused play indicator is chrome too — it
+                      // covers the frame the peek is meant to reveal,
+                      // and holding never resumes playback, so leaving
+                      // it up would contradict the gesture.
+                      FeedImmersiveChrome(
+                        child: PausedVideoOverlay(
+                          controller: widget.controller!,
+                          videoId: video.id,
+                          // Only a pause the user can undo gets the
+                          // affordance. A comments/share sheet, a pushed
+                          // route or a backgrounded app pauses the player
+                          // too, but resumes it on its own — showing a play
+                          // button behind the sheet just reads as broken.
+                          isVisible: widget.isActive && widget.isFeedActive,
+                        ),
                       ),
-                    ],
-                  ),
+                    FeedImmersiveChrome(
+                      child: _FeedItemActions(
+                        video: video,
+                        index: widget.index,
+                        contextTitle: widget.contextTitle,
+                        isOwnVideo: isOwnVideo,
+                        onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
+                        // Captions fade with the rest of the chrome, by
+                        // design: the hold reveals the frame the UI covers,
+                        // and the caption is an overlay over that same frame,
+                        // so keeping it up would re-cover exactly what the
+                        // peek exposes. It is gone only while the viewer
+                        // holds, and returns the instant they release.
+                        subtitleLayer:
+                            video.hasSubtitles && widget.controller != null
+                            ? _SubtitleLayer(
+                                video: video,
+                                controller: widget.controller!,
+                              )
+                            : null,
+                        pagePositionListenable: pagePositionListenable,
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                    ),
+                  ],
                 );
               },
             ),
