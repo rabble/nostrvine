@@ -13,6 +13,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -285,6 +286,7 @@ void main() {
       MockAuthService? mockAuthService,
       String? contextTitle,
       String? sponsorName,
+      MediaQueryData? mediaQueryData,
       ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
       String? sourceDetail,
       VoidCallback? onBack,
@@ -292,18 +294,21 @@ void main() {
       final effectiveState = state ?? const FullscreenFeedState();
       when(() => mockBloc.state).thenReturn(effectiveState);
 
+      final content = buildContent(
+        contextTitle: contextTitle,
+        sponsorName: sponsorName,
+        trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
+        onBack: onBack,
+      );
       return testMaterialApp(
         additionalOverrides: additionalOverrides,
         mockAuthService: mockAuthService,
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
-        home: buildContent(
-          contextTitle: contextTitle,
-          sponsorName: sponsorName,
-          trafficSource: trafficSource,
-          sourceDetail: sourceDetail,
-          onBack: onBack,
-        ),
+        home: mediaQueryData == null
+            ? content
+            : MediaQuery(data: mediaQueryData, child: content),
       );
     }
 
@@ -399,16 +404,160 @@ void main() {
 
         expect(find.text(expected), findsOneWidget);
         expect(
-          tester
-              .widgetList<AnimatedOpacity>(
-                find.ancestor(
-                  of: find.byType(FullscreenSponsorDisclosure),
-                  matching: find.byType(AnimatedOpacity),
-                ),
-              )
-              .every((fade) => fade.opacity == 1.0),
-          isTrue,
+          find.ancestor(
+            of: find.byType(FullscreenSponsorDisclosure),
+            matching: find.byType(AnimatedOpacity),
+          ),
+          findsNothing,
         );
+      });
+
+      testWidgets('holding the disclosure enters immersive viewing', (
+        tester,
+      ) async {
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: createTestVideos(count: 1),
+            ),
+            sponsorName: 'Acme Bikes',
+          ),
+        );
+        await tester.pump();
+
+        final disclosureText = find.descendant(
+          of: find.byType(FullscreenSponsorDisclosure),
+          matching: find.byType(Text),
+        );
+        final immersiveCubit = tester
+            .element(disclosureText)
+            .read<FeedImmersiveCubit>();
+        final gesture = await tester.startGesture(
+          tester.getCenter(disclosureText),
+        );
+        await tester.pump(kLongPressTimeout + const Duration(milliseconds: 1));
+
+        expect(immersiveCubit.state.isImmersive, isTrue);
+
+        await gesture.up();
+        await tester.pump();
+        expect(immersiveCubit.state.isImmersive, isFalse);
+      });
+
+      testWidgets('positions the disclosure inside the safe app-bar row', (
+        tester,
+      ) async {
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+        const topPadding = 48.0;
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: createTestVideos(count: 1),
+            ),
+            sponsorName: 'Acme Bikes',
+            mediaQueryData: const MediaQueryData(
+              padding: EdgeInsets.only(top: topPadding),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final disclosureRect = tester.getRect(
+          find.byType(FullscreenSponsorDisclosure),
+        );
+        final appBarRect = tester.getRect(find.byType(DiVineAppBar));
+
+        expect(disclosureRect.top, greaterThanOrEqualTo(topPadding));
+        expect(disclosureRect.center.dy, closeTo(topPadding + 36, 0.01));
+        expect(disclosureRect.bottom, lessThanOrEqualTo(appBarRect.bottom));
+      });
+
+      for (final textScale in <double>[1, 2, 3]) {
+        testWidgets(
+          'keeps the disclosure clear of app-bar controls at ${textScale}x',
+          (tester) async {
+            final nativePlayer = _NativePlayerHarness(tester)..install();
+            addTearDown(nativePlayer.dispose);
+
+            await tester.pumpWidget(
+              buildSubject(
+                state: FullscreenFeedState(
+                  status: FullscreenFeedStatus.ready,
+                  videos: createTestVideos(count: 1),
+                ),
+                sponsorName: 'A long sponsor name',
+                mediaQueryData: MediaQueryData(
+                  textScaler: TextScaler.linear(textScale),
+                ),
+              ),
+            );
+            await tester.pump();
+
+            final disclosureRect = tester.getRect(
+              find.byType(FullscreenSponsorDisclosure),
+            );
+            final backButtonRect = tester.getRect(
+              find.bySemanticsIdentifier(
+                DiVineAppBarLeading.backButtonSemanticId,
+              ),
+            );
+            final settingsRect = tester.getRect(find.byType(FeedSettingsMenu));
+
+            expect(
+              disclosureRect.left,
+              greaterThanOrEqualTo(backButtonRect.right),
+            );
+            expect(disclosureRect.right, lessThanOrEqualTo(settingsRect.left));
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+
+      testWidgets('announces sponsorship before video controls', (
+        tester,
+      ) async {
+        final semanticsHandle = tester.ensureSemantics();
+        final nativePlayer = _NativePlayerHarness(tester)..install();
+        addTearDown(nativePlayer.dispose);
+        final disclosureLabel = lookupAppLocalizations(
+          const Locale('en'),
+        ).exploreFeaturedSponsoredBy('Acme Bikes');
+
+        try {
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: createTestVideos(count: 1),
+              ),
+              sponsorName: 'Acme Bikes',
+            ),
+          );
+          await tester.pump();
+
+          final traversal = tester.semantics
+              .simulatedAccessibilityTraversal()
+              .map((node) => node.getSemanticsData().label)
+              .toList();
+          final backIndex = traversal.indexOf('Back');
+          final disclosureIndex = traversal.indexOf(disclosureLabel);
+          final firstVideoControlIndex = traversal.indexWhere(
+            (label) => label.contains('Like'),
+          );
+
+          expect(backIndex, isNonNegative);
+          expect(disclosureIndex, greaterThan(backIndex));
+          expect(firstVideoControlIndex, greaterThan(disclosureIndex));
+        } finally {
+          semanticsHandle.dispose();
+        }
       });
 
       testWidgets('omits the disclosure for an unsponsored feed', (

@@ -11,14 +11,9 @@ import 'package:openvine/l10n/l10n.dart';
 /// surface. The text deliberately has no line ceiling so the disclosure stays
 /// complete at large system text sizes.
 ///
-/// The scrim matches the app bar's own icon buttons ([VineTheme.scrim15], the
-/// `0x26000000` those buttons use in transparent mode) so the disclosure reads
-/// as part of the top chrome rather than as something dropped on the video.
-///
-/// That fill was chosen for an icon, and an icon is a thick shape that carries
-/// itself; text is thin strokes. At 15% the scrim measures 1.4:1 against a
-/// pure-white shot, so it is [_glyphShadows], not the box, that keeps this
-/// readable over a bright frame.
+/// The scrim is sized for the brightest frame rather than the average one.
+/// At [VineTheme.scrim65], white text clears 7:1 against a pure-white shot,
+/// while remaining quieter than the 80% media-chrome treatment.
 ///
 /// It is deliberately small and quiet rather than sized like a control. This
 /// is the one chrome layer that survives immersive viewing, so it is the only
@@ -27,7 +22,25 @@ import 'package:openvine/l10n/l10n.dart';
 class FullscreenSponsorDisclosure extends StatelessWidget {
   const FullscreenSponsorDisclosure({required this.sponsorName, super.key});
 
+  /// Horizontal padding around the localized disclosure text.
+  static const horizontalPadding = 10.0;
+
+  /// Vertical padding around the localized disclosure text.
+  static const verticalPadding = 6.0;
+
   final String sponsorName;
+
+  /// Height of one line plus its vertical padding at the current text scale.
+  ///
+  /// The fullscreen feed uses this only to center the first line in the app
+  /// bar row; wrapped lines continue downward over the video without clipping.
+  static double singleLineHeight(BuildContext context) {
+    final style = VineTheme.bodyTinyFont();
+    final scaledFontSize = MediaQuery.textScalerOf(
+      context,
+    ).scale(style.fontSize!);
+    return scaledFontSize * style.height! + verticalPadding * 2;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +48,14 @@ class FullscreenSponsorDisclosure extends StatelessWidget {
       alignment: AlignmentDirectional.centerStart,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: VineTheme.scrim15,
+          color: VineTheme.scrim65,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
           child: Text(
             context.l10n.exploreFeaturedSponsoredBy(sponsorName),
             style: VineTheme.bodyTinyFont(
@@ -52,12 +68,11 @@ class FullscreenSponsorDisclosure extends StatelessWidget {
   }
 }
 
-/// Carries the legibility the chrome-matched scrim does not provide on its own.
+/// Adds local edge separation on top of the contrast-compliant scrim.
 ///
-/// Contrast against a scrim is one number for the whole box; a shadow works at
-/// the glyph edge instead, which is where reading actually happens. The tight
-/// shadow separates the letters from whatever sits directly behind them and
-/// the wider one lifts the whole word off a bright frame.
+/// The scrim carries the required contrast. The tight shadow separates the
+/// letters from detail immediately behind them and the wider one lifts the
+/// whole word off visually busy footage.
 ///
 /// Deliberately heavier than the single `shadow25` blur that `caption_pill`
 /// uses over the same video. A caption that loses a word to a bright frame is

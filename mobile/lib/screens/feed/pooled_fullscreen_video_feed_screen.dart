@@ -3,12 +3,14 @@
 // ABOUTME: Uses FullscreenFeedBloc for state management
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show OrdinalSortKey;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
@@ -60,23 +62,20 @@ Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return Alignment.center;
 }
 
-/// Leading inset that clears the app bar's back button.
-///
-/// The disclosure sits on the app bar's own row, to the right of the back
-/// button, so it starts past that button's tap target.
-const double _sponsorDisclosureStartInset = 64;
+/// Clears both the expanded leading slot and the scaled back-button target.
+double _sponsorDisclosureStartInset(
+  BuildContext context,
+  DiVineAppBarStyle style,
+) => math.max(
+  style.leadingWidth,
+  style.horizontalPadding + DivineIcon.scaleSize(context, 48),
+);
 
-/// Trailing inset that clears the app bar's overflow button.
-const double _sponsorDisclosureEndInset = 64;
-
-/// Height of a single-line disclosure: [VineTheme.bodyTinyFont]'s 14pt line
-/// box, plus 6pt of padding above and below.
-///
-/// Used only to centre the first line against the back button. The disclosure
-/// is deliberately not height-constrained to the bar — a long sponsor name, or
-/// a large system text size, wraps downward over the video rather than clip,
-/// because a clipped disclosure has stopped disclosing.
-const double _sponsorDisclosureLineHeight = 26;
+/// Clears the scaled trailing action target plus its app-bar edge padding.
+double _sponsorDisclosureEndInset(
+  BuildContext context,
+  DiVineAppBarStyle style,
+) => style.horizontalPadding + DivineIcon.scaleSize(context, 48);
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
@@ -845,6 +844,21 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   currentUserPubkey != null &&
                   state.currentVideo != null;
 
+              final appBarStyle = DiVineAppBarStyle.overMediaStyle.copyWith(
+                horizontalPadding: 12,
+                // With the default 48 px icon button and 12 px
+                // [horizontalPadding], a 72 px leading slot leaves
+                // 12 px between the back button's right edge and
+                // the title text (72 − 12 − 48 = 12).
+                leadingWidth: 72,
+                // Figma `title/medium` token (Bricolage Grotesque
+                // 800, 16 / 24 / 0.15) — overrides the default
+                // [VineTheme.titleLargeFont] (22) used by the
+                // shared app bar.
+                titleStyle: VineTheme.titleMediumFont(
+                  color: VineTheme.whiteText,
+                ),
+              );
               final appBar = DiVineAppBar(
                 title: widget.contextTitle ?? '',
                 showBackButton: true,
@@ -860,21 +874,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // video so a small icon hit-target is easy to miss.
                 expandLeadingHitArea: true,
                 customActions: [FeedSettingsMenu(video: state.currentVideo)],
-                style: DiVineAppBarStyle.overMediaStyle.copyWith(
-                  horizontalPadding: 12,
-                  // With the default 48 px icon button and 12 px
-                  // [horizontalPadding], a 72 px leading slot leaves
-                  // 12 px between the back button's right edge and
-                  // the title text (72 − 12 − 48 = 12).
-                  leadingWidth: 72,
-                  // Figma `title/medium` token (Bricolage Grotesque
-                  // 800, 16 / 24 / 0.15) — overrides the default
-                  // [VineTheme.titleLargeFont] (22) used by the
-                  // shared app bar.
-                  titleStyle: VineTheme.titleMediumFont(
-                    color: VineTheme.whiteText,
-                  ),
-                ),
+                style: appBarStyle,
               );
 
               return Scaffold(
@@ -925,125 +925,134 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // already-`extendBodyBehindAppBar` body expects.
                 appBar: PreferredSize(
                   preferredSize: appBar.preferredSize,
-                  child: FeedImmersiveChrome(
-                    child: TextFieldTapRegion(child: appBar),
+                  child: Semantics(
+                    sortKey: const OrdinalSortKey(0),
+                    child: FeedImmersiveChrome(
+                      child: TextFieldTapRegion(child: appBar),
+                    ),
                   ),
                 ),
                 body: Stack(
                   children: [
-                    Column(
-                      children: [
-                        Expanded(
-                          // Match the home feed: when the comment bar is on
-                          // screen, the video carries the same rounded
-                          // bottom corners as `video_feed_page.dart`, so
-                          // the corners reveal the semantic nav surface (the
-                          // outer color [NavRoundedShell] paints). It
-                          // shares its hex (`#00150D`) with the comment
-                          // bar's [VineTheme.surfaceBackground], so the
-                          // rounded cutouts seam continuously into the bar.
-                          child: Stack(
-                            children: [
-                              FeedTuningSwipeGate(
-                                enabled: feedTuningEnabled,
-                                onTuned: _onTuned,
-                                child: VideoTapShield(
-                                  child: _MaybeRoundFeedBottom(
-                                    roundCorners: showCommentBar,
-                                    child: MediaQuery.removePadding(
-                                      context: context,
-                                      removeBottom: true,
-                                      child: FeedVideos(
-                                        key: _feedVideosKey,
-                                        // Pause the reel while the DM reply composer
-                                        // is focused so it doesn't play under the
-                                        // keyboard.
-                                        isActive: !_replyComposerFocused,
-                                        videos: state.videos,
-                                        contextTitle: widget.contextTitle,
-                                        currentIndex: state.currentIndex,
-                                        hasMore: state.canLoadMore,
-                                        isLoadingMore: state.isLoadingMore,
-                                        trafficSource: widget.trafficSource,
-                                        sourceDetail: widget.sourceDetail,
-                                        onActiveVideoChanged: (video, index) {
-                                          ref
-                                              .read(
-                                                foregroundFeedActivityGateProvider,
-                                              )
-                                              .markActive();
-                                          _resumeAutoAdvanceAfterSwipe();
-                                          ref
-                                              .read(
-                                                feedPerformanceTrackerProvider,
-                                              )
-                                              .startVideoSwipeTracking(
-                                                video.id,
-                                              );
-                                          context
-                                              .read<FullscreenFeedBloc>()
-                                              .add(
-                                                FullscreenFeedIndexChanged(
-                                                  index,
-                                                ),
-                                              );
-                                          widget.onPageChanged?.call(index);
-                                        },
-                                        onNearEnd: () {
-                                          if (state.canLoadMore) {
-                                            _triggerLoadMore();
-                                          }
-                                        },
+                    Semantics(
+                      sortKey: const OrdinalSortKey(2),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            // Match the home feed: when the comment bar is on
+                            // screen, the video carries the same rounded
+                            // bottom corners as `video_feed_page.dart`, so
+                            // the corners reveal the semantic nav surface (the
+                            // outer color [NavRoundedShell] paints). It
+                            // shares its hex (`#00150D`) with the comment
+                            // bar's [VineTheme.surfaceBackground], so the
+                            // rounded cutouts seam continuously into the bar.
+                            child: Stack(
+                              children: [
+                                FeedTuningSwipeGate(
+                                  enabled: feedTuningEnabled,
+                                  onTuned: _onTuned,
+                                  child: VideoTapShield(
+                                    child: _MaybeRoundFeedBottom(
+                                      roundCorners: showCommentBar,
+                                      child: MediaQuery.removePadding(
+                                        context: context,
+                                        removeBottom: true,
+                                        child: FeedVideos(
+                                          key: _feedVideosKey,
+                                          // Pause the reel while the DM reply composer
+                                          // is focused so it doesn't play under the
+                                          // keyboard.
+                                          isActive: !_replyComposerFocused,
+                                          videos: state.videos,
+                                          contextTitle: widget.contextTitle,
+                                          currentIndex: state.currentIndex,
+                                          hasMore: state.canLoadMore,
+                                          isLoadingMore: state.isLoadingMore,
+                                          trafficSource: widget.trafficSource,
+                                          sourceDetail: widget.sourceDetail,
+                                          onActiveVideoChanged: (video, index) {
+                                            ref
+                                                .read(
+                                                  foregroundFeedActivityGateProvider,
+                                                )
+                                                .markActive();
+                                            _resumeAutoAdvanceAfterSwipe();
+                                            ref
+                                                .read(
+                                                  feedPerformanceTrackerProvider,
+                                                )
+                                                .startVideoSwipeTracking(
+                                                  video.id,
+                                                );
+                                            context
+                                                .read<FullscreenFeedBloc>()
+                                                .add(
+                                                  FullscreenFeedIndexChanged(
+                                                    index,
+                                                  ),
+                                                );
+                                            widget.onPageChanged?.call(index);
+                                          },
+                                          onNearEnd: () {
+                                            if (state.canLoadMore) {
+                                              _triggerLoadMore();
+                                            }
+                                          },
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                bottom: 16,
-                                child: LoadingMorePill(
-                                  isVisible:
-                                      state.isLoadingMore &&
-                                      state.currentIndex >=
-                                          state.videos.length - 1,
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 16,
+                                  child: LoadingMorePill(
+                                    isVisible:
+                                        state.isLoadingMore &&
+                                        state.currentIndex >=
+                                            state.videos.length - 1,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (showCommentBar)
-                          InlineCommentComposerBar(
-                            onFocusChanged: (focused) {
-                              if (mounted &&
-                                  focused != _inlineComposerFocused) {
-                                setState(
-                                  () => _inlineComposerFocused = focused,
-                                );
-                              }
-                            },
-                          ),
-                        if (showDmReplyBar)
-                          ReelReplyBridge(
-                            setComposerFocused: (focused) {
-                              if (mounted && focused != _replyComposerFocused) {
-                                setState(() => _replyComposerFocused = focused);
-                              }
-                            },
-                            playReaction: (emoji) {
-                              if (mounted) {
-                                setState(() {
-                                  _reactionEmoji = emoji;
-                                  _reactionNonce++;
-                                });
-                              }
-                            },
-                            child: ReelDmReplyBarHost(
-                              dmReplyContext: widget.dmReplyContext!,
+                              ],
                             ),
                           ),
-                      ],
+                          if (showCommentBar)
+                            InlineCommentComposerBar(
+                              onFocusChanged: (focused) {
+                                if (mounted &&
+                                    focused != _inlineComposerFocused) {
+                                  setState(
+                                    () => _inlineComposerFocused = focused,
+                                  );
+                                }
+                              },
+                            ),
+                          if (showDmReplyBar)
+                            ReelReplyBridge(
+                              setComposerFocused: (focused) {
+                                if (mounted &&
+                                    focused != _replyComposerFocused) {
+                                  setState(
+                                    () => _replyComposerFocused = focused,
+                                  );
+                                }
+                              },
+                              playReaction: (emoji) {
+                                if (mounted) {
+                                  setState(() {
+                                    _reactionEmoji = emoji;
+                                    _reactionNonce++;
+                                  });
+                                }
+                              },
+                              child: ReelDmReplyBarHost(
+                                dmReplyContext: widget.dmReplyContext!,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     // Deliberately not wrapped in [FeedImmersiveChrome]: every
                     // other chrome layer fades while the viewer holds the
@@ -1056,13 +1065,21 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         top:
                             MediaQuery.paddingOf(context).top +
                             (appBar.preferredSize.height -
-                                    _sponsorDisclosureLineHeight) /
+                                    FullscreenSponsorDisclosure.singleLineHeight(
+                                      context,
+                                    )) /
                                 2,
-                        start: _sponsorDisclosureStartInset,
-                        end: _sponsorDisclosureEndInset,
-                        child: TextFieldTapRegion(
-                          child: FullscreenSponsorDisclosure(
-                            sponsorName: sponsorName,
+                        start: _sponsorDisclosureStartInset(
+                          context,
+                          appBarStyle,
+                        ),
+                        end: _sponsorDisclosureEndInset(context, appBarStyle),
+                        child: IgnorePointer(
+                          child: Semantics(
+                            sortKey: const OrdinalSortKey(1),
+                            child: FullscreenSponsorDisclosure(
+                              sponsorName: sponsorName,
+                            ),
                           ),
                         ),
                       ),
