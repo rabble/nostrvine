@@ -115,35 +115,42 @@ scan.
 
 #### Cache freshness contract
 
-A series list is a replaceable event, so a session-long cache would freeze it.
+A series list is remote-derived cacheable data, so the exact-coordinate lookup
+uses the existing `cache_sync` package rather than introducing a feature-local
+cache. A session-long entry would freeze a replaceable event.
 A viewer who cached parts 1-3 would keep reading `of 3` for the rest of the
 session, and a newly published part 4 would fail membership validation and show
 no series UI at all — the feature silently disappearing on exactly the video
 that motivated it. The cache is therefore bounded:
 
-- **Entries carry a fetch timestamp and a 60-second TTL.** A read older than
-  that refetches before answering. 60 seconds is chosen so a creator publishing
-  consecutive parts sees the count move without a restart, while a viewer
-  scrolling a feed of one series' parts still gets one fetch, not one per video.
+- **`cache_sync` entries use a 60-second TTL.** The stable cache key contains
+  the full list owner pubkey and d-tag. A read older than the TTL refetches
+  before answering. 60 seconds is chosen so a creator publishing consecutive
+  parts sees the count move without a restart, while a viewer scrolling a feed
+  of one series' parts still gets one fetch, not one per video.
 - **A negative membership result is never served from cache.** If the cached
-  list does not contain the video's coordinate, refetch once before concluding
-  the video is not a member. Only a fresh miss suppresses the series UI. This is
-  the rule that keeps a just-published part from rendering as an ordinary video;
-  everything else here is an optimization, this one is correctness.
-- **Local mutation invalidates immediately.** `createSeries` and the append path
-  in `CuratedListService` evict the affected coordinate synchronously, before
-  their futures complete, so the publishing creator never reads their own stale
-  list.
-- **A newer replaceable event wins on arrival.** If any live subscription
-  delivers a kind-30005 event for a cached coordinate with a higher `created_at`
-  (ties broken by lower event id, matching the replaceable-event ordering
-  already applied on fetch), it replaces the entry rather than waiting for the
-  TTL.
+  list does not contain the video's coordinate, the repository awaits
+  `CacheSync.invalidate(key)` and performs one exact-coordinate relay fetch
+  before concluding that the video is not a member. Only that fresh miss
+  suppresses the series UI. This is the rule that keeps a just-published part
+  from rendering as an ordinary video; everything else here is an optimization,
+  this one is correctness.
+- **Local mutation invalidation is awaited.** After `createSeries` or the append
+  path commits a local mutation, it awaits `CacheSync.invalidate(key)` before
+  its future completes. Callers therefore cannot observe the old entry after an
+  awaited mutation. `CacheSync.invalidate` is Drift-backed and asynchronous;
+  read-your-write ordering, not a literally synchronous eviction API, is the
+  required guarantee.
 
-Staleness that survives all four is bounded to 60 seconds on the total, and to
-zero on membership. `Part 3 of 9` briefly reading `of 8` is acceptable; `no
-series UI` for a valid part is not, which is why only the count is allowed to
-lag.
+Version 1 deliberately adds no second live kind-30005 subscription. The
+existing subscription is owned by `CuratedListService` and covers the signed-in
+user's lists; coupling it into the read-oriented repository, or adding another
+subscription there, would create ownership and lifecycle work that the TTL,
+awaited local invalidation, and fresh-on-negative rule do not require.
+
+Remote total-count staleness is bounded to 60 seconds and membership staleness
+to one forced relay fetch. `Part 3 of 9` briefly reading `of 8` is acceptable;
+`no series UI` for a valid part after a successful fresh fetch is not.
 
 `VideoSeriesCubit` is the only new state-management unit. Given a `VideoEvent`,
 it:
@@ -151,7 +158,7 @@ it:
 1. Returns no series state when `seriesCoordinate` is absent or malformed.
 2. Loads the exact list through `CuratedListRepository`.
 3. Validates matching ownership and membership.
-4. Exposes the list and the video's zero-based index.
+4. Exposes the list and the video's zero-based authoritative list position.
 
 There is no separate `SeriesBloc`; the existing curated-list providers and
 fullscreen player already own list loading and playback.
@@ -169,22 +176,22 @@ At publish time:
    do not begin the video publish until a relay has accepted it. A creation
    failure keeps the user on the metadata screen with retry and cancel actions.
 
-   The existing `CuratedListService.createList()` already provides this proof
-   and needs no new API. For a public list by an authenticated user it calls
-   `_publishListToNostr(newList, confirmed: true)`, which awaits
-   `publishEventAwaitOk` and treats `outcome.acceptedByAny` as the bar; on
-   failure it removes the local list, re-saves, and returns `null`
-   (`mobile/lib/services/curated_list_service.dart:273-280`, `1135-1148`). The
-   publication result is not discarded — a non-null return **is** the
-   relay-acceptance proof.
+   Generic `CuratedListService.createList()` does **not** provide this proof and
+   its offline behavior must remain unchanged. It deliberately keeps a local
+   list when no relay is reachable: `_createList` awaits
+   `_publishListToNostr(current, confirmed: true)` but discards the returned
+   boolean, then returns the retained list. Private lists publish too, with
+   sealed items; `isPublic` is a series visibility requirement, not a condition
+   that makes publication happen.
 
-   Two conditions are load-bearing, and `createSeries` must enforce both rather
-   than inherit them by luck: the list must be `isPublic: true`, and the user
-   must be authenticated. When either is false the publish is skipped entirely
-   and a local-only list is returned — which for a series would mean a creator
-   builds parts against a list no viewer can resolve. `createSeries` therefore
-   fixes `isPublic: true` and fails closed when unauthenticated, and the publish
-   flow treats a `null` return as the creation failure above.
+   `createSeries` therefore has a series-specific confirmed-creation contract.
+   It returns an explicit result with `success(list)`, `unauthenticated`, and
+   `relayRejected` outcomes. It creates a public, non-collaborative manual list,
+   awaits the confirmed publish result, and returns `success` only when
+   `acceptedByAny` is true. On signing failure or relay rejection it removes the
+   provisional local list and persists that removal before returning
+   `relayRejected`. The publish flow continues to step 2 only for `success`;
+   both failure outcomes keep the metadata state and offer retry or cancel.
 2. Sign and publish the video with the marked series `a` tag.
 3. After the video publish succeeds, append its stable kind-34236 coordinate to
    the list through `CuratedListService`.
@@ -209,10 +216,30 @@ Part 3 of 10 · Series name
 
 Tapping it opens the existing author/list route and starts
 `CuratedListFeedScreen` playback at index 0. That screen cannot do this today,
-so version 1 extends it — see [Playback entry contract](#playback-entry-contract). The series mode of that screen adds
-part numbers to grid items; playback remains
-`PooledFullscreenVideoFeedScreen` with the list's existing order. Swipe and
-auto-advance behavior remain unchanged.
+so version 1 extends it — see [Playback entry contract](#playback-entry-contract).
+The series mode of that screen adds part numbers to grid items; playback remains
+`PooledFullscreenVideoFeedScreen`. Swipe and auto-advance behavior remain
+unchanged after the resolved videos have been restored to authoritative list
+order.
+
+#### Ordered resolution contract
+
+`videoEventsByIdsProvider` does not preserve its input order today: it appends
+cached event ids, then cached addressable coordinates, then relay results in
+arrival order, yielding again as each event arrives. The grid and fullscreen
+player render that emitted order verbatim. Reusing it without an ordering step
+would make `play=0`, displayed part numbers, and swipe order depend on cache and
+relay timing rather than the series list.
+
+Every provider emission used for a curated list must therefore be projected
+back into the order of the requested `videoIds`. Matching uses the full event id
+for ordinary events and the full `34236:<pubkey>:<d-tag>` coordinate for
+addressable videos. Missing or blocked videos are omitted without collapsing
+the authoritative position: UI part numbers come from the matched coordinate's
+zero-based position in `videoIds`, plus one, while the total remains the count
+of valid same-author coordinates in the series list. The grid and player receive
+the same ordered resolved list, so a late arrival inserts at its list position
+rather than at the end.
 
 #### Playback entry contract
 
@@ -226,24 +253,30 @@ therefore requires a screen change, not just navigation.
 
 Version 1 adds:
 
-- **`final int? initialVideoIndex;`** to `CuratedListFeedScreen`, defaulting to
+- **`final int? initialListIndex;`** to `CuratedListFeedScreen`, defaulting to
   `null` so every existing call site keeps today's grid-first behavior
   unchanged.
-- **`initState` seeds `_activeVideoIndex` from it.** The field stays mutable and
-  every existing transition — selecting a grid item, backing out to the grid —
-  is untouched, so back from playback still lands on the grid rather than
-  leaving the screen.
-- **An out-of-range or negative value falls back to the grid** rather than
-  throwing. The existing guard at line 265 already discards an index past the
-  loaded video count; the constructor value goes through the same path, which
-  matters because the list can name a part whose video fails to load.
-- **`CuratedListByAuthorScreen` forwards it** from an optional `play` query
-  parameter on `/list/:pubkey/:listId`, parsed with `int.tryParse` so a
-  malformed value degrades to the grid instead of failing the route. This keeps
-  the entry point a plain deep link, so a shared series URL can also open at a
-  part.
-- **`SeriesChip` navigates to** `CuratedListByAuthorScreen.pathFor(...)` with
-  `play=0`.
+- **The requested authoritative position stays pending while videos load.** It
+  is not copied directly into `_activeVideoIndex`, because missing videos make
+  an index in the resolved player list different from a position in the source
+  list. Once the video at `videoIds[initialListIndex]` resolves, the screen maps
+  its full id or coordinate to the corresponding index in the ordered resolved
+  list and enters playback there. If that particular video cannot be loaded,
+  the screen stays on the grid rather than silently starting a later part.
+  Loading and error states keep the normal app bar and route-level back
+  affordance. The active-player field stays mutable, so backing out of playback
+  still lands on the grid rather than leaving the screen.
+- **A malformed, negative, or out-of-range value stays on the grid.** The
+  existing player guard is not reused: today it renders a chrome-less
+  `curatedListVideoNotAvailable` dead end for a high index and does not reject a
+  negative index. Version 1 validates before entering video mode instead.
+- **`RoutePaths` owns the query parameter.** Its author/list path builder gains
+  an optional `play` argument and emits the query parameter. The router parses
+  it with `int.tryParse`, and `CuratedListByAuthorScreen` only forwards the
+  nullable parsed value; screen `pathFor` methods remain thin `RoutePaths`
+  delegates.
+- **`SeriesChip` navigates through `RoutePaths` with `play: 0`.** This keeps the
+  entry point a plain deep link, so a shared series URL can also open at a part.
 
 The existing list route, deep link, sharing, loading, and missing-video behavior
 are otherwise reused. Version 1 adds no previous/next overlay buttons and no new series
@@ -274,7 +307,7 @@ part 1; the viewer swipes or auto-advances through the remaining parts.
 
 | Failure | Behavior |
 |---|---|
-| Series creation fails (`createSeries` returns `null`, i.e. no relay accepted the list, or the user is unauthenticated) | Do not start the video publish. Keep the metadata state and offer retry or cancel. |
+| Series creation is unauthenticated or no relay accepts it | `createSeries` returns the corresponding non-success result. Remove any provisional list, do not start the video publish, keep the metadata state, and offer retry or cancel. |
 | Video publish fails | Do not append the part. The background retry retains the selected series coordinate. |
 | Video succeeds but list relay publish fails | Keep the locally appended part and the existing pending-republish state; remote viewers see no chip until the list update reaches a relay. |
 | Series list is missing or deleted | Render no chip. The video remains an ordinary playable video. |
@@ -286,25 +319,28 @@ part 1; the viewer swipes or auto-advances through the remaining parts.
 - `models`: `CuratedList.isSeries` and `VideoEvent.seriesCoordinate` JSON,
   `copyWith`, equality, tag parsing, and marked-versus-unmarked `a` tags.
 - `curated_list_repository`: series marker round-trip, exact-coordinate fetch,
-  replaceable-event winner selection, validation, and caching. Cache freshness
-  specifically: a read inside the TTL does not refetch, a read past it does, a
-  cached negative membership refetches before suppressing the UI, a local
-  mutation evicts synchronously, and a higher-`created_at` event arriving on a
-  subscription replaces the entry.
+  replaceable-event winner selection, validation, and `cache_sync` caching.
+  Cache freshness specifically: a read inside the TTL does not refetch, a read
+  past it does, a cached negative membership invalidates and refetches before
+  suppressing the UI, and an awaited local mutation does not complete until
+  invalidation completes.
 - `CuratedListService`: `createSeries` invariants and append behavior using a
-  full kind-34236 coordinate, including that it forces `isPublic: true`, fails
-  closed when unauthenticated, and returns `null` when no relay accepts the
-  list.
+  full kind-34236 coordinate, including its explicit success,
+  unauthenticated, and relay-rejected outcomes, provisional-list rollback, and
+  the fact that generic `createList` retains its existing offline semantics.
 - Publish: selected series is retained in the draft, the marked tag is signed,
   append happens only after successful video publication, and failed list
   publication retains retry state.
 - `VideoSeriesCubit`: absent/malformed coordinate, missing list, wrong owner,
   missing membership, and valid index.
 - Widget: chip copy, no chip for ordinary or invalid videos, numbered series
-  grid, and chip navigation starts playback at part 1. Also that
-  `initialVideoIndex: null` still opens the grid, that an out-of-range value
-  falls back to the grid, and that backing out of seeded playback lands on the
-  grid.
+  grid, and chip navigation starts playback at part 1. Cover mixed cache/relay
+  arrival, late insertion, and missing-video gaps to prove that grid numbering,
+  playback start, and swipe order follow `videoIds`; also cover that
+  `initialListIndex: null` still opens the grid, malformed/negative/out-of-range
+  values stay on the grid, an unavailable requested part does not substitute a
+  later part, loading retains a back affordance, and backing out of seeded
+  playback lands on the grid.
 - Localization: mirror new keys into every `app_*.arb` locale or record known
   untranslated debt, then run the ARB consistency test.
 - Visual verification: run the existing golden verification workflow and
