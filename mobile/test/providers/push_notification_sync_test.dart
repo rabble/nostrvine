@@ -552,6 +552,45 @@ void main() {
       });
     });
 
+    test('retries an uncertain publish once, then stops', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return PushRegistrationResult.uncertainFailure;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+        expect(registerCalls, 2);
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+        expect(registerCalls, 2);
+        container.dispose();
+      });
+    });
+
     test(
       'invalidation wakes a parked retry so teardown deregisters without '
       'waiting out the registration timeout',

@@ -19,7 +19,12 @@ import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-enum PushRegistrationResult { published, retryableFailure, terminalFailure }
+enum PushRegistrationResult {
+  published,
+  retryableFailure,
+  uncertainFailure,
+  terminalFailure,
+}
 
 /// Manages FCM push notification registration and lifecycle via Nostr events.
 ///
@@ -100,7 +105,18 @@ class PushNotificationService {
       return PushRegistrationResult.terminalFailure;
     }
 
-    final token = await _getToken();
+    String? token;
+    try {
+      token = await _getToken();
+    } on Object catch (error) {
+      Log.warning(
+        'FCM token is unavailable - skipping push notification registration: '
+        '$error',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+      return PushRegistrationResult.terminalFailure;
+    }
     if (!await _isPublishCurrent(isCurrent)) {
       return PushRegistrationResult.terminalFailure;
     }
@@ -394,10 +410,13 @@ class PushNotificationService {
 
     final outcome = await _publishPushControlEvent(event, 'registration');
     if (outcome.confirmed) return PushRegistrationResult.published;
-    // A rejection cannot recover unchanged, and no-response is ambiguous: the
-    // relay may have stored this event even though its OK never arrived.
-    if (outcome.rejectedBy.isNotEmpty || outcome.noResponseFrom.isNotEmpty) {
+    if (outcome.rejectedBy.isNotEmpty) {
       return PushRegistrationResult.terminalFailure;
+    }
+    // No-response is ambiguous: the relay may have stored the event, but it can
+    // also mean the pool repaired a half-open socket for the next attempt.
+    if (outcome.noResponseFrom.isNotEmpty) {
+      return PushRegistrationResult.uncertainFailure;
     }
     // An all-empty outcome means no connected relay received the event.
     return PushRegistrationResult.retryableFailure;

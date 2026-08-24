@@ -90,6 +90,7 @@ void main() {
 
   PushNotificationService buildService({
     String? token = testToken,
+    Future<String?> Function()? getToken,
     FutureOr<bool> Function()? isCurrent,
   }) {
     return PushNotificationService(
@@ -97,7 +98,7 @@ void main() {
       nostrClient: mockNostrClient,
       notificationService: mockNotificationService,
       environmentConfig: testEnvironment,
-      getToken: () async => token,
+      getToken: getToken ?? () async => token,
       isCurrent: isCurrent,
     );
   }
@@ -257,6 +258,19 @@ void main() {
         service.dispose();
       });
 
+      test('returns terminal failure when FCM token lookup throws', () async {
+        final service = buildService(
+          getToken: () => throw StateError('apns-token-not-set'),
+        );
+
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.terminalFailure,
+        );
+        verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
+        service.dispose();
+      });
+
       test(
         'skips registration when push service pubkey is still placeholder',
         () async {
@@ -335,7 +349,7 @@ void main() {
       });
 
       test(
-        'returns terminal failure when registration publish receives no OK response',
+        'returns uncertain failure when registration publish receives no OK response',
         () async {
           when(
             () => mockNostrSigner.nip44Encrypt(any(), any()),
@@ -368,7 +382,7 @@ void main() {
           final service = buildService();
           expect(
             await service.register(testPubkey),
-            PushRegistrationResult.terminalFailure,
+            PushRegistrationResult.uncertainFailure,
           );
           service.dispose();
         },

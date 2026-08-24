@@ -40,6 +40,7 @@ final class _PushRegistrationOperation {
   Timer? retryTimer;
   Completer<void>? retryWaiter;
   int retryCount = 0;
+  int uncertainRetryCount = 0;
   Event? deferredCleanupDeregistrationEvent;
   _PushRegistrationPhase phase = _PushRegistrationPhase.beforePushService;
   bool cleanupScheduled = false;
@@ -187,6 +188,7 @@ class PushNotificationSessionCoordinator {
       if (token != null) {
         operation.generation += 1;
         operation.pendingToken = token;
+        operation.uncertainRetryCount = 0;
         operation.wakeRetry();
       }
       return;
@@ -432,12 +434,17 @@ class PushNotificationSessionCoordinator {
         if (!_isRegistrationCurrent(operation)) return;
         if (result == PushRegistrationResult.published) {
           operation.retryCount = 0;
+          operation.uncertainRetryCount = 0;
         }
         if (operation.generation != generation) continue;
         switch (result) {
           case PushRegistrationResult.published:
           case PushRegistrationResult.terminalFailure:
             return;
+          case PushRegistrationResult.uncertainFailure:
+            if (operation.uncertainRetryCount >= 1) return;
+            operation.uncertainRetryCount += 1;
+            await _waitForRegistrationRetry(operation);
           case PushRegistrationResult.retryableFailure:
             await _waitForRegistrationRetry(operation);
         }
