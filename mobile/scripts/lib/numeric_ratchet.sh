@@ -77,9 +77,13 @@ _nr_write_baseline() {
     : > "$reasons"
   fi
 
+  # `|| true` is load-bearing: with an EMPTY offender set grep matches nothing
+  # and exits 1, which under `set -o pipefail` + `set -e` would abort before the
+  # baseline is written. A zero-entry baseline is the normal state of a
+  # frozen-at-zero guard, not a failure.
   {
     print_baseline_header
-    printf '%s\n' "$emitted" | grep -v '^[[:space:]]*$' | while IFS= read -r line; do
+    { printf '%s\n' "$emitted" | grep -v '^[[:space:]]*$' || true; } | while IFS= read -r line; do
       local key reason
       key="${line%%"$TAB"*}"
       reason="$(awk -F '\t' -v target="$key" '$1 == target { print $2; exit }' "$reasons")"

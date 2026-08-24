@@ -170,6 +170,28 @@ run_numeric_ratchet
         expect(lines, ['a\t5 # keep me']);
       });
 
+      test(
+        'an EMPTY offender set writes a zero-entry baseline, not an error',
+        () {
+          // A frozen-at-zero guard regenerates from nothing as its NORMAL state.
+          // `grep -v` matches no lines and exits 1, so under `set -o pipefail`
+          // plus `set -e` the write aborts unless it is guarded. Losing that
+          // guard made every check_*_ceiling.sh exit 1 on a clean fixture.
+          writeCurrent('');
+
+          final res = run(update: true);
+
+          expect(res.exitCode, 0, reason: res.stderr.toString());
+          expect(res.stdout, contains('wrote 0 baseline entries'));
+          expect(
+            baseline.readAsLinesSync().where(
+              (line) => line.isNotEmpty && !line.startsWith('#'),
+            ),
+            isEmpty,
+          );
+        },
+      );
+
       test('a reason-free baseline regenerates byte-identically', () {
         writeCurrent('a\t5\nb\t3\n');
         run(update: true);
