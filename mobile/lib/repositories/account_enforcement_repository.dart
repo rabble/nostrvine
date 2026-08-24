@@ -51,11 +51,11 @@ class AccountEnforcementRepository {
     }
     final status = await _oauthClient.getAccountStatus(token);
     if (status == null) {
-      // A failed read is an ERROR, not a status. Returning `unknown` here would
-      // be indistinguishable from a successful "no enforcement" read to any
-      // consumer reading the resolved value, which would let an offline refresh
-      // silently clear a restriction marker the user had already earned.
-      // Surfacing it lets Riverpod retain the last good value instead.
+      // A failed read is an ERROR, not a status. Resolving it to any kind here
+      // would be indistinguishable from a successful read to a consumer reading
+      // the resolved value, which would let an offline refresh silently clear a
+      // restriction marker the user had already earned. Surfacing it lets
+      // Riverpod retain the last good value instead.
       throw const AccountStatusUnavailable();
     }
     return AccountEnforcementStatus.fromKeycast(status);
