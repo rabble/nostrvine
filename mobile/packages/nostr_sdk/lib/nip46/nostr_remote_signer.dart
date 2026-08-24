@@ -199,6 +199,13 @@ class NostrRemoteSigner extends NostrSigner {
             event.pubkey,
           );
           if (response != null) {
+            if (response.result == 'auth_url' && !response.isAuthChallenge) {
+              log(
+                '[NIP46] onMessage: ignoring malformed auth challenge for '
+                'id=${response.id}',
+              );
+              return;
+            }
             // An auth challenge answers a request the client already sent, so
             // its id must be one we are waiting on. Correlating here (and not
             // logging the URL) closes the last of the unsolicited-challenge

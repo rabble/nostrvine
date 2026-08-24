@@ -170,6 +170,35 @@ void main() {
         expect(opened, isNull);
       });
 
+      test(
+        'a malformed auth_url does not complete the pending request',
+        () async {
+          for (final error in <String?>[null, '']) {
+            final id = 'malformed-${error == null ? 'null' : 'empty'}';
+            final completer = Completer<String?>();
+            completer.future.ignore();
+            signer.callbacks[id] = completer;
+            final response = await buildResponse(
+              bunkerPriv,
+              payload: {
+                'id': id,
+                'result': 'auth_url',
+                if (error != null) 'error': error,
+              },
+            );
+
+            await signer.onMessage(idleRelay(), [
+              'EVENT',
+              'sub-1',
+              response.toJson(),
+            ]);
+
+            expect(completer.isCompleted, isFalse);
+            expect(signer.callbacks[id], same(completer));
+          }
+        },
+      );
+
       test('a stranger event is dropped without throwing', () async {
         registerPending('req-1');
         final forged = await buildResponse(
