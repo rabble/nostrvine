@@ -108,7 +108,7 @@ BuildProvenanceService _service({
   return BuildProvenanceService(
     packageInfo: PackageInfo(
       appName: 'Divine',
-      packageName: 'com.divinevideo.app',
+      packageName: 'co.openvine.app',
       version: '1.0.20',
       buildNumber: '837',
     ),
