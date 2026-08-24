@@ -13,6 +13,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/minor_account_review_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -359,7 +360,7 @@ void main() {
           authState: AuthState.unauthenticated,
           location: FeatureRequestScreen.path,
         ),
-        '/welcome',
+        WelcomeScreen.path,
       );
     });
 
@@ -369,7 +370,7 @@ void main() {
           authState: AuthState.unauthenticated,
           location: BugReportScreen.path,
         ),
-        '/welcome',
+        WelcomeScreen.path,
       );
     });
   });
