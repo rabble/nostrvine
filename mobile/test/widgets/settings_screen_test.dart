@@ -20,9 +20,11 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -31,6 +33,7 @@ import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:openvine/screens/settings/account_status_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/draft_storage_service.dart';
@@ -137,6 +140,7 @@ void main() {
       _MockBackgroundPublishBloc? publishBloc,
       InviteAvailabilityCubit? availabilityCubit,
       bool developerMode = false,
+      AccountEnforcementKind? enforcement,
     }) {
       when(
         () => mockAuthService.getKnownAccounts(),
@@ -171,6 +175,10 @@ void main() {
           ),
           if (developerMode)
             isDeveloperModeEnabledProvider.overrideWithValue(true),
+          if (enforcement != null)
+            accountEnforcementStatusProvider.overrideWith(
+              (ref) async => AccountEnforcementStatus(kind: enforcement),
+            ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -1089,5 +1097,87 @@ void main() {
         await tester.pump();
       },
     );
+
+    group('account status tile', () {
+      testWidgets('is reachable without first failing to post', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(enforcement: AccountEnforcementKind.none),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.accountStatusTitle),
+          200,
+          scrollable: scrollable,
+        );
+
+        expect(find.text(l10n.accountStatusTitle), findsOneWidget);
+        expect(
+          find.text(l10n.accountStatusTileSubtitleRestricted),
+          findsNothing,
+          reason: 'an unrestricted account must not be flagged on the row',
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+
+      testWidgets('flags a restricted account on the row itself', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(enforcement: AccountEnforcementKind.suspended),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.accountStatusTitle),
+          200,
+          scrollable: scrollable,
+        );
+
+        expect(
+          find.text(l10n.accountStatusTileSubtitleRestricted),
+          findsOneWidget,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+
+      testWidgets('tapping it opens the account status route', (tester) async {
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(
+            goRouter: mockGoRouter,
+            enforcement: AccountEnforcementKind.suspended,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollable = find.byType(Scrollable);
+        await scrollUntilTappable(
+          tester,
+          find.text(l10n.accountStatusTitle),
+          200,
+          scrollable: scrollable,
+        );
+        await tester.tap(find.text(l10n.accountStatusTitle));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.push(AccountStatusScreen.path)).called(1);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      });
+    });
   });
 }
