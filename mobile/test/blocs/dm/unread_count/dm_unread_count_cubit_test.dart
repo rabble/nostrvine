@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -98,8 +99,22 @@ DmConversation _groupConvo(
 /// Pad an index into a unique 64-char hex conversation id / pubkey.
 String _hex(int i) => i.toRadixString(16).padLeft(64, '0');
 
-Future<void> _settle() =>
-    Future<void>.delayed(const Duration(milliseconds: 10));
+void _settle(FakeAsync fake) {
+  fake.flushMicrotasks();
+  fake.elapse(Duration.zero);
+}
+
+void _close(FakeAsync fake, DmUnreadCountCubit cubit) {
+  cubit.close();
+  fake.flushMicrotasks();
+}
+
+void _testWithFakeAsync(
+  String description,
+  void Function(FakeAsync fake) body,
+) {
+  test(description, () => fakeAsync(body));
+}
 
 void main() {
   setUpAll(() {
@@ -158,21 +173,20 @@ void main() {
         followRepository: followRepository,
         contentBlocklistRepository: contentBlocklistRepository,
         // Behaviour tests assert the final settled count, not coalescing
-        // timing — disable the debounce so a single `_settle()` is enough.
-        // The debounce itself is covered by the dedicated coalescing test.
+        // timing. The debounce itself is covered by the dedicated test below.
         recomputeDebounce: Duration.zero,
       );
     }
 
-    test('initial state is 0', () {
+    _testWithFakeAsync('initial state is 0', (fake) {
       final cubit = buildCubit();
       expect(cubit.state, equals(0));
-      cubit.close();
+      _close(fake, cubit);
     });
 
-    test(
+    _testWithFakeAsync(
       'excludes unread conversations from non-approved counterparties (#176)',
-      () async {
+      (fake) {
         // alice approved, bob not. The badge must not reveal bob's hidden attempt.
         final cubit = DmUnreadCountCubit(
           dmRepository: dmRepository,
@@ -180,59 +194,53 @@ void main() {
           protectedMinorInboxGate: _FakeInboxGate(approved: {_alice}),
           recomputeDebounce: Duration.zero,
         );
-        addTearDown(cubit.close);
-
-        final countedApprovedConversation = expectLater(
-          cubit.stream,
-          emits(1),
-        );
         acceptedController.add([
           _convo('a', peer: _alice, isRead: false, currentUserHasSent: true),
           _convo('b', peer: _bob, isRead: false, currentUserHasSent: true),
         ]);
         potentialController.add(const []);
-        await countedApprovedConversation;
+        _settle(fake);
 
         expect(cubit.state, equals(1));
+        _close(fake, cubit);
       },
     );
 
-    test('stays at 0 when there are no conversations', () async {
+    _testWithFakeAsync('stays at 0 when there are no conversations', (fake) {
       final cubit = buildCubit();
-      addTearDown(cubit.close);
 
       acceptedController.add(const []);
       potentialController.add(const []);
-      await _settle();
+      _settle(fake);
 
       expect(cubit.state, equals(0));
+      _close(fake, cubit);
     });
 
-    test(
+    _testWithFakeAsync(
       'counts an unread conversation from a followed peer the user has '
       'never replied to (#4976 regression — old follow-blind count returned 0)',
-      () async {
+      (fake) {
         followed.add(_alice);
         final cubit = buildCubit();
-        addTearDown(cubit.close);
 
         acceptedController.add(const []);
         potentialController.add([
           _convo('c1', peer: _alice, isRead: false, currentUserHasSent: false),
         ]);
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(1));
+        _close(fake, cubit);
       },
     );
 
-    test(
+    _testWithFakeAsync(
       'counts an unread group when every peer is followed and the user has '
       'never replied',
-      () async {
+      (fake) {
         followed.addAll({_alice, _bob});
         final cubit = buildCubit();
-        addTearDown(cubit.close);
 
         acceptedController.add(const []);
         potentialController.add([
@@ -243,95 +251,93 @@ void main() {
             currentUserHasSent: false,
           ),
         ]);
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(1));
+        _close(fake, cubit);
       },
     );
 
-    test(
+    _testWithFakeAsync(
       'holds the count while userPubkey is empty, then counts the followed '
       '1:1 once the identity arrives (#5374)',
-      () async {
+      (fake) {
         followed.add(_alice);
         // Cold start: empty pubkey until the identity stream delivers it.
         when(() => dmRepository.userPubkey).thenReturn('');
         final pubkeyController = StreamController<String>();
-        addTearDown(pubkeyController.close);
         when(
           () => dmRepository.userPubkeyStream,
         ).thenAnswer((_) => pubkeyController.stream);
 
         final cubit = buildCubit();
-        addTearDown(cubit.close);
 
         acceptedController.add(const []);
         potentialController.add([
           _convo('c1', peer: _alice, isRead: false, currentUserHasSent: false),
         ]);
-        await _settle();
+        _settle(fake);
         // Empty pubkey: self cannot be filtered, so the guard holds the count
         // instead of misclassifying the 1:1 as a group and dropping it.
         expect(cubit.state, equals(0));
 
-        // Identity arrival re-fires the recompute. Wait for the emission via
-        // `emitsThrough(1)` instead of a wall-clock `_settle()`, which raced the
-        // cubit's real-timer `debounceTime` under merged-isolate CI load (#5374).
-        final counted = expectLater(cubit.stream, emitsThrough(equals(1)));
+        // Identity arrival re-fires the recompute.
         pubkeyController.add(_me);
-        await counted;
+        _settle(fake);
         // Identity arrived → the followed-but-unreplied 1:1 is counted.
         expect(cubit.state, equals(1));
+        _close(fake, cubit);
+        pubkeyController.close();
+        fake.flushMicrotasks();
       },
     );
 
-    test('counts an unread accepted conversation', () async {
+    _testWithFakeAsync('counts an unread accepted conversation', (fake) {
       final cubit = buildCubit();
-      addTearDown(cubit.close);
 
       acceptedController.add([
         _convo('c2', peer: _bob, isRead: false, currentUserHasSent: true),
       ]);
       potentialController.add(const []);
-      await _settle();
+      _settle(fake);
 
       expect(cubit.state, equals(1));
+      _close(fake, cubit);
     });
 
-    test(
+    _testWithFakeAsync(
       'excludes an unread request from a non-followed peer the user has '
       'never replied to (it is not shown in the Messages list)',
-      () async {
+      (fake) {
         // _carol is not in `followed`, never replied -> classifies as a request.
         final cubit = buildCubit();
-        addTearDown(cubit.close);
 
         acceptedController.add(const []);
         potentialController.add([
           _convo('c3', peer: _carol, isRead: false, currentUserHasSent: false),
         ]);
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(0));
+        _close(fake, cubit);
       },
     );
 
-    test('excludes read conversations', () async {
+    _testWithFakeAsync('excludes read conversations', (fake) {
       final cubit = buildCubit();
-      addTearDown(cubit.close);
 
       acceptedController.add([
         _convo('c4', peer: _bob, isRead: true, currentUserHasSent: true),
       ]);
       potentialController.add(const []);
-      await _settle();
+      _settle(fake);
 
       expect(cubit.state, equals(0));
+      _close(fake, cubit);
     });
 
-    test('counts the full unpaginated accepted set', () async {
+    _testWithFakeAsync('counts the full unpaginated accepted set', (fake) {
       final cubit = buildCubit();
-      addTearDown(cubit.close);
 
       // More than one inbox page of unread accepted conversations.
       final many = List.generate(
@@ -345,30 +351,31 @@ void main() {
       );
       acceptedController.add(many);
       potentialController.add(const []);
-      await _settle();
+      _settle(fake);
 
       expect(cubit.state, equals(60));
       // The badge must subscribe without a limit (full count, not a page).
       verify(() => dmRepository.watchAcceptedConversations()).called(1);
+      _close(fake, cubit);
     });
 
-    test('recomputes when the following list changes', () async {
+    _testWithFakeAsync('recomputes when the following list changes', (fake) {
       final cubit = buildCubit();
-      addTearDown(cubit.close);
 
       acceptedController.add(const []);
       potentialController.add([
         _convo('c5', peer: _alice, isRead: false, currentUserHasSent: false),
       ]);
-      await _settle();
+      _settle(fake);
       // _alice not followed yet -> request -> not counted.
       expect(cubit.state, equals(0));
 
       followed.add(_alice);
       followingController.add([_alice]);
-      await _settle();
+      _settle(fake);
       // Now followed -> appears in the Messages list -> counted.
       expect(cubit.state, equals(1));
+      _close(fake, cubit);
     });
 
     group('blocklist-aware', () {
@@ -387,7 +394,9 @@ void main() {
         await stateController.close();
       });
 
-      test('excludes a blocked unread accepted conversation', () async {
+      _testWithFakeAsync('excludes a blocked unread accepted conversation', (
+        fake,
+      ) {
         // Blocklist drops _bob's conversation, mirroring the list.
         when(
           () => blocklist.filterBlockedConversations(
@@ -397,18 +406,20 @@ void main() {
         ).thenReturn(const <DmConversation>[]);
 
         final cubit = buildCubit(contentBlocklistRepository: blocklist);
-        addTearDown(cubit.close);
 
         acceptedController.add([
           _convo('c6', peer: _bob, isRead: false, currentUserHasSent: true),
         ]);
         potentialController.add(const []);
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(0));
+        _close(fake, cubit);
       });
 
-      test('counts conversations the blocklist passes through', () async {
+      _testWithFakeAsync('counts conversations the blocklist passes through', (
+        fake,
+      ) {
         when(
           () => blocklist.filterBlockedConversations(
             any(),
@@ -419,18 +430,18 @@ void main() {
         );
 
         final cubit = buildCubit(contentBlocklistRepository: blocklist);
-        addTearDown(cubit.close);
 
         acceptedController.add([
           _convo('c7', peer: _bob, isRead: false, currentUserHasSent: true),
         ]);
         potentialController.add(const []);
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(1));
+        _close(fake, cubit);
       });
 
-      test('recomputes when the blocklist changes', () async {
+      _testWithFakeAsync('recomputes when the blocklist changes', (fake) {
         // Initially passes through -> counted.
         when(
           () => blocklist.filterBlockedConversations(
@@ -442,13 +453,12 @@ void main() {
         );
 
         final cubit = buildCubit(contentBlocklistRepository: blocklist);
-        addTearDown(cubit.close);
 
         acceptedController.add([
           _convo('c8', peer: _bob, isRead: false, currentUserHasSent: true),
         ]);
         potentialController.add(const []);
-        await _settle();
+        _settle(fake);
         expect(cubit.state, equals(1));
 
         // Block _bob mid-session: the filter now drops it, and a blocklist
@@ -460,25 +470,25 @@ void main() {
           ),
         ).thenReturn(const <DmConversation>[]);
         stateController.add(_MockContentPolicyState());
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(0));
+        _close(fake, cubit);
       });
     });
 
-    test(
+    _testWithFakeAsync(
       'setRepositories re-points the count at fresh repositories and stops '
       'counting against the stale ones (app-shell auth-ready rebuild, #4976)',
-      () async {
+      (fake) {
         final cubit = buildCubit();
-        addTearDown(cubit.close);
 
         // Pre-auth repository emits one unread accepted conversation.
         acceptedController.add([
           _convo('c9', peer: _bob, isRead: false, currentUserHasSent: true),
         ]);
         potentialController.add(const []);
-        await _settle();
+        _settle(fake);
         expect(cubit.state, equals(1));
 
         // Auth becomes ready: the providers rebuild into fresh instances.
@@ -487,11 +497,6 @@ void main() {
         final acceptedController2 = StreamController<List<DmConversation>>();
         final potentialController2 = StreamController<List<DmConversation>>();
         final followingController2 = StreamController<List<String>>();
-        addTearDown(() async {
-          await acceptedController2.close();
-          await potentialController2.close();
-          await followingController2.close();
-        });
         when(() => dmRepository2.userPubkey).thenReturn(_me);
         when(
           () => dmRepository2.userPubkeyStream,
@@ -505,9 +510,7 @@ void main() {
         when(
           () => followRepository2.followingStream,
         ).thenAnswer((_) => followingController2.stream);
-        when(
-          () => followRepository2.isFollowing(any()),
-        ).thenReturn(false);
+        when(() => followRepository2.isFollowing(any())).thenReturn(false);
 
         cubit.setRepositories(
           dmRepository: dmRepository2,
@@ -520,24 +523,29 @@ void main() {
           _convo('c11', peer: _carol, isRead: false, currentUserHasSent: true),
         ]);
         potentialController2.add(const []);
-        await _settle();
+        _settle(fake);
         expect(cubit.state, equals(2));
 
         // The stale repository must no longer affect the badge.
         acceptedController.add(const []);
-        await _settle();
+        _settle(fake);
         expect(cubit.state, equals(2));
+
+        _close(fake, cubit);
+        acceptedController2.close();
+        potentialController2.close();
+        followingController2.close();
+        fake.flushMicrotasks();
       },
     );
 
-    test(
+    _testWithFakeAsync(
       'coalesces a burst of conversation writes into a single recompute '
       '(debounce)',
-      () async {
+      (fake) {
         var filterCalls = 0;
         final blocklist = _MockContentBlocklistRepository();
         final stateController = StreamController<ContentPolicyState>();
-        addTearDown(stateController.close);
         when(
           () => blocklist.stateStream,
         ).thenAnswer((_) => stateController.stream);
@@ -560,7 +568,6 @@ void main() {
           contentBlocklistRepository: blocklist,
           recomputeDebounce: const Duration(milliseconds: 100),
         );
-        addTearDown(cubit.close);
 
         potentialController.add(const []);
         // Five rapid accepted-list updates inside the debounce window.
@@ -570,25 +577,31 @@ void main() {
           ]);
         }
 
-        // Still inside the window: the expensive pass has not run yet.
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        fake.flushMicrotasks();
+
+        // Still immediately before the boundary: the expensive pass has not run.
+        fake.elapse(const Duration(milliseconds: 99));
         expect(filterCalls, equals(0));
 
-        // After the window settles: exactly one recompute for the whole burst.
-        await Future<void>.delayed(const Duration(milliseconds: 150));
+        // At the boundary: exactly one recompute for the whole burst.
+        fake.elapse(const Duration(milliseconds: 1));
         expect(filterCalls, equals(1));
         expect(cubit.state, equals(1));
+
+        _close(fake, cubit);
+        stateController.close();
+        fake.flushMicrotasks();
       },
     );
 
-    test('cancels subscription on close', () async {
+    _testWithFakeAsync('cancels subscription on close', (fake) {
       final cubit = buildCubit();
-      await cubit.close();
+      _close(fake, cubit);
 
       // Emitting after close must not throw (subscription cancelled).
       acceptedController.add(const []);
       potentialController.add(const []);
-      await _settle();
+      _settle(fake);
     });
 
     group('pinned support row parity (#6283)', () {
@@ -600,22 +613,20 @@ void main() {
         legacyModeration,
       ]);
 
-      DmUnreadCountCubit buildPinAwareCubit({
-        ProtectedMinorInboxGate? gate,
-      }) => DmUnreadCountCubit(
-        dmRepository: dmRepository,
-        followRepository: followRepository,
-        protectedMinorInboxGate: gate,
-        recomputeDebounce: Duration.zero,
-        supportRowPubkey: moderation,
-      );
+      DmUnreadCountCubit buildPinAwareCubit({ProtectedMinorInboxGate? gate}) =>
+          DmUnreadCountCubit(
+            dmRepository: dmRepository,
+            followRepository: followRepository,
+            protectedMinorInboxGate: gate,
+            recomputeDebounce: Duration.zero,
+            supportRowPubkey: moderation,
+          );
 
-      test(
+      _testWithFakeAsync(
         'counts an inbound-only unread moderation thread, which the inbox '
         'renders as the pin rather than as a request',
-        () async {
+        (fake) {
           final cubit = buildPinAwareCubit();
-          addTearDown(cubit.close);
 
           // Nobody is followed, so both classify as requests. The moderation
           // one becomes the pinned row (dot and all); the stranger stays in
@@ -635,18 +646,18 @@ void main() {
               currentUserHasSent: false,
             ),
           ]);
-          await _settle();
+          _settle(fake);
 
           expect(cubit.state, equals(1));
+          _close(fake, cubit);
         },
       );
 
-      test(
+      _testWithFakeAsync(
         'counts a retired-key moderation thread, matching the list that keeps '
         'legacy history visible',
-        () async {
+        (fake) {
           final cubit = buildPinAwareCubit();
-          addTearDown(cubit.close);
 
           acceptedController.add([
             _convo(
@@ -657,18 +668,20 @@ void main() {
             ),
           ]);
           potentialController.add(const []);
-          await _settle();
+          _settle(fake);
 
           // The inbox keeps this legacy-history row visible until #6416 gives
           // it an archived read-only presentation, so the badge can point at a
           // row the user can still find.
           expect(cubit.state, equals(1));
+          _close(fake, cubit);
         },
       );
 
-      test('counts an adopted moderation thread exactly once', () async {
+      _testWithFakeAsync('counts an adopted moderation thread exactly once', (
+        fake,
+      ) {
         final cubit = buildPinAwareCubit();
-        addTearDown(cubit.close);
 
         // The accepted and potential-request streams are independent, so a
         // currentUserHasSent flip can be observed in one before the other.
@@ -680,18 +693,18 @@ void main() {
         );
         acceptedController.add([thread]);
         potentialController.add([thread]);
-        await _settle();
+        _settle(fake);
 
         expect(cubit.state, equals(1));
+        _close(fake, cubit);
       });
 
-      test(
+      _testWithFakeAsync(
         'excludes a pinned thread the protected-minor gate rejects (#176)',
-        () async {
+        (fake) {
           final cubit = buildPinAwareCubit(
             gate: _FakeInboxGate(approved: const {}),
           );
-          addTearDown(cubit.close);
 
           acceptedController.add(const []);
           potentialController.add([
@@ -702,19 +715,19 @@ void main() {
               currentUserHasSent: false,
             ),
           ]);
-          await _settle();
+          _settle(fake);
 
           // The pin is filtered out of the list for this user, so the badge
           // must not leak its existence.
           expect(cubit.state, equals(0));
+          _close(fake, cubit);
         },
       );
 
-      test(
+      _testWithFakeAsync(
         'counts exactly as before when no support pubkey is injected',
-        () async {
+        (fake) {
           final cubit = buildCubit();
-          addTearDown(cubit.close);
 
           acceptedController.add([
             _convo(
@@ -725,11 +738,12 @@ void main() {
             ),
           ]);
           potentialController.add(const []);
-          await _settle();
+          _settle(fake);
 
           // Degrades to the un-pinned behaviour rather than partitioning
           // against an empty key.
           expect(cubit.state, equals(1));
+          _close(fake, cubit);
         },
       );
     });
