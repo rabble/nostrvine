@@ -184,6 +184,10 @@ void main() {
     environment: AppEnvironment.test,
     configuredPushServicePubkey: pushServicePubkey,
   );
+  const stagingEnvironment = _ConfiguredEnvironmentConfig(
+    environment: AppEnvironment.staging,
+    configuredPushServicePubkey: pushServicePubkey,
+  );
 
   setUpAll(() {
     registerFallbackValue(const NotificationPreferences());
@@ -1542,7 +1546,7 @@ void main() {
     );
 
     test(
-      'direct pre-teardown deregistration uses a captured cleanup client',
+      'account-switch cleanup retains provider dependencies after disposal',
       () async {
         final tokenRefreshController = StreamController<String>.broadcast();
         addTearDown(tokenRefreshController.close);
@@ -1570,15 +1574,18 @@ void main() {
         when(
           () => signer.nip44Encrypt(any(), any()),
         ).thenAnswer((_) async => 'encrypted-dereg-token');
-        when(() => messaging.getToken()).thenAnswer((_) async => 'fcm-token');
+        final tokenCompleter = Completer<String?>();
+        when(
+          () => messaging.getToken(),
+        ).thenAnswer((_) => tokenCompleter.future);
         when(
           () => cleanupClient.publishEventAwaitOk(
             event,
-            targetRelays: [pushEnvironment.relayUrl],
+            targetRelays: [stagingEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
           ),
         ).thenAnswer(
-          (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
+          (_) async => _acceptedOutcome(event, stagingEnvironment.relayUrl),
         );
         final initializeCompleter = Completer<void>();
         when(cleanupClient.initialize).thenAnswer(
@@ -1587,6 +1594,9 @@ void main() {
         // ignore: unnecessary_lambdas
         when(() => cleanupClient.dispose()).thenAnswer((_) async {});
 
+        var currentEnvironment = pushEnvironment;
+        EnvironmentConfig? cleanupEnvironment;
+        Object? cleanupStatisticsService;
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
         );
@@ -1600,16 +1610,18 @@ void main() {
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
-            currentEnvironmentProvider.overrideWith((_) => pushEnvironment),
+            currentEnvironmentProvider.overrideWith((_) => currentEnvironment),
             nostrSessionProvider.overrideWith(() => nostrSession),
             nostrClientFactoryProvider.overrideWithValue(
-              ({dbClient, environmentConfig, signer, statisticsService}) =>
-                  cleanupClient,
+              ({dbClient, environmentConfig, signer, statisticsService}) {
+                cleanupEnvironment = environmentConfig;
+                cleanupStatisticsService = statisticsService;
+                return cleanupClient;
+              },
             ),
           ],
         );
-        addTearDown(container.dispose);
-        container.read(pushNotificationSyncProvider);
+        final coordinator = container.read(pushNotificationSyncProvider)!;
 
         when(() => nostrClient.publicKey).thenReturn(pubkeyA);
         nostrSession.setReadiness(
@@ -1621,19 +1633,41 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
-        final teardownFuture = beforeSessionTeardownCallback!();
+        currentEnvironment = stagingEnvironment;
+        container.invalidate(currentEnvironmentProvider);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final teardownFuture = coordinator
+            .deregisterLastReadyPubkeyAfterAccountSwitch();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(() => messaging.getToken()).called(1);
+        verifyNever(cleanupClient.initialize);
+        verifyNever(
+          () => cleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [stagingEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        );
+
+        container.dispose();
+        tokenCompleter.complete('fcm-token');
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
         verify(() => signer.signEvent(any())).called(1);
         verify(cleanupClient.initialize).called(1);
-        verifyNever(
-          () => cleanupClient.publishEventAwaitOk(
-            event,
-            targetRelays: [pushEnvironment.relayUrl],
-            timeout: const Duration(seconds: 5),
-          ),
-        );
+        expect(cleanupEnvironment, same(stagingEnvironment));
+        expect(cleanupStatisticsService, isNull);
 
         initializeCompleter.complete();
         await teardownFuture;
@@ -1641,7 +1675,7 @@ void main() {
         verify(
           () => cleanupClient.publishEventAwaitOk(
             event,
-            targetRelays: [pushEnvironment.relayUrl],
+            targetRelays: [stagingEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
           ),
         ).called(1);

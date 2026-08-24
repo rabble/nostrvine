@@ -8,6 +8,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -23,6 +24,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// skip the side-effect-free `activate()` refactor (design §8.2 correction).
 typedef AccountSignIn =
     Future<void> Function(ProviderContainer container, KnownAccount account);
+
+const _accountSwitchPushCleanupTimeout = Duration(seconds: 15);
 
 Future<void> _defaultSignIn(
   ProviderContainer container,
@@ -132,6 +135,12 @@ String? accountSwitchInitialLocation({
 /// intentionally: it only ever copies the leaving account's own credentials
 /// into its own slot.
 ///
+/// Push deregistration follows the same commit boundary. The outgoing
+/// coordinator is captured before sign-in can replace shared signer storage,
+/// but it runs only after [AccountSwitchController.swapTo] commits the target.
+/// The swap host retains the outgoing container until cleanup settles so its
+/// account-scoped signer remains usable throughout deregistration.
+///
 /// Rolling the container back is not enough on its own: a sign-in that got far
 /// enough to fail has already restored the *target* account's signer keys over
 /// the shared slots and persisted its auth source, which the live container
@@ -151,6 +160,10 @@ Future<void> swapAccount({
   await controller.runExclusive(() async {
     await currentAuthService.archiveCurrentSignerInfo();
     final current = controller.currentContainer;
+    final outgoingPushCoordinator =
+        current != null && current.exists(pushNotificationSyncProvider)
+        ? current.read(pushNotificationSyncProvider)
+        : null;
     final currentLocation = accountSwitchInitialLocation(
       currentLocation: _currentRouterLocation(controller),
       currentPubkeyHex: current?.read(authServiceProvider).currentPublicKeyHex,
@@ -168,8 +181,38 @@ Future<void> swapAccount({
     try {
       previousPrimary = await keyStorage.getKeyContainer();
       await signIn(container, account);
-      await controller.swapTo(container);
-      await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
+      await controller.swapTo(
+        container,
+        beforePreviousContainerDispose: outgoingPushCoordinator == null
+            ? null
+            : () async {
+                try {
+                  await outgoingPushCoordinator
+                      .deregisterLastReadyPubkeyAfterAccountSwitch()
+                      .timeout(_accountSwitchPushCleanupTimeout);
+                } catch (error) {
+                  // The target account is already live. Push cleanup is
+                  // best-effort and must not turn a committed switch into a
+                  // rollback attempt.
+                  Log.warning(
+                    'Outgoing account push deregistration failed: $error',
+                    name: 'swapAccount',
+                  );
+                }
+              },
+      );
+      try {
+        await container
+            .read(authServiceProvider)
+            .claimLegacyRowsForCurrentUser();
+      } catch (error) {
+        // The target container is already mounted, so this post-commit
+        // migration cannot be rolled back.
+        Log.warning(
+          'Claiming legacy user data after account swap failed: $error',
+          name: 'swapAccount',
+        );
+      }
     } catch (_) {
       try {
         await currentAuthService.restoreSignerInfoForCurrentAccount();

@@ -10,7 +10,6 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/services/app_badge_service.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
@@ -239,29 +238,32 @@ final notificationPreferencesServiceProvider =
 ///
 /// Registers FCM token only after the signer-backed Nostr client is ready.
 /// Deregisters the last ready client through AuthService's pre-teardown hook so
-/// outgoing-session cleanup runs before signers and callbacks are cleared.
+/// outgoing-session cleanup runs before signers and callbacks are cleared. The
+/// returned coordinator lets account switching run the same captured-identity
+/// cleanup after the replacement account has committed.
 @Riverpod(keepAlive: true)
-void pushNotificationSync(Ref ref) {
+PushNotificationSessionCoordinator? pushNotificationSync(Ref ref) {
   // Firebase Messaging only supports Android, iOS, macOS, and web.
   if (!isFirebaseSupported) {
-    return;
+    return null;
   }
 
   final authService = ref.watch(authServiceProvider);
   ref.watch(notificationPreferencesDirtySyncBridgeProvider);
+  final nostrClientFactory = ref.read(nostrClientFactoryProvider);
+  final dbClient = ref.read(appDbClientProvider);
 
   final coordinator = PushNotificationSessionCoordinator(
     authService: authService,
     firebaseMessaging: ref.read(firebaseMessagingProvider),
     readReadiness: () => ref.read(nostrSessionProvider),
     readPushService: () => ref.read(pushNotificationServiceProvider),
-    createCleanupClient: (identity) {
-      final factory = ref.read(nostrClientFactoryProvider);
-      return factory(
+    readCleanupClientFactory: () {
+      final environmentConfig = ref.read(currentEnvironmentProvider);
+      return (identity) => nostrClientFactory(
         signer: identity,
-        statisticsService: ref.read(relayStatisticsServiceProvider),
-        environmentConfig: ref.read(currentEnvironmentProvider),
-        dbClient: ref.read(appDbClientProvider),
+        environmentConfig: environmentConfig,
+        dbClient: dbClient,
       );
     },
   );
@@ -295,4 +297,6 @@ void pushNotificationSync(Ref ref) {
     authStateSubscription.cancel();
     onMessageSubscription.cancel();
   });
+
+  return coordinator;
 }

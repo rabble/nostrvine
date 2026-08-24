@@ -16,6 +16,9 @@ import 'package:unified_logger/unified_logger.dart';
 typedef PushReadinessReader = NostrSessionReadiness Function();
 typedef PushServiceReader = PushNotificationService? Function();
 typedef CleanupClientFactory = NostrClient Function(NostrIdentity identity);
+typedef CleanupClientFactoryReader = CleanupClientFactory Function();
+
+const _pushRegistrationCleanupWaitTimeout = Duration(seconds: 4);
 
 enum _PushRegistrationPhase { beforePushService, mayPublish }
 
@@ -43,18 +46,18 @@ class PushNotificationSessionCoordinator {
     required FirebaseMessaging firebaseMessaging,
     required PushReadinessReader readReadiness,
     required PushServiceReader readPushService,
-    required CleanupClientFactory createCleanupClient,
+    required CleanupClientFactoryReader readCleanupClientFactory,
   }) : _authService = authService,
        _firebaseMessaging = firebaseMessaging,
        _readReadiness = readReadiness,
        _readPushService = readPushService,
-       _createCleanupClient = createCleanupClient;
+       _readCleanupClientFactory = readCleanupClientFactory;
 
   final AuthService _authService;
   final FirebaseMessaging _firebaseMessaging;
   final PushReadinessReader _readReadiness;
   final PushServiceReader _readPushService;
-  final CleanupClientFactory _createCleanupClient;
+  final CleanupClientFactoryReader _readCleanupClientFactory;
 
   final _activeRegistrations = <_PushRegistrationOperation>{};
   StreamSubscription<String>? _tokenRefreshSubscription;
@@ -63,6 +66,7 @@ class PushNotificationSessionCoordinator {
   NostrClient? _lastReadyClient;
   PushNotificationService? _lastReadyPushService;
   NostrIdentity? _lastReadyIdentity;
+  CleanupClientFactory? _lastReadyCleanupClientFactory;
 
   void dispose() {
     _tokenRefreshSubscription?.cancel();
@@ -77,6 +81,7 @@ class PushNotificationSessionCoordinator {
       _lastReadyClient = null;
       _lastReadyPushService = null;
       _lastReadyIdentity = null;
+      _lastReadyCleanupClientFactory = null;
       _invalidateActiveRegistrations();
     }
   }
@@ -92,6 +97,7 @@ class PushNotificationSessionCoordinator {
         _lastReadyClient = null;
         _lastReadyPushService = null;
         _lastReadyIdentity = null;
+        _lastReadyCleanupClientFactory = null;
       }
       return;
     }
@@ -101,6 +107,7 @@ class PushNotificationSessionCoordinator {
       _lastReadyClient = null;
       _lastReadyPushService = null;
       _lastReadyIdentity = null;
+      _lastReadyCleanupClientFactory = null;
       _invalidateActiveRegistrations();
       return;
     }
@@ -113,6 +120,7 @@ class PushNotificationSessionCoordinator {
       _lastReadyClient = null;
       _lastReadyPushService = null;
       _lastReadyIdentity = null;
+      _lastReadyCleanupClientFactory = null;
       _invalidateActiveRegistrations();
       return;
     }
@@ -121,6 +129,7 @@ class PushNotificationSessionCoordinator {
     _lastReadyClient = readiness.client;
     _lastReadyPushService = pushService;
     _lastReadyIdentity = identity;
+    _lastReadyCleanupClientFactory = _readCleanupClientFactory();
     _ensureTokenRefreshSubscription();
     _startRegistrationOperation(
       pubkey: readyPubkey,
@@ -187,23 +196,46 @@ class PushNotificationSessionCoordinator {
     );
   }
 
-  Future<void> deregisterLastReadyPubkey() async {
+  Future<void> deregisterLastReadyPubkey() =>
+      _deregisterLastReadyPubkey(requireCurrentSession: true);
+
+  /// Deregisters the captured outgoing session after an account swap commits.
+  ///
+  /// Unlike sign-out teardown, this runs after the target container commits.
+  /// The swap host retains the outgoing provider container until this work
+  /// settles, while the captured pubkey and identity keep cleanup scoped to the
+  /// account being left.
+  Future<void> deregisterLastReadyPubkeyAfterAccountSwitch() =>
+      _deregisterLastReadyPubkey(requireCurrentSession: false);
+
+  Future<void> _deregisterLastReadyPubkey({
+    required bool requireCurrentSession,
+  }) async {
     final pubkey = _lastReadyPubkey;
     final client = _lastReadyClient;
     final pushService = _lastReadyPushService;
     final identity = _lastReadyIdentity;
+    final createCleanupClient = _lastReadyCleanupClientFactory;
     final operations = List<_PushRegistrationOperation>.of(
       _activeRegistrations,
     );
     _invalidateActiveRegistrations();
-    if (pubkey == null || client == null || pushService == null) return;
+    if (pubkey == null ||
+        client == null ||
+        pushService == null ||
+        createCleanupClient == null) {
+      return;
+    }
     pushService.deactivateRegistration();
 
     Event? deferredCleanupDeregistrationEvent;
     for (final operation in operations) {
       if (operation.phase == _PushRegistrationPhase.mayPublish) {
         deferredCleanupDeregistrationEvent ??=
-            await _createDeferredCleanupDeregistrationEvent(operation);
+            await _createDeferredCleanupDeregistrationEvent(
+              operation,
+              requireCurrentSession: requireCurrentSession,
+            );
         operation.deferredCleanupDeregistrationEvent ??=
             deferredCleanupDeregistrationEvent;
       }
@@ -220,7 +252,9 @@ class PushNotificationSessionCoordinator {
         await Future.wait(
           operationsToWait.map(
             (operation) =>
-                operation.future?.timeout(const Duration(seconds: 4)) ??
+                operation.future?.timeout(
+                  _pushRegistrationCleanupWaitTimeout,
+                ) ??
                 Future<void>.value(),
           ),
         );
@@ -235,10 +269,20 @@ class PushNotificationSessionCoordinator {
       }
     }
 
-    if (!_isOutgoingSessionCurrent(pubkey, client, pushService)) return;
+    if (requireCurrentSession &&
+        !_isOutgoingSessionCurrent(pubkey, client, pushService)) {
+      return;
+    }
 
     if (identity == null) {
-      await _deregisterCapturedPubkey(pubkey, client, pushService, null, null);
+      await _deregisterCapturedPubkey(
+        pubkey,
+        client,
+        pushService,
+        null,
+        null,
+        requireCurrentSession: requireCurrentSession,
+      );
       return;
     }
 
@@ -249,6 +293,7 @@ class PushNotificationSessionCoordinator {
           deregistrationEvent,
           pushService,
           identity,
+          createCleanupClient,
         );
       } catch (e) {
         Log.warning(
@@ -260,7 +305,14 @@ class PushNotificationSessionCoordinator {
       return;
     }
 
-    await _deregisterWithCleanupClient(pubkey, client, pushService, identity);
+    await _deregisterWithCleanupClient(
+      pubkey,
+      client,
+      pushService,
+      identity,
+      createCleanupClient: createCleanupClient,
+      requireCurrentSession: requireCurrentSession,
+    );
   }
 
   void _invalidateActiveRegistrations() {
@@ -377,12 +429,13 @@ class PushNotificationSessionCoordinator {
     NostrClient client,
     PushNotificationService pushService,
     NostrIdentity? signingIdentity,
-    NostrClient? publishClient,
-  ) async {
+    NostrClient? publishClient, {
+    required bool requireCurrentSession,
+  }) async {
     try {
       await pushService.deregister(
         pubkey,
-        isCurrent: publishClient == null
+        isCurrent: requireCurrentSession && publishClient == null
             ? () => _isOutgoingSessionCurrent(pubkey, client, pushService)
             : null,
         signingIdentity: signingIdentity,
@@ -401,8 +454,9 @@ class PushNotificationSessionCoordinator {
     Event deregistrationEvent,
     PushNotificationService pushService,
     NostrIdentity identity,
+    CleanupClientFactory createCleanupClient,
   ) async {
-    final cleanupClient = _createCleanupClient(identity);
+    final cleanupClient = createCleanupClient(identity);
     try {
       await cleanupClient.initialize();
       await pushService.publishDeregistrationEvent(
@@ -418,10 +472,15 @@ class PushNotificationSessionCoordinator {
     String pubkey,
     NostrClient client,
     PushNotificationService pushService,
-    NostrIdentity identity,
-  ) async {
+    NostrIdentity identity, {
+    required CleanupClientFactory createCleanupClient,
+    required bool requireCurrentSession,
+  }) async {
     try {
-      if (!_isOutgoingSessionCurrent(pubkey, client, pushService)) return;
+      if (requireCurrentSession &&
+          !_isOutgoingSessionCurrent(pubkey, client, pushService)) {
+        return;
+      }
       final deregistrationEvent = await pushService
           .createSignedDeregistrationEvent(pubkey, signingIdentity: identity);
       if (deregistrationEvent == null) return;
@@ -430,6 +489,7 @@ class PushNotificationSessionCoordinator {
         deregistrationEvent,
         pushService,
         identity,
+        createCleanupClient,
       );
     } catch (e) {
       Log.warning(
@@ -441,14 +501,16 @@ class PushNotificationSessionCoordinator {
   }
 
   Future<Event?> _createDeferredCleanupDeregistrationEvent(
-    _PushRegistrationOperation operation,
-  ) async {
+    _PushRegistrationOperation operation, {
+    required bool requireCurrentSession,
+  }) async {
     try {
-      if (!_isOutgoingSessionCurrent(
-        operation.pubkey,
-        operation.client,
-        operation.pushService,
-      )) {
+      if (requireCurrentSession &&
+          !_isOutgoingSessionCurrent(
+            operation.pubkey,
+            operation.client,
+            operation.pushService,
+          )) {
         return null;
       }
       return await operation.pushService.createSignedDeregistrationEvent(
@@ -471,8 +533,10 @@ class PushNotificationSessionCoordinator {
     if (operation.cleanupScheduled) return;
     final registrationFuture = operation.future;
     final deregistrationEvent = operation.deferredCleanupDeregistrationEvent;
+    final createCleanupClient = _lastReadyCleanupClientFactory;
     if (registrationFuture == null) return;
     if (deregistrationEvent == null) return;
+    if (createCleanupClient == null) return;
     operation.cleanupScheduled = true;
     unawaited(
       (() async {
@@ -482,6 +546,7 @@ class PushNotificationSessionCoordinator {
             deregistrationEvent,
             operation.pushService,
             operation.identity,
+            createCleanupClient,
           );
         } catch (e) {
           Log.warning(

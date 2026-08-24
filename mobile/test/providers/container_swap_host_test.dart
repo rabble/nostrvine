@@ -68,6 +68,34 @@ void main() {
       expect(() => first.read(_valueProvider), throwsStateError);
     });
 
+    testWidgets('retains the previous container until cleanup settles', (
+      tester,
+    ) async {
+      final controller = AccountSwitchController();
+      final first = containerWith('A');
+      final cleanupCompleter = Completer<void>();
+      await tester.pumpWidget(
+        ContainerSwapHost(
+          initialContainer: first,
+          controller: controller,
+          child: const _ValueText(),
+        ),
+      );
+
+      await controller.swapTo(
+        containerWith('B'),
+        beforePreviousContainerDispose: () => cleanupCompleter.future,
+      );
+      await tester.pump();
+
+      expect(first.read(_valueProvider), 'A');
+
+      cleanupCompleter.complete();
+      await tester.pump();
+
+      expect(() => first.read(_valueProvider), throwsStateError);
+    });
+
     testWidgets('swap remounts container-owned child state', (tester) async {
       final controller = AccountSwitchController();
       var initStateCount = 0;
