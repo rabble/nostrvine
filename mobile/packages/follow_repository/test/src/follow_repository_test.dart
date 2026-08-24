@@ -4974,7 +4974,7 @@ void main() {
 
     group('getFollowerStats - REST + WS merge', () {
       test(
-        'uses higher count when REST and WS both return data',
+        'keeps following max behavior while followers use available source',
         () async {
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -5038,8 +5038,7 @@ void main() {
 
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          // Should pick the higher value from each source
-          // Followers: max(REST 50, WS 0) = 50
+          // Followers have only the REST observation because no indexers run.
           // Following: max(REST 100, WS 80) = 100
           expect(stats.followers, equals(50));
           expect(stats.following, equals(100));
@@ -5249,7 +5248,7 @@ void main() {
       );
     });
 
-    group('getFollowerStats - merge picks higher from each source', () {
+    group('getFollowerStats - following merge', () {
       test(
         'picks WS following when higher than REST',
         () async {
@@ -5678,7 +5677,7 @@ void main() {
         );
 
         test(
-          'uses highest count across multiple indexers',
+          'uses the highest count corroborated by another complete source',
           () async {
             var callCount = 0;
             repository = FollowRepository(
@@ -5720,9 +5719,95 @@ void main() {
 
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
-            // indexer1: 1 follower, indexer2: 2 followers → best=2
+            // A lone high complete source cannot win outright.
+            expect(stats.followers, equals(1));
+          },
+        );
+
+        test(
+          'rejects one high outlier across REST and complete indexers',
+          () async {
+            final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+            ).thenAnswer(
+              (_) async => const SocialCounts(
+                pubkey: testTargetPubkey,
+                followerCount: 50,
+                followingCount: 0,
+              ),
+            );
+
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              indexerRelayUrls: const [
+                'wss://indexer1.test',
+                'wss://indexer2.test',
+              ],
+              relayFactory: (url, status) {
+                final count = url.contains('indexer1') ? 55 : 500;
+                return _FakeRelay(url, status)
+                  ..fakeResponses = [
+                    ...List.generate(
+                      count,
+                      (i) => <dynamic>[
+                        'EVENT',
+                        's',
+                        {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                      ],
+                    ),
+                    <dynamic>['EOSE', 's'],
+                  ];
+              },
+            );
+
+            final stats = await repository.getFollowerStats(testTargetPubkey);
+
+            expect(stats.followers, equals(55));
+          },
+        );
+
+        test(
+          'rejects one high outlier when all sources are partial',
+          () async {
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              indexerRelayUrls: const [
+                'wss://indexer1.test',
+                'wss://indexer2.test',
+                'wss://indexer3.test',
+              ],
+              relayFactory: (url, status) {
+                final count = url.contains('indexer1')
+                    ? 1
+                    : url.contains('indexer2')
+                    ? 2
+                    : 200;
+                return _FakeRelay(url, status)
+                  ..fakeResponses = List.generate(
+                    count,
+                    (i) => <dynamic>[
+                      'EVENT',
+                      's',
+                      {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                    ],
+                  );
+              },
+            );
+
+            final stats = await repository.getFollowerStats(testTargetPubkey);
+
             expect(stats.followers, equals(2));
           },
+          timeout: const Timeout(Duration(seconds: 20)),
         );
       });
 
@@ -6233,9 +6318,9 @@ void main() {
       });
     });
 
-    group('getFollowerStats - WS followers higher than REST', () {
+    group('getFollowerStats - conflicting complete follower sources', () {
       test(
-        'picks WS followers when higher than REST',
+        'does not let a lone higher indexer count beat REST',
         () async {
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -6280,11 +6365,54 @@ void main() {
 
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          // followers: max(REST 5, WS 10) = 10
-          expect(stats.followers, equals(10));
+          // The lower of two complete observations is the highest count both
+          // sources support.
+          expect(stats.followers, equals(5));
           // following: max(REST 10, WS 0) = 10
           expect(stats.following, equals(10));
         },
+      );
+
+      test(
+        'caps one complete count at the best partial lower bound',
+        () async {
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+          ).thenAnswer(
+            (_) async => const SocialCounts(
+              pubkey: testTargetPubkey,
+              followerCount: 50,
+              followingCount: 10,
+            ),
+          );
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            indexerRelayUrls: const ['wss://idx.test'],
+            relayFactory: (url, status) {
+              return _FakeRelay(url, status)
+                ..fakeResponses = List.generate(
+                  40,
+                  (i) => <dynamic>[
+                    'EVENT',
+                    's',
+                    {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                  ],
+                );
+            },
+          );
+
+          final stats = await repository.getFollowerStats(testTargetPubkey);
+
+          expect(stats.followers, equals(40));
+        },
+        timeout: const Timeout(Duration(seconds: 20)),
       );
     });
 
@@ -6432,7 +6560,7 @@ void main() {
       );
 
       test(
-        'indexer relay send error returns partial results',
+        'indexer close error keeps the EOSE-complete count',
         () async {
           const indexerUrl = 'wss://idx.test';
 
@@ -6461,7 +6589,7 @@ void main() {
           // send() throws after completer completes
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          expect(stats, isNotNull);
+          expect(stats.followers, equals(1));
         },
       );
 

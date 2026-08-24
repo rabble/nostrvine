@@ -30,6 +30,17 @@ typedef _CachedFollowerStats = ({
   DateTime cachedAt,
 });
 
+typedef _FollowerCountObservation = ({
+  int count,
+  bool isComplete,
+  String source,
+});
+
+typedef _WebSocketFollowerStats = ({
+  int following,
+  List<_FollowerCountObservation> followerCounts,
+});
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -954,8 +965,8 @@ class FollowRepository {
 
   /// Fetch follower stats from the network.
   ///
-  /// Runs REST API and WebSocket queries in parallel, then uses the
-  /// higher count from each source.
+  /// Runs REST API and WebSocket queries in parallel, then corroborates the
+  /// follower count across the usable source observations.
   Future<FollowerStats> _fetchFollowerStats(String pubkey) async {
     // Run REST and WebSocket queries in parallel for best coverage
     final results = await Future.wait([
@@ -963,33 +974,73 @@ class FollowRepository {
       _fetchFollowerStatsViaWebSocket(pubkey),
     ]);
 
-    final restResult = results[0];
-    final wsResult = results[1]!;
+    final restResult = results[0] as FollowerStats?;
+    final wsResult = results[1]! as _WebSocketFollowerStats;
+    final followerCounts = [
+      if (restResult != null)
+        (count: restResult.followers, isComplete: true, source: 'REST'),
+      ...wsResult.followerCounts,
+    ];
+    final followers = _corroborateFollowerCount(followerCounts);
+    final following = restResult == null
+        ? wsResult.following
+        : max(restResult.following, wsResult.following);
+    final observationSummary = followerCounts.isEmpty
+        ? 'none'
+        : followerCounts
+              .map(
+                (result) =>
+                    '${result.source}=${result.count}'
+                    '${result.isComplete ? '(complete)' : '(partial)'}',
+              )
+              .join(', ');
 
-    if (restResult == null) {
-      return wsResult;
-    }
-
-    // Use the higher count from each source
-    final followers = restResult.followers > wsResult.followers
-        ? restResult.followers
-        : wsResult.followers;
-    final following = restResult.following > wsResult.following
-        ? restResult.following
-        : wsResult.following;
-
-    if (followers != restResult.followers ||
-        following != restResult.following) {
-      Log.info(
-        'Follower stats merged: REST=${restResult.followers}/'
-        '${restResult.following}, WS=${wsResult.followers}/'
-        '${wsResult.following} → using $followers/$following',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
-    }
+    Log.info(
+      'Follower count observations: $observationSummary, '
+      'using $followers for ${pubkeyForLogs(pubkey)}',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
 
     return FollowerStats(followers: followers, following: following);
+  }
+
+  /// Selects the highest follower count corroborated by another observation.
+  ///
+  /// Complete observations establish that a source finished answering, but
+  /// EOSE only covers that relay's own holdings. Two complete observations use
+  /// their second-highest count. A single complete observation is capped by the
+  /// best partial lower bound, while an all-partial result also uses its
+  /// second-highest count. A lone high value therefore cannot win any
+  /// multi-source result.
+  static int _corroborateFollowerCount(
+    List<_FollowerCountObservation> observations,
+  ) {
+    if (observations.isEmpty) return 0;
+
+    int secondHighest(List<int> counts) {
+      counts.sort();
+      return counts[counts.length - 2];
+    }
+
+    final completeCounts = observations
+        .where((result) => result.isComplete)
+        .map((result) => result.count)
+        .toList();
+    if (completeCounts.length >= 2) return secondHighest(completeCounts);
+
+    final partialCounts = observations
+        .where((result) => !result.isComplete)
+        .map((result) => result.count)
+        .toList();
+    if (completeCounts.length == 1) {
+      if (partialCounts.isEmpty) return completeCounts.single;
+      return min(completeCounts.single, partialCounts.reduce(max));
+    }
+
+    return partialCounts.length == 1
+        ? partialCounts.single
+        : secondHighest(partialCounts);
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -1029,21 +1080,29 @@ class FollowRepository {
   }
 
   /// Fetch follower stats via WebSocket queries (parallel).
-  Future<FollowerStats> _fetchFollowerStatsViaWebSocket(String pubkey) async {
+  Future<_WebSocketFollowerStats> _fetchFollowerStatsViaWebSocket(
+    String pubkey,
+  ) async {
     try {
       final results = await Future.wait([
         _fetchFollowingCountViaWebSocket(pubkey),
         _fetchFollowersCountViaIndexers(pubkey),
       ]);
 
-      return FollowerStats(following: results[0], followers: results[1]);
+      return (
+        following: results[0] as int,
+        followerCounts: results[1] as List<_FollowerCountObservation>,
+      );
     } catch (e) {
       Log.error(
         'Error fetching follower stats via WebSocket: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return FollowerStats.zero;
+      return (
+        following: 0,
+        followerCounts: const <_FollowerCountObservation>[],
+      );
     }
   }
 
@@ -1074,7 +1133,9 @@ class FollowRepository {
   }
 
   /// Get followers count by querying indexer relays directly.
-  Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
+  Future<List<_FollowerCountObservation>> _fetchFollowersCountViaIndexers(
+    String pubkey,
+  ) async {
     final results = await Future.wait(
       _indexerRelayUrls.map(
         (url) =>
@@ -1085,29 +1146,16 @@ class FollowRepository {
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
-              return 0;
+              return null;
             }),
       ),
     );
 
-    // Use the highest count from any indexer
-    var best = 0;
-    for (final count in results) {
-      if (count > best) best = count;
-    }
-
-    Log.info(
-      'Indexer followers counts: $results, '
-      'using $best for ${pubkeyForLogs(pubkey)}',
-      name: 'FollowRepository',
-      category: LogCategory.system,
-    );
-
-    return best;
+    return results.whereType<_FollowerCountObservation>().toList();
   }
 
   /// Query a single indexer relay for kind 3 events mentioning pubkey.
-  Future<int> _queryIndexerForFollowerCount(
+  Future<_FollowerCountObservation?> _queryIndexerForFollowerCount(
     String indexerUrl,
     String pubkey,
   ) async {
@@ -1116,6 +1164,7 @@ class FollowRepository {
     final completer = Completer<int>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
+    var isComplete = false;
 
     relay.onMessage = (relay, jsonMsg) async {
       if (jsonMsg.isEmpty) return;
@@ -1130,6 +1179,7 @@ class FollowRepository {
         }
       } else if (messageType == 'EOSE') {
         if (!completer.isCompleted) {
+          isComplete = true;
           completer.complete(followerPubkeys.length);
         }
       }
@@ -1144,7 +1194,7 @@ class FollowRepository {
 
       final connected = await relay.connect();
       if (!connected) {
-        return 0;
+        return null;
       }
 
       final result = await completer.future.timeout(
@@ -1159,14 +1209,20 @@ class FollowRepository {
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return result;
+      return (count: result, isComplete: isComplete, source: indexerUrl);
     } catch (e) {
       Log.warning(
         'Error querying $indexerUrl for followers: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return followerPubkeys.length;
+      return followerPubkeys.isEmpty
+          ? null
+          : (
+              count: followerPubkeys.length,
+              isComplete: isComplete,
+              source: indexerUrl,
+            );
     } finally {
       try {
         await relay.disconnect();
