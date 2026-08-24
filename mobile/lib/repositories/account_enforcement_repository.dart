@@ -1,5 +1,5 @@
 // ABOUTME: Fetches the authenticated account's enforcement state from Keycast
-// ABOUTME: and maps it to AccountEnforcementStatus, failing to unknown.
+// ABOUTME: and maps positive restriction signals without claiming all-clear.
 
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
@@ -64,9 +64,8 @@ class AccountEnforcementRepository {
 
 /// Thrown when the account status could not be read at all.
 ///
-/// Distinct from [AccountEnforcementKind.unknown], which is a resolved "we hold
-/// no signal for you". This means the lookup itself failed and the previous
-/// answer, if any, is still the best one available.
+/// This means the lookup itself failed and the previous answer, if any, is
+/// still the best one available.
 class AccountStatusUnavailable implements Exception {
   const AccountStatusUnavailable();
 

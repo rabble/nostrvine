@@ -34,34 +34,15 @@ void main() {
       expect(headings.toSet(), hasLength(headings.length));
     });
 
-    test('unknown does not borrow the good-standing copy', () {
-      // "We could not check" and "you are fine" are different claims. Letting
-      // unknown fall through to the good-standing copy would reassure a
-      // suspended user whose status fetch simply failed.
+    test('unverified makes no good-standing claim', () {
       expect(
-        l10n.accountEnforcementHeading(AccountEnforcementKind.unknown),
-        isNot(l10n.accountEnforcementHeading(AccountEnforcementKind.none)),
+        l10n.accountEnforcementHeading(AccountEnforcementKind.unverified),
+        isNot(contains('good standing')),
       );
       expect(
-        l10n.accountEnforcementBody(AccountEnforcementKind.unknown),
-        isNot(l10n.accountEnforcementBody(AccountEnforcementKind.none)),
+        l10n.accountEnforcementBody(AccountEnforcementKind.unverified),
+        isNot(contains('no restrictions')),
       );
-    });
-
-    test('no enforced state renders the good-standing copy', () {
-      final okHeading = l10n.accountEnforcementHeading(
-        AccountEnforcementKind.none,
-      );
-
-      for (final kind in AccountEnforcementKind.values) {
-        if (AccountEnforcementStatus(kind: kind).isEnforced) {
-          expect(
-            l10n.accountEnforcementHeading(kind),
-            isNot(okHeading),
-            reason: '$kind must not read as good standing',
-          );
-        }
-      }
     });
   });
 }

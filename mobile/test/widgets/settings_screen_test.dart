@@ -1103,7 +1103,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSubject(enforcement: AccountEnforcementKind.none),
+          buildSubject(enforcement: AccountEnforcementKind.unverified),
         );
         await tester.pumpAndSettle();
 

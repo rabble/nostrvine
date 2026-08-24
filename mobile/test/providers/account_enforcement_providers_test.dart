@@ -104,7 +104,7 @@ void main() {
         'is seen', () async {
       // The status a user opens Settings to check must be current. Without
       // autoDispose the first read caches for the whole app session, so an
-      // account suspended after launch keeps reading "in good standing" until
+      // account suspended after launch keeps rendering an earlier answer until
       // the app is restarted — the exact failure this surface exists to fix.
       var requests = 0;
       final authService = _MockAuthService();
@@ -139,11 +139,9 @@ void main() {
     });
 
     test(
-      'a self-custody account reports no account state, without fetching',
+      'a self-custody account remains unverified without fetching',
       () async {
-        // Only a divineOAuth account has a Keycast session. An imported or locally
-        // generated key has no Divine account to be suspended, so "we could not
-        // check, try again" would be a lie: retrying can never resolve it.
+        // Keycast cannot report relay enforcement for a self-custody key.
         var requests = 0;
         final authService = _MockAuthService();
         when(() => authService.isRegistered).thenReturn(false);
@@ -163,7 +161,7 @@ void main() {
           accountEnforcementStatusProvider.future,
         );
 
-        expect(status.kind, AccountEnforcementKind.noAccountState);
+        expect(status.kind, AccountEnforcementKind.unverified);
         expect(requests, 0, reason: 'no Keycast session to ask');
       },
     );
@@ -208,28 +206,31 @@ void main() {
       },
     );
 
-    test('authenticated: an active account reports none', () async {
-      final authService = _MockAuthService();
-      when(() => authService.isRegistered).thenReturn(true);
-      when(
-        authService.activeAccountKeycastToken,
-      ).thenAnswer((_) async => 'tok123');
+    test(
+      'authenticated: an absent Keycast mirror remains unverified',
+      () async {
+        final authService = _MockAuthService();
+        when(() => authService.isRegistered).thenReturn(true);
+        when(
+          authService.activeAccountKeycastToken,
+        ).thenAnswer((_) async => 'tok123');
 
-      final container = ProviderContainer(
-        overrides: [
-          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          oauthClientProvider.overrideWithValue(_oauthReturning(_activeBody)),
-          authServiceProvider.overrideWithValue(authService),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+            oauthClientProvider.overrideWithValue(_oauthReturning(_activeBody)),
+            authServiceProvider.overrideWithValue(authService),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final status = await container.read(
-        accountEnforcementStatusProvider.future,
-      );
+        final status = await container.read(
+          accountEnforcementStatusProvider.future,
+        );
 
-      expect(status.kind, AccountEnforcementKind.none);
-      expect(status.isEnforced, isFalse);
-    });
+        expect(status.kind, AccountEnforcementKind.unverified);
+        expect(status.isEnforced, isFalse);
+      },
+    );
   });
 }

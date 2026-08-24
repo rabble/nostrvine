@@ -84,8 +84,8 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
           child: async.when(
             // Show the spinner while refreshing rather than Riverpod's default
             // of holding the previous value on screen. A status cached before
-            // the user was suspended must not read as "in good standing" while
-            // the refetch is in flight; not knowing yet is the honest state.
+            // the user was suspended must not remain visible while the refetch
+            // is in flight; not knowing yet is the honest state.
             skipLoadingOnRefresh: false,
             loading: () => const Center(child: CircularProgressIndicator()),
             // Keep a confirmed restriction through a failed read so its appeal
@@ -94,17 +94,12 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
             error: (_, _) => _StatusBody(
               kind: async.value?.kind.isEnforced ?? false
                   ? async.value!.kind
-                  : AccountEnforcementKind.unknown,
+                  : null,
+              isLastKnown: async.value?.kind.isEnforced ?? false,
               onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
             ),
             data: (status) => _StatusBody(
               kind: status.kind,
-              // Retry is offered only where it can actually change the
-              // answer. noAccountState is settled because there is no Divine
-              // account to check.
-              onRetry: status.kind == AccountEnforcementKind.unknown
-                  ? () => ref.invalidate(accountEnforcementStatusProvider)
-                  : null,
             ),
           ),
         ),
@@ -114,29 +109,41 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
 }
 
 class _StatusBody extends StatelessWidget {
-  const _StatusBody({required this.kind, this.onRetry});
+  const _StatusBody({this.kind, this.isLastKnown = false, this.onRetry});
 
-  final AccountEnforcementKind kind;
+  final AccountEnforcementKind? kind;
+  final bool isLastKnown;
   final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isEnforced = kind.isEnforced;
+    final isEnforced = kind?.isEnforced ?? false;
     final colors = context.vineColors;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          l10n.accountEnforcementHeading(kind),
+          kind == null
+              ? l10n.accountStatusUnknownHeading
+              : l10n.accountEnforcementHeading(kind!),
           style: VineTheme.headlineSmallFont(color: colors.primaryText),
         ),
         const SizedBox(height: 8),
         Text(
-          l10n.accountEnforcementBody(kind),
+          kind == null
+              ? l10n.accountStatusUnknownBody
+              : l10n.accountEnforcementBody(kind!),
           style: VineTheme.bodyMediumFont(color: colors.primaryText),
         ),
+        if (isLastKnown) ...[
+          const SizedBox(height: 16),
+          Text(
+            l10n.accountStatusLastKnownBody,
+            style: VineTheme.bodyMediumFont(color: colors.secondaryText),
+          ),
+        ],
         if (onRetry != null) ...[
           const SizedBox(height: 16),
           DivineButton(

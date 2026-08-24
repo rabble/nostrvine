@@ -29,8 +29,8 @@ final accountEnforcementRepositoryProvider =
 ///
 /// autoDispose so the status is re-read whenever nothing is listening any
 /// more, rather than cached for the life of the app. An account suspended
-/// after launch must not keep reading as being in good standing until the
-/// user restarts — that is the failure this surface exists to fix. Call
+/// after launch must not keep rendering an earlier answer until the user
+/// restarts. Call
 /// `ref.invalidate(accountEnforcementStatusProvider)` to force a refresh
 /// while it is still being watched.
 final FutureProvider<AccountEnforcementStatus>
@@ -42,14 +42,12 @@ accountEnforcementStatusProvider =
           kind: AccountEnforcementKind.signedOut,
         );
       }
-      // Only a divineOAuth account has a Keycast session. Every other sign-in
-      // source is a key the user holds, so there is no Divine account state to
-      // report and no endpoint worth calling. Answering `unknown` here would
-      // render as "we could not check, try again" against a retry that can
-      // never succeed.
+      // Only a divineOAuth account has a Keycast session. Relay enforcement is
+      // independent of key custody, but mobile has no user-facing relay-status
+      // endpoint yet, so make no status claim for other sign-in sources.
       if (!ref.watch(authServiceProvider).isRegistered) {
         return const AccountEnforcementStatus(
-          kind: AccountEnforcementKind.noAccountState,
+          kind: AccountEnforcementKind.unverified,
         );
       }
       return ref

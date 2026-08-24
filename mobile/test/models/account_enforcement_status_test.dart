@@ -18,24 +18,14 @@ KeycastAccountStatus _status({String? accountStatus, String? suspendedReason}) {
 
 void main() {
   group('AccountEnforcementStatus.fromKeycast', () {
-    test('unknown when the Keycast status could not be read', () {
-      // A null response is an ABSENT signal, not a positive "you are fine".
-      // Mirrors ProtectedMinorStatus.fromKeycast so a fetch failure never
-      // silently tells a suspended user their account is in good standing.
-      final s = AccountEnforcementStatus.fromKeycast(null);
-
-      expect(s.kind, AccountEnforcementKind.unknown);
-      expect(s.isKnown, isFalse);
-    });
-
-    test('none when account_status is absent', () {
-      // Keycast populates account_status ONLY when the account is not active
-      // (api/src/api/http/auth.rs from_account_row), so absent means active.
+    test('unverified when account_status is absent', () {
+      // Keycast is a best-effort mirror of relay enforcement. Its absence is
+      // not authoritative evidence that the relay considers this account
+      // unrestricted.
       final s = AccountEnforcementStatus.fromKeycast(_status());
 
-      expect(s.kind, AccountEnforcementKind.none);
+      expect(s.kind, AccountEnforcementKind.unverified);
       expect(s.isEnforced, isFalse);
-      expect(s.isKnown, isTrue);
     });
 
     test('suspended when account_status is suspended', () {
@@ -67,7 +57,7 @@ void main() {
       );
 
       expect(s.isEnforced, isTrue);
-      expect(s.kind, isNot(AccountEnforcementKind.none));
+      expect(s.kind, isNot(AccountEnforcementKind.unverified));
     });
 
     test('an empty account_status is not treated as good standing', () {
@@ -75,7 +65,7 @@ void main() {
         _status(accountStatus: ''),
       );
 
-      expect(s.kind, isNot(AccountEnforcementKind.none));
+      expect(s.kind, isNot(AccountEnforcementKind.unverified));
     });
   });
 

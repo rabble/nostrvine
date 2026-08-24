@@ -11968,11 +11968,12 @@ class AppLocalizationsPl extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusOkHeading => 'Your account is in good standing';
+  String get accountStatusUnverifiedHeading =>
+      'We can\'t verify your Divine status yet';
 
   @override
-  String get accountStatusOkBody =>
-      'There are no restrictions on your account.';
+  String get accountStatusUnverifiedBody =>
+      'This doesn\'t mean your account is restricted. The app can\'t confirm your current Divine status yet.';
 
   @override
   String get accountStatusSuspendedHeading => 'Your account is suspended';
@@ -11986,7 +11987,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get accountStatusBannedBody =>
-      'You can\'t post, comment, or send messages on Divine, and your videos have been removed from Divine\'s servers.';
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
 
   @override
   String get accountStatusRestrictedHeading => 'Your account is restricted';
@@ -12004,20 +12005,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'This doesn\'t mean anything is wrong. Check your connection and try again.';
 
   @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
   String get accountStatusSignedOutHeading =>
       'Sign in to check your account status';
 
   @override
   String get accountStatusSignedOutBody =>
       'There isn\'t a signed-in account to check right now.';
-
-  @override
-  String get accountStatusNoAccountStateHeading =>
-      'Divine doesn\'t hold a status for this account';
-
-  @override
-  String get accountStatusNoAccountStateBody =>
-      'You\'re signed in with a key you hold yourself rather than a Divine account, so there\'s no Divine account status for us to look up.';
 
   @override
   String get accountStatusKeysUnaffectedHeading =>

@@ -42,7 +42,7 @@ void main() {
       expect(s.isEnforced, isTrue);
     });
 
-    test('none when keycast reports an active account', () async {
+    test('unverified when keycast has no restriction mirror', () async {
       final repo = AccountEnforcementRepository(
         oauthClient: _oauthReturning(_activeBody, 200),
         readAccessToken: () async => 'tok',
@@ -50,7 +50,7 @@ void main() {
 
       final s = await repo.fetchCurrentStatus();
 
-      expect(s.kind, AccountEnforcementKind.none);
+      expect(s.kind, AccountEnforcementKind.unverified);
     });
 
     test(

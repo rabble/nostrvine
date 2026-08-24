@@ -19798,17 +19798,17 @@ abstract class AppLocalizations {
   /// **'Your account is restricted'**
   String get accountStatusTileSubtitleRestricted;
 
-  /// Heading shown when the account is under no enforcement.
+  /// Heading shown when the app has no authoritative relay-backed account status.
   ///
   /// In en, this message translates to:
-  /// **'Your account is in good standing'**
-  String get accountStatusOkHeading;
+  /// **'We can\'t verify your Divine status yet'**
+  String get accountStatusUnverifiedHeading;
 
-  /// Body shown when the account is under no enforcement.
+  /// Body shown when Keycast cannot provide an authoritative Divine enforcement status.
   ///
   /// In en, this message translates to:
-  /// **'There are no restrictions on your account.'**
-  String get accountStatusOkBody;
+  /// **'This doesn\'t mean your account is restricted. The app can\'t confirm your current Divine status yet.'**
+  String get accountStatusUnverifiedBody;
 
   /// Heading shown when the account is suspended.
   ///
@@ -19828,10 +19828,10 @@ abstract class AppLocalizations {
   /// **'Your account is banned'**
   String get accountStatusBannedHeading;
 
-  /// Explains that a ban removes content, unlike a suspension which hides it.
+  /// Explains that a ban takes content down from Divine without claiming physical deletion.
   ///
   /// In en, this message translates to:
-  /// **'You can\'t post, comment, or send messages on Divine, and your videos have been removed from Divine\'s servers.'**
+  /// **'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.'**
   String get accountStatusBannedBody;
 
   /// Heading shown when the account is under an enforcement state this app version does not recognize.
@@ -19858,6 +19858,12 @@ abstract class AppLocalizations {
   /// **'This doesn\'t mean anything is wrong. Check your connection and try again.'**
   String get accountStatusUnknownBody;
 
+  /// Shown with a retained confirmed restriction after its refresh fails.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t refresh your status. This is the last status we received.'**
+  String get accountStatusLastKnownBody;
+
   /// Heading shown when the account-status route is opened without a signed-in account.
   ///
   /// In en, this message translates to:
@@ -19869,18 +19875,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There isn\'t a signed-in account to check right now.'**
   String get accountStatusSignedOutBody;
-
-  /// Heading shown when the signed-in key is self-custodied, so there is no Divine-side account state.
-  ///
-  /// In en, this message translates to:
-  /// **'Divine doesn\'t hold a status for this account'**
-  String get accountStatusNoAccountStateHeading;
-
-  /// Explains that a self-custody key has no Divine account state, so no status can be reported.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re signed in with a key you hold yourself rather than a Divine account, so there\'s no Divine account status for us to look up.'**
-  String get accountStatusNoAccountStateBody;
 
   /// Heading for the section explaining that Divine's enforcement does not affect the user's Nostr identity.
   ///

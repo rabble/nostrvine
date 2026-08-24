@@ -88,21 +88,14 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('a healthy account sees no appeal or exit path', (
+    testWidgets('an unverified account gets no false all-clear', (
       tester,
     ) async {
-      await _pumpWith(tester, AccountEnforcementKind.none);
+      await _pumpWith(tester, AccountEnforcementKind.unverified);
 
-      expect(find.text(l10n.accountStatusOkHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusContactSupport), findsNothing);
       expect(find.text(l10n.accountStatusMoveAccount), findsNothing);
-    });
-
-    testWidgets('unknown offers a retry', (tester) async {
-      await _pumpWith(tester, AccountEnforcementKind.unknown);
-
-      expect(find.text(l10n.accountStatusUnknownHeading), findsOneWidget);
-      expect(find.text(l10n.accountStatusRetry), findsOneWidget);
     });
 
     testWidgets('signed out explains the state without a futile retry', (
@@ -164,7 +157,7 @@ void main() {
           accountEnforcementStatusProvider.overrideWith((ref) async {
             call++;
             return const AccountEnforcementStatus(
-              kind: AccountEnforcementKind.none,
+              kind: AccountEnforcementKind.unverified,
             );
           }),
         ],
@@ -205,8 +198,8 @@ void main() {
     ) async {
       // Riverpod's `when` defaults to skipLoadingOnRefresh: true, which renders
       // the PREVIOUS value while a refresh is in flight. On this screen that
-      // means an account suspended after Settings resolved "none" would read
-      // "in good standing", with no appeal or exit path, until the refetch
+      // means an account suspended after Settings resolved an earlier value
+      // would keep that value, with no appeal or exit path, until the refetch
       // lands. Showing a spinner is the honest answer while we do not know.
       var call = 0;
       final pending = Completer<AccountEnforcementStatus>();
@@ -217,7 +210,7 @@ void main() {
             if (call == 1) {
               return Future.value(
                 const AccountEnforcementStatus(
-                  kind: AccountEnforcementKind.none,
+                  kind: AccountEnforcementKind.unverified,
                 ),
               );
             }
@@ -242,19 +235,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(l10n.accountStatusOkHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
 
       container.invalidate(accountEnforcementStatusProvider);
       await tester.pump();
 
       expect(
-        find.text(l10n.accountStatusOkHeading),
+        find.text(l10n.accountStatusUnverifiedHeading),
         findsNothing,
         reason: 'a stale answer must not survive a refresh',
       );
     });
 
-    testWidgets('a failed refresh never preserves a stale all-clear', (
+    testWidgets('a failed refresh discards a prior unverified result', (
       tester,
     ) async {
       var call = 0;
@@ -264,7 +257,7 @@ void main() {
             call++;
             if (call == 1) {
               return const AccountEnforcementStatus(
-                kind: AccountEnforcementKind.none,
+                kind: AccountEnforcementKind.unverified,
               );
             }
             throw const AccountStatusUnavailable();
@@ -292,7 +285,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.accountStatusOkHeading), findsNothing);
+      expect(find.text(l10n.accountStatusUnverifiedHeading), findsNothing);
       expect(find.text(l10n.accountStatusUnknownHeading), findsOneWidget);
     });
 
@@ -335,17 +328,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.accountStatusSuspendedHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusLastKnownBody), findsOneWidget);
+      expect(find.text(l10n.accountStatusRetry), findsOneWidget);
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('a self-custody account is told so, with no futile retry', (
+    testWidgets('a self-custody account gets no unsupported status claim', (
       tester,
     ) async {
       // Retrying can never resolve this, so offering it would be a lie.
-      await _pumpWith(tester, AccountEnforcementKind.noAccountState);
+      await _pumpWith(tester, AccountEnforcementKind.unverified);
 
       expect(
-        find.text(l10n.accountStatusNoAccountStateHeading),
+        find.text(l10n.accountStatusUnverifiedHeading),
         findsOneWidget,
       );
       expect(find.text(l10n.accountStatusRetry), findsNothing);

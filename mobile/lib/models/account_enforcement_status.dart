@@ -4,22 +4,13 @@
 import 'package:keycast_flutter/keycast_flutter.dart';
 
 enum AccountEnforcementKind {
-  /// No signal: the status could not be read. Transient, so retrying helps.
-  unknown,
-
   /// There is no signed-in account whose status can be checked.
   signedOut,
 
-  /// Divine holds no enforcement state for this account.
-  ///
-  /// The key is self-custodied (imported, generated locally, or held by a
-  /// remote signer), so there is no Divine account to be suspended. Distinct
-  /// from [unknown]: this is a settled answer, not a failed lookup, and
-  /// retrying will never change it.
-  noAccountState,
-
-  /// Confirmed in good standing.
-  none,
+  /// The client has no authoritative relay-backed status for this account.
+  /// Keycast may confirm a restriction, but an absent Keycast mirror cannot
+  /// prove that relay enforcement is absent.
+  unverified,
 
   /// Reversible: content is hidden, not deleted.
   suspended,
@@ -52,23 +43,16 @@ enum AccountEnforcementKind {
 class AccountEnforcementStatus {
   const AccountEnforcementStatus({required this.kind});
 
-  factory AccountEnforcementStatus.unknown() =>
-      const AccountEnforcementStatus(kind: AccountEnforcementKind.unknown);
-
   /// Maps a Keycast account status to enforcement state.
-  ///
-  /// A null [status] (fetch failed, or no OAuth session) is preserved as
-  /// [AccountEnforcementKind.unknown] rather than "none", so an absent signal
-  /// never reads as a positive all-clear.
-  factory AccountEnforcementStatus.fromKeycast(KeycastAccountStatus? status) {
-    if (status == null) {
-      return AccountEnforcementStatus.unknown();
-    }
+  factory AccountEnforcementStatus.fromKeycast(KeycastAccountStatus status) {
     final raw = status.accountStatus;
     if (raw == null) {
-      // Keycast populates account_status only when the account is NOT active,
-      // so its absence is a positive "active" signal.
-      return const AccountEnforcementStatus(kind: AccountEnforcementKind.none);
+      // Keycast is a best-effort mirror of relay enforcement. Its absence is
+      // not authoritative evidence that the relay considers this account
+      // unrestricted, so never turn it into a positive all-clear.
+      return const AccountEnforcementStatus(
+        kind: AccountEnforcementKind.unverified,
+      );
     }
     switch (raw) {
       case 'suspended':
@@ -87,8 +71,6 @@ class AccountEnforcementStatus {
   }
 
   final AccountEnforcementKind kind;
-
-  bool get isKnown => kind != AccountEnforcementKind.unknown;
 
   bool get isEnforced => kind.isEnforced;
 }
