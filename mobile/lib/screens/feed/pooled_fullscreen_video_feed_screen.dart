@@ -60,6 +60,24 @@ Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return Alignment.center;
 }
 
+/// Leading inset that clears the app bar's back button.
+///
+/// The disclosure sits on the app bar's own row, to the right of the back
+/// button, so it starts past that button's tap target.
+const double _sponsorDisclosureStartInset = 64;
+
+/// Trailing inset that clears the app bar's overflow button.
+const double _sponsorDisclosureEndInset = 64;
+
+/// Height of a single-line disclosure: [VineTheme.bodyTinyFont]'s 14pt line
+/// box, plus 6pt of padding above and below.
+///
+/// Used only to centre the first line against the back button. The disclosure
+/// is deliberately not height-constrained to the bar — a long sponsor name, or
+/// a large system text size, wraps downward over the video rather than clip,
+/// because a clipped disclosure has stopped disclosing.
+const double _sponsorDisclosureLineHeight = 26;
+
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
 /// The feed is described by a [source] and resolved through a
@@ -1037,10 +1055,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       PositionedDirectional(
                         top:
                             MediaQuery.paddingOf(context).top +
-                            appBar.preferredSize.height +
-                            8,
-                        start: 16,
-                        end: 16,
+                            (appBar.preferredSize.height -
+                                    _sponsorDisclosureLineHeight) /
+                                2,
+                        start: _sponsorDisclosureStartInset,
+                        end: _sponsorDisclosureEndInset,
                         child: TextFieldTapRegion(
                           child: FullscreenSponsorDisclosure(
                             sponsorName: sponsorName,

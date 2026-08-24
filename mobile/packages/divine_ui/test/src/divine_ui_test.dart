@@ -601,6 +601,21 @@ void main() {
         expect(style.fontSize, 12);
         expect(style.fontWeight, FontWeight.w400);
       });
+
+      testWidgets('bodyTinyFont returns correct style', (tester) async {
+        final style = VineTheme.bodyTinyFont();
+        expect(style.fontSize, 10);
+        expect(style.fontWeight, FontWeight.w400);
+        expect(style.height, 14 / 10);
+        expect(style.letterSpacing, 0.4);
+      });
+
+      testWidgets('bodyTinyFont is the smallest body size', (tester) async {
+        expect(
+          VineTheme.bodyTinyFont().fontSize,
+          lessThan(VineTheme.bodySmallFont().fontSize!),
+        );
+      });
     });
 
     group('typography - label fonts', () {
