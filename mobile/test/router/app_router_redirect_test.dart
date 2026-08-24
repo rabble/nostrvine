@@ -17,6 +17,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -357,6 +358,16 @@ void main() {
         await redirectFor(
           authState: AuthState.unauthenticated,
           location: FeatureRequestScreen.path,
+        ),
+        '/welcome',
+      );
+    });
+
+    test('keeps signed-out bug reports behind the auth gate', () async {
+      expect(
+        await redirectFor(
+          authState: AuthState.unauthenticated,
+          location: BugReportScreen.path,
         ),
         '/welcome',
       );
