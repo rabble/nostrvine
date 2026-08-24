@@ -603,10 +603,10 @@ class NostrConnectSession {
     // listening relays could reserve the real id with a junk copy that
     // fails decryption, so the genuine response arriving from another
     // relay is discarded as a "duplicate" and sign-in times out (#6151).
-    if (!event.isValid) {
+    if (!event.isValid || !event.isSigned) {
       logger(
         '[NostrConnectSession] Dropped event from ${event.pubkey}: '
-        'failed id integrity',
+        'failed event verification',
       );
       return;
     }

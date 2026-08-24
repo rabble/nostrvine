@@ -11,7 +11,11 @@ class NostrRemoteRequest {
 
   List<String> params;
 
-  NostrRemoteRequest(this.method, this.params) : id = StringUtil.rndNameStr(12);
+  // The id is the only value binding a bunker response to this request when
+  // the response passes the signer's author check, so mint it from a CSPRNG
+  // rather than the unseeded Random behind rndNameStr (#7344).
+  NostrRemoteRequest(this.method, this.params)
+    : id = StringUtil.rndSecureNameStr(12);
 
   Future<String?> encrypt(NostrSigner signer, String pubkey) async {
     Map<String, dynamic> jsonMap = {};

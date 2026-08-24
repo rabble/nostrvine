@@ -1927,7 +1927,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     _bunkerSigner!.onAuthUrlReceived = (authUrl) async {
       Log.info(
-        'Bunker requires authentication, opening: $authUrl',
+        'Bunker requires authentication; opening URL',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1935,7 +1935,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final launched = await _launchAuthUrl?.call(uri) ?? false;
       if (!launched) {
         Log.error(
-          'Could not launch auth URL: $authUrl',
+          'Could not launch bunker authentication URL',
           name: 'AuthService',
           category: LogCategory.auth,
         );

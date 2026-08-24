@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import '../client_utils/keys.dart';
 import '../event.dart';
 import '../event_kind.dart';
 import '../filter.dart';
@@ -38,7 +39,15 @@ class NostrRemoteSigner extends NostrSigner {
 
   late LocalNostrSigner localNostrSigner;
 
-  NostrRemoteSigner(this.relayMode, this.info);
+  NostrRemoteSigner(this.relayMode, this.info) {
+    if (!keyIsValid(info.remoteSignerPubkey)) {
+      throw ArgumentError.value(
+        info.remoteSignerPubkey,
+        'info.remoteSignerPubkey',
+        'A valid remote signer pubkey is required',
+      );
+    }
+  }
 
   List<Relay> relays = [];
 
@@ -137,8 +146,16 @@ class NostrRemoteSigner extends NostrSigner {
   Future<String?> pullPubkey() async {
     var request = NostrRemoteRequest("get_public_key", []);
     var pubkey = await sendAndWaitForResult(request, timeout: 120);
-    info.userPubkey = pubkey;
-    return pubkey;
+    // Never bind the session to a malformed pubkey: get_public_key must
+    // return a 32-byte hex key, and everything downstream trusts this value
+    // as the account identity (#7344).
+    if (pubkey == null || !keyIsValid(pubkey)) {
+      log('[NIP46] pullPubkey: dropping non-hex get_public_key result');
+      return null;
+    }
+    final normalizedPubkey = pubkey.toLowerCase();
+    info.userPubkey = normalizedPubkey;
+    return normalizedPubkey;
   }
 
   Future<void> onMessage(Relay relay, List<dynamic> json) async {
@@ -153,20 +170,61 @@ class NostrRemoteSigner extends NostrSigner {
           '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${pubkeyForLogs(event.pubkey)}, createdAt=${event.createdAt}',
         );
         if (event.kind == EventKind.nostrRemoteSigning) {
+          // NIP-46 responses must be authored by the paired remote signer.
+          // Compare against the signer key, not the user's account key: those
+          // keys legitimately differ for some bunkers.
+          final expectedSigner = info.remoteSignerPubkey;
+          if (event.pubkey.toLowerCase() != expectedSigner.toLowerCase()) {
+            log(
+              '[NIP46] onMessage: dropping kind-24133 event from an '
+              'unexpected author: expected=${pubkeyForLogs(expectedSigner)} '
+              'got=${pubkeyForLogs(event.pubkey)}',
+            );
+            return;
+          }
+          // isValid is id-integrity (sha256); isSigned is the Schnorr
+          // verification. Both are required — an attacker clears isValid
+          // trivially by recomputing the id over their own forged event.
+          if (!event.isValid || !event.isSigned) {
+            log(
+              '[NIP46] onMessage: dropping kind-24133 event from '
+              '${pubkeyForLogs(event.pubkey)} that failed id/signature '
+              'validation',
+            );
+            return;
+          }
           var response = await NostrRemoteResponse.decrypt(
             event.content,
             localNostrSigner,
             event.pubkey,
           );
           if (response != null) {
-            // Check for auth_url challenge - this means user needs to approve
-            if (response.result == 'auth_url' && response.error != null) {
+            if (response.result == 'auth_url' && !response.isAuthChallenge) {
               log(
-                '[NIP46] onMessage: auth challenge received, URL=${response.error}',
+                '[NIP46] onMessage: ignoring malformed auth challenge for '
+                'id=${response.id}',
               );
-              // Only open the auth URL once per request ID
-              // This prevents re-opening the browser on reconnection when
-              // historical events are replayed from the relay
+              return;
+            }
+            // An auth challenge answers a request the client already sent, so
+            // its id must be one we are waiting on. Correlating here (and not
+            // logging the URL) closes the last of the unsolicited-challenge
+            // surface after the author check above (#7339).
+            if (response.isAuthChallenge) {
+              if (!callbacks.containsKey(response.id)) {
+                log(
+                  '[NIP46] onMessage: ignoring auth challenge for unknown '
+                  'request id=${response.id}',
+                );
+                return;
+              }
+              log(
+                '[NIP46] onMessage: auth challenge received for '
+                'id=${response.id}',
+              );
+              // Only open the auth URL once per request ID. This prevents
+              // re-opening the browser on reconnection when historical events
+              // are replayed from the relay.
               if (_openedAuthUrls.contains(response.id)) {
                 log(
                   '[NIP46] onMessage: auth URL already opened for id=${response.id}, ignoring',
@@ -413,10 +471,13 @@ class NostrRemoteSigner extends NostrSigner {
     // our device and the bunker server (subtract 30 seconds)
     final adjustedSinceTimestamp = sinceTimestamp - 30;
 
+    // The receive-side author check remains the backstop for a relay that
+    // ignores this filter.
     var filter = Filter(
       since: adjustedSinceTimestamp,
       p: [pubkey],
       kinds: [EventKind.nostrRemoteSigning],
+      authors: [info.remoteSignerPubkey],
     );
 
     final filterJson = filter.toJson();

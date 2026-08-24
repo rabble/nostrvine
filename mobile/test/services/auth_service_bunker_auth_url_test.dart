@@ -11,6 +11,7 @@ import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 import 'support/auth_service_test_harness.dart';
 
@@ -35,7 +36,8 @@ void main() {
     late _MockUserDataCleanupService mockCleanupService;
     late _MockNostrRemoteSigner signer;
 
-    setUp(() {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
       mockCleanupService = _MockUserDataCleanupService();
       stubUserDataCleanupSuccess(mockCleanupService);
       AuthServiceChannelMocks.install();
@@ -105,6 +107,32 @@ void main() {
       await launcherCalled.future;
       // Flush the callback's remaining microtasks (the Log.error branch).
       await Future<void>.delayed(Duration.zero);
+    });
+
+    test('never records the approval URL in support logs', () async {
+      const approvalUrl =
+          'https://bunker.example/authorize/one-time-secret?code=private';
+      final launcherCalled = Completer<void>();
+      await connectBunker(
+        launchAuthUrl: (uri) async {
+          launcherCalled.complete();
+          return false;
+        },
+      );
+
+      signer.capturedAuthUrlCallback!(approvalUrl);
+      await launcherCalled.future;
+      await Future<void>.delayed(Duration.zero);
+
+      final messages = LogCaptureService()
+          .getRecentLogs()
+          .map((entry) => entry.message)
+          .toList();
+      expect(messages, contains('Bunker requires authentication; opening URL'));
+      expect(messages, contains('Could not launch bunker authentication URL'));
+      expect(messages.join('\n'), isNot(contains(approvalUrl)));
+      expect(messages.join('\n'), isNot(contains('one-time-secret')));
+      expect(messages.join('\n'), isNot(contains('private')));
     });
 
     test('does not throw when no launcher is wired', () async {
