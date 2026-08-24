@@ -117,5 +117,69 @@ run_numeric_ratchet
       expect(res.exitCode, 0, reason: res.stdout.toString());
       expect(res.stdout, contains('OK [probe]'));
     });
+
+    group('trailing "# reason" comments', () {
+      test('survive UPDATE_BASELINE, matched by key not by count', () {
+        writeCurrent('a\t5\nb\t3\n');
+        run(update: true);
+        baseline.writeAsStringSync(
+          '# probe baseline\na\t5 # rewrite: shell setup is stale (#4836)\nb\t3\n',
+        );
+
+        // `a` drops to 4: the count moves, the explanation must not.
+        writeCurrent('a\t4\nb\t3\n');
+        final res = run(update: true);
+
+        expect(res.exitCode, 0, reason: res.stderr.toString());
+        final lines = baseline
+            .readAsLinesSync()
+            .where((line) => !line.startsWith('#'))
+            .toList();
+        expect(lines, [
+          'a\t4 # rewrite: shell setup is stale (#4836)',
+          'b\t3',
+        ]);
+      });
+
+      test('are ignored by every comparison', () {
+        writeCurrent('a\t5\n');
+        run(update: true);
+        baseline.writeAsStringSync('# probe baseline\na\t5 # some reason\n');
+
+        final res = run();
+
+        expect(res.exitCode, 0, reason: res.stdout.toString());
+        expect(res.stdout, contains('OK [probe]'));
+      });
+
+      test('are dropped for a key that stops being emitted', () {
+        writeCurrent('a\t5\nb\t3\n');
+        run(update: true);
+        baseline.writeAsStringSync(
+          '# probe baseline\na\t5 # keep me\nb\t3 # drop me\n',
+        );
+
+        writeCurrent('a\t5\n');
+        final res = run(update: true);
+
+        expect(res.exitCode, 0, reason: res.stderr.toString());
+        final lines = baseline
+            .readAsLinesSync()
+            .where((line) => !line.startsWith('#'))
+            .toList();
+        expect(lines, ['a\t5 # keep me']);
+      });
+
+      test('a reason-free baseline regenerates byte-identically', () {
+        writeCurrent('a\t5\nb\t3\n');
+        run(update: true);
+        final before = baseline.readAsStringSync();
+
+        final res = run(update: true);
+
+        expect(res.exitCode, 0, reason: res.stderr.toString());
+        expect(baseline.readAsStringSync(), before);
+      });
+    });
   });
 }
