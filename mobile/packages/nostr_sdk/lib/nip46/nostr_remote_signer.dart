@@ -153,6 +153,37 @@ class NostrRemoteSigner extends NostrSigner {
           '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${pubkeyForLogs(event.pubkey)}, createdAt=${event.createdAt}',
         );
         if (event.kind == EventKind.nostrRemoteSigning) {
+          // Authenticate the sender before acting on anything. A NIP-46
+          // response is, by the spec's data model, authored by the
+          // remote-signer we paired with. NIP-44 decryption only proves the
+          // sender holds event.pubkey's key — not that event.pubkey is that
+          // signer — so without this bind any pubkey that can publish a
+          // kind-24133 event p-tagged to our client key would drive
+          // onAuthUrlReceived (#7339) or complete a pending request via
+          // `callbacks` (#7344). Compare against remoteSignerPubkey, never
+          // userPubkey: a bunker's signer key legitimately differs from the
+          // user key. Hex is case-insensitive.
+          final expectedSigner = info.remoteSignerPubkey;
+          if (expectedSigner.isNotEmpty &&
+              event.pubkey.toLowerCase() != expectedSigner.toLowerCase()) {
+            log(
+              '[NIP46] onMessage: dropping kind-24133 event from an '
+              'unexpected author: expected=${pubkeyForLogs(expectedSigner)} '
+              'got=${pubkeyForLogs(event.pubkey)}',
+            );
+            return;
+          }
+          // isValid is id-integrity (sha256); isSigned is the Schnorr
+          // verification. Both are required — an attacker clears isValid
+          // trivially by recomputing the id over their own forged event.
+          if (!event.isValid || !event.isSigned) {
+            log(
+              '[NIP46] onMessage: dropping kind-24133 event from '
+              '${pubkeyForLogs(event.pubkey)} that failed id/signature '
+              'validation',
+            );
+            return;
+          }
           var response = await NostrRemoteResponse.decrypt(
             event.content,
             localNostrSigner,
