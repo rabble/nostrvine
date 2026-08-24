@@ -44,8 +44,10 @@ import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Offset of the follow badge from the avatar's top-start corner.
-const double _followBadgeOffset = 31;
+/// Size of the avatar block: the avatar plus the sliver of overflow the follow
+/// badge has always drawn into. Also the height the author text is centred
+/// against, so the badge's larger footprint cannot move it.
+const double _avatarClusterSize = 58;
 
 class VideoOverlayPreviewData {
   const VideoOverlayPreviewData({
@@ -334,18 +336,25 @@ class VideoOverlayActions extends ConsumerWidget {
                     }
 
                     return Row(
+                      // Deliberate: the follow badge's 48dp tap target makes
+                      // this cluster taller than the avatar whenever the badge
+                      // draws, and default centring would then drop the author
+                      // text relative to the avatar. Start-aligning the row,
+                      // and centring the text against the avatar block below,
+                      // keeps both exactly where they were.
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Avatar with follow button overlay
-                        SizedBox(
-                          // Avatar (48) + the follow badge's 48dp tap target
-                          // starting at the badge origin. Flutter rejects a hit
-                          // outside a box BEFORE it reaches the child, and
-                          // `Clip.none` only affects painting — so if this box
-                          // stayed at 58 the badge's enlarged hit area would be
-                          // silently clipped back to 27dp.
-                          width: _followBadgeOffset + followButtonTapTargetSize,
-                          height:
-                              _followBadgeOffset + followButtonTapTargetSize,
+                        ConstrainedBox(
+                          // Floor at the avatar block, so every state where the
+                          // badge draws NOTHING — loading, already following,
+                          // own video, blocked author, preview mode — renders
+                          // exactly as before. The Stack grows past this only
+                          // when the badge actually occupies its footprint.
+                          constraints: const BoxConstraints(
+                            minWidth: _avatarClusterSize,
+                            minHeight: _avatarClusterSize,
+                          ),
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -358,15 +367,12 @@ class VideoOverlayActions extends ConsumerWidget {
                                     context.l10n.videoAuthorAvatarSemanticLabel,
                                 onTap: navigateToProfile,
                               ),
-                              // Follow button positioned at bottom-right of avatar
+                              // NOT positioned: a positioned child contributes
+                              // nothing to a Stack's size, so the Stack could
+                              // never shrink back when the badge hides. The
+                              // badge owns its footprint and places itself.
                               if (video != null)
-                                PositionedDirectional(
-                                  start: _followBadgeOffset,
-                                  top: _followBadgeOffset,
-                                  child: VideoFollowButton(
-                                    pubkey: authorPubkey,
-                                  ),
-                                ),
+                                VideoFollowButton(pubkey: authorPubkey),
                             ],
                           ),
                         ),
@@ -374,64 +380,72 @@ class VideoOverlayActions extends ConsumerWidget {
                         // User name and loop count (tappable to go to profile)
                         Expanded(
                           child: GestureDetector(
-                            // Opaque, so the padding added by the minimum-height
-                            // constraint below is tappable rather than falling
-                            // through to the video.
+                            // Opaque, so the whole author strip navigates to
+                            // the profile rather than only the painted glyphs.
+                            // This widens an existing target; it adds no new
+                            // destination.
                             behavior: HitTestBehavior.opaque,
                             onTap: navigateToProfile,
-                            // The name + meta column is intrinsically 44dp, which
-                            // failed androidTapTargetGuideline (48) on device.
-                            // minHeight, not a fixed height, so the row still
-                            // grows with the system font scale
-                            // (.claude/rules/accessibility.md).
+                            // The name + meta column is intrinsically 44dp,
+                            // which failed androidTapTargetGuideline (48) on
+                            // device. Constrained to the avatar block and
+                            // centred, so the text sits where it always has
+                            // while the target clears 48dp. minHeight, not a
+                            // fixed height, so it still grows with the system
+                            // font scale (.claude/rules/accessibility.md).
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(minHeight: 48),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Flexible(
-                                        child: Semantics(
-                                          identifier: 'video_author_name',
-                                          container: true,
-                                          explicitChildNodes: true,
-                                          label: context.l10n
-                                              .videoAuthorSemanticLabel(
-                                                displayName,
+                              constraints: const BoxConstraints(
+                                minHeight: _avatarClusterSize,
+                              ),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Semantics(
+                                            identifier: 'video_author_name',
+                                            container: true,
+                                            explicitChildNodes: true,
+                                            label: context.l10n
+                                                .videoAuthorSemanticLabel(
+                                                  displayName,
+                                                ),
+                                            child: DivineHeartText(
+                                              displayName,
+                                              style: VineTheme.titleSmallFont(
+                                                color: VineTheme.whiteText,
                                               ),
-                                          child: DivineHeartText(
-                                            displayName,
-                                            style: VineTheme.titleSmallFont(
-                                              color: VineTheme.whiteText,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                      ),
-                                      if (showCheckmark)
-                                        const SpecialProfileCheckmark(),
-                                      if (isOgViner) const OgVinerBadge(),
-                                      if (isOgBetaTester)
-                                        OgBetaBadge(
-                                          onTap: () =>
-                                              showProfileBadgeExplanationSheet(
-                                                context,
-                                                ProfileBadgeExplanationType
-                                                    .ogBetaTester,
-                                              ),
-                                        ),
-                                    ],
-                                  ),
-                                  _VideoCardMetaLine(
-                                    meta: resolveVideoCardMeta(
-                                      video: video,
-                                      isOwnVideo: isOwnVideo,
+                                        if (showCheckmark)
+                                          const SpecialProfileCheckmark(),
+                                        if (isOgViner) const OgVinerBadge(),
+                                        if (isOgBetaTester)
+                                          OgBetaBadge(
+                                            onTap: () =>
+                                                showProfileBadgeExplanationSheet(
+                                                  context,
+                                                  ProfileBadgeExplanationType
+                                                      .ogBetaTester,
+                                                ),
+                                          ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                    _VideoCardMetaLine(
+                                      meta: resolveVideoCardMeta(
+                                        video: video,
+                                        isOwnVideo: isOwnVideo,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
