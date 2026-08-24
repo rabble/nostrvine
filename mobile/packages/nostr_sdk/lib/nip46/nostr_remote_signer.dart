@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import '../client_utils/keys.dart';
 import '../event.dart';
 import '../event_kind.dart';
 import '../filter.dart';
@@ -137,6 +138,13 @@ class NostrRemoteSigner extends NostrSigner {
   Future<String?> pullPubkey() async {
     var request = NostrRemoteRequest("get_public_key", []);
     var pubkey = await sendAndWaitForResult(request, timeout: 120);
+    // Never bind the session to a malformed pubkey: get_public_key must
+    // return a 32-byte hex key, and everything downstream trusts this value
+    // as the account identity (#7344).
+    if (pubkey == null || !keyIsValid(pubkey)) {
+      log('[NIP46] pullPubkey: dropping non-hex get_public_key result');
+      return null;
+    }
     info.userPubkey = pubkey;
     return pubkey;
   }

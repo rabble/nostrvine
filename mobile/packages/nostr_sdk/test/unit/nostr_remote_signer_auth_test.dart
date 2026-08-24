@@ -17,6 +17,8 @@ import 'package:nostr_sdk/relay/relay_status.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:test/test.dart';
 
+import '../support/test_relay_server.dart';
+
 void main() {
   group('NostrRemoteSigner inbound sender authentication', () {
     late String clientPriv;
@@ -207,6 +209,77 @@ void main() {
         final query = await unpaired.genQueryMsg();
         final filter = query![2] as Map<String, dynamic>;
         expect(filter.containsKey('authors'), isFalse);
+      });
+    });
+
+    group('pullPubkey validation (#7344)', () {
+      // Reads the client's own get_public_key request off the relay and
+      // decrypts it with the bunker key to recover its NIP-46 request id.
+      Future<String> awaitRequestId(TestRelayServer server) async {
+        final bunker = LocalNostrSigner(bunkerPriv);
+        for (var attempt = 0; attempt < 100; attempt++) {
+          for (final message in server.receivedMessages) {
+            if (message.isEmpty || message[0] != 'EVENT') continue;
+            final event = message.last as Map<String, dynamic>;
+            if (event['kind'] != EventKind.nostrRemoteSigning) continue;
+            if (event['pubkey'] != clientPub) continue;
+            final plaintext = await bunker.nip44Decrypt(
+              clientPub,
+              event['content'] as String,
+            );
+            if (plaintext == null) continue;
+            return jsonDecode(plaintext)['id'] as String;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        fail('get_public_key request never reached the relay');
+      }
+
+      Future<NostrRemoteSigner> connectedSigner(TestRelayServer server) async {
+        final signer = NostrRemoteSigner(
+          RelayMode.baseMode,
+          NostrRemoteSignerInfo.parseBunkerUrl(
+            'bunker://$bunkerPub?relay=${server.url}&secret=testsecret'
+            '&nsec=${Nip19.encodePrivateKey(clientPriv)}',
+          ),
+        );
+        addTearDown(signer.close);
+        await signer.connect(sendConnectRequest: false);
+        return signer;
+      }
+
+      test('rejects a non-hex get_public_key result', () async {
+        final server = await TestRelayServer.start();
+        addTearDown(server.close);
+        final signer = await connectedSigner(server);
+
+        final pending = signer.pullPubkey();
+        final id = await awaitRequestId(server);
+        final response = await buildResponse(
+          bunkerPriv,
+          payload: {'id': id, 'result': 'not-a-valid-hex-pubkey'},
+        );
+        server.push(['EVENT', 'sub', response.toJson()]);
+
+        expect(await pending, isNull);
+        expect(signer.info.userPubkey, isNull);
+      });
+
+      test('accepts a valid hex get_public_key result', () async {
+        final server = await TestRelayServer.start();
+        addTearDown(server.close);
+        final signer = await connectedSigner(server);
+
+        final pending = signer.pullPubkey();
+        final id = await awaitRequestId(server);
+        final response = await buildResponse(
+          bunkerPriv,
+          payload: {'id': id, 'result': bunkerPub},
+        );
+        server.push(['EVENT', 'sub', response.toJson()]);
+
+        expect(await pending, bunkerPub);
+        expect(signer.info.userPubkey, bunkerPub);
       });
     });
 
