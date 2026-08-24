@@ -561,6 +561,59 @@ void main() {
       });
     });
 
+    test(
+      'invalidation wakes a parked retry so teardown deregisters without '
+      'waiting out the registration timeout',
+      () {
+        fakeAsync((async) {
+          when(
+            () => messaging.getNotificationSettings(),
+          ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+          // Registration never succeeds, so the drain parks on the backoff
+          // timer with no publish in flight.
+          when(
+            () =>
+                pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+          ).thenAnswer((_) async => false);
+
+          final nostrSession = _TestNostrSession(
+            const NostrSessionReadiness.signedOut(),
+          );
+          final container = buildContainer(nostrSession: nostrSession);
+          container.read(pushNotificationSyncProvider);
+          when(
+            () => authService.currentIdentity,
+          ).thenReturn(_identity(pubkeyA));
+          when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+          nostrSession.setReadiness(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkeyA,
+              client: nostrClient,
+            ),
+          );
+          async.flushMicrotasks();
+
+          verify(
+            () => pushService.register(
+              pubkeyA,
+              isCurrent: any(named: 'isCurrent'),
+            ),
+          ).called(1);
+
+          unawaited(beforeSessionTeardownCallback!());
+          async.flushMicrotasks();
+
+          // Invalidation wakes the parked retry, so the registration future
+          // completes now and cleanup publishes without elapsing the 4s
+          // _pushRegistrationCleanupWaitTimeout. Without the wake this
+          // deregistration only happens via the timeout fallback.
+          verify(defaultCleanupClient.initialize).called(1);
+
+          container.dispose();
+        });
+      },
+    );
+
     test('resumes a durable registration marker from a previous session', () {
       fakeAsync((async) {
         var registerCalls = 0;
