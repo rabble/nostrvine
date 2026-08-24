@@ -102,7 +102,7 @@ void main() {
       expect(find.text('Join waitlist'), findsOneWidget);
     });
 
-    testWidgets('keeps the invite form when client config is unavailable', (
+    testWidgets('bypasses the gate when client config is unavailable', (
       tester,
     ) async {
       when(
@@ -112,7 +112,8 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Add your invite code'), findsOneWidget);
+      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Add your invite code'), findsNothing);
     });
 
     testWidgets('bypasses the gate when server onboarding mode is open', (
