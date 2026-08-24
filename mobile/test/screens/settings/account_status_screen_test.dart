@@ -6,19 +6,36 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/repositories/account_enforcement_repository.dart';
 import 'package:openvine/screens/settings/account_status_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
-Future<void> _pumpWith(WidgetTester tester, AccountEnforcementKind kind) async {
+import '../../helpers/go_router.dart';
+import '../../helpers/url_launcher_test_double.dart';
+
+Future<void> _pumpWith(
+  WidgetTester tester,
+  AccountEnforcementKind kind, {
+  MockGoRouter? goRouter,
+}) async {
   // Tall surface: the body is a ListView, which only builds what fits, and the
   // longer enforcement copy would otherwise push the appeal and exit buttons
   // outside the built viewport.
   tester.view.physicalSize = const Size(1080, 2600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
+
+  const app = MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: AccountStatusScreen(),
+  );
 
   await tester.pumpWidget(
     ProviderScope(
@@ -27,11 +44,9 @@ Future<void> _pumpWith(WidgetTester tester, AccountEnforcementKind kind) async {
           (ref) async => AccountEnforcementStatus(kind: kind),
         ),
       ],
-      child: const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: AccountStatusScreen(),
-      ),
+      child: goRouter == null
+          ? app
+          : MockGoRouterProvider(goRouter: goRouter, child: app),
     ),
   );
   await tester.pumpAndSettle();
@@ -97,6 +112,44 @@ void main() {
 
       expect(find.text(l10n.accountStatusSignedOutHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusRetry), findsNothing);
+    });
+
+    testWidgets('contact support opens the support centre', (tester) async {
+      final goRouter = MockGoRouter();
+      when(() => goRouter.push(any())).thenAnswer((_) async => null);
+
+      await _pumpWith(
+        tester,
+        AccountEnforcementKind.suspended,
+        goRouter: goRouter,
+      );
+
+      await tester.tap(find.text(l10n.accountStatusContactSupport));
+      await tester.pumpAndSettle();
+
+      verify(() => goRouter.push(SupportCenterScreen.path)).called(1);
+    });
+
+    testWidgets('move your account leaves for the portability page', (
+      tester,
+    ) async {
+      final originalPlatform = UrlLauncherPlatform.instance;
+      final launcher = UrlLauncherTestDouble();
+      UrlLauncherPlatform.instance = launcher;
+      addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+      await _pumpWith(tester, AccountEnforcementKind.suspended);
+
+      await tester.tap(find.text(l10n.accountStatusMoveAccount));
+      await tester.pumpAndSettle();
+
+      // The exit flow lives on the web, so it must leave the app rather than
+      // resolve to an in-app route.
+      expect(
+        launcher.launched.single.url,
+        AppConstants.accountPortabilityUrl,
+      );
+      expect(launcher.launched.single.useExternalApplication, isTrue);
     });
 
     testWidgets('opening the screen refetches an already-cached status', (
