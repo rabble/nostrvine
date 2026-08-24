@@ -95,6 +95,26 @@ void main() {
     });
 
     group('does not count', () {
+      test(
+        'an unrelated declaration annotation named Skip',
+        () {
+          final sites = scan('''
+class Skip {
+  const Skip(String reason);
+}
+
+@Skip('domain metadata')
+class Fixture {}
+
+void main() {
+  test('a', () {});
+}
+''');
+
+          expect(sites, isEmpty);
+        },
+      );
+
       test("blocTest's skip:, which is an assertion offset", () {
         // bloc_test declares `int skip = 0`: the number of leading states to
         // ignore. Excluding by callee keeps a named int constant safe too.
@@ -152,6 +172,7 @@ void main() {
   test('a', () {}, skip: !kIsWeb);
   test('b', () {}, skip: !(Platform.isIOS || Platform.isAndroid));
   test('c', () {}, skip: defaultTargetPlatform == TargetPlatform.macOS);
+  test('d', () {}, skip: !kIsWeb ? 'Web-only test' : null);
 }
 ''');
 
@@ -176,6 +197,16 @@ void main() {
         final sites = scan('''
 void main() {
   test('a', () {}, skip: !kIsWeb && _featureOff);
+}
+''');
+
+        expect(sites, hasLength(1));
+      });
+
+      test('a platform predicate made unconditional by a literal counts', () {
+        final sites = scan('''
+void main() {
+  test('a', () {}, skip: !kIsWeb || true);
 }
 ''');
 

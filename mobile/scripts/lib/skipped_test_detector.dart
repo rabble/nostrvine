@@ -18,8 +18,8 @@
 //
 // A non-literal value counts. `skip: _kBlockedOnCI` is an unconditional skip
 // wearing a disguise, and leaving it uncounted would leave a one-line bypass.
-// Only an expression built ENTIRELY from platform predicates is exempt — see
-// [_platformTokens] — because those gate a test to where it can run rather
+// Only recognized platform-predicate expression shapes are exempt — see
+// [_isPlatformGate] — because those gate a test to where it can run rather
 // than switching it off.
 //
 // `skip: false` never counts: it disables nothing.
@@ -58,21 +58,16 @@ import 'package:analyzer/source/line_info.dart';
 /// `blocTest` is excluded on purpose; see the header.
 const _testDeclarations = {'test', 'testWidgets', 'group', 'patrolTest'};
 
-/// Identifiers an exempt platform gate may be built from.
-///
-/// `Platform.isX` and `TargetPlatform.x` arrive as the property name, so the
-/// receiver and the property are both checked against this set.
-const _platformTokens = {
-  'kIsWeb',
-  'Platform',
-  'defaultTargetPlatform',
-  'TargetPlatform',
+const _platformGetters = {
   'isAndroid',
   'isIOS',
   'isLinux',
   'isMacOS',
   'isWindows',
   'isFuchsia',
+};
+
+const _targetPlatforms = {
   'android',
   'iOS',
   'linux',
@@ -237,7 +232,7 @@ class _SkippedTestVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitAnnotation(Annotation node) {
     // `@Skip('reason')` above `library;` disables every test in the file.
-    if (node.name.name == 'Skip') {
+    if (node.name.name == 'Skip' && node.parent is LibraryDirective) {
       final args = node.arguments?.arguments ?? const <Expression>[];
       sites.add(
         SkippedTest(
@@ -304,23 +299,72 @@ bool disablesTest(Expression value) {
   return !_isPlatformGate(value);
 }
 
-/// True when every identifier in [value] is a platform predicate.
+/// True for a boolean expression composed only of recognized platform checks.
 ///
-/// Requires at least one such identifier, so a bare `skip: someFlag` is debt
-/// rather than a gate.
+/// Checking AST shapes, rather than identifier names, is load-bearing. A value
+/// such as `!kIsWeb || true` mentions only a platform identifier but disables
+/// the test everywhere, so it must count.
 bool _isPlatformGate(Expression value) {
-  final collector = _IdentifierCollector();
-  value.accept(collector);
-  if (collector.names.isEmpty) return false;
-  return collector.names.every(_platformTokens.contains);
+  if (value is ParenthesizedExpression) {
+    return _isPlatformGate(value.expression);
+  }
+  if (value is SimpleIdentifier) return value.name == 'kIsWeb';
+  if (value is PrefixExpression && value.operator.lexeme == '!') {
+    return _isPlatformGate(value.operand);
+  }
+  if (value is ConditionalExpression && _isPlatformGate(value.condition)) {
+    return _isPlatformSkipPair(
+      value.thenExpression,
+      value.elseExpression,
+    );
+  }
+  if (_isProperty(value, 'Platform', _platformGetters)) return true;
+  if (value is! BinaryExpression) return false;
+
+  final operator = value.operator.lexeme;
+  if (operator == '&&' || operator == '||') {
+    return _isPlatformGate(value.leftOperand) &&
+        _isPlatformGate(value.rightOperand);
+  }
+  if (operator == '==' || operator == '!=') {
+    return (_isDefaultTargetPlatform(value.leftOperand) &&
+            _isTargetPlatform(value.rightOperand)) ||
+        (_isTargetPlatform(value.leftOperand) &&
+            _isDefaultTargetPlatform(value.rightOperand));
+  }
+  return false;
 }
 
-class _IdentifierCollector extends RecursiveAstVisitor<void> {
-  final names = <String>[];
-
-  @override
-  void visitSimpleIdentifier(SimpleIdentifier node) {
-    names.add(node.name);
-    super.visitSimpleIdentifier(node);
+bool _isPlatformSkipPair(Expression first, Expression second) {
+  if ((first is StringLiteral && second is NullLiteral) ||
+      (first is NullLiteral && second is StringLiteral)) {
+    return true;
   }
+  return first is BooleanLiteral &&
+      second is BooleanLiteral &&
+      first.value != second.value;
+}
+
+bool _isDefaultTargetPlatform(Expression value) {
+  final unwrapped = value is ParenthesizedExpression ? value.expression : value;
+  return unwrapped is SimpleIdentifier &&
+      unwrapped.name == 'defaultTargetPlatform';
+}
+
+bool _isTargetPlatform(Expression value) =>
+    _isProperty(value, 'TargetPlatform', _targetPlatforms);
+
+bool _isProperty(Expression value, String receiver, Set<String> properties) {
+  final unwrapped = value is ParenthesizedExpression ? value.expression : value;
+  if (unwrapped is PrefixedIdentifier) {
+    return unwrapped.prefix.name == receiver &&
+        properties.contains(unwrapped.identifier.name);
+  }
+  if (unwrapped is PropertyAccess) {
+    final target = unwrapped.target;
+    return target is SimpleIdentifier &&
+        target.name == receiver &&
+        properties.contains(unwrapped.propertyName.name);
+  }
+  return false;
 }
