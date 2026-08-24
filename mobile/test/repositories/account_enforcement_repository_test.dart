@@ -72,6 +72,21 @@ void main() {
       },
     );
 
+    test('an empty token is treated the same as a missing one', () async {
+      // Without the isEmpty half of the guard this would send `Bearer ` and
+      // read whatever the server makes of it, instead of reporting that we
+      // could not ask.
+      final repo = AccountEnforcementRepository(
+        oauthClient: _oauthReturning(_activeBody, 200),
+        readAccessToken: () async => '',
+      );
+
+      await expectLater(
+        repo.fetchCurrentStatus(),
+        throwsA(isA<AccountStatusUnavailable>()),
+      );
+    });
+
     test('surfaces a read failure as an error, not as a status', () async {
       // A failed read must be distinguishable from a successful "no
       // enforcement" read: collapsing them lets an offline refresh clear a
