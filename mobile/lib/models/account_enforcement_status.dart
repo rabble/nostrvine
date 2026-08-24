@@ -7,6 +7,9 @@ enum AccountEnforcementKind {
   /// No signal: the status could not be read. Transient, so retrying helps.
   unknown,
 
+  /// There is no signed-in account whose status can be checked.
+  signedOut,
+
   /// Divine holds no enforcement state for this account.
   ///
   /// The key is self-custodied (imported, generated locally, or held by a
@@ -31,6 +34,12 @@ enum AccountEnforcementKind {
   /// tell a restricted user their account is fine, so newer server states
   /// degrade to generic restriction copy rather than to an all-clear.
   restricted,
+  ;
+
+  bool get isEnforced =>
+      this == AccountEnforcementKind.suspended ||
+      this == AccountEnforcementKind.banned ||
+      this == AccountEnforcementKind.restricted;
 }
 
 /// Enforcement state for the *authenticated* account, as reported by Keycast's
@@ -81,8 +90,5 @@ class AccountEnforcementStatus {
 
   bool get isKnown => kind != AccountEnforcementKind.unknown;
 
-  bool get isEnforced =>
-      kind == AccountEnforcementKind.suspended ||
-      kind == AccountEnforcementKind.banned ||
-      kind == AccountEnforcementKind.restricted;
+  bool get isEnforced => kind.isEnforced;
 }

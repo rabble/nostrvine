@@ -28,7 +28,7 @@ import 'package:openvine/models/account_enforcement_status.dart';
 /// [ProtectedMinorRepository], which reads `verified_minor` from the same
 /// response. Deliberately not shared in this change — rewiring the
 /// minor-safety fetch path is out of scope here and carries more risk than the
-/// duplicate request. Worth collapsing into one cached fetch later.
+/// duplicate request. The shared-fetch consolidation remains tracked in #7765.
 class AccountEnforcementRepository {
   AccountEnforcementRepository({
     required KeycastOAuth oauthClient,

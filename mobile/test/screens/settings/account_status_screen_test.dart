@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/providers/account_enforcement_providers.dart';
+import 'package:openvine/repositories/account_enforcement_repository.dart';
 import 'package:openvine/screens/settings/account_status_screen.dart';
 
 Future<void> _pumpWith(WidgetTester tester, AccountEnforcementKind kind) async {
@@ -89,6 +90,15 @@ void main() {
       expect(find.text(l10n.accountStatusRetry), findsOneWidget);
     });
 
+    testWidgets('signed out explains the state without a futile retry', (
+      tester,
+    ) async {
+      await _pumpWith(tester, AccountEnforcementKind.signedOut);
+
+      expect(find.text(l10n.accountStatusSignedOutHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusRetry), findsNothing);
+    });
+
     testWidgets('opening the screen refetches an already-cached status', (
       tester,
     ) async {
@@ -109,10 +119,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Resolve it once, as Settings would, so a value is already cached.
-      final sub = container.listen(
-        accountEnforcementStatusProvider,
-        (_, _) {},
-      );
+      final sub = container.listen(accountEnforcementStatusProvider, (_, _) {});
       await container.read(accountEnforcementStatusProvider.future);
       expect(call, 1);
       addTearDown(sub.close);
@@ -192,6 +199,90 @@ void main() {
         findsNothing,
         reason: 'a stale answer must not survive a refresh',
       );
+    });
+
+    testWidgets('a failed refresh never preserves a stale all-clear', (
+      tester,
+    ) async {
+      var call = 0;
+      final container = ProviderContainer(
+        overrides: [
+          accountEnforcementStatusProvider.overrideWith((ref) async {
+            call++;
+            if (call == 1) {
+              return const AccountEnforcementStatus(
+                kind: AccountEnforcementKind.none,
+              );
+            }
+            throw const AccountStatusUnavailable();
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(accountEnforcementStatusProvider, (_, _) {});
+      addTearDown(sub.close);
+      await container.read(accountEnforcementStatusProvider.future);
+
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AccountStatusScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.accountStatusOkHeading), findsNothing);
+      expect(find.text(l10n.accountStatusUnknownHeading), findsOneWidget);
+    });
+
+    testWidgets('a failed refresh preserves a confirmed restriction', (
+      tester,
+    ) async {
+      var call = 0;
+      final container = ProviderContainer(
+        overrides: [
+          accountEnforcementStatusProvider.overrideWith((ref) async {
+            call++;
+            if (call == 1) {
+              return const AccountEnforcementStatus(
+                kind: AccountEnforcementKind.suspended,
+              );
+            }
+            throw const AccountStatusUnavailable();
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(accountEnforcementStatusProvider, (_, _) {});
+      addTearDown(sub.close);
+      await container.read(accountEnforcementStatusProvider.future);
+
+      tester.view.physicalSize = const Size(1080, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AccountStatusScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.accountStatusSuspendedHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
     testWidgets('a self-custody account is told so, with no futile retry', (

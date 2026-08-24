@@ -17,6 +17,8 @@ extension AccountEnforcementL10n on AppLocalizations {
     switch (kind) {
       case AccountEnforcementKind.unknown:
         return accountStatusUnknownHeading;
+      case AccountEnforcementKind.signedOut:
+        return accountStatusSignedOutHeading;
       case AccountEnforcementKind.noAccountState:
         return accountStatusNoAccountStateHeading;
       case AccountEnforcementKind.none:
@@ -34,6 +36,8 @@ extension AccountEnforcementL10n on AppLocalizations {
     switch (kind) {
       case AccountEnforcementKind.unknown:
         return accountStatusUnknownBody;
+      case AccountEnforcementKind.signedOut:
+        return accountStatusSignedOutBody;
       case AccountEnforcementKind.noAccountState:
         return accountStatusNoAccountStateBody;
       case AccountEnforcementKind.none:

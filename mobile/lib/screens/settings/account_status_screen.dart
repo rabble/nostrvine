@@ -88,23 +88,20 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
             // the refetch is in flight; not knowing yet is the honest state.
             skipLoadingOnRefresh: false,
             loading: () => const Center(child: CircularProgressIndicator()),
-            // A failed read is not a claim about the account, so it keeps
-            // showing whatever was last known and only falls back to "we could
-            // not check" when nothing was. Otherwise the Settings tile, which
-            // retains the last value, would say "restricted" while this screen
-            // denied knowing anything and withheld the appeal and exit paths
-            // the surface exists to provide.
+            // Keep a confirmed restriction through a failed read so its appeal
+            // and exit paths remain available. Never keep a stale all-clear:
+            // an account may have become restricted before the failed refresh.
             error: (_, _) => _StatusBody(
-              kind: async.value?.kind ?? AccountEnforcementKind.unknown,
+              kind: async.value?.kind.isEnforced ?? false
+                  ? async.value!.kind
+                  : AccountEnforcementKind.unknown,
               onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
             ),
             data: (status) => _StatusBody(
               kind: status.kind,
               // Retry is offered only where it can actually change the
-              // answer. noAccountState is settled (there is no Divine account
-              // to check) and sessionExpired needs re-authentication, not a
-              // retry — Settings, one tap back, owns that control, so this
-              // screen points at it in copy rather than duplicating the flow.
+              // answer. noAccountState is settled because there is no Divine
+              // account to check.
               onRetry: status.kind == AccountEnforcementKind.unknown
                   ? () => ref.invalidate(accountEnforcementStatusProvider)
                   : null,
@@ -125,55 +122,62 @@ class _StatusBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final isEnforced = AccountEnforcementStatus(kind: kind).isEnforced;
+    final isEnforced = kind.isEnforced;
+    final colors = context.vineColors;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Text(
           l10n.accountEnforcementHeading(kind),
-          style: Theme.of(context).textTheme.headlineSmall,
+          style: VineTheme.headlineSmallFont(color: colors.primaryText),
         ),
         const SizedBox(height: 8),
         Text(
           l10n.accountEnforcementBody(kind),
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: VineTheme.bodyMediumFont(color: colors.primaryText),
         ),
         if (onRetry != null) ...[
           const SizedBox(height: 16),
-          OutlinedButton(
+          DivineButton(
+            label: l10n.accountStatusRetry,
+            type: DivineButtonType.secondary,
+            expanded: true,
             onPressed: onRetry,
-            child: Text(l10n.accountStatusRetry),
           ),
         ],
         if (isEnforced) ...[
           const SizedBox(height: 32),
           Text(
             l10n.accountStatusKeysUnaffectedHeading,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: VineTheme.titleMediumFont(color: colors.primaryText),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.accountStatusKeysUnaffectedBody,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: VineTheme.bodyMediumFont(color: colors.primaryText),
           ),
           const SizedBox(height: 32),
           Text(
             l10n.accountStatusAppealHeading,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: VineTheme.titleMediumFont(color: colors.primaryText),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.accountStatusAppealBody,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: VineTheme.bodyMediumFont(color: colors.primaryText),
           ),
           const SizedBox(height: 16),
-          FilledButton(
+          DivineButton(
+            label: l10n.accountStatusContactSupport,
+            expanded: true,
             onPressed: () => context.push(SupportCenterScreen.path),
-            child: Text(l10n.accountStatusContactSupport),
           ),
           const SizedBox(height: 8),
-          OutlinedButton(
+          DivineButton(
+            label: l10n.accountStatusMoveAccount,
+            type: DivineButtonType.secondary,
+            expanded: true,
             // openExternalLink rather than a raw launchUrl: it checks the URL
             // can be handled and routes divine.video links in-app, so the exit
             // path does not silently do nothing on a device without a browser.
@@ -181,7 +185,6 @@ class _StatusBody extends StatelessWidget {
               context,
               AppConstants.accountPortabilityUrl,
             ),
-            child: Text(l10n.accountStatusMoveAccount),
           ),
         ],
       ],

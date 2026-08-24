@@ -384,7 +384,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // Always present for a signed-in account, so status is
                   // reachable without first failing to post (s-t-s#200 R-5).
                   DivineListTile(
-                    icon: DivineIconName.shieldCheck,
+                    icon: DivineIconName.userFocus,
                     title: context.l10n.accountStatusTitle,
                     subtitle: accountEnforced
                         ? context.l10n.accountStatusTileSubtitleRestricted

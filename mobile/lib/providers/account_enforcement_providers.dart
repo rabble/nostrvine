@@ -23,10 +23,9 @@ final accountEnforcementRepositoryProvider =
 
 /// Enforcement state for the authenticated account.
 ///
-/// An unauthenticated app has no account to report on, so it resolves to
-/// [AccountEnforcementKind.unknown] rather than [AccountEnforcementKind.none]:
-/// "no signal" is the truth, and `none` is a positive claim of good standing
-/// this provider is not entitled to make.
+/// An unauthenticated app has no account to report on, so it resolves to a
+/// settled signed-out state instead of offering a network retry that cannot
+/// change the answer.
 ///
 /// autoDispose so the status is re-read whenever nothing is listening any
 /// more, rather than cached for the life of the app. An account suspended
@@ -39,7 +38,9 @@ accountEnforcementStatusProvider =
     FutureProvider.autoDispose<AccountEnforcementStatus>((ref) async {
       final authState = ref.watch(currentAuthStateProvider);
       if (authState != AuthState.authenticated) {
-        return AccountEnforcementStatus.unknown();
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.signedOut,
+        );
       }
       // Only a divineOAuth account has a Keycast session. Every other sign-in
       // source is a key the user holds, so there is no Divine account state to
