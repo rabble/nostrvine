@@ -13,6 +13,7 @@ import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/support_email_composer.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../helpers/url_launcher_test_double.dart';
@@ -35,17 +36,21 @@ void main() {
     final en = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
+      ZendeskSupportService.resetForTesting();
       authService = _MockAuthService();
       bugReportService = _MockBugReportService();
       accountDeletionService = _MockAccountDeletionService();
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
     });
 
+    tearDown(ZendeskSupportService.resetForTesting);
+
     Future<void> pump(
       WidgetTester tester, {
       AuthState authState = AuthState.authenticated,
       Locale locale = const Locale('en'),
       SupportEmailCompose? composeEmail,
+      Future<bool> Function()? openZendeskSupport,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -66,7 +71,10 @@ void main() {
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: SupportCenterScreen(composeEmail: composeEmail),
+            home: SupportCenterScreen(
+              composeEmail: composeEmail,
+              openZendeskSupport: openZendeskSupport,
+            ),
           ),
         ),
       );
@@ -152,6 +160,7 @@ void main() {
     ) async {
       String? capturedToEmail;
       String? capturedSubject;
+      String? capturedBody;
       await pump(
         tester,
         authState: AuthState.unauthenticated,
@@ -164,6 +173,7 @@ void main() {
             }) async {
               capturedToEmail = toEmail;
               capturedSubject = subject;
+              capturedBody = body;
             },
       );
 
@@ -172,6 +182,57 @@ void main() {
 
       expect(capturedToEmail, AppConstants.supportEmail);
       expect(capturedSubject, en.supportContactSupport);
+      expect(capturedBody, contains(en.supportChatNotAvailable));
+      expect(capturedBody, contains(en.supportContactSupportSubtitle));
+    });
+
+    testWidgets('falls back to email when Zendesk cannot open messages', (
+      tester,
+    ) async {
+      var composed = false;
+      await pump(
+        tester,
+        authState: AuthState.unauthenticated,
+        openZendeskSupport: () async => false,
+        composeEmail:
+            ({
+              required String toEmail,
+              required String subject,
+              required String body,
+              Rect? sharePositionOrigin,
+            }) async {
+              composed = true;
+            },
+      );
+
+      await tester.tap(find.text(en.supportContactSupport));
+      await tester.pumpAndSettle();
+
+      expect(composed, true);
+    });
+
+    testWidgets('shows an error when email support cannot open', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        authState: AuthState.unauthenticated,
+        composeEmail:
+            ({
+              required String toEmail,
+              required String subject,
+              required String body,
+              Rect? sharePositionOrigin,
+            }) async => throw Exception('compose failed'),
+      );
+
+      await tester.tap(find.text(en.supportContactSupport));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(en.authCouldNotOpenEmail(AppConstants.supportEmail)),
+        findsOneWidget,
+      );
     });
 
     // The row existing is not the feature; reaching the confirmation gate is.

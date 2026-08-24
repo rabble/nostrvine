@@ -25,9 +25,14 @@ class SupportCenterScreen extends ConsumerWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
-  const SupportCenterScreen({this.composeEmail, super.key});
+  const SupportCenterScreen({
+    this.composeEmail,
+    this.openZendeskSupport,
+    super.key,
+  });
 
   final SupportEmailCompose? composeEmail;
+  final Future<bool> Function()? openZendeskSupport;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -222,42 +227,42 @@ class SupportCenterScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _viewSupportMessages(BuildContext context) async {
-    if (!ZendeskSupportService.isAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportChatNotAvailable,
-          error: true,
-        ),
-      );
-      return;
-    }
-
+  Future<bool> _viewSupportMessages() async {
     // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
-    final shown = await ZendeskSupportService.showTicketListScreen();
-    if (!shown && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportCouldNotOpenMessages,
-          error: true,
-        ),
-      );
-    }
+    return ZendeskSupportService.showTicketListScreen();
   }
 
   Future<void> _contactSupport(BuildContext context) async {
-    if (ZendeskSupportService.isAvailable) {
-      await _viewSupportMessages(context);
-      return;
+    final l10n = context.l10n;
+    var emailBody = l10n.supportContactSupportSubtitle;
+    final openZendesk =
+        openZendeskSupport ??
+        (ZendeskSupportService.isAvailable ? _viewSupportMessages : null);
+    if (openZendesk != null) {
+      if (await openZendesk()) return;
+      emailBody = '${l10n.supportCouldNotOpenMessages}\n\n$emailBody';
+    } else {
+      emailBody = '${l10n.supportChatNotAvailable}\n\n$emailBody';
     }
+    if (!context.mounted) return;
 
     final sharePositionOrigin = shareAnchorForContext(context);
-    await (composeEmail ?? SupportEmailComposer().compose)(
-      toEmail: AppConstants.supportEmail,
-      subject: context.l10n.supportContactSupport,
-      body: '',
-      sharePositionOrigin: sharePositionOrigin,
-    );
+    try {
+      await (composeEmail ?? SupportEmailComposer().compose)(
+        toEmail: AppConstants.supportEmail,
+        subject: l10n.supportContactSupport,
+        body: emailBody,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          l10n.authCouldNotOpenEmail(AppConstants.supportEmail),
+          error: true,
+        ),
+      );
+    }
   }
 
   Future<void> _launchUrl(
