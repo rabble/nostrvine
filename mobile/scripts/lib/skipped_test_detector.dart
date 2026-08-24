@@ -232,7 +232,7 @@ class _SkippedTestVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitAnnotation(Annotation node) {
     // `@Skip('reason')` above `library;` disables every test in the file.
-    if (node.name.name == 'Skip' && node.parent is LibraryDirective) {
+    if (node.name.name == 'Skip' && node.parent is Directive) {
       final args = node.arguments?.arguments ?? const <Expression>[];
       sites.add(
         SkippedTest(

@@ -80,6 +80,20 @@ void main() {
         expect(sites.single.description, '<whole file>');
       });
 
+      test('a file-level @Skip annotation before the first import', () {
+        final sites = scan('''
+@Skip('whole suite is broken')
+import 'package:test/test.dart';
+
+void main() {
+  test('a', () {});
+}
+''');
+
+        expect(sites, hasLength(1));
+        expect(sites.single.declaration, '@Skip');
+      });
+
       test('a named constant, which is an unconditional skip in disguise', () {
         final sites = scan('''
 const _blockedOnCi = true;

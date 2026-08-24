@@ -925,6 +925,12 @@ void main() {
       expect(savedValue2, isTrue);
     });
 
+    test('clears the tracked views cache without error', () async {
+      await analyticsService.initialize();
+
+      expect(analyticsService.clearTrackedViews, returnsNormally);
+    });
+
     test('should handle batch tracking of empty list', () async {
       await analyticsService.initialize();
       await expectLater(analyticsService.trackVideoViews([]), completes);
