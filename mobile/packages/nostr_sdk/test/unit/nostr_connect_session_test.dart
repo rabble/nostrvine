@@ -1295,7 +1295,7 @@ void main() {
         ..['content'] = 'not-a-valid-nip44-ciphertext';
       relay.push(['EVENT', 'sub', tamperedEvent]);
       await _waitUntil(
-        () => logs.any((line) => line.contains('failed id integrity')),
+        () => logs.any((line) => line.contains('failed event verification')),
       );
       expect(
         session.state,
@@ -1318,12 +1318,50 @@ void main() {
       expect(session.state, equals(NostrConnectState.connected));
     });
   });
+
+  group('event signature verification', () {
+    test('drops an unsigned response before replay deduplication', () async {
+      final relay = await TestRelayServer.start();
+      addTearDown(relay.close);
+
+      final logs = <String>[];
+      final session = NostrConnectSession(
+        relays: [relay.url],
+        logger: logs.add,
+      );
+      addTearDown(session.dispose);
+
+      await session.start();
+      final info = session.info!;
+      final secret = info.optionalSecret!;
+      logs.clear();
+
+      final wait = session.waitForConnection(
+        timeout: const Duration(seconds: 5),
+      );
+      final genuineEvent = await _encryptedResponseEvent(
+        clientPubkey: info.clientPubkey!,
+        result: secret,
+      );
+      final unsignedEvent = Map<String, dynamic>.from(genuineEvent)
+        ..['sig'] = '';
+
+      relay.push(['EVENT', 'sub', unsignedEvent]);
+      await _waitUntil(
+        () => logs.any((line) => line.contains('failed event verification')),
+      );
+      expect(session.state, equals(NostrConnectState.listening));
+
+      relay.push(['EVENT', 'sub', genuineEvent]);
+      expect(await wait, isNotNull);
+      expect(session.state, equals(NostrConnectState.connected));
+    });
+  });
 }
 
 /// Builds a NIP-44-encrypted kind-24133 response event addressed to
 /// [clientPubkey], as a `nostrconnect://` signer would send it. The signer
-/// keypair is ephemeral; [Event.fromJson] does not verify signatures, so the
-/// event is left unsigned.
+/// keypair is ephemeral and signs the response as a real remote signer would.
 Future<Map<String, dynamic>> _encryptedResponseEvent({
   required String clientPubkey,
   required String result,
@@ -1334,9 +1372,10 @@ Future<Map<String, dynamic>> _encryptedResponseEvent({
   final remoteSignerPubkey = (await signer.getPublicKey())!;
   final response = NostrRemoteResponse(requestId, result, error: error);
   final ciphertext = (await response.encrypt(signer, clientPubkey))!;
-  return Event(remoteSignerPubkey, EventKind.nostrRemoteSigning, [
+  final event = Event(remoteSignerPubkey, EventKind.nostrRemoteSigning, [
     ['p', clientPubkey],
-  ], ciphertext).toJson();
+  ], ciphertext);
+  return (await signer.signEvent(event))!.toJson();
 }
 
 /// Polls [condition] until it holds, failing the test after [timeout].
