@@ -15,6 +15,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/providers/redirect_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -296,5 +297,38 @@ void main() {
         expect(result, MinorAccountReviewScreen.path);
       },
     );
+  });
+
+  group('signed-out support access', () {
+    test('keeps the Support Center reachable while unauthenticated', () async {
+      resetNavigationState();
+      final authService = _MockAuthService();
+      when(() => authService.authState).thenReturn(AuthState.unauthenticated);
+
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+          currentAccountDeletionAttemptProvider.overrideWith(
+            (ref) async => null,
+          ),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentAccountDeletionAttemptProvider.future);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+
+      final state = _MockGoRouterState();
+      final uri = Uri.parse(SupportCenterScreen.path);
+      when(() => state.uri).thenReturn(uri);
+      when(() => state.matchedLocation).thenReturn(uri.path);
+
+      expect(
+        appRouterRedirect(container.read(_refProbeProvider), state),
+        isNull,
+      );
+    });
   });
 }

@@ -364,6 +364,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
       location == SupportCenterScreen.path ||
       location == BugReportScreen.path ||
       location == FeatureRequestScreen.path;
+  final isPublicSupportRoute = location == SupportCenterScreen.path;
   final isModerationConversationRoute =
       moderationConversationId != null &&
       location == ConversationPage.pathForId(moderationConversationId);
@@ -521,6 +522,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   // awaitingTosAcceptance has no dedicated screen, so treat it like
   // unauthenticated.
   if (!isAuthRoute &&
+      !isPublicSupportRoute &&
       !_isPublicRecorderLocation(location) &&
       (authState == AuthState.unauthenticated ||
           authState == AuthState.awaitingTosAcceptance)) {
