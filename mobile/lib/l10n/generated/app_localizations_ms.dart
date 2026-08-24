@@ -10311,7 +10311,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Nilai pelayan: tidak diketahui (lalai dihidupkan)';
+      'Nilai pelayan: tidak diketahui';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

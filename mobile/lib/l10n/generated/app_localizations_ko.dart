@@ -9795,8 +9795,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get devOptionsInviteAvailabilityServerDisabled => '서버 값: 꺼짐';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown =>
-      '서버 값: 알 수 없음 (기본값 켜짐)';
+  String get devOptionsInviteAvailabilityServerUnknown => '서버 값: 알 수 없음';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone => '재정의: 서버 값 사용';

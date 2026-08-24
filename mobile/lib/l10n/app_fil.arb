@@ -2845,7 +2845,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Server value: nilo-load",
   "devOptionsInviteAvailabilityServerEnabled": "Server value: naka-on",
   "devOptionsInviteAvailabilityServerDisabled": "Server value: naka-off",
-  "devOptionsInviteAvailabilityServerUnknown": "Server value: hindi alam (naka-on bilang default)",
+  "devOptionsInviteAvailabilityServerUnknown": "Server value: hindi alam",
   "devOptionsInviteAvailabilityOverrideNone": "Override: gamitin ang server value",
   "devOptionsInviteAvailabilityOverrideEnabled": "Override: piliting i-on",
   "devOptionsInviteAvailabilityOverrideDisabled": "Override: piliting i-off",

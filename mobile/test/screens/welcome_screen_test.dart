@@ -297,19 +297,44 @@ void main() {
         },
       );
 
-      testWidgets('tapping create account calls acceptTerms and navigates', (
-        tester,
-      ) async {
-        await useTallSurface(tester);
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+      testWidgets(
+        'tapping create account defaults to skipping the invite gate',
+        (tester) async {
+          await useTallSurface(tester);
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Create a new Divine account'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Create a new Divine account'));
+          await tester.pumpAndSettle();
 
-        verify(() => mockAuthService.acceptTerms()).called(1);
-        expect(find.text('Invite Gate'), findsOneWidget);
-      });
+          verify(() => mockAuthService.acceptTerms()).called(1);
+          expect(find.text('Create Account'), findsOneWidget);
+          expect(find.text('Invite Gate'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'tapping create account skips the invite gate while config resolves',
+        (tester) async {
+          await useTallSurface(tester);
+          final availabilityCubit = seededInviteAvailabilityCubit(
+            serverMode: null,
+            hasResolved: false,
+          );
+          addTearDown(availabilityCubit.close);
+
+          await tester.pumpWidget(
+            createTestWidget(availabilityCubit: availabilityCubit),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Create a new Divine account'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Create Account'), findsOneWidget);
+          expect(find.text('Invite Gate'), findsNothing);
+        },
+      );
 
       testWidgets(
         'tapping create account skips the invite gate when invites are disabled',
@@ -726,7 +751,7 @@ void main() {
       });
 
       testWidgets(
-        'tapping "Create new account" calls acceptTerms and navigates',
+        'tapping "Create new account" defaults to skipping the invite gate',
         (tester) async {
           await tester.binding.setSurfaceSize(const Size(800, 1200));
           addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -737,7 +762,8 @@ void main() {
           await tester.pumpAndSettle();
 
           verify(() => mockAuthService.acceptTerms()).called(1);
-          expect(find.text('Invite Gate'), findsOneWidget);
+          expect(find.text('Create Account'), findsOneWidget);
+          expect(find.text('Invite Gate'), findsNothing);
         },
       );
 

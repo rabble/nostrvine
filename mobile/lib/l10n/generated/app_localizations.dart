@@ -17455,7 +17455,7 @@ abstract class AppLocalizations {
   /// No description provided for @devOptionsInviteAvailabilityServerUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Server value: unknown (defaults enabled)'**
+  /// **'Server value: unknown'**
   String get devOptionsInviteAvailabilityServerUnknown;
 
   /// No description provided for @devOptionsInviteAvailabilityOverrideNone.

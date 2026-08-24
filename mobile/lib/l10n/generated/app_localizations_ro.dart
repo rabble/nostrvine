@@ -10518,7 +10518,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Valoare server: necunoscută (implicit activat)';
+      'Valoare server: necunoscută';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

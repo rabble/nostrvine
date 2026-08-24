@@ -22,14 +22,11 @@ void main() {
       expect(parseOnboardingMode('open'), OnboardingMode.open);
     });
 
-    test('defaults missing and unknown values to inviteCodeRequired', () {
-      expect(parseOnboardingMode(null), OnboardingMode.inviteCodeRequired);
-      expect(parseOnboardingMode(''), OnboardingMode.inviteCodeRequired);
-      expect(
-        parseOnboardingMode('unavailable'),
-        OnboardingMode.inviteCodeRequired,
-      );
-      expect(parseOnboardingMode('mystery'), OnboardingMode.inviteCodeRequired);
+    test('defaults missing and unknown values to open', () {
+      expect(parseOnboardingMode(null), OnboardingMode.open);
+      expect(parseOnboardingMode(''), OnboardingMode.open);
+      expect(parseOnboardingMode('unavailable'), OnboardingMode.open);
+      expect(parseOnboardingMode('mystery'), OnboardingMode.open);
     });
   });
 

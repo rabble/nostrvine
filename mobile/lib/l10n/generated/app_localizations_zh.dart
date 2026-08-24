@@ -9689,7 +9689,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsInviteAvailabilityServerDisabled => '服务器值：已禁用';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown => '服务器值：未知（默认启用）';
+  String get devOptionsInviteAvailabilityServerUnknown => '服务器值：未知';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone => '覆盖：使用服务器值';

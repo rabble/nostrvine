@@ -52,7 +52,11 @@ List<RouteBase> authRoutes(Ref ref) {
           name: CreateAccountScreen.routeName,
           builder: (_, state) {
             _captureProductAnalyticsUtm(ref, state);
-            return const InviteProtectedCreateAccountScreen();
+            return InviteProtectedCreateAccountScreen(
+              initialCode: state.uri.queryParameters['code'],
+              initialError: state.uri.queryParameters['error'],
+              initialSourceSlug: state.uri.queryParameters['sourceSlug'],
+            );
           },
         ),
         GoRoute(

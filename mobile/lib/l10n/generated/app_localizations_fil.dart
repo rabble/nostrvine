@@ -10388,7 +10388,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Server value: hindi alam (naka-on bilang default)';
+      'Server value: hindi alam';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

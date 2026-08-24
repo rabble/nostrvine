@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "サーバー値: 読み込み中",
   "devOptionsInviteAvailabilityServerEnabled": "サーバー値: 有効",
   "devOptionsInviteAvailabilityServerDisabled": "サーバー値: 無効",
-  "devOptionsInviteAvailabilityServerUnknown": "サーバー値: 不明（既定で有効）",
+  "devOptionsInviteAvailabilityServerUnknown": "サーバー値: 不明",
   "devOptionsInviteAvailabilityOverrideNone": "上書き: サーバー値を使う",
   "devOptionsInviteAvailabilityOverrideEnabled": "上書き: 有効を強制",
   "devOptionsInviteAvailabilityOverrideDisabled": "上書き: 無効を強制",

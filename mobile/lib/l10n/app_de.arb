@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Serverwert: wird geladen",
   "devOptionsInviteAvailabilityServerEnabled": "Serverwert: aktiviert",
   "devOptionsInviteAvailabilityServerDisabled": "Serverwert: deaktiviert",
-  "devOptionsInviteAvailabilityServerUnknown": "Serverwert: unbekannt (standardmäßig aktiviert)",
+  "devOptionsInviteAvailabilityServerUnknown": "Serverwert: unbekannt",
   "devOptionsInviteAvailabilityOverrideNone": "Override: Serverwert verwenden",
   "devOptionsInviteAvailabilityOverrideEnabled": "Override: aktiviert erzwingen",
   "devOptionsInviteAvailabilityOverrideDisabled": "Override: deaktiviert erzwingen",

@@ -16,7 +16,16 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
 class InviteProtectedCreateAccountScreen extends ConsumerStatefulWidget {
-  const InviteProtectedCreateAccountScreen({super.key});
+  const InviteProtectedCreateAccountScreen({
+    this.initialCode,
+    this.initialError,
+    this.initialSourceSlug,
+    super.key,
+  });
+
+  final String? initialCode;
+  final String? initialError;
+  final String? initialSourceSlug;
 
   @override
   ConsumerState<InviteProtectedCreateAccountScreen> createState() =>
@@ -28,7 +37,16 @@ class _InviteProtectedCreateAccountScreenState
   void _redirectToInvite(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        context.go(WelcomeScreen.inviteGatePath);
+        final code = widget.initialCode;
+        context.go(
+          code == null || code.isEmpty
+              ? WelcomeScreen.inviteGatePath
+              : WelcomeScreen.inviteGatePathWithCode(
+                  code,
+                  error: widget.initialError,
+                  sourceSlug: widget.initialSourceSlug,
+                ),
+        );
       }
     });
   }
@@ -48,12 +66,12 @@ class _InviteProtectedCreateAccountScreenState
               });
             }
 
-            if (!availability.hasResolved) {
-              return const _InviteGuardLoadingPage();
-            }
-
             if (!availability.isEnabled || state.hasAccessGrant) {
               return const CreateAccountScreen();
+            }
+
+            if (!availability.hasResolved) {
+              return const _InviteGuardLoadingPage();
             }
 
             _redirectToInvite(context);

@@ -372,8 +372,12 @@ void main() {
             ),
           ),
         );
+        final availabilityCubit = seededInviteAvailabilityCubit();
+        addTearDown(availabilityCubit.close);
 
-        await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(
+          buildSubject(availabilityCubit: availabilityCubit),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.notificationsInvitePlural(2)), findsOneWidget);
@@ -393,8 +397,12 @@ void main() {
               ),
             ),
           );
+          final availabilityCubit = seededInviteAvailabilityCubit();
+          addTearDown(availabilityCubit.close);
 
-          await tester.pumpWidget(buildSubject());
+          await tester.pumpWidget(
+            buildSubject(availabilityCubit: availabilityCubit),
+          );
           await tester.pumpAndSettle();
 
           expect(find.text(l10n.notificationsInviteSingular), findsOneWidget);

@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Serverwaarde: laden",
   "devOptionsInviteAvailabilityServerEnabled": "Serverwaarde: aan",
   "devOptionsInviteAvailabilityServerDisabled": "Serverwaarde: uit",
-  "devOptionsInviteAvailabilityServerUnknown": "Serverwaarde: onbekend (standaard aan)",
+  "devOptionsInviteAvailabilityServerUnknown": "Serverwaarde: onbekend",
   "devOptionsInviteAvailabilityOverrideNone": "Overschrijving: serverwaarde gebruiken",
   "devOptionsInviteAvailabilityOverrideEnabled": "Overschrijving: aan afdwingen",
   "devOptionsInviteAvailabilityOverrideDisabled": "Overschrijving: uit afdwingen",

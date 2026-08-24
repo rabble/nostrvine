@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Sunucu değeri: yükleniyor",
   "devOptionsInviteAvailabilityServerEnabled": "Sunucu değeri: açık",
   "devOptionsInviteAvailabilityServerDisabled": "Sunucu değeri: kapalı",
-  "devOptionsInviteAvailabilityServerUnknown": "Sunucu değeri: bilinmiyor (varsayılan açık)",
+  "devOptionsInviteAvailabilityServerUnknown": "Sunucu değeri: bilinmiyor",
   "devOptionsInviteAvailabilityOverrideNone": "Geçersiz kılma: sunucu değerini kullan",
   "devOptionsInviteAvailabilityOverrideEnabled": "Geçersiz kılma: açık olarak zorla",
   "devOptionsInviteAvailabilityOverrideDisabled": "Geçersiz kılma: kapalı olarak zorla",

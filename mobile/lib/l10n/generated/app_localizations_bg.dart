@@ -10393,7 +10393,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get devOptionsInviteAvailabilityServerUnknown =>
-      'Стойност от сървъра: неизвестна (по подразбиране включено)';
+      'Стойност от сървъра: неизвестна';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

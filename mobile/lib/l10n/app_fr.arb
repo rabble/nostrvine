@@ -4042,7 +4042,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Valeur serveur : chargement",
   "devOptionsInviteAvailabilityServerEnabled": "Valeur serveur : activé",
   "devOptionsInviteAvailabilityServerDisabled": "Valeur serveur : désactivé",
-  "devOptionsInviteAvailabilityServerUnknown": "Valeur serveur : inconnue (activé par défaut)",
+  "devOptionsInviteAvailabilityServerUnknown": "Valeur serveur : inconnue",
   "devOptionsInviteAvailabilityOverrideNone": "Surcharge : utiliser la valeur serveur",
   "devOptionsInviteAvailabilityOverrideEnabled": "Surcharge : forcer activé",
   "devOptionsInviteAvailabilityOverrideDisabled": "Surcharge : forcer désactivé",

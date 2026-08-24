@@ -10287,8 +10287,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'سرور ویلیو: غیر فعال';
 
   @override
-  String get devOptionsInviteAvailabilityServerUnknown =>
-      'سرور ویلیو: نامعلوم (بطور ڈیفالٹ فعال)';
+  String get devOptionsInviteAvailabilityServerUnknown => 'سرور ویلیو: نامعلوم';
 
   @override
   String get devOptionsInviteAvailabilityOverrideNone =>

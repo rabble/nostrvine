@@ -5805,7 +5805,7 @@
   "devOptionsInviteAvailabilityServerLoading": "Giá trị máy chủ: đang tải",
   "devOptionsInviteAvailabilityServerEnabled": "Giá trị máy chủ: đã bật",
   "devOptionsInviteAvailabilityServerDisabled": "Giá trị máy chủ: đã tắt",
-  "devOptionsInviteAvailabilityServerUnknown": "Giá trị máy chủ: không rõ (mặc định bật)",
+  "devOptionsInviteAvailabilityServerUnknown": "Giá trị máy chủ: không rõ",
   "devOptionsInviteAvailabilityOverrideNone": "Ghi đè: dùng giá trị máy chủ",
   "devOptionsInviteAvailabilityOverrideEnabled": "Ghi đè: buộc bật",
   "devOptionsInviteAvailabilityOverrideDisabled": "Ghi đè: buộc tắt",
