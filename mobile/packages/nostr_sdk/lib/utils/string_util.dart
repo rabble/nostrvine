@@ -163,6 +163,21 @@ class StringUtil {
     return str;
   }
 
+  /// Like [rndNameStr] but drawn from a cryptographically secure RNG.
+  ///
+  /// Use for values that must be unguessable, such as a NIP-46 request id:
+  /// the plain [rndNameStr] uses an unseeded [Random] whose whole stream is a
+  /// deterministic function of a 32-bit seed (#7344).
+  static String rndSecureNameStr(int length) {
+    final l = _rndNameHex.length;
+    final random = Random.secure();
+    final buffer = StringBuffer();
+    for (var i = 0; i < length; i++) {
+      buffer.write(_rndNameHex[random.nextInt(l)]);
+    }
+    return buffer.toString();
+  }
+
   static List<int> findAllIndex(String text, String match) {
     var matchLength = match.length;
     var textLength = match.length;
