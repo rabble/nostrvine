@@ -154,6 +154,34 @@ void main() {
       });
     });
 
+    group('subscription filter (defense in depth)', () {
+      test('constrains authors to the paired remote signer', () async {
+        final query = await signer.genQueryMsg();
+        expect(query, isNotNull);
+        final filter = query![2] as Map<String, dynamic>;
+        expect(filter['authors'], [bunkerPub]);
+        expect(filter['#p'], [clientPub]);
+        expect(filter['kinds'], [EventKind.nostrRemoteSigning]);
+      });
+
+      test('omits authors when the remote signer pubkey is unknown', () async {
+        final unpaired = NostrRemoteSigner(
+          RelayMode.baseMode,
+          NostrRemoteSignerInfo(
+            remoteSignerPubkey: '',
+            relays: const ['wss://relay.example.com'],
+            nsec: Nip19.encodePrivateKey(clientPriv),
+          ),
+        );
+        unpaired.localNostrSigner = LocalNostrSigner(clientPriv);
+        addTearDown(unpaired.close);
+
+        final query = await unpaired.genQueryMsg();
+        final filter = query![2] as Map<String, dynamic>;
+        expect(filter.containsKey('authors'), isFalse);
+      });
+    });
+
     group('response correlation (#7344)', () {
       test(
         'a stranger cannot complete a pending request via callbacks',

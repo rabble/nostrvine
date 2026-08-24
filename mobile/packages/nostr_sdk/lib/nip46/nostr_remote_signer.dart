@@ -444,10 +444,16 @@ class NostrRemoteSigner extends NostrSigner {
     // our device and the bunker server (subtract 30 seconds)
     final adjustedSinceTimestamp = sinceTimestamp - 30;
 
+    // Constrain the subscription to the paired remote signer so an honest
+    // relay never delivers a stranger's kind-24133 event in the first place.
+    // The onMessage author check is the backstop for a relay that ignores
+    // the filter; skip authors only when the signer pubkey is not yet known.
+    final expectedSigner = info.remoteSignerPubkey;
     var filter = Filter(
       since: adjustedSinceTimestamp,
       p: [pubkey],
       kinds: [EventKind.nostrRemoteSigning],
+      authors: expectedSigner.isNotEmpty ? [expectedSigner] : null,
     );
 
     final filterJson = filter.toJson();
