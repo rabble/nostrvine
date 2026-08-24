@@ -298,6 +298,7 @@ class ZendeskSupportService {
     }
   }
 
+  // Ticket history may open signed out; ticket creation still needs requester info.
   static Future<bool> _setAvailableAnonymousIdentity() {
     if (_userName != null && _userEmail != null) {
       return setAnonymousIdentityWithUserInfo();

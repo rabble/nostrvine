@@ -13,6 +13,7 @@ import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
@@ -24,7 +25,9 @@ class SupportCenterScreen extends ConsumerWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
-  const SupportCenterScreen({super.key});
+  const SupportCenterScreen({this.composeEmail, super.key});
+
+  final SupportEmailCompose? composeEmail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,13 +51,12 @@ class SupportCenterScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              if (ZendeskSupportService.isAvailable)
-                _SupportTile(
-                  icon: DivineIconName.chat,
-                  title: l10n.supportContactSupport,
-                  subtitle: l10n.supportContactSupportSubtitle,
-                  onTap: () => _viewSupportMessages(context),
-                ),
+              _SupportTile(
+                icon: DivineIconName.chat,
+                title: l10n.supportContactSupport,
+                subtitle: l10n.supportContactSupportSubtitle,
+                onTap: () => _contactSupport(context),
+              ),
               if (isAuthenticated)
                 _SupportTile(
                   icon: DivineIconName.warningCircle,
@@ -241,6 +243,21 @@ class SupportCenterScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  Future<void> _contactSupport(BuildContext context) async {
+    if (ZendeskSupportService.isAvailable) {
+      await _viewSupportMessages(context);
+      return;
+    }
+
+    final sharePositionOrigin = shareAnchorForContext(context);
+    await (composeEmail ?? SupportEmailComposer().compose)(
+      toEmail: AppConstants.supportEmail,
+      subject: context.l10n.supportContactSupport,
+      body: '',
+      sharePositionOrigin: sharePositionOrigin,
+    );
   }
 
   Future<void> _launchUrl(

@@ -12,6 +12,7 @@ import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/support_email_composer.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../helpers/url_launcher_test_double.dart';
@@ -44,6 +45,7 @@ void main() {
       WidgetTester tester, {
       AuthState authState = AuthState.authenticated,
       Locale locale = const Locale('en'),
+      SupportEmailCompose? composeEmail,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -64,7 +66,7 @@ void main() {
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const SupportCenterScreen(),
+            home: SupportCenterScreen(composeEmail: composeEmail),
           ),
         ),
       );
@@ -143,6 +145,33 @@ void main() {
 
       expect(find.text(en.supportReportBug), findsNothing);
       expect(find.text(en.supportRequestFeature), findsNothing);
+    });
+
+    testWidgets('opens email support when Zendesk is unavailable', (
+      tester,
+    ) async {
+      String? capturedToEmail;
+      String? capturedSubject;
+      await pump(
+        tester,
+        authState: AuthState.unauthenticated,
+        composeEmail:
+            ({
+              required String toEmail,
+              required String subject,
+              required String body,
+              Rect? sharePositionOrigin,
+            }) async {
+              capturedToEmail = toEmail;
+              capturedSubject = subject;
+            },
+      );
+
+      await tester.tap(find.text(en.supportContactSupport));
+      await tester.pumpAndSettle();
+
+      expect(capturedToEmail, AppConstants.supportEmail);
+      expect(capturedSubject, en.supportContactSupport);
     });
 
     // The row existing is not the feature; reaching the confirmation gate is.
