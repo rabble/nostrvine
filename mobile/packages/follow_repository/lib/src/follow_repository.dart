@@ -33,6 +33,7 @@ typedef _CachedFollowerStats = ({
 typedef _FollowerCountObservation = ({
   int count,
   bool isComplete,
+  bool isRestBaseline,
   String source,
 });
 
@@ -978,7 +979,12 @@ class FollowRepository {
     final wsResult = results[1]! as _WebSocketFollowerStats;
     final followerCounts = [
       if (restResult != null)
-        (count: restResult.followers, isComplete: false, source: 'REST'),
+        (
+          count: restResult.followers,
+          isComplete: false,
+          isRestBaseline: true,
+          source: 'REST',
+        ),
       ...wsResult.followerCounts,
     ];
     final followers = _corroborateFollowerCount(followerCounts);
@@ -1005,14 +1011,14 @@ class FollowRepository {
     return FollowerStats(followers: followers, following: following);
   }
 
-  /// Selects a follower count from the highest-confidence usable observations.
+  /// Selects a follower count using REST as the stable baseline.
   ///
-  /// Complete observations establish that an indexer finished answering, but
-  /// EOSE only covers that relay's own holdings. Positive complete observations
-  /// form the preferred confidence tier and partial lower bounds never cap
-  /// them. Conflicts within a tier use the second-highest value so a lone high
-  /// source cannot win. Zero observations are ignored when any source found
-  /// followers because an empty index is not evidence against positive data.
+  /// One indexer cannot override REST because neither EOSE nor a timeout proves
+  /// that relay's holdings are complete. Two or more indexers can raise the
+  /// baseline using their second-highest count, which rejects a lone high
+  /// outlier without letting a low partial result drag REST down. Without REST,
+  /// the same second-highest fallback applies across indexers; a single indexer
+  /// is used only when it is the sole available evidence.
   static int _corroborateFollowerCount(
     List<_FollowerCountObservation> observations,
   ) {
@@ -1027,21 +1033,25 @@ class FollowRepository {
     final usable = hasPositiveCount
         ? observations.where((result) => result.count > 0)
         : observations;
-    final completeCounts = usable
-        .where((result) => result.isComplete)
+    final restCounts = usable
+        .where((result) => result.isRestBaseline)
         .map((result) => result.count)
         .toList();
-    if (completeCounts.length >= 2) return secondHighest(completeCounts);
-    if (completeCounts.length == 1) return completeCounts.single;
-
-    final partialCounts = usable
-        .where((result) => !result.isComplete)
+    final indexerCounts = usable
+        .where((result) => !result.isRestBaseline)
         .map((result) => result.count)
         .toList();
+    final restBaseline = restCounts.isEmpty ? null : restCounts.reduce(max);
 
-    return partialCounts.length == 1
-        ? partialCounts.single
-        : secondHighest(partialCounts);
+    if (indexerCounts.length >= 2) {
+      final corroboratedIndexerCount = secondHighest(indexerCounts);
+      return restBaseline == null
+          ? corroboratedIndexerCount
+          : max(restBaseline, corroboratedIndexerCount);
+    }
+
+    if (restBaseline != null) return restBaseline;
+    return indexerCounts.single;
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -1210,7 +1220,12 @@ class FollowRepository {
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return (count: result, isComplete: isComplete, source: indexerUrl);
+      return (
+        count: result,
+        isComplete: isComplete,
+        isRestBaseline: false,
+        source: indexerUrl,
+      );
     } catch (e) {
       Log.warning(
         'Error querying $indexerUrl for followers: $e',
@@ -1222,6 +1237,7 @@ class FollowRepository {
           : (
               count: followerPubkeys.length,
               isComplete: isComplete,
+              isRestBaseline: false,
               source: indexerUrl,
             );
     } finally {

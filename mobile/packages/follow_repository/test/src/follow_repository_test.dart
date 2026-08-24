@@ -6358,17 +6358,16 @@ void main() {
 
     group('getFollowerStats - source confidence', () {
       test(
-        'prefers a complete indexer count over partial REST',
+        'does not let one low EOSE indexer drag REST down',
         () async {
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          // REST: followers=5
           when(
             () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
           ).thenAnswer(
             (_) async => const SocialCounts(
               pubkey: testTargetPubkey,
-              followerCount: 5,
+              followerCount: 1000,
               followingCount: 10,
             ),
           );
@@ -6383,7 +6382,6 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [indexerUrl],
             relayFactory: (url, status) {
-              // Return 10 follower pubkeys → WS followers=10 > REST=5
               return _FakeRelay(url, status)
                 ..fakeResponses = [
                   ...List.generate(
@@ -6403,14 +6401,14 @@ void main() {
 
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          expect(stats.followers, equals(10));
+          expect(stats.followers, equals(1000));
           // following: max(REST 10, WS 0) = 10
           expect(stats.following, equals(10));
         },
       );
 
       test(
-        'does not let partial REST cap one complete indexer',
+        'does not let one low partial indexer drag REST down',
         () async {
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -6419,7 +6417,7 @@ void main() {
           ).thenAnswer(
             (_) async => const SocialCounts(
               pubkey: testTargetPubkey,
-              followerCount: 40,
+              followerCount: 1000,
               followingCount: 10,
             ),
           );
@@ -6433,24 +6431,22 @@ void main() {
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               return _FakeRelay(url, status)
-                ..fakeResponses = [
-                  ...List.generate(
-                    50,
-                    (i) => <dynamic>[
-                      'EVENT',
-                      's',
-                      {'pubkey': i.toRadixString(16).padLeft(64, '0')},
-                    ],
-                  ),
-                  <dynamic>['EOSE', 's'],
-                ];
+                ..fakeResponses = List.generate(
+                  3,
+                  (i) => <dynamic>[
+                    'EVENT',
+                    's',
+                    {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                  ],
+                );
             },
           );
 
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
-          expect(stats.followers, equals(50));
+          expect(stats.followers, equals(1000));
         },
+        timeout: const Timeout(Duration(seconds: 20)),
       );
     });
 
