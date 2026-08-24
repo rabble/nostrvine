@@ -17,6 +17,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/feature_request_dialog.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -300,10 +301,13 @@ void main() {
   });
 
   group('signed-out support access', () {
-    test('keeps the Support Center reachable while unauthenticated', () async {
+    Future<String?> redirectFor({
+      required AuthState authState,
+      required String location,
+    }) async {
       resetNavigationState();
       final authService = _MockAuthService();
-      when(() => authService.authState).thenReturn(AuthState.unauthenticated);
+      when(() => authService.authState).thenReturn(authState);
 
       final container = ProviderContainer(
         overrides: [
@@ -321,13 +325,40 @@ void main() {
       await container.read(currentMinorAccountReviewStatusProvider.future);
 
       final state = _MockGoRouterState();
-      final uri = Uri.parse(SupportCenterScreen.path);
+      final uri = Uri.parse(location);
       when(() => state.uri).thenReturn(uri);
       when(() => state.matchedLocation).thenReturn(uri.path);
 
+      return appRouterRedirect(container.read(_refProbeProvider), state);
+    }
+
+    test('keeps the Support Center reachable while unauthenticated', () async {
       expect(
-        appRouterRedirect(container.read(_refProbeProvider), state),
+        await redirectFor(
+          authState: AuthState.unauthenticated,
+          location: SupportCenterScreen.path,
+        ),
         isNull,
+      );
+    });
+
+    test('keeps the Support Center reachable while awaiting TOS', () async {
+      expect(
+        await redirectFor(
+          authState: AuthState.awaitingTosAcceptance,
+          location: SupportCenterScreen.path,
+        ),
+        isNull,
+      );
+    });
+
+    test('keeps signed-out feature requests behind the auth gate', () async {
+      expect(
+        await redirectFor(
+          authState: AuthState.unauthenticated,
+          location: FeatureRequestScreen.path,
+        ),
+        '/welcome',
       );
     });
   });

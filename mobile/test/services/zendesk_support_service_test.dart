@@ -350,6 +350,31 @@ void main() {
       expect(showTicketListCalled, true);
     });
 
+    test('sets a plain anonymous identity without cached user info', () async {
+      final calls = <String>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            calls.add(call.method);
+            if (call.method == 'initialize') return true;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      final result = await ZendeskSupportService.showTicketListScreen();
+
+      expect(result, isTrue);
+      expect(
+        calls,
+        containsAllInOrder(['setAnonymousIdentity', 'showTicketList']),
+      );
+    });
+
     test('retries with anonymous identity when NO_IDENTITY error', () async {
       var showTicketListCallCount = 0;
       var setUserIdentityCalled = false;
@@ -1422,30 +1447,33 @@ void main() {
       expect(methodCalls, ['showNewTicket']);
     });
 
-    test('showTicketListScreen without auth context skips refresh', () async {
-      final methodCalls = <String>[];
+    test(
+      'showTicketListScreen without auth context sets anonymous identity',
+      () async {
+        final methodCalls = <String>[];
 
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            methodCalls.add(call.method);
-            if (call.method == 'initialize') return true;
-            if (call.method == 'showTicketList') return true;
-            return null;
-          });
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call.method);
+              if (call.method == 'initialize') return true;
+              if (call.method == 'showTicketList') return true;
+              return null;
+            });
 
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
+        await ZendeskSupportService.initialize(
+          appId: 'test',
+          clientId: 'test',
+          zendeskUrl: 'https://test.zendesk.com',
+        );
 
-      methodCalls.clear();
+        methodCalls.clear();
 
-      final result = await ZendeskSupportService.showTicketListScreen();
+        final result = await ZendeskSupportService.showTicketListScreen();
 
-      expect(result, true);
-      expect(methodCalls, ['showTicketList']);
-    });
+        expect(result, true);
+        expect(methodCalls, ['setAnonymousIdentity', 'showTicketList']);
+      },
+    );
 
     test(
       'showTicketListScreen falls back to anonymous identity when JWT refresh fails',
@@ -1621,7 +1649,7 @@ void main() {
 
         expect(result, isTrue);
         expect(refreshCallCount, 0);
-        expect(methodCalls, ['showTicketList']);
+        expect(methodCalls, ['setAnonymousIdentity', 'showTicketList']);
       },
     );
   });

@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -37,7 +39,7 @@ class SupportCenterScreen extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: l10n.supportTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () => context.safePop(fallback: WelcomeScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Align(
@@ -60,12 +62,13 @@ class SupportCenterScreen extends ConsumerWidget {
                 onTap: () =>
                     _showBugReport(context, bugReportService, userPubkey),
               ),
-              _SupportTile(
-                icon: DivineIconName.sparkle,
-                title: l10n.supportRequestFeature,
-                subtitle: l10n.supportRequestFeatureSubtitle,
-                onTap: () => _showFeatureRequest(context),
-              ),
+              if (isAuthenticated)
+                _SupportTile(
+                  icon: DivineIconName.sparkle,
+                  title: l10n.supportRequestFeature,
+                  subtitle: l10n.supportRequestFeatureSubtitle,
+                  onTap: () => _showFeatureRequest(context),
+                ),
               _SupportTile(
                 icon: DivineIconName.save,
                 title: l10n.supportSaveLogs,

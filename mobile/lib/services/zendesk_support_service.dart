@@ -235,7 +235,9 @@ class ZendeskSupportService {
     await _awaitInitialization();
 
     if (!_initialized) return false;
-    if (_userName == null || _userEmail == null) return false;
+    if (_userName == null || _userEmail == null) {
+      return setAnonymousIdentity();
+    }
 
     try {
       await _channel.invokeMethod('setUserIdentity', {
@@ -279,20 +281,21 @@ class ZendeskSupportService {
   ///
   /// Sets a plain anonymous identity without name/email so Zendesk widget works.
   /// Should be called before showing ticket screens if user is not logged in.
-  static Future<void> setAnonymousIdentity() async {
-    if (_initialized) {
-      try {
-        await _channel.invokeMethod('setAnonymousIdentity');
-        Log.info(
-          'Zendesk anonymous identity set',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          'Error setting Zendesk anonymous identity: $e',
-          category: LogCategory.system,
-        );
-      }
+  static Future<bool> setAnonymousIdentity() async {
+    if (!_initialized) return false;
+    try {
+      await _channel.invokeMethod('setAnonymousIdentity');
+      Log.info(
+        'Zendesk anonymous identity set',
+        category: LogCategory.system,
+      );
+      return true;
+    } catch (e) {
+      Log.warning(
+        'Error setting Zendesk anonymous identity: $e',
+        category: LogCategory.system,
+      );
+      return false;
     }
   }
 

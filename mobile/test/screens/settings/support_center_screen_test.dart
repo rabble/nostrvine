@@ -135,6 +135,13 @@ void main() {
       expect(find.text(en.supportReportBug), findsOneWidget);
     });
 
+    testWidgets('hides feature requests when signed out', (tester) async {
+      await pump(tester, authState: AuthState.unauthenticated);
+      await scrollToBottom(tester);
+
+      expect(find.text(en.supportRequestFeature), findsNothing);
+    });
+
     // The row existing is not the feature; reaching the confirmation gate is.
     testWidgets('opens the deletion confirmation gate when tapped', (
       tester,
