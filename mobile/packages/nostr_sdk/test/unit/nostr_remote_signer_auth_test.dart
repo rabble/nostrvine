@@ -83,10 +83,20 @@ void main() {
       'error': url,
     };
 
+    // An auth challenge answers a request the client already sent, so its id
+    // is present in `callbacks`. Register one so these tests isolate the
+    // author/signature checks rather than the id-correlation gate.
+    void registerPending(String id) {
+      final completer = Completer<String?>();
+      completer.future.ignore();
+      signer.callbacks[id] = completer;
+    }
+
     group('auth_url challenge (#7339)', () {
       test('a stranger auth_url never reaches the launcher', () async {
         String? opened;
         signer.onAuthUrlReceived = (url) => opened = url;
+        registerPending('req-1');
 
         final forged = await buildResponse(
           attackerPriv,
@@ -110,6 +120,7 @@ void main() {
           'control)', () async {
         String? opened;
         signer.onAuthUrlReceived = (url) => opened = url;
+        registerPending('req-1');
 
         final legit = await buildResponse(
           bunkerPriv,
@@ -124,6 +135,7 @@ void main() {
       test('a bunker auth_url with an invalid signature is dropped', () async {
         String? opened;
         signer.onAuthUrlReceived = (url) => opened = url;
+        registerPending('req-1');
 
         final tampered = await buildResponse(
           bunkerPriv,
@@ -141,7 +153,23 @@ void main() {
         expect(opened, isNull);
       });
 
+      test('an auth_url for an uncorrelated request id is ignored', () async {
+        String? opened;
+        signer.onAuthUrlReceived = (url) => opened = url;
+        // No registerPending: nothing is waiting on this id.
+
+        final legit = await buildResponse(
+          bunkerPriv,
+          payload: authUrlPayload('never-requested', 'https://bunker/approve'),
+        );
+
+        await signer.onMessage(idleRelay(), ['EVENT', 'sub-1', legit.toJson()]);
+
+        expect(opened, isNull);
+      });
+
       test('a stranger event is dropped without throwing', () async {
+        registerPending('req-1');
         final forged = await buildResponse(
           attackerPriv,
           payload: authUrlPayload('req-1', 'https://evil.example/phish'),

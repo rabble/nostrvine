@@ -190,14 +190,25 @@ class NostrRemoteSigner extends NostrSigner {
             event.pubkey,
           );
           if (response != null) {
-            // Check for auth_url challenge - this means user needs to approve
-            if (response.result == 'auth_url' && response.error != null) {
+            // An auth challenge answers a request the client already sent, so
+            // its id must be one we are waiting on. Correlating here (and not
+            // logging the URL) closes the last of the unsolicited-challenge
+            // surface after the author check above (#7339).
+            if (response.isAuthChallenge) {
+              if (!callbacks.containsKey(response.id)) {
+                log(
+                  '[NIP46] onMessage: ignoring auth challenge for unknown '
+                  'request id=${response.id}',
+                );
+                return;
+              }
               log(
-                '[NIP46] onMessage: auth challenge received, URL=${response.error}',
+                '[NIP46] onMessage: auth challenge received for '
+                'id=${response.id}',
               );
-              // Only open the auth URL once per request ID
-              // This prevents re-opening the browser on reconnection when
-              // historical events are replayed from the relay
+              // Only open the auth URL once per request ID. This prevents
+              // re-opening the browser on reconnection when historical events
+              // are replayed from the relay.
               if (_openedAuthUrls.contains(response.id)) {
                 log(
                   '[NIP46] onMessage: auth URL already opened for id=${response.id}, ignoring',
