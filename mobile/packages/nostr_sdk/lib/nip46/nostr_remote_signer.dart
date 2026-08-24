@@ -39,7 +39,15 @@ class NostrRemoteSigner extends NostrSigner {
 
   late LocalNostrSigner localNostrSigner;
 
-  NostrRemoteSigner(this.relayMode, this.info);
+  NostrRemoteSigner(this.relayMode, this.info) {
+    if (!keyIsValid(info.remoteSignerPubkey)) {
+      throw ArgumentError.value(
+        info.remoteSignerPubkey,
+        'info.remoteSignerPubkey',
+        'A valid remote signer pubkey is required',
+      );
+    }
+  }
 
   List<Relay> relays = [];
 
@@ -161,19 +169,11 @@ class NostrRemoteSigner extends NostrSigner {
           '[NIP46] onMessage: received event subscriptionId=$subscriptionId, kind=${event.kind} from ${pubkeyForLogs(event.pubkey)}, createdAt=${event.createdAt}',
         );
         if (event.kind == EventKind.nostrRemoteSigning) {
-          // Authenticate the sender before acting on anything. A NIP-46
-          // response is, by the spec's data model, authored by the
-          // remote-signer we paired with. NIP-44 decryption only proves the
-          // sender holds event.pubkey's key — not that event.pubkey is that
-          // signer — so without this bind any pubkey that can publish a
-          // kind-24133 event p-tagged to our client key would drive
-          // onAuthUrlReceived (#7339) or complete a pending request via
-          // `callbacks` (#7344). Compare against remoteSignerPubkey, never
-          // userPubkey: a bunker's signer key legitimately differs from the
-          // user key. Hex is case-insensitive.
+          // NIP-46 responses must be authored by the paired remote signer.
+          // Compare against the signer key, not the user's account key: those
+          // keys legitimately differ for some bunkers.
           final expectedSigner = info.remoteSignerPubkey;
-          if (expectedSigner.isNotEmpty &&
-              event.pubkey.toLowerCase() != expectedSigner.toLowerCase()) {
+          if (event.pubkey.toLowerCase() != expectedSigner.toLowerCase()) {
             log(
               '[NIP46] onMessage: dropping kind-24133 event from an '
               'unexpected author: expected=${pubkeyForLogs(expectedSigner)} '
@@ -463,16 +463,13 @@ class NostrRemoteSigner extends NostrSigner {
     // our device and the bunker server (subtract 30 seconds)
     final adjustedSinceTimestamp = sinceTimestamp - 30;
 
-    // Constrain the subscription to the paired remote signer so an honest
-    // relay never delivers a stranger's kind-24133 event in the first place.
-    // The onMessage author check is the backstop for a relay that ignores
-    // the filter; skip authors only when the signer pubkey is not yet known.
-    final expectedSigner = info.remoteSignerPubkey;
+    // The receive-side author check remains the backstop for a relay that
+    // ignores this filter.
     var filter = Filter(
       since: adjustedSinceTimestamp,
       p: [pubkey],
       kinds: [EventKind.nostrRemoteSigning],
-      authors: expectedSigner.isNotEmpty ? [expectedSigner] : null,
+      authors: [info.remoteSignerPubkey],
     );
 
     final filterJson = filter.toJson();

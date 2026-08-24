@@ -194,21 +194,18 @@ void main() {
         expect(filter['kinds'], [EventKind.nostrRemoteSigning]);
       });
 
-      test('omits authors when the remote signer pubkey is unknown', () async {
-        final unpaired = NostrRemoteSigner(
-          RelayMode.baseMode,
-          NostrRemoteSignerInfo(
-            remoteSignerPubkey: '',
-            relays: const ['wss://relay.example.com'],
-            nsec: Nip19.encodePrivateKey(clientPriv),
+      test('rejects construction without a valid remote signer pubkey', () {
+        expect(
+          () => NostrRemoteSigner(
+            RelayMode.baseMode,
+            NostrRemoteSignerInfo(
+              remoteSignerPubkey: '',
+              relays: const ['wss://relay.example.com'],
+              nsec: Nip19.encodePrivateKey(clientPriv),
+            ),
           ),
+          throwsArgumentError,
         );
-        unpaired.localNostrSigner = LocalNostrSigner(clientPriv);
-        addTearDown(unpaired.close);
-
-        final query = await unpaired.genQueryMsg();
-        final filter = query![2] as Map<String, dynamic>;
-        expect(filter.containsKey('authors'), isFalse);
       });
     });
 
