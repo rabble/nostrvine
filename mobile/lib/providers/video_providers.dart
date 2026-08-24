@@ -172,6 +172,7 @@ VideoEventService videoEventService(Ref ref) {
     feedAspectRatioPreferenceServiceProvider,
   );
   final prefs = ref.watch(sharedPreferencesProvider);
+  final authService = ref.watch(authServiceProvider);
 
   final service = VideoEventService(
     nostrService,
@@ -210,6 +211,9 @@ VideoEventService videoEventService(Ref ref) {
   service.setBlocklistRepository(blocklistRepository);
   service.setLikesRepository(likesRepository);
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
+  service.setCurrentUserPubkeyProvider(
+    () => authService.currentPublicKeyHex ?? nostrService.publicKey,
+  );
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
   service.setProvenanceFilterService(provenanceFilterService);
@@ -542,6 +546,7 @@ VideosRepository videosRepository(Ref ref) {
   ref.watch(divineHostFilterVersionProvider);
 
   final nostrClient = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
@@ -567,6 +572,8 @@ VideosRepository videosRepository(Ref ref) {
   final nsfwFilter = createNsfwFilter(
     contentFilterService,
     moderationLabelService: moderationLabelService,
+    viewerPubkey: () =>
+        authService.currentPublicKeyHex ?? nostrClient.publicKey,
   );
 
   final repository = VideosRepository(
@@ -586,6 +593,8 @@ VideosRepository videosRepository(Ref ref) {
     warningLabelsResolver: createNsfwWarnLabels(
       contentFilterService,
       moderationLabelService: moderationLabelService,
+      viewerPubkey: () =>
+          authService.currentPublicKeyHex ?? nostrClient.publicKey,
     ),
     funnelcakeApiClient: funnelcakeClient,
     inMemoryFeedCache: InMemoryFeedCache(),

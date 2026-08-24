@@ -1,6 +1,74 @@
 import 'package:models/models.dart';
 import 'package:openvine/models/content_label.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+
+/// Content-warning labels separated by who applied them.
+typedef EffectiveContentLabelSources = ({
+  List<String> creator,
+  List<String> trusted,
+});
+
+typedef EffectiveContentFilterDecision = ({
+  ContentFilterPreference preference,
+  List<String> warnLabels,
+});
+
+bool contentOwnerMatches(String authorPubkey, String? viewerPubkey) =>
+    viewerPubkey != null &&
+    authorPubkey.toLowerCase() == viewerPubkey.toLowerCase();
+
+/// Applies content preferences without losing label provenance.
+///
+/// Only the narrow creator-label carve-out owned by [ContentFilterService]
+/// can turn a creator-applied hide into a warning. Trusted and server-applied
+/// moderation labels remain hide-capable for every viewer.
+EffectiveContentFilterDecision resolveEffectiveContentFilterDecision({
+  required EffectiveContentLabelSources sources,
+  required List<String> moderationLabels,
+  required ContentFilterService contentFilterService,
+  required bool isOwner,
+}) {
+  final warnLabels = <String>[];
+  var preference = ContentFilterPreference.show;
+
+  void consider(
+    String value, {
+    required bool creatorApplied,
+    required bool warningsEnabled,
+  }) {
+    final label = ContentLabel.fromValue(value);
+    if (label == null) return;
+    final next = creatorApplied
+        ? contentFilterService.getCreatorSelfLabelPreference(
+            label,
+            isOwner: isOwner,
+          )
+        : contentFilterService.getPreference(label);
+    if (next == ContentFilterPreference.hide) {
+      preference = ContentFilterPreference.hide;
+      return;
+    }
+    if (warningsEnabled && next == ContentFilterPreference.warn) {
+      if (preference != ContentFilterPreference.hide) {
+        preference = ContentFilterPreference.warn;
+      }
+      if (!warnLabels.contains(value)) warnLabels.add(value);
+    }
+  }
+
+  for (final value in sources.creator) {
+    consider(value, creatorApplied: true, warningsEnabled: true);
+  }
+  for (final value in sources.trusted) {
+    consider(value, creatorApplied: false, warningsEnabled: true);
+  }
+  for (final value in moderationLabels) {
+    consider(value, creatorApplied: false, warningsEnabled: false);
+  }
+
+  return (preference: preference, warnLabels: warnLabels);
+}
 
 /// Builds the effective moderation label set for a [VideoEvent].
 ///
@@ -15,17 +83,33 @@ List<String> resolveEffectiveContentLabels(
   VideoEvent video, {
   ModerationLabelService? moderationLabelService,
 }) {
-  final labels = <String>[];
+  final sources = resolveEffectiveContentLabelSources(
+    video,
+    moderationLabelService: moderationLabelService,
+  );
+  return {...sources.creator, ...sources.trusted}.toList();
+}
 
-  void addLabel(String? value) {
+/// Resolves labels without losing whether the creator or a trusted labeler
+/// applied them.
+EffectiveContentLabelSources resolveEffectiveContentLabelSources(
+  VideoEvent video, {
+  ModerationLabelService? moderationLabelService,
+}) {
+  final creator = <String>[];
+  final trusted = <String>[];
+
+  void addLabel(List<String> target, String? value) {
     final normalized = normalizeModerationLabelValue(value);
-    if (normalized == null || labels.contains(normalized)) {
+    if (normalized == null || target.contains(normalized)) {
       return;
     }
-    labels.add(normalized);
+    target.add(normalized);
   }
 
-  video.contentWarningLabels.forEach(addLabel);
+  for (final label in video.contentWarningLabels) {
+    addLabel(creator, label);
+  }
 
   if (moderationLabelService != null) {
     final addressableId = video.addressableId;
@@ -34,12 +118,12 @@ List<String> resolveEffectiveContentLabels(
           in moderationLabelService.getContentWarningsByAddressableId(
             addressableId,
           )) {
-        addLabel(label.labelValue);
+        addLabel(trusted, label.labelValue);
       }
     }
 
     for (final label in moderationLabelService.getContentWarnings(video.id)) {
-      addLabel(label.labelValue);
+      addLabel(trusted, label.labelValue);
     }
 
     final sha256 = video.sha256;
@@ -47,25 +131,25 @@ List<String> resolveEffectiveContentLabels(
       for (final label in moderationLabelService.getContentWarningsByHash(
         sha256,
       )) {
-        addLabel(label.labelValue);
+        addLabel(trusted, label.labelValue);
       }
     }
 
     for (final label in moderationLabelService.getLabelsForPubkey(
       video.pubkey,
     )) {
-      addLabel(label.labelValue);
+      addLabel(trusted, label.labelValue);
     }
   }
 
   for (final hashtag in video.hashtags) {
     final normalized = hashtag.trim().toLowerCase();
     if (normalized == 'nsfw' || normalized == 'adult') {
-      addLabel('nudity');
+      addLabel(creator, 'nudity');
     }
   }
 
-  return labels;
+  return (creator: creator, trusted: trusted);
 }
 
 /// Normalizes a moderation label value while preserving unknown labels.
