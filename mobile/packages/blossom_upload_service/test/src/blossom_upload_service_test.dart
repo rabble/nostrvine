@@ -1655,62 +1655,6 @@ void main() {
       );
     });
 
-    group('Upload Response Handling', () {
-      late _MockDio mockDio;
-
-      setUp(() {
-        mockDio = _MockDio();
-        service = BlossomUploadService(
-          authProvider: mockAuthProvider,
-          dio: mockDio,
-        );
-      });
-
-      test('should return success with media URL on 200 response', () async {
-        // Arrange
-        await service.setBlossomEnabled(true);
-        await service.setBlossomServer('https://blossom.example.com');
-
-        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
-
-        // This test documents the expected successful flow
-        expect(true, isTrue); // Placeholder
-      });
-
-      test('should handle HTTP 409 Conflict as successful upload', () async {
-        // Expected behavior: When server returns 409 for duplicate files,
-        // BlossomUploadService should return BlossomUploadResult with:
-        // - success: true
-        // - videoId: file hash
-        // - cdnUrl: constructed URL
-        // - errorMessage: 'File already exists on server'
-
-        expect(true, isTrue); // Placeholder documenting expected behavior
-      });
-
-      test('should handle HTTP 202 Processing as processing state', () async {
-        // Expected behavior: When server returns 202 Accepted,
-        // BlossomUploadService should return BlossomUploadResult with:
-        // - success: true
-        // - videoId: provided ID
-        // - cdnUrl: constructed URL
-        // - errorMessage: 'processing' (signals UploadManager to
-        //   start polling)
-
-        expect(true, isTrue); // Placeholder documenting expected behavior
-      });
-
-      test('should handle various Blossom server error responses', () async {
-        // This test documents expected error handling for:
-        // - 401 Unauthorized (bad NIP-98 auth)
-        // - 413 Payload Too Large
-        // - 500 Internal Server Error
-        // - Network timeouts
-
-        expect(true, isTrue); // Placeholder
-      });
-    });
-
     group('Server Presets', () {
       test('should support popular Blossom servers', () async {
         // Test that the service can be configured with known servers
@@ -1726,18 +1670,6 @@ void main() {
           final retrieved = await service.getBlossomServer();
           expect(retrieved, equals(server));
         }
-      });
-    });
-
-    group('Progress Tracking', () {
-      test('should report upload progress via callback', () async {
-        // Document expected behavior:
-        // - Progress callback should be called multiple times
-        // - Values should be between 0.0 and 1.0
-        // - Values should be monotonically increasing
-        // - Final value should be 1.0 on success
-
-        expect(true, isTrue); // Placeholder
       });
     });
 

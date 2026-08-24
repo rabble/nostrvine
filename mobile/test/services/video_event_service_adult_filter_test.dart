@@ -50,12 +50,6 @@ void main() {
   });
 
   group('VideoEventService - adult content filtering', () {
-    test('setContentFilterService sets the service correctly', () {
-      videoEventService.setContentFilterService(mockContentFilterService);
-
-      expect(true, isTrue);
-    });
-
     test('shouldFilterAdultContent returns false when service not set', () {
       expect(videoEventService.shouldFilterAdultContent, isFalse);
     });

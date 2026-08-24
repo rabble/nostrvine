@@ -138,14 +138,6 @@ void main() {
         expect(prefs.getBool('analytics_enabled'), isFalse);
       });
 
-      test('handles case when no user-specific data exists', () async {
-        // Service should not throw when there's nothing to clear
-        await service.clearUserSpecificData();
-
-        // Just verify it completes without error
-        expect(true, isTrue);
-      });
-
       test('clears bookmark-related keys', () async {
         await prefs.setStringList('bookmark_sets', ['set1']);
         await prefs.setString('global_bookmarks', 'bookmark_data');

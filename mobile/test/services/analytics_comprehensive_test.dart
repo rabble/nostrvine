@@ -125,30 +125,5 @@ void main() {
         );
       },
     );
-
-    test('should handle concurrent tracking requests', () async {
-      analyticsService = AnalyticsService(disableNostrPublishing: true);
-      await analyticsService.initialize();
-
-      final videos = List.generate(
-        5,
-        (index) => VideoEvent(
-          id: 'concurrent-test-id-$index',
-          pubkey: 'test-pubkey',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          content: 'Test video $index',
-          timestamp: DateTime.now(),
-        ),
-      );
-
-      // Send all requests concurrently
-      final futures = videos
-          .map((video) => analyticsService.trackVideoView(video))
-          .toList();
-      await Future.wait(futures);
-
-      // Should complete without error
-      expect(true, isTrue);
-    });
   });
 }

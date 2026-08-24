@@ -229,13 +229,6 @@ void main() {
         }
       });
 
-      test('handles empty list gracefully', () async {
-        await dao.upsertEventsBatch([]);
-
-        // Should not throw, just return
-        expect(true, isTrue);
-      });
-
       test('also upserts video metrics for video events in batch', () async {
         final events = [
           createVideoEvent(loops: 100, createdAt: 1000),
