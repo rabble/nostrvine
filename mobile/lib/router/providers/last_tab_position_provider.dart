@@ -26,6 +26,17 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
         return;
       }
 
+      // Landing on the Explore grid has to *erase* the tab's remembered
+      // feed index, not record 0. `getPosition` documents null as grid
+      // mode, and coercing the grid's absent index to 0 left every consumer
+      // resuming a video the user never chose (#8084).
+      if (ctx.type == RouteType.explore && ctx.videoIndex == null) {
+        if (state.containsKey(RouteType.explore)) {
+          state = {...state}..remove(RouteType.explore);
+        }
+        return;
+      }
+
       final index = ctx.videoIndex ?? 0;
       if (state[ctx.type] != index) {
         state = {...state, ctx.type: index};

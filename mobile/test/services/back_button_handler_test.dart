@@ -41,6 +41,7 @@ void main() {
       routes: [
         GoRoute(path: '/home/:i', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/explore', builder: (_, _) => const SizedBox()),
+        GoRoute(path: '/explore/:i', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/notifications/:i', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/inbox', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/hashtag/:tag', builder: (_, _) => const SizedBox()),
@@ -150,13 +151,9 @@ void main() {
         expect(result.location, equals('/home/0'));
       });
 
-      // Pins today's behaviour, which is not the intended one — tracked in
-      // #8084. LastTabPosition records `ctx.videoIndex ?? 0`, so merely
-      // opening the Explore *grid* records index 0 and restoring the tab
-      // lands on the video feed rather than the grid. Identical on
-      // origin/main, whose back path resolves the same getPosition value
-      // through ExploreScreen.pathForIndex, so this PR does not change it.
-      // Fixing #8084 should flip this expectation to '/explore'.
+      // #8084: this used to land on '/explore/0' — the video feed —
+      // because LastTabPosition recorded `ctx.videoIndex ?? 0` and merely
+      // opening the grid stored index 0.
       testWidgets('returns to the previously visited tab', (tester) async {
         final result = await pressBackAfterVisiting(tester, [
           '/home/0',
@@ -165,7 +162,25 @@ void main() {
         ]);
 
         expect(result.handled, isTrue);
-        expect(result.location, equals('/explore/0'));
+        expect(
+          result.location,
+          equals('/explore'),
+          reason: 'the user was on the grid, so the tab restores the grid',
+        );
+      });
+
+      testWidgets('resumes the explore video the user actually opened', (
+        tester,
+      ) async {
+        final result = await pressBackAfterVisiting(tester, [
+          '/home/0',
+          '/explore',
+          '/explore/4',
+          '/inbox',
+        ]);
+
+        expect(result.handled, isTrue);
+        expect(result.location, equals('/explore/4'));
       });
 
       // Regression for #3337: tab 2 hosts /inbox and /notifications/:index.

@@ -56,6 +56,47 @@ void main() {
           isNull,
         );
       });
+
+      // #8084: the writer recorded `ctx.videoIndex ?? 0`, so visiting the
+      // grid stored index 0 and explore never read as null again. Every
+      // consumer's grid-mode branch became unreachable, and restoring the
+      // tab opened a video the user never chose.
+      test('stays null after visiting the explore grid', () async {
+        await visit(['/explore']);
+
+        expect(
+          container
+              .read(lastTabPositionProvider.notifier)
+              .getPosition(RouteType.explore),
+          isNull,
+          reason: 'the grid carries no index, so there is none to remember',
+        );
+      });
+
+      test('reports the index once an explore video is opened', () async {
+        await visit(['/explore', '/explore/5']);
+
+        expect(
+          container
+              .read(lastTabPositionProvider.notifier)
+              .getPosition(RouteType.explore),
+          equals(5),
+        );
+      });
+
+      test('clears back to null on returning to the explore grid', () async {
+        await visit(['/explore/5', '/explore']);
+
+        expect(
+          container
+              .read(lastTabPositionProvider.notifier)
+              .getPosition(RouteType.explore),
+          isNull,
+          reason:
+              'returning to the grid must erase the stale feed index, not '
+              'leave the tab resuming a video the user backed out of',
+        );
+      });
     });
 
     group('recordedPosition', () {
