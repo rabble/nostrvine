@@ -1,5 +1,5 @@
 // ABOUTME: Follow button widget for video overlay using BLoC pattern.
-// ABOUTME: Circular 20x20 button positioned near the author avatar.
+// ABOUTME: Circular 20dp badge on the avatar corner, with a 48dp tap target.
 // ABOUTME: Only rendered when the viewer is NOT following the author; once
 // ABOUTME: following, the button disappears entirely (no "following" state).
 
@@ -23,6 +23,17 @@ import 'package:unified_logger/unified_logger.dart';
 /// The button is only shown for videos authored by someone the viewer does
 /// not yet follow. Once the viewer follows the author, the button hides for
 /// good.
+/// Painted diameter of the follow badge.
+const double followButtonVisualSize = 20;
+
+/// Minimum tap target for the follow badge, per
+/// `.claude/rules/accessibility.md` ("Minimum touch target size is 48x48 dp").
+///
+/// The parent Stack must extend at least this far past the badge origin, or the
+/// extra hit area is clipped: Flutter rejects a hit outside a box before it
+/// reaches the child, and `Clip.none` only affects painting.
+const double followButtonTapTargetSize = 48;
+
 class VideoFollowButton extends ConsumerStatefulWidget {
   const VideoFollowButton({required this.pubkey, super.key});
 
@@ -131,6 +142,9 @@ class VideoFollowButtonView extends StatelessWidget {
           label: context.l10n.videoFollowButtonFollow,
           button: true,
           child: GestureDetector(
+            // Opaque so the whole 48dp box below takes the hit, not just the
+            // 20dp circle painted inside it.
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               Log.info(
                 'Follow button tapped for ${pubkeyForLogs(pubkey)}',
@@ -141,19 +155,35 @@ class VideoFollowButtonView extends StatelessWidget {
                 MyFollowingToggleRequested(pubkey),
               );
             },
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: const BoxDecoration(
-                color: VineTheme.cameraButtonGreen,
-                shape: BoxShape.circle,
-                boxShadow: VineTheme.buttonBoxShadows,
-              ),
-              child: const Center(
-                child: DivineIcon(
-                  icon: DivineIconName.follow,
-                  size: 13,
-                  color: VineTheme.whiteText,
+            // The badge PAINTS at 20dp, but a tap target must be at least
+            // 48dp (.claude/rules/accessibility.md). On a real device this
+            // node reported Size(20.0, 20.0) and failed both
+            // androidTapTargetGuideline (48) and iOSTapTargetGuideline (44).
+            //
+            // The box grows down-and-end from the badge rather than centring
+            // on it: the badge sits on the avatar's trailing-bottom corner, so
+            // a centred 48dp target would cover most of the 48dp avatar and
+            // steal the taps that open the author's profile.
+            child: SizedBox(
+              width: followButtonTapTargetSize,
+              height: followButtonTapTargetSize,
+              child: Align(
+                alignment: AlignmentDirectional.topStart,
+                child: Container(
+                  width: followButtonVisualSize,
+                  height: followButtonVisualSize,
+                  decoration: const BoxDecoration(
+                    color: VineTheme.cameraButtonGreen,
+                    shape: BoxShape.circle,
+                    boxShadow: VineTheme.buttonBoxShadows,
+                  ),
+                  child: const Center(
+                    child: DivineIcon(
+                      icon: DivineIconName.follow,
+                      size: 13,
+                      color: VineTheme.whiteText,
+                    ),
+                  ),
                 ),
               ),
             ),

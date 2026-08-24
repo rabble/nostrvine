@@ -14,6 +14,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 
+import '../../helpers/accessibility_guidelines.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
@@ -54,6 +55,91 @@ void main() {
         ),
       );
     }
+
+    group('accessibility', () {
+      // Keep the subject off the viewport and scrollable edges: Flutter's
+      // tap-target guidelines SKIP boundary-touching nodes, so a flush fixture
+      // passes vacuously and would not catch a regression here.
+      Widget centred(String pubkey) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 200,
+              height: 200,
+              child: Center(
+                child: BlocProvider<MyFollowingBloc>.value(
+                  value: mockMyFollowingBloc,
+                  child: VideoFollowButtonView(pubkey: pubkey),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      testWidgets('the tap target is 48dp even though the badge paints 20dp', (
+        tester,
+      ) async {
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          const MyFollowingState(status: MyFollowingStatus.success),
+        );
+
+        await tester.pumpWidget(centred(validPubkey('other')));
+        await tester.pump();
+
+        // Asserted on the SIZE, not only through the guideline below: a
+        // guideline can go vacuous if the node stops being reported, an
+        // explicit size cannot. Shipped at Size(20, 20), which failed both
+        // androidTapTargetGuideline (48) and iOSTapTargetGuideline (44) on a
+        // real device.
+        expect(
+          tester.getSize(find.byType(GestureDetector)),
+          const Size(followButtonTapTargetSize, followButtonTapTargetSize),
+        );
+      });
+
+      testWidgets('the painted badge is still 20dp', (tester) async {
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          const MyFollowingState(status: MyFollowingStatus.success),
+        );
+
+        await tester.pumpWidget(centred(validPubkey('other')));
+        await tester.pump();
+
+        // The enlarged target must not enlarge the badge: it sits on the
+        // avatar's corner and its diameter is a design constant.
+        final circle = find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration! as BoxDecoration).shape == BoxShape.circle,
+        );
+
+        expect(circle, findsOneWidget);
+        expect(
+          tester.getSize(circle),
+          const Size(followButtonVisualSize, followButtonVisualSize),
+        );
+      });
+
+      testWidgets('meets the tap-target and labelling guidelines', (
+        tester,
+      ) async {
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          const MyFollowingState(status: MyFollowingStatus.success),
+        );
+
+        await tester.pumpWidget(centred(validPubkey('other')));
+        await tester.pump();
+
+        await expectMeetsAccessibilityGuidelines(
+          tester,
+          guidelines: divineSemanticsGuidelines,
+        );
+      });
+    });
 
     group('button state', () {
       testWidgets('shows follow icon when not following', (tester) async {

@@ -44,6 +44,9 @@ import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Offset of the follow badge from the avatar's top-start corner.
+const double _followBadgeOffset = 31;
+
 class VideoOverlayPreviewData {
   const VideoOverlayPreviewData({
     required this.pubkey,
@@ -334,8 +337,15 @@ class VideoOverlayActions extends ConsumerWidget {
                       children: [
                         // Avatar with follow button overlay
                         SizedBox(
-                          width: 58, // 48 avatar + follow button overflow
-                          height: 58,
+                          // Avatar (48) + the follow badge's 48dp tap target
+                          // starting at the badge origin. Flutter rejects a hit
+                          // outside a box BEFORE it reaches the child, and
+                          // `Clip.none` only affects painting — so if this box
+                          // stayed at 58 the badge's enlarged hit area would be
+                          // silently clipped back to 27dp.
+                          width: _followBadgeOffset + followButtonTapTargetSize,
+                          height:
+                              _followBadgeOffset + followButtonTapTargetSize,
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -351,8 +361,8 @@ class VideoOverlayActions extends ConsumerWidget {
                               // Follow button positioned at bottom-right of avatar
                               if (video != null)
                                 PositionedDirectional(
-                                  start: 31,
-                                  top: 31,
+                                  start: _followBadgeOffset,
+                                  top: _followBadgeOffset,
                                   child: VideoFollowButton(
                                     pubkey: authorPubkey,
                                   ),
@@ -364,53 +374,65 @@ class VideoOverlayActions extends ConsumerWidget {
                         // User name and loop count (tappable to go to profile)
                         Expanded(
                           child: GestureDetector(
+                            // Opaque, so the padding added by the minimum-height
+                            // constraint below is tappable rather than falling
+                            // through to the video.
+                            behavior: HitTestBehavior.opaque,
                             onTap: navigateToProfile,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Semantics(
-                                        identifier: 'video_author_name',
-                                        container: true,
-                                        explicitChildNodes: true,
-                                        label: context.l10n
-                                            .videoAuthorSemanticLabel(
-                                              displayName,
+                            // The name + meta column is intrinsically 44dp, which
+                            // failed androidTapTargetGuideline (48) on device.
+                            // minHeight, not a fixed height, so the row still
+                            // grows with the system font scale
+                            // (.claude/rules/accessibility.md).
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Semantics(
+                                          identifier: 'video_author_name',
+                                          container: true,
+                                          explicitChildNodes: true,
+                                          label: context.l10n
+                                              .videoAuthorSemanticLabel(
+                                                displayName,
+                                              ),
+                                          child: DivineHeartText(
+                                            displayName,
+                                            style: VineTheme.titleSmallFont(
+                                              color: VineTheme.whiteText,
                                             ),
-                                        child: DivineHeartText(
-                                          displayName,
-                                          style: VineTheme.titleSmallFont(
-                                            color: VineTheme.whiteText,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                    ),
-                                    if (showCheckmark)
-                                      const SpecialProfileCheckmark(),
-                                    if (isOgViner) const OgVinerBadge(),
-                                    if (isOgBetaTester)
-                                      OgBetaBadge(
-                                        onTap: () =>
-                                            showProfileBadgeExplanationSheet(
-                                              context,
-                                              ProfileBadgeExplanationType
-                                                  .ogBetaTester,
-                                            ),
-                                      ),
-                                  ],
-                                ),
-                                _VideoCardMetaLine(
-                                  meta: resolveVideoCardMeta(
-                                    video: video,
-                                    isOwnVideo: isOwnVideo,
+                                      if (showCheckmark)
+                                        const SpecialProfileCheckmark(),
+                                      if (isOgViner) const OgVinerBadge(),
+                                      if (isOgBetaTester)
+                                        OgBetaBadge(
+                                          onTap: () =>
+                                              showProfileBadgeExplanationSheet(
+                                                context,
+                                                ProfileBadgeExplanationType
+                                                    .ogBetaTester,
+                                              ),
+                                        ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  _VideoCardMetaLine(
+                                    meta: resolveVideoCardMeta(
+                                      video: video,
+                                      isOwnVideo: isOwnVideo,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
