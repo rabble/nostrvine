@@ -1014,9 +1014,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
             child: Builder(
               builder: (context) {
                 return Semantics(
-                  button: true,
-                  label: context.l10n.videoPlayerPlayVideo,
-                  hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
+                  // The label and hint live on the GESTURE SURFACE below, not
+                  // here. This node carries no tap action, so a label on it
+                  // left the actual tappable node unlabeled — a screen reader
+                  // announced a full-screen button with no name, and
+                  // labeledTapTargetGuideline failed on a real device.
                   // The chrome layers are SIBLINGS above the gesture surface,
                   // never descendants of it. As descendants, any press held
                   // past `kLongPressTimeout` anywhere on the action rail was
@@ -1059,38 +1061,57 @@ class __OverlayState extends ConsumerState<_Overlay> {
                               _handleImmersivePointerEnd(event.pointer),
                           onPointerCancel: (event) =>
                               _handleImmersivePointerEnd(event.pointer),
-                          child: GestureDetector(
-                            behavior: .translucent,
-                            onTap: interactiveReady ? _handlePlayerTap : null,
-                            onDoubleTapDown: interactiveReady
-                                ? (details) => _handleDoubleTapLike(
-                                    context,
-                                    details,
-                                    isOwnVideo: isOwnVideo,
-                                  )
-                                : null,
-                            child: GestureDetector(
-                              behavior: .translucent,
-                              // Press and hold to peek at the unobstructed
-                              // frame. Deliberately not gated on
-                              // [interactiveReady] the way tap and double-tap
-                              // are: those mutate the player or publish a
-                              // like, while this only hides chrome, which is
-                              // just as valid over a still-loading frame.
-                              //
-                              // Excluded from semantics, and kept on its own
-                              // detector so the tap action above still is
-                              // published. A `GestureDetector` publishes
-                              // `SemanticsAction.longPress` for ANY long-press
-                              // callback, `onLongPressStart` included — and
-                              // firing that action delivers no pointer events,
-                              // so the release path below would never run and
-                              // a screen-reader user would be left with every
-                              // control hidden and pointer-blocked until the
-                              // item was disposed.
-                              excludeFromSemantics: true,
-                              onLongPressStart: (_) => _enterImmersive(),
-                              child: const SizedBox.expand(),
+                          // MergeSemantics, not a bare Semantics: with
+                          // `container: false` the annotation lands on its own
+                          // node while GestureDetector publishes the tap action
+                          // on a DIFFERENT one, which is exactly the shipped
+                          // bug — a 440x850 tappable with no label. Merging is
+                          // safe here because the chrome layers are Stack
+                          // SIBLINGS, not descendants, so nothing else is
+                          // flattened into this node.
+                          child: MergeSemantics(
+                            child: Semantics(
+                              button: true,
+                              label: context.l10n.videoPlayerPlayVideo,
+                              hint: isOwnVideo
+                                  ? null
+                                  : context.l10n.videoPlayerTapHint,
+                              child: GestureDetector(
+                                behavior: .translucent,
+                                onTap: interactiveReady
+                                    ? _handlePlayerTap
+                                    : null,
+                                onDoubleTapDown: interactiveReady
+                                    ? (details) => _handleDoubleTapLike(
+                                        context,
+                                        details,
+                                        isOwnVideo: isOwnVideo,
+                                      )
+                                    : null,
+                                child: GestureDetector(
+                                  behavior: .translucent,
+                                  // Press and hold to peek at the unobstructed
+                                  // frame. Deliberately not gated on
+                                  // [interactiveReady] the way tap and double-tap
+                                  // are: those mutate the player or publish a
+                                  // like, while this only hides chrome, which is
+                                  // just as valid over a still-loading frame.
+                                  //
+                                  // Excluded from semantics, and kept on its own
+                                  // detector so the tap action above still is
+                                  // published. A `GestureDetector` publishes
+                                  // `SemanticsAction.longPress` for ANY long-press
+                                  // callback, `onLongPressStart` included — and
+                                  // firing that action delivers no pointer events,
+                                  // so the release path below would never run and
+                                  // a screen-reader user would be left with every
+                                  // control hidden and pointer-blocked until the
+                                  // item was disposed.
+                                  excludeFromSemantics: true,
+                                  onLongPressStart: (_) => _enterImmersive(),
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
                             ),
                           ),
                         ),
