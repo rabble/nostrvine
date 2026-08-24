@@ -35,7 +35,7 @@ class FullscreenSponsorDisclosure extends StatelessWidget {
   /// The fullscreen feed uses this only to center the first line in the app
   /// bar row; wrapped lines continue downward over the video without clipping.
   static double singleLineHeight(BuildContext context) {
-    final style = VineTheme.bodyTinyFont();
+    final style = VineTheme.bodyTinyFont(color: VineTheme.whiteText);
     final scaledFontSize = MediaQuery.textScalerOf(
       context,
     ).scale(style.fontSize!);
