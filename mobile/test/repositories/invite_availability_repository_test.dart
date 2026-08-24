@@ -52,7 +52,7 @@ void main() {
       expect(state.isEnabled, isFalse);
     });
 
-    test('defaults to enabled when client config fails', () async {
+    test('defaults to disabled when client config fails', () async {
       when(
         () => client.getClientConfig(),
       ).thenThrow(const InviteApiException('unavailable'));
@@ -63,7 +63,7 @@ void main() {
       final state = await repository.loadOnce();
       expect(state.hasResolved, isTrue);
       expect(state.serverMode, isNull);
-      expect(state.isEnabled, isTrue);
+      expect(state.isEnabled, isFalse);
     });
 
     test('does not refetch after a failed load', () async {

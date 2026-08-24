@@ -28,8 +28,8 @@ class InviteAvailabilityState extends Equatable {
 
   /// Whether signup/access invitations should be shown and enforced.
   ///
-  /// `open` is the only disabled server value. Missing, unavailable, or
-  /// unknown configuration defaults to enabled.
+  /// Only an explicit `inviteCodeRequired` server value enables invitations.
+  /// Missing, unavailable, or unknown configuration defaults to disabled.
   bool get isEnabled {
     switch (developerOverride) {
       case InviteAvailabilityOverride.forceEnabled:
@@ -37,14 +37,14 @@ class InviteAvailabilityState extends Equatable {
       case InviteAvailabilityOverride.forceDisabled:
         return false;
       case InviteAvailabilityOverride.useServer:
-        return serverMode != OnboardingMode.open;
+        return serverMode == OnboardingMode.inviteCodeRequired;
     }
   }
 
   InviteClientConfig get resolvedConfig {
     return config ??
         InviteClientConfig(
-          mode: serverMode ?? OnboardingMode.inviteCodeRequired,
+          mode: serverMode ?? OnboardingMode.open,
           supportEmail: AppConstants.supportEmail,
         );
   }

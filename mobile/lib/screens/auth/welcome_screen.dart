@@ -148,7 +148,7 @@ class _WelcomeView extends StatelessWidget {
           case WelcomeStatus.navigatingToCreateAccount:
             final invitesEnabled =
                 context.read<InviteAvailabilityCubit?>()?.state.isEnabled ??
-                true;
+                false;
             context.push(
               invitesEnabled
                   ? WelcomeScreen.inviteGatePath
