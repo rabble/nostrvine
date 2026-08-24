@@ -17,11 +17,13 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/consumption_analytics/consumption_analytics_tracker.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart'
     show ViewTrafficSource;
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/community_content_label_provider.dart';
@@ -141,6 +143,8 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   String? _activeSubtitleVideoId;
   final Object _subtitleVisibilityOwner = Object();
   late final SubtitleVisibilityOverrideNotifier _subtitleVisibilityOverrides;
+  late final ConsumptionAnalyticsTracker _consumptionAnalytics;
+  final Set<String> _seenVideoIds = {};
 
   @override
   void initState() {
@@ -148,6 +152,11 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     _subtitleVisibilityOverrides = ref.read(
       subtitleVisibilityOverrideProvider.notifier,
     );
+    _consumptionAnalytics = ref.read(consumptionAnalyticsTrackerProvider);
+    if (widget.currentIndex >= 0 &&
+        widget.currentIndex < widget.videos.length) {
+      _seenVideoIds.add(widget.videos[widget.currentIndex].id);
+    }
   }
 
   void _syncScopedSubtitleVisibility(String videoId, {bool defer = false}) {
@@ -409,6 +418,14 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         onActiveVideoChanged: (video, index) {
           _syncScopedSubtitleVisibility(video.id);
           _resumeAutoAdvanceAfterSwipe();
+          if (_seenVideoIds.add(video.id)) {
+            unawaited(
+              _consumptionAnalytics.feedScrolled(
+                trafficSource: widget.trafficSource,
+                depth: _seenVideoIds.length,
+              ),
+            );
+          }
           widget.onActiveVideoChanged?.call(video, index);
         },
         // Nothing in the feed plays longer than a Vine, not even a 60s file a
@@ -1008,6 +1025,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                     archivedLikeCount: video.originalLikes,
                     initialCommentCount: liveCommentCountSeed(video),
                     initialRepostCount: liveRepostCountSeed(video),
+                    consumptionAnalytics: ref.read(
+                      consumptionAnalyticsTrackerProvider,
+                    ),
                   )
                   ..add(const VideoInteractionsSubscriptionRequested())
                   ..add(const VideoInteractionsFetchRequested()),

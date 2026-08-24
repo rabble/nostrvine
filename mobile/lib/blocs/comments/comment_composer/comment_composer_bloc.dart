@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/comments/comment_composer/mention_search.dart';
 import 'package:openvine/blocs/comments/comment_composer/reportable_sites.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
+import 'package:openvine/features/consumption_analytics/consumption_analytics_tracker.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
@@ -48,6 +49,7 @@ class CommentComposerBloc
     MentionResolutionService? mentionResolutionService,
     MentionCandidatePubkeysProvider? mentionCandidatePubkeysProvider,
     DuplicateCommentChecker? isDuplicateSubmission,
+    ConsumptionAnalyticsTracker? consumptionAnalytics,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
        _rootEventId = rootEventId,
@@ -64,6 +66,7 @@ class CommentComposerBloc
                  )),
        _mentionCandidatePubkeysProvider = mentionCandidatePubkeysProvider,
        _isDuplicateSubmission = isDuplicateSubmission,
+       _consumptionAnalytics = consumptionAnalytics,
        super(const CommentComposerState()) {
     on<CommentTextChanged>(_onTextChanged);
     on<CommentReplyToggled>(_onReplyToggled);
@@ -91,6 +94,7 @@ class CommentComposerBloc
   final MentionResolutionService? _mentionResolutionService;
   final MentionCandidatePubkeysProvider? _mentionCandidatePubkeysProvider;
   final DuplicateCommentChecker? _isDuplicateSubmission;
+  final ConsumptionAnalyticsTracker? _consumptionAnalytics;
   final String _rootEventId;
   final int _rootEventKind;
   final String _rootAuthorPubkey;
@@ -236,6 +240,12 @@ class CommentComposerBloc
             placeholderId: placeholderId,
             confirmed: postedComment,
           ),
+        ),
+      );
+      unawaited(
+        _consumptionAnalytics?.commentSent(
+          targetVideoId: _rootEventId,
+          targetPubkey: _rootAuthorPubkey,
         ),
       );
     } catch (e, stackTrace) {

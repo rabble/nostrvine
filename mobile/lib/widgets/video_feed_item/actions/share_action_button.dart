@@ -2,6 +2,8 @@
 // ABOUTME: Opens unified share sheet: tap a contact to select it (never an
 // ABOUTME: instant send), compose an optional message, send explicitly.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -100,6 +103,11 @@ class ShareActionButton extends StatelessWidget {
       labelWhenZero: context.l10n.videoActionShareLabel,
       onPressed: () {
         onInteracted?.call();
+        unawaited(
+          ProviderScope.containerOf(context, listen: false)
+              .read(consumptionAnalyticsTrackerProvider)
+              .shareTapped(targetVideoId: video.id, targetPubkey: video.pubkey),
+        );
         Log.info(
           'Share button tapped for ${video.id}',
           name: 'ShareActionButton',

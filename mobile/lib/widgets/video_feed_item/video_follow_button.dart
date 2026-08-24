@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -59,6 +60,7 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       _bloc = MyFollowingBloc(
         followRepository: followRepository,
         contentBlocklistRepository: blocklistRepository,
+        consumptionAnalytics: ref.read(consumptionAnalyticsTrackerProvider),
       )..add(const MyFollowingListLoadRequested());
     }
 

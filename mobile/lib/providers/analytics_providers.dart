@@ -4,6 +4,7 @@
 import 'package:analytics/analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/features/consumption_analytics/consumption_analytics_tracker.dart';
 import 'package:openvine/features/creation_analytics/creation_analytics_tracker.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -105,6 +106,13 @@ final creationAnalyticsTrackerProvider = Provider<CreationAnalyticsTracker>(
     analytics: ref.watch(analyticsEventSinkProvider),
   ),
 );
+
+final consumptionAnalyticsTrackerProvider =
+    Provider<ConsumptionAnalyticsTracker>(
+      (ref) => ConsumptionAnalyticsTracker(
+        analytics: ref.watch(analyticsEventSinkProvider),
+      ),
+    );
 
 final analyticsIdentityCoordinatorProvider =
     Provider<AnalyticsIdentityCoordinator>(
