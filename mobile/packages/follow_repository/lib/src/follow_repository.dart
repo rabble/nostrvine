@@ -1012,7 +1012,8 @@ class FollowRepository {
   /// evidence to identify an outlier, so the highest observed lower bound wins.
   /// Zero observations are ignored beside positive evidence. EOSE completion is
   /// intentionally diagnostic only: it proves the response finished, not that
-  /// the relay holds every relevant kind 3 event.
+  /// the relay holds every relevant kind 3 event. Consequently, two low partial
+  /// observations can conservatively reject one high source in the 3+ fallback.
   static int _corroborateFollowerCount(
     List<_FollowerCountObservation> observations,
   ) {
