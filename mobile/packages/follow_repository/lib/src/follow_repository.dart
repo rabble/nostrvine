@@ -33,7 +33,6 @@ typedef _CachedFollowerStats = ({
 typedef _FollowerCountObservation = ({
   int count,
   bool isComplete,
-  bool isRestBaseline,
   String source,
 });
 
@@ -979,12 +978,7 @@ class FollowRepository {
     final wsResult = results[1]! as _WebSocketFollowerStats;
     final followerCounts = [
       if (restResult != null)
-        (
-          count: restResult.followers,
-          isComplete: false,
-          isRestBaseline: true,
-          source: 'REST',
-        ),
+        (count: restResult.followers, isComplete: false, source: 'REST'),
       ...wsResult.followerCounts,
     ];
     final followers = _corroborateFollowerCount(followerCounts);
@@ -1011,14 +1005,14 @@ class FollowRepository {
     return FollowerStats(followers: followers, following: following);
   }
 
-  /// Selects a follower count using REST as the stable baseline.
+  /// Selects a robust follower count across all usable observations.
   ///
-  /// One indexer cannot override REST because neither EOSE nor a timeout proves
-  /// that relay's holdings are complete. Two or more indexers can raise the
-  /// baseline using their second-highest count, which rejects a lone high
-  /// outlier without letting a low partial result drag REST down. Without REST,
-  /// the same second-highest fallback applies across indexers; a single indexer
-  /// is used only when it is the sole available evidence.
+  /// Three or more positive observations use their second-highest count so one
+  /// high outlier cannot win. With only one or two positives there is not enough
+  /// evidence to identify an outlier, so the highest observed lower bound wins.
+  /// Zero observations are ignored beside positive evidence. EOSE completion is
+  /// intentionally diagnostic only: it proves the response finished, not that
+  /// the relay holds every relevant kind 3 event.
   static int _corroborateFollowerCount(
     List<_FollowerCountObservation> observations,
   ) {
@@ -1033,25 +1027,8 @@ class FollowRepository {
     final usable = hasPositiveCount
         ? observations.where((result) => result.count > 0)
         : observations;
-    final restCounts = usable
-        .where((result) => result.isRestBaseline)
-        .map((result) => result.count)
-        .toList();
-    final indexerCounts = usable
-        .where((result) => !result.isRestBaseline)
-        .map((result) => result.count)
-        .toList();
-    final restBaseline = restCounts.isEmpty ? null : restCounts.reduce(max);
-
-    if (indexerCounts.length >= 2) {
-      final corroboratedIndexerCount = secondHighest(indexerCounts);
-      return restBaseline == null
-          ? corroboratedIndexerCount
-          : max(restBaseline, corroboratedIndexerCount);
-    }
-
-    if (restBaseline != null) return restBaseline;
-    return indexerCounts.single;
+    final counts = usable.map((result) => result.count).toList();
+    return counts.length >= 3 ? secondHighest(counts) : counts.reduce(max);
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -1223,7 +1200,6 @@ class FollowRepository {
       return (
         count: result,
         isComplete: isComplete,
-        isRestBaseline: false,
         source: indexerUrl,
       );
     } catch (e) {
@@ -1237,7 +1213,6 @@ class FollowRepository {
           : (
               count: followerPubkeys.length,
               isComplete: isComplete,
-              isRestBaseline: false,
               source: indexerUrl,
             );
     } finally {

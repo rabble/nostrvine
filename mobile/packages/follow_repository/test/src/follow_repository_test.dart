@@ -5677,7 +5677,7 @@ void main() {
         );
 
         test(
-          'uses second-highest count across complete indexers',
+          'uses highest lower bound when only two indexers answer',
           () async {
             var callCount = 0;
             repository = FollowRepository(
@@ -5719,8 +5719,7 @@ void main() {
 
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
-            // A lone high complete source cannot win outright.
-            expect(stats.followers, equals(1));
+            expect(stats.followers, equals(2));
           },
         );
 
@@ -5769,6 +5768,54 @@ void main() {
             final stats = await repository.getFollowerStats(testTargetPubkey);
 
             expect(stats.followers, equals(55));
+          },
+        );
+
+        test(
+          'corrects a high REST outlier with two lower indexers',
+          () async {
+            final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+            ).thenAnswer(
+              (_) async => const SocialCounts(
+                pubkey: testTargetPubkey,
+                followerCount: 500,
+                followingCount: 0,
+              ),
+            );
+
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              indexerRelayUrls: const [
+                'wss://indexer1.test',
+                'wss://indexer2.test',
+              ],
+              relayFactory: (url, status) {
+                final count = url.contains('indexer1') ? 88 : 90;
+                return _FakeRelay(url, status)
+                  ..fakeResponses = [
+                    ...List.generate(
+                      count,
+                      (i) => <dynamic>[
+                        'EVENT',
+                        's',
+                        {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                      ],
+                    ),
+                    <dynamic>['EOSE', 's'],
+                  ];
+              },
+            );
+
+            final stats = await repository.getFollowerStats(testTargetPubkey);
+
+            expect(stats.followers, equals(90));
           },
         );
 
@@ -5846,6 +5893,54 @@ void main() {
 
             expect(stats.followers, equals(1000));
           },
+        );
+
+        test(
+          'keeps the higher lower bound with no REST and two indexers',
+          () async {
+            var callCount = 0;
+            repository = FollowRepository(
+              nostrClient: mockNostrClient,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
+              indexerRelayUrls: const [
+                'wss://indexer1.test',
+                'wss://indexer2.test',
+              ],
+              relayFactory: (url, status) {
+                callCount++;
+                return _FakeRelay(url, status)
+                  ..fakeResponses = callCount == 1
+                      ? [
+                          ...List.generate(
+                            10,
+                            (i) => <dynamic>[
+                              'EVENT',
+                              's',
+                              {
+                                'pubkey': i.toRadixString(16).padLeft(64, '0'),
+                              },
+                            ],
+                          ),
+                          <dynamic>['EOSE', 's'],
+                        ]
+                      : List.generate(
+                          3,
+                          (i) => <dynamic>[
+                            'EVENT',
+                            's',
+                            {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                          ],
+                        );
+              },
+            );
+
+            final stats = await repository.getFollowerStats(testTargetPubkey);
+
+            expect(stats.followers, equals(10));
+          },
+          timeout: const Timeout(Duration(seconds: 20)),
         );
       });
 
@@ -6357,6 +6452,47 @@ void main() {
     });
 
     group('getFollowerStats - source confidence', () {
+      test('uses a higher single-indexer lower bound over REST', () async {
+        final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+        ).thenAnswer(
+          (_) async => const SocialCounts(
+            pubkey: testTargetPubkey,
+            followerCount: 5,
+            followingCount: 10,
+          ),
+        );
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const ['wss://idx.test'],
+          relayFactory: (url, status) {
+            return _FakeRelay(url, status)
+              ..fakeResponses = [
+                ...List.generate(
+                  10,
+                  (i) => <dynamic>[
+                    'EVENT',
+                    's',
+                    {'pubkey': i.toRadixString(16).padLeft(64, '0')},
+                  ],
+                ),
+                <dynamic>['EOSE', 's'],
+              ];
+          },
+        );
+
+        final stats = await repository.getFollowerStats(testTargetPubkey);
+
+        expect(stats.followers, equals(10));
+      });
+
       test(
         'does not let one low EOSE indexer drag REST down',
         () async {
