@@ -801,6 +801,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        await tester.scrollUntilVisible(
+          find.text(l10n.settingsGeneralTitle),
+          200,
+        );
         expect(find.text(l10n.settingsGeneralTitle), findsOneWidget);
         expect(find.text('Bluesky Publishing'), findsNothing);
 
