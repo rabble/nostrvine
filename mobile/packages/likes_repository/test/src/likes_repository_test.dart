@@ -6551,6 +6551,33 @@ void main() {
         expect(counts.emojiReactions[testEventId], equals({'😂': 2}));
       });
 
+      test('counts only the newest emoji reaction per pubkey', () async {
+        const repeatPubkey = 'repeat_pubkey_1234567890abcdef';
+        mockQueryEventsSequence([
+          [
+            createMockReaction(
+              id: 'older_joy_reaction',
+              targetEventId: testEventId,
+              authorPubkey: repeatPubkey,
+              content: '😂',
+            ),
+            createMockReaction(
+              id: 'newer_fire_reaction',
+              targetEventId: testEventId,
+              authorPubkey: repeatPubkey,
+              content: '🔥',
+              createdAt: defaultTimestamp + 1,
+            ),
+          ],
+          <Event>[],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+        final counts = await repository.getVoteCounts([testEventId]);
+
+        expect(counts.emojiReactions[testEventId], equals({'🔥': 1}));
+      });
+
       test('reaction retractions carry the NIP-09 k tag', () async {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);

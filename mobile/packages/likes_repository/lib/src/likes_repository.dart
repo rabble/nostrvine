@@ -1377,10 +1377,11 @@ class LikesRepository {
     // Dedupe per pubkey: NIP-25 imposes no per-user cap, so another client
     // can publish the same vote or emoji from one account repeatedly, and
     // counting raw events would let each copy inflate the score (#7784
-    // device patrol). One person counts once per bucket.
+    // device patrol). Votes count once per bucket; emoji reactions keep only
+    // each account's newest event so one person contributes to one chip.
     final upvoterPubkeys = <String, Set<String>>{};
     final downvoterPubkeys = <String, Set<String>>{};
-    final emojiReactorPubkeys = <String, Map<String, Set<String>>>{};
+    final newestEmojiEventByTargetAndPubkey = <String, Map<String, Event>>{};
 
     final knownEventIds = eventIds.toSet();
     for (final event in reactionsById.values) {
@@ -1399,9 +1400,11 @@ class LikesRepository {
       } else {
         final emoji = emojiReactionContentOf(event.content);
         if (emoji == null) continue;
-        ((emojiReactorPubkeys[targetId] ??= {})[emoji] ??= {}).add(
-          event.pubkey,
-        );
+        final byPubkey = newestEmojiEventByTargetAndPubkey[targetId] ??= {};
+        final current = byPubkey[event.pubkey];
+        if (current == null || event.createdAt > current.createdAt) {
+          byPubkey[event.pubkey] = event;
+        }
       }
     }
 
@@ -1411,11 +1414,13 @@ class LikesRepository {
     for (final entry in downvoterPubkeys.entries) {
       downvotes[entry.key] = entry.value.length;
     }
-    for (final entry in emojiReactorPubkeys.entries) {
-      emojiReactions[entry.key] = {
-        for (final perEmoji in entry.value.entries)
-          perEmoji.key: perEmoji.value.length,
-      };
+    for (final entry in newestEmojiEventByTargetAndPubkey.entries) {
+      final countsByEmoji = <String, int>{};
+      for (final event in entry.value.values) {
+        final emoji = emojiReactionContentOf(event.content)!;
+        countsByEmoji[emoji] = (countsByEmoji[emoji] ?? 0) + 1;
+      }
+      emojiReactions[entry.key] = countsByEmoji;
     }
 
     return (
