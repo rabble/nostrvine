@@ -19785,6 +19785,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.'**
   String get safetySettingsShowVerifiedOnlySubtitle;
+
+  /// Title of the account status screen, and of the settings row that opens it.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status'**
+  String get accountStatusTitle;
+
+  /// Settings row subtitle shown when the signed-in account is under enforcement.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted'**
+  String get accountStatusTileSubtitleRestricted;
+
+  /// Heading shown when the app has no authoritative relay-backed account status.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t verify your Divine status yet'**
+  String get accountStatusUnverifiedHeading;
+
+  /// Body shown when Keycast cannot provide an authoritative Divine enforcement status.
+  ///
+  /// In en, this message translates to:
+  /// **'This doesn\'t mean your account is restricted. The app can\'t confirm your current Divine status yet.'**
+  String get accountStatusUnverifiedBody;
+
+  /// Heading shown when the account is suspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is suspended'**
+  String get accountStatusSuspendedHeading;
+
+  /// Explains what a suspension restricts and that content is hidden rather than deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.'**
+  String get accountStatusSuspendedBody;
+
+  /// Heading shown when the account is banned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is banned'**
+  String get accountStatusBannedHeading;
+
+  /// Explains that a ban takes content down from Divine without claiming physical deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.'**
+  String get accountStatusBannedBody;
+
+  /// Heading shown when the account is under an enforcement state this app version does not recognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted'**
+  String get accountStatusRestrictedHeading;
+
+  /// Body for an unrecognized enforcement state, which usually means the app is older than the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.'**
+  String get accountStatusRestrictedBody;
+
+  /// Heading shown when the status could not be read, so nothing is claimed either way.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check your account status'**
+  String get accountStatusUnknownHeading;
+
+  /// Body shown when the status could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'This doesn\'t mean anything is wrong. Check your connection and try again.'**
+  String get accountStatusUnknownBody;
+
+  /// Shown with a retained confirmed restriction after its refresh fails.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t refresh your status. This is the last status we received.'**
+  String get accountStatusLastKnownBody;
+
+  /// Heading shown when the account-status route is opened without a signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to check your account status'**
+  String get accountStatusSignedOutHeading;
+
+  /// Body shown when the account-status route is opened without a signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'There isn\'t a signed-in account to check right now.'**
+  String get accountStatusSignedOutBody;
+
+  /// Heading for the section explaining that Divine's enforcement does not affect the user's Nostr identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account still belongs to you'**
+  String get accountStatusKeysUnaffectedHeading;
+
+  /// Explains that the restriction is limited to Divine-operated surfaces and the user's Nostr identity is untouched.
+  ///
+  /// In en, this message translates to:
+  /// **'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.'**
+  String get accountStatusKeysUnaffectedBody;
+
+  /// Heading for the appeal section.
+  ///
+  /// In en, this message translates to:
+  /// **'If you think this is wrong'**
+  String get accountStatusAppealHeading;
+
+  /// States the appeals policy plainly and points to support as the channel, without promising a formal appeals process.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.'**
+  String get accountStatusAppealBody;
+
+  /// Button opening the in-app support center.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get accountStatusContactSupport;
+
+  /// Button opening the account portability page.
+  ///
+  /// In en, this message translates to:
+  /// **'Move your account'**
+  String get accountStatusMoveAccount;
+
+  /// Button that refetches the account status.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get accountStatusRetry;
 }
 
 class _AppLocalizationsDelegate

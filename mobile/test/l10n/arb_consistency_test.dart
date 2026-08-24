@@ -484,6 +484,30 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
+  // Account-enforcement translation remains tracked in #7765. The policy copy
+  // is deliberately left in English until its human translation pass.
+  'accountStatusTitle',
+  'accountStatusTileSubtitleRestricted',
+  'accountStatusUnverifiedHeading',
+  'accountStatusUnverifiedBody',
+  'accountStatusSuspendedHeading',
+  'accountStatusSuspendedBody',
+  'accountStatusBannedHeading',
+  'accountStatusBannedBody',
+  'accountStatusRestrictedHeading',
+  'accountStatusRestrictedBody',
+  'accountStatusUnknownHeading',
+  'accountStatusUnknownBody',
+  'accountStatusLastKnownBody',
+  'accountStatusSignedOutHeading',
+  'accountStatusSignedOutBody',
+  'accountStatusKeysUnaffectedHeading',
+  'accountStatusKeysUnaffectedBody',
+  'accountStatusAppealHeading',
+  'accountStatusAppealBody',
+  'accountStatusContactSupport',
+  'accountStatusMoveAccount',
+  'accountStatusRetry',
   // Inbox Badges tab and its All-tab banner. Translation deferred to the next
   // l10n pass.
   'notificationsTabBadges',
