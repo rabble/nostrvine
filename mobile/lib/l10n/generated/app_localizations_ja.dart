@@ -1843,6 +1843,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '開発者モードを無効にしました';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Shorebirdパッチ';
 
   @override
@@ -4211,12 +4218,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get supportRequestFeatureSubtitle => '改善や新機能の提案';
 
   @override
-  String get supportSaveLogs => 'ログを保存';
-
-  @override
-  String get supportSaveLogsSubtitle => '手動送信用にログをファイルにエクスポート';
-
-  @override
   String get supportFaq => 'よくある質問';
 
   @override
@@ -4248,18 +4249,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'ログのエクスポートがうまくいかなかった';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

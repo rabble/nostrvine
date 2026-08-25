@@ -1366,6 +1366,14 @@
   },
   "devOptionsDisableDeveloperModeSubtitle": "Hide developer options from settings",
   "devOptionsDisableDeveloperModeToast": "Developer mode disabled",
+  "devOptionsExportLogs": "Export Logs",
+  "@devOptionsExportLogs": {
+    "description": "Developer-options row that opens the system share sheet with the captured log file attached."
+  },
+  "devOptionsExportLogsSubtitle": "Share the log file so we can dig in",
+  "@devOptionsExportLogsSubtitle": {
+    "description": "Subtitle for the developer-options Export Logs row. Says what the row does: hands the file to another app."
+  },
   "devOptionsShorebirdTitle": "Shorebird Patches",
   "devOptionsShorebirdPatchLabel": "Running patch",
   "@devOptionsShorebirdPatchLabel": {
@@ -2831,8 +2839,6 @@
   "supportReportBugSubtitle": "Technical issues with the app",
   "supportRequestFeature": "Request a Feature",
   "supportRequestFeatureSubtitle": "Suggest an improvement or new feature",
-  "supportSaveLogs": "Save Logs",
-  "supportSaveLogsSubtitle": "Export logs to file for manual sending",
   "supportFaq": "FAQ",
   "supportFaqSubtitle": "Common questions & answers",
   "supportFamily": "Divine Family",
@@ -2856,22 +2862,6 @@
   "supportLoginRequired": "Log in to contact support",
   "supportExportingLogs": "Exporting logs...",
   "supportExportLogsFailed": "Failed to export logs",
-  "supportCopyLogs": "Copy Logs",
-  "@supportCopyLogs": {
-    "description": "Support Center tile that copies recent logs to the clipboard. Separate from Save Logs because Android's share sheet Copy action can only copy text, never the attached log file."
-  },
-  "supportCopyLogsSubtitle": "Put the recent ones on your clipboard",
-  "@supportCopyLogsSubtitle": {
-    "description": "Subtitle for the Copy Logs tile. 'The recent ones' refers to log entries; the copy is capped so it stays pasteable."
-  },
-  "supportLogsCopied": "Logs copied",
-  "@supportLogsCopied": {
-    "description": "Snackbar confirming the logs reached the clipboard."
-  },
-  "supportCopyLogsFailed": "Couldn't copy the logs",
-  "@supportCopyLogsFailed": {
-    "description": "Snackbar shown when the clipboard write failed or could not be verified."
-  },
   "supportNoLogsToExport": "No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.",
   "@supportNoLogsToExport": {
     "description": "Shown when the user exports or copies logs but the in-memory capture buffer is empty, which is what happens after a crash or force-quit. Tells them the logs do not survive a restart so they know to reproduce first."

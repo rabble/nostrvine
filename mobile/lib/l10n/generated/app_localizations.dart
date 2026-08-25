@@ -3403,6 +3403,18 @@ abstract class AppLocalizations {
   /// **'Developer mode disabled'**
   String get devOptionsDisableDeveloperModeToast;
 
+  /// Developer-options row that opens the system share sheet with the captured log file attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Logs'**
+  String get devOptionsExportLogs;
+
+  /// Subtitle for the developer-options Export Logs row. Says what the row does: hands the file to another app.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the log file so we can dig in'**
+  String get devOptionsExportLogsSubtitle;
+
   /// No description provided for @devOptionsShorebirdTitle.
   ///
   /// In en, this message translates to:
@@ -7637,18 +7649,6 @@ abstract class AppLocalizations {
   /// **'Suggest an improvement or new feature'**
   String get supportRequestFeatureSubtitle;
 
-  /// No description provided for @supportSaveLogs.
-  ///
-  /// In en, this message translates to:
-  /// **'Save Logs'**
-  String get supportSaveLogs;
-
-  /// No description provided for @supportSaveLogsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Export logs to file for manual sending'**
-  String get supportSaveLogsSubtitle;
-
   /// No description provided for @supportFaq.
   ///
   /// In en, this message translates to:
@@ -7714,30 +7714,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to export logs'**
   String get supportExportLogsFailed;
-
-  /// Support Center tile that copies recent logs to the clipboard. Separate from Save Logs because Android's share sheet Copy action can only copy text, never the attached log file.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy Logs'**
-  String get supportCopyLogs;
-
-  /// Subtitle for the Copy Logs tile. 'The recent ones' refers to log entries; the copy is capped so it stays pasteable.
-  ///
-  /// In en, this message translates to:
-  /// **'Put the recent ones on your clipboard'**
-  String get supportCopyLogsSubtitle;
-
-  /// Snackbar confirming the logs reached the clipboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Logs copied'**
-  String get supportLogsCopied;
-
-  /// Snackbar shown when the clipboard write failed or could not be verified.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t copy the logs'**
-  String get supportCopyLogsFailed;
 
   /// Shown when the user exports or copies logs but the in-memory capture buffer is empty, which is what happens after a crash or force-quit. Tells them the logs do not survive a restart so they know to reproduce first.
   ///

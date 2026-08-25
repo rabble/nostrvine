@@ -1853,6 +1853,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '개발자 모드가 비활성화됨';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Shorebird 패치';
 
   @override
@@ -4227,12 +4234,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportRequestFeatureSubtitle => '개선이나 새로운 기능을 제안해요';
 
   @override
-  String get supportSaveLogs => '로그 저장';
-
-  @override
-  String get supportSaveLogsSubtitle => '수동 전송을 위해 로그를 파일로 내보내요';
-
-  @override
   String get supportFaq => '자주 묻는 질문';
 
   @override
@@ -4264,18 +4265,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => '로그 내보내기에 실패했어요';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

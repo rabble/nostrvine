@@ -12,17 +12,15 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SupportCenterScreen extends ConsumerStatefulWidget {
+class SupportCenterScreen extends ConsumerWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
@@ -36,20 +34,11 @@ class SupportCenterScreen extends ConsumerStatefulWidget {
   final Future<bool> Function()? openZendeskSupport;
 
   @override
-  ConsumerState<SupportCenterScreen> createState() =>
-      _SupportCenterScreenState();
-}
-
-class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
-  var _copyingLogs = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.watch(authServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
     final isAuthenticated =
         ref.watch(currentAuthStateProvider) == AuthState.authenticated;
-    final bugReportService = ref.read(bugReportServiceProvider);
 
     final l10n = context.l10n;
     return Scaffold(
@@ -76,8 +65,7 @@ class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
                   icon: DivineIconName.warningCircle,
                   title: l10n.supportReportBug,
                   subtitle: l10n.supportReportBugSubtitle,
-                  onTap: () =>
-                      _showBugReport(context, bugReportService, userPubkey),
+                  onTap: () => _showBugReport(context, userPubkey),
                 ),
               if (isAuthenticated)
                 _SupportTile(
@@ -86,21 +74,6 @@ class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
                   subtitle: l10n.supportRequestFeatureSubtitle,
                   onTap: () => _showFeatureRequest(context),
                 ),
-              _SupportTile(
-                icon: DivineIconName.save,
-                title: l10n.supportSaveLogs,
-                subtitle: l10n.supportSaveLogsSubtitle,
-                onTap: () => _exportLogs(context, bugReportService, userPubkey),
-              ),
-              // Separate from Save Logs because the share sheet cannot serve
-              // a copy on Android — its Copy chip copies EXTRA_TEXT and never
-              // the attached file (#8112).
-              _SupportTile(
-                icon: DivineIconName.copy,
-                title: l10n.supportCopyLogs,
-                subtitle: l10n.supportCopyLogsSubtitle,
-                onTap: () => _copyLogs(context, bugReportService, userPubkey),
-              ),
               // #6335 was filed from here by someone who could not find
               // deletion, so it has to be reachable from here too. It sits
               // above the outbound links rather than last so it stays on
@@ -166,11 +139,7 @@ class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
     );
   }
 
-  void _showBugReport(
-    BuildContext context,
-    BugReportService bugReportService,
-    String? userPubkey,
-  ) {
+  void _showBugReport(BuildContext context, String? userPubkey) {
     if (userPubkey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
@@ -188,144 +157,6 @@ class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
     context.push(FeatureRequestScreen.path);
   }
 
-  Future<void> _exportLogs(
-    BuildContext context,
-    BugReportService bugReportService,
-    String? userPubkey,
-  ) async {
-    // Resolve the popover anchor before any await — iPad idiom (including
-    // iOS builds on Apple Silicon Macs) rejects the share sheet without it.
-    final sharePositionOrigin = shareAnchorForContext(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        context.l10n.supportExportingLogs,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    final result = await bugReportService.exportLogsToFile(
-      currentScreen: 'SupportCenterScreen',
-      userPubkey: userPubkey,
-      sharePositionOrigin: sharePositionOrigin,
-    );
-    if (!context.mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-
-    switch (result.status) {
-      case LogExportStatus.cancelled:
-        // User backed out of the share sheet or Save As dialog.
-        return;
-      case LogExportStatus.noLogs:
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportNoLogsToExport,
-            duration: const Duration(seconds: 8),
-          ),
-        );
-        return;
-      case LogExportStatus.unconfirmed:
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportExportLogsUnconfirmed,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-        return;
-      case LogExportStatus.failed:
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportExportLogsFailed,
-            error: true,
-          ),
-        );
-        return;
-      case LogExportStatus.shared:
-      case LogExportStatus.saved:
-        break;
-    }
-
-    final filePath = result.filePath;
-    if (filePath != null) {
-      messenger.showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportLogsSavedTo(filePath),
-          duration: const Duration(seconds: 8),
-          actionLabel: context.l10n.supportRevealLogsAction,
-          onActionPressed: () {
-            // DivineSnackbarContainer's action is a plain button, so unlike
-            // SnackBarAction it does not dismiss the banner for us.
-            messenger.hideCurrentSnackBar();
-            bugReportService.revealExportedFile(filePath);
-          },
-        ),
-      );
-    }
-  }
-
-  Future<void> _copyLogs(
-    BuildContext context,
-    BugReportService bugReportService,
-    String? userPubkey,
-  ) async {
-    if (_copyingLogs) return;
-    _copyingLogs = true;
-    ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        context.l10n.supportExportingLogs,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    try {
-      final result = await bugReportService.buildLogClipboardText(
-        currentScreen: 'SupportCenterScreen',
-        userPubkey: userPubkey,
-      );
-      if (!context.mounted) return;
-
-      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-      switch (result.status) {
-        case LogClipboardStatus.noLogs:
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              context.l10n.supportNoLogsToExport,
-              duration: const Duration(seconds: 8),
-            ),
-          );
-          return;
-        case LogClipboardStatus.failed:
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              context.l10n.supportCopyLogsFailed,
-              error: true,
-            ),
-          );
-          return;
-        case LogClipboardStatus.success:
-          break;
-      }
-
-      // copyVerified reads the value back, so a clipboard blocked by a work
-      // profile or a device policy reports failure instead of looking fine.
-      final copied = await ClipboardUtils.copyVerified(
-        context,
-        result.text!,
-        message: context.l10n.supportLogsCopied,
-      );
-      if (!context.mounted || copied) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportCopyLogsFailed,
-          error: true,
-        ),
-      );
-    } finally {
-      _copyingLogs = false;
-    }
-  }
-
   Future<bool> _viewSupportMessages() async {
     // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
     return ZendeskSupportService.showTicketListScreen();
@@ -335,7 +166,7 @@ class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
     final l10n = context.l10n;
     var emailBody = l10n.supportContactSupportSubtitle;
     final openZendesk =
-        widget.openZendeskSupport ??
+        openZendeskSupport ??
         (ZendeskSupportService.isAvailable ? _viewSupportMessages : null);
     if (openZendesk != null) {
       if (await openZendesk()) return;
@@ -347,7 +178,7 @@ class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
 
     final sharePositionOrigin = shareAnchorForContext(context);
     try {
-      await (widget.composeEmail ?? SupportEmailComposer().compose)(
+      await (composeEmail ?? SupportEmailComposer().compose)(
         toEmail: AppConstants.supportEmail,
         subject: l10n.supportContactSupport,
         body: emailBody,

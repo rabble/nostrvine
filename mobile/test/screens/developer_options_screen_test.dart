@@ -120,6 +120,32 @@ void main() {
       },
     );
 
+    // #8127 moved log export here from Support Center, which regular users
+    // see. It belongs between the environment picker and Shorebird patches.
+    testWidgets('places Export Logs between environments and Shorebird', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await pumpScreen(tester, await mockPrefs());
+
+      expect(find.text(l10n.devOptionsExportLogs), findsOneWidget);
+
+      final production = tester.getTopLeft(find.text('Production')).dy;
+      final exportLogs = tester
+          .getTopLeft(
+            find.text(l10n.devOptionsExportLogs),
+          )
+          .dy;
+      final shorebird = tester
+          .getTopLeft(
+            find.text(l10n.devOptionsShorebirdTitle),
+          )
+          .dy;
+
+      expect(exportLogs, greaterThan(production));
+      expect(exportLogs, lessThan(shorebird));
+    });
+
     testWidgets(
       'DeveloperOptionsScreen constrains menu content width on wide screens',
       (tester) async {

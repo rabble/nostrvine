@@ -28,6 +28,7 @@ import 'package:openvine/screens/clip_recovery_screen.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/widgets/developer/storage_footprint_section.dart';
+import 'package:openvine/widgets/developer_options/export_logs_section.dart';
 import 'package:openvine/widgets/developer_options/shorebird_patch_section.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -203,7 +204,12 @@ class _DeveloperOptionsScreenState
                 );
               }),
 
-              // Divider between environments and Shorebird patches
+              // Divider between environments and log export
+              Divider(color: context.vineColors.outline, height: 32),
+
+              const ExportLogsSection(),
+
+              // Divider between log export and Shorebird patches
               Divider(color: context.vineColors.outline, height: 32),
 
               ShorebirdPatchSection(

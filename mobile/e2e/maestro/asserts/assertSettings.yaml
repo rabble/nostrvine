@@ -57,10 +57,6 @@ appId: co.openvine.app.staging
     ProofMode Info
     Learn about ProofMode verification and authenticity
 
-- assertVisible: |-
-    Save Logs
-    Export logs to file for manual sending
-
 - assertVisible: ADVANCED ACCOUNT OPTIONS
 
 - assertVisible: |-

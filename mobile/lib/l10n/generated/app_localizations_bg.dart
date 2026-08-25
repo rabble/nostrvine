@@ -2025,6 +2025,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Режимът за разработчици е изключен';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Корекции на Shorebird';
 
   @override
@@ -4518,13 +4525,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Предложи подобрение или нова функция';
 
   @override
-  String get supportSaveLogs => 'Запази логове';
-
-  @override
-  String get supportSaveLogsSubtitle =>
-      'Експортирай логовете във файл за ръчно изпращане';
-
-  @override
   String get supportFaq => 'ЧЗВ';
 
   @override
@@ -4558,18 +4558,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'Не успяхме да експортираме логовете';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

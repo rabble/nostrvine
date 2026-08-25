@@ -2002,6 +2002,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ontwikkelaarsmodus uitgeschakeld';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Shorebird-patches';
 
   @override
@@ -4485,13 +4492,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stel een verbetering of nieuwe functie voor';
 
   @override
-  String get supportSaveLogs => 'Logs opslaan';
-
-  @override
-  String get supportSaveLogsSubtitle =>
-      'Exporteer logs naar bestand om handmatig te versturen';
-
-  @override
   String get supportFaq => 'Veelgestelde vragen';
 
   @override
@@ -4526,18 +4526,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'Logs exporteren mislukt';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

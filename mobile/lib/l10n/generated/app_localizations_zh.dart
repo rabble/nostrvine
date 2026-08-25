@@ -1868,6 +1868,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => '开发者模式已关闭';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Shorebird 补丁';
 
   @override
@@ -4199,12 +4206,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportRequestFeatureSubtitle => '提出改进建议或新功能想法';
 
   @override
-  String get supportSaveLogs => '保存日志';
-
-  @override
-  String get supportSaveLogsSubtitle => '导出日志到文件，手动发送';
-
-  @override
   String get supportFaq => '常见问题';
 
   @override
@@ -4236,18 +4237,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => '日志导出失败';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

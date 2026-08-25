@@ -1955,6 +1955,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'የገንቢ ሁነታ ተሰናክሏል';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'የShorebird ማስተካከያዎች';
 
   @override
@@ -4373,12 +4380,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportRequestFeatureSubtitle => 'ማሻሻያ ወይም አዲስ ባህሪን ይጠቁሙ';
 
   @override
-  String get supportSaveLogs => 'ምዝግብ ማስታወሻዎችን ያስቀምጡ';
-
-  @override
-  String get supportSaveLogsSubtitle => 'በእጅ ለመላክ የምዝግብ ማስታወሻዎችን ወደ ፋይል ይላኩ።';
-
-  @override
   String get supportFaq => 'የሚጠየቁ ጥያቄዎች';
 
   @override
@@ -4411,18 +4412,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'ምዝግብ ማስታወሻዎችን ወደ ውጭ መላክ አልተሳካም።';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>
