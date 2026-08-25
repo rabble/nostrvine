@@ -829,9 +829,26 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           'identityVerifications',
           db.identityVerificationsDao.clearAll,
         );
-        // Clear DM sync cursors so the next login triggers a full re-fetch
-        // from relays instead of using stale `since:` boundaries.
-        await safeCleanup('dmSyncState', () => DmSyncState(prefs).clearAll());
+        // Clear the leaving account's DM sync cursors so its next login
+        // re-fetches from relays instead of resuming from a `since:` boundary
+        // whose local rows have just been deleted.
+        //
+        // Per-pubkey, not clearAll: the sweep is prefix-based over every
+        // account's keys, so a switch used to drop the *other* accounts'
+        // cursors and drain-complete flags too, re-opening a full history
+        // re-download for each of them. `clear` has existed for this since it
+        // was written — its doc comment already says "Called on account
+        // switch" — it just was never wired up. See #7325.
+        //
+        // main.dart's onDatabaseReset callers keep clearAll: there the whole
+        // database was recreated, so every account's cursors are genuinely
+        // stale.
+        if (userPubkey != null) {
+          await safeCleanup(
+            'dmSyncState',
+            () => DmSyncState(prefs).clear(userPubkey),
+          );
+        }
 
         // Per-user data cleanup (#2999): only on destructive paths
         if (deleteUserData && userPubkey != null) {
