@@ -813,6 +813,52 @@ void main() {
       expect(feed.canAutoPlay!(video), isTrue);
     });
 
+    testWidgets('the author row is a 48dp tap target', (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        InfiniteVideoFeed.debugIsSupportedOverride = true;
+
+        final video = _makeVideo();
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+        );
+        await tester.pump(const Duration(seconds: 4));
+
+        // The name + meta column is intrinsically 44dp and shipped that way:
+        // on an iPhone it reported Size(280.0, 44.0) and failed
+        // androidTapTargetGuideline (48). Walk the tree rather than matching a
+        // label, because the meta line's text is date-dependent.
+        final heights = <double>[];
+        void visit(SemanticsNode node) {
+          if (node.getSemanticsData().hasAction(SemanticsAction.tap)) {
+            heights.add(node.rect.height);
+          }
+          node.visitChildren((child) {
+            visit(child);
+            return true;
+          });
+        }
+
+        visit(tester.getSemantics(find.byType(FeedVideos)));
+
+        // The author row is the only wide tappable in the header.
+        final authorRow = heights.where((h) => h > 20).toList();
+        expect(authorRow, isNotEmpty, reason: 'no header tap target found');
+        expect(
+          authorRow.every((h) => h >= 48),
+          isTrue,
+          reason: 'header tap targets must be >= 48dp, got $authorRow',
+        );
+      } finally {
+        semantics.dispose();
+      }
+    });
+
     testWidgets('exposes localized semantics label and hint', (tester) async {
       final semantics = tester.ensureSemantics();
       try {
