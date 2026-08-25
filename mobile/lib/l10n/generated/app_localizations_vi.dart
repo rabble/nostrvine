@@ -6880,7 +6880,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Yêu cầu xóa tài khoản không thành công.';
+      'Hiện chưa thể xóa tài khoản. Chưa có gì bị xóa.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

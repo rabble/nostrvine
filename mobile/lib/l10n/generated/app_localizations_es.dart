@@ -6974,7 +6974,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'No se pudo solicitar la eliminación de la cuenta.';
+      'La eliminación de cuentas no está disponible en este momento. No se eliminó nada.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

@@ -6956,7 +6956,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Hindi nagtagumpay ang request na i-delete ang account.';
+      'Hindi available ngayon ang pag-delete ng account. Walang na-delete.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

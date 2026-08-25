@@ -6835,7 +6835,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Hesap silme isteği başarısız oldu.';
+      'Hesap silme şu anda kullanılamıyor. Hiçbir şey silinmedi.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

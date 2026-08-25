@@ -6992,7 +6992,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Die Anfrage zur Kontolöschung ist fehlgeschlagen.';
+      'Die Kontolöschung ist gerade nicht verfügbar. Es wurde nichts gelöscht.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

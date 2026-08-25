@@ -4538,7 +4538,7 @@
     "deleteAccountConfirmationHintUsername": "Напиши потребителското си име",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
     "deleteAccountDeleteAllContentButton": "Изтрий цялото съдържание",
-    "deleteAccountDeletionUnavailable": "Заявката за изтриване на акаунта не бе успешна.",
+    "deleteAccountDeletionUnavailable": "Изтриването на акаунт не е достъпно в момента. Нищо не беше изтрито.",
     "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "Не успяхме да довършим изтриването на акаунта ти. Опитай пак.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},

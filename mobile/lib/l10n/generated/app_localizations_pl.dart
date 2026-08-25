@@ -7067,7 +7067,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Żądanie usunięcia konta nie powiodło się.';
+      'Usuwanie konta jest teraz niedostępne. Nic nie zostało usunięte.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

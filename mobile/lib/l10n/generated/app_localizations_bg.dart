@@ -6977,7 +6977,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Заявката за изтриване на акаунта не бе успешна.';
+      'Изтриването на акаунт не е достъпно в момента. Нищо не беше изтрито.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

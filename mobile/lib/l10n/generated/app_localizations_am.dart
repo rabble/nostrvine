@@ -6752,7 +6752,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get deleteAccountDeletionUnavailable => 'የመለያ ስረዛ ጥያቄ አልተሳካም።';
+  String get deleteAccountDeletionUnavailable =>
+      'የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም።';
 
   @override
   String get deleteAccountDeletionIncomplete =>

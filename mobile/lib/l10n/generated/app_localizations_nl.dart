@@ -6936,7 +6936,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Verzoek om accountverwijdering mislukt.';
+      'Je account kan op dit moment niet worden verwijderd. Er is niets verwijderd.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

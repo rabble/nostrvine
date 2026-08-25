@@ -3822,7 +3822,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountDeleteAllContentButton": "Padam Semua Kandungan",
-  "deleteAccountDeletionUnavailable": "Permintaan pemadaman akaun gagal.",
+  "deleteAccountDeletionUnavailable": "Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan.",
   "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.",
   "@deleteAccountDeletionIncomplete": {
