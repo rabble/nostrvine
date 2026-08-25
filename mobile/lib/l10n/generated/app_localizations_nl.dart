@@ -9963,17 +9963,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Beoordelingspagina openen';
 
   @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Je kunt je account meenemen';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Je kunt je Divine-identiteit blijven gebruiken op andere infrastructuur. Verplaats je account of download je archief.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Verplaats je account';
-
-  @override
   String get minorAccountReviewCheckAgain => 'Opnieuw controleren';
 
   @override

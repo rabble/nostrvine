@@ -9878,17 +9878,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Mở trang xem xét';
 
   @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Bạn có thể mang tài khoản của mình theo';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Bạn vẫn có thể dùng danh tính Divine của mình trên hạ tầng khác. Di chuyển tài khoản hoặc tải xuống kho lưu trữ của bạn.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Di chuyển tài khoản của bạn';
-
-  @override
   String get minorAccountReviewCheckAgain => 'Kiểm tra lại';
 
   @override

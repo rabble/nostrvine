@@ -9842,16 +9842,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'فتح صفحة المراجعة';
 
   @override
-  String get minorAccountReviewMoveAccountTitle => 'يمكنك أخذ حسابك معك';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'لا يزال بإمكانك استخدام هوية Divine الخاصة بك على بنية تحتية أخرى. انقل حسابك أو نزّل أرشيفك.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'نقل حسابك';
-
-  @override
   String get minorAccountReviewCheckAgain => 'تحقق مرة أخرى';
 
   @override
