@@ -6848,6 +6848,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Penghapusan akun sedang tidak tersedia. Tidak ada yang dihapus. Coba lagi nanti.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Kami tidak bisa menyelesaikan penghapusan akunmu. Coba lagi.';
 

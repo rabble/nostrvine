@@ -4410,6 +4410,8 @@
     "deleteAccountContentDeletionFailed": "Kunde inte ta bort innehåll från relerna",
     "deleteAccountRelayConfirmationFailed": "Vi kunde inte bekräfta kontoraderingen med något relä. Kontrollera anslutningen och försök igen.",
     "deleteAccountDeleteAllContentButton": "Ta bort allt innehåll",
+    "deleteAccountDeletionUnavailable": "Kontoborttagning är inte tillgänglig just nu. Ingenting har tagits bort. Försök igen senare.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "Vi kunde inte slutföra raderingen av ditt konto. Försök igen.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "Slutför raderingen av ditt konto",

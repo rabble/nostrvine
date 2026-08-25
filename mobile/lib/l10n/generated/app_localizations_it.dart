@@ -6993,6 +6993,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'L\'eliminazione dell\'account non è disponibile al momento. Non è stato eliminato nulla. Riprova più tardi.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Non siamo riusciti a completare l\'eliminazione del tuo account. Riprova.';
 

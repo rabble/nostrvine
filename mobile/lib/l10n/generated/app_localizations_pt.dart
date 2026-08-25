@@ -6971,6 +6971,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'A exclusão de conta não está disponível no momento. Nada foi excluído. Tente novamente mais tarde.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Não conseguimos concluir a exclusão da sua conta. Tente novamente.';
 

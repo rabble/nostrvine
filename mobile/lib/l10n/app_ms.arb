@@ -3825,6 +3825,8 @@
   "deleteAccountContentDeletionFailed": "Gagal memadam kandungan daripada relay",
   "deleteAccountRelayConfirmationFailed": "Kami tidak dapat mengesahkan pemadaman akaun dengan mana-mana relay. Semak sambungan anda dan cuba lagi.",
   "deleteAccountDeleteAllContentButton": "Padam Semua Kandungan",
+  "deleteAccountDeletionUnavailable": "Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan. Cuba lagi kemudian.",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.",
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."

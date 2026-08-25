@@ -1148,7 +1148,7 @@ void main() {
         find.text(
           lookupAppLocalizations(
             const Locale('en'),
-          ).deleteAccountBurnUsernameFailed,
+          ).deleteAccountDeletionUnavailable,
         ),
         findsOneWidget,
       );
@@ -1332,7 +1332,7 @@ void main() {
         find.text(
           lookupAppLocalizations(
             const Locale('en'),
-          ).deleteAccountBurnUsernameFailed,
+          ).deleteAccountDeletionUnavailable,
         ),
         findsOneWidget,
       );
@@ -1720,7 +1720,7 @@ void main() {
       },
     );
 
-    testWidgets('prepare network failure aborts before relay deletion', (
+    testWidgets('username preparation failure keeps username guidance', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1733,7 +1733,13 @@ void main() {
       final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       when(
         () => recoveryRepository.prepare(username: any(named: 'username')),
-      ).thenThrow(const AccountDeletionRecoveryException('connection lost'));
+      ).thenThrow(
+        const AccountDeletionRecoveryException(
+          'name server rejected request',
+          stage: AccountDeletionRecoveryStage.usernamePreparation,
+          statusCode: 409,
+        ),
+      );
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -1773,7 +1779,7 @@ void main() {
       );
     });
 
-    testWidgets('coordinator outage uses generic copy without a username', (
+    testWidgets('coordinator outage explains deletion is unavailable', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1783,7 +1789,11 @@ void main() {
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       when(recoveryRepository.prepare).thenThrow(
-        const AccountDeletionRecoveryException('connection lost'),
+        const AccountDeletionRecoveryException(
+          'Deletion attempt request failed (404)',
+          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+          statusCode: 404,
+        ),
       );
 
       late BuildContext capturedContext;
@@ -1807,7 +1817,114 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
+      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+    });
+
+    testWidgets(
+      'coordinator outage ignores burn option when choosing guidance',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
+          const AccountDeletionRecoveryException(
+            'Deletion attempt request failed (404)',
+            stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+            statusCode: 404,
+          ),
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          deletionRecoveryRepository: recoveryRepository,
+          burnUsername: true,
+          ownedUsername: (name: 'alice', canonical: 'alice'),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _englishL10n();
+        expect(
+          find.text(l10n.deleteAccountDeletionUnavailable),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
+        expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
+        verifyNever(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        );
+      },
+    );
+
+    testWidgets('ambiguous post-username failure keeps neutral guidance', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Username confirmation request failed',
+          stage: AccountDeletionRecoveryStage.coordinatorUsernameConfirmation,
+          statusCode: 503,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        burnUsername: true,
+        ownedUsername: (name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
       expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
@@ -1822,6 +1939,7 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
       // The pre-flight gate runs on every path; default it to ready so
       // these tests exercise the behaviour under test, not the gate.
       when(
@@ -1846,6 +1964,7 @@ void main() {
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
         burnUsername: true,
       );
       await tester.pumpAndSettle();
@@ -1856,6 +1975,9 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       );
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
     });
 
     testWidgets('aborts before burn when the account changed', (tester) async {

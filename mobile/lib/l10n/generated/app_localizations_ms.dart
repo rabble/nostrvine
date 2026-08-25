@@ -6933,6 +6933,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan. Cuba lagi kemudian.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.';
 

@@ -6951,6 +6951,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Je account kan op dit moment niet worden verwijderd. Er is niets verwijderd. Probeer het later opnieuw.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
 

@@ -6971,6 +6971,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Hindi available ngayon ang pag-delete ng account. Walang na-delete. Subukan ulit mamaya.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Hindi namin natapos ang pag-delete ng account mo. Subukan ulit.';
 

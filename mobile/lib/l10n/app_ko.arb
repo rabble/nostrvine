@@ -3871,6 +3871,8 @@
     "deleteAccountContentDeletionFailed": "릴레이에서 콘텐츠를 삭제하지 못했어요",
     "deleteAccountRelayConfirmationFailed": "어떤 릴레이에서도 계정 삭제를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.",
     "deleteAccountDeleteAllContentButton": "모든 콘텐츠 삭제",
+    "deleteAccountDeletionUnavailable": "지금은 계정을 삭제할 수 없어요. 삭제된 항목은 없어요. 나중에 다시 시도해주세요.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "계정 삭제를 완료하지 못했어요. 다시 시도해주세요.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "계정 삭제 마무리하기",

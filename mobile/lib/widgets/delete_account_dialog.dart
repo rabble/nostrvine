@@ -542,6 +542,7 @@ Future<void> executeAccountDeletion({
   final accountChangedAfterDeletionText =
       context.l10n.deleteAccountAccountChangedAfterDeletion;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
+  final deletionUnavailableText = context.l10n.deleteAccountDeletionUnavailable;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final relayConfirmationFailedText =
       context.l10n.deleteAccountRelayConfirmationFailed;
@@ -621,6 +622,21 @@ Future<void> executeAccountDeletion({
               }
             : null,
       ),
+    );
+    announceOutcome(message);
+  }
+
+  void abortPreparation(Object error, String message) {
+    Log.warning(
+      'Account deletion could not be prepared ($error); aborting '
+      'account deletion',
+      name: screenName,
+      category: LogCategory.auth,
+    );
+    dismissProgressSheet();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(message, error: true),
     );
     announceOutcome(message);
   }
@@ -712,10 +728,17 @@ Future<void> executeAccountDeletion({
       // it, so we must NOT proceed — treated the same as a failed release
       // (hard-block, symmetric in both directions).
       try {
-        if ((burnUsername && ownedUsername == null) ||
-            deletionRecoveryRepository == null) {
+        if (deletionRecoveryRepository == null) {
           throw const AccountDeletionRecoveryException(
             'Deletion recovery is unavailable',
+            stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+            isTransportFailure: true,
+          );
+        }
+        if (burnUsername && ownedUsername == null) {
+          throw const AccountDeletionRecoveryException(
+            'Username release is unavailable',
+            stage: AccountDeletionRecoveryStage.usernamePreparation,
           );
         }
         final prepared = await deletionRecoveryRepository.prepare(
@@ -724,6 +747,7 @@ Future<void> executeAccountDeletion({
         if (prepared.status != AccountDeletionAttemptStatus.recoverable) {
           throw AccountDeletionRecoveryException(
             'Prepare returned ${prepared.status.name}',
+            stage: AccountDeletionRecoveryStage.coordinatorAttempt,
           );
         }
         deletionAttempt = prepared;
@@ -734,25 +758,19 @@ Future<void> executeAccountDeletion({
           name: screenName,
           category: LogCategory.auth,
         );
+      } on AccountDeletionRecoveryException catch (error) {
+        final message = switch (error.stage) {
+          AccountDeletionRecoveryStage.coordinatorAttempt
+              when error.indicatesServiceUnavailable =>
+            deletionUnavailableText,
+          AccountDeletionRecoveryStage.usernamePreparation =>
+            burnUsernameFailedText,
+          _ => deletionIncompleteText,
+        };
+        abortPreparation(error, message);
+        return;
       } on Object catch (error) {
-        Log.warning(
-          'Username release could not be prepared ($error); aborting '
-          'account deletion',
-          name: screenName,
-          category: LogCategory.auth,
-        );
-        dismissProgressSheet();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              burnUsername ? burnUsernameFailedText : deletionIncompleteText,
-              error: true,
-            ),
-          );
-          announceOutcome(
-            burnUsername ? burnUsernameFailedText : deletionIncompleteText,
-          );
-        }
+        abortPreparation(error, deletionIncompleteText);
         return;
       }
     }

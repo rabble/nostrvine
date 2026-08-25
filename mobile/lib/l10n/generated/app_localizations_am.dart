@@ -6768,6 +6768,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም። ቆይተው እንደገና ይሞክሩ።';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 

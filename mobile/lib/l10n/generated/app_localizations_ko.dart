@@ -6594,6 +6594,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      '지금은 계정을 삭제할 수 없어요. 삭제된 항목은 없어요. 나중에 다시 시도해주세요.';
+
+  @override
   String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
 
   @override

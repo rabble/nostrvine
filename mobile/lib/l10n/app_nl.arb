@@ -4410,6 +4410,8 @@
     "deleteAccountContentDeletionFailed": "Inhoud verwijderen van relays mislukt",
     "deleteAccountRelayConfirmationFailed": "We konden het verwijderen van het account bij geen enkele relay bevestigen. Controleer je verbinding en probeer het opnieuw.",
     "deleteAccountDeleteAllContentButton": "Alle inhoud verwijderen",
+    "deleteAccountDeletionUnavailable": "Je account kan op dit moment niet worden verwijderd. Er is niets verwijderd. Probeer het later opnieuw.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "We konden je account niet volledig verwijderen. Probeer het opnieuw.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "Verwijderen van je account afronden",

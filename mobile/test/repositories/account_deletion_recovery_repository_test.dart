@@ -108,6 +108,49 @@ void main() {
       expect(result, isNull);
     });
 
+    test('coordinator 404 preserves status, stage, and availability', () {
+      expect(
+        () => repository(
+          MockClient((_) async => http.Response('{}', 404)),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesServiceUnavailable,
+                'indicatesServiceUnavailable',
+                isTrue,
+              ),
+        ),
+      );
+    });
+
+    test('coordinator transport failure is classified as unavailable', () {
+      expect(
+        () => repository(
+          MockClient((_) async => throw http.ClientException('offline')),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesServiceUnavailable,
+                'indicatesServiceUnavailable',
+                isTrue,
+              ),
+        ),
+      );
+    });
+
     test(
       'preparing username completes owner prepare and verified handshake',
       () async {
@@ -158,6 +201,62 @@ void main() {
         ]);
       },
     );
+
+    test('Name Server failure is tagged as username preparation', () {
+      expect(
+        () => repository(
+          MockClient((request) async {
+            if (request.url.host == 'names.divine.video') {
+              return http.Response('{}', 503);
+            }
+            return coordinatorPreparing(request);
+          }),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.usernamePreparation,
+              ),
+        ),
+      );
+    });
+
+    test('coordinator confirmation failure has its own stage', () {
+      expect(
+        () => repository(
+          MockClient((request) async {
+            if (request.url.path == '/api/account-deletion/attempts') {
+              return coordinatorPreparing(request);
+            }
+            if (request.url.host == 'names.divine.video') {
+              return http.Response(
+                jsonEncode({
+                  'attempt_id': 'attempt-1',
+                  'state': 'pending',
+                  'expires_at': 1787450400,
+                }),
+                200,
+              );
+            }
+            return http.Response('{}', 503);
+          }),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorUsernameConfirmation,
+              ),
+        ),
+      );
+    });
 
     test(
       'resume preparation preserves the existing coordinator attempt id',
@@ -446,6 +545,24 @@ void main() {
         Duration(milliseconds: 10),
         Duration(milliseconds: 20),
       ]);
+    });
+
+    test('exhausted 429 is classified as service unavailable', () {
+      expect(
+        () => repository(
+          MockClient((_) async => http.Response('{}', 429)),
+          delay: (_) async {},
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 429)
+              .having(
+                (error) => error.indicatesServiceUnavailable,
+                'indicatesServiceUnavailable',
+                isTrue,
+              ),
+        ),
+      );
     });
 
     test('a stalled Name Server keeps the repository failure type', () async {

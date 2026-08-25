@@ -6920,6 +6920,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'اکاؤنٹ حذف کرنے کی سہولت ابھی دستیاب نہیں ہے۔ کچھ بھی حذف نہیں ہوا۔ بعد میں دوبارہ کوشش کریں۔';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
 

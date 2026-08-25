@@ -4410,6 +4410,8 @@
     "deleteAccountContentDeletionFailed": "Gagal menghapus konten dari relay",
     "deleteAccountRelayConfirmationFailed": "Kami tidak bisa memastikan penghapusan akun dengan relay mana pun. Periksa koneksimu dan coba lagi.",
     "deleteAccountDeleteAllContentButton": "Hapus Semua Konten",
+    "deleteAccountDeletionUnavailable": "Penghapusan akun sedang tidak tersedia. Tidak ada yang dihapus. Coba lagi nanti.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "Kami tidak bisa menyelesaikan penghapusan akunmu. Coba lagi.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "Selesaikan penghapusan akunmu",

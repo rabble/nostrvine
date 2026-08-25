@@ -7082,6 +7082,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Usuwanie konta jest teraz niedostępne. Nic nie zostało usunięte. Spróbuj ponownie później.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Nie udało się dokończyć usuwania konta. Spróbuj ponownie.';
 

@@ -6916,6 +6916,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Kontoborttagning är inte tillgänglig just nu. Ingenting har tagits bort. Försök igen senare.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Vi kunde inte slutföra raderingen av ditt konto. Försök igen.';
 

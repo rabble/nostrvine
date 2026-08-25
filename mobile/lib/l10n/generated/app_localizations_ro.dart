@@ -7094,6 +7094,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Ștergerea contului nu este disponibilă momentan. Nu s-a șters nimic. Încearcă din nou mai târziu.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
 

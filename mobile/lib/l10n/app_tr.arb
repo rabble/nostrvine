@@ -4410,6 +4410,8 @@
     "deleteAccountContentDeletionFailed": "İçerik rölelerden silinemedi",
     "deleteAccountRelayConfirmationFailed": "Hesap silmeyi hiçbir röleyle doğrulayamadık. Bağlantını kontrol edip tekrar dene.",
     "deleteAccountDeleteAllContentButton": "Tüm İçeriği Sil",
+    "deleteAccountDeletionUnavailable": "Hesap silme şu anda kullanılamıyor. Hiçbir şey silinmedi. Daha sonra tekrar dene.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "Hesabını silme işlemini tamamlayamadık. Tekrar dene.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "Hesap silme işlemini tamamla",

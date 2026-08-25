@@ -6992,6 +6992,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Изтриването на акаунт не е достъпно в момента. Нищо не беше изтрито. Опитай отново по-късно.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
 

@@ -6895,6 +6895,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Hiện chưa thể xóa tài khoản. Chưa có gì bị xóa. Hãy thử lại sau nhé.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
 

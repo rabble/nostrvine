@@ -4410,6 +4410,8 @@
     "deleteAccountContentDeletionFailed": "Échec de la suppression du contenu des relays",
     "deleteAccountRelayConfirmationFailed": "On n'a pas pu confirmer la suppression du compte auprès d'un relais. Vérifie ta connexion et réessaie.",
     "deleteAccountDeleteAllContentButton": "Supprimer tout le contenu",
+    "deleteAccountDeletionUnavailable": "La suppression de compte n’est pas disponible pour le moment. Rien n’a été supprimé. Réessaie plus tard.",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "On n'a pas pu terminer la suppression de ton compte. Réessaie.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "Terminer la suppression de ton compte",

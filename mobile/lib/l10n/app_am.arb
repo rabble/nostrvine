@@ -4535,6 +4535,8 @@
     "deleteAccountContentDeletionFailed": "ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም",
     "deleteAccountRelayConfirmationFailed": "የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።",
     "deleteAccountDeleteAllContentButton": "ሁሉንም ይዘት ሰርዝ",
+    "deleteAccountDeletionUnavailable": "የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም። ቆይተው እንደገና ይሞክሩ።",
+    "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},
     "accountDeletionRecoveryTitle": "የመለያዎን መሰረዝ ያጠናቅቁ",

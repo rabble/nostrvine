@@ -6850,6 +6850,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Hesap silme şu anda kullanılamıyor. Hiçbir şey silinmedi. Daha sonra tekrar dene.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
 
