@@ -892,6 +892,53 @@ void main() {
       });
     });
 
+    group('claimLegacyRows', () {
+      const userA = 'pubkey_claim_a';
+      const userB = 'pubkey_claim_b';
+
+      test('adopts NULL-owner rows and leaves owned rows alone', () async {
+        await dao.insertMessage(
+          id: 'msg_legacy',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Legacy message',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_legacy',
+        );
+        await dao.insertMessage(
+          id: 'msg_b1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_bob',
+          content: 'User B message',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_b1',
+          ownerPubkey: userB,
+        );
+
+        final claimed = await dao.claimLegacyRows(userA);
+
+        expect(claimed, equals(1));
+        // The adopted row is now reachable by an owner-scoped delete, which is
+        // the whole point — before #7325 nothing could ever delete it.
+        expect(await dao.clearAllForUser(userA), equals(1));
+        expect(await dao.countMessages(conversationId1), equals(1));
+      });
+
+      test('returns 0 when there is nothing unowned', () async {
+        await dao.insertMessage(
+          id: 'msg_a1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'User A message',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_a1',
+          ownerPubkey: userA,
+        );
+
+        expect(await dao.claimLegacyRows(userB), equals(0));
+      });
+    });
+
     group('clearAll', () {
       test('deletes all direct messages', () async {
         await dao.insertMessage(
