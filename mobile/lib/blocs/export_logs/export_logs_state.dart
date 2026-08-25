@@ -1,4 +1,4 @@
-// ABOUTME: State for the developer-options log export flow
+// ABOUTME: State for the Support Center log export flow
 // ABOUTME: Status enum only — the UI maps each outcome to its own l10n string
 
 import 'package:equatable/equatable.dart';

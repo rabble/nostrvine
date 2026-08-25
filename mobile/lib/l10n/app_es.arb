@@ -1638,6 +1638,8 @@
     "supportReportBugSubtitle": "Problemas técnicos con la app",
     "supportRequestFeature": "Pedir una función",
     "supportRequestFeatureSubtitle": "Sugerí una mejora o una función nueva",
+    "supportSaveLogs": "Guardar logs",
+    "supportSaveLogsSubtitle": "Exportá los logs a un archivo para enviarlos manualmente",
     "supportFaq": "Preguntas frecuentes",
     "supportFaqSubtitle": "Preguntas y respuestas comunes",
     "supportFamily": "Divine Family",

@@ -1833,6 +1833,8 @@
     "supportReportBugSubtitle": "Технически проблеми с приложението",
     "supportRequestFeature": "Заявка за функция",
     "supportRequestFeatureSubtitle": "Предложи подобрение или нова функция",
+    "supportSaveLogs": "Запази логове",
+    "supportSaveLogsSubtitle": "Експортирай логовете във файл за ръчно изпращане",
     "supportFaq": "ЧЗВ",
     "supportFaqSubtitle": "Често задавани въпроси и отговори",
     "supportFamily": "Divine Family",

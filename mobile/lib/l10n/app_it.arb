@@ -1634,6 +1634,8 @@
     "supportReportBugSubtitle": "Problemi tecnici con l'app",
     "supportRequestFeature": "Richiedi una funzionalità",
     "supportRequestFeatureSubtitle": "Suggerisci un miglioramento o una nuova funzionalità",
+    "supportSaveLogs": "Salva log",
+    "supportSaveLogsSubtitle": "Esporta i log in un file per l'invio manuale",
     "supportFaq": "FAQ",
     "supportFaqSubtitle": "Domande frequenti e risposte",
     "supportFamily": "Divine Family",

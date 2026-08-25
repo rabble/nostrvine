@@ -1634,6 +1634,8 @@
     "supportReportBugSubtitle": "Probleme tehnice cu aplicația",
     "supportRequestFeature": "Cere o funcție",
     "supportRequestFeatureSubtitle": "Sugerează o îmbunătățire sau o funcție nouă",
+    "supportSaveLogs": "Salvează jurnalele",
+    "supportSaveLogsSubtitle": "Exportă jurnalele într-un fișier pentru trimitere manuală",
     "supportFaq": "Întrebări frecvente",
     "supportFaqSubtitle": "Întrebări și răspunsuri comune",
     "supportFamily": "Divine Family",

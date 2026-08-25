@@ -1624,6 +1624,8 @@
     "supportReportBugSubtitle": "アプリの技術的な問題",
     "supportRequestFeature": "機能リクエスト",
     "supportRequestFeatureSubtitle": "改善や新機能の提案",
+    "supportSaveLogs": "ログを保存",
+    "supportSaveLogsSubtitle": "手動送信用にログをファイルにエクスポート",
     "supportFaq": "よくある質問",
     "supportFaqSubtitle": "よくある質問と回答",
     "supportFamily": "Divine Family",

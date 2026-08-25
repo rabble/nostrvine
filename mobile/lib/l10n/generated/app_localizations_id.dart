@@ -1924,13 +1924,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Mode pengembang dinonaktifkan';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Patch Shorebird';
 
   @override
@@ -4406,6 +4399,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Sarankan perbaikan atau fitur baru';
+
+  @override
+  String get supportSaveLogs => 'Simpan Log';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Ekspor log ke file untuk pengiriman manual';
 
   @override
   String get supportFaq => 'FAQ';

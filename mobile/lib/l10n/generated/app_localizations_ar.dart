@@ -1975,13 +1975,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'تم تعطيل وضع المطوّر';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'تصحيحات Shorebird';
 
   @override
@@ -4439,6 +4432,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get supportRequestFeatureSubtitle => 'اقتراح تحسين أو ميزة جديدة';
+
+  @override
+  String get supportSaveLogs => 'حفظ السجلات';
+
+  @override
+  String get supportSaveLogsSubtitle => 'تصدير السجلات إلى ملف للإرسال يدويًا';
 
   @override
   String get supportFaq => 'الأسئلة الشائعة';

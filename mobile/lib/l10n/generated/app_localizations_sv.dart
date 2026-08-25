@@ -1987,13 +1987,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Utvecklarläge inaktiverat';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Shorebird-korrigeringar';
 
   @override
@@ -4472,6 +4465,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Föreslå en förbättring eller ny funktion';
+
+  @override
+  String get supportSaveLogs => 'Spara loggar';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Exportera loggar till fil för manuell sändning';
 
   @override
   String get supportFaq => 'FAQ';

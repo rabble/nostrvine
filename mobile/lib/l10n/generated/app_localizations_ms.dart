@@ -1977,13 +1977,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Mod pembangun dilumpuhkan';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Tampalan Shorebird';
 
   @override
@@ -4474,6 +4467,13 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Cadangkan penambahbaikan atau ciri baharu';
+
+  @override
+  String get supportSaveLogs => 'Simpan Log';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Eksport log ke fail untuk penghantaran manual';
 
   @override
   String get supportFaq => 'Soalan Lazim';

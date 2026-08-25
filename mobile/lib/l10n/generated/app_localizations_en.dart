@@ -2002,13 +2002,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get devOptionsDisableDeveloperModeToast => 'Developer mode disabled';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Shorebird Patches';
 
   @override
@@ -4563,6 +4556,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Suggest an improvement or new feature';
+
+  @override
+  String get supportSaveLogs => 'Save Logs';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Export logs to file for manual sending';
 
   @override
   String get supportFaq => 'FAQ';

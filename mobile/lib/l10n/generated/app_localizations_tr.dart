@@ -1929,13 +1929,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Geliştirici modu devre dışı bırakıldı';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Shorebird yamaları';
 
   @override
@@ -4417,6 +4410,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Bir iyileştirme veya yeni özellik öner';
+
+  @override
+  String get supportSaveLogs => 'Günlükleri Kaydet';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Manuel göndermek için günlükleri dosyaya aktar';
 
   @override
   String get supportFaq => 'SSS';
