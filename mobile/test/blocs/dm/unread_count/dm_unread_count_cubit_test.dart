@@ -598,6 +598,12 @@ void main() {
       final cubit = buildCubit();
       _close(fake, cubit);
 
+      // Assert the cancel directly. The writes below cannot fail this test on
+      // their own: with the cancel removed they feed a still-open cubit and
+      // throw in neither case.
+      expect(acceptedController.hasListener, isFalse);
+      expect(potentialController.hasListener, isFalse);
+
       // Emitting after close must not throw (subscription cancelled).
       acceptedController.add(const []);
       potentialController.add(const []);
