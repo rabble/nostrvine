@@ -1,5 +1,5 @@
-// ABOUTME: Persists push preferences and their retry state.
-// ABOUTME: Keeps preference sync storage out of the UI.
+// ABOUTME: Persists push notification preferences and syncs them to the push service
+// ABOUTME: Keeps storage and remote update logic out of the settings UI
 
 import 'dart:convert';
 
@@ -11,7 +11,10 @@ import 'package:unified_logger/unified_logger.dart';
 abstract interface class NotificationPreferencesStore {
   Future<NotificationPreferences> loadPreferences();
   Future<void> savePreferences(NotificationPreferences preferences);
-  Future<void> markDirty(String pubkey, NotificationPreferences preferences);
+  Future<void> markDirty(
+    String pubkey,
+    NotificationPreferences preferences,
+  );
   Future<NotificationPreferences?> loadDirty(String pubkey);
   Future<void> clearDirty(String pubkey);
   Future<void> clearDirtyIfMatches(

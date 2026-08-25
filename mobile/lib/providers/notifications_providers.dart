@@ -152,7 +152,9 @@ notificationPreferencesDirtySyncBridgeProvider =
           await preferencesService.markDirtyIfSchemaOutdated(pubkey);
           if (!isReadyForPubkey(pubkey)) return;
           final outcome = await preferencesService
-              .syncDirtyPreferencesForPubkey(pubkey);
+              .syncDirtyPreferencesForPubkey(
+                pubkey,
+              );
           if (disposed || generation != drainGeneration) return;
           switch (outcome) {
             case NotificationPreferencesSyncOutcome.publishedAndCleared:

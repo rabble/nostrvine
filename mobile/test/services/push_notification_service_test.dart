@@ -459,6 +459,39 @@ void main() {
         );
         service.dispose();
       });
+
+      test('retries when the configured relay is unreachable', () async {
+        final fakeEvent = _FakeEvent();
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => fakeEvent);
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            fakeEvent,
+            targetRelays: [testEnvironment.relayUrl],
+            timeout: pushPublishTimeout,
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: fakeEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+            unreachableTargets: [testEnvironment.relayUrl],
+          ),
+        );
+
+        final service = buildService();
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.retryableFailure,
+        );
+        service.dispose();
+      });
     });
 
     group('deregister', () {
