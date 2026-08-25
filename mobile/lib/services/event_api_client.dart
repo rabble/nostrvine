@@ -24,8 +24,8 @@ final class EventApiAccepted extends EventApiPublishResult {
   final String eventId;
 }
 
-/// The API rejected the event with an actionable, non-retryable status
-/// (401/403/422, or a client-side signer/identity mismatch).
+/// The API rejected the event with an actionable status (401/403/422, a
+/// client-side signer/identity mismatch, or an explicit restriction response).
 final class EventApiRejected extends EventApiPublishResult {
   const EventApiRejected({required this.statusCode, required this.reason});
 
@@ -50,9 +50,8 @@ final class EventApiTransientFailure extends EventApiPublishResult {
 /// The request body is the already-signed event JSON. Authorization is
 /// NIP-98 (kind 27235) over the exact publish URL, `POST` method, and a
 /// payload hash of the request body. Outcomes are classified so the caller
-/// can treat acceptances as published, 401/403/422 as real failures, and
-/// everything else (timeouts, 5xx, network errors) as transient — at which
-/// point the caller should fall back to a WebSocket publish.
+/// can treat acceptances as published, inspect explicit rejections, and
+/// classify everything else (timeouts, 5xx, network errors) as transient.
 class EventApiClient {
   EventApiClient({
     required http.Client httpClient,

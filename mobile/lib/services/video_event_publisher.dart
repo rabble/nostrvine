@@ -633,8 +633,6 @@ class VideoEventPublisher {
       switch (outcome) {
         case _EventPublishOutcome.published:
           return _EventPublishOutcome.published;
-        case _EventPublishOutcome.permanentlyRejected:
-          return _EventPublishOutcome.permanentlyRejected;
         case _EventPublishOutcome.transientFailure:
           if (attempt < maxRetries) {
             final delaySeconds = attempt * 2; // 2s, 4s backoff
@@ -653,6 +651,9 @@ class VideoEventPublisher {
             );
           }
       }
+    }
+    if (await _relayPresence(event) == _RelayPresence.found) {
+      return _EventPublishOutcome.published;
     }
     return _EventPublishOutcome.transientFailure;
   }
@@ -680,17 +681,17 @@ class VideoEventPublisher {
             source: AccountRestrictionSource.rest,
           );
         }
-        Log.error(
-          '❌ REST publish permanently rejected ($statusCode) for '
-          '${event.id}: $reason',
+        Log.warning(
+          '⚠️ REST publish rejected ($statusCode) for ${event.id}: $reason; '
+          'falling back to an OK-aware WebSocket publish',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return _EventPublishOutcome.permanentlyRejected;
+        return _publishEventToNostr(event);
       case EventApiTransientFailure(:final reason):
         Log.warning(
           '⚠️ REST publish transient failure for ${event.id} ($reason); '
-          'falling back to WebSocket fire-and-forget',
+          'falling back to an OK-aware WebSocket publish',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );

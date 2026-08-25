@@ -220,20 +220,28 @@ void main() {
       },
     );
 
-    test('REST rejection stops without WebSocket fallback', () async {
+    test('REST rejection falls back to WebSocket acceptance', () async {
       final signedEvent = createSignedEvent();
       stubSigning(signedEvent);
       stubRest(const EventApiRejected(statusCode: 422, reason: 'bad event'));
+      stubWebSocket(
+        PublishOutcome(
+          eventId: signedEvent.id,
+          acceptedBy: const ['wss://trusted.example'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       final result = await publisher.publishDirectUpload(createUpload());
 
-      expect(result, isFalse);
-      verifyNever(
+      expect(result, isTrue);
+      verify(
         () => mockNostrClient.publishEventAwaitOk(
-          any(),
+          signedEvent,
           timeout: any(named: 'timeout'),
         ),
-      );
+      ).called(1);
       verify(() => mockEventApiClient.publishEvent(signedEvent)).called(1);
     });
 
@@ -450,6 +458,43 @@ void main() {
             nostrEventId: signedEvent.id,
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'final WebSocket false-negative is recovered by relay presence',
+      () async {
+        final signedEvent = createSignedEvent();
+        stubSigning(signedEvent);
+        stubRest(const EventApiTransientFailure('http_503'));
+        stubWebSocket(
+          PublishOutcome(
+            eventId: signedEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const ['wss://trusted.example'],
+          ),
+        );
+        var presenceChecks = 0;
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async {
+          presenceChecks++;
+          return presenceChecks == 3 ? [signedEvent] : <Event>[];
+        });
+
+        expect(await publisher.publishDirectUpload(createUpload()), isTrue);
+        verify(() => mockEventApiClient.publishEvent(signedEvent)).called(3);
+        verify(
+          () => mockNostrClient.publishEventAwaitOk(
+            signedEvent,
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(3);
+        expect(presenceChecks, 3);
       },
     );
   });
