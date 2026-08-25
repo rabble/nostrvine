@@ -19,10 +19,18 @@ import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Describes whether a push-token registration should be retried.
 enum PushRegistrationResult {
+  /// The relay confirmed that it stored the registration event.
   published,
+
+  /// No relay received the event, so retrying cannot create a duplicate.
   retryableFailure,
+
+  /// A relay may have stored the event but did not confirm it.
   uncertainFailure,
+
+  /// A prerequisite failed or the relay rejected the event; do not retry.
   terminalFailure,
 }
 
@@ -402,9 +410,6 @@ class PushNotificationService {
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return PushRegistrationResult.terminalFailure;
-    }
-    if (!await _isPublishCurrent(isCurrent)) {
       return PushRegistrationResult.terminalFailure;
     }
 

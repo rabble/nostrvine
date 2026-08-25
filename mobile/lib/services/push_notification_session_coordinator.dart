@@ -412,7 +412,7 @@ class PushNotificationSessionCoordinator {
         final generation = operation.generation;
         final token = operation.pendingToken;
         operation.pendingToken = null;
-        var result = PushRegistrationResult.retryableFailure;
+        late final PushRegistrationResult result;
         try {
           result = token == null
               ? await operation.pushService.register(
@@ -424,12 +424,14 @@ class PushNotificationSessionCoordinator {
                   token,
                   isCurrent: isCurrent,
                 );
-        } catch (e) {
+        } catch (e, stackTrace) {
           Log.warning(
             'Push notification registration failed: $e',
             name: 'PushNotificationSync',
             category: LogCategory.system,
+            stackTrace: stackTrace,
           );
+          return;
         }
         if (!_isRegistrationCurrent(operation)) return;
         if (result == PushRegistrationResult.published) {
