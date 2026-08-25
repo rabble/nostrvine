@@ -80,6 +80,16 @@ Future<void> showUploadFailureSheet(
       context.read<BackgroundPublishBloc>().add(
         BackgroundPublishVanished(draftId: upload.draft.id),
       );
+      messenger?.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.uploadFailureSheetSavedToDraftsSnackbar,
+          actionLabel: context.l10n.contentWarningView,
+          onActionPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            context.push(LibraryScreen.draftsPath);
+          },
+        ),
+      );
       context.push(RoutePaths.accountStatus);
     case _:
       // Sheet was popped externally (e.g. during route transition).

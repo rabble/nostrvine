@@ -43,3 +43,25 @@ class AudioReuseNotPermittedException implements Exception {
       'AudioReuseNotPermittedException: the selected sound does not grant '
       'reuse consent (audio: $audioEventId)';
 }
+
+/// The authoritative Divine publish surface rejected the signed-in account.
+class AccountRestrictedPublishException implements Exception {
+  const AccountRestrictedPublishException({
+    required this.reason,
+    required this.source,
+  });
+
+  /// The exact authoritative rejection reason, retained for diagnostics.
+  final String reason;
+
+  /// Which first-party publish transport supplied [reason].
+  final AccountRestrictionSource source;
+
+  @override
+  String toString() =>
+      'AccountRestrictedPublishException: ${source.name} rejected the account '
+      '($reason)';
+}
+
+/// First-party source that established an account-level publish restriction.
+enum AccountRestrictionSource { rest, webSocket }

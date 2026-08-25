@@ -113,7 +113,7 @@ class _ActionPrompt extends StatelessWidget {
       ProfileActionType.accountRestricted => (
         DivineStickerName.blocked,
         l10n.profileAccountRestricted,
-        l10n.publishErrorAccountRestricted,
+        l10n.accountStatusRestrictedBody,
         l10n.accountStatusTitle,
       ),
       ProfileActionType.secureAccount => (

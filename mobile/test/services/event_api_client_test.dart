@@ -206,6 +206,26 @@ void main() {
       expect(result.reason, 'blocked: pubkey is suspended');
     });
 
+    test('treats a non-string rejection message as transient', () async {
+      stubToken(buildToken());
+      final client = buildClient(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({'accepted': false, 'message': 42}),
+            200,
+          ),
+        ),
+      );
+
+      final result = await client.publishEvent(buildVideoEvent());
+
+      expect(result, isA<EventApiTransientFailure>());
+      expect(
+        (result as EventApiTransientFailure).reason,
+        startsWith('not_accepted:'),
+      );
+    });
+
     for (final status in [401, 403, 422]) {
       test('returns EventApiRejected on $status', () async {
         stubToken(buildToken());

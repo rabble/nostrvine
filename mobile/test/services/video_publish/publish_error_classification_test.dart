@@ -17,7 +17,10 @@ void main() {
     test('maps an authoritative account restriction to its own kind', () {
       expect(
         VideoPublishService.classifyPublishErrorObject(
-          const AccountRestrictedPublishException(),
+          const AccountRestrictedPublishException(
+            reason: 'blocked: pubkey is suspended',
+            source: AccountRestrictionSource.rest,
+          ),
         ),
         PublishErrorKind.accountRestricted,
       );

@@ -272,6 +272,10 @@ void main() {
             BackgroundPublishRetryRequested(draftId: 'draft-1'),
           ),
         );
+        expect(
+          find.text(l10n.uploadFailureSheetSavedToDraftsSnackbar),
+          findsOneWidget,
+        );
       });
 
       testWidgets(

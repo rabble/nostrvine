@@ -49,7 +49,7 @@ void main() {
     test('an unrecognized account_status is enforced, never good standing', () {
       // Keycast sets account_status ONLY for a non-active account, so ANY
       // value we do not recognize still means the account is restricted.
-      // Defaulting an unknown value to `none` would tell a restricted user
+      // Defaulting an unknown value to `unverified` would tell a restricted user
       // their account is fine and hand them the generic retry copy — the exact
       // failure s-t-s#200 exists to fix. Fail closed instead.
       final s = AccountEnforcementStatus.fromKeycast(

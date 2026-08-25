@@ -169,8 +169,14 @@ class EventApiClient {
           );
           return EventApiAccepted(eventId);
         }
-        final reason = decoded['message'] as String?;
-        if (!accepted && reason != null && isAccountRestrictedReason(reason)) {
+        final reason = _rejectionReason(response.body);
+        if (!accepted && isAccountRestrictedReason(reason)) {
+          Log.error(
+            'REST publish rejected account for event ${event.id} from '
+            '${pubkeyForLogs(event.pubkey)}: $reason',
+            name: _logName,
+            category: LogCategory.video,
+          );
           return EventApiRejected(statusCode: status, reason: reason);
         }
         Log.warning(

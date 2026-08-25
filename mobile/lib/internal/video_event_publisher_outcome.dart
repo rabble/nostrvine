@@ -3,4 +3,4 @@
 
 part of '../services/video_event_publisher.dart';
 
-enum _EventPublishOutcome { published, accountRestricted, transientFailure }
+enum _EventPublishOutcome { published, transientFailure }

@@ -28,12 +28,26 @@ bool isAccountRestrictedOutcome(
   PublishOutcome outcome, {
   required String trustedRelayUrl,
 }) =>
-    outcome.acceptedBy.isEmpty &&
-    outcome.rejectedBy.entries.any(
-      (entry) =>
-          relayUrlsEquivalent(entry.key, trustedRelayUrl) &&
-          isAccountRestrictedReason(entry.value),
-    );
+    accountRestrictedReasonFromOutcome(
+      outcome,
+      trustedRelayUrl: trustedRelayUrl,
+    ) !=
+    null;
+
+/// Returns the trusted relay's exact account-restriction reason, or `null`.
+String? accountRestrictedReasonFromOutcome(
+  PublishOutcome outcome, {
+  required String trustedRelayUrl,
+}) {
+  if (outcome.acceptedBy.isNotEmpty) return null;
+  for (final entry in outcome.rejectedBy.entries) {
+    if (relayUrlsEquivalent(entry.key, trustedRelayUrl) &&
+        isAccountRestrictedReason(entry.value)) {
+      return entry.value;
+    }
+  }
+  return null;
+}
 
 /// Whether at least one relay rate-limited a publish that none accepted.
 bool isRateLimitedOutcome(PublishOutcome outcome) =>

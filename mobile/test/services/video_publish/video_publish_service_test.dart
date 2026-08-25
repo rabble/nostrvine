@@ -414,7 +414,10 @@ void main() {
           );
           _stubPublishVideoEventThrows(
             mockVideoEventPublisher,
-            const AccountRestrictedPublishException(),
+            const AccountRestrictedPublishException(
+              reason: 'blocked: pubkey is suspended',
+              source: AccountRestrictionSource.rest,
+            ),
           );
 
           final result = await service.publishVideo(draft: _createTestDraft());

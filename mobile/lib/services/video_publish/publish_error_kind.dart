@@ -93,8 +93,3 @@ enum PublishErrorKind {
   /// Unclassified failure — generic "try again" copy.
   generic,
 }
-
-/// An authoritative Divine publish surface rejected the signed-in account.
-class AccountRestrictedPublishException implements Exception {
-  const AccountRestrictedPublishException();
-}
