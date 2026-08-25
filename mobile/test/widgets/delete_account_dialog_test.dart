@@ -1590,6 +1590,56 @@ void main() {
       );
     });
 
+    testWidgets('username support failure stays neutral when burn is off', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      when(recoveryRepository.prepare).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Deletion attempt request failed (503)',
+          code: 'username_recovery_unavailable',
+          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+          statusCode: 503,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
+      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+    });
+
     testWidgets('ambiguous post-username failure keeps neutral guidance', (
       tester,
     ) async {

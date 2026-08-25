@@ -758,7 +758,7 @@ Future<void> executeAccountDeletion({
           // Ordered ahead of the unavailable arm on purpose: this is also a
           // 503, but it is the one coordinator answer the user can act on.
           AccountDeletionRecoveryStage.coordinatorAttempt
-              when error.indicatesUsernameRecoveryUnsupported =>
+              when burnUsername && error.indicatesUsernameRecoveryUnsupported =>
             burnUsernameFailedText,
           AccountDeletionRecoveryStage.coordinatorAttempt
               when error.indicatesMissingCoordinatorRoute =>
