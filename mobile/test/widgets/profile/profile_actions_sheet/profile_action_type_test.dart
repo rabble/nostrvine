@@ -67,7 +67,7 @@ void main() {
         expect(actions, isEmpty);
       });
 
-      test('a confirmed restriction replaces setup actions', () {
+      test('a confirmed restriction is ordered before setup actions', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAccountEnforced: true,
@@ -75,7 +75,14 @@ void main() {
           hasAnyProfileInfo: false,
         );
 
-        expect(actions, equals([ProfileActionType.accountRestricted]));
+        expect(
+          actions,
+          equals([
+            ProfileActionType.accountRestricted,
+            ProfileActionType.secureAccount,
+            ProfileActionType.completeProfile,
+          ]),
+        );
       });
     });
   });

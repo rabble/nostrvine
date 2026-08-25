@@ -2247,7 +2247,7 @@ void main() {
         expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
       });
 
-      testWidgets('shows a single persistent restriction action first', (
+      testWidgets('shows a persistent restriction before setup actions', (
         tester,
       ) async {
         final mockGoRouter = MockGoRouter();
@@ -2267,7 +2267,7 @@ void main() {
 
         expect(find.text(enL10n.profileAccountRestricted), findsOneWidget);
         expect(find.text('2'), findsNothing);
-        expect(find.text('3'), findsNothing);
+        expect(find.text('3'), findsOneWidget);
 
         await tester.tap(find.text(enL10n.profileAccountRestricted));
         await tester.pumpAndSettle();

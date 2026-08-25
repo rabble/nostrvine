@@ -32,9 +32,9 @@ enum ProfileActionType {
     required bool hasAnyProfileInfo,
   }) {
     if (!isOwnProfile) return const [];
-    if (isAccountEnforced) return const [accountRestricted];
 
     return [
+      if (isAccountEnforced) accountRestricted,
       if (isAnonymous) secureAccount,
       if (!hasAnyProfileInfo) completeProfile,
     ];
