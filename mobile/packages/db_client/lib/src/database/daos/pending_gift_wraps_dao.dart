@@ -106,6 +106,17 @@ class PendingGiftWrapsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Removes every pending row owned by [ownerPubkey].
+  ///
+  /// `ownerPubkey` is non-nullable here and part of the primary key, so this
+  /// is exhaustive for that account — there are no legacy NULL-owner rows to
+  /// strand, unlike `direct_messages`. See #7325.
+  Future<int> clearAllForUser(String ownerPubkey) {
+    return (delete(
+      pendingGiftWraps,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
   /// Removes every pending row. Called during account cleanup (switch /
   /// destructive sign-out) alongside the other DM-table wipes so an account's
   /// raw (still-encrypted) gift wraps never outlive its decrypted DM data.

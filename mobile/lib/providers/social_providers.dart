@@ -719,10 +719,13 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // Escaping cleanup reads must go through port providers; direct reads of
   // auth-dependent providers from this callback can recreate #7389.
   //
-  // When [deleteUserData] is true (destructive sign-out or identity change),
-  // also deletes per-user DAO rows scoped by [userPubkey].
-  // Non-destructive sign-out (account switch) skips per-user deletion since
-  // those rows are already scoped by ownerPubkey.
+  // Every delete here is scoped to [userPubkey], the account being left. The
+  // DM family used to be wiped unqualified on this path, which destroyed every
+  // account's decrypted history on an ordinary switch (#7325).
+  //
+  // [deleteUserData] additionally widens the destructive paths: it drops rows
+  // this account may still need (removal tombstones, retryable reactions) that
+  // a plain switch deliberately preserves.
   service.onDatabaseCleanup =
       ({String? userPubkey, bool deleteUserData = false}) async {
         Future<void> safeCleanup(
@@ -756,19 +759,41 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             category: LogCategory.auth,
           );
         }
-        await safeCleanup('directMessages', db.directMessagesDao.clearAll);
-        await safeCleanup('conversations', db.conversationsDao.clearAll);
-        // Raw failed-decrypt gift wraps are encrypted DM data of the same
-        // class as direct_messages — wipe them on the same path so they never
-        // outlive the account's decrypted DMs. See #5202.
-        await safeCleanup('pendingGiftWraps', db.pendingGiftWrapsDao.clearAll);
-        // Wipe the processed-wrap dedup ledger on the same path: a stale ledger
-        // must never suppress re-population of an account's reactions/deletions
-        // after its DM data is cleared. See #5452.
-        await safeCleanup(
-          'processedGiftWraps',
-          db.processedGiftWrapsDao.clearAll,
-        );
+        // Scoped to the leaving account. These were unqualified deletes, which
+        // destroyed every account's decrypted DM history on an ordinary switch
+        // or sign-out — reads are already owner-filtered, so the wipe bought
+        // nothing it did not already have. Legacy NULL-owner rows, the reason
+        // the unscoped form was chosen, are drained by claimLegacyRows at
+        // session setup. See #7325.
+        //
+        // When userPubkey is null there is no account to scope to; skip rather
+        // than fall back to clearAll. The rows stay invisible to the incoming
+        // account through ownerPubkey filtering, and the claim below adopts
+        // any that are still unowned.
+        if (userPubkey != null) {
+          await safeCleanup(
+            'directMessages',
+            () => db.directMessagesDao.clearAllForUser(userPubkey),
+          );
+          await safeCleanup(
+            'conversations',
+            () => db.conversationsDao.clearAllForUser(userPubkey),
+          );
+          // Raw failed-decrypt gift wraps are encrypted DM data of the same
+          // class as direct_messages — wipe them on the same path so they
+          // never outlive the account's decrypted DMs. See #5202.
+          await safeCleanup(
+            'pendingGiftWraps',
+            () => db.pendingGiftWrapsDao.clearAllForUser(userPubkey),
+          );
+          // Wipe the processed-wrap dedup ledger on the same path: a stale
+          // ledger must never suppress re-population of an account's
+          // reactions/deletions after its DM data is cleared. See #5452.
+          await safeCleanup(
+            'processedGiftWraps',
+            () => db.processedGiftWrapsDao.clearAllForUser(userPubkey),
+          );
+        }
         if (deleteUserData && userPubkey != null) {
           await safeCleanup(
             'removedConversations',

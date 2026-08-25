@@ -66,6 +66,17 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
         .write(ProcessedGiftWrapsCompanion(ownerPubkey: Value(newOwnerPubkey)));
   }
 
+  /// Removes every processed-wrap row owned by [ownerPubkey].
+  ///
+  /// Legacy NULL-owner rows are claimed at session setup
+  /// ([claimLegacyRows]), so a scoped delete reaches them on the next switch.
+  /// See #7325.
+  Future<int> clearAllForUser(String ownerPubkey) {
+    return (delete(
+      processedGiftWraps,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
   /// Removes every processed-wrap row. Called during account cleanup (switch /
   /// destructive sign-out) alongside the other DM-table wipes so a stale ledger
   /// can never suppress re-population of an account's reactions/deletions.
