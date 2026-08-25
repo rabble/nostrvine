@@ -7160,6 +7160,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'Видеото се качи, но звукът не е разрешен за повторна употреба. Избери друг звук, за да публикуваш.';
 
@@ -11865,11 +11872,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusUnverifiedHeading => 'Nothing to report';
+  String get accountStatusUnverifiedHeading => 'Account restrictions';
 
   @override
   String get accountStatusUnverifiedBody =>
-      'There\'s nothing here about your account right now.';
+      'This screen only shows confirmed restrictions. There’s nothing to show here right now.';
 
   @override
   String get profileAccountRestricted => 'Account restricted';

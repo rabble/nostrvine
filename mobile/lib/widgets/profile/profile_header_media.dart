@@ -488,10 +488,7 @@ class _ProfileAvatarWithColor extends StatelessWidget {
               onTap: onActionTap,
               child: _ProfileActionLabel(
                 action: pendingActions.first,
-                badgeCount:
-                    pendingActions.first == ProfileActionType.accountRestricted
-                    ? 1
-                    : pendingActions.length,
+                badgeCount: pendingActions.length,
               ),
             ),
           ),
@@ -574,7 +571,9 @@ class _ProfileActionLabel extends StatelessWidget {
       ),
     };
 
-    final chip = context.vineColors.accentChipYellow;
+    final chip = action == ProfileActionType.accountRestricted
+        ? context.vineColors.accentChipOrange
+        : context.vineColors.accentChipYellow;
     final maxWidth = MediaQuery.sizeOf(context).width - 32;
 
     return Stack(

@@ -15,6 +15,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 
 class _MockUploadManager extends Mock implements UploadManager {}
 
@@ -85,10 +86,8 @@ void main() {
 
     // Recovery queries return nothing unless a test overrides this.
     when(
-      () => mockNostrClient.queryEvents(
-        any(),
-        useCache: any(named: 'useCache'),
-      ),
+      () =>
+          mockNostrClient.queryEvents(any(), useCache: any(named: 'useCache')),
     ).thenAnswer((_) async => <Event>[]);
 
     when(
@@ -217,11 +216,26 @@ void main() {
       ).called(1);
     });
 
+    test('account restriction stops without WebSocket fallback', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubRest(
+        const EventApiRejected(
+          statusCode: 403,
+          reason: 'blocked: pubkey is suspended',
+        ),
+      );
+
+      expect(
+        () => publisher.publishDirectUpload(createUpload()),
+        throwsA(isA<AccountRestrictedPublishException>()),
+      );
+      verifyNever(() => mockNostrClient.publishEvent(any()));
+    });
+
     test('retry reuses the original signed event id (no re-sign)', () async {
       final signedEvent = createSignedEvent();
-      final retryUpload = createUpload().copyWith(
-        nostrEventId: signedEvent.id,
-      );
+      final retryUpload = createUpload().copyWith(nostrEventId: signedEvent.id);
       when(
         () => mockPersonalEventCache.getEventById(signedEvent.id),
       ).thenReturn(signedEvent);

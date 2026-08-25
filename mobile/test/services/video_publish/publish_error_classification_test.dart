@@ -14,6 +14,15 @@ class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
   group('classifyPublishErrorObject', () {
+    test('maps an authoritative account restriction to its own kind', () {
+      expect(
+        VideoPublishService.classifyPublishErrorObject(
+          const AccountRestrictedPublishException(),
+        ),
+        PublishErrorKind.accountRestricted,
+      );
+    });
+
     test('maps a withheld-sound refusal to its own kind', () {
       expect(
         VideoPublishService.classifyPublishErrorObject(

@@ -185,6 +185,27 @@ void main() {
       expect(result, isA<EventApiTransientFailure>());
     });
 
+    test('returns rejected for a restricted accepted:false response', () async {
+      stubToken(buildToken());
+      final client = buildClient(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'accepted': false,
+              'message': 'blocked: pubkey is suspended',
+            }),
+            200,
+          ),
+        ),
+      );
+
+      final result = await client.publishEvent(buildVideoEvent());
+
+      expect(result, isA<EventApiRejected>());
+      expect((result as EventApiRejected).statusCode, 200);
+      expect(result.reason, 'blocked: pubkey is suspended');
+    });
+
     for (final status in [401, 403, 422]) {
       test('returns EventApiRejected on $status', () async {
         stubToken(buildToken());
@@ -198,6 +219,29 @@ void main() {
         expect((result as EventApiRejected).statusCode, equals(status));
       });
     }
+
+    test('extracts the relay rejection message from a JSON response', () async {
+      stubToken(buildToken());
+      final client = buildClient(
+        MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'accepted': false,
+              'message': 'blocked: pubkey is suspended',
+            }),
+            403,
+          ),
+        ),
+      );
+
+      final result = await client.publishEvent(buildVideoEvent());
+
+      expect(result, isA<EventApiRejected>());
+      expect(
+        (result as EventApiRejected).reason,
+        'blocked: pubkey is suspended',
+      );
+    });
 
     test('returns transient failure on 500', () async {
       stubToken(buildToken());

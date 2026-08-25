@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Outcome of a REST publish attempt against `POST {apiBaseUrl}/api/events`.
@@ -168,6 +169,10 @@ class EventApiClient {
           );
           return EventApiAccepted(eventId);
         }
+        final reason = decoded['message'] as String?;
+        if (!accepted && reason != null && isAccountRestrictedReason(reason)) {
+          return EventApiRejected(statusCode: status, reason: reason);
+        }
         Log.warning(
           'REST publish 200 without accepted:true and matching event_id '
           'for ${event.id}: '
@@ -195,7 +200,10 @@ class EventApiClient {
         name: _logName,
         category: LogCategory.video,
       );
-      return EventApiRejected(statusCode: status, reason: response.body);
+      return EventApiRejected(
+        statusCode: status,
+        reason: _rejectionReason(response.body),
+      );
     }
 
     // 5xx and any other status: transient — caller falls back to WebSocket.
@@ -205,5 +213,18 @@ class EventApiClient {
       category: LogCategory.video,
     );
     return EventApiTransientFailure('http_$status');
+  }
+
+  String _rejectionReason(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final message = decoded['message'];
+        if (message is String && message.isNotEmpty) return message;
+      }
+    } catch (_) {
+      // Plain-text rejection bodies are already the reason.
+    }
+    return body;
   }
 }

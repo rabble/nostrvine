@@ -14,9 +14,12 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
+
+import '../helpers/go_router.dart';
 
 class _MockDivineVideoDraft extends Mock implements DivineVideoDraft {}
 
@@ -47,8 +50,11 @@ void main() {
     ).thenReturn(model.AspectRatio.vertical);
   });
 
-  Widget buildSubject({required BackgroundUpload upload}) {
-    return MaterialApp(
+  Widget buildSubject({
+    required BackgroundUpload upload,
+    MockGoRouter? goRouter,
+  }) {
+    final app = MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: BlocProvider<BackgroundPublishBloc>.value(
@@ -63,6 +69,9 @@ void main() {
         ),
       ),
     );
+    return goRouter == null
+        ? app
+        : MockGoRouterProvider(goRouter: goRouter, child: app);
   }
 
   group('showUploadFailureSheet', () {
@@ -173,6 +182,26 @@ void main() {
         );
       });
 
+      testWidgets('account restriction replaces retry with Account status', (
+        tester,
+      ) async {
+        final upload = BackgroundUpload(
+          draft: mockDraft,
+          progress: 1,
+          result: const PublishError(PublishErrorKind.accountRestricted),
+        );
+
+        await tester.pumpWidget(buildSubject(upload: upload));
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.uploadFailureSheetAccountStatusButton),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.uploadFailureSheetTryAgainButton), findsNothing);
+      });
+
       testWidgets('$DivineButton with Save to Drafts label', (tester) async {
         final upload = BackgroundUpload(
           draft: mockDraft,
@@ -209,6 +238,42 @@ void main() {
     });
 
     group('interactions', () {
+      testWidgets('Account status action removes retry and opens status', (
+        tester,
+      ) async {
+        final goRouter = MockGoRouter();
+        when(() => goRouter.push<Object?>(any())).thenAnswer((_) async => null);
+        final upload = BackgroundUpload(
+          draft: mockDraft,
+          progress: 1,
+          result: const PublishError(PublishErrorKind.accountRestricted),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(upload: upload, goRouter: goRouter),
+        );
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(l10n.uploadFailureSheetAccountStatusButton),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => goRouter.push<Object?>(RoutePaths.accountStatus),
+        ).called(1);
+        verify(
+          () => mockBloc.add(
+            BackgroundPublishVanished(draftId: 'draft-1'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockBloc.add(
+            BackgroundPublishRetryRequested(draftId: 'draft-1'),
+          ),
+        );
+      });
+
       testWidgets(
         'tapping Try Again dispatches $BackgroundPublishRetryRequested',
         (tester) async {

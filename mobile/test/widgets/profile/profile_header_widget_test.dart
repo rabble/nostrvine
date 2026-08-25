@@ -41,6 +41,7 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/secure_account_prompt_dismissal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
@@ -337,6 +338,7 @@ void main() {
       bool profileIsLoading = false,
       bool isAnonymous = false,
       bool isAccountEnforced = false,
+      VoidCallback? onEnforcementRead,
       bool hasExpiredSession = false,
       bool isRpcUpgradeInProgress = false,
       bool tryRefreshResult = false,
@@ -467,7 +469,10 @@ void main() {
                 : const Stream<ProfileStats?>.empty(),
           ),
           authServiceProvider.overrideWithValue(effectiveAuthService),
-          isAccountEnforcedProvider.overrideWith((ref) => isAccountEnforced),
+          isAccountEnforcedProvider.overrideWith((ref) {
+            onEnforcementRead?.call();
+            return isAccountEnforced;
+          }),
           badgeRepositoryProvider.overrideWithValue(badgeRepository),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -2271,20 +2276,62 @@ void main() {
         expect(find.byType(ProfileActionsSheetContent), findsNothing);
       });
 
+      testWidgets('healthy own profile has no restriction action', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsNothing);
+      });
+
+      testWidgets('secure-account dismissal does not hide a restriction', (
+        tester,
+      ) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(
+          SecureAccountPromptDismissalStore.keyFor(testUserHex),
+          true,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+            isAnonymous: true,
+            isAccountEnforced: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsOneWidget);
+      });
+
       testWidgets('never shows the restriction action on another profile', (
         tester,
       ) async {
+        var enforcementReads = 0;
         await tester.pumpWidget(
           buildTestWidget(
             userIdHex: testUserHex,
             isOwnProfile: false,
             profile: createTestProfile(displayName: 'Test User'),
             isAccountEnforced: true,
+            onEnforcementRead: () => enforcementReads++,
           ),
         );
         await tester.pumpAndSettle();
 
         expect(find.text(enL10n.profileAccountRestricted), findsNothing);
+        expect(enforcementReads, 0);
       });
 
       testWidgets('tapping label opens actions bottom sheet', (tester) async {

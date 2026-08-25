@@ -279,7 +279,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // upgrade resolves — the auth stream emits a nudge in both cases)
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
-    final isAccountEnforced = ref.watch(isAccountEnforcedProvider);
+    final isAccountEnforced =
+        widget.isOwnProfile && ref.watch(isAccountEnforcedProvider);
     final hasExpiredSession = authService.hasExpiredOAuthSession;
     final isRpcUpgradeInProgress = authService.isRpcUpgradeInProgress;
     final prefs = ref.watch(sharedPreferencesProvider);

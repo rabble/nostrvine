@@ -6687,6 +6687,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get publishErrorNostrPublishFailed => '视频已上传，但帖子没能发布。请检查你的中继设置后重试。';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       '视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。';
 
@@ -11047,11 +11054,11 @@ class AppLocalizationsZh extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusUnverifiedHeading => 'Nothing to report';
+  String get accountStatusUnverifiedHeading => 'Account restrictions';
 
   @override
   String get accountStatusUnverifiedBody =>
-      'There\'s nothing here about your account right now.';
+      'This screen only shows confirmed restrictions. There’s nothing to show here right now.';
 
   @override
   String get profileAccountRestricted => 'Account restricted';

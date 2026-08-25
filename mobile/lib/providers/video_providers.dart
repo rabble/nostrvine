@@ -298,6 +298,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     // call time without subscribing to it.
     soundSyncRepositoryGetter: () => ref.read(soundSyncRepositoryValueProvider),
     eventApiClient: eventApiClient,
+    trustedRelayUrl: environmentConfig.relayUrl,
     audioReuseConsentChecker: consentResolver.verify,
     // ref.read at call time, not watch: this keepAlive provider must not
     // rebuild (and drop its in-flight publish coalescer) when storage is

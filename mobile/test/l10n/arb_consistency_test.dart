@@ -499,6 +499,8 @@ const _knownUntranslatedDebt = <String>{
   'accountStatusUnverifiedHeading',
   'accountStatusUnverifiedBody',
   'profileAccountRestricted',
+  'publishErrorAccountRestricted',
+  'uploadFailureSheetAccountStatusButton',
   'accountStatusSuspendedHeading',
   'accountStatusSuspendedBody',
   'accountStatusBannedHeading',

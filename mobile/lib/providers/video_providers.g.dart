@@ -334,7 +334,7 @@ final class VideoEventPublisherProvider
 }
 
 String _$videoEventPublisherHash() =>
-    r'7573ecc058093098690c837e88c247b4d623f9fb';
+    r'3a40d2a3de92880b3365f735fb22d2bddf85dfe3';
 
 /// View event publisher for kind 22236 ephemeral analytics events
 ///

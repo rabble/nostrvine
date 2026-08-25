@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
+import 'package:openvine/screens/settings/account_status_screen.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_action_type.dart';
 
 /// Content widget for the profile-actions bottom sheet.
@@ -55,9 +56,7 @@ class _ProfileActionsSheetContentState
 
   void _onPrimaryTap(ProfileActionType action) {
     final route = switch (action) {
-      ProfileActionType.accountRestricted => throw StateError(
-        'Account restrictions open directly from the profile badge',
-      ),
+      ProfileActionType.accountRestricted => AccountStatusScreen.path,
       ProfileActionType.secureAccount => SecureAccountScreen.path,
       ProfileActionType.completeProfile => ProfileSetupScreen.setupPath,
     };
@@ -111,8 +110,11 @@ class _ActionPrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final (sticker, title, subtitle, primaryLabel) = switch (action) {
-      ProfileActionType.accountRestricted => throw StateError(
-        'Account restrictions are not setup-sheet actions',
+      ProfileActionType.accountRestricted => (
+        DivineStickerName.blocked,
+        l10n.profileAccountRestricted,
+        l10n.publishErrorAccountRestricted,
+        l10n.accountStatusTitle,
       ),
       ProfileActionType.secureAccount => (
         DivineStickerName.skeletonKey,

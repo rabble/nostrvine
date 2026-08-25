@@ -6933,6 +6933,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
 
@@ -11440,11 +11447,11 @@ class AppLocalizationsAm extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusUnverifiedHeading => 'Nothing to report';
+  String get accountStatusUnverifiedHeading => 'Account restrictions';
 
   @override
   String get accountStatusUnverifiedBody =>
-      'There\'s nothing here about your account right now.';
+      'This screen only shows confirmed restrictions. There’s nothing to show here right now.';
 
   @override
   String get profileAccountRestricted => 'Account restricted';

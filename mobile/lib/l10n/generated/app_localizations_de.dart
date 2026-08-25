@@ -7176,6 +7176,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Video wurde hochgeladen, aber der Beitrag konnte nicht veröffentlicht werden. Prüfe deine Relay-Einstellungen und versuch es erneut.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'Das Video wurde hochgeladen, aber der Sound ist nicht zur Wiederverwendung freigegeben. Wähl einen anderen Sound, um zu posten.';
 
@@ -11891,11 +11898,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusUnverifiedHeading => 'Nothing to report';
+  String get accountStatusUnverifiedHeading => 'Account restrictions';
 
   @override
   String get accountStatusUnverifiedBody =>
-      'There\'s nothing here about your account right now.';
+      'This screen only shows confirmed restrictions. There’s nothing to show here right now.';
 
   @override
   String get profileAccountRestricted => 'Account restricted';
