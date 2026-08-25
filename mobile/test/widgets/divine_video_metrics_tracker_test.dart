@@ -426,6 +426,19 @@ void main() {
 
       expect(consumptionSink.eventNames, ['video_started', 'video_skipped']);
 
+      expect(consumptionSink.paramsFor('video_started'), {
+        'video_id': 'video_id',
+        'author_pubkey': 'creator_pubkey',
+        'feed_type': 'home',
+        'position_in_feed': 0,
+        'is_archive': 0,
+      });
+      expect(consumptionSink.paramsFor('video_skipped'), {
+        'video_id': 'video_id',
+        'watch_ms': 1100,
+        'position_in_feed': 0,
+      });
+
       final viewEndEvents = _viewEndEvents(analyticsService);
       expect(viewEndEvents, hasLength(1));
       expect(viewEndEvents.single.video.id, equals('video_id'));
@@ -484,6 +497,12 @@ void main() {
           'video_started',
           'video_completed',
         ]);
+        expect(consumptionSink.paramsFor('video_completed'), {
+          'video_id': 'video_id',
+          'watch_ms': 5000,
+          'pct_watched': 100.0,
+          'loops': 1,
+        });
 
         isActive.dispose();
         video.dispose();
@@ -1209,6 +1228,10 @@ Widget _buildTrackerHarness({
 
 class _RecordingEventSink extends NoOpAnalyticsEventSink {
   final eventNames = <String>[];
+  final _parameters = <String, Map<String, Object>>{};
+
+  /// Parameters of the most recent event named [name].
+  Map<String, Object> paramsFor(String name) => _parameters[name]!;
 
   @override
   Future<void> logEvent({
@@ -1216,6 +1239,7 @@ class _RecordingEventSink extends NoOpAnalyticsEventSink {
     required Map<String, Object> parameters,
   }) async {
     eventNames.add(name);
+    _parameters[name] = parameters;
   }
 }
 
