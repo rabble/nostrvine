@@ -5490,12 +5490,12 @@ void main() {
         await secondPageStarted.future;
         final cursorsBeforeStop = syncState.persistedDrainCursors.length;
 
-        // The production teardown, then the wipe it is supposed to guard:
-        // the cleanup callback clears DmSyncState right after awaiting it.
-        await repository.stopListening();
-        await syncState.clearAll();
-
+        // The production teardown must wait for the parked page to observe the
+        // stop before the cleanup callback is allowed to clear DmSyncState.
+        final stop = repository.stopListening();
         secondPageRelease.complete();
+        await stop;
+        await syncState.clearAll();
         await drain;
 
         // Both assertions are on monotonic evidence the drain leaves behind.
@@ -5567,20 +5567,22 @@ void main() {
       // landing in that gap used to reach setHistoryDrainCursor below and
       // re-seed the state the cleanup had just wiped. See #7318.
       test(
-        'a teardown during the last persist does not write a cursor',
+        'stopListening waits for the last persist before returning',
         () async {
           final syncState = _FakeDmSyncState()..oldestOverride = 100;
-          late DmRepository repository;
+          final persistStarted = Completer<void>();
+          final persistRelease = Completer<void>();
 
-          // Fires inside _handleDeletionEvent, i.e. after the loop's final
-          // guard has already passed for this (only) event.
+          // Park inside _handleDeletionEvent, after the loop's final guard has
+          // already passed for this (only) event.
           when(
             () => mockDirectMessagesDao.getMessageById(
               any(),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer((_) async {
-            await repository.stopListening();
+            persistStarted.complete();
+            await persistRelease.future;
             return null;
           });
 
@@ -5614,8 +5616,26 @@ void main() {
                 : const <Event>[];
           });
 
-          repository = createRepository(syncState: syncState);
-          await repository.backfillHistoryIfNeeded();
+          final repository = createRepository(syncState: syncState);
+          final drain = repository.backfillHistoryIfNeeded();
+          await persistStarted.future;
+
+          var stopCompleted = false;
+          final stop = repository.stopListening().whenComplete(() {
+            stopCompleted = true;
+          });
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            stopCompleted,
+            isFalse,
+            reason: 'stopListening returned while an ingest write was live',
+          );
+
+          persistRelease.complete();
+          await stop;
+          await syncState.clearAll();
+          await drain;
 
           expect(
             syncState.persistedDrainCursors,
@@ -5626,6 +5646,51 @@ void main() {
           );
         },
       );
+
+      test('stopListening waits for a suspended decrypt-retry pass', () async {
+        final pendingGiftWrapsDao = _MockPendingGiftWrapsDao();
+        final retryReadStarted = Completer<void>();
+        final retryReadRelease = Completer<void>();
+
+        when(
+          () => pendingGiftWrapsDao.deleteExhausted(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            maxAttempts: any(named: 'maxAttempts'),
+          ),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => pendingGiftWrapsDao.getRetryable(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            maxAttempts: any(named: 'maxAttempts'),
+          ),
+        ).thenAnswer((_) async {
+          retryReadStarted.complete();
+          await retryReadRelease.future;
+          return const <PendingGiftWrap>[];
+        });
+
+        final repository = createRepository(
+          pendingGiftWrapsDao: pendingGiftWrapsDao,
+        );
+        final retry = repository.retryPendingDecryptions();
+        await retryReadStarted.future;
+
+        var stopCompleted = false;
+        final stop = repository.stopListening().whenComplete(() {
+          stopCompleted = true;
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          stopCompleted,
+          isFalse,
+          reason: 'stopListening returned while the retry pass was live',
+        );
+
+        retryReadRelease.complete();
+        await stop;
+        await retry;
+      });
     });
 
     // -----------------------------------------------------------------
@@ -6051,9 +6116,9 @@ void main() {
           // generation bump must invalidate the late spawn so its worker is
           // closed instead of being installed as a leak nothing ever closes.
           await controller.close();
-          await repository.stopListening();
+          final stop = repository.stopListening();
           spawnGate.complete();
-          await Future<void>.delayed(Duration.zero);
+          await stop;
 
           expect(staleWorker.closed, isTrue);
           // The stale worker never verified anything — the wrap it was
@@ -6109,10 +6174,9 @@ void main() {
           // generation guard sees only post-stop values, installing a worker
           // into the orphaned repository that nothing ever closes.
           await controller.close();
-          await repository.stopListening();
+          final stop = repository.stopListening();
           rpcGate.complete();
-          await Future<void>.delayed(Duration.zero);
-          await Future<void>.delayed(Duration.zero);
+          await stop;
 
           expect(spawnedWorkers, isEmpty);
           // The torn-down session persists nothing; the wrap re-arrives via

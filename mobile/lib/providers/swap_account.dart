@@ -11,6 +11,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -38,15 +39,17 @@ const _accountSwitchPushCleanupTimeout = Duration(seconds: 15);
 /// that no writer for an account may be live while that account's
 /// device-scoped data is wiped, and the scope that owns the data is the device,
 /// not either container. See #7318.
-Future<void> _quiesceOutgoingDmIngest(ProviderContainer? outgoing) async {
-  if (outgoing == null || !outgoing.exists(dmRepositoryProvider)) return;
+Future<bool> _quiesceOutgoingDmIngest(ProviderContainer? outgoing) async {
+  if (outgoing == null || !outgoing.exists(dmRepositoryProvider)) return false;
   try {
-    await outgoing.read(dmRepositoryProvider).stopListening();
+    await outgoing.read(dmListeningStopProvider)();
+    return true;
   } catch (error) {
     Log.warning(
       'Stopping the outgoing account DM ingest before the swap failed: $error',
       name: 'swapAccount',
     );
+    return false;
   }
 }
 
@@ -216,11 +219,12 @@ Future<void> swapAccount({
     );
     final keyStorage = container.read(secureKeyStorageProvider);
     SecureKeyContainer? previousPrimary;
+    var outgoingDmIngestQuiesced = false;
     try {
       previousPrimary = await keyStorage.getKeyContainer();
       // Before sign-in, because sign-in is what runs the identity-change
       // cleanup that wipes the shared DM tables. See #7318.
-      await _quiesceOutgoingDmIngest(current);
+      outgoingDmIngestQuiesced = await _quiesceOutgoingDmIngest(current);
       await signIn(container, account);
       await controller.swapTo(
         container,
@@ -255,12 +259,13 @@ Future<void> swapAccount({
         );
       }
     } catch (_) {
-      // The outgoing container stays live on a rollback, so give it its DM
-      // ingest back. Ahead of the restores below, and outside their try,
-      // because those can throw — and a rollback that fails to restore keys
-      // must still leave the user with the DMs it took away. This logs its own
-      // failures rather than throwing. See #7318.
-      await _resumeOutgoingDmIngest(current);
+      // The outgoing container stays live on a rollback. If this attempt
+      // stopped its live subscription, restore that subscription before the
+      // key restores below, which can throw. History recovery remains
+      // resumable and restarts on the next inbox open. See #7318.
+      if (outgoingDmIngestQuiesced) {
+        await _resumeOutgoingDmIngest(current);
+      }
       try {
         await currentAuthService.restoreSignerInfoForCurrentAccount();
         await keyStorage.restorePrimaryKeyContainer(previousPrimary);

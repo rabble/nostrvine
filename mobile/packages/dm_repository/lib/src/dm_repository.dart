@@ -1597,6 +1597,8 @@ class DmRepository {
     // decrypt isolate holding this user's key now rather than whenever the
     // bailing drain unwinds. The drain's own `finally` is idempotent if it
     // also runs. Mirrors _resetState. See #7318.
+    final historyDrain = _historyDrain;
+    final pendingDecryptRetry = _pendingDecryptRetry;
     _historyDrain = null;
     _pendingDecryptRetry = null;
     _drainDecryptIsolate?.close();
@@ -1615,13 +1617,24 @@ class DmRepository {
     // same user may resume listening. #4977.
     _readMarkerDebounce?.cancel();
     _readMarkerDebounce = null;
-    _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
     try {
       await _nostrClient.unsubscribe(_subscriptionId);
     } on Object {
       // Ignore if subscription doesn't exist
+    }
+
+    // stopListening() is awaited immediately before account cleanup wipes the
+    // DM tables. Session guards stop future iterations, but the current event
+    // persist can already be past its final guard, and the drain can still
+    // have cursor/read-state writes after it. Preserve the handles captured
+    // above and wait for every writer to observe the teardown before declaring
+    // the repository quiescent. See #7318.
+    await historyDrain;
+    await pendingDecryptRetry;
+    while (_eventLock != null) {
+      await _eventLock;
     }
   }
 
