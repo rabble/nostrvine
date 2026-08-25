@@ -706,6 +706,81 @@ void main() {
     expect(currentAuthService.calls, equals(['archive', 'signIn']));
   });
 
+  group('DM lifecycle', () {
+    testWidgets('quiesces outgoing DM persistence before target sign-in', (
+      tester,
+    ) async {
+      final dmRepository = _MockDmRepository();
+      final events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop outgoing DMs');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {});
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      initial.read(dmRepositoryProvider);
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => events.add('sign in target'),
+      );
+      await tester.pump();
+
+      expect(events, ['stop outgoing DMs', 'sign in target']);
+      verify(dmRepository.stopListening).called(1);
+      verifyNever(dmRepository.startListening);
+    });
+
+    testWidgets('resumes outgoing DMs when target sign-in fails', (
+      tester,
+    ) async {
+      final dmRepository = _MockDmRepository();
+      final events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop outgoing DMs');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {
+        events.add('resume outgoing DMs');
+      });
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      initial.read(dmRepositoryProvider);
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async {
+            events.add('sign in target');
+            throw Exception('signer unavailable');
+          },
+        ),
+        throwsException,
+      );
+      await tester.pump();
+
+      expect(events, [
+        'stop outgoing DMs',
+        'sign in target',
+        'resume outgoing DMs',
+      ]);
+      expect(_isDisposed(initial), isFalse);
+    });
+  });
+
   testWidgets('aborts before building anything when the archive fails', (
     tester,
   ) async {

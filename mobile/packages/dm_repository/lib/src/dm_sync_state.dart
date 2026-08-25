@@ -249,8 +249,8 @@ class DmSyncState {
 
   /// Removes all DM sync state entries for every pubkey.
   ///
-  /// Called during database cleanup to ensure the next login triggers a
-  /// full re-sync from relays instead of using stale `since:` cursors.
+  /// Called only after the entire database is recreated, when every account's
+  /// local rows and therefore every persisted sync boundary are stale.
   Future<void> clearAll() async {
     final keysToRemove = _prefs
         .getKeys()

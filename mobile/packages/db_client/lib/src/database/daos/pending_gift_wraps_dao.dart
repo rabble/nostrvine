@@ -41,6 +41,13 @@ class PendingGiftWrapsDao extends DatabaseAccessor<AppDatabase>
     required String rawJson,
     required int createdAt,
   }) async {
+    if (ownerPubkey.isEmpty) {
+      throw ArgumentError.value(
+        ownerPubkey,
+        'ownerPubkey',
+        'must not be empty',
+      );
+    }
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await transaction(() async {
       final existing =
@@ -106,21 +113,22 @@ class PendingGiftWrapsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
-  /// Removes every pending row owned by [ownerPubkey].
-  ///
-  /// `ownerPubkey` is non-nullable here and part of the primary key, so this
-  /// is exhaustive for that account — there are no legacy NULL-owner rows to
-  /// strand, unlike `direct_messages`. See #7325.
-  Future<int> clearAllForUser(String ownerPubkey) {
-    return (delete(
-      pendingGiftWraps,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  /// Deletes pending wraps for the departing account plus any rows written
+  /// with the legacy empty owner, preserving every other known account.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(pendingGiftWraps)..where(
+          (t) => t.ownerPubkey.equals(ownerPubkey) | t.ownerPubkey.equals(''),
+        ))
+        .go();
   }
 
-  /// Removes every pending row. Called during account cleanup (switch /
-  /// destructive sign-out) alongside the other DM-table wipes so an account's
-  /// raw (still-encrypted) gift wraps never outlive its decrypted DM data.
-  Future<int> clearAll() => delete(pendingGiftWraps).go();
+  /// Deletes only legacy empty-owner rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
+    return (delete(
+      pendingGiftWraps,
+    )..where((t) => t.ownerPubkey.equals(''))).go();
+  }
 
   /// Returns rows for [ownerPubkey] still below [maxAttempts], newest first
   /// (so recent conversations are recovered before older ones).

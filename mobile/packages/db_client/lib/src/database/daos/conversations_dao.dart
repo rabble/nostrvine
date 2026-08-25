@@ -429,27 +429,24 @@ END
     return attachedDatabase.transaction(action);
   }
 
-  /// Delete all conversations for a specific user.
-  Future<int> clearAllForUser(String ownerPubkey) {
+  /// Deletes conversations for the departing account plus unattributed legacy
+  /// rows, while preserving every other known account's conversations.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(conversations)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) |
+              t.ownerPubkey.isNull() |
+              t.ownerPubkey.equals(''),
+        ))
+        .go();
+  }
+
+  /// Deletes only unattributed legacy rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
     return (delete(
       conversations,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
-  }
-
-  /// Claim legacy conversations (NULL `ownerPubkey`) for [newOwnerPubkey].
-  ///
-  /// Called during session setup so pre-multi-account rows are attributed to
-  /// the signed-in account instead of staying visible to every account through
-  /// [_ownedOrLegacy]. Mirrors `NotificationsDao.claimLegacyRows`.
-  Future<int> claimLegacyRows(String newOwnerPubkey) {
-    return (update(conversations)..where((t) => t.ownerPubkey.isNull())).write(
-      ConversationsCompanion(ownerPubkey: Value(newOwnerPubkey)),
-    );
-  }
-
-  /// Delete all conversations.
-  Future<int> clearAll() {
-    return delete(conversations).go();
+    )..where((t) => t.ownerPubkey.isNull() | t.ownerPubkey.equals(''))).go();
   }
 
   /// Backfill `current_user_has_sent` for conversations where the user

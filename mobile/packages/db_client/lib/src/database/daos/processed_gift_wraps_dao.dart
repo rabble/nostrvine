@@ -44,10 +44,20 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Records [giftWrapId] as terminally processed (idempotent — a re-delivered
-  /// wrap or a concurrent writer never throws). [ownerPubkey] is informational
-  /// only — not part of the dedup key, and not used to scope deletes (cleanup
-  /// is global via [clearAll]).
-  Future<void> record({required String giftWrapId, String? ownerPubkey}) async {
+  /// wrap or a concurrent writer never throws). [ownerPubkey] is not part of
+  /// the dedup key, but is required so account cleanup can remove the correct
+  /// ledger entry without affecting another local account.
+  Future<void> record({
+    required String giftWrapId,
+    required String ownerPubkey,
+  }) async {
+    if (ownerPubkey.isEmpty) {
+      throw ArgumentError.value(
+        ownerPubkey,
+        'ownerPubkey',
+        'must not be empty',
+      );
+    }
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await into(processedGiftWraps).insert(
       ProcessedGiftWrapsCompanion.insert(
@@ -59,28 +69,25 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Claim legacy processed-wrap rows (NULL `ownerPubkey`) for
-  /// [newOwnerPubkey], so an owner-scoped delete can reach them.
-  Future<int> claimLegacyRows(String newOwnerPubkey) {
-    return (update(processedGiftWraps)..where((t) => t.ownerPubkey.isNull()))
-        .write(ProcessedGiftWrapsCompanion(ownerPubkey: Value(newOwnerPubkey)));
+  /// Deletes ledger rows for the departing account plus unattributed legacy
+  /// rows, while preserving every other known account's ledger entries.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(processedGiftWraps)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) |
+              t.ownerPubkey.isNull() |
+              t.ownerPubkey.equals(''),
+        ))
+        .go();
   }
 
-  /// Removes every processed-wrap row owned by [ownerPubkey].
-  ///
-  /// Legacy NULL-owner rows are claimed at session setup
-  /// ([claimLegacyRows]), so a scoped delete reaches them on the next switch.
-  /// See #7325.
-  Future<int> clearAllForUser(String ownerPubkey) {
+  /// Deletes only unattributed legacy rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
     return (delete(
       processedGiftWraps,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+    )..where((t) => t.ownerPubkey.isNull() | t.ownerPubkey.equals(''))).go();
   }
-
-  /// Removes every processed-wrap row. Called during account cleanup (switch /
-  /// destructive sign-out) alongside the other DM-table wipes so a stale ledger
-  /// can never suppress re-population of an account's reactions/deletions.
-  Future<int> clearAll() => delete(processedGiftWraps).go();
 
   /// Total processed-wrap rows (diagnostics / tests).
   Future<int> count() async {

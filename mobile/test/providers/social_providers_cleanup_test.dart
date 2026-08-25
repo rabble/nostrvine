@@ -614,38 +614,50 @@ void main() {
       });
 
       test(
-        'legacy NULL-owner rows survive a switch and are claimable',
+        'a known-owner switch deletes NULL and empty-owner DM rows',
         () async {
           await seedDm(
             messageId: _dmTargetMessageId,
             conversationId: _dmConversationId,
           );
-
-          await readService().onDatabaseCleanup!(userPubkey: _pubkeyA);
-          expect(
-            await dmCountFor(null),
-            1,
-            reason: "an unowned row is nobody's to delete on a scoped switch",
+          await seedDm(
+            messageId: _dmSecondTargetMessageId,
+            conversationId: _reactionIdB,
+            ownerPubkey: '',
           );
 
-          await readService().onClaimLegacyRows!(_pubkeyB);
+          await readService().onDatabaseCleanup!(userPubkey: _pubkeyA);
           expect(await dmCountFor(null), 0);
-          expect(await dmCountFor(_pubkeyB), 1);
-          expect(await conversationCountFor(_pubkeyB), 1);
+          expect(await dmCountFor(''), 0);
+          expect(await conversationCountFor(null), 0);
+          expect(await conversationCountFor(''), 0);
         },
       );
 
-      test('a null userPubkey deletes nothing', () async {
+      test('an unknown leaving user deletes only ambiguous DM rows', () async {
         await seedDm(
           messageId: _dmTargetMessageId,
           conversationId: _dmConversationId,
           ownerPubkey: _pubkeyA,
+        );
+        await seedDm(
+          messageId: _dmSecondTargetMessageId,
+          conversationId: _reactionIdB,
+        );
+        await seedDm(
+          messageId: _pendingDeletionId,
+          conversationId: _reactionIdA,
+          ownerPubkey: '',
         );
 
         await readService().onDatabaseCleanup!();
 
         expect(await dmCountFor(_pubkeyA), 1);
         expect(await conversationCountFor(_pubkeyA), 1);
+        expect(await dmCountFor(null), 0);
+        expect(await dmCountFor(''), 0);
+        expect(await conversationCountFor(null), 0);
+        expect(await conversationCountFor(''), 0);
       });
 
       test("only the leaving account's DM sync cursors are cleared", () async {
@@ -655,7 +667,11 @@ void main() {
         await syncState.markHistoryDrainComplete(_pubkeyA);
         await syncState.markHistoryDrainComplete(_pubkeyB);
 
-        await readService().onDatabaseCleanup!(userPubkey: _pubkeyA);
+        await readService().clearUserSpecificData(
+          reason: 'test_identity_change',
+          isIdentityChange: true,
+          userPubkey: _pubkeyA,
+        );
 
         expect(syncState.newestSyncedAt(_pubkeyA), isNull);
         expect(syncState.historyDrainComplete(_pubkeyA), isFalse);

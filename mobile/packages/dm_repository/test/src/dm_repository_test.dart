@@ -156,6 +156,9 @@ Future<Event> _buildForgedSealGiftWrap({
 
 class _MockPendingGiftWrapsDao extends Mock implements PendingGiftWrapsDao {}
 
+class _MockProcessedGiftWrapsDao extends Mock
+    implements ProcessedGiftWrapsDao {}
+
 class _MockRemovedConversationsDao extends Mock
     implements RemovedConversationsDao {}
 
@@ -173,7 +176,7 @@ class _InMemoryProcessedGiftWrapsDao extends Mock
   @override
   Future<void> record({
     required String giftWrapId,
-    String? ownerPubkey,
+    required String ownerPubkey,
   }) async {
     recorded.add(giftWrapId);
   }
@@ -6182,6 +6185,130 @@ void main() {
           // The torn-down session persists nothing; the wrap re-arrives via
           // the next session's subscription window / history drain.
           expect(persistedGiftWrapIds, isNot(contains(wrap.id)));
+        },
+      );
+
+      test(
+        'a failed decrypt completing after stopListening is not queued under '
+        'an owner',
+        () async {
+          final giftWrap = await _buildGiftWrap(
+            rumor: rumorFor('late failed decrypt', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(giftWrap.id),
+          ).thenAnswer((_) async => false);
+
+          final decryptStarted = Completer<void>();
+          final decryptGate = Completer<void>();
+          final pendingDao = _MockPendingGiftWrapsDao();
+          final repository = createRepository(
+            pendingGiftWrapsDao: pendingDao,
+            rumorDecryptor: (_, _) async {
+              decryptStarted.complete();
+              await decryptGate.future;
+              return null;
+            },
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await decryptStarted.future;
+
+          await repository.stopListening();
+          decryptGate.complete();
+          await Future<void>.delayed(Duration.zero);
+
+          verifyNever(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          );
+          await controller.close();
+        },
+      );
+
+      test(
+        'stopListening drains a processed-ledger write already in persistence',
+        () async {
+          final giftWrap = await _buildGiftWrap(
+            rumor: rumorFor('terminal outcome', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final terminalRumor = Event(
+            senderPub,
+            12345,
+            <List<String>>[
+              ['p', recipientPub],
+            ],
+            'unsupported',
+            createdAt: 1700000500,
+          );
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(giftWrap.id),
+          ).thenAnswer((_) async => false);
+
+          final ledger = _MockProcessedGiftWrapsDao();
+          when(
+            () => ledger.hasGiftWrap(giftWrap.id),
+          ).thenAnswer((_) async => false);
+          final recordStarted = Completer<void>();
+          final recordGate = Completer<void>();
+          when(
+            () => ledger.record(
+              giftWrapId: giftWrap.id,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async {
+            recordStarted.complete();
+            await recordGate.future;
+          });
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            rumorDecryptor: (_, _) async => terminalRumor,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await recordStarted.future;
+
+          var stopped = false;
+          final stop = repository.stopListening().then((_) => stopped = true);
+          await Future<void>.delayed(Duration.zero);
+          expect(stopped, isFalse);
+
+          recordGate.complete();
+          await stop;
+          expect(stopped, isTrue);
+          verify(
+            () => ledger.record(
+              giftWrapId: giftWrap.id,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+          await controller.close();
         },
       );
 

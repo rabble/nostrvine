@@ -51,6 +51,19 @@ void main() {
       expect(rows.single.createdAt, 100);
     });
 
+    test('recordFailedDecrypt rejects an empty owner', () async {
+      await expectLater(
+        dao.recordFailedDecrypt(
+          giftWrapId: wrap1,
+          ownerPubkey: '',
+          rawJson: 'raw',
+          createdAt: 100,
+        ),
+        throwsArgumentError,
+      );
+      expect(await dao.countForOwner(''), 0);
+    });
+
     test(
       'recordFailedDecrypt increments attempts on repeat and keeps the '
       'original raw payload',
@@ -216,7 +229,7 @@ void main() {
       expect(await dao.countForOwner(ownerB), 1);
     });
 
-    test('clearAll removes every row across all owners', () async {
+    test('account-switch cleanup preserves another owner', () async {
       await dao.recordFailedDecrypt(
         giftWrapId: wrap1,
         ownerPubkey: ownerA,
@@ -230,11 +243,30 @@ void main() {
         createdAt: 100,
       );
 
-      final deleted = await dao.clearAll();
+      final deleted = await dao.clearForAccountSwitch(ownerA);
 
-      expect(deleted, 2);
+      expect(deleted, 1);
       expect(await dao.countForOwner(ownerA), 0);
-      expect(await dao.countForOwner(ownerB), 0);
+      expect(await dao.countForOwner(ownerB), 1);
+    });
+
+    test('unknown-owner cleanup removes a legacy empty-owner row', () async {
+      await database.customStatement(
+        'INSERT INTO pending_gift_wraps '
+        '(gift_wrap_id, owner_pubkey, raw_json, created_at) '
+        "VALUES (?, '', '{}', 100)",
+        [wrap1],
+      );
+      await dao.recordFailedDecrypt(
+        giftWrapId: wrap2,
+        ownerPubkey: ownerB,
+        rawJson: 'r',
+        createdAt: 100,
+      );
+
+      expect(await dao.clearUnowned(), 1);
+      expect(await dao.countForOwner(''), 0);
+      expect(await dao.countForOwner(ownerB), 1);
     });
   });
 }

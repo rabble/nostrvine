@@ -347,28 +347,25 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return attachedDatabase.transaction(action);
   }
 
-  /// Delete all DMs for a specific user.
-  Future<int> clearAllForUser(String ownerPubkey) {
+  /// Deletes DMs for the departing account plus unattributed legacy rows.
+  ///
+  /// Ambiguous rows must never cross an account boundary and become visible to
+  /// the incoming account. Rows owned by every other known account survive.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(directMessages)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) |
+              t.ownerPubkey.isNull() |
+              t.ownerPubkey.equals(''),
+        ))
+        .go();
+  }
+
+  /// Deletes only unattributed legacy rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
     return (delete(
       directMessages,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
-  }
-
-  /// Claim legacy DMs (NULL `ownerPubkey`) for [newOwnerPubkey].
-  ///
-  /// Called during session setup so pre-multi-account rows are attributed to
-  /// the signed-in account instead of staying visible to every account through
-  /// [_ownedOrLegacy]. Mirrors `NotificationsDao.claimLegacyRows`; without it
-  /// an owner-scoped delete can never reach these rows, because the column was
-  /// added nullable with no backfill.
-  Future<int> claimLegacyRows(String newOwnerPubkey) {
-    return (update(directMessages)..where((t) => t.ownerPubkey.isNull())).write(
-      DirectMessagesCompanion(ownerPubkey: Value(newOwnerPubkey)),
-    );
-  }
-
-  /// Delete all DMs.
-  Future<int> clearAll() {
-    return delete(directMessages).go();
+    )..where((t) => t.ownerPubkey.isNull() | t.ownerPubkey.equals(''))).go();
   }
 }

@@ -743,7 +743,24 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
           }
         }
 
-        await safeCleanup(
+        Future<void> requiredCleanup(
+          String name,
+          Future<void> Function() fn,
+        ) async {
+          try {
+            await fn();
+          } catch (e) {
+            Log.error(
+              'Required account-boundary cleanup failed for $name and '
+              '${pubkeyForLogs(userPubkey, whenNull: "unknown user")}: $e',
+              name: 'UserDataCleanup',
+              category: LogCategory.auth,
+            );
+            rethrow;
+          }
+        }
+
+        await requiredCleanup(
           'dmRepository',
           () => ref.read(dmListeningStopProvider)(),
         );
@@ -759,41 +776,28 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             category: LogCategory.auth,
           );
         }
-        // Scoped to the leaving account. These were unqualified deletes, which
-        // destroyed every account's decrypted DM history on an ordinary switch
-        // or sign-out — reads are already owner-filtered, so the wipe bought
-        // nothing it did not already have. Legacy NULL-owner rows, the reason
-        // the unscoped form was chosen, are drained by claimLegacyRows at
-        // session setup. See #7325.
-        //
-        // When userPubkey is null there is no account to scope to; skip rather
-        // than fall back to clearAll. The rows stay invisible to the incoming
-        // account through ownerPubkey filtering, and the claim below adopts
-        // any that are still unowned.
-        if (userPubkey != null) {
-          await safeCleanup(
-            'directMessages',
-            () => db.directMessagesDao.clearAllForUser(userPubkey),
-          );
-          await safeCleanup(
-            'conversations',
-            () => db.conversationsDao.clearAllForUser(userPubkey),
-          );
-          // Raw failed-decrypt gift wraps are encrypted DM data of the same
-          // class as direct_messages — wipe them on the same path so they
-          // never outlive the account's decrypted DMs. See #5202.
-          await safeCleanup(
-            'pendingGiftWraps',
-            () => db.pendingGiftWrapsDao.clearAllForUser(userPubkey),
-          );
-          // Wipe the processed-wrap dedup ledger on the same path: a stale
-          // ledger must never suppress re-population of an account's
-          // reactions/deletions after its DM data is cleared. See #5452.
-          await safeCleanup(
-            'processedGiftWraps',
-            () => db.processedGiftWrapsDao.clearAllForUser(userPubkey),
-          );
-        }
+        // A switch must leave no DM data attributable to the departing account
+        // and must never expose ambiguous legacy data to the incoming account.
+        // Known-owner rows for every other saved account remain intact. When
+        // the departing account is unknown, delete only NULL/empty-owner rows.
+        // See #7325.
+        await requiredCleanup('DM tables', () async {
+          await db.transaction(() async {
+            if (userPubkey != null) {
+              await db.directMessagesDao.clearForAccountSwitch(userPubkey);
+              await db.conversationsDao.clearForAccountSwitch(userPubkey);
+              // Raw failed-decrypt wraps and their terminal dedup ledger must
+              // never outlive the decrypted DM data they accompany.
+              await db.pendingGiftWrapsDao.clearForAccountSwitch(userPubkey);
+              await db.processedGiftWrapsDao.clearForAccountSwitch(userPubkey);
+            } else {
+              await db.directMessagesDao.clearUnowned();
+              await db.conversationsDao.clearUnowned();
+              await db.pendingGiftWrapsDao.clearUnowned();
+              await db.processedGiftWrapsDao.clearUnowned();
+            }
+          });
+        });
         if (deleteUserData && userPubkey != null) {
           await safeCleanup(
             'removedConversations',
@@ -925,14 +929,6 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
     // unattributed. Claim them for the first account to sign in after the
     // upgrade rather than leaving them visible to every account.
     await db.notificationsDao.claimLegacyRows(userPubkey);
-    // The DM tables gained `owner_pubkey` nullable with no backfill, so every
-    // row written before multi-account support is NULL-owned. Reads treat NULL
-    // as "visible to everyone" (`_ownedOrLegacy`), and no owner-scoped delete
-    // can reach them, which is why the cleanup callback used to wipe the whole
-    // table. Claim them here so the scoped delete below is complete. See #7325.
-    await db.directMessagesDao.claimLegacyRows(userPubkey);
-    await db.conversationsDao.claimLegacyRows(userPubkey);
-    await db.processedGiftWrapsDao.claimLegacyRows(userPubkey);
   };
 
   return service;
