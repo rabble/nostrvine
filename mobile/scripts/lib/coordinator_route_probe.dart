@@ -1,5 +1,5 @@
 // ABOUTME: Probes the account-deletion coordinator route for configured environments.
-// ABOUTME: Missing and unreachable routes fail before a mobile build can ship (#8125).
+// ABOUTME: Blocks releases unless selected routes return HTTP 401 (#8125).
 
 import 'dart:async';
 import 'dart:io';
@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:analyzer/dart/analysis/features.dart';
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:http/http.dart' as http;
 
 const coordinatorCurrentPath = '/api/account-deletion/attempts/current';
@@ -15,6 +16,8 @@ const defaultRetryDelay = Duration(seconds: 2);
 
 typedef StatusFetcher = Future<int> Function(Uri uri, Duration timeout);
 typedef RetryWaiter = Future<void> Function(Duration duration);
+typedef ConfigReader = String Function();
+typedef LineWriter = void Function(String line);
 
 final class CoordinatorTarget {
   const CoordinatorTarget({
@@ -28,7 +31,7 @@ final class CoordinatorTarget {
   Uri get probeUri => Uri.parse('$apiBaseUrl$coordinatorCurrentPath');
 }
 
-enum ProbeState { serving, missing, unreachable }
+enum ProbeState { serving, missing, unavailable, unexpected, unreachable }
 
 final class ProbeResult {
   const ProbeResult({
@@ -36,26 +39,39 @@ final class ProbeResult {
     required this.state,
     this.statusCode,
     this.error,
+    this.attempts = 1,
   });
 
   final CoordinatorTarget target;
   final ProbeState state;
   final int? statusCode;
   final Object? error;
+  final int attempts;
 
   bool get passed => state == ProbeState.serving;
 
   String get message => switch (state) {
     ProbeState.serving =>
-      'PASS ${target.environment}: ${target.probeUri} returned $statusCode.',
+      'PASS ${target.environment}: ${target.probeUri} returned $statusCode'
+          '${_attemptSuffix(attempts)}.',
     ProbeState.missing =>
       'FAIL ${target.environment}: coordinator route is not serving at '
           '${target.probeUri} (HTTP 404).',
+    ProbeState.unavailable =>
+      'FAIL ${target.environment}: coordinator route is unavailable at '
+          '${target.probeUri} (HTTP $statusCode${_attemptSuffix(attempts)}).',
+    ProbeState.unexpected =>
+      'FAIL ${target.environment}: coordinator route returned an unexpected '
+          'response at ${target.probeUri} (HTTP $statusCode).',
     ProbeState.unreachable =>
       'FAIL ${target.environment}: coordinator route is unreachable at '
-          '${target.probeUri} (${_safeError(error)}).',
+          '${target.probeUri} (${_safeError(error)}'
+          '${_attemptSuffix(attempts)}).',
   };
 }
+
+String _attemptSuffix(int attempts) =>
+    attempts > 1 ? ' after $attempts attempts' : '';
 
 String _safeError(Object? error) {
   if (error is TimeoutException) return 'request timed out';
@@ -77,7 +93,7 @@ List<CoordinatorTarget> extractCoordinatorTargets(String source) {
     throwIfDiagnostics: false,
   );
   if (parsed.errors.any(
-    (error) => error.diagnosticCode.severity.name == 'ERROR',
+    (error) => error.diagnosticCode.severity == DiagnosticSeverity.ERROR,
   )) {
     throw const FormatException('environment_config.dart does not parse');
   }
@@ -201,14 +217,40 @@ Future<ProbeResult> probeCoordinatorRoute(
     if (attempt > 0) await waitBeforeRetry(retryDelay);
     try {
       final statusCode = await fetchStatus(target.probeUri, timeout);
+      final attempts = attempt + 1;
+      if (statusCode == HttpStatus.unauthorized) {
+        return ProbeResult(
+          target: target,
+          state: ProbeState.serving,
+          statusCode: statusCode,
+          attempts: attempts,
+        );
+      }
+      if (statusCode == HttpStatus.notFound) {
+        return ProbeResult(
+          target: target,
+          state: ProbeState.missing,
+          statusCode: statusCode,
+          attempts: attempts,
+        );
+      }
+      if (statusCode >= HttpStatus.internalServerError && statusCode < 600) {
+        if (attempt == 0) continue;
+        return ProbeResult(
+          target: target,
+          state: ProbeState.unavailable,
+          statusCode: statusCode,
+          attempts: attempts,
+        );
+      }
       return ProbeResult(
         target: target,
-        state: statusCode == HttpStatus.notFound
-            ? ProbeState.missing
-            : ProbeState.serving,
+        state: ProbeState.unexpected,
         statusCode: statusCode,
+        attempts: attempts,
       );
     } on Object catch (error) {
+      if (!_isRetryableNetworkError(error)) rethrow;
       lastError = error;
     }
   }
@@ -216,8 +258,15 @@ Future<ProbeResult> probeCoordinatorRoute(
     target: target,
     state: ProbeState.unreachable,
     error: lastError,
+    attempts: 2,
   );
 }
+
+bool _isRetryableNetworkError(Object error) =>
+    error is TimeoutException ||
+    error is SocketException ||
+    error is HandshakeException ||
+    error is http.ClientException;
 
 Future<void> _waitWithTimer(Duration duration) {
   final completer = Completer<void>();
@@ -234,35 +283,51 @@ Future<int> _fetchStatus(Uri uri, Duration timeout) async {
   }
 }
 
-Future<void> main(List<String> arguments) async {
+Future<int> runCoordinatorRouteProbe(
+  List<String> arguments, {
+  required ConfigReader readEnvironmentConfig,
+  required StatusFetcher fetchStatus,
+  RetryWaiter waitBeforeRetry = _waitWithTimer,
+  LineWriter writeStdout = print,
+  LineWriter writeStderr = _writeStderr,
+}) async {
   String? selectedEnvironment;
   for (final argument in arguments) {
     if (argument.startsWith('--environment=')) {
+      if (selectedEnvironment != null) {
+        writeStderr('The --environment argument may only be provided once.');
+        writeStderr(_usage);
+        return 64;
+      }
       selectedEnvironment = argument
           .substring('--environment='.length)
           .toUpperCase();
+      if (selectedEnvironment.isEmpty) {
+        writeStderr('The --environment value must not be empty.');
+        writeStderr(_usage);
+        return 64;
+      }
     } else {
-      stderr.writeln(
-        'Usage: dart run scripts/lib/coordinator_route_probe.dart [--environment=NAME]',
-      );
-      exitCode = 64;
-      return;
+      writeStderr('Unknown argument: $argument');
+      writeStderr(_usage);
+      return 64;
     }
   }
 
   try {
-    final source = File(
-      'lib/models/environment_config.dart',
-    ).readAsStringSync();
+    final source = readEnvironmentConfig();
     var targets = extractCoordinatorTargets(source);
     if (selectedEnvironment != null) {
       targets = targets
           .where((target) => target.environment == selectedEnvironment)
           .toList(growable: false);
       if (targets.isEmpty) {
-        throw FormatException(
-          'Environment $selectedEnvironment is not a configured non-local environment',
+        writeStderr(
+          'Environment $selectedEnvironment is not a configured non-local '
+          'environment.',
         );
+        writeStderr(_usage);
+        return 64;
       }
     }
 
@@ -270,19 +335,33 @@ Future<void> main(List<String> arguments) async {
     for (final target in targets) {
       final result = await probeCoordinatorRoute(
         target,
-        fetchStatus: _fetchStatus,
+        fetchStatus: fetchStatus,
+        waitBeforeRetry: waitBeforeRetry,
       );
-      (result.passed ? stdout : stderr).writeln(result.message);
+      (result.passed ? writeStdout : writeStderr)(result.message);
       failed |= !result.passed;
     }
-    if (failed) exitCode = 1;
+    return failed ? 1 : 0;
   } on Object catch (error) {
-    stderr.writeln(
-      'FAIL coordinator route configuration: ${_safeError(error)}',
-    );
-    if (error is FormatException) stderr.writeln(error.message);
-    exitCode = 1;
+    writeStderr('FAIL coordinator route configuration: $error');
+    return 1;
   }
+}
+
+const _usage =
+    'Usage: dart run scripts/lib/coordinator_route_probe.dart '
+    '[--environment=NAME]';
+
+void _writeStderr(String line) => stderr.writeln(line);
+
+Future<void> main(List<String> arguments) async {
+  exitCode = await runCoordinatorRouteProbe(
+    arguments,
+    readEnvironmentConfig: () => File(
+      'lib/models/environment_config.dart',
+    ).readAsStringSync(),
+    fetchStatus: _fetchStatus,
+  );
 }
 
 extension<T> on Iterable<T> {

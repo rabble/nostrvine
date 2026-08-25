@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Fails when the account-deletion coordinator route is absent or unreachable.
-# HTTP 401 passes: it proves the unauthenticated request reached a mounted route.
-# HTTP 404 fails: it means the client would ship ahead of its required backend.
+# Fails unless the account-deletion coordinator route rejects a credential-free
+# GET with HTTP 401. Missing, unreachable, unavailable, and unexpected responses
+# mean the client would ship without its required backend contract.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

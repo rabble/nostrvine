@@ -82,7 +82,8 @@ definitions:
       name: Check account-deletion coordinator route
       script: |
         flutter pub get
-        ./scripts/check_coordinator_route_serving.sh
+        DEFAULT_ENV="${{ inputs.DEFAULT_ENV }}" \
+          ./scripts/check_coordinator_route_serving.sh
     - &clean_ios_workspace_state
       name: Clean stale Xcode/SPM workspace state
       script: |
