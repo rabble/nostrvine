@@ -9,7 +9,9 @@ import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/notifications_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -26,6 +28,45 @@ typedef AccountSignIn =
     Future<void> Function(ProviderContainer container, KnownAccount account);
 
 const _accountSwitchPushCleanupTimeout = Duration(seconds: 15);
+
+/// Stops the outgoing account's DM ingest before the incoming container signs
+/// in and wipes shared DM state.
+///
+/// The identity-change cleanup runs from the *incoming* container, where
+/// `dmListeningStopProvider` finds no repository and returns early — while the
+/// outgoing container's repository is still draining history into the
+/// `DeviceScope`-shared database and `SharedPreferences`. The invariant is
+/// that no writer for an account may be live while that account's
+/// device-scoped data is wiped, and the scope that owns the data is the device,
+/// not either container. See #7318.
+Future<bool> _quiesceOutgoingDmIngest(ProviderContainer? outgoing) async {
+  if (outgoing == null || !outgoing.exists(dmRepositoryProvider)) return false;
+  try {
+    await outgoing.read(dmListeningStopProvider)();
+    return true;
+  } catch (error) {
+    Log.warning(
+      'Stopping the outgoing account DM ingest before the swap failed: $error',
+      name: 'swapAccount',
+    );
+    return false;
+  }
+}
+
+/// Re-opens the outgoing account's DM ingest after a failed swap, so the
+/// rollback does not leave the still-signed-in user without DMs.
+Future<void> _resumeOutgoingDmIngest(ProviderContainer? outgoing) async {
+  if (outgoing == null || !outgoing.exists(dmRepositoryProvider)) return;
+  try {
+    await outgoing.read(dmRepositoryProvider).startListening();
+  } catch (error) {
+    Log.warning(
+      'Resuming the outgoing account DM ingest after a failed swap '
+      'failed: $error',
+      name: 'swapAccount',
+    );
+  }
+}
 
 Future<void> _defaultSignIn(
   ProviderContainer container,
@@ -178,8 +219,12 @@ Future<void> swapAccount({
     );
     final keyStorage = container.read(secureKeyStorageProvider);
     SecureKeyContainer? previousPrimary;
+    var outgoingDmIngestQuiesced = false;
     try {
       previousPrimary = await keyStorage.getKeyContainer();
+      // Before sign-in, because sign-in is what runs the identity-change
+      // cleanup that wipes the shared DM tables. See #7318.
+      outgoingDmIngestQuiesced = await _quiesceOutgoingDmIngest(current);
       await signIn(container, account);
       await controller.swapTo(
         container,
@@ -214,6 +259,13 @@ Future<void> swapAccount({
         );
       }
     } catch (_) {
+      // The outgoing container stays live on a rollback. If this attempt
+      // stopped its live subscription, restore that subscription before the
+      // key restores below, which can throw. History recovery remains
+      // resumable and restarts on the next inbox open. See #7318.
+      if (outgoingDmIngestQuiesced) {
+        await _resumeOutgoingDmIngest(current);
+      }
       try {
         await currentAuthService.restoreSignerInfoForCurrentAccount();
         await keyStorage.restorePrimaryKeyContainer(previousPrimary);

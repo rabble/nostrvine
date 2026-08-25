@@ -5439,6 +5439,258 @@ void main() {
           expect(syncState.markedCompletePubkeys, [_validPubkeyB]);
         },
       );
+
+      // #7318: stopListening() is the production disposal path — the only
+      // teardown wired to dmRepositoryProvider — and the sign-out cleanup
+      // awaits it before wiping the DM tables and DmSyncState. A drain
+      // suspended mid-page must stop with it; otherwise it resumes after the
+      // wipe and re-seeds the state that was just cleared.
+      test('stops a suspended history drain when listening stops', () async {
+        var pageCalls = 0;
+        final secondPageStarted = Completer<void>();
+        final secondPageRelease = Completer<void>();
+
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((inv) async {
+          final filter =
+              (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                  .single;
+          // Neither the own-kind-10050 inbox resolve (#4974) nor the
+          // outgoing-NIP-04 recovery pass (#5304) is a history page; keep
+          // both out of the page counter.
+          if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+            return const <Event>[];
+          }
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return const <Event>[];
+          }
+          pageCalls++;
+          if (pageCalls == 2) {
+            secondPageStarted.complete();
+            await secondPageRelease.future;
+          }
+          // Three populated pages then exhaustion, so an unstopped drain runs
+          // all the way through to markHistoryDrainComplete.
+          return pageCalls <= 3
+              ? [deletion(filter.until! - 1)]
+              : const <Event>[];
+        });
+
+        final syncState = _FakeDmSyncState()
+          ..oldestOverride = 1000000
+          ..drainVersionOverride = DmSyncState.currentDrainVersion;
+        final repository = createRepository(syncState: syncState);
+
+        final drain = repository.backfillHistoryIfNeeded();
+        await secondPageStarted.future;
+        final cursorsBeforeStop = syncState.persistedDrainCursors.length;
+
+        // The production teardown must wait for the parked page to observe the
+        // stop before the cleanup callback is allowed to clear DmSyncState.
+        final stop = repository.stopListening();
+        secondPageRelease.complete();
+        await stop;
+        await syncState.clearAll();
+        await drain;
+
+        // Both assertions are on monotonic evidence the drain leaves behind.
+        // A `drainCursorOverride, isNull` check would NOT be: reaching the end
+        // clears the cursor as a side effect of marking complete, so it passes
+        // even when the drain ran on past the stop.
+        expect(
+          syncState.persistedDrainCursors.length,
+          cursorsBeforeStop,
+          reason: 'the drain persisted a cursor after stopListening()',
+        );
+        expect(
+          syncState.markedCompletePubkeys,
+          isEmpty,
+          reason: 'the drain ran to completion after stopListening()',
+        );
+      });
+
+      // The loop guards are all *inside* the paging work, but the preamble
+      // writes before reaching them: upgradeDrainVersionIfNeeded clears and
+      // re-stamps the drain version, and an absent key reads as version 0, so
+      // after the account cleanup has wiped DmSyncState it always writes. The
+      // inbox bloc re-dispatches ConversationListStarted on blocklist and
+      // profile-repository changes, so a pass can still be entered while the
+      // leaving container is alive. See #7318.
+      test(
+        'a drain entered after listening stopped touches no state',
+        () async {
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.stopListening();
+          await repository.backfillHistoryIfNeeded();
+
+          expect(
+            syncState.upgradedPubkeys,
+            isEmpty,
+            reason: 'the drain re-stamped the drain version after a teardown',
+          );
+        },
+      );
+
+      // Same shape in the decrypt-retry pass: deleteExhausted is a write, and
+      // it runs ahead of the first session guard. See #7318.
+      test(
+        'a retry pass entered after listening stopped touches no state',
+        () async {
+          final pendingGiftWrapsDao = _MockPendingGiftWrapsDao();
+          final repository = createRepository(
+            pendingGiftWrapsDao: pendingGiftWrapsDao,
+            syncState: _FakeDmSyncState(),
+          );
+
+          await repository.stopListening();
+          await repository.retryPendingDecryptions();
+
+          verifyNever(
+            () => pendingGiftWrapsDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          );
+        },
+      );
+
+      // _fetchHistoryPage's session guard sits at the TOP of its persist loop,
+      // so the last event's persist — and the yield after it — are suspension
+      // points it cannot see past: it returns the page either way. A teardown
+      // landing in that gap used to reach setHistoryDrainCursor below and
+      // re-seed the state the cleanup had just wiped. See #7318.
+      test(
+        'stopListening waits for the last persist before returning',
+        () async {
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          final persistStarted = Completer<void>();
+          final persistRelease = Completer<void>();
+
+          // Park inside _handleDeletionEvent, after the loop's final guard has
+          // already passed for this (only) event.
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {
+            persistStarted.complete();
+            await persistRelease.future;
+            return null;
+          });
+
+          var pageCalls = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return const <Event>[];
+            }
+            pageCalls++;
+            return pageCalls == 1
+                ? [
+                    Event(
+                      _validPubkeyA,
+                      EventKind.eventDeletion,
+                      const [
+                        ['e', _rumorEventId],
+                      ],
+                      '',
+                      createdAt: 99,
+                    ),
+                  ]
+                : const <Event>[];
+          });
+
+          final repository = createRepository(syncState: syncState);
+          final drain = repository.backfillHistoryIfNeeded();
+          await persistStarted.future;
+
+          var stopCompleted = false;
+          final stop = repository.stopListening().whenComplete(() {
+            stopCompleted = true;
+          });
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            stopCompleted,
+            isFalse,
+            reason: 'stopListening returned while an ingest write was live',
+          );
+
+          persistRelease.complete();
+          await stop;
+          await syncState.clearAll();
+          await drain;
+
+          expect(
+            syncState.persistedDrainCursors,
+            isEmpty,
+            reason:
+                'the drain persisted a cursor after a teardown that landed '
+                'between the last persist and the cursor write',
+          );
+        },
+      );
+
+      test('stopListening waits for a suspended decrypt-retry pass', () async {
+        final pendingGiftWrapsDao = _MockPendingGiftWrapsDao();
+        final retryReadStarted = Completer<void>();
+        final retryReadRelease = Completer<void>();
+
+        when(
+          () => pendingGiftWrapsDao.deleteExhausted(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            maxAttempts: any(named: 'maxAttempts'),
+          ),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => pendingGiftWrapsDao.getRetryable(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            maxAttempts: any(named: 'maxAttempts'),
+          ),
+        ).thenAnswer((_) async {
+          retryReadStarted.complete();
+          await retryReadRelease.future;
+          return const <PendingGiftWrap>[];
+        });
+
+        final repository = createRepository(
+          pendingGiftWrapsDao: pendingGiftWrapsDao,
+        );
+        final retry = repository.retryPendingDecryptions();
+        await retryReadStarted.future;
+
+        var stopCompleted = false;
+        final stop = repository.stopListening().whenComplete(() {
+          stopCompleted = true;
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          stopCompleted,
+          isFalse,
+          reason: 'stopListening returned while the retry pass was live',
+        );
+
+        retryReadRelease.complete();
+        await stop;
+        await retry;
+      });
     });
 
     // -----------------------------------------------------------------
@@ -5864,9 +6116,9 @@ void main() {
           // generation bump must invalidate the late spawn so its worker is
           // closed instead of being installed as a leak nothing ever closes.
           await controller.close();
-          await repository.stopListening();
+          final stop = repository.stopListening();
           spawnGate.complete();
-          await Future<void>.delayed(Duration.zero);
+          await stop;
 
           expect(staleWorker.closed, isTrue);
           // The stale worker never verified anything — the wrap it was
@@ -5922,10 +6174,9 @@ void main() {
           // generation guard sees only post-stop values, installing a worker
           // into the orphaned repository that nothing ever closes.
           await controller.close();
-          await repository.stopListening();
+          final stop = repository.stopListening();
           rpcGate.complete();
-          await Future<void>.delayed(Duration.zero);
-          await Future<void>.delayed(Duration.zero);
+          await stop;
 
           expect(spawnedWorkers, isEmpty);
           // The torn-down session persists nothing; the wrap re-arrives via

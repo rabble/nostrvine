@@ -867,10 +867,10 @@ class DmRepository {
             'DM subscription error: $error',
             category: LogCategory.system,
           );
-          // Cancel the failed subscription so its onDone callback never fires
-          // after a later stopListening() call (which leaves _disposed false).
-          // Without this, the orphaned subscription's onDone would schedule a
-          // reconnect timer that leaks past the current lifecycle.
+          // Release the failed subscription so its onDone cannot fire later
+          // and schedule a reconnect. stopListening() now sets _disposed,
+          // which suppresses that path as well (#7318); this cancel remains
+          // the local cleanup for a stream that has already failed.
           unawaited(_giftWrapSubscription?.cancel());
           _giftWrapSubscription = null;
           if (!_disposed) {
@@ -953,6 +953,7 @@ class DmRepository {
     required int limit,
     required String subscriptionId,
     required String pubkey,
+    required int generation,
     List<String>? tempRelays,
   }) async {
     final filter = nostr_filter.Filter(
@@ -976,7 +977,7 @@ class DmRepository {
       useCache: false,
       tempRelays: tempRelays,
     );
-    if (_disposed || _userPubkey != pubkey) return null;
+    if (_ingestSessionEnded(pubkey, generation)) return null;
 
     // Pass 1 (off the _eventLock): batch-decrypt this page's gift wraps in one
     // isolate hop per chunk for local-key signers, instead of one isolate
@@ -985,13 +986,13 @@ class DmRepository {
     final preDecrypted = await _batchDecryptGiftWraps(events);
     // The batch decrypt above can span many events with no inner guard, so
     // re-check before persisting that the user did not switch / tear down.
-    if (_disposed || _userPubkey != pubkey) return null;
+    if (_ingestSessionEnded(pubkey, generation)) return null;
 
     // Pass 2 (original page order): persist. Pre-decrypted gift wraps skip the
     // per-event decrypt; everything else (NIP-04, deletions, remote-signer or
     // failed wraps) routes through the unchanged per-event handler.
     for (var i = 0; i < events.length; i++) {
-      if (_disposed || _userPubkey != pubkey) return null;
+      if (_ingestSessionEnded(pubkey, generation)) return null;
       final event = events[i];
       final rumor = preDecrypted[event.id];
       if (rumor != null) {
@@ -1023,11 +1024,11 @@ class DmRepository {
   /// the gift-wrap drain's `connectedRelayCount == 0` guard so a momentary
   /// disconnect in this window doesn't silently skip recovery *and*
   /// permanently strand the user's outgoing NIP-04 history. See #5304.
-  Future<bool> _recoverOutgoingNip04(String pubkey) async {
+  Future<bool> _recoverOutgoingNip04(String pubkey, int generation) async {
     try {
       var cursor = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
-        if (_disposed || _userPubkey != pubkey) return false;
+        if (_ingestSessionEnded(pubkey, generation)) return false;
         final events = await _nostrClient.queryEvents(
           [
             nostr_filter.Filter(
@@ -1040,7 +1041,7 @@ class DmRepository {
           subscriptionId: 'dm_drain_nip04_${pubkey}_$page',
           useCache: false,
         );
-        if (_disposed || _userPubkey != pubkey) return false;
+        if (_ingestSessionEnded(pubkey, generation)) return false;
         if (events.isEmpty) {
           // An empty page is genuine exhaustion only if a relay was actually
           // connected to answer it. With 0 connected relays queryEvents
@@ -1050,7 +1051,7 @@ class DmRepository {
           return _nostrClient.connectedRelayCount > 0;
         }
         for (var i = 0; i < events.length; i++) {
-          if (_disposed || _userPubkey != pubkey) return false;
+          if (_ingestSessionEnded(pubkey, generation)) return false;
           await _handleIncomingEvent(events[i]);
           await _maybeYieldDuringDrain(i);
         }
@@ -1202,11 +1203,24 @@ class DmRepository {
     return run;
   }
 
+  /// Whether the session a background ingest pass started under has ended —
+  /// the repository was torn down, the user switched, or an explicit
+  /// [stopListening] bumped the session token.
+  ///
+  /// Every ingest-loop guard reads this one predicate so they cannot drift
+  /// apart: #7318 was six guards that all tested `_disposed || _userPubkey`
+  /// while the live-subscription path had already moved on to the token.
+  bool _ingestSessionEnded(String pubkey, int generation) =>
+      _disposed || _userPubkey != pubkey || _resetGeneration != generation;
+
   Future<void> _runPendingDecryptRetry() async {
-    if (!isInitialized) return;
+    // Same shape as the drain: deleteExhausted below is a write, and it runs
+    // ahead of the first session guard. See #7318.
+    if (_disposed || !isInitialized) return;
     final dao = _pendingGiftWrapsDao;
     if (dao == null) return;
     final pubkey = _userPubkey;
+    final gen = _resetGeneration;
     var began = false;
     try {
       // Drop wraps that exhausted the retry cap so the queue cannot grow
@@ -1251,7 +1265,7 @@ class DmRepository {
       _beginRecovery();
       began = true;
       for (var i = 0; i < pending.length; i++) {
-        if (_disposed || _userPubkey != pubkey) return;
+        if (_ingestSessionEnded(pubkey, gen)) return;
         final row = pending[i];
         // Already recovered by the live sub / drain — clear the stale row so
         // it does not linger and re-query on every inbox open.
@@ -1291,9 +1305,9 @@ class DmRepository {
           );
           continue;
         }
-        // Re-check after the awaits above so an account switch mid-pass never
-        // replays the old user's wrap under the new session.
-        if (_disposed || _userPubkey != pubkey) return;
+        // Re-check after the awaits above so an account switch or a teardown
+        // mid-pass never replays the old user's wrap under the new session.
+        if (_ingestSessionEnded(pubkey, gen)) return;
         // Route through _handleIncomingEvent so the replay serializes on the
         // same _eventLock as the live subscription and the drain. A
         // successful decrypt deletes the pending row inside
@@ -1319,12 +1333,21 @@ class DmRepository {
   }
 
   Future<void> _runHistoryDrain() async {
-    if (!isInitialized) return;
+    // Ahead of isInitialized, which stopListening() deliberately leaves true so
+    // a restart can re-open: the preamble below writes before reaching the
+    // first session guard. upgradeDrainVersionIfNeeded re-stamps the drain
+    // version, and an absent key reads as version 0, so once the account
+    // cleanup has wiped DmSyncState this pass always writes. See #7318.
+    if (_disposed || !isInitialized) return;
     final syncState = _syncState;
     if (syncState == null) return;
     // Pin the user for the whole drain so an account switch mid-drain can
     // never mark the wrong pubkey complete or query for the new user.
     final pubkey = _userPubkey;
+    // Pin the session token alongside the user. _disposed alone would stop a
+    // drain on the stopListening() path, but a stop immediately followed by a
+    // restart on this instance clears it again under an in-flight drain.
+    final gen = _resetGeneration;
     // One-time forced re-drain: installs that completed under an older,
     // buggy drain (pre-#5202) are stuck with historyDrainComplete=true while
     // the relay still holds unrecovered history. A drain-version bump clears
@@ -1362,7 +1385,7 @@ class DmRepository {
           final spawned = await _decryptIsolateSpawner(
             drainSigner.withPrivateKeyHex((k) => k),
           );
-          if (_disposed || _userPubkey != pubkey) {
+          if (_ingestSessionEnded(pubkey, gen)) {
             spawned.close();
             return;
           }
@@ -1386,7 +1409,7 @@ class DmRepository {
       // logs, returns null, and wraps validate inline. See #5424.
       if (drainDecryptIsolate == null) {
         await _ensureVerifyIsolate();
-        if (_disposed || _userPubkey != pubkey) return;
+        if (_ingestSessionEnded(pubkey, gen)) return;
       }
 
       // The relay filters `until:` on the OUTER gift-wrap created_at, which
@@ -1406,22 +1429,29 @@ class DmRepository {
       // page at them so the backfill reads gift wraps delivered outside the
       // default pool. `null` keeps default-pool-only behavior. See #4974.
       final ownInbox = await _ownInboxTargetRelays();
-      if (_disposed || _userPubkey != pubkey) return;
+      if (_ingestSessionEnded(pubkey, gen)) return;
 
       var reachedEnd = false;
       var pagesRun = 0;
       var totalEvents = 0;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         // Bail if the user switched or the repository was torn down.
-        if (_disposed || _userPubkey != pubkey) return;
+        if (_ingestSessionEnded(pubkey, gen)) return;
         final events = await _fetchHistoryPage(
           until: cursor,
           limit: DmHistoryDrainConfig.pageSize,
           subscriptionId: 'dm_drain_${pubkey}_$page',
           pubkey: pubkey,
+          generation: gen,
           tempRelays: ownInbox,
         );
         if (events == null) return;
+        // _fetchHistoryPage's own guard sits at the top of its persist loop,
+        // so the last event's persist and the yield after it are both
+        // suspension points it cannot see past — it returns the page either
+        // way. Re-check here or a teardown landing in that gap still reaches
+        // setHistoryDrainCursor below and re-seeds the wiped state. See #7318.
+        if (_ingestSessionEnded(pubkey, gen)) return;
         pagesRun++;
         totalEvents += events.length;
         if (events.isEmpty) {
@@ -1476,12 +1506,12 @@ class DmRepository {
         // (e.g. a momentary disconnect in this window) so a flaky network
         // never silently skips recovery AND marks the drain complete — it
         // resumes on the next inbox open instead.
-        final nip04Recovered = await _recoverOutgoingNip04(pubkey);
+        final nip04Recovered = await _recoverOutgoingNip04(pubkey, gen);
         if (nip04Recovered) {
           await syncState.markHistoryDrainComplete(pubkey);
           // Restore read state now that the full conversation set is present:
           // last-sent floor + any read markers stashed during the drain. #4977.
-          await _restoreReadStateAfterDrain(pubkey);
+          await _restoreReadStateAfterDrain(pubkey, gen);
           Log.info(
             'DM history drain complete for ${pubkeyForLogs(pubkey)}: '
             'pages=$pagesRun, eventsFetched=$totalEvents',
@@ -1540,22 +1570,39 @@ class DmRepository {
     }
   }
 
-  /// Stop listening for incoming DMs and clean up resources.
+  /// Stops listening for incoming DMs and tears this repository down.
+  ///
+  /// This is the production disposal path — `dmRepositoryProvider` wires it to
+  /// `ref.onDispose`, and the account cleanup awaits it before wiping the DM
+  /// tables — so it stops the background ingest loops too, not just the
+  /// subscription. See #7318.
   Future<void> stopListening() async {
-    // Don't set _disposed = true here — _disposed is reserved for
-    // _resetState() (user switch). Setting it would make a subsequent
-    // startListening() call a silent no-op, breaking re-open flows such
-    // as the post-signOut cleanup in UserDataCleanupService that may be
-    // followed by a fresh sign-in on the same repository instance.
-    //
-    // But DO bump the session token: an intentional stop must invalidate any
+    // _disposed is what stops the history drain and the decrypt-retry pass:
+    // their guards read it, and nothing else those guards check flips here
+    // (_userPubkey is cleared only by _resetState, which the provider never
+    // reaches). It also suppresses the onDone reconnect. A later
+    // startListening() on this instance still re-opens cleanly — it clears the
+    // flag as its first statement, precisely so a stop can be followed by a
+    // restart, and nothing user-facing reads it.
+    _disposed = true;
+    // Bump the session token too: an intentional stop must invalidate any
     // startListening()/ensureDmRelayListPublished() resolve already in flight,
     // so its post-await continuation bails instead of re-opening the
-    // subscription (or completing a publish) after the stop. _disposed stays
-    // false so a later startListening() re-opens cleanly. See #4974.
+    // subscription (or completing a publish) after the stop. See #4974.
     _resetGeneration++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    // Drop the loop handles so a later startListening() starts a fresh pass
+    // rather than re-awaiting a stale future, and reclaim the drain-scoped
+    // decrypt isolate holding this user's key now rather than whenever the
+    // bailing drain unwinds. The drain's own `finally` is idempotent if it
+    // also runs. Mirrors _resetState. See #7318.
+    final historyDrain = _historyDrain;
+    final pendingDecryptRetry = _pendingDecryptRetry;
+    _historyDrain = null;
+    _pendingDecryptRetry = null;
+    _drainDecryptIsolate?.close();
+    _drainDecryptIsolate = null;
     // Close the shared verify isolate: in production this is the disposal
     // path — dmRepositoryProvider rebuilds construct a fresh repository and
     // dispose the old one via stopListening, never via _resetState — so
@@ -1570,13 +1617,24 @@ class DmRepository {
     // same user may resume listening. #4977.
     _readMarkerDebounce?.cancel();
     _readMarkerDebounce = null;
-    _eventLock = null;
     await _giftWrapSubscription?.cancel();
     _giftWrapSubscription = null;
     try {
       await _nostrClient.unsubscribe(_subscriptionId);
     } on Object {
       // Ignore if subscription doesn't exist
+    }
+
+    // stopListening() is awaited immediately before account cleanup wipes the
+    // DM tables. Session guards stop future iterations, but the current event
+    // persist can already be past its final guard, and the drain can still
+    // have cursor/read-state writes after it. Preserve the handles captured
+    // above and wait for every writer to observe the teardown before declaring
+    // the repository quiescent. See #7318.
+    await historyDrain;
+    await pendingDecryptRetry;
+    while (_eventLock != null) {
+      await _eventLock;
     }
   }
 
@@ -5708,14 +5766,17 @@ class DmRepository {
   /// advance the cursor to their own most-recent sent message; and
   /// (2) flush [_pendingReadCursors] — markers whose conversations had not yet
   /// been ingested when the marker was first processed.
-  Future<void> _restoreReadStateAfterDrain(String pubkey) async {
+  Future<void> _restoreReadStateAfterDrain(
+    String pubkey,
+    int generation,
+  ) async {
     try {
       final floors = await _conversationsDao.lastSentTimestampsByConversation(
         pubkey,
         ownerPubkey: pubkey,
       );
       for (final entry in floors.entries) {
-        if (_disposed || _userPubkey != pubkey) return;
+        if (_ingestSessionEnded(pubkey, generation)) return;
         await _conversationsDao.applyReadCursor(
           entry.key,
           entry.value,
@@ -5726,7 +5787,7 @@ class DmRepository {
         final pending = Map<String, int>.from(_pendingReadCursors);
         _pendingReadCursors.clear();
         for (final entry in pending.entries) {
-          if (_disposed || _userPubkey != pubkey) return;
+          if (_ingestSessionEnded(pubkey, generation)) return;
           await _conversationsDao.applyReadCursor(
             entry.key,
             entry.value,
