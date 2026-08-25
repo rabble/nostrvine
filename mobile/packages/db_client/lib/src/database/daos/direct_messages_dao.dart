@@ -354,6 +354,19 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
   }
 
+  /// Claim legacy DMs (NULL `ownerPubkey`) for [newOwnerPubkey].
+  ///
+  /// Called during session setup so pre-multi-account rows are attributed to
+  /// the signed-in account instead of staying visible to every account through
+  /// [_ownedOrLegacy]. Mirrors `NotificationsDao.claimLegacyRows`; without it
+  /// an owner-scoped delete can never reach these rows, because the column was
+  /// added nullable with no backfill.
+  Future<int> claimLegacyRows(String newOwnerPubkey) {
+    return (update(directMessages)..where((t) => t.ownerPubkey.isNull())).write(
+      DirectMessagesCompanion(ownerPubkey: Value(newOwnerPubkey)),
+    );
+  }
+
   /// Delete all DMs.
   Future<int> clearAll() {
     return delete(directMessages).go();

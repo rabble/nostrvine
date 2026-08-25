@@ -401,10 +401,7 @@ END
       'COALESCE(last_read_timestamp, 0), '
       'COALESCE(last_message_timestamp, 0)) '
       'WHERE id IN ($placeholders)${_ownerSqlClause(ownerPubkey)}',
-      variables: [
-        ...ids.map(Variable.new),
-        ..._ownerSqlVariables(ownerPubkey),
-      ],
+      variables: [...ids.map(Variable.new), ..._ownerSqlVariables(ownerPubkey)],
       updates: {attachedDatabase.conversations},
       updateKind: UpdateKind.update,
     );
@@ -437,6 +434,17 @@ END
     return (delete(
       conversations,
     )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
+  /// Claim legacy conversations (NULL `ownerPubkey`) for [newOwnerPubkey].
+  ///
+  /// Called during session setup so pre-multi-account rows are attributed to
+  /// the signed-in account instead of staying visible to every account through
+  /// [_ownedOrLegacy]. Mirrors `NotificationsDao.claimLegacyRows`.
+  Future<int> claimLegacyRows(String newOwnerPubkey) {
+    return (update(conversations)..where((t) => t.ownerPubkey.isNull())).write(
+      ConversationsCompanion(ownerPubkey: Value(newOwnerPubkey)),
+    );
   }
 
   /// Delete all conversations.

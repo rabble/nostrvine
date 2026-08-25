@@ -152,10 +152,7 @@ Stream<void> dmMessageRetryTriggerWithRelayRepair({
 
 /// Whether two connectivity reports describe the same set of transports.
 /// Order-insensitive: `connectivity_plus` gives no ordering guarantee.
-bool _sameConnectivity(
-  List<ConnectivityResult> a,
-  List<ConnectivityResult> b,
-) {
+bool _sameConnectivity(List<ConnectivityResult> a, List<ConnectivityResult> b) {
   final aSet = a.toSet();
   final bSet = b.toSet();
   return aSet.length == bSet.length && aSet.containsAll(bSet);
@@ -606,9 +603,7 @@ AnalyticsService analyticsService(Ref ref) {
   final appVersion = resolveProductAnalyticsRelease(
     runtimeVersion: ref.watch(appVersionProvider),
     environment: const String.fromEnvironment('DEFAULT_ENV'),
-    stagingOverride: const String.fromEnvironment(
-      'PRODUCT_ANALYTICS_RELEASE',
-    ),
+    stagingOverride: const String.fromEnvironment('PRODUCT_ANALYTICS_RELEASE'),
   );
   final service = AnalyticsService(
     viewEventPublisher: viewPublisher,
@@ -888,6 +883,14 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
     // unattributed. Claim them for the first account to sign in after the
     // upgrade rather than leaving them visible to every account.
     await db.notificationsDao.claimLegacyRows(userPubkey);
+    // The DM tables gained `owner_pubkey` nullable with no backfill, so every
+    // row written before multi-account support is NULL-owned. Reads treat NULL
+    // as "visible to everyone" (`_ownedOrLegacy`), and no owner-scoped delete
+    // can reach them, which is why the cleanup callback used to wipe the whole
+    // table. Claim them here so the scoped delete below is complete. See #7325.
+    await db.directMessagesDao.claimLegacyRows(userPubkey);
+    await db.conversationsDao.claimLegacyRows(userPubkey);
+    await db.processedGiftWrapsDao.claimLegacyRows(userPubkey);
   };
 
   return service;

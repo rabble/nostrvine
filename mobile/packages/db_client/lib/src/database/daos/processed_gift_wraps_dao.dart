@@ -47,10 +47,7 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
   /// wrap or a concurrent writer never throws). [ownerPubkey] is informational
   /// only — not part of the dedup key, and not used to scope deletes (cleanup
   /// is global via [clearAll]).
-  Future<void> record({
-    required String giftWrapId,
-    String? ownerPubkey,
-  }) async {
+  Future<void> record({required String giftWrapId, String? ownerPubkey}) async {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await into(processedGiftWraps).insert(
       ProcessedGiftWrapsCompanion.insert(
@@ -60,6 +57,13 @@ class ProcessedGiftWrapsDao extends DatabaseAccessor<AppDatabase>
       ),
       mode: InsertMode.insertOrIgnore,
     );
+  }
+
+  /// Claim legacy processed-wrap rows (NULL `ownerPubkey`) for
+  /// [newOwnerPubkey], so an owner-scoped delete can reach them.
+  Future<int> claimLegacyRows(String newOwnerPubkey) {
+    return (update(processedGiftWraps)..where((t) => t.ownerPubkey.isNull()))
+        .write(ProcessedGiftWrapsCompanion(ownerPubkey: Value(newOwnerPubkey)));
   }
 
   /// Removes every processed-wrap row. Called during account cleanup (switch /
