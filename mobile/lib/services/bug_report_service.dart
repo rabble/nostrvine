@@ -29,8 +29,10 @@ class BugReportService {
   BugReportService({
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
+    Future<PackageInfo> Function()? packageInfoLoader,
   }) : _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
-       _storageManagementService = storageManagementService;
+       _storageManagementService = storageManagementService,
+       _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform;
 
   static const _uuid = Uuid();
 
@@ -44,6 +46,7 @@ class BugReportService {
   static const int logClipboardByteBudget = 64 * 1024;
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
+  final Future<PackageInfo> Function() _packageInfoLoader;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -59,7 +62,7 @@ class BugReportService {
       final reportId = _uuid.v4();
 
       // Get app version from package_info_plus
-      final packageInfo = await PackageInfo.fromPlatform();
+      final packageInfo = await _packageInfoLoader();
       final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
 
       // Get device info using device_info_plus
@@ -617,7 +620,7 @@ class BugReportService {
     String? currentScreen,
     String? userPubkey,
   }) async {
-    final packageInfo = await PackageInfo.fromPlatform();
+    final packageInfo = await _packageInfoLoader();
     final buffer = StringBuffer()
       ..writeln('OpenVine Comprehensive Log Export')
       ..writeln('═' * 80)
@@ -650,21 +653,18 @@ class BugReportService {
   /// Build the diagnostic header plus the most recent log lines that fit
   /// under [logClipboardByteBudget], for copying to the clipboard.
   ///
-  /// Returns `null` when the capture buffer is empty, so the caller can say
-  /// so rather than putting a bare header on the clipboard.
-  ///
   /// This exists because the share sheet cannot serve a copy on Android: its
   /// "Copy" chip copies `Intent.EXTRA_TEXT`, never the attached file. A
   /// separate path is the only way that gesture yields logs, and it has to
   /// be capped — the full buffer runs to 5-10 MB and the clipboard crosses a
   /// Binder transaction with roughly a 1 MB ceiling for everything in it.
-  Future<String?> buildLogClipboardText({
+  Future<LogClipboardResult> buildLogClipboardText({
     String? currentScreen,
     String? userPubkey,
   }) async {
     try {
       final allLogLines = await LogCaptureService().getAllLogsAsText();
-      if (allLogLines.isEmpty) return null;
+      if (allLogLines.isEmpty) return const LogClipboardResult.noLogs();
 
       final stats = await LogCaptureService().getLogStatistics();
       final header = await _buildLogHeader(
@@ -676,23 +676,42 @@ class BugReportService {
 
       // Walk backwards so the tail — the part nearest whatever just went
       // wrong — is what survives the budget.
+      final sanitizedLines = allLogLines.map(_sanitizeString).toList();
       final tail = <String>[];
-      var budget = logClipboardByteBudget - utf8.encode(header).length;
-      for (final line in allLogLines.reversed) {
-        final sanitized = _sanitizeString(line);
-        final cost = utf8.encode(sanitized).length + 1;
-        if (cost > budget) break;
-        budget -= cost;
-        tail.add(sanitized);
+      final headerBytes = utf8.encode(header).length;
+      var tailBytes = 0;
+      for (final line in sanitizedLines.reversed) {
+        final lineBytes = utf8.encode(line).length + 1;
+        final omitted = sanitizedLines.length - tail.length - 1;
+        final markerBytes = utf8.encode(_omittedMarker(omitted)).length;
+        if (headerBytes + markerBytes + tailBytes + lineBytes >
+            logClipboardByteBudget) {
+          break;
+        }
+        tail.add(line);
+        tailBytes += lineBytes;
       }
 
-      final buffer = StringBuffer(header);
-      final omitted = allLogLines.length - tail.length;
-      if (omitted > 0) {
-        buffer.writeln('... [$omitted earlier entries omitted]');
+      if (tail.isEmpty) {
+        final omitted = sanitizedLines.length - 1;
+        final marker = _omittedMarker(omitted);
+        final fixedText = '$header$marker';
+        final remaining =
+            logClipboardByteBudget - utf8.encode(fixedText).length;
+        final newest = _truncateUtf8(sanitizedLines.last, remaining - 1);
+        final text = '$fixedText$newest\n';
+        return LogClipboardResult.success(
+          _truncateUtf8(text, logClipboardByteBudget),
+        );
       }
-      tail.reversed.forEach(buffer.writeln);
-      return buffer.toString();
+
+      return LogClipboardResult.success(
+        _buildClipboardPayload(
+          header: header,
+          reversedTail: tail,
+          totalLineCount: sanitizedLines.length,
+        ),
+      );
     } catch (e, stackTrace) {
       Log.error(
         'Failed to build clipboard log text: $e',
@@ -700,8 +719,38 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return null;
+      return const LogClipboardResult.failed();
     }
+  }
+
+  static String _buildClipboardPayload({
+    required String header,
+    required List<String> reversedTail,
+    required int totalLineCount,
+  }) {
+    final buffer = StringBuffer(header);
+    final omitted = totalLineCount - reversedTail.length;
+    if (omitted > 0) buffer.write(_omittedMarker(omitted));
+    reversedTail.reversed.forEach(buffer.writeln);
+    return buffer.toString();
+  }
+
+  static String _omittedMarker(int omitted) =>
+      omitted > 0 ? '... [$omitted earlier entries omitted]\n' : '';
+
+  static String _truncateUtf8(String value, int maxBytes) {
+    if (maxBytes <= 0) return '';
+    final bytes = utf8.encode(value);
+    if (bytes.length <= maxBytes) return value;
+    var end = maxBytes;
+    while (end > 0) {
+      try {
+        return utf8.decode(bytes.sublist(0, end));
+      } on FormatException {
+        end--;
+      }
+    }
+    return '';
   }
 
   /// Export logs on mobile platforms using the system share sheet.
@@ -852,6 +901,23 @@ class BugReportService {
   }
 }
 
+/// Result of preparing captured logs for the clipboard.
+class LogClipboardResult {
+  const LogClipboardResult._(this.status, {this.text});
+
+  const LogClipboardResult.success(String text)
+    : this._(LogClipboardStatus.success, text: text);
+
+  const LogClipboardResult.noLogs() : this._(LogClipboardStatus.noLogs);
+
+  const LogClipboardResult.failed() : this._(LogClipboardStatus.failed);
+
+  final LogClipboardStatus status;
+  final String? text;
+}
+
+enum LogClipboardStatus { success, noLogs, failed }
+
 /// Outcome of [BugReportService.exportLogsToFile].
 ///
 /// On desktop, [filePath] points at the path the user picked in the
@@ -879,18 +945,6 @@ class LogExportResult {
 
   final LogExportStatus status;
   final String? filePath;
-
-  /// Whether the logs reached somewhere the user can get at them.
-  ///
-  /// [LogExportStatus.unconfirmed] counts: the share sheet was presented and
-  /// the platform simply declined to report the outcome, so treating it as a
-  /// failure would be a guess in the direction that costs us the report.
-  bool get success =>
-      status == LogExportStatus.shared ||
-      status == LogExportStatus.saved ||
-      status == LogExportStatus.unconfirmed;
-
-  bool get cancelled => status == LogExportStatus.cancelled;
 }
 
 /// How an export ended.

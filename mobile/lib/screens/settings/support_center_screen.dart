@@ -22,7 +22,7 @@ import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SupportCenterScreen extends ConsumerWidget {
+class SupportCenterScreen extends ConsumerStatefulWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
@@ -36,7 +36,15 @@ class SupportCenterScreen extends ConsumerWidget {
   final Future<bool> Function()? openZendeskSupport;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SupportCenterScreen> createState() =>
+      _SupportCenterScreenState();
+}
+
+class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
+  var _copyingLogs = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
     final isAuthenticated =
@@ -260,38 +268,62 @@ class SupportCenterScreen extends ConsumerWidget {
     BugReportService bugReportService,
     String? userPubkey,
   ) async {
-    final text = await bugReportService.buildLogClipboardText(
-      currentScreen: 'SupportCenterScreen',
-      userPubkey: userPubkey,
-    );
-    if (!context.mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    if (text == null) {
-      messenger.showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportNoLogsToExport,
-          duration: const Duration(seconds: 8),
-        ),
-      );
-      return;
-    }
-
-    // copyVerified reads the value back, so a clipboard blocked by a work
-    // profile or a device policy reports failure instead of looking fine.
-    final copied = await ClipboardUtils.copyVerified(
-      context,
-      text,
-      message: context.l10n.supportLogsCopied,
-    );
-    if (!context.mounted || copied) return;
-
+    if (_copyingLogs) return;
+    _copyingLogs = true;
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
-        context.l10n.supportCopyLogsFailed,
-        error: true,
+        context.l10n.supportExportingLogs,
+        duration: const Duration(seconds: 2),
       ),
     );
+
+    try {
+      final result = await bugReportService.buildLogClipboardText(
+        currentScreen: 'SupportCenterScreen',
+        userPubkey: userPubkey,
+      );
+      if (!context.mounted) return;
+
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      switch (result.status) {
+        case LogClipboardStatus.noLogs:
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.supportNoLogsToExport,
+              duration: const Duration(seconds: 8),
+            ),
+          );
+          return;
+        case LogClipboardStatus.failed:
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.supportCopyLogsFailed,
+              error: true,
+            ),
+          );
+          return;
+        case LogClipboardStatus.success:
+          break;
+      }
+
+      // copyVerified reads the value back, so a clipboard blocked by a work
+      // profile or a device policy reports failure instead of looking fine.
+      final copied = await ClipboardUtils.copyVerified(
+        context,
+        result.text!,
+        message: context.l10n.supportLogsCopied,
+      );
+      if (!context.mounted || copied) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportCopyLogsFailed,
+          error: true,
+        ),
+      );
+    } finally {
+      _copyingLogs = false;
+    }
   }
 
   Future<bool> _viewSupportMessages() async {
@@ -303,7 +335,7 @@ class SupportCenterScreen extends ConsumerWidget {
     final l10n = context.l10n;
     var emailBody = l10n.supportContactSupportSubtitle;
     final openZendesk =
-        openZendeskSupport ??
+        widget.openZendeskSupport ??
         (ZendeskSupportService.isAvailable ? _viewSupportMessages : null);
     if (openZendesk != null) {
       if (await openZendesk()) return;
@@ -315,7 +347,7 @@ class SupportCenterScreen extends ConsumerWidget {
 
     final sharePositionOrigin = shareAnchorForContext(context);
     try {
-      await (composeEmail ?? SupportEmailComposer().compose)(
+      await (widget.composeEmail ?? SupportEmailComposer().compose)(
         toEmail: AppConstants.supportEmail,
         subject: l10n.supportContactSupport,
         body: emailBody,

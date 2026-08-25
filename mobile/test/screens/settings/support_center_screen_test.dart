@@ -1,6 +1,8 @@
 // ABOUTME: Tests the Support Center resource links and account-deletion auth gate
 // ABOUTME: Regression cover for #6335, which was reported from this screen
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,7 +105,7 @@ void main() {
             currentScreen: any(named: 'currentScreen'),
             userPubkey: any(named: 'userPubkey'),
           ),
-        ).thenAnswer((_) async => logText);
+        ).thenAnswer((_) async => const LogClipboardResult.success(logText));
 
         final clipboardWrites = <String>[];
         tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -143,7 +145,7 @@ void main() {
             currentScreen: any(named: 'currentScreen'),
             userPubkey: any(named: 'userPubkey'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const LogClipboardResult.noLogs());
 
         await pump(tester);
         await tester.tap(find.text(en.supportCopyLogs));
@@ -151,6 +153,85 @@ void main() {
 
         expect(find.text(en.supportNoLogsToExport), findsOneWidget);
         expect(find.text(en.supportCopyLogsFailed), findsNothing);
+      });
+
+      testWidgets('reports a diagnostic build failure', (tester) async {
+        when(
+          () => bugReportService.buildLogClipboardText(
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => const LogClipboardResult.failed());
+
+        await pump(tester);
+        await tester.tap(find.text(en.supportCopyLogs));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.supportCopyLogsFailed), findsOneWidget);
+        expect(find.text(en.supportNoLogsToExport), findsNothing);
+      });
+
+      testWidgets('reports when the clipboard refuses the logs', (
+        tester,
+      ) async {
+        const logText = 'OpenVine Comprehensive Log Export\nupload stalled';
+        when(
+          () => bugReportService.buildLogClipboardText(
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => const LogClipboardResult.success(logText));
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.getData') {
+              return <String, dynamic>{'text': 'device policy blocked this'};
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+
+        await pump(tester);
+        await tester.tap(find.text(en.supportCopyLogs));
+        await tester.pumpAndSettle();
+
+        expect(find.text(en.supportCopyLogsFailed), findsOneWidget);
+        expect(find.text(en.supportLogsCopied), findsNothing);
+      });
+
+      testWidgets('shows progress and ignores a second tap while building', (
+        tester,
+      ) async {
+        final result = Completer<LogClipboardResult>();
+        when(
+          () => bugReportService.buildLogClipboardText(
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) => result.future);
+
+        await pump(tester);
+        await tester.tap(find.text(en.supportCopyLogs));
+        await tester.pump();
+        await tester.tap(find.text(en.supportCopyLogs));
+        await tester.pump();
+
+        expect(find.text(en.supportExportingLogs), findsOneWidget);
+        verify(
+          () => bugReportService.buildLogClipboardText(
+            currentScreen: 'SupportCenterScreen',
+            userPubkey: _pubkeyHex,
+          ),
+        ).called(1);
+
+        result.complete(const LogClipboardResult.noLogs());
+        await tester.pumpAndSettle();
       });
     });
 
