@@ -18,8 +18,9 @@ class ExportLogsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bugReportService = ref.watch(bugReportServiceProvider);
     final authService = ref.watch(authServiceProvider);
+    final authState = ref.watch(currentAuthStateProvider);
     return BlocProvider<ExportLogsCubit>(
-      key: ValueKey((bugReportService, authService)),
+      key: ValueKey((bugReportService, authService, authState)),
       create: (_) => ExportLogsCubit(
         bugReportService: bugReportService,
         currentScreen: 'DeveloperOptionsScreen',

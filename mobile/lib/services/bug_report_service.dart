@@ -26,6 +26,8 @@ import 'package:uuid/uuid.dart';
 
 /// Service for creating and managing bug reports
 class BugReportService {
+  static const _logExportShareSubject = 'Divine Full Logs';
+
   BugReportService({
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
@@ -672,10 +674,7 @@ class BugReportService {
       // copy the attachment, so a label there pastes as a placeholder
       // that looks like a successful copy (#8112).
       final result = await showShareSheetAtOrigin(
-        ShareParams(
-          files: [XFile(filePath)],
-          subject: 'Divine Full Logs',
-        ),
+        buildLogExportShareParams(filePath),
         sharePositionOrigin: sharePositionOrigin,
       );
 
@@ -707,6 +706,12 @@ class BugReportService {
       return const LogExportResult.failed();
     }
   }
+
+  @visibleForTesting
+  static ShareParams buildLogExportShareParams(String filePath) => ShareParams(
+    files: [XFile(filePath)],
+    subject: _logExportShareSubject,
+  );
 
   // Private helper methods
 

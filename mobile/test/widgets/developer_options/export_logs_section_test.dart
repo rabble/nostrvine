@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -12,6 +11,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/developer_options/export_logs_section.dart';
+
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -34,17 +35,14 @@ void main() {
 
     Future<void> pump(WidgetTester tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
+        testMaterialApp(
+          additionalOverrides: [
             authServiceProvider.overrideWithValue(authService),
             bugReportServiceProvider.overrideWithValue(bugReportService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ListView(children: const [ExportLogsSection()]),
-            ),
+          home: Scaffold(
+            body: ListView(children: const [ExportLogsSection()]),
           ),
         ),
       );

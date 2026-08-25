@@ -61,6 +61,14 @@ void main() {
     });
   });
 
+  test('native log share params carry the file without a text extra', () {
+    final params = BugReportService.buildLogExportShareParams('/tmp/logs.txt');
+
+    expect(params.files!.single.path, '/tmp/logs.txt');
+    expect(params.subject, 'Divine Full Logs');
+    expect(params.text, isNull);
+  });
+
   group('buildDeviceDescription', () {
     const channel = MethodChannel('dev.fluttercommunity.plus/device_info');
     final messenger =
