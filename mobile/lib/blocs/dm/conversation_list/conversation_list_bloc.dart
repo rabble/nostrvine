@@ -226,11 +226,11 @@ class ConversationListBloc
         // re-exposing yourself.
         //
         // This recovers the viewer's OWN blocks only, not everything the
-        // filter above removed: `shouldFilterFromFeeds` unions five buckets,
-        // and the other four (`_mutedPubkeys`, `_mutualMuteBlocklist`,
-        // `_blockedByOthers`, `_internalBlocklist`) stay hidden. A thread
-        // hidden because the counterparty blocked or muted *us* is still
-        // unreachable — deliberately out of scope, see #7025.
+        // filter above removed: `shouldFilterFromDms` unions three buckets,
+        // and the other two (`_mutedPubkeys`, `_internalBlocklist`) stay
+        // hidden. A thread hidden because the counterparty blocked or muted
+        // *us* no longer reaches this filter at all — that union is feeds-only
+        // now, see #7345.
         final blockedConversations = _computeBlockedConversations(
           userPubkey: userPubkey,
           candidates: [...inboxConversations, ...split.requests],

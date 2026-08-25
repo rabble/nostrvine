@@ -135,14 +135,17 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
     // Reactors to hide from the reaction pill + who-reacted sheet: the
-    // repository's canonical feed-hide set (blocked ∪ muted ∪ muted-by ∪
-    // blocked-by), the same union `shouldFilterFromFeeds` enforces app-wide.
+    // repository's DM-hide set (blocked ∪ muted), the same union
+    // `shouldFilterFromDms` enforces across DM surfaces. Deliberately not
+    // `feedHiddenPubkeys`, which also carries muted-by and blocked-by — a
+    // third party must not be able to strip reactions out of the viewer's own
+    // thread by publishing a list (#7345).
     // Watching blocklistVersionProvider rebuilds this view — re-reading the
     // set and re-passing it to every ReactionsRow — on any block/unblock/mute
     // change while the thread is open.
     ref.watch(blocklistVersionProvider);
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final blockedReactors = blocklistRepository.feedHiddenPubkeys;
+    final blockedReactors = blocklistRepository.dmHiddenPubkeys;
 
     // A thread reached from the Blocked chip is readable but not writable:
     // the block stays in force, so the composer and the reaction affordance

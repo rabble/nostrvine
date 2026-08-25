@@ -2132,6 +2132,175 @@ void main() {
     );
   });
 
+  group('shouldFilterFromDms', () {
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    const runtimeBlocked =
+        '0000000000000000000000000000000000000000000000000000000000000002';
+    const mutedByUs =
+        '0000000000000000000000000000000000000000000000000000000000000003';
+    const mutualMuter =
+        '0000000000000000000000000000000000000000000000000000000000000004';
+    const blockedByOther =
+        '0000000000000000000000000000000000000000000000000000000000000005';
+    const stranger =
+        '0000000000000000000000000000000000000000000000000000000000000006';
+
+    DmConversation conversationWith(String otherPubkey) => DmConversation(
+      id: 'conv-$otherPubkey',
+      participantPubkeys: [ourPubkey, otherPubkey],
+      isGroup: false,
+      createdAt: 1,
+    );
+
+    test('is empty when no hide bucket is populated', () {
+      expect(ContentBlocklistRepository().dmHiddenPubkeys, isEmpty);
+    });
+
+    test('keeps a DM thread when the counterparty mutes or blocks us, and '
+        'still hides the ones we hid ourselves', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistRepository(prefs: prefs);
+
+      final muteController = StreamController<Event>();
+      final blockController = StreamController<Event>();
+      final mockMuteClient = _MockNostrClient();
+      final mockBlockClient = _MockNostrClient();
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      await service.blockUser(runtimeBlocked, ourPubkey: ourPubkey);
+
+      when(
+        () => mockMuteClient.subscribe(any()),
+      ).thenAnswer((_) => muteController.stream);
+      await service.syncMuteListsInBackground(mockMuteClient, ourPubkey);
+      muteController
+        ..add(
+          Event(
+              ourPubkey,
+              10000,
+              [
+                ['p', mutedByUs],
+              ],
+              '',
+              createdAt: now,
+            )
+            ..id = 'own-mute'
+            ..sig = 'sig',
+        )
+        ..add(
+          Event(
+              mutualMuter,
+              10000,
+              [
+                ['p', ourPubkey],
+              ],
+              '',
+              createdAt: now,
+            )
+            ..id = 'mutual-mute'
+            ..sig = 'sig',
+        );
+
+      final mockSigner = _MockBlockListSigner();
+      when(() => mockSigner.isAuthenticated).thenReturn(false);
+      when(
+        () => mockBlockClient.subscribe(any()),
+      ).thenAnswer((_) => blockController.stream);
+      await service.syncBlockListsInBackground(
+        mockBlockClient,
+        mockSigner,
+        ourPubkey,
+      );
+      blockController.add(
+        Event(
+            blockedByOther,
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            'Block list',
+            createdAt: now,
+          )
+          ..id = 'blocked-by'
+          ..sig = 'sig',
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Precondition: all four buckets really are populated, so the
+      // assertions below cannot pass vacuously.
+      expect(
+        service.feedHiddenPubkeys,
+        containsAll(<String>{
+          runtimeBlocked,
+          mutedByUs,
+          mutualMuter,
+          blockedByOther,
+        }),
+      );
+
+      // The regression (#7345): a third party's list must not reach a DM
+      // surface, whether asked as a predicate, a set, or a conversation
+      // filter.
+      for (final pubkey in <String>{mutualMuter, blockedByOther}) {
+        expect(service.shouldFilterFromDms(pubkey), isFalse);
+        expect(service.dmHiddenPubkeys, isNot(contains(pubkey)));
+      }
+      expect(
+        service.filterBlockedConversations([
+          conversationWith(mutualMuter),
+          conversationWith(blockedByOther),
+        ], userPubkey: ourPubkey),
+        hasLength(2),
+      );
+
+      // The viewer's own decisions still hide, so this is not a blanket
+      // removal of DM filtering.
+      for (final pubkey in <String>{runtimeBlocked, mutedByUs}) {
+        expect(service.shouldFilterFromDms(pubkey), isTrue);
+        expect(service.dmHiddenPubkeys, contains(pubkey));
+      }
+      expect(
+        service.filterBlockedConversations([
+          conversationWith(runtimeBlocked),
+          conversationWith(mutedByUs),
+        ], userPubkey: ourPubkey),
+        isEmpty,
+      );
+
+      expect(service.shouldFilterFromDms(stranger), isFalse);
+
+      // The set and the predicate must agree for every pubkey, so a future
+      // bucket added to one cannot silently diverge from the other.
+      for (final pubkey in <String>{
+        runtimeBlocked,
+        mutedByUs,
+        mutualMuter,
+        blockedByOther,
+        stranger,
+      }) {
+        expect(
+          service.dmHiddenPubkeys.contains(pubkey),
+          equals(service.shouldFilterFromDms(pubkey)),
+          reason:
+              'dmHiddenPubkeys and shouldFilterFromDms '
+              'disagree for $pubkey',
+        );
+      }
+
+      // DM hiding is a strict subset of feed hiding: a bucket added to the
+      // viewer list reaches both, and one added to the feed list reaches
+      // only feeds.
+      expect(service.feedHiddenPubkeys, containsAll(service.dmHiddenPubkeys));
+
+      await muteController.close();
+      await blockController.close();
+    });
+  });
+
   group('blockedPubkeysForAccount', () {
     const ourPubkey =
         '0000000000000000000000000000000000000000000000000000000000000001';
@@ -3853,7 +4022,8 @@ void main() {
     );
 
     test(
-      "the blocker's DM conversation reappears once the block is lifted",
+      "the blocker's DM conversation stays visible throughout, because a "
+      "third party cannot hide the viewer's own thread (#7345)",
       () async {
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final conversations = [
@@ -3883,13 +4053,24 @@ void main() {
         );
         await pumpEventQueue();
 
+        // Precondition: the block really did land, so the assertion below
+        // cannot pass just because the bucket stayed empty.
+        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+        expect(
+          service.shouldFilterFromFeeds(blockerPubkey),
+          isTrue,
+          reason: 'feeds still honour a third-party block',
+        );
+
         expect(
           service.filterBlockedConversations(
             conversations,
             userPubkey: ourPubkey,
           ),
-          isEmpty,
-          reason: 'while blocked, the conversation is hidden',
+          hasLength(1),
+          reason:
+              "being blocked must not remove the viewer's own copy of a "
+              'thread they already received',
         );
 
         relay.publish(
@@ -3904,13 +4085,14 @@ void main() {
         );
         await pumpEventQueue();
 
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
         expect(
           service.filterBlockedConversations(
             conversations,
             userPubkey: ourPubkey,
           ),
           hasLength(1),
-          reason: 'the lifted block must un-hide the DM conversation',
+          reason: 'and the lift does not change the DM surface either',
         );
       },
     );

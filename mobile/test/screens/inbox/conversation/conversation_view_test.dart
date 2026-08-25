@@ -149,7 +149,7 @@ void main() {
       mockBlocklist = _MockContentBlocklistRepository();
       // Default: nobody blocked. Reaction-filtering tests re-stub this.
       when(
-        () => mockBlocklist.feedHiddenPubkeys,
+        () => mockBlocklist.dmHiddenPubkeys,
       ).thenReturn(const <String>{});
       when(() => mockBlocklist.isBlocked(any())).thenReturn(false);
 
@@ -2515,8 +2515,9 @@ void main() {
         );
       }
 
-      // The flat feed-hide set the view now reads from the repository
-      // (`feedHiddenPubkeys`), which is itself the union of these buckets.
+      // The flat DM-hide set the view reads from the repository
+      // (`dmHiddenPubkeys`) — the viewer's own blocks and mutes only. A
+      // third party's list must not reach a DM surface (#7345).
       Set<String> hiddenReactors({
         Set<String> blocked = const {},
         Set<String> muted = const {},
@@ -2552,7 +2553,7 @@ void main() {
             createdAt: 1_700_000_003,
           ),
         ]);
-        when(() => mockBlocklist.feedHiddenPubkeys).thenReturn(
+        when(() => mockBlocklist.dmHiddenPubkeys).thenReturn(
           hiddenReactors(blocked: {blockedReactor}, muted: {mutedReactor}),
         );
 
@@ -2573,7 +2574,7 @@ void main() {
           reaction(id: 'r-blk', reactor: blockedReactor, emoji: '😂'),
         ]);
         when(
-          () => mockBlocklist.feedHiddenPubkeys,
+          () => mockBlocklist.dmHiddenPubkeys,
         ).thenReturn(hiddenReactors(blocked: {blockedReactor}));
 
         await tester.pumpWidget(loadedWithReactedMessage());
@@ -2597,7 +2598,7 @@ void main() {
           ),
         ]);
         when(
-          () => mockBlocklist.feedHiddenPubkeys,
+          () => mockBlocklist.dmHiddenPubkeys,
         ).thenReturn(hiddenReactors(blocked: {blockedReactor}));
 
         await tester.pumpWidget(loadedWithReactedMessage());
@@ -2622,7 +2623,7 @@ void main() {
         tester,
       ) async {
         var hidden = <String>{};
-        when(() => mockBlocklist.feedHiddenPubkeys).thenAnswer((_) => hidden);
+        when(() => mockBlocklist.dmHiddenPubkeys).thenAnswer((_) => hidden);
         primeReactions([
           reaction(id: 'r-own', reactor: currentPubkey, emoji: '🔥'),
           reaction(
