@@ -274,12 +274,17 @@ Future<void> _waitWithTimer(Duration duration) {
   return completer.future;
 }
 
-Future<int> _fetchStatus(Uri uri, Duration timeout) async {
-  final client = http.Client();
+Future<int> fetchCoordinatorStatus(
+  Uri uri,
+  Duration timeout, {
+  http.Client? client,
+}) async {
+  final requestClient = client ?? http.Client();
   try {
-    return (await client.get(uri).timeout(timeout)).statusCode;
+    final request = http.Request('GET', uri)..followRedirects = false;
+    return (await requestClient.send(request).timeout(timeout)).statusCode;
   } finally {
-    client.close();
+    if (client == null) requestClient.close();
   }
 }
 
@@ -357,10 +362,9 @@ void _writeStderr(String line) => stderr.writeln(line);
 Future<void> main(List<String> arguments) async {
   exitCode = await runCoordinatorRouteProbe(
     arguments,
-    readEnvironmentConfig: () => File(
-      'lib/models/environment_config.dart',
-    ).readAsStringSync(),
-    fetchStatus: _fetchStatus,
+    readEnvironmentConfig: () =>
+        File('lib/models/environment_config.dart').readAsStringSync(),
+    fetchStatus: fetchCoordinatorStatus,
   );
 }
 

@@ -111,6 +111,12 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
     def test_scheduled_probe_maintains_one_incident_issue(self) -> None:
         workflow = self.coordinator_probe_workflow_contents
         self.assertIn("issues: write", workflow)
+        self.assertIn("group: coordinator-route-probe", workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn(
+            "github.ref_name == github.event.repository.default_branch",
+            workflow,
+        )
         self.assertIn("coordinator-route-probe-incident", workflow)
         self.assertIn("state: 'all'", workflow)
         self.assertIn("state: 'open'", workflow)

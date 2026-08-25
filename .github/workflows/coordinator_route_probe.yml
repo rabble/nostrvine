@@ -9,8 +9,15 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: coordinator-route-probe
+  cancel-in-progress: false
+
 jobs:
   probe:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.ref_name == github.event.repository.default_branch
     name: Probe configured environments
     runs-on: ubuntu-24.04
     timeout-minutes: 10

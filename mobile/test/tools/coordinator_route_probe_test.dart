@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 // ignore: avoid_relative_lib_imports, scripts are outside lib/ and not importable through package:openvine.
 import '../../scripts/lib/coordinator_route_probe.dart';
@@ -40,10 +42,12 @@ void main() {
         File('lib/models/environment_config.dart').readAsStringSync(),
       );
 
-      expect(
-        targets.map((target) => target.environment),
-        ['POC', 'STAGING', 'TEST', 'PRODUCTION'],
-      );
+      expect(targets.map((target) => target.environment), [
+        'POC',
+        'STAGING',
+        'TEST',
+        'PRODUCTION',
+      ]);
     });
 
     test('derives every non-local target from environment config', () {
@@ -189,6 +193,22 @@ void main() {
     );
     Future<void> noWait(Duration _) async {}
 
+    test('does not follow redirects away from the probed route', () async {
+      final client = MockClient((request) async {
+        expect(request.followRedirects, isFalse);
+        return http.Response('', HttpStatus.found);
+      });
+      addTearDown(client.close);
+
+      final statusCode = await fetchCoordinatorStatus(
+        target.probeUri,
+        defaultProbeTimeout,
+        client: client,
+      );
+
+      expect(statusCode, HttpStatus.found);
+    });
+
     test(
       'passes a mounted route that rejects unauthenticated access',
       () async {
@@ -259,6 +279,7 @@ void main() {
 
     for (final statusCode in const [
       HttpStatus.ok,
+      HttpStatus.found,
       HttpStatus.forbidden,
       HttpStatus.methodNotAllowed,
     ]) {
@@ -438,10 +459,7 @@ void main() {
       );
 
       expect(result, 1);
-      expect(
-        stderr.join('\n'),
-        contains('lib/models/environment_config.dart'),
-      );
+      expect(stderr.join('\n'), contains('lib/models/environment_config.dart'));
       expect(stderr.join('\n'), contains('No such file'));
       expect(stderr.join('\n'), isNot(contains('request failed')));
     });
