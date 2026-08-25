@@ -90,7 +90,7 @@ Future<void> showUploadFailureSheet(
           },
         ),
       );
-      context.push(RoutePaths.accountStatus);
+      context.push(RoutePaths.accountStatus, extra: true);
     case _:
       // Sheet was popped externally (e.g. during route transition).
       // Save to drafts silently so the user's content is preserved.

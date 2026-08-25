@@ -632,14 +632,9 @@ class VideoEventPublisher {
       final outcome = await _publishViaRestThenWebSocket(apiClient, event);
       switch (outcome) {
         case _EventPublishOutcome.published:
-          if (attempt > 1) {
-            Log.info(
-              '✅ Publish succeeded on attempt $attempt',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
           return _EventPublishOutcome.published;
+        case _EventPublishOutcome.permanentlyRejected:
+          return _EventPublishOutcome.permanentlyRejected;
         case _EventPublishOutcome.transientFailure:
           if (attempt < maxRetries) {
             final delaySeconds = attempt * 2; // 2s, 4s backoff
@@ -685,13 +680,13 @@ class VideoEventPublisher {
             source: AccountRestrictionSource.rest,
           );
         }
-        Log.warning(
-          '⚠️ REST publish rejected ($statusCode) for ${event.id}: $reason; '
-          'falling back to WebSocket fire-and-forget',
+        Log.error(
+          '❌ REST publish permanently rejected ($statusCode) for '
+          '${event.id}: $reason',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return _publishEventToNostr(event);
+        return _EventPublishOutcome.permanentlyRejected;
       case EventApiTransientFailure(:final reason):
         Log.warning(
           '⚠️ REST publish transient failure for ${event.id} ($reason); '

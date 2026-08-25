@@ -108,7 +108,8 @@ List<RouteBase> settingsRoutes(Ref ref) {
     GoRoute(
       path: AccountStatusScreen.path,
       name: AccountStatusScreen.routeName,
-      builder: (_, _) => const AccountStatusScreen(),
+      builder: (_, state) =>
+          AccountStatusScreen(publishRestrictionConfirmed: state.extra == true),
     ),
     GoRoute(
       path: SupportCenterScreen.path,

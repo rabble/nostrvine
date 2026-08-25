@@ -23,6 +23,7 @@ Future<void> _pumpWith(
   WidgetTester tester,
   AccountEnforcementKind kind, {
   MockGoRouter? goRouter,
+  bool publishRestrictionConfirmed = false,
 }) async {
   // Tall surface: the body is a ListView, which only builds what fits, and the
   // longer enforcement copy would otherwise push the appeal and exit buttons
@@ -31,10 +32,12 @@ Future<void> _pumpWith(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  const app = MaterialApp(
+  final app = MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: AccountStatusScreen(),
+    home: AccountStatusScreen(
+      publishRestrictionConfirmed: publishRestrictionConfirmed,
+    ),
   );
 
   await tester.pumpWidget(
@@ -97,6 +100,21 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsNothing);
       expect(find.text(l10n.accountStatusMoveAccount), findsNothing);
     });
+
+    testWidgets(
+      'a publish-confirmed restriction survives an unverified status source',
+      (tester) async {
+        await _pumpWith(
+          tester,
+          AccountEnforcementKind.unverified,
+          publishRestrictionConfirmed: true,
+        );
+
+        expect(find.text(l10n.accountStatusRestrictedHeading), findsOneWidget);
+        expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
+        expect(find.text(l10n.accountStatusMoveAccount), findsOneWidget);
+      },
+    );
 
     testWidgets('signed out explains the state without a futile retry', (
       tester,

@@ -242,7 +242,9 @@ void main() {
         tester,
       ) async {
         final goRouter = MockGoRouter();
-        when(() => goRouter.push<Object?>(any())).thenAnswer((_) async => null);
+        when(
+          () => goRouter.push<Object?>(any(), extra: any(named: 'extra')),
+        ).thenAnswer((_) async => null);
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
@@ -260,7 +262,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => goRouter.push<Object?>(RoutePaths.accountStatus),
+          () => goRouter.push<Object?>(RoutePaths.accountStatus, extra: true),
         ).called(1);
         verify(
           () => mockBloc.add(

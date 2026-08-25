@@ -220,35 +220,21 @@ void main() {
       },
     );
 
-    test('REST rejection falls back to WebSocket send success', () async {
+    test('REST rejection stops without WebSocket fallback', () async {
       final signedEvent = createSignedEvent();
       stubSigning(signedEvent);
       stubRest(const EventApiRejected(statusCode: 422, reason: 'bad event'));
-      stubWebSocket(
-        PublishOutcome(
-          eventId: signedEvent.id,
-          acceptedBy: const ['wss://trusted.example'],
-          rejectedBy: const {},
-          noResponseFrom: const [],
-        ),
-      );
 
       final result = await publisher.publishDirectUpload(createUpload());
 
-      expect(result, isTrue);
-      verify(
+      expect(result, isFalse);
+      verifyNever(
         () => mockNostrClient.publishEventAwaitOk(
-          signedEvent,
+          any(),
           timeout: any(named: 'timeout'),
         ),
-      ).called(1);
-      verify(
-        () => mockUploadManager.updateUploadStatus(
-          'test-upload-id',
-          UploadStatus.published,
-          nostrEventId: signedEvent.id,
-        ),
-      ).called(1);
+      );
+      verify(() => mockEventApiClient.publishEvent(signedEvent)).called(1);
     });
 
     test('account restriction stops without WebSocket fallback', () async {
