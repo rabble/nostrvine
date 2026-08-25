@@ -158,6 +158,16 @@ class VideoOverlayActions extends ConsumerWidget {
     final hasTextContent =
         descriptionText.isNotEmpty || (titleText?.isNotEmpty ?? false);
 
+    // Shared by the title and the description, and on the description it is
+    // attached twice: once to the semantics node that carries the label, once
+    // to the detector that takes the real pointer.
+    final openMetadata = video == null
+        ? null
+        : () {
+            onInteracted?.call();
+            MetadataExpandedSheet.show(context, video);
+          };
+
     // In fullscreen mode, ensure badges clear the status bar icons
     // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
     // widget (Scaffold, SafeArea) has already consumed the safe area.
@@ -470,12 +480,7 @@ class VideoOverlayActions extends ConsumerWidget {
                       label: context.l10n.videoOverlayOpenMetadataFromTitle,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: video == null
-                            ? null
-                            : () {
-                                onInteracted?.call();
-                                MetadataExpandedSheet.show(context, video);
-                              },
+                        onTap: openMetadata,
                         child: DivineHeartText(
                           titleText,
                           style: VineTheme.labelMediumFont(
@@ -500,14 +505,19 @@ class VideoOverlayActions extends ConsumerWidget {
                       button: true,
                       label:
                           context.l10n.videoOverlayOpenMetadataFromDescription,
+                      // The action belongs on the node that carries the label.
+                      // On the detector below it landed on an anonymous child:
+                      // `LinkifiedText` splits into several spans once the text
+                      // holds a hashtag, mention or URL, and then nothing merges
+                      // up to name the tappable node. Plain text merges and
+                      // passes, so this was data-dependent, not layout-dependent.
+                      onTap: openMetadata,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: video == null
-                            ? null
-                            : () {
-                                onInteracted?.call();
-                                MetadataExpandedSheet.show(context, video);
-                              },
+                        // Excluded so it cannot re-create the anonymous node
+                        // the annotation above exists to name.
+                        excludeFromSemantics: true,
+                        onTap: openMetadata,
                         child: LinkifiedText(
                           text: descriptionText,
                           style: VineTheme.bodySmallFont(
