@@ -15,13 +15,14 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SupportCenterScreen extends ConsumerWidget {
+class SupportCenterScreen extends ConsumerStatefulWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
@@ -35,7 +36,15 @@ class SupportCenterScreen extends ConsumerWidget {
   final Future<bool> Function()? openZendeskSupport;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SupportCenterScreen> createState() =>
+      _SupportCenterScreenState();
+}
+
+class _SupportCenterScreenState extends ConsumerState<SupportCenterScreen> {
+  var _copyingLogs = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
     final isAuthenticated =
@@ -82,6 +91,15 @@ class SupportCenterScreen extends ConsumerWidget {
                 title: l10n.supportSaveLogs,
                 subtitle: l10n.supportSaveLogsSubtitle,
                 onTap: () => _exportLogs(context, bugReportService, userPubkey),
+              ),
+              // Separate from Save Logs because the share sheet cannot serve
+              // a copy on Android — its Copy chip copies EXTRA_TEXT and never
+              // the attached file (#8112).
+              _SupportTile(
+                icon: DivineIconName.copy,
+                title: l10n.supportCopyLogs,
+                subtitle: l10n.supportCopyLogsSubtitle,
+                onTap: () => _copyLogs(context, bugReportService, userPubkey),
               ),
               // #6335 was filed from here by someone who could not find
               // deletion, so it has to be reachable from here too. It sits
@@ -192,25 +210,43 @@ class SupportCenterScreen extends ConsumerWidget {
     );
     if (!context.mounted) return;
 
-    if (result.cancelled) {
-      // User dismissed the Save As dialog; nothing to report.
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      return;
-    }
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
 
-    if (!result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportExportLogsFailed,
-          error: true,
-        ),
-      );
-      return;
+    switch (result.status) {
+      case LogExportStatus.cancelled:
+        // User backed out of the share sheet or Save As dialog.
+        return;
+      case LogExportStatus.noLogs:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.supportNoLogsToExport,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+        return;
+      case LogExportStatus.unconfirmed:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.supportExportLogsUnconfirmed,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        return;
+      case LogExportStatus.failed:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.supportExportLogsFailed,
+            error: true,
+          ),
+        );
+        return;
+      case LogExportStatus.shared:
+      case LogExportStatus.saved:
+        break;
     }
 
     final filePath = result.filePath;
     if (filePath != null) {
-      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
           context.l10n.supportLogsSavedTo(filePath),
@@ -227,6 +263,69 @@ class SupportCenterScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _copyLogs(
+    BuildContext context,
+    BugReportService bugReportService,
+    String? userPubkey,
+  ) async {
+    if (_copyingLogs) return;
+    _copyingLogs = true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        context.l10n.supportExportingLogs,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      final result = await bugReportService.buildLogClipboardText(
+        currentScreen: 'SupportCenterScreen',
+        userPubkey: userPubkey,
+      );
+      if (!context.mounted) return;
+
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      switch (result.status) {
+        case LogClipboardStatus.noLogs:
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.supportNoLogsToExport,
+              duration: const Duration(seconds: 8),
+            ),
+          );
+          return;
+        case LogClipboardStatus.failed:
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.supportCopyLogsFailed,
+              error: true,
+            ),
+          );
+          return;
+        case LogClipboardStatus.success:
+          break;
+      }
+
+      // copyVerified reads the value back, so a clipboard blocked by a work
+      // profile or a device policy reports failure instead of looking fine.
+      final copied = await ClipboardUtils.copyVerified(
+        context,
+        result.text!,
+        message: context.l10n.supportLogsCopied,
+      );
+      if (!context.mounted || copied) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportCopyLogsFailed,
+          error: true,
+        ),
+      );
+    } finally {
+      _copyingLogs = false;
+    }
+  }
+
   Future<bool> _viewSupportMessages() async {
     // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
     return ZendeskSupportService.showTicketListScreen();
@@ -236,7 +335,7 @@ class SupportCenterScreen extends ConsumerWidget {
     final l10n = context.l10n;
     var emailBody = l10n.supportContactSupportSubtitle;
     final openZendesk =
-        openZendeskSupport ??
+        widget.openZendeskSupport ??
         (ZendeskSupportService.isAvailable ? _viewSupportMessages : null);
     if (openZendesk != null) {
       if (await openZendesk()) return;
@@ -248,7 +347,7 @@ class SupportCenterScreen extends ConsumerWidget {
 
     final sharePositionOrigin = shareAnchorForContext(context);
     try {
-      await (composeEmail ?? SupportEmailComposer().compose)(
+      await (widget.composeEmail ?? SupportEmailComposer().compose)(
         toEmail: AppConstants.supportEmail,
         subject: l10n.supportContactSupport,
         body: emailBody,

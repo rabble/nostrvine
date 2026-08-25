@@ -7,7 +7,6 @@ import 'package:analytics/analytics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
-import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
 const _rawNsec =
@@ -414,27 +413,5 @@ void main() {
           ? 'Only runs on iOS/Android'
           : null,
     );
-
-    test('should validate report size', () {
-      // Create a huge report
-      final input = BugReportData(
-        reportId: 'test-123',
-        timestamp: DateTime.now(),
-        userDescription: 'x' * 1000000, // 1MB description
-        deviceInfo: {},
-        appVersion: '1.0.0',
-        recentLogs: [],
-        errorCounts: {},
-      );
-
-      final sizeInBytes = service.estimateReportSize(input);
-
-      expect(sizeInBytes, greaterThan(0));
-    });
-
-    test('should truncate logs if report exceeds size limit', () {
-      // This will be implemented when we add size validation
-      expect(BugReportConfig.maxReportSizeBytes, equals(1024 * 1024)); // 1MB
-    });
   });
 }

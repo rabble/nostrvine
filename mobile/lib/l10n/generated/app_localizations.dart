@@ -7715,6 +7715,42 @@ abstract class AppLocalizations {
   /// **'Failed to export logs'**
   String get supportExportLogsFailed;
 
+  /// Support Center tile that copies recent logs to the clipboard. Separate from Save Logs because Android's share sheet Copy action can only copy text, never the attached log file.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Logs'**
+  String get supportCopyLogs;
+
+  /// Subtitle for the Copy Logs tile. 'The recent ones' refers to log entries; the copy is capped so it stays pasteable.
+  ///
+  /// In en, this message translates to:
+  /// **'Put the recent ones on your clipboard'**
+  String get supportCopyLogsSubtitle;
+
+  /// Snackbar confirming the logs reached the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs copied'**
+  String get supportLogsCopied;
+
+  /// Snackbar shown when the clipboard write failed or could not be verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t copy the logs'**
+  String get supportCopyLogsFailed;
+
+  /// Shown when the user exports or copies logs but the in-memory capture buffer is empty, which is what happens after a crash or force-quit. Tells them the logs do not survive a restart so they know to reproduce first.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.'**
+  String get supportNoLogsToExport;
+
+  /// Shown on Android when the share sheet was presented but the platform reported no outcome, so the share may well have succeeded. Deliberately not phrased as an error.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs handed off. Check the app you shared to.'**
+  String get supportExportLogsUnconfirmed;
+
   /// Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.
   ///
   /// In en, this message translates to:

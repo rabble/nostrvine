@@ -4238,6 +4238,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportExportLogsFailed => '日志导出失败';
 
   @override
+  String get supportCopyLogs => 'Copy Logs';
+
+  @override
+  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
+
+  @override
+  String get supportLogsCopied => 'Logs copied';
+
+  @override
+  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
+
+  @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return '日志已保存到 $path';
   }

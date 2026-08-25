@@ -3,63 +3,214 @@
 // ABOUTME: depends on the device's Downloads directory and LogCaptureService
 // ABOUTME: file IO that is awkward to mock in pure unit tests.
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show LogEntry, LogLevel;
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/device_memory_util.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:unified_logger/unified_logger.dart' show LogCaptureService;
 
 class _MockStorageManagementService extends Mock
     implements StorageManagementService {}
+
+Future<PackageInfo> _loadPackageInfo() async => PackageInfo(
+  appName: 'Divine',
+  packageName: 'video.divine',
+  version: '1.0.21',
+  buildNumber: '849',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(LogExportResult, () {
-    test('preserves success and filePath when both are provided', () {
-      const result = LogExportResult(
-        success: true,
-        filePath: '/Users/rabble/Downloads/openvine_full_logs.txt',
-      );
+    test('saved carries the path the user picked', () {
+      const path = '/Users/rabble/Downloads/openvine_full_logs.txt';
+      const result = LogExportResult.saved(path);
 
-      expect(result.success, isTrue);
-      expect(
-        result.filePath,
-        equals('/Users/rabble/Downloads/openvine_full_logs.txt'),
-      );
+      expect(result.status, equals(LogExportStatus.saved));
+      expect(result.filePath, equals(path));
     });
 
-    test('defaults filePath to null when not provided', () {
-      const result = LogExportResult(success: true);
+    test('shared has no file path', () {
+      const result = LogExportResult.shared();
 
-      expect(result.success, isTrue);
       expect(result.filePath, isNull);
     });
 
-    test('represents failure with no filePath', () {
-      const result = LogExportResult(success: false);
+    // The regression in #8113: an Android share whose outcome the platform
+    // declines to report is not a failure, and reporting it as one told the
+    // user log export was broken when it had just worked.
+    test('unconfirmed stays distinct from failure', () {
+      const result = LogExportResult.unconfirmed();
 
-      expect(result.success, isFalse);
-      expect(result.filePath, isNull);
-      expect(result.cancelled, isFalse);
+      expect(result.status, equals(LogExportStatus.unconfirmed));
     });
 
-    test('cancelled named constructor sets the cancelled flag', () {
+    test('cancelled has its own status and no path', () {
       const result = LogExportResult.cancelled();
 
-      expect(result.cancelled, isTrue);
-      expect(result.success, isFalse);
+      expect(result.status, equals(LogExportStatus.cancelled));
       expect(result.filePath, isNull);
     });
 
-    test('default cancelled flag is false', () {
-      const result = LogExportResult(success: true, filePath: '/tmp/logs.txt');
+    // #8114: an empty capture buffer is the user's to fix by reproducing
+    // without restarting, so it must stay distinguishable from a real error.
+    test('noLogs is distinct from failed', () {
+      const noLogs = LogExportResult.noLogs();
+      const failed = LogExportResult.failed();
 
-      expect(result.cancelled, isFalse);
+      expect(noLogs.status, equals(LogExportStatus.noLogs));
+      expect(failed.status, equals(LogExportStatus.failed));
+      expect(noLogs.status, isNot(equals(failed.status)));
     });
+  });
+
+  group('buildLogClipboardText', () {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
+    });
+
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
+      AppUptime.reset();
+      DeviceMemoryUtil.resetCache();
+    });
+
+    // #8114: an empty buffer has to be reportable as "nothing captured"
+    // rather than handed over as a bare header the user would paste into a
+    // ticket believing it held their logs.
+    test('reports no logs when nothing has been captured', () async {
+      final result = await BugReportService(
+        packageInfoLoader: _loadPackageInfo,
+      ).buildLogClipboardText();
+
+      expect(result.status, equals(LogClipboardStatus.noLogs));
+      expect(result.text, isNull);
+    });
+
+    test('includes the header and the captured line', () async {
+      LogCaptureService().captureLog(
+        LogEntry(
+          timestamp: DateTime(2026, 8, 24),
+          level: LogLevel.error,
+          message: 'upload stalled at 40 percent',
+        ),
+      );
+
+      final result = await BugReportService(
+        packageInfoLoader: _loadPackageInfo,
+      ).buildLogClipboardText();
+
+      expect(result.status, equals(LogClipboardStatus.success));
+      expect(result.text, contains('OpenVine Comprehensive Log Export'));
+      expect(result.text, contains('App Version: 1.0.21+849'));
+      expect(result.text, contains('upload stalled at 40 percent'));
+    });
+
+    // #8112: the clipboard crosses a Binder transaction, so an uncapped
+    // copy of a full 5-10 MB buffer is the one outcome that cannot work.
+    test('caps the copy and keeps the newest entries', () async {
+      final filler = 'x' * 512;
+      for (var i = 0; i < 400; i++) {
+        LogCaptureService().captureLog(
+          LogEntry(
+            timestamp: DateTime(2026, 8, 24).add(Duration(seconds: i)),
+            level: LogLevel.info,
+            message: 'entry $i $filler',
+          ),
+        );
+      }
+
+      final result = await BugReportService(
+        packageInfoLoader: _loadPackageInfo,
+      ).buildLogClipboardText();
+      final text = result.text!;
+
+      expect(
+        utf8.encode(text).length,
+        lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+      );
+      expect(text, contains('entry 399'));
+      expect(text, contains('earlier entries omitted'));
+      expect(text, isNot(contains('entry 0 ')));
+    });
+
+    test('includes the omission marker within the byte ceiling', () async {
+      for (var i = 0; i < 200; i++) {
+        LogCaptureService().captureLog(
+          LogEntry(
+            timestamp: DateTime(2026, 8, 24).add(Duration(seconds: i)),
+            level: LogLevel.info,
+            message: 'entry $i ${'x' * 1024}',
+          ),
+        );
+      }
+
+      final result = await BugReportService(
+        packageInfoLoader: _loadPackageInfo,
+      ).buildLogClipboardText();
+
+      expect(result.status, equals(LogClipboardStatus.success));
+      expect(
+        utf8.encode(result.text!).length,
+        lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+      );
+      expect(result.text, contains('earlier entries omitted'));
+    });
+
+    test(
+      'keeps useful content when the newest line exceeds the budget',
+      () async {
+        LogCaptureService().captureLog(
+          LogEntry(
+            timestamp: DateTime(2026, 8, 24),
+            level: LogLevel.error,
+            message:
+                'newest failure ${'z' * BugReportService.logClipboardByteBudget}',
+          ),
+        );
+
+        final result = await BugReportService(
+          packageInfoLoader: _loadPackageInfo,
+        ).buildLogClipboardText();
+
+        expect(result.status, equals(LogClipboardStatus.success));
+        expect(result.text, contains('newest failure'));
+        expect(
+          utf8.encode(result.text!).length,
+          lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+        );
+      },
+    );
+
+    test(
+      'reports a header diagnostic failure separately from no logs',
+      () async {
+        LogCaptureService().captureLog(
+          LogEntry(
+            timestamp: DateTime(2026, 8, 24),
+            level: LogLevel.error,
+            message: 'captured before diagnostics failed',
+          ),
+        );
+
+        final result = await BugReportService(
+          packageInfoLoader: () async =>
+              throw StateError('diagnostics unavailable'),
+        ).buildLogClipboardText();
+
+        expect(result.status, equals(LogClipboardStatus.failed));
+        expect(result.text, isNull);
+      },
+    );
   });
 
   group('buildDeviceDescription', () {

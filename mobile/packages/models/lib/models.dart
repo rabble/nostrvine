@@ -5,7 +5,6 @@ export 'src/actor_info.dart';
 export 'src/aspect_ratio.dart';
 export 'src/audio_event.dart';
 export 'src/bug_report_data.dart';
-export 'src/bug_report_result.dart';
 export 'src/bulk_profiles_response.dart';
 export 'src/bulk_video_stats_entry.dart';
 export 'src/bulk_video_stats_response.dart';
