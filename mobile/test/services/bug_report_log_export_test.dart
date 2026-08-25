@@ -184,12 +184,81 @@ void main() {
 
         expect(result.status, equals(LogClipboardStatus.success));
         expect(result.text, contains('newest failure'));
+        // An ASCII cut never backs off, so the copy fills the ceiling exactly.
+        // A bound alone would leave a shrunken newest-line budget green.
         expect(
           utf8.encode(result.text!).length,
-          lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+          equals(BugReportService.logClipboardByteBudget),
         );
       },
     );
+
+    // Exercise the clipboard assembly with non-ASCII content. Exact byte
+    // boundary behavior is covered deterministically below.
+    test(
+      'keeps multi-byte content within the clipboard byte ceiling',
+      () async {
+        const emoji = '\u{1F3AC}';
+        final emojiBytes = utf8.encode(emoji).length;
+        final reps =
+            BugReportService.logClipboardByteBudget ~/ emojiBytes + 500;
+        LogCaptureService().captureLog(
+          LogEntry(
+            timestamp: DateTime(2026, 8, 24),
+            level: LogLevel.error,
+            message: 'newest failure ${emoji * reps}',
+          ),
+        );
+
+        final result = await BugReportService(
+          packageInfoLoader: _loadPackageInfo,
+        ).buildLogClipboardText();
+
+        expect(result.status, equals(LogClipboardStatus.success));
+        expect(result.text, contains('newest failure'));
+        // The back-off costs at most a partial character, so the copy stays at
+        // the ceiling instead of collapsing toward it. Deriving the slack from
+        // the character keeps the bound tight if this test ever swaps it.
+        expect(
+          utf8.encode(result.text!).length,
+          inInclusiveRange(
+            BugReportService.logClipboardByteBudget - (emojiBytes - 1),
+            BugReportService.logClipboardByteBudget,
+          ),
+        );
+      },
+    );
+
+    for (final (label, unit) in const [
+      ('4-byte emoji', '\u{1F3AC}'),
+      ('3-byte CJK', '\u65E5'),
+      ('2-byte accent', '\u00E9'),
+    ]) {
+      test('backs off every incomplete $label sequence', () {
+        const prefix = 'ASCII prefix ';
+        const suffix = ' trailing text';
+        final value = '$prefix$unit$suffix';
+        final prefixBytes = utf8.encode(prefix).length;
+        final unitBytes = utf8.encode(unit).length;
+
+        for (
+          var includedBytes = 1;
+          includedBytes < unitBytes;
+          includedBytes++
+        ) {
+          expect(
+            BugReportService.truncateUtf8(value, prefixBytes + includedBytes),
+            equals(prefix),
+            reason: 'included $includedBytes of $unitBytes bytes',
+          );
+        }
+
+        expect(
+          BugReportService.truncateUtf8(value, prefixBytes + unitBytes),
+          equals('$prefix$unit'),
+        );
+      });
+    }
 
     test(
       'reports a header diagnostic failure separately from no logs',
