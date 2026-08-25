@@ -5513,6 +5513,53 @@ void main() {
           reason: 'the drain ran to completion after stopListening()',
         );
       });
+
+      // The loop guards are all *inside* the paging work, but the preamble
+      // writes before reaching them: upgradeDrainVersionIfNeeded clears and
+      // re-stamps the drain version, and an absent key reads as version 0, so
+      // after the account cleanup has wiped DmSyncState it always writes. The
+      // inbox bloc re-dispatches ConversationListStarted on blocklist and
+      // profile-repository changes, so a pass can still be entered while the
+      // leaving container is alive. See #7318.
+      test(
+        'a drain entered after listening stopped touches no state',
+        () async {
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.stopListening();
+          await repository.backfillHistoryIfNeeded();
+
+          expect(
+            syncState.upgradedPubkeys,
+            isEmpty,
+            reason: 'the drain re-stamped the drain version after a teardown',
+          );
+        },
+      );
+
+      // Same shape in the decrypt-retry pass: deleteExhausted is a write, and
+      // it runs ahead of the first session guard. See #7318.
+      test(
+        'a retry pass entered after listening stopped touches no state',
+        () async {
+          final pendingGiftWrapsDao = _MockPendingGiftWrapsDao();
+          final repository = createRepository(
+            pendingGiftWrapsDao: pendingGiftWrapsDao,
+            syncState: _FakeDmSyncState(),
+          );
+
+          await repository.stopListening();
+          await repository.retryPendingDecryptions();
+
+          verifyNever(
+            () => pendingGiftWrapsDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------

@@ -1214,7 +1214,9 @@ class DmRepository {
       _disposed || _userPubkey != pubkey || _resetGeneration != generation;
 
   Future<void> _runPendingDecryptRetry() async {
-    if (!isInitialized) return;
+    // Same shape as the drain: deleteExhausted below is a write, and it runs
+    // ahead of the first session guard. See #7318.
+    if (_disposed || !isInitialized) return;
     final dao = _pendingGiftWrapsDao;
     if (dao == null) return;
     final pubkey = _userPubkey;
@@ -1331,7 +1333,12 @@ class DmRepository {
   }
 
   Future<void> _runHistoryDrain() async {
-    if (!isInitialized) return;
+    // Ahead of isInitialized, which stopListening() deliberately leaves true so
+    // a restart can re-open: the preamble below writes before reaching the
+    // first session guard. upgradeDrainVersionIfNeeded re-stamps the drain
+    // version, and an absent key reads as version 0, so once the account
+    // cleanup has wiped DmSyncState this pass always writes. See #7318.
+    if (_disposed || !isInitialized) return;
     final syncState = _syncState;
     if (syncState == null) return;
     // Pin the user for the whole drain so an account switch mid-drain can
