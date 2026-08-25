@@ -4577,6 +4577,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get supportExportLogsFailed => 'Échec de l\'exportation des logs';
 
   @override
+  String get supportCopyLogs => 'Copy Logs';
+
+  @override
+  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
+
+  @override
+  String get supportLogsCopied => 'Logs copied';
+
+  @override
+  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
+
+  @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'Journaux enregistrés dans $path';
   }

@@ -3,14 +3,19 @@
 // ABOUTME: depends on the device's Downloads directory and LogCaptureService
 // ABOUTME: file IO that is awkward to mock in pure unit tests.
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show LogEntry, LogLevel;
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/device_memory_util.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:unified_logger/unified_logger.dart' show LogCaptureService;
 
 class _MockStorageManagementService extends Mock
     implements StorageManagementService {}
@@ -19,35 +24,35 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(LogExportResult, () {
-    test('preserves success and filePath when both are provided', () {
-      const result = LogExportResult(
-        success: true,
-        filePath: '/Users/rabble/Downloads/openvine_full_logs.txt',
-      );
+    test('saved carries the path the user picked', () {
+      const path = '/Users/rabble/Downloads/openvine_full_logs.txt';
+      const result = LogExportResult.saved(path);
 
+      expect(result.status, equals(LogExportStatus.saved));
+      expect(result.filePath, equals(path));
       expect(result.success, isTrue);
-      expect(
-        result.filePath,
-        equals('/Users/rabble/Downloads/openvine_full_logs.txt'),
-      );
     });
 
-    test('defaults filePath to null when not provided', () {
-      const result = LogExportResult(success: true);
+    test('shared reports success without a path', () {
+      const result = LogExportResult.shared();
 
       expect(result.success, isTrue);
-      expect(result.filePath, isNull);
-    });
-
-    test('represents failure with no filePath', () {
-      const result = LogExportResult(success: false);
-
-      expect(result.success, isFalse);
       expect(result.filePath, isNull);
       expect(result.cancelled, isFalse);
     });
 
-    test('cancelled named constructor sets the cancelled flag', () {
+    // The regression in #8113: an Android share whose outcome the platform
+    // declines to report is not a failure, and reporting it as one told the
+    // user log export was broken when it had just worked.
+    test('unconfirmed counts as success rather than failure', () {
+      const result = LogExportResult.unconfirmed();
+
+      expect(result.status, equals(LogExportStatus.unconfirmed));
+      expect(result.success, isTrue);
+      expect(result.cancelled, isFalse);
+    });
+
+    test('cancelled is neither success nor failure', () {
       const result = LogExportResult.cancelled();
 
       expect(result.cancelled, isTrue);
@@ -55,10 +60,87 @@ void main() {
       expect(result.filePath, isNull);
     });
 
-    test('default cancelled flag is false', () {
-      const result = LogExportResult(success: true, filePath: '/tmp/logs.txt');
+    // #8114: an empty capture buffer is the user's to fix by reproducing
+    // without restarting, so it must stay distinguishable from a real error.
+    test('noLogs is distinct from failed and neither is a success', () {
+      const noLogs = LogExportResult.noLogs();
+      const failed = LogExportResult.failed();
 
-      expect(result.cancelled, isFalse);
+      expect(noLogs.status, equals(LogExportStatus.noLogs));
+      expect(failed.status, equals(LogExportStatus.failed));
+      expect(noLogs.status, isNot(equals(failed.status)));
+      expect(noLogs.success, isFalse);
+      expect(failed.success, isFalse);
+      expect(noLogs.cancelled, isFalse);
+    });
+  });
+
+  group('buildLogClipboardText', () {
+    setUp(() async {
+      PackageInfo.setMockInitialValues(
+        appName: 'Divine',
+        packageName: 'video.divine',
+        version: '1.0.21',
+        buildNumber: '849',
+        buildSignature: '',
+      );
+      await LogCaptureService().clearAllLogs();
+    });
+
+    tearDown(() async {
+      await LogCaptureService().clearAllLogs();
+      AppUptime.reset();
+      DeviceMemoryUtil.resetCache();
+    });
+
+    // #8114: an empty buffer has to be reportable as "nothing captured"
+    // rather than handed over as a bare header the user would paste into a
+    // ticket believing it held their logs.
+    test('returns null when nothing has been captured', () async {
+      expect(await BugReportService().buildLogClipboardText(), isNull);
+    });
+
+    test('includes the header and the captured line', () async {
+      LogCaptureService().captureLog(
+        LogEntry(
+          timestamp: DateTime(2026, 8, 24),
+          level: LogLevel.error,
+          message: 'upload stalled at 40 percent',
+        ),
+      );
+
+      final text = await BugReportService().buildLogClipboardText();
+
+      expect(text, isNotNull);
+      expect(text, contains('OpenVine Comprehensive Log Export'));
+      expect(text, contains('App Version: 1.0.21+849'));
+      expect(text, contains('upload stalled at 40 percent'));
+    });
+
+    // #8112: the clipboard crosses a Binder transaction, so an uncapped
+    // copy of a full 5-10 MB buffer is the one outcome that cannot work.
+    test('caps the copy and keeps the newest entries', () async {
+      final filler = 'x' * 512;
+      for (var i = 0; i < 400; i++) {
+        LogCaptureService().captureLog(
+          LogEntry(
+            timestamp: DateTime(2026, 8, 24).add(Duration(seconds: i)),
+            level: LogLevel.info,
+            message: 'entry $i $filler',
+          ),
+        );
+      }
+
+      final text = await BugReportService().buildLogClipboardText();
+
+      expect(text, isNotNull);
+      expect(
+        utf8.encode(text!).length,
+        lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+      );
+      expect(text, contains('entry 399'));
+      expect(text, contains('earlier entries omitted'));
+      expect(text, isNot(contains('entry 0 ')));
     });
   });
 

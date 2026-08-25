@@ -33,6 +33,15 @@ class BugReportService {
        _storageManagementService = storageManagementService;
 
   static const _uuid = Uuid();
+
+  /// Byte ceiling for a clipboard copy of the logs.
+  ///
+  /// Android moves clipboard data across a Binder transaction whose ~1 MB
+  /// ceiling covers everything in flight, and Zendesk caps a ticket
+  /// description at 64K — so a copy someone can actually paste into a
+  /// support ticket is the smaller of the two constraints.
+  @visibleForTesting
+  static const int logClipboardByteBudget = 64 * 1024;
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
 
@@ -266,36 +275,18 @@ class BugReportService {
           'No logs available for export',
           category: LogCategory.system,
         );
-        return const LogExportResult(success: false);
+        return const LogExportResult.noLogs();
       }
 
-      // Get package info for metadata
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
-
-      // Build comprehensive log file with header
-      final buffer = StringBuffer();
-      buffer.writeln('OpenVine Comprehensive Log Export');
-      buffer.writeln('═' * 80);
-      buffer.writeln('Export Time: ${DateTime.now().toIso8601String()}');
-      buffer.writeln('App Version: $appVersion');
-      buffer.writeln('Total Log Lines: ${allLogLines.length}');
-      buffer.writeln('Log Files: ${stats['fileCount']}');
-      buffer.writeln('Total Size: ${stats['totalSizeMB']} MB');
-      final deviceDescription = await buildDeviceDescription();
-      if (deviceDescription != null) {
-        buffer.writeln('Device: $deviceDescription');
-      }
-      buffer.write(buildRuntimeDiagnostics());
-      buffer.write(await buildEnvironmentDiagnostics());
-      if (currentScreen != null) {
-        buffer.writeln('Current Screen: $currentScreen');
-      }
-      if (userPubkey != null) {
-        buffer.writeln('User Pubkey: ${pubkeyForLogs(userPubkey)}');
-      }
-      buffer.writeln('═' * 80);
-      buffer.writeln();
+      final buffer = StringBuffer()
+        ..write(
+          await _buildLogHeader(
+            stats: stats,
+            lineCount: allLogLines.length,
+            currentScreen: currentScreen,
+            userPubkey: userPubkey,
+          ),
+        );
 
       // Add all log lines (already formatted by LogCaptureService)
       for (final line in allLogLines) {
@@ -326,7 +317,7 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
   }
 
@@ -548,7 +539,7 @@ class BugReportService {
         'Logs downloaded via browser: $fileName ($sizeMB MB, $lineCount lines)',
         category: LogCategory.system,
       );
-      return const LogExportResult(success: true);
+      return const LogExportResult.shared();
     } catch (e, stackTrace) {
       Log.error(
         'Failed to download logs on web: $e',
@@ -556,7 +547,7 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
   }
 
@@ -606,7 +597,7 @@ class BugReportService {
         '($fileSizeMB MB, $lineCount lines)',
         category: LogCategory.system,
       );
-      return LogExportResult(success: true, filePath: location.path);
+      return LogExportResult.saved(location.path);
     } catch (e, stackTrace) {
       Log.error(
         'Failed to save logs on desktop: $e',
@@ -614,7 +605,102 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
+    }
+  }
+
+  /// The diagnostic preamble both the exported file and the clipboard
+  /// copy start with, terminated by a blank line.
+  Future<String> _buildLogHeader({
+    required Map<String, dynamic> stats,
+    required int lineCount,
+    String? currentScreen,
+    String? userPubkey,
+  }) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final buffer = StringBuffer()
+      ..writeln('OpenVine Comprehensive Log Export')
+      ..writeln('═' * 80)
+      ..writeln('Export Time: ${DateTime.now().toIso8601String()}')
+      ..writeln(
+        'App Version: ${packageInfo.version}+${packageInfo.buildNumber}',
+      )
+      ..writeln('Total Log Lines: $lineCount')
+      ..writeln('Log Files: ${stats['fileCount']}')
+      ..writeln('Total Size: ${stats['totalSizeMB']} MB');
+    final deviceDescription = await buildDeviceDescription();
+    if (deviceDescription != null) {
+      buffer.writeln('Device: $deviceDescription');
+    }
+    buffer
+      ..write(buildRuntimeDiagnostics())
+      ..write(await buildEnvironmentDiagnostics());
+    if (currentScreen != null) {
+      buffer.writeln('Current Screen: $currentScreen');
+    }
+    if (userPubkey != null) {
+      buffer.writeln('User Pubkey: ${pubkeyForLogs(userPubkey)}');
+    }
+    return (buffer
+          ..writeln('═' * 80)
+          ..writeln())
+        .toString();
+  }
+
+  /// Build the diagnostic header plus the most recent log lines that fit
+  /// under [logClipboardByteBudget], for copying to the clipboard.
+  ///
+  /// Returns `null` when the capture buffer is empty, so the caller can say
+  /// so rather than putting a bare header on the clipboard.
+  ///
+  /// This exists because the share sheet cannot serve a copy on Android: its
+  /// "Copy" chip copies `Intent.EXTRA_TEXT`, never the attached file. A
+  /// separate path is the only way that gesture yields logs, and it has to
+  /// be capped — the full buffer runs to 5-10 MB and the clipboard crosses a
+  /// Binder transaction with roughly a 1 MB ceiling for everything in it.
+  Future<String?> buildLogClipboardText({
+    String? currentScreen,
+    String? userPubkey,
+  }) async {
+    try {
+      final allLogLines = await LogCaptureService().getAllLogsAsText();
+      if (allLogLines.isEmpty) return null;
+
+      final stats = await LogCaptureService().getLogStatistics();
+      final header = await _buildLogHeader(
+        stats: stats,
+        lineCount: allLogLines.length,
+        currentScreen: currentScreen,
+        userPubkey: userPubkey,
+      );
+
+      // Walk backwards so the tail — the part nearest whatever just went
+      // wrong — is what survives the budget.
+      final tail = <String>[];
+      var budget = logClipboardByteBudget - utf8.encode(header).length;
+      for (final line in allLogLines.reversed) {
+        final sanitized = _sanitizeString(line);
+        final cost = utf8.encode(sanitized).length + 1;
+        if (cost > budget) break;
+        budget -= cost;
+        tail.add(sanitized);
+      }
+
+      final buffer = StringBuffer(header);
+      final omitted = allLogLines.length - tail.length;
+      if (omitted > 0) {
+        buffer.writeln('... [$omitted earlier entries omitted]');
+      }
+      tail.reversed.forEach(buffer.writeln);
+      return buffer.toString();
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to build clipboard log text: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 
@@ -642,9 +728,12 @@ class BugReportService {
         category: LogCategory.system,
       );
 
-      // Share the file
-      // Note: text field is intentionally minimal to ensure the file is the primary content
-      // When users select "Copy" in the share dialog, they should get the file, not metadata
+      // `text` stays short because it is the body every share target
+      // prefills — a log dump here would land in the email or message
+      // alongside the attachment. On Android it is also what the share
+      // sheet's own "Copy" chip copies, which copies EXTRA_TEXT and never
+      // the attachment, so that chip cannot deliver logs however it is
+      // worded. Copying is served by [buildLogClipboardText] instead.
       final result = await showShareSheetAtOrigin(
         ShareParams(
           files: [XFile(filePath)],
@@ -654,15 +743,23 @@ class BugReportService {
         sharePositionOrigin: sharePositionOrigin,
       );
 
-      if (result.status == ShareResultStatus.success) {
-        Log.info('Logs shared successfully', category: LogCategory.system);
-        return const LogExportResult(success: true);
-      } else {
-        Log.warning(
-          'Log sharing was dismissed or failed: ${result.status}',
-          category: LogCategory.system,
-        );
-        return const LogExportResult(success: false);
+      switch (result.status) {
+        case ShareResultStatus.success:
+          Log.info('Logs shared successfully', category: LogCategory.system);
+          return const LogExportResult.shared();
+        case ShareResultStatus.dismissed:
+          Log.info(
+            'Log sharing dismissed by user',
+            category: LogCategory.system,
+          );
+          return const LogExportResult.cancelled();
+        case ShareResultStatus.unavailable:
+          Log.warning(
+            'Log sharing outcome unavailable; the sheet may still have '
+            'completed the share',
+            category: LogCategory.system,
+          );
+          return const LogExportResult.unconfirmed();
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -671,7 +768,7 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
   }
 
@@ -762,23 +859,66 @@ class BugReportService {
 /// mobile and web, [filePath] is null because the platform's share /
 /// download flow already surfaces the file.
 ///
-/// [cancelled] is true when the user dismissed a Save As dialog without
-/// picking a location — distinct from [success] = false (which is a real
-/// failure) so the UI can stay silent on cancel rather than flashing a
-/// "Failed to export logs" toast.
+/// The UI branches on [status]: four of the six outcomes are not failures,
+/// and reporting them as one is what made a working export look broken.
 class LogExportResult {
-  const LogExportResult({
-    required this.success,
-    this.filePath,
-    this.cancelled = false,
-  });
+  const LogExportResult(this.status, {this.filePath});
 
-  const LogExportResult.cancelled()
-    : success = false,
-      filePath = null,
-      cancelled = true;
+  const LogExportResult.shared() : this(LogExportStatus.shared);
 
-  final bool success;
+  const LogExportResult.saved(String path)
+    : this(LogExportStatus.saved, filePath: path);
+
+  const LogExportResult.cancelled() : this(LogExportStatus.cancelled);
+
+  const LogExportResult.noLogs() : this(LogExportStatus.noLogs);
+
+  const LogExportResult.unconfirmed() : this(LogExportStatus.unconfirmed);
+
+  const LogExportResult.failed() : this(LogExportStatus.failed);
+
+  final LogExportStatus status;
   final String? filePath;
-  final bool cancelled;
+
+  /// Whether the logs reached somewhere the user can get at them.
+  ///
+  /// [LogExportStatus.unconfirmed] counts: the share sheet was presented and
+  /// the platform simply declined to report the outcome, so treating it as a
+  /// failure would be a guess in the direction that costs us the report.
+  bool get success =>
+      status == LogExportStatus.shared ||
+      status == LogExportStatus.saved ||
+      status == LogExportStatus.unconfirmed;
+
+  bool get cancelled => status == LogExportStatus.cancelled;
+}
+
+/// How an export ended.
+enum LogExportStatus {
+  /// The share sheet or browser download completed.
+  shared,
+
+  /// Written to a path the user picked in a desktop Save As dialog.
+  saved,
+
+  /// The user backed out of the share sheet or Save As dialog.
+  cancelled,
+
+  /// The capture buffer held nothing to export.
+  ///
+  /// Distinct from [failed] because the fix is the user's, not ours: the
+  /// buffer is in memory only, so a restart empties it and they need to
+  /// reproduce the problem before exporting.
+  noLogs,
+
+  /// The share sheet was presented but the platform reported no outcome.
+  ///
+  /// `share_plus` returns `ShareResultStatus.unavailable` on Android when it
+  /// cannot attach to an Activity and falls back to `context.startActivity`.
+  /// The sheet still opens and the share can still complete; the callback is
+  /// simply cancelled up front, so there is nothing to observe.
+  unconfirmed,
+
+  /// A real failure — the write threw, or the platform reported an error.
+  failed,
 }
