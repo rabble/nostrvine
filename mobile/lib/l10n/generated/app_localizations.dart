@@ -19822,17 +19822,11 @@ abstract class AppLocalizations {
   /// **'Your account is restricted'**
   String get accountStatusTileSubtitleRestricted;
 
-  /// Neutral heading shown when the account-status screen has no restriction to report.
+  /// Sole line on the account status screen when there is no restriction to report, including when the status could not be read. Deliberately has no body copy.
   ///
   /// In en, this message translates to:
-  /// **'Account restrictions'**
-  String get accountStatusUnverifiedHeading;
-
-  /// Neutral body shown when the account-status screen has no restriction to report.
-  ///
-  /// In en, this message translates to:
-  /// **'This screen only shows confirmed restrictions. There’s nothing to show here right now.'**
-  String get accountStatusUnverifiedBody;
+  /// **'Everything looks good!'**
+  String get accountStatusAllClearHeading;
 
   /// Persistent profile-avatar badge label shown when Divine has confirmed an account restriction.
   ///
@@ -19875,18 +19869,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.'**
   String get accountStatusRestrictedBody;
-
-  /// Heading shown when the status could not be read, so nothing is claimed either way.
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn\'t check your account status'**
-  String get accountStatusUnknownHeading;
-
-  /// Body shown when the status could not be read.
-  ///
-  /// In en, this message translates to:
-  /// **'This doesn\'t mean anything is wrong. Check your connection and try again.'**
-  String get accountStatusUnknownBody;
 
   /// Shown with a retained confirmed restriction after its refresh fails.
   ///

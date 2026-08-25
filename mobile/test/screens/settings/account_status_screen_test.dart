@@ -91,12 +91,12 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('an unverified account gets no false all-clear', (
+    testWidgets('an unrestricted account is greeted, not reported to', (
       tester,
     ) async {
       await _pumpWith(tester, AccountEnforcementKind.unverified);
 
-      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusContactSupport), findsNothing);
       expect(find.text(l10n.accountStatusMoveAccount), findsNothing);
     });
@@ -250,13 +250,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
 
       container.invalidate(accountEnforcementStatusProvider);
       await tester.pump();
 
       expect(
-        find.text(l10n.accountStatusUnverifiedHeading),
+        find.text(l10n.accountStatusAllClearHeading),
         findsNothing,
         reason: 'a stale answer must not survive a refresh',
       );
@@ -300,8 +300,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.accountStatusUnverifiedHeading), findsNothing);
-      expect(find.text(l10n.accountStatusUnknownHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
+      expect(
+        find.text(l10n.accountStatusRetry),
+        findsNothing,
+        reason: 'nothing to retry once the screen has nothing to report',
+      );
     });
 
     testWidgets('a failed refresh preserves a confirmed restriction', (
@@ -348,13 +352,13 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('a self-custody account gets no unsupported status claim', (
+    testWidgets('a self-custody account is offered no futile retry', (
       tester,
     ) async {
       // Retrying can never resolve this, so offering it would be a lie.
       await _pumpWith(tester, AccountEnforcementKind.unverified);
 
-      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
+      expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusRetry), findsNothing);
     });
   });

@@ -11881,11 +11881,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusUnverifiedHeading => 'Account restrictions';
-
-  @override
-  String get accountStatusUnverifiedBody =>
-      'This screen only shows confirmed restrictions. There’s nothing to show here right now.';
+  String get accountStatusAllClearHeading => 'Everything looks good!';
 
   @override
   String get profileAccountRestricted => 'Account restricted';
@@ -11910,14 +11906,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accountStatusRestrictedBody =>
       'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
-
-  @override
-  String get accountStatusUnknownHeading =>
-      'We couldn\'t check your account status';
-
-  @override
-  String get accountStatusUnknownBody =>
-      'This doesn\'t mean anything is wrong. Check your connection and try again.';
 
   @override
   String get accountStatusLastKnownBody =>

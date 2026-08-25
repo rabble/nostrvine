@@ -495,9 +495,8 @@ const _knownUntranslatedDebt = <String>{
   // Account-enforcement translation remains tracked in #7765. The policy copy
   // is deliberately left in English until its human translation pass.
   'accountStatusTitle',
+  'accountStatusAllClearHeading',
   'accountStatusTileSubtitleRestricted',
-  'accountStatusUnverifiedHeading',
-  'accountStatusUnverifiedBody',
   'profileAccountRestricted',
   'publishErrorAccountRestricted',
   'uploadFailureSheetAccountStatusButton',
@@ -507,8 +506,6 @@ const _knownUntranslatedDebt = <String>{
   'accountStatusBannedBody',
   'accountStatusRestrictedHeading',
   'accountStatusRestrictedBody',
-  'accountStatusUnknownHeading',
-  'accountStatusUnknownBody',
   'accountStatusLastKnownBody',
   'accountStatusSignedOutHeading',
   'accountStatusSignedOutBody',

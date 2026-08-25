@@ -11,18 +11,21 @@ void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   group('AccountEnforcementL10n', () {
-    test('maps every kind to a non-empty heading and body', () {
+    test('maps every kind to a non-empty heading', () {
       for (final kind in AccountEnforcementKind.values) {
         expect(
           l10n.accountEnforcementHeading(kind),
           isNotEmpty,
           reason: 'no heading for $kind',
         );
-        expect(
-          l10n.accountEnforcementBody(kind),
-          isNotEmpty,
-          reason: 'no body for $kind',
-        );
+      }
+    });
+
+    test('never maps a kind to an empty body', () {
+      for (final kind in AccountEnforcementKind.values) {
+        final body = l10n.accountEnforcementBody(kind);
+        if (body == null) continue;
+        expect(body, isNotEmpty, reason: 'empty body for $kind');
       }
     });
 
@@ -34,19 +37,26 @@ void main() {
       expect(headings.toSet(), hasLength(headings.length));
     });
 
-    test('unverified makes no good-standing claim', () {
-      expect(
-        l10n.accountEnforcementHeading(AccountEnforcementKind.unverified),
-        isNot(contains('good standing')),
-      );
-      expect(
-        l10n.accountEnforcementBody(AccountEnforcementKind.unverified),
-        isNot(contains('no restrictions')),
-      );
-      expect(
-        l10n.accountEnforcementHeading(AccountEnforcementKind.unverified),
-        isNot(contains("can't verify")),
-      );
+    test(
+      'unverified resolves to the all-clear, with no body to explain it',
+      () {
+        expect(
+          l10n.accountEnforcementHeading(AccountEnforcementKind.unverified),
+          l10n.accountStatusAllClearHeading,
+        );
+        expect(
+          l10n.accountEnforcementBody(AccountEnforcementKind.unverified),
+          isNull,
+          reason: 'a second line here could only describe how Divine checks',
+        );
+      },
+    );
+
+    test('every other kind keeps a body', () {
+      for (final kind in AccountEnforcementKind.values) {
+        if (kind == AccountEnforcementKind.unverified) continue;
+        expect(l10n.accountEnforcementBody(kind), isNotNull, reason: '$kind');
+      }
     });
   });
 }
