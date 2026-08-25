@@ -114,6 +114,10 @@ Widget _wrapWithRouter(Widget child) {
         builder: (_, state) =>
             const Scaffold(body: Text('Support destination')),
       ),
+      GoRoute(
+        path: RoutePaths.supportReportBug,
+        builder: (_, state) => const Scaffold(body: Text('Bug report form')),
+      ),
     ],
   );
   // Same reason the sign-out redirect router is disposed below: an
@@ -1398,6 +1402,7 @@ void main() {
 
       final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
+      expect(find.text(l10n.supportContactSupport), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
       expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
@@ -1406,6 +1411,10 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       );
+
+      await tester.tap(find.text(l10n.supportContactSupport));
+      await tester.pumpAndSettle();
+      expect(find.text('Bug report form'), findsOneWidget);
     });
 
     testWidgets(

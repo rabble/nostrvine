@@ -3822,7 +3822,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountDeleteAllContentButton": "تمام مواد حذف کریں",
-  "deleteAccountDeletionUnavailable": "اکاؤنٹ حذف کرنے کی سہولت ابھی دستیاب نہیں ہے۔ کچھ بھی حذف نہیں ہوا۔",
+  "deleteAccountDeletionUnavailable": "اکاؤنٹ حذف کرنے کی درخواست ناکام ہو گئی۔",
   "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔",
   "@deleteAccountDeletionIncomplete": {

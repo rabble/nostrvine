@@ -6918,7 +6918,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan.';
+      'Permintaan pemadaman akaun gagal.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

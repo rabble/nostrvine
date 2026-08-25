@@ -7079,7 +7079,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Ștergerea contului nu este disponibilă momentan. Nu s-a șters nimic.';
+      'Solicitarea de ștergere a contului a eșuat.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

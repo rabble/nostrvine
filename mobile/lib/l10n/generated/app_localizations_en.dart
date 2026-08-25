@@ -7012,7 +7012,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Account deletion isn\'t available right now. Nothing was deleted.';
+      'Account deletion request failed.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

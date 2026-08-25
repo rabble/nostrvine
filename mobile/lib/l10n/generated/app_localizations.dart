@@ -11834,10 +11834,10 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get accountDeletionSignOut;
 
-  /// Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred.
+  /// Error shown when an account deletion request cannot start because the deletion coordinator is unavailable.
   ///
   /// In en, this message translates to:
-  /// **'Account deletion isn\'t available right now. Nothing was deleted.'**
+  /// **'Account deletion request failed.'**
   String get deleteAccountDeletionUnavailable;
 
   /// Neutral error when account deletion could not complete and no claim about username state is safe.

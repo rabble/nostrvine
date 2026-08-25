@@ -3822,7 +3822,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountDeleteAllContentButton": "Xóa tất cả nội dung",
-  "deleteAccountDeletionUnavailable": "Hiện chưa thể xóa tài khoản. Chưa có gì bị xóa.",
+  "deleteAccountDeletionUnavailable": "Yêu cầu xóa tài khoản không thành công.",
   "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.",
   "@deleteAccountDeletionIncomplete": {

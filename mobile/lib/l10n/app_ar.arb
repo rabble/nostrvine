@@ -4407,7 +4407,7 @@
     "deleteAccountConfirmationHintUsername": "اكتب اسم المستخدم الخاص بك",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
     "deleteAccountDeleteAllContentButton": "حذف كل المحتوى",
-    "deleteAccountDeletionUnavailable": "حذف الحساب غير متاح الآن. لم يتم حذف أي شيء.",
+    "deleteAccountDeletionUnavailable": "فشل طلب حذف الحساب.",
     "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},

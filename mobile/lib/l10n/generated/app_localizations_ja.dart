@@ -6561,8 +6561,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get deleteAccountDeletionUnavailable =>
-      'アカウント削除は現在利用できません。何も削除されていません。';
+  String get deleteAccountDeletionUnavailable => 'アカウント削除リクエストに失敗しました。';
 
   @override
   String get deleteAccountDeletionIncomplete => 'アカウントの削除を完了できなかったよ。もう一回試してね。';

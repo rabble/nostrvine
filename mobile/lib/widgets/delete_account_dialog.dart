@@ -14,6 +14,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -540,6 +541,7 @@ Future<void> executeAccountDeletion({
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionUnavailableText = context.l10n.deleteAccountDeletionUnavailable;
+  final contactSupportText = context.l10n.supportContactSupport;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final handleLabel = ownedUsername != null
       ? '@${ownedUsername.name}.divine.video'
@@ -619,7 +621,11 @@ Future<void> executeAccountDeletion({
     announceOutcome(message);
   }
 
-  void abortPreparation(Object error, String message) {
+  void abortPreparation(
+    Object error,
+    String message, {
+    bool offerSupport = false,
+  }) {
     Log.warning(
       'Account deletion could not be prepared ($error); aborting '
       'account deletion',
@@ -629,7 +635,15 @@ Future<void> executeAccountDeletion({
     dismissProgressSheet();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(message, error: true),
+      DivineSnackbarContainer.snackBar(
+        message,
+        error: true,
+        duration: offerSupport ? const Duration(seconds: 12) : null,
+        actionLabel: offerSupport ? contactSupportText : null,
+        onActionPressed: offerSupport
+            ? () => context.push(RoutePaths.supportReportBug)
+            : null,
+      ),
     );
     announceOutcome(message);
   }
@@ -747,7 +761,13 @@ Future<void> executeAccountDeletion({
             burnUsernameFailedText,
           _ => deletionIncompleteText,
         };
-        abortPreparation(error, message);
+        abortPreparation(
+          error,
+          message,
+          offerSupport:
+              error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
+              error.indicatesMissingCoordinatorRoute,
+        );
         return;
       } on Object catch (error) {
         abortPreparation(error, deletionIncompleteText);

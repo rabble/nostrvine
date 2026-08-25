@@ -6856,8 +6856,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get deleteAccountDeletionUnavailable =>
-      'حذف الحساب غير متاح الآن. لم يتم حذف أي شيء.';
+  String get deleteAccountDeletionUnavailable => 'فشل طلب حذف الحساب.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

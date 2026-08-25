@@ -6905,7 +6905,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'اکاؤنٹ حذف کرنے کی سہولت ابھی دستیاب نہیں ہے۔ کچھ بھی حذف نہیں ہوا۔';
+      'اکاؤنٹ حذف کرنے کی درخواست ناکام ہو گئی۔';
 
   @override
   String get deleteAccountDeletionIncomplete =>

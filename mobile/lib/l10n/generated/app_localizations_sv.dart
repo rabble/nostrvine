@@ -6901,7 +6901,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Kontoborttagning är inte tillgänglig just nu. Ingenting har tagits bort.';
+      'Begäran om kontoborttagning misslyckades.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

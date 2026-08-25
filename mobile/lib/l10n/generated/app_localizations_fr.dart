@@ -6999,7 +6999,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'La suppression de compte n’est pas disponible pour le moment. Rien n’a été supprimé.';
+      'La demande de suppression du compte a échoué.';
 
   @override
   String get deleteAccountDeletionIncomplete =>

@@ -6522,7 +6522,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get deleteAccountDeletionUnavailable => '账号删除功能目前不可用。未删除任何内容。';
+  String get deleteAccountDeletionUnavailable => '账号删除请求失败。';
 
   @override
   String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';

@@ -4532,7 +4532,7 @@
     "deleteAccountConfirmationHintUsername": "የተጠቃሚ ስምዎን ይተይቡ",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
     "deleteAccountDeleteAllContentButton": "ሁሉንም ይዘት ሰርዝ",
-    "deleteAccountDeletionUnavailable": "የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም።",
+    "deleteAccountDeletionUnavailable": "የመለያ ስረዛ ጥያቄ አልተሳካም።",
     "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},

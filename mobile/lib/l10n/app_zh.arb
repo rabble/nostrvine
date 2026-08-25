@@ -3822,7 +3822,7 @@
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
   "deleteAccountDeleteAllContentButton": "删除所有内容",
-  "deleteAccountDeletionUnavailable": "账号删除功能目前不可用。未删除任何内容。",
+  "deleteAccountDeletionUnavailable": "账号删除请求失败。",
   "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "我们没能完成账号删除，请重试。",
   "@deleteAccountDeletionIncomplete": {

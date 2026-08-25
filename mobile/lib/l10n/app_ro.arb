@@ -4407,7 +4407,7 @@
     "deleteAccountConfirmationHintUsername": "Scrie numele tău de utilizator",
     "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
     "deleteAccountDeleteAllContentButton": "Șterge tot conținutul",
-    "deleteAccountDeletionUnavailable": "Ștergerea contului nu este disponibilă momentan. Nu s-a șters nimic.",
+    "deleteAccountDeletionUnavailable": "Solicitarea de ștergere a contului a eșuat.",
     "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
     "deleteAccountDeletionIncomplete": "Nu am putut finaliza ștergerea contului tău. Încearcă din nou.",
     "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."},

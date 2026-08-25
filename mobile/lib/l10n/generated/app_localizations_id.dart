@@ -6833,7 +6833,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Penghapusan akun sedang tidak tersedia. Tidak ada yang dihapus.';
+      'Permintaan penghapusan akun gagal.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
