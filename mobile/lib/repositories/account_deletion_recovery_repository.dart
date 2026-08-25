@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:openvine/models/account_deletion_attempt.dart';
@@ -163,6 +164,12 @@ class AccountDeletionRecoveryRepository {
         stage: AccountDeletionRecoveryStage.usernamePreparation,
         isTransportFailure: true,
       );
+    } on IOException {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation request failed',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
+        isTransportFailure: true,
+      );
     }
     if (nameResponse.statusCode != 200) {
       throw _exceptionFromResponse(
@@ -218,6 +225,11 @@ class AccountDeletionRecoveryRepository {
         isTransportFailure: true,
       );
     } on http.ClientException {
+      throw const AccountDeletionRecoveryException(
+        'Status lookup request failed',
+        isTransportFailure: true,
+      );
+    } on IOException {
       throw const AccountDeletionRecoveryException(
         'Status lookup request failed',
         isTransportFailure: true,
@@ -317,6 +329,12 @@ class AccountDeletionRecoveryRepository {
         isTransportFailure: true,
       );
     } on http.ClientException {
+      throw AccountDeletionRecoveryException(
+        'Deletion attempt request failed',
+        stage: stage,
+        isTransportFailure: true,
+      );
+    } on IOException {
       throw AccountDeletionRecoveryException(
         'Deletion attempt request failed',
         stage: stage,

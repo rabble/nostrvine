@@ -441,7 +441,7 @@ Future<void> executeAccountDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
   required AuthService authService,
-  AccountDeletionRecoveryRepository? deletionRecoveryRepository,
+  required AccountDeletionRecoveryRepository deletionRecoveryRepository,
   bool burnUsername = false,
   ({String name, String canonical})? ownedUsername,
   String? confirmedPubkey,
@@ -565,10 +565,12 @@ Future<void> executeAccountDeletion({
   var attemptPrepared = false;
   var usernamePrepared = false;
 
+  bool hasPreparedAttempt() => deletionAttempt != null;
+
   void showDurableDeletionOutcome(String message, {bool offerCancel = true}) {
     final attempt = deletionAttempt;
     final repository = deletionRecoveryRepository;
-    if (!context.mounted || attempt == null || repository == null) return;
+    if (!context.mounted || attempt == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
         message,
@@ -723,18 +725,11 @@ Future<void> executeAccountDeletion({
     // Create the durable coordinator attempt for every deletion. When the user
     // opted to burn a username, the repository also performs the owner-auth
     // Name Server prepare and the coordinator's verified handshake.
-    if (deletionRecoveryRepository != null || burnUsername) {
-      // Opted in to burn. A missing handle or repository means we cannot honor
-      // it, so we must NOT proceed — treated the same as a failed release
-      // (hard-block, symmetric in both directions).
+    {
+      // Opted in to burn. A missing handle means we cannot honor it, so we must
+      // NOT proceed — treated the same as a failed release (hard-block,
+      // symmetric in both directions).
       try {
-        if (deletionRecoveryRepository == null) {
-          throw const AccountDeletionRecoveryException(
-            'Deletion recovery is unavailable',
-            stage: AccountDeletionRecoveryStage.coordinatorAttempt,
-            isTransportFailure: true,
-          );
-        }
         if (burnUsername && ownedUsername == null) {
           throw const AccountDeletionRecoveryException(
             'Username release is unavailable',
@@ -751,7 +746,7 @@ Future<void> executeAccountDeletion({
           );
         }
         deletionAttempt = prepared;
-        attemptPrepared = true;
+        attemptPrepared = hasPreparedAttempt();
         usernamePrepared = prepared.username != null;
         Log.info(
           'Prepared durable account deletion attempt before deletion',
@@ -816,9 +811,7 @@ Future<void> executeAccountDeletion({
       if (attemptPrepared) {
         final attempt = deletionAttempt;
         final eventId = result.deleteEventId;
-        if (attempt == null ||
-            eventId == null ||
-            deletionRecoveryRepository == null) {
+        if (eventId == null) {
           dismissProgressSheet();
           showDurableDeletionOutcome(
             usernamePrepared ? recoveryBodyText : cancelAttemptBodyText,

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -134,6 +135,27 @@ void main() {
       expect(
         () => repository(
           MockClient((_) async => throw http.ClientException('offline')),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesServiceUnavailable,
+                'indicatesServiceUnavailable',
+                isTrue,
+              ),
+        ),
+      );
+    });
+
+    test('coordinator TLS failure is classified as unavailable', () {
+      expect(
+        () => repository(
+          MockClient((_) async => throw const HandshakeException('bad TLS')),
         ).prepare(),
         throwsA(
           isA<AccountDeletionRecoveryException>()
