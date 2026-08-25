@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/go_router_page_name.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
@@ -108,7 +109,9 @@ List<RouteBase> settingsRoutes(Ref ref) {
     GoRoute(
       path: AccountStatusScreen.path,
       name: AccountStatusScreen.routeName,
-      builder: (_, _) => const AccountStatusScreen(),
+      builder: (_, state) => AccountStatusScreen(
+        publishRestrictionConfirmed: extraAs<bool>(state.extra) == true,
+      ),
     ),
     GoRoute(
       path: SupportCenterScreen.path,

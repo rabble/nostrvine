@@ -12128,6 +12128,18 @@ abstract class AppLocalizations {
   /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
   String get publishErrorNostrPublishFailed;
 
+  /// Terminal publish error shown when the authoritative Divine relay rejects the signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted, so this post couldn’t be published.'**
+  String get publishErrorAccountRestricted;
+
+  /// Button on a restricted-account publish failure that opens Account status instead of retrying.
+  ///
+  /// In en, this message translates to:
+  /// **'View Account Status'**
+  String get uploadFailureSheetAccountStatusButton;
+
   /// No description provided for @publishErrorAudioReuseNotPermitted.
   ///
   /// In en, this message translates to:
@@ -19810,17 +19822,23 @@ abstract class AppLocalizations {
   /// **'Your account is restricted'**
   String get accountStatusTileSubtitleRestricted;
 
-  /// Heading shown when the app has no authoritative relay-backed account status.
+  /// Neutral heading shown when the account-status screen has no restriction to report.
   ///
   /// In en, this message translates to:
-  /// **'We can\'t verify your Divine status yet'**
+  /// **'Account restrictions'**
   String get accountStatusUnverifiedHeading;
 
-  /// Body shown when Keycast cannot provide an authoritative Divine enforcement status.
+  /// Neutral body shown when the account-status screen has no restriction to report.
   ///
   /// In en, this message translates to:
-  /// **'This doesn\'t mean your account is restricted. The app can\'t confirm your current Divine status yet.'**
+  /// **'This screen only shows confirmed restrictions. There’s nothing to show here right now.'**
   String get accountStatusUnverifiedBody;
+
+  /// Persistent profile-avatar badge label shown when Divine has confirmed an account restriction.
+  ///
+  /// In en, this message translates to:
+  /// **'Account restricted'**
+  String get profileAccountRestricted;
 
   /// Heading shown when the account is suspended.
   ///

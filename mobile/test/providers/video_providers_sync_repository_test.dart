@@ -87,7 +87,9 @@ void main() {
               (_) => _MockVideosRepository(),
             ),
             currentEnvironmentProvider.overrideWith(
-              (_) => EnvironmentConfig.production,
+              (_) => const EnvironmentConfig(
+                environment: AppEnvironment.staging,
+              ),
             ),
             nip98AuthServiceProvider.overrideWith(
               (_) => _MockNip98AuthService(),
@@ -104,6 +106,10 @@ void main() {
         addTearDown(container.dispose);
 
         final before = container.read(videoEventPublisherProvider);
+        expect(
+          before.trustedRelayUrlForTesting,
+          'wss://relay.staging.divine.video',
+        );
 
         // The transition this pins: soundSyncAvailabilityProvider resolving
         // well after videoEventPublisherProvider was first read.

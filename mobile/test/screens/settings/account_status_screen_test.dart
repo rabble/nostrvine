@@ -23,6 +23,7 @@ Future<void> _pumpWith(
   WidgetTester tester,
   AccountEnforcementKind kind, {
   MockGoRouter? goRouter,
+  bool publishRestrictionConfirmed = false,
 }) async {
   // Tall surface: the body is a ListView, which only builds what fits, and the
   // longer enforcement copy would otherwise push the appeal and exit buttons
@@ -31,10 +32,12 @@ Future<void> _pumpWith(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
-  const app = MaterialApp(
+  final app = MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: AccountStatusScreen(),
+    home: AccountStatusScreen(
+      publishRestrictionConfirmed: publishRestrictionConfirmed,
+    ),
   );
 
   await tester.pumpWidget(
@@ -83,7 +86,7 @@ void main() {
       tester,
     ) async {
       // The fail-closed state must not lose the way to contest it.
-      await _pumpWith(tester, AccountEnforcementKind.restricted);
+      await _pumpWith(tester, AccountEnforcementKind.unknownRestriction);
 
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
@@ -97,6 +100,21 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsNothing);
       expect(find.text(l10n.accountStatusMoveAccount), findsNothing);
     });
+
+    testWidgets(
+      'a publish-confirmed restriction survives an unverified status source',
+      (tester) async {
+        await _pumpWith(
+          tester,
+          AccountEnforcementKind.unverified,
+          publishRestrictionConfirmed: true,
+        );
+
+        expect(find.text(l10n.accountStatusRestrictedHeading), findsOneWidget);
+        expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
+        expect(find.text(l10n.accountStatusMoveAccount), findsOneWidget);
+      },
+    );
 
     testWidgets('signed out explains the state without a futile retry', (
       tester,
@@ -138,10 +156,7 @@ void main() {
 
       // The exit flow lives on the web, so it must leave the app rather than
       // resolve to an in-app route.
-      expect(
-        launcher.launched.single.url,
-        AppConstants.accountPortabilityUrl,
-      );
+      expect(launcher.launched.single.url, AppConstants.accountPortabilityUrl);
       expect(launcher.launched.single.useExternalApplication, isTrue);
     });
 
@@ -339,10 +354,7 @@ void main() {
       // Retrying can never resolve this, so offering it would be a lie.
       await _pumpWith(tester, AccountEnforcementKind.unverified);
 
-      expect(
-        find.text(l10n.accountStatusUnverifiedHeading),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusRetry), findsNothing);
     });
   });

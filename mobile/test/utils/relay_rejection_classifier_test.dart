@@ -65,6 +65,13 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        accountRestrictedReasonFromOutcome(
+          restricted,
+          trustedRelayUrl: 'wss://relay.divine.video',
+        ),
+        'blocked: pubkey is suspended',
+      );
     });
 
     test('an acceptance prevents an account restriction verdict', () {

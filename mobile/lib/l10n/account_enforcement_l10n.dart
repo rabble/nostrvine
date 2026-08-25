@@ -8,8 +8,10 @@ import 'package:openvine/models/account_enforcement_status.dart';
 ///
 /// Follows the project's l10n rule: state carries codes, never English copy.
 ///
-/// The mapping is exhaustive by design. No resolved kind makes a positive
-/// good-standing claim because Keycast is not authoritative for relay state.
+/// The mapping is exhaustive by design. The neutral [AccountEnforcementKind.unverified]
+/// copy reports only that this screen has nothing to show; it does not make a
+/// positive good-standing claim because Keycast is not authoritative for
+/// relay state.
 extension AccountEnforcementL10n on AppLocalizations {
   String accountEnforcementHeading(AccountEnforcementKind kind) {
     switch (kind) {
@@ -21,7 +23,7 @@ extension AccountEnforcementL10n on AppLocalizations {
         return accountStatusSuspendedHeading;
       case AccountEnforcementKind.banned:
         return accountStatusBannedHeading;
-      case AccountEnforcementKind.restricted:
+      case AccountEnforcementKind.unknownRestriction:
         return accountStatusRestrictedHeading;
     }
   }
@@ -36,7 +38,7 @@ extension AccountEnforcementL10n on AppLocalizations {
         return accountStatusSuspendedBody;
       case AccountEnforcementKind.banned:
         return accountStatusBannedBody;
-      case AccountEnforcementKind.restricted:
+      case AccountEnforcementKind.unknownRestriction:
         return accountStatusRestrictedBody;
     }
   }

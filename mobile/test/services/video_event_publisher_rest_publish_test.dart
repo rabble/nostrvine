@@ -7,7 +7,9 @@ import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/exceptions/video_exceptions.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/event_api_client.dart';
@@ -50,6 +52,7 @@ void main() {
     registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(UploadStatus.pending);
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -67,6 +70,7 @@ void main() {
       personalEventCache: mockPersonalEventCache,
       videoEventService: mockVideoEventService,
       eventApiClient: mockEventApiClient,
+      trustedRelayUrl: 'wss://trusted.example',
     );
 
     when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -85,10 +89,8 @@ void main() {
 
     // Recovery queries return nothing unless a test overrides this.
     when(
-      () => mockNostrClient.queryEvents(
-        any(),
-        useCache: any(named: 'useCache'),
-      ),
+      () =>
+          mockNostrClient.queryEvents(any(), useCache: any(named: 'useCache')),
     ).thenAnswer((_) async => <Event>[]);
 
     when(
@@ -148,10 +150,13 @@ void main() {
     ).thenAnswer((_) async => result);
   }
 
-  void stubWebSocket(PublishResult result) {
+  void stubWebSocket(PublishOutcome outcome) {
     when(
-      () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => result);
+      () => mockNostrClient.publishEventAwaitOk(
+        any(),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer((_) async => outcome);
   }
 
   group('VideoEventPublisher REST-first publish', () {
@@ -172,7 +177,12 @@ void main() {
         ),
       ).called(1);
       // REST succeeded — no WebSocket fallback.
-      verifyNever(() => mockNostrClient.publishEvent(any()));
+      verifyNever(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      );
     });
 
     test(
@@ -181,13 +191,25 @@ void main() {
         final signedEvent = createSignedEvent();
         stubSigning(signedEvent);
         stubRest(const EventApiTransientFailure('http_503'));
-        stubWebSocket(PublishSuccess(event: signedEvent));
+        stubWebSocket(
+          PublishOutcome(
+            eventId: signedEvent.id,
+            acceptedBy: const ['wss://trusted.example'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
 
         final result = await publisher.publishDirectUpload(createUpload());
 
         expect(result, isTrue);
         verify(() => mockEventApiClient.publishEvent(any())).called(1);
-        verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
+        verify(
+          () => mockNostrClient.publishEventAwaitOk(
+            signedEvent,
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
         verify(
           () => mockUploadManager.updateUploadStatus(
             'test-upload-id',
@@ -198,30 +220,133 @@ void main() {
       },
     );
 
-    test('REST rejection falls back to WebSocket send success', () async {
+    test('REST rejection falls back to WebSocket acceptance', () async {
       final signedEvent = createSignedEvent();
       stubSigning(signedEvent);
       stubRest(const EventApiRejected(statusCode: 422, reason: 'bad event'));
-      stubWebSocket(PublishSuccess(event: signedEvent));
+      stubWebSocket(
+        PublishOutcome(
+          eventId: signedEvent.id,
+          acceptedBy: const ['wss://trusted.example'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        ),
+      );
 
       final result = await publisher.publishDirectUpload(createUpload());
 
       expect(result, isTrue);
-      verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
       verify(
-        () => mockUploadManager.updateUploadStatus(
-          'test-upload-id',
-          UploadStatus.published,
-          nostrEventId: signedEvent.id,
+        () => mockNostrClient.publishEventAwaitOk(
+          signedEvent,
+          timeout: any(named: 'timeout'),
+        ),
+      ).called(1);
+      verify(() => mockEventApiClient.publishEvent(signedEvent)).called(1);
+    });
+
+    test('account restriction stops without WebSocket fallback', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubRest(
+        const EventApiRejected(
+          statusCode: 403,
+          reason: 'blocked: pubkey is suspended',
+        ),
+      );
+
+      await expectLater(
+        publisher.publishDirectUpload(createUpload()),
+        throwsA(isA<AccountRestrictedPublishException>()),
+      );
+      verifyNever(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      );
+    });
+
+    test('trusted WebSocket restriction stops retrying', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubRest(const EventApiTransientFailure('http_503'));
+      stubWebSocket(
+        PublishOutcome(
+          eventId: signedEvent.id,
+          acceptedBy: const [],
+          rejectedBy: const {
+            'wss://trusted.example/': 'blocked: pubkey is suspended',
+          },
+          noResponseFrom: const [],
+        ),
+      );
+
+      await expectLater(
+        publisher.publishDirectUpload(createUpload()),
+        throwsA(isA<AccountRestrictedPublishException>()),
+      );
+
+      verify(
+        () => mockNostrClient.publishEventAwaitOk(
+          signedEvent,
+          timeout: any(named: 'timeout'),
+        ),
+      ).called(1);
+      verify(() => mockEventApiClient.publishEvent(signedEvent)).called(1);
+    });
+
+    test('an acceptance defeats a trusted WebSocket restriction', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubRest(const EventApiTransientFailure('http_503'));
+      stubWebSocket(
+        PublishOutcome(
+          eventId: signedEvent.id,
+          acceptedBy: const ['wss://another.example'],
+          rejectedBy: const {
+            'wss://trusted.example': 'blocked: pubkey is banned',
+          },
+          noResponseFrom: const [],
+        ),
+      );
+
+      expect(await publisher.publishDirectUpload(createUpload()), isTrue);
+    });
+
+    test('an untrusted WebSocket restriction is not authoritative', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubRest(const EventApiTransientFailure('http_503'));
+      stubWebSocket(
+        PublishOutcome(
+          eventId: signedEvent.id,
+          acceptedBy: const [],
+          rejectedBy: const {
+            'wss://untrusted.example': 'blocked: pubkey is suspended',
+          },
+          noResponseFrom: const [],
+        ),
+      );
+      when(
+        () => mockNostrClient.queryEvents(
+          any(),
+          useCache: any(named: 'useCache'),
+        ),
+      ).thenAnswer((_) async => [signedEvent]);
+
+      expect(await publisher.publishDirectUpload(createUpload()), isTrue);
+      verify(
+        () => mockNostrClient.publishEventAwaitOk(
+          signedEvent,
+          timeout: any(named: 'timeout'),
         ),
       ).called(1);
     });
 
     test('retry reuses the original signed event id (no re-sign)', () async {
       final signedEvent = createSignedEvent();
-      final retryUpload = createUpload().copyWith(
-        nostrEventId: signedEvent.id,
-      );
+      final retryUpload = createUpload().copyWith(nostrEventId: signedEvent.id);
       when(
         () => mockPersonalEventCache.getEventById(signedEvent.id),
       ).thenReturn(signedEvent);
@@ -266,7 +391,12 @@ void main() {
 
         expect(result, isTrue);
         verifyNever(() => mockEventApiClient.publishEvent(any()));
-        verifyNever(() => mockNostrClient.publishEvent(any()));
+        verifyNever(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        );
         verify(
           () => mockUploadManager.updateUploadStatus(
             'test-upload-id',
@@ -286,7 +416,14 @@ void main() {
         stubRest(const EventApiTransientFailure('http_503'));
         // WebSocket reports failure even though the relay actually stored it
         // during the first send — so the pre-retry recovery query finds it.
-        stubWebSocket(const PublishFailed());
+        stubWebSocket(
+          PublishOutcome(
+            eventId: signedEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const ['wss://trusted.example'],
+          ),
+        );
         when(
           () => mockNostrClient.queryEvents(
             any(),
@@ -308,7 +445,12 @@ void main() {
         ).called(1);
         // Exactly one WebSocket send — the second attempt short-circuits on
         // recovery rather than re-broadcasting and creating a duplicate.
-        verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
+        verify(
+          () => mockNostrClient.publishEventAwaitOk(
+            signedEvent,
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
         verify(
           () => mockUploadManager.updateUploadStatus(
             'test-upload-id',
@@ -316,6 +458,43 @@ void main() {
             nostrEventId: signedEvent.id,
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'final WebSocket false-negative is recovered by relay presence',
+      () async {
+        final signedEvent = createSignedEvent();
+        stubSigning(signedEvent);
+        stubRest(const EventApiTransientFailure('http_503'));
+        stubWebSocket(
+          PublishOutcome(
+            eventId: signedEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const ['wss://trusted.example'],
+          ),
+        );
+        var presenceChecks = 0;
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async {
+          presenceChecks++;
+          return presenceChecks == 3 ? [signedEvent] : <Event>[];
+        });
+
+        expect(await publisher.publishDirectUpload(createUpload()), isTrue);
+        verify(() => mockEventApiClient.publishEvent(signedEvent)).called(3);
+        verify(
+          () => mockNostrClient.publishEventAwaitOk(
+            signedEvent,
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(3);
+        expect(presenceChecks, 3);
       },
     );
   });

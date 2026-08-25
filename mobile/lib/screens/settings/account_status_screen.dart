@@ -29,7 +29,17 @@ class AccountStatusScreen extends ConsumerStatefulWidget {
   static const routeName = 'account-status';
   static const String path = RoutePaths.accountStatus;
 
-  const AccountStatusScreen({super.key});
+  const AccountStatusScreen({
+    this.publishRestrictionConfirmed = false,
+    super.key,
+  });
+
+  /// Whether an authoritative publish response just confirmed enforcement.
+  ///
+  /// This preserves the useful restriction and appeal surface for accounts
+  /// that have no Keycast status source. The publish result cannot distinguish
+  /// suspended from banned, so it uses the generic restriction copy.
+  final bool publishRestrictionConfirmed;
 
   @override
   ConsumerState<AccountStatusScreen> createState() =>
@@ -67,6 +77,16 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final async = ref.watch(accountEnforcementStatusProvider);
+    final publishRestriction = widget.publishRestrictionConfirmed
+        ? AccountEnforcementKind.unknownRestriction
+        : null;
+
+    AccountEnforcementKind effectiveKind(AccountEnforcementKind kind) {
+      if (kind.isEnforced || kind == AccountEnforcementKind.signedOut) {
+        return kind;
+      }
+      return publishRestriction ?? kind;
+    }
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -87,20 +107,24 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
             // the user was suspended must not remain visible while the refetch
             // is in flight; not knowing yet is the honest state.
             skipLoadingOnRefresh: false,
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => publishRestriction == null
+                ? const Center(child: CircularProgressIndicator())
+                : _StatusBody(kind: publishRestriction),
             // Keep a confirmed restriction through a failed read so its appeal
             // and exit paths remain available. Never keep a stale all-clear:
             // an account may have become restricted before the failed refresh.
-            error: (_, _) => _StatusBody(
-              kind: async.value?.kind.isEnforced ?? false
-                  ? async.value!.kind
-                  : null,
-              isLastKnown: async.value?.kind.isEnforced ?? false,
-              onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
-            ),
-            data: (status) => _StatusBody(
-              kind: status.kind,
-            ),
+            error: (_, _) {
+              final cachedKind = async.value?.kind;
+              final retainedKind = cachedKind?.isEnforced ?? false
+                  ? cachedKind
+                  : publishRestriction;
+              return _StatusBody(
+                kind: retainedKind,
+                isLastKnown: retainedKind != null,
+                onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
+              );
+            },
+            data: (status) => _StatusBody(kind: effectiveKind(status.kind)),
           ),
         ),
       ),
