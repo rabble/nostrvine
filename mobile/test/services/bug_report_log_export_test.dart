@@ -191,27 +191,17 @@ void main() {
       },
     );
 
-    // The oversized-line case above is all ASCII, so the cut lands on a
-    // character boundary and the back-off loop in _truncateUtf8 never runs:
-    // removing that loop leaves the case above green. Multi-byte units force
-    // the cut mid-sequence, and
-    // a truncation that ignored it would hand the clipboard malformed UTF-8:
-    // `utf8.decode` throws, and `copyVerified` compares the read-back value
-    // exactly, so the user would get "Couldn't copy the logs".
-    for (final (label, unit) in const [
-      ('4-byte emoji', '\u{1F3AC}'),
-      ('3-byte CJK', '\u65E5'),
-      ('2-byte accent', '\u00E9'),
-    ]) {
-      test('truncates on a character boundary with a $label line', () async {
-        final unitBytes = utf8.encode(unit).length;
-        final reps =
-            (BugReportService.logClipboardByteBudget ~/ unitBytes) + 500;
+    // Exercise the clipboard assembly with non-ASCII content. Exact byte
+    // boundary behavior is covered deterministically below.
+    test(
+      'keeps multi-byte content within the clipboard byte ceiling',
+      () async {
+        const reps = BugReportService.logClipboardByteBudget ~/ 4 + 500;
         LogCaptureService().captureLog(
           LogEntry(
             timestamp: DateTime(2026, 8, 24),
             level: LogLevel.error,
-            message: 'newest failure ${unit * reps}',
+            message: 'newest failure ${'\u{1F3AC}' * reps}',
           ),
         );
 
@@ -221,19 +211,40 @@ void main() {
 
         expect(result.status, equals(LogClipboardStatus.success));
         expect(result.text, contains('newest failure'));
-
-        final bytes = utf8.encode(result.text!);
         expect(
-          bytes.length,
+          utf8.encode(result.text!).length,
           lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
         );
-        // Throws FormatException on a split multi-byte sequence.
-        expect(() => utf8.decode(bytes), returnsNormally);
-        // The back-off cost at most one unit, so the copy stays near the cap
-        // rather than collapsing to the header.
+      },
+    );
+
+    for (final (label, unit) in const [
+      ('4-byte emoji', '\u{1F3AC}'),
+      ('3-byte CJK', '\u65E5'),
+      ('2-byte accent', '\u00E9'),
+    ]) {
+      test('backs off every incomplete $label sequence', () {
+        const prefix = 'ASCII prefix ';
+        const suffix = ' trailing text';
+        final value = '$prefix$unit$suffix';
+        final prefixBytes = utf8.encode(prefix).length;
+        final unitBytes = utf8.encode(unit).length;
+
+        for (
+          var includedBytes = 1;
+          includedBytes < unitBytes;
+          includedBytes++
+        ) {
+          expect(
+            BugReportService.truncateUtf8(value, prefixBytes + includedBytes),
+            equals(prefix),
+            reason: 'included $includedBytes of $unitBytes bytes',
+          );
+        }
+
         expect(
-          bytes.length,
-          greaterThan(BugReportService.logClipboardByteBudget - unitBytes),
+          BugReportService.truncateUtf8(value, prefixBytes + unitBytes),
+          equals('$prefix$unit'),
         );
       });
     }

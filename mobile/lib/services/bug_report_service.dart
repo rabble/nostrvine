@@ -698,10 +698,10 @@ class BugReportService {
         final fixedText = '$header$marker';
         final remaining =
             logClipboardByteBudget - utf8.encode(fixedText).length;
-        final newest = _truncateUtf8(sanitizedLines.last, remaining - 1);
+        final newest = truncateUtf8(sanitizedLines.last, remaining - 1);
         final text = '$fixedText$newest\n';
         return LogClipboardResult.success(
-          _truncateUtf8(text, logClipboardByteBudget),
+          truncateUtf8(text, logClipboardByteBudget),
         );
       }
 
@@ -738,7 +738,8 @@ class BugReportService {
   static String _omittedMarker(int omitted) =>
       omitted > 0 ? '... [$omitted earlier entries omitted]\n' : '';
 
-  static String _truncateUtf8(String value, int maxBytes) {
+  @visibleForTesting
+  static String truncateUtf8(String value, int maxBytes) {
     if (maxBytes <= 0) return '';
     final bytes = utf8.encode(value);
     if (bytes.length <= maxBytes) return value;
