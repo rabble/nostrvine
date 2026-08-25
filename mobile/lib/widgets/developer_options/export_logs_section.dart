@@ -3,10 +3,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/export_logs/export_logs_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 
 /// Hands the captured log file to the system share sheet.
@@ -15,6 +16,110 @@ class ExportLogsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bugReportService = ref.watch(bugReportServiceProvider);
+    final authService = ref.watch(authServiceProvider);
+    return BlocProvider<ExportLogsCubit>(
+      key: ValueKey((bugReportService, authService)),
+      create: (_) => ExportLogsCubit(
+        bugReportService: bugReportService,
+        currentScreen: 'DeveloperOptionsScreen',
+        userPubkey: authService.currentPublicKeyHex,
+      ),
+      child: const ExportLogsView(),
+    );
+  }
+}
+
+@visibleForTesting
+class ExportLogsView extends StatelessWidget {
+  @visibleForTesting
+  const ExportLogsView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ExportLogsCubit, ExportLogsState>(
+      listenWhen: (previous, current) => previous.status != current.status,
+      listener: _showOutcome,
+      child: const _ExportLogsTile(),
+    );
+  }
+
+  static void _showOutcome(BuildContext context, ExportLogsState state) {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (state.status == ExportLogsStatus.exporting) {
+      messenger.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          l10n.supportExportingLogs,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    messenger.hideCurrentSnackBar();
+
+    switch (state.status) {
+      case ExportLogsStatus.idle:
+      case ExportLogsStatus.exporting:
+      case ExportLogsStatus.cancelled:
+        // Cancelled means the user backed out — they know what they did.
+        return;
+      case ExportLogsStatus.noLogs:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            l10n.supportNoLogsToExport,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+        return;
+      case ExportLogsStatus.unconfirmed:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            l10n.supportExportLogsUnconfirmed,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        return;
+      case ExportLogsStatus.failed:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            l10n.supportExportLogsFailed,
+            error: true,
+          ),
+        );
+        return;
+      case ExportLogsStatus.shared:
+      case ExportLogsStatus.saved:
+        break;
+    }
+
+    final filePath = state.filePath;
+    if (filePath == null) return;
+
+    final cubit = context.read<ExportLogsCubit>();
+    messenger.showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        l10n.supportLogsSavedTo(filePath),
+        duration: const Duration(seconds: 8),
+        actionLabel: l10n.supportRevealLogsAction,
+        onActionPressed: () {
+          // DivineSnackbarContainer's action is a plain button, so unlike
+          // SnackBarAction it does not dismiss the banner for us.
+          messenger.hideCurrentSnackBar();
+          cubit.revealFile(filePath);
+        },
+      ),
+    );
+  }
+}
+
+class _ExportLogsTile extends StatelessWidget {
+  const _ExportLogsTile();
+
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
       leading: DivineIcon(
         icon: DivineIconName.save,
@@ -22,89 +127,18 @@ class ExportLogsSection extends ConsumerWidget {
       ),
       title: Text(
         context.l10n.devOptionsExportLogs,
-        style: VineTheme.titleMediumFont(
-          color: context.vineColors.primaryText,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.devOptionsExportLogsSubtitle,
         style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
-      onTap: () => _exportLogs(context, ref),
-    );
-  }
-
-  Future<void> _exportLogs(BuildContext context, WidgetRef ref) async {
-    final bugReportService = ref.read(bugReportServiceProvider);
-    final userPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
-
-    // Resolve the popover anchor before any await — iPad idiom (including
-    // iOS builds on Apple Silicon Macs) rejects the share sheet without it.
-    final sharePositionOrigin = shareAnchorForContext(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        context.l10n.supportExportingLogs,
-        duration: const Duration(seconds: 2),
+      // Resolve the popover anchor before the cubit's first await — the iPad
+      // idiom (including iOS builds on Apple Silicon Macs) rejects the share
+      // sheet without it.
+      onTap: () => context.read<ExportLogsCubit>().export(
+        sharePositionOrigin: shareAnchorForContext(context),
       ),
     );
-
-    final result = await bugReportService.exportLogsToFile(
-      currentScreen: 'DeveloperOptionsScreen',
-      userPubkey: userPubkey,
-      sharePositionOrigin: sharePositionOrigin,
-    );
-    if (!context.mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-
-    switch (result.status) {
-      case LogExportStatus.cancelled:
-        // User backed out of the share sheet or Save As dialog.
-        return;
-      case LogExportStatus.noLogs:
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportNoLogsToExport,
-            duration: const Duration(seconds: 8),
-          ),
-        );
-        return;
-      case LogExportStatus.unconfirmed:
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportExportLogsUnconfirmed,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-        return;
-      case LogExportStatus.failed:
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportExportLogsFailed,
-            error: true,
-          ),
-        );
-        return;
-      case LogExportStatus.shared:
-      case LogExportStatus.saved:
-        break;
-    }
-
-    final filePath = result.filePath;
-    if (filePath != null) {
-      messenger.showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportLogsSavedTo(filePath),
-          duration: const Duration(seconds: 8),
-          actionLabel: context.l10n.supportRevealLogsAction,
-          onActionPressed: () {
-            // DivineSnackbarContainer's action is a plain button, so unlike
-            // SnackBarAction it does not dismiss the banner for us.
-            messenger.hideCurrentSnackBar();
-            bugReportService.revealExportedFile(filePath);
-          },
-        ),
-      );
-    }
   }
 }

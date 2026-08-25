@@ -1,6 +1,8 @@
 // ABOUTME: Tests the developer-options Export Logs row and its outcome copy
 // ABOUTME: Regression cover for #8113 and #8114, moved here from #8127
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +87,38 @@ void main() {
           () => bugReportService.exportLogsToFile(
             currentScreen: 'DeveloperOptionsScreen',
             userPubkey: _pubkeyHex,
+            sharePositionOrigin: any(named: 'sharePositionOrigin'),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('ignores a second tap while an export is in flight', (
+        tester,
+      ) async {
+        final gate = Completer<LogExportResult>();
+        when(
+          () => bugReportService.exportLogsToFile(
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+            sharePositionOrigin: any(named: 'sharePositionOrigin'),
+          ),
+        ).thenAnswer((_) => gate.future);
+
+        await pump(tester);
+        await tester.tap(find.text(en.devOptionsExportLogs));
+        await tester.pump();
+        await tester.tap(find.text(en.devOptionsExportLogs));
+        await tester.pump();
+
+        expect(find.text(en.supportExportingLogs), findsOneWidget);
+
+        gate.complete(const LogExportResult.shared());
+        await tester.pumpAndSettle();
+
+        verify(
+          () => bugReportService.exportLogsToFile(
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
             sharePositionOrigin: any(named: 'sharePositionOrigin'),
           ),
         ).called(1);
