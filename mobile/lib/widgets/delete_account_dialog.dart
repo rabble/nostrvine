@@ -755,6 +755,11 @@ Future<void> executeAccountDeletion({
         );
       } on AccountDeletionRecoveryException catch (error) {
         final message = switch (error.stage) {
+          // Ordered ahead of the unavailable arm on purpose: this is also a
+          // 503, but it is the one coordinator answer the user can act on.
+          AccountDeletionRecoveryStage.coordinatorAttempt
+              when error.indicatesUsernameRecoveryUnsupported =>
+            burnUsernameFailedText,
           AccountDeletionRecoveryStage.coordinatorAttempt
               when error.indicatesServiceUnavailable =>
             deletionUnavailableText,

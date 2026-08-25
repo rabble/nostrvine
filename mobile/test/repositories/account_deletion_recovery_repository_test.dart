@@ -126,6 +126,74 @@ void main() {
                 (error) => error.indicatesServiceUnavailable,
                 'indicatesServiceUnavailable',
                 isTrue,
+              )
+              .having(
+                (error) => error.indicatesUsernameRecoveryUnsupported,
+                'indicatesUsernameRecoveryUnsupported',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
+    test('a coordinator with no Name Server stays user-actionable', () {
+      expect(
+        () => repository(
+          MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'failure_code': 'username_recovery_unavailable',
+                'failure_message':
+                    'Username recovery is unavailable in this environment',
+              }),
+              503,
+            ),
+          ),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesUsernameRecoveryUnsupported,
+                'indicatesUsernameRecoveryUnsupported',
+                isTrue,
+              ),
+        ),
+      );
+    });
+
+    test('a coordinator outage is not mistaken for a username problem', () {
+      expect(
+        () => repository(
+          MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'failure_code': 'coordinator_unavailable',
+                'failure_message':
+                    'Deletion service is temporarily unavailable',
+              }),
+              503,
+            ),
+          ),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having(
+                (error) => error.indicatesUsernameRecoveryUnsupported,
+                'indicatesUsernameRecoveryUnsupported',
+                isFalse,
+              )
+              .having(
+                (error) => error.indicatesServiceUnavailable,
+                'indicatesServiceUnavailable',
+                isTrue,
               ),
         ),
       );

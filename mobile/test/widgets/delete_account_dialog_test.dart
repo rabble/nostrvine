@@ -1428,7 +1428,7 @@ void main() {
     });
 
     testWidgets(
-      'coordinator outage ignores burn option when choosing guidance',
+      'an absent coordinator ignores burn option when choosing guidance',
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
@@ -1481,6 +1481,62 @@ void main() {
         );
       },
     );
+
+    testWidgets('a coordinator without username support says to uncheck it', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      // The coordinator answers this only for a username-bearing attempt, and
+      // a username-free deletion succeeds against the same server — so the
+      // 503 here has to keep the uncheck guidance rather than read as an
+      // outage nothing can fix.
+      when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
+        const AccountDeletionRecoveryException(
+          'Deletion attempt request failed (503)',
+          code: 'username_recovery_unavailable',
+          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
+          statusCode: 503,
+        ),
+      );
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        burnUsername: true,
+        ownedUsername: (name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _englishL10n();
+      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+    });
 
     testWidgets('ambiguous post-username failure keeps neutral guidance', (
       tester,

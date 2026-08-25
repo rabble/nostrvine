@@ -38,6 +38,15 @@ class AccountDeletionRecoveryException implements Exception {
         (status != null && status >= 500 && status <= 599);
   }
 
+  /// Whether only the username release is unsupported by this deployment.
+  ///
+  /// The coordinator answers `503 username_recovery_unavailable` when an
+  /// attempt carries a username and no Name Server is configured. A
+  /// username-free deletion succeeds against that same coordinator, so this
+  /// failure is user-actionable — unlike every other unavailable answer.
+  bool get indicatesUsernameRecoveryUnsupported =>
+      code == 'username_recovery_unavailable';
+
   @override
   String toString() =>
       'AccountDeletionRecoveryException($message, code: $code, '
