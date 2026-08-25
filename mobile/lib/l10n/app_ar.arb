@@ -1624,6 +1624,8 @@
     "supportReportBugSubtitle": "مشاكل تقنية في التطبيق",
     "supportRequestFeature": "طلب ميزة",
     "supportRequestFeatureSubtitle": "اقتراح تحسين أو ميزة جديدة",
+    "supportSaveLogs": "حفظ السجلات",
+    "supportSaveLogsSubtitle": "تصدير السجلات إلى ملف للإرسال يدويًا",
     "supportFaq": "الأسئلة الشائعة",
     "supportFaqSubtitle": "الأسئلة والأجوبة الشائعة",
     "supportFamily": "Divine Family",

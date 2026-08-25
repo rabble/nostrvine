@@ -1092,6 +1092,8 @@
     "supportReportBugSubtitle": "앱의 기술적 문제",
     "supportRequestFeature": "기능 요청",
     "supportRequestFeatureSubtitle": "개선이나 새로운 기능을 제안해요",
+    "supportSaveLogs": "로그 저장",
+    "supportSaveLogsSubtitle": "수동 전송을 위해 로그를 파일로 내보내요",
     "supportFaq": "자주 묻는 질문",
     "supportFaqSubtitle": "일반적인 질문과 답변",
     "supportFamily": "Divine Family",

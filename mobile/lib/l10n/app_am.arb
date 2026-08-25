@@ -2021,6 +2021,8 @@
     "supportReportBugSubtitle": "ከመተግበሪያው ጋር ቴክኒካዊ ጉዳዮች",
     "supportRequestFeature": "ባህሪ ይጠይቁ",
     "supportRequestFeatureSubtitle": "ማሻሻያ ወይም አዲስ ባህሪን ይጠቁሙ",
+    "supportSaveLogs": "ምዝግብ ማስታወሻዎችን ያስቀምጡ",
+    "supportSaveLogsSubtitle": "በእጅ ለመላክ የምዝግብ ማስታወሻዎችን ወደ ፋይል ይላኩ።",
     "supportFaq": "የሚጠየቁ ጥያቄዎች",
     "supportFaqSubtitle": "የተለመዱ ጥያቄዎች እና መልሶች",
     "supportFamily": "Divine Family",

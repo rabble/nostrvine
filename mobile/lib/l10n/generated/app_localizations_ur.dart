@@ -1995,13 +1995,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'ڈویلپر موڈ غیر فعال ہو گیا';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Shorebird پیچز';
 
   @override
@@ -4483,6 +4476,13 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'کوئی بہتری یا نیا فیچر تجویز کریں';
+
+  @override
+  String get supportSaveLogs => 'لاگز محفوظ کریں';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'دستی بھیجنے کے لیے لاگز فائل میں ایکسپورٹ کریں';
 
   @override
   String get supportFaq => 'عمومی سوالات';

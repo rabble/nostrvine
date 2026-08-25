@@ -1634,6 +1634,8 @@
     "supportReportBugSubtitle": "Tekniska problem med appen",
     "supportRequestFeature": "Begär en funktion",
     "supportRequestFeatureSubtitle": "Föreslå en förbättring eller ny funktion",
+    "supportSaveLogs": "Spara loggar",
+    "supportSaveLogsSubtitle": "Exportera loggar till fil för manuell sändning",
     "supportFaq": "FAQ",
     "supportFaqSubtitle": "Vanliga frågor och svar",
     "supportFamily": "Divine Family",

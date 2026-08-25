@@ -1366,14 +1366,6 @@
   },
   "devOptionsDisableDeveloperModeSubtitle": "Hide developer options from settings",
   "devOptionsDisableDeveloperModeToast": "Developer mode disabled",
-  "devOptionsExportLogs": "Export Logs",
-  "@devOptionsExportLogs": {
-    "description": "Developer-options row that opens the system share sheet with the captured log file attached."
-  },
-  "devOptionsExportLogsSubtitle": "Share the log file so we can dig in",
-  "@devOptionsExportLogsSubtitle": {
-    "description": "Subtitle for the developer-options Export Logs row. Says what the row does: hands the file to another app."
-  },
   "devOptionsShorebirdTitle": "Shorebird Patches",
   "devOptionsShorebirdPatchLabel": "Running patch",
   "@devOptionsShorebirdPatchLabel": {
@@ -2839,6 +2831,8 @@
   "supportReportBugSubtitle": "Technical issues with the app",
   "supportRequestFeature": "Request a Feature",
   "supportRequestFeatureSubtitle": "Suggest an improvement or new feature",
+  "supportSaveLogs": "Save Logs",
+  "supportSaveLogsSubtitle": "Export logs to file for manual sending",
   "supportFaq": "FAQ",
   "supportFaqSubtitle": "Common questions & answers",
   "supportFamily": "Divine Family",

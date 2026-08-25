@@ -2376,6 +2376,8 @@
   "supportReportBugSubtitle": "Sự cố kỹ thuật của ứng dụng",
   "supportRequestFeature": "Yêu cầu tính năng",
   "supportRequestFeatureSubtitle": "Đề xuất cải tiến hoặc tính năng mới",
+  "supportSaveLogs": "Lưu nhật ký",
+  "supportSaveLogsSubtitle": "Xuất nhật ký ra tệp để gửi thủ công",
   "supportFaq": "Câu hỏi thường gặp",
   "supportFaqSubtitle": "Câu hỏi & câu trả lời phổ biến",
   "supportFamily": "Divine Family",

@@ -1995,13 +1995,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Na-disable ang developer mode';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Mga patch ng Shorebird';
 
   @override
@@ -4503,6 +4496,13 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Magmungkahi ng improvement o bagong feature';
+
+  @override
+  String get supportSaveLogs => 'I-save ang Logs';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'I-export ang logs sa file para manual na maipadala';
 
   @override
   String get supportFaq => 'FAQ';

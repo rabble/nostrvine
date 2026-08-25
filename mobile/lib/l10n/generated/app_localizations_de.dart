@@ -2017,13 +2017,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Entwicklermodus deaktiviert';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Shorebird-Patches';
 
   @override
@@ -4530,6 +4523,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Eine Verbesserung oder ein neues Feature vorschlagen';
+
+  @override
+  String get supportSaveLogs => 'Logs speichern';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Logs als Datei exportieren, um sie manuell zu senden';
 
   @override
   String get supportFaq => 'FAQ';

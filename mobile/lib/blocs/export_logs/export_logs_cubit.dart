@@ -1,4 +1,4 @@
-// ABOUTME: Drives the developer-options log export and reveal actions
+// ABOUTME: Drives the Support Center log export and reveal actions
 // ABOUTME: Keeps BugReportService out of the widget layer (UI -> Cubit -> Service)
 
 import 'dart:ui' show Rect;

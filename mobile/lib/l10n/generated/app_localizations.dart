@@ -3403,18 +3403,6 @@ abstract class AppLocalizations {
   /// **'Developer mode disabled'**
   String get devOptionsDisableDeveloperModeToast;
 
-  /// Developer-options row that opens the system share sheet with the captured log file attached.
-  ///
-  /// In en, this message translates to:
-  /// **'Export Logs'**
-  String get devOptionsExportLogs;
-
-  /// Subtitle for the developer-options Export Logs row. Says what the row does: hands the file to another app.
-  ///
-  /// In en, this message translates to:
-  /// **'Share the log file so we can dig in'**
-  String get devOptionsExportLogsSubtitle;
-
   /// No description provided for @devOptionsShorebirdTitle.
   ///
   /// In en, this message translates to:
@@ -7648,6 +7636,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggest an improvement or new feature'**
   String get supportRequestFeatureSubtitle;
+
+  /// No description provided for @supportSaveLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Logs'**
+  String get supportSaveLogs;
+
+  /// No description provided for @supportSaveLogsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export logs to file for manual sending'**
+  String get supportSaveLogsSubtitle;
 
   /// No description provided for @supportFaq.
   ///

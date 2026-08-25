@@ -2041,13 +2041,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modul dezvoltator a fost dezactivat';
 
   @override
-  String get devOptionsExportLogs => 'Export Logs';
-
-  @override
-  String get devOptionsExportLogsSubtitle =>
-      'Share the log file so we can dig in';
-
-  @override
   String get devOptionsShorebirdTitle => 'Patch-uri Shorebird';
 
   @override
@@ -4609,6 +4602,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get supportRequestFeatureSubtitle =>
       'Sugerează o îmbunătățire sau o funcție nouă';
+
+  @override
+  String get supportSaveLogs => 'Salvează jurnalele';
+
+  @override
+  String get supportSaveLogsSubtitle =>
+      'Exportă jurnalele într-un fișier pentru trimitere manuală';
 
   @override
   String get supportFaq => 'Întrebări frecvente';
