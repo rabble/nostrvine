@@ -5439,6 +5439,80 @@ void main() {
           expect(syncState.markedCompletePubkeys, [_validPubkeyB]);
         },
       );
+
+      // #7318: stopListening() is the production disposal path — the only
+      // teardown wired to dmRepositoryProvider — and the sign-out cleanup
+      // awaits it before wiping the DM tables and DmSyncState. A drain
+      // suspended mid-page must stop with it; otherwise it resumes after the
+      // wipe and re-seeds the state that was just cleared.
+      test('stops a suspended history drain when listening stops', () async {
+        var pageCalls = 0;
+        final secondPageStarted = Completer<void>();
+        final secondPageRelease = Completer<void>();
+
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((inv) async {
+          final filter =
+              (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                  .single;
+          // Neither the own-kind-10050 inbox resolve (#4974) nor the
+          // outgoing-NIP-04 recovery pass (#5304) is a history page; keep
+          // both out of the page counter.
+          if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+            return const <Event>[];
+          }
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return const <Event>[];
+          }
+          pageCalls++;
+          if (pageCalls == 2) {
+            secondPageStarted.complete();
+            await secondPageRelease.future;
+          }
+          // Three populated pages then exhaustion, so an unstopped drain runs
+          // all the way through to markHistoryDrainComplete.
+          return pageCalls <= 3
+              ? [deletion(filter.until! - 1)]
+              : const <Event>[];
+        });
+
+        final syncState = _FakeDmSyncState()
+          ..oldestOverride = 1000000
+          ..drainVersionOverride = DmSyncState.currentDrainVersion;
+        final repository = createRepository(syncState: syncState);
+
+        final drain = repository.backfillHistoryIfNeeded();
+        await secondPageStarted.future;
+        final cursorsBeforeStop = syncState.persistedDrainCursors.length;
+
+        // The production teardown, then the wipe it is supposed to guard:
+        // the cleanup callback clears DmSyncState right after awaiting it.
+        await repository.stopListening();
+        await syncState.clearAll();
+
+        secondPageRelease.complete();
+        await drain;
+
+        // Both assertions are on monotonic evidence the drain leaves behind.
+        // A `drainCursorOverride, isNull` check would NOT be: reaching the end
+        // clears the cursor as a side effect of marking complete, so it passes
+        // even when the drain ran on past the stop.
+        expect(
+          syncState.persistedDrainCursors.length,
+          cursorsBeforeStop,
+          reason: 'the drain persisted a cursor after stopListening()',
+        );
+        expect(
+          syncState.markedCompletePubkeys,
+          isEmpty,
+          reason: 'the drain ran to completion after stopListening()',
+        );
+      });
     });
 
     // -----------------------------------------------------------------
