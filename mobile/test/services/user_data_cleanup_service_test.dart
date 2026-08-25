@@ -406,7 +406,7 @@ void main() {
       );
 
       test(
-        'clears dynamic prefix keys when isIdentityChange is true',
+        'clears shared dynamic caches but preserves scoped DM cursors',
         () async {
           // Set up dynamic pubkey-keyed caches
           await prefs.setString(
@@ -414,7 +414,8 @@ void main() {
             '["pubkey1","pubkey2"]',
           );
           await prefs.setString('relay_discovery_npub1abc', 'relay_data');
-          // DM sync cursors are also per-pubkey and should be cleared
+          // DM sync cursors are cleared by DmSyncState for the leaving pubkey,
+          // not by this global prefix sweep.
           await prefs.setInt('dm.newestSyncedAt.abc123', 1700000000);
           await prefs.setInt('dm.oldestSyncedAt.abc123', 1699000000);
 
@@ -426,8 +427,8 @@ void main() {
           // Dynamic prefix keys should be cleared on identity change
           expect(prefs.containsKey('following_list_abc123'), isFalse);
           expect(prefs.containsKey('relay_discovery_npub1abc'), isFalse);
-          expect(prefs.containsKey('dm.newestSyncedAt.abc123'), isFalse);
-          expect(prefs.containsKey('dm.oldestSyncedAt.abc123'), isFalse);
+          expect(prefs.containsKey('dm.newestSyncedAt.abc123'), isTrue);
+          expect(prefs.containsKey('dm.oldestSyncedAt.abc123'), isTrue);
         },
       );
 
@@ -526,6 +527,18 @@ void main() {
         );
       });
 
+      test('throws database cleanup failure on identity change', () async {
+        service.onDatabaseCleanup =
+            ({String? userPubkey, bool deleteUserData = false}) async {
+              throw StateError('cleanup failed');
+            };
+
+        await expectLater(
+          service.clearUserSpecificData(isIdentityChange: true),
+          throwsA(isA<StateError>()),
+        );
+      });
+
       test('claimLegacyRows calls onClaimLegacyRows callback', () async {
         String? receivedPubkey;
         service.onClaimLegacyRows = (String pubkey) async {
@@ -588,13 +601,13 @@ void main() {
     });
 
     group('identityChangePrefixes', () {
-      test('contains expected prefix categories', () {
+      test('contains only globally safe prefix categories', () {
         const prefixes = UserDataCleanupService.identityChangePrefixes;
 
         expect(prefixes, contains('following_list_'));
         expect(prefixes, contains('relay_discovery_'));
-        expect(prefixes, contains('dm.newestSyncedAt.'));
-        expect(prefixes, contains('dm.oldestSyncedAt.'));
+        expect(prefixes, isNot(contains('dm.newestSyncedAt.')));
+        expect(prefixes, isNot(contains('dm.oldestSyncedAt.')));
       });
 
       test('does NOT contain non-dynamic prefixes', () {

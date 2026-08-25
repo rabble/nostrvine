@@ -522,6 +522,11 @@ class DmRepository {
   /// never race into the dedup/insert path.
   Future<void>? _eventLock;
 
+  /// Preserves subscription ordering while gift-wrap decryption runs outside
+  /// [_eventLock]. A suspended remote signer must not block account cleanup;
+  /// generation checks prevent its late result from entering persistence.
+  Future<void>? _giftWrapProcessingLock;
+
   /// Tracks the first post-auth cleanup pass so conversation queries can avoid
   /// emitting stale denormalized previews before repairs land.
   Future<void>? _postAuthMaintenance;
@@ -996,7 +1001,9 @@ class DmRepository {
       final event = events[i];
       final rumor = preDecrypted[event.id];
       if (rumor != null) {
-        await _withEventLock(() => _persistDecryptedGiftWrap(event, rumor));
+        await _withEventLock(
+          () => _persistDecryptedGiftWrap(event, rumor, ownerPubkey: pubkey),
+        );
       } else {
         await _handleIncomingEvent(event);
       }
@@ -1647,15 +1654,42 @@ class DmRepository {
   /// Serialized via [_eventLock] so that subscription events never race
   /// into the dedup/insert path concurrently.
   Future<void> _handleIncomingEvent(Event event) async {
+    if (event.kind == EventKind.giftWrap) {
+      final gen = _resetGeneration;
+      final ownerPubkey = _userPubkey;
+      await _withGiftWrapProcessingLock(() async {
+        if (_disposed ||
+            _resetGeneration != gen ||
+            _userPubkey != ownerPubkey) {
+          return;
+        }
+        await _handleGiftWrapEvent(event);
+      });
+      return;
+    }
     await _withEventLock(() async {
       if (event.kind == EventKind.eventDeletion) {
         await _handleDeletionEvent(event);
       } else if (event.kind == EventKind.directMessage) {
         await _handleNip04Event(event);
-      } else {
-        await _handleGiftWrapEvent(event);
       }
     });
+  }
+
+  Future<void> _withGiftWrapProcessingLock(
+    Future<void> Function() body,
+  ) async {
+    while (_giftWrapProcessingLock != null) {
+      await _giftWrapProcessingLock;
+    }
+    final completer = Completer<void>();
+    _giftWrapProcessingLock = completer.future;
+    try {
+      await body();
+    } finally {
+      _giftWrapProcessingLock = null;
+      completer.complete();
+    }
   }
 
   /// Runs [body] under the [_eventLock] so dedup/insert work is serialized,
@@ -1764,10 +1798,15 @@ class DmRepository {
   /// the ledger DAO is absent (older test fixtures). Recorded AFTER the
   /// outcome write so a crash in between only ever costs a benign re-decrypt,
   /// never a lost reaction/deletion. #5452.
-  Future<void> _recordProcessedWrap(String giftWrapId) async {
+  Future<void> _recordProcessedWrap(
+    String giftWrapId, {
+    String? ownerPubkey,
+  }) async {
+    final owner = ownerPubkey ?? _ownerPubkey;
+    if (owner == null) return;
     await _processedGiftWrapsDao?.record(
       giftWrapId: giftWrapId,
-      ownerPubkey: _userPubkey,
+      ownerPubkey: owner,
     );
   }
 
@@ -1777,6 +1816,8 @@ class DmRepository {
   /// hold the [_eventLock] (via [_handleIncomingEvent]).
   Future<void> _handleGiftWrapEvent(Event giftWrapEvent) async {
     final gen = _resetGeneration;
+    final ownerPubkey = _userPubkey;
+    if (ownerPubkey.isEmpty) return;
     final Event? rumorEvent;
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
@@ -1806,7 +1847,9 @@ class DmRepository {
       // torn-down repository that nothing ever closes (PR #5957 review).
       // The wrap re-arrives via the next session's subscription window /
       // history drain, so nothing is lost.
-      if (_disposed || _resetGeneration != gen) return;
+      if (_disposed || _resetGeneration != gen || _userPubkey != ownerPubkey) {
+        return;
+      }
 
       rumorEvent = await _decryptRumor(nostr, giftWrapEvent);
     } on Object catch (e, stackTrace) {
@@ -1820,14 +1863,41 @@ class DmRepository {
       // Only the null path reached the queue, so a remote-signer (Keycast RPC)
       // failure that raised — the very case #5202's queue exists for — dropped
       // the wrap permanently with no retry. Skip when the session moved on:
-      // `recordFailedDecrypt` keys on `_userPubkey`, so queueing under a
-      // switched account would file the wrap against the wrong owner.
-      if (_disposed || _resetGeneration != gen) return;
-      await _persistDecryptedGiftWrap(giftWrapEvent, null);
+      // Queue only under the immutable owner that began this operation.
+      if (_disposed || _resetGeneration != gen || _userPubkey != ownerPubkey) {
+        return;
+      }
+      await _withEventLock(() async {
+        if (_disposed ||
+            _resetGeneration != gen ||
+            _userPubkey != ownerPubkey) {
+          return;
+        }
+        await _persistDecryptedGiftWrap(
+          giftWrapEvent,
+          null,
+          ownerPubkey: ownerPubkey,
+        );
+      });
       return;
     }
 
-    await _persistDecryptedGiftWrap(giftWrapEvent, rumorEvent);
+    // A successful remote decrypt can outlive the account that started it.
+    // Never enter persistence after teardown or under a replacement identity;
+    // relay replay will deliver the wrap to the correct session later.
+    if (_disposed || _resetGeneration != gen || _userPubkey != ownerPubkey) {
+      return;
+    }
+    await _withEventLock(() async {
+      if (_disposed || _resetGeneration != gen || _userPubkey != ownerPubkey) {
+        return;
+      }
+      await _persistDecryptedGiftWrap(
+        giftWrapEvent,
+        rumorEvent,
+        ownerPubkey: ownerPubkey,
+      );
+    });
   }
 
   /// Persists a single (already-decrypted) gift wrap. [rumorEvent] is the
@@ -1837,8 +1907,9 @@ class DmRepository {
   /// hold the [_eventLock]. See #5391.
   Future<void> _persistDecryptedGiftWrap(
     Event giftWrapEvent,
-    Event? rumorEvent,
-  ) async {
+    Event? rumorEvent, {
+    required String ownerPubkey,
+  }) async {
     try {
       if (rumorEvent == null) {
         // Persist the still-encrypted wrap so a later retry can recover the
@@ -1846,7 +1917,7 @@ class DmRepository {
         // RPC) decryption must not be permanent data loss. See #5202.
         await _pendingGiftWrapsDao?.recordFailedDecrypt(
           giftWrapId: giftWrapEvent.id,
-          ownerPubkey: _userPubkey,
+          ownerPubkey: ownerPubkey,
           rawJson: jsonEncode(giftWrapEvent.toJson()),
           createdAt: giftWrapEvent.createdAt,
         );
@@ -1861,7 +1932,7 @@ class DmRepository {
       // retry queue stops reprocessing this wrap. See #5202.
       await _pendingGiftWrapsDao?.deletePending(
         giftWrapId: giftWrapEvent.id,
-        ownerPubkey: _userPubkey,
+        ownerPubkey: ownerPubkey,
       );
 
       // Bind to a final local so the non-null type promotes inside the
@@ -1897,7 +1968,10 @@ class DmRepository {
         // Record only terminal outcomes: a reaction whose target message has
         // not synced is left out so it re-decrypts and lands later. #5452.
         if (outcome == DmReactionWrapOutcome.processed) {
-          await _recordProcessedWrap(giftWrapEvent.id);
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
         }
         return;
       }
@@ -1907,7 +1981,10 @@ class DmRepository {
           giftWrapId: giftWrapEvent.id,
         );
         if (outcome == DmReactionWrapOutcome.processed) {
-          await _recordProcessedWrap(giftWrapEvent.id);
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
         }
         return;
       }
@@ -1921,7 +1998,10 @@ class DmRepository {
       if (rumor.kind == EventKind.appSpecificData) {
         if (_hasReadMarkerDTag(rumor)) {
           await _reconcileReadMarker(rumor);
-          await _recordProcessedWrap(giftWrapEvent.id);
+          await _recordProcessedWrap(
+            giftWrapEvent.id,
+            ownerPubkey: ownerPubkey,
+          );
         }
         return;
       }
@@ -1933,7 +2013,7 @@ class DmRepository {
       // such a kind would need a one-off backfill. Acceptable vs. re-decrypting
       // every unknown wrap on every launch today. #5452.
       if (!_supportedDmKinds.contains(rumor.kind)) {
-        await _recordProcessedWrap(giftWrapEvent.id);
+        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         return;
       }
 
@@ -1942,7 +2022,7 @@ class DmRepository {
       // from non-compliant clients that add extra p-tags.
       final rawParticipants = _extractParticipants(rumor);
       if (rawParticipants.length < 2) {
-        await _recordProcessedWrap(giftWrapEvent.id);
+        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         return;
       }
 
@@ -1955,7 +2035,7 @@ class DmRepository {
       // Defense-in-depth: should not happen after the self-wrap fix above,
       // but guards against any future code path producing degenerate lists.
       if (participants.toSet().length < 2) {
-        await _recordProcessedWrap(giftWrapEvent.id);
+        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         return;
       }
 
@@ -1979,7 +2059,7 @@ class DmRepository {
           // well-formed-hex check keeps this keyspace disjoint from the
           // legacy (content, createdAt) dedup tuple.
           if (tag[0] == _sendBatchTagKey &&
-              rumor.pubkey == _userPubkey &&
+              rumor.pubkey == ownerPubkey &&
               _isValidSendBatchId(tag[1])) {
             sendBatchId = tag[1];
           }
@@ -2000,10 +2080,10 @@ class DmRepository {
         senderPubkey: rumor.pubkey,
         content: rumor.content,
         createdAt: persistedCreatedAt,
-        ownerPubkey: _userPubkey,
+        ownerPubkey: ownerPubkey,
       );
       if (isDuplicate) {
-        await _recordProcessedWrap(giftWrapEvent.id);
+        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         Log.debug(
           'Skipping duplicate NIP-17 DM ${rumor.id} in conversation '
           '$conversationId from ${pubkeyForLogs(rumor.pubkey)}: matching '
@@ -2018,7 +2098,7 @@ class DmRepository {
       // The inner hasGiftWrap re-check guards against TOCTOU races where
       // a poll and subscription event both pass the outer fast-path check.
       final isGroup = participants.length > 2;
-      final isSentByMe = rumor.pubkey == _userPubkey;
+      final isSentByMe = rumor.pubkey == ownerPubkey;
       final previewContent = rumor.kind == EventKind.fileMessage
           ? _filePreviewText(fileMetadata?.fileType)
           : rumor.content;
@@ -2028,9 +2108,6 @@ class DmRepository {
       var suppressedByRemovedConversation = false;
       int? removedAt;
       await _conversationsDao.runInTransaction(() async {
-        // Snapshot the owner for the whole transaction: an account switch
-        // mid-flight must not mix one account's reads with another's writes.
-        final ownerPubkey = _userPubkey;
         // Re-check dedup inside transaction (TOCTOU protection). The skip is
         // logged after the transaction below; logging here too would emit one
         // line per skip twice.
@@ -2112,7 +2189,7 @@ class DmRepository {
         // Terminal: record the wrap so replays skip it before decryption.
         // The tombstone is authoritative for the account's lifetime, so the
         // ledger is not racing a reopening that clears it.
-        await _recordProcessedWrap(giftWrapEvent.id);
+        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         Log.debug(
           'Suppressed NIP-17 DM ${rumor.id} in removed conversation '
           '$conversationId: createdAt $persistedCreatedAt is at or before '
@@ -2122,7 +2199,7 @@ class DmRepository {
         return;
       }
       if (!inserted) {
-        await _recordProcessedWrap(giftWrapEvent.id);
+        await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         Log.debug(
           'Skipped duplicate NIP-17 DM ${rumor.id} in conversation '
           '$conversationId: insert was ignored by local dedup constraints',
@@ -2134,7 +2211,7 @@ class DmRepository {
       // Advance sync boundaries from the bounded local timestamp. The outer
       // gift wrap randomizes its own created_at within a ~2 day window
       // (NIP-17) so it must not be used for boundary tracking.
-      await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
+      await _syncState?.recordSeen(ownerPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
         'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
@@ -2770,10 +2847,7 @@ class DmRepository {
       // NIP-04 created_at values are not randomized (unlike NIP-17 gift
       // wraps), so this bounded timestamp is a real send time and safe to
       // record as a cursor.
-      await _syncState?.recordSeen(
-        _userPubkey,
-        createdAt: persistedCreatedAt,
-      );
+      await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
         'Persisted NIP-04 DM ${nip04Event.id} '
@@ -2994,14 +3068,9 @@ class DmRepository {
       }
       // _OwnDmInboxState.absent — safe to self-advertise.
 
-      final unsigned = Event(
-        pubkey,
-        EventKind.dmRelaysList,
-        <List<String>>[
-          <String>['relay', relayUrl],
-        ],
-        '',
-      );
+      final unsigned = Event(pubkey, EventKind.dmRelaysList, <List<String>>[
+        <String>['relay', relayUrl],
+      ], '');
 
       final Event? signed;
       try {
@@ -5846,10 +5915,9 @@ class DmRepository {
         conversationId: conversationId,
         ownerPubkey: owner,
       );
-      await _reactionsRepository?.deleteForConversations(
-        [conversationId],
-        ownerPubkey: owner,
-      );
+      await _reactionsRepository?.deleteForConversations([
+        conversationId,
+      ], ownerPubkey: owner);
     });
   }
 

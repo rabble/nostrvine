@@ -892,37 +892,44 @@ void main() {
       });
     });
 
-    group('clearAll', () {
-      test('deletes all direct messages', () async {
-        await dao.insertMessage(
-          id: 'msg_1',
+    group('account-switch cleanup', () {
+      const userA = 'pubkey_cleanup_a';
+      const userB = 'pubkey_cleanup_b';
+
+      Future<void> insert(String id, String? ownerPubkey) {
+        return dao.insertMessage(
+          id: id,
           conversationId: conversationId1,
           senderPubkey: 'pubkey_alice',
-          content: 'Msg 1',
-          createdAt: 1700000000,
-          giftWrapId: 'gw_1',
+          content: id,
+          createdAt: 1700000001,
+          giftWrapId: 'gw_$id',
+          ownerPubkey: ownerPubkey,
         );
-        await dao.insertMessage(
-          id: 'msg_2',
-          conversationId: conversationId2,
-          senderPubkey: 'pubkey_bob',
-          content: 'Msg 2',
-          createdAt: 1700000100,
-          giftWrapId: 'gw_2',
+      }
+
+      test('deletes the leaving account and ambiguous owners', () async {
+        await insert('msg_a', userA);
+        await insert('msg_b', userB);
+        await insert('msg_null', null);
+        await insert('msg_empty', '');
+
+        expect(await dao.clearForAccountSwitch(userA), equals(3));
+        expect(await dao.countMessages(conversationId1), equals(1));
+        expect(
+          await dao.countMessages(conversationId1, ownerPubkey: userB),
+          equals(1),
         );
-
-        final deleted = await dao.clearAll();
-
-        expect(deleted, equals(2));
-        final conv1 = await dao.getMessagesForConversation(conversationId1);
-        final conv2 = await dao.getMessagesForConversation(conversationId2);
-        expect(conv1, isEmpty);
-        expect(conv2, isEmpty);
       });
 
-      test('returns 0 when table is empty', () async {
-        final deleted = await dao.clearAll();
-        expect(deleted, equals(0));
+      test('unknown owner cleanup deletes only ambiguous rows', () async {
+        await insert('msg_a', userA);
+        await insert('msg_b', userB);
+        await insert('msg_null', null);
+        await insert('msg_empty', '');
+
+        expect(await dao.clearUnowned(), equals(2));
+        expect(await dao.countMessages(conversationId1), equals(2));
       });
     });
 
@@ -998,7 +1005,7 @@ void main() {
         },
       );
 
-      test('clearAllForUser only deletes that user messages', () async {
+      test('account-switch cleanup preserves another user messages', () async {
         await dao.insertMessage(
           id: 'msg_a1',
           conversationId: conversationId1,
@@ -1018,7 +1025,7 @@ void main() {
           ownerPubkey: userB,
         );
 
-        final deleted = await dao.clearAllForUser(userA);
+        final deleted = await dao.clearForAccountSwitch(userA);
 
         expect(deleted, equals(1));
         final remaining = await dao.getMessagesForConversation(

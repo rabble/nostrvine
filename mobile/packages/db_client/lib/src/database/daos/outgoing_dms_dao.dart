@@ -460,7 +460,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
 
   /// Delete every queued outgoing DM owned by [ownerPubkey].
   ///
-  /// Mirrors [DirectMessagesDao.clearAllForUser]: the repository calls
+  /// Mirrors [DirectMessagesDao.clearForAccountSwitch]: cleanup calls
   /// this from the signout / account-switch path so a different
   /// account's retry service never picks up the previous user's
   /// in-flight rows. Returns the number of rows removed.

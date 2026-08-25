@@ -347,15 +347,25 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return attachedDatabase.transaction(action);
   }
 
-  /// Delete all DMs for a specific user.
-  Future<int> clearAllForUser(String ownerPubkey) {
-    return (delete(
-      directMessages,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  /// Deletes DMs for the departing account plus unattributed legacy rows.
+  ///
+  /// Ambiguous rows must never cross an account boundary and become visible to
+  /// the incoming account. Rows owned by every other known account survive.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(directMessages)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) |
+              t.ownerPubkey.isNull() |
+              t.ownerPubkey.equals(''),
+        ))
+        .go();
   }
 
-  /// Delete all DMs.
-  Future<int> clearAll() {
-    return delete(directMessages).go();
+  /// Deletes only unattributed legacy rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
+    return (delete(
+      directMessages,
+    )..where((t) => t.ownerPubkey.isNull() | t.ownerPubkey.equals(''))).go();
   }
 }
