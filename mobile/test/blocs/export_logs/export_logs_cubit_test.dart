@@ -55,6 +55,20 @@ void main() {
         },
       );
 
+      // The mobile happy path: another app confirmed it took the file. It
+      // carries no path (unlike a desktop save) and the UI stays silent, so
+      // nothing else guards this mapping against a mis-wire to failure.
+      blocTest<ExportLogsCubit, ExportLogsState>(
+        'maps a confirmed share to shared',
+        setUp: () => stubExport(const LogExportResult.shared()),
+        build: build,
+        act: (cubit) => cubit.export(),
+        expect: () => const [
+          ExportLogsState(status: ExportLogsStatus.exporting),
+          ExportLogsState(status: ExportLogsStatus.shared),
+        ],
+      );
+
       // #8113: share_plus reports `unavailable` whenever it cannot attach to
       // an Activity, even though the sheet opened. Mapping that to failure is
       // what told the user log export was broken.
