@@ -4023,7 +4023,7 @@ void main() {
 
     test(
       "the blocker's DM conversation stays visible throughout, because a "
-      'third party cannot hide the viewer\'s own thread (#7345)',
+      "third party cannot hide the viewer's own thread (#7345)",
       () async {
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         final conversations = [
@@ -4069,7 +4069,7 @@ void main() {
           ),
           hasLength(1),
           reason:
-              'being blocked must not remove the viewer\'s own copy of a '
+              "being blocked must not remove the viewer's own copy of a "
               'thread they already received',
         );
 
