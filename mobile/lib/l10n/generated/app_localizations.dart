@@ -19810,17 +19810,23 @@ abstract class AppLocalizations {
   /// **'Your account is restricted'**
   String get accountStatusTileSubtitleRestricted;
 
-  /// Heading shown when the app has no authoritative relay-backed account status.
+  /// Neutral heading shown when the account-status screen has no restriction to report.
   ///
   /// In en, this message translates to:
-  /// **'We can\'t verify your Divine status yet'**
+  /// **'Nothing to report'**
   String get accountStatusUnverifiedHeading;
 
-  /// Body shown when Keycast cannot provide an authoritative Divine enforcement status.
+  /// Neutral body shown when the account-status screen has no restriction to report.
   ///
   /// In en, this message translates to:
-  /// **'This doesn\'t mean your account is restricted. The app can\'t confirm your current Divine status yet.'**
+  /// **'There\'s nothing here about your account right now.'**
   String get accountStatusUnverifiedBody;
+
+  /// Persistent profile-avatar badge label shown when Divine has confirmed an account restriction.
+  ///
+  /// In en, this message translates to:
+  /// **'Account restricted'**
+  String get profileAccountRestricted;
 
   /// Heading shown when the account is suspended.
   ///

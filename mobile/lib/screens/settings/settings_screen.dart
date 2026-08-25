@@ -381,17 +381,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: _handleSessionExpired,
                       iconColor: VineTheme.accentOrange,
                     ),
-                  // Always present for a signed-in account, so status is
-                  // reachable without first failing to post (s-t-s#200 R-5).
-                  DivineListTile(
-                    icon: DivineIconName.userFocus,
-                    title: context.l10n.accountStatusTitle,
-                    subtitle: accountEnforced
-                        ? context.l10n.accountStatusTileSubtitleRestricted
-                        : null,
-                    iconColor: accountEnforced ? VineTheme.accentOrange : null,
-                    onTap: () => context.push(AccountStatusScreen.path),
-                  ),
+                  if (accountEnforced)
+                    DivineListTile(
+                      icon: DivineIconName.userFocus,
+                      title: context.l10n.accountStatusTitle,
+                      subtitle:
+                          context.l10n.accountStatusTileSubtitleRestricted,
+                      iconColor: VineTheme.accentOrange,
+                      onTap: () => context.push(AccountStatusScreen.path),
+                    ),
                 ],
 
                 DivineListTile(

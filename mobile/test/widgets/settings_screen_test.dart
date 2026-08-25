@@ -329,9 +329,7 @@ void main() {
       addTearDown(availabilityCubit.close);
 
       await tester.pumpWidget(
-        buildSubject(
-          availabilityCubit: availabilityCubit,
-        ),
+        buildSubject(availabilityCubit: availabilityCubit),
       );
       await tester.pumpAndSettle();
 
@@ -341,59 +339,53 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets(
-      'keeps share action when invite override forces disabled',
-      (tester) async {
-        final availabilityCubit = seededInviteAvailabilityCubit();
-        addTearDown(availabilityCubit.close);
+    testWidgets('keeps share action when invite override forces disabled', (
+      tester,
+    ) async {
+      final availabilityCubit = seededInviteAvailabilityCubit();
+      addTearDown(availabilityCubit.close);
 
-        await tester.pumpWidget(
-          buildSubject(
-            availabilityCubit: availabilityCubit,
+      await tester.pumpWidget(
+        buildSubject(availabilityCubit: availabilityCubit),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+
+      availabilityCubit.setOverride(InviteAvailabilityOverride.forceDisabled);
+      expect(availabilityCubit.state.isEnabled, isFalse);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('share action does not show an invite activity badge', (
+      tester,
+    ) async {
+      final mockInviteCubit = _MockInviteStatusCubit();
+      when(() => mockInviteCubit.state).thenReturn(
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: true,
+            remaining: 5,
+            total: 5,
+            codes: [],
           ),
-        );
-        await tester.pumpAndSettle();
-        expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+        ),
+      );
 
-        availabilityCubit.setOverride(InviteAvailabilityOverride.forceDisabled);
-        expect(availabilityCubit.state.isEnabled, isFalse);
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+      await tester.pumpAndSettle();
 
-        expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+      expect(find.text(l10n.settingsShareDivine), findsOneWidget);
+      expect(find.text('5'), findsNothing);
 
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'share action does not show an invite activity badge',
-      (
-        tester,
-      ) async {
-        final mockInviteCubit = _MockInviteStatusCubit();
-        when(() => mockInviteCubit.state).thenReturn(
-          const InviteStatusState(
-            status: InviteStatusLoadingStatus.loaded,
-            inviteStatus: InviteStatus(
-              canInvite: true,
-              remaining: 5,
-              total: 5,
-              codes: [],
-            ),
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
-        await tester.pumpAndSettle();
-
-        expect(find.text(l10n.settingsShareDivine), findsOneWidget);
-        expect(find.text('5'), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
 
     testWidgets(
       'hides account action when multiple accounts exist and switching is disabled',
@@ -1099,27 +1091,16 @@ void main() {
     );
 
     group('account status tile', () {
-      testWidgets('is reachable without first failing to post', (
-        tester,
-      ) async {
+      testWidgets('is hidden when no restriction is confirmed', (tester) async {
         await tester.pumpWidget(
           buildSubject(enforcement: AccountEnforcementKind.unverified),
         );
         await tester.pumpAndSettle();
 
-        final scrollable = find.byType(Scrollable);
-        await scrollUntilTappable(
-          tester,
-          find.text(l10n.accountStatusTitle),
-          200,
-          scrollable: scrollable,
-        );
-
-        expect(find.text(l10n.accountStatusTitle), findsOneWidget);
+        expect(find.text(l10n.accountStatusTitle), findsNothing);
         expect(
           find.text(l10n.accountStatusTileSubtitleRestricted),
           findsNothing,
-          reason: 'an unrestricted account must not be flagged on the row',
         );
 
         await tester.pumpWidget(const SizedBox());

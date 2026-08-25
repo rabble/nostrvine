@@ -11177,12 +11177,14 @@ class AppLocalizationsKo extends AppLocalizations {
       'Your account is restricted';
 
   @override
-  String get accountStatusUnverifiedHeading =>
-      'We can\'t verify your Divine status yet';
+  String get accountStatusUnverifiedHeading => 'Nothing to report';
 
   @override
   String get accountStatusUnverifiedBody =>
-      'This doesn\'t mean your account is restricted. The app can\'t confirm your current Divine status yet.';
+      'There\'s nothing here about your account right now.';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
 
   @override
   String get accountStatusSuspendedHeading => 'Your account is suspended';

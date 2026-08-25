@@ -22,12 +22,14 @@ import 'package:openvine/features/monetization/monetization_analytics.dart';
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
@@ -277,6 +279,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // upgrade resolves — the auth stream emits a nudge in both cases)
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
+    final isAccountEnforced = ref.watch(isAccountEnforcedProvider);
     final hasExpiredSession = authService.hasExpiredOAuthSession;
     final isRpcUpgradeInProgress = authService.isRpcUpgradeInProgress;
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -302,6 +305,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     final pendingActions =
         ProfileActionType.pending(
           isOwnProfile: widget.isOwnProfile,
+          isAccountEnforced: isAccountEnforced,
           isAnonymous: isAnonymous,
           hasAnyProfileInfo: hasAnyProfileInfo,
         ).where((action) {
@@ -396,13 +400,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     showSkeleton: showIdentitySkeleton,
                     profileColor: profileColor,
                     pendingActions: pendingActions,
-                    onActionTap: pendingActions.isNotEmpty
-                        ? () => _showActionsSheet(
+                    onActionTap: pendingActions.isEmpty
+                        ? null
+                        : pendingActions.first ==
+                              ProfileActionType.accountRestricted
+                        ? () => context.push(RoutePaths.accountStatus)
+                        : () => _showActionsSheet(
                             context,
                             pendingActions,
                             secureAccountPromptDismissal,
-                          )
-                        : null,
+                          ),
                   ),
                 ),
 

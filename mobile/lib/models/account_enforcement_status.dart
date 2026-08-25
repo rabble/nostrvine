@@ -21,16 +21,15 @@ enum AccountEnforcementKind {
   /// Restricted, but by a state this client build does not recognize.
   ///
   /// Keycast sets `account_status` only for a non-active account, so an
-  /// unrecognized value still means restricted. Mapping it to [none] would
-  /// tell a restricted user their account is fine, so newer server states
-  /// degrade to generic restriction copy rather than to an all-clear.
-  restricted,
-  ;
+  /// unrecognized value still means restricted. Mapping it to [unverified]
+  /// would hide a confirmed restriction, so newer server states degrade to
+  /// generic restriction copy rather than to an unknown status.
+  unknownRestriction;
 
   bool get isEnforced =>
       this == AccountEnforcementKind.suspended ||
       this == AccountEnforcementKind.banned ||
-      this == AccountEnforcementKind.restricted;
+      this == AccountEnforcementKind.unknownRestriction;
 }
 
 /// Enforcement state for the *authenticated* account, as reported by Keycast's
@@ -66,7 +65,7 @@ class AccountEnforcementStatus {
     }
     // Fail closed: a value we do not recognize is still a non-active account.
     return const AccountEnforcementStatus(
-      kind: AccountEnforcementKind.restricted,
+      kind: AccountEnforcementKind.unknownRestriction,
     );
   }
 

@@ -43,6 +43,10 @@ void main() {
         l10n.accountEnforcementBody(AccountEnforcementKind.unverified),
         isNot(contains('no restrictions')),
       );
+      expect(
+        l10n.accountEnforcementHeading(AccountEnforcementKind.unverified),
+        isNot(contains("can't verify")),
+      );
     });
   });
 }

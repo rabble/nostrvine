@@ -1,12 +1,15 @@
-// ABOUTME: Enum representing pending profile actions (secure account,
-// ABOUTME: complete profile) with a static helper to compute which are active.
+// ABOUTME: Enum representing account and profile actions needing attention.
+// ABOUTME: Computes their priority for the signed-in user's profile badge.
 
-/// Actions a new user can take to finish setting up their profile.
+/// Account and profile actions that need the signed-in user's attention.
 ///
 /// The [pending] factory returns the ordered list of actions that still
-/// need attention. "Secure account" always appears before "complete profile"
-/// so that account recovery is prioritised.
+/// need attention. An account restriction always appears first, followed by
+/// account recovery and profile completion.
 enum ProfileActionType {
+  /// Divine has confirmed that this account is restricted.
+  accountRestricted,
+
   /// The user has no email/password and should register to secure their
   /// identity.
   secureAccount,
@@ -18,17 +21,20 @@ enum ProfileActionType {
   /// auth state.
   ///
   /// [isOwnProfile] — whether we are looking at the logged-in user's profile.
+  /// [isAccountEnforced] — whether Divine has confirmed an account restriction.
   /// [isAnonymous] — the user signed in with an auto-generated key (no email).
   /// [hasAnyProfileInfo] — the user has set at least one profile field
   ///   (name, display name, picture, bio, or NIP-05).
   static List<ProfileActionType> pending({
     required bool isOwnProfile,
+    required bool isAccountEnforced,
     required bool isAnonymous,
     required bool hasAnyProfileInfo,
   }) {
     if (!isOwnProfile) return const [];
 
     return [
+      if (isAccountEnforced) accountRestricted,
       if (isAnonymous) secureAccount,
       if (!hasAnyProfileInfo) completeProfile,
     ];

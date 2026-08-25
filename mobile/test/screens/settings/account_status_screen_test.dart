@@ -83,7 +83,7 @@ void main() {
       tester,
     ) async {
       // The fail-closed state must not lose the way to contest it.
-      await _pumpWith(tester, AccountEnforcementKind.restricted);
+      await _pumpWith(tester, AccountEnforcementKind.unknownRestriction);
 
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
@@ -138,10 +138,7 @@ void main() {
 
       // The exit flow lives on the web, so it must leave the app rather than
       // resolve to an in-app route.
-      expect(
-        launcher.launched.single.url,
-        AppConstants.accountPortabilityUrl,
-      );
+      expect(launcher.launched.single.url, AppConstants.accountPortabilityUrl);
       expect(launcher.launched.single.useExternalApplication, isTrue);
     });
 
@@ -339,10 +336,7 @@ void main() {
       // Retrying can never resolve this, so offering it would be a lie.
       await _pumpWith(tester, AccountEnforcementKind.unverified);
 
-      expect(
-        find.text(l10n.accountStatusUnverifiedHeading),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.accountStatusUnverifiedHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusRetry), findsNothing);
     });
   });

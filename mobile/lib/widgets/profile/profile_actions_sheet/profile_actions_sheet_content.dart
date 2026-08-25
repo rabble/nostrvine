@@ -55,6 +55,9 @@ class _ProfileActionsSheetContentState
 
   void _onPrimaryTap(ProfileActionType action) {
     final route = switch (action) {
+      ProfileActionType.accountRestricted => throw StateError(
+        'Account restrictions open directly from the profile badge',
+      ),
       ProfileActionType.secureAccount => SecureAccountScreen.path,
       ProfileActionType.completeProfile => ProfileSetupScreen.setupPath,
     };
@@ -108,6 +111,9 @@ class _ActionPrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final (sticker, title, subtitle, primaryLabel) = switch (action) {
+      ProfileActionType.accountRestricted => throw StateError(
+        'Account restrictions are not setup-sheet actions',
+      ),
       ProfileActionType.secureAccount => (
         DivineStickerName.skeletonKey,
         l10n.profileSecureYourAccount,

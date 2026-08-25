@@ -488,7 +488,10 @@ class _ProfileAvatarWithColor extends StatelessWidget {
               onTap: onActionTap,
               child: _ProfileActionLabel(
                 action: pendingActions.first,
-                badgeCount: pendingActions.length,
+                badgeCount:
+                    pendingActions.first == ProfileActionType.accountRestricted
+                    ? 1
+                    : pendingActions.length,
               ),
             ),
           ),
@@ -557,6 +560,10 @@ class _ProfileActionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, label) = switch (action) {
+      ProfileActionType.accountRestricted => (
+        DivineIconName.warning,
+        context.l10n.profileAccountRestricted,
+      ),
       ProfileActionType.secureAccount => (
         DivineIconName.lockSimple,
         context.l10n.profileSecureYourAccount,
