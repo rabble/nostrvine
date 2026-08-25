@@ -1446,6 +1446,12 @@ class DmRepository {
           tempRelays: ownInbox,
         );
         if (events == null) return;
+        // _fetchHistoryPage's own guard sits at the top of its persist loop,
+        // so the last event's persist and the yield after it are both
+        // suspension points it cannot see past — it returns the page either
+        // way. Re-check here or a teardown landing in that gap still reaches
+        // setHistoryDrainCursor below and re-seeds the wiped state. See #7318.
+        if (_ingestSessionEnded(pubkey, gen)) return;
         pagesRun++;
         totalEvents += events.length;
         if (events.isEmpty) {
@@ -1505,7 +1511,7 @@ class DmRepository {
           await syncState.markHistoryDrainComplete(pubkey);
           // Restore read state now that the full conversation set is present:
           // last-sent floor + any read markers stashed during the drain. #4977.
-          await _restoreReadStateAfterDrain(pubkey);
+          await _restoreReadStateAfterDrain(pubkey, gen);
           Log.info(
             'DM history drain complete for ${pubkeyForLogs(pubkey)}: '
             'pages=$pagesRun, eventsFetched=$totalEvents',
@@ -5747,14 +5753,17 @@ class DmRepository {
   /// advance the cursor to their own most-recent sent message; and
   /// (2) flush [_pendingReadCursors] — markers whose conversations had not yet
   /// been ingested when the marker was first processed.
-  Future<void> _restoreReadStateAfterDrain(String pubkey) async {
+  Future<void> _restoreReadStateAfterDrain(
+    String pubkey,
+    int generation,
+  ) async {
     try {
       final floors = await _conversationsDao.lastSentTimestampsByConversation(
         pubkey,
         ownerPubkey: pubkey,
       );
       for (final entry in floors.entries) {
-        if (_disposed || _userPubkey != pubkey) return;
+        if (_ingestSessionEnded(pubkey, generation)) return;
         await _conversationsDao.applyReadCursor(
           entry.key,
           entry.value,
@@ -5765,7 +5774,7 @@ class DmRepository {
         final pending = Map<String, int>.from(_pendingReadCursors);
         _pendingReadCursors.clear();
         for (final entry in pending.entries) {
-          if (_disposed || _userPubkey != pubkey) return;
+          if (_ingestSessionEnded(pubkey, generation)) return;
           await _conversationsDao.applyReadCursor(
             entry.key,
             entry.value,

@@ -5560,6 +5560,72 @@ void main() {
           );
         },
       );
+
+      // _fetchHistoryPage's session guard sits at the TOP of its persist loop,
+      // so the last event's persist — and the yield after it — are suspension
+      // points it cannot see past: it returns the page either way. A teardown
+      // landing in that gap used to reach setHistoryDrainCursor below and
+      // re-seed the state the cleanup had just wiped. See #7318.
+      test(
+        'a teardown during the last persist does not write a cursor',
+        () async {
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          late DmRepository repository;
+
+          // Fires inside _handleDeletionEvent, i.e. after the loop's final
+          // guard has already passed for this (only) event.
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {
+            await repository.stopListening();
+            return null;
+          });
+
+          var pageCalls = 0;
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return const <Event>[];
+            }
+            pageCalls++;
+            return pageCalls == 1
+                ? [
+                    Event(
+                      _validPubkeyA,
+                      EventKind.eventDeletion,
+                      const [
+                        ['e', _rumorEventId],
+                      ],
+                      '',
+                      createdAt: 99,
+                    ),
+                  ]
+                : const <Event>[];
+          });
+
+          repository = createRepository(syncState: syncState);
+          await repository.backfillHistoryIfNeeded();
+
+          expect(
+            syncState.persistedDrainCursors,
+            isEmpty,
+            reason:
+                'the drain persisted a cursor after a teardown that landed '
+                'between the last persist and the cursor write',
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------
