@@ -761,7 +761,7 @@ Future<void> executeAccountDeletion({
               when error.indicatesUsernameRecoveryUnsupported =>
             burnUsernameFailedText,
           AccountDeletionRecoveryStage.coordinatorAttempt
-              when error.indicatesServiceUnavailable =>
+              when error.indicatesMissingCoordinatorRoute =>
             deletionUnavailableText,
           AccountDeletionRecoveryStage.usernamePreparation =>
             burnUsernameFailedText,

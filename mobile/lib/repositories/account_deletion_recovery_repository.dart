@@ -22,6 +22,7 @@ class AccountDeletionRecoveryException implements Exception {
     this.stage,
     this.statusCode,
     this.isTransportFailure = false,
+    this.indicatesMissingCoordinatorRoute = false,
   });
 
   final String message;
@@ -29,14 +30,7 @@ class AccountDeletionRecoveryException implements Exception {
   final AccountDeletionRecoveryStage? stage;
   final int? statusCode;
   final bool isTransportFailure;
-
-  bool get indicatesServiceUnavailable {
-    final status = statusCode;
-    return isTransportFailure ||
-        status == 404 ||
-        status == 429 ||
-        (status != null && status >= 500 && status <= 599);
-  }
+  final bool indicatesMissingCoordinatorRoute;
 
   /// Whether only the username release is unsupported by this deployment.
   ///
@@ -51,7 +45,9 @@ class AccountDeletionRecoveryException implements Exception {
   String toString() =>
       'AccountDeletionRecoveryException($message, code: $code, '
       'stage: $stage, statusCode: $statusCode, '
-      'isTransportFailure: $isTransportFailure)';
+      'isTransportFailure: $isTransportFailure, '
+      'indicatesMissingCoordinatorRoute: '
+      '$indicatesMissingCoordinatorRoute)';
 }
 
 class AccountDeletionRecoveryRepository {
@@ -374,8 +370,10 @@ class AccountDeletionRecoveryRepository {
     AccountDeletionRecoveryStage? stage,
   }) {
     String? code;
+    var hasParseableResponseBody = false;
     try {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
+      hasParseableResponseBody = true;
       code = (json['failure_code'] ?? json['code']) as String?;
     } on Object {
       // The status code and localized client fallback remain authoritative.
@@ -385,6 +383,8 @@ class AccountDeletionRecoveryRepository {
       code: code,
       stage: stage,
       statusCode: response.statusCode,
+      indicatesMissingCoordinatorRoute:
+          response.statusCode == 404 && !hasParseableResponseBody,
     );
   }
 

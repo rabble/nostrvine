@@ -109,10 +109,10 @@ void main() {
       expect(result, isNull);
     });
 
-    test('coordinator 404 preserves status, stage, and availability', () {
+    test('route-absent 404 preserves status, stage, and availability', () {
       expect(
         () => repository(
-          MockClient((_) async => http.Response('{}', 404)),
+          MockClient((_) async => http.Response('', 404)),
         ).prepare(),
         throwsA(
           isA<AccountDeletionRecoveryException>()
@@ -123,13 +123,35 @@ void main() {
                 AccountDeletionRecoveryStage.coordinatorAttempt,
               )
               .having(
-                (error) => error.indicatesServiceUnavailable,
-                'indicatesServiceUnavailable',
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
                 isTrue,
               )
               .having(
                 (error) => error.indicatesUsernameRecoveryUnsupported,
                 'indicatesUsernameRecoveryUnsupported',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
+    test('structured coordinator 404 is not classified as route absent', () {
+      expect(
+        () => repository(
+          MockClient(
+            (_) async => http.Response(
+              jsonEncode({'failure_code': 'attempt_not_found'}),
+              404,
+            ),
+          ),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
                 isFalse,
               ),
         ),
@@ -168,7 +190,7 @@ void main() {
       );
     });
 
-    test('a coordinator outage is not mistaken for a username problem', () {
+    test('a structured coordinator outage remains neutral', () {
       expect(
         () => repository(
           MockClient(
@@ -191,15 +213,15 @@ void main() {
                 isFalse,
               )
               .having(
-                (error) => error.indicatesServiceUnavailable,
-                'indicatesServiceUnavailable',
-                isTrue,
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
               ),
         ),
       );
     });
 
-    test('coordinator transport failure is classified as unavailable', () {
+    test('coordinator transport failure remains transient', () {
       expect(
         () => repository(
           MockClient((_) async => throw http.ClientException('offline')),
@@ -212,15 +234,15 @@ void main() {
                 AccountDeletionRecoveryStage.coordinatorAttempt,
               )
               .having(
-                (error) => error.indicatesServiceUnavailable,
-                'indicatesServiceUnavailable',
-                isTrue,
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
               ),
         ),
       );
     });
 
-    test('coordinator TLS failure is classified as unavailable', () {
+    test('coordinator TLS failure remains transient', () {
       expect(
         () => repository(
           MockClient((_) async => throw const HandshakeException('bad TLS')),
@@ -233,9 +255,9 @@ void main() {
                 AccountDeletionRecoveryStage.coordinatorAttempt,
               )
               .having(
-                (error) => error.indicatesServiceUnavailable,
-                'indicatesServiceUnavailable',
-                isTrue,
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
               ),
         ),
       );
@@ -637,7 +659,7 @@ void main() {
       ]);
     });
 
-    test('exhausted 429 is classified as service unavailable', () {
+    test('exhausted 429 is not classified as a missing route', () {
       expect(
         () => repository(
           MockClient((_) async => http.Response('{}', 429)),
@@ -647,9 +669,9 @@ void main() {
           isA<AccountDeletionRecoveryException>()
               .having((error) => error.statusCode, 'statusCode', 429)
               .having(
-                (error) => error.indicatesServiceUnavailable,
-                'indicatesServiceUnavailable',
-                isTrue,
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
               ),
         ),
       );
