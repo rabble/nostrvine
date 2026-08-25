@@ -779,6 +779,20 @@ class VineTheme {
     fontFeatures: fontFeatures,
   );
 
+  /// Body tiny: Inter 400 10/14/0.4
+  ///
+  /// The smallest type the design system offers, for supporting text that has
+  /// to be present without competing — a commercial disclosure over video, for
+  /// example. Regular weight by design: at this size the 600 of the `label`
+  /// family reads as shouting.
+  static TextStyle bodyTinyFont({Color? color}) => GoogleFonts.inter(
+    fontSize: 10,
+    fontWeight: FontWeight.w400,
+    height: 14 / 10,
+    letterSpacing: 0.4,
+    color: color,
+  );
+
   // --------------------------------------------------------------------------
   // Label styles (Inter, weight 600)
   // --------------------------------------------------------------------------
