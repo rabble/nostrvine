@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -40,6 +41,14 @@ class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
+Future<void> _loadEmailVerificationLayoutFonts(WidgetTester tester) async {
+  // Construct the exact styles before draining them: google_fonts only queues
+  // bundled font I/O when a style is first requested.
+  VineTheme.bodyMediumFont();
+  VineTheme.labelLargeFont();
+  await tester.runAsync(GoogleFonts.pendingFonts);
+}
 
 void main() {
   late _MockEmailVerificationCubit mockCubit;
@@ -1643,6 +1652,7 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding(bottom: keyboardExtent);
       addTearDown(tester.view.reset);
 
+      await _loadEmailVerificationLayoutFonts(tester);
       await tester.pumpWidget(
         createTestWidget(
           deviceCode: 'test-device-code',
@@ -1686,6 +1696,7 @@ void main() {
       tester.view.physicalSize = const Size(360, 560);
       addTearDown(tester.view.reset);
 
+      await _loadEmailVerificationLayoutFonts(tester);
       await tester.pumpWidget(
         MediaQuery(
           data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
@@ -1719,6 +1730,7 @@ void main() {
       tester.view.physicalSize = const Size(320, 480);
       addTearDown(tester.view.reset);
 
+      await _loadEmailVerificationLayoutFonts(tester);
       await tester.pumpWidget(
         MediaQuery(
           data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
