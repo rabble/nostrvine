@@ -1968,6 +1968,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã tắt chế độ nhà phát triển';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Bản vá Shorebird';
 
   @override
@@ -4440,12 +4447,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đề xuất cải tiến hoặc tính năng mới';
 
   @override
-  String get supportSaveLogs => 'Lưu nhật ký';
-
-  @override
-  String get supportSaveLogsSubtitle => 'Xuất nhật ký ra tệp để gửi thủ công';
-
-  @override
   String get supportFaq => 'Câu hỏi thường gặp';
 
   @override
@@ -4480,18 +4481,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'Không xuất được nhật ký';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

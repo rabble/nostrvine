@@ -2014,6 +2014,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Modo de desarrollador desactivado';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Parches de Shorebird';
 
   @override
@@ -4515,13 +4522,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sugerí una mejora o una función nueva';
 
   @override
-  String get supportSaveLogs => 'Guardar logs';
-
-  @override
-  String get supportSaveLogsSubtitle =>
-      'Exportá los logs a un archivo para enviarlos manualmente';
-
-  @override
   String get supportFaq => 'Preguntas frecuentes';
 
   @override
@@ -4556,18 +4556,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'No se pudieron exportar los logs';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

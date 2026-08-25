@@ -1995,6 +1995,13 @@ class AppLocalizationsUr extends AppLocalizations {
       'ڈویلپر موڈ غیر فعال ہو گیا';
 
   @override
+  String get devOptionsExportLogs => 'Export Logs';
+
+  @override
+  String get devOptionsExportLogsSubtitle =>
+      'Share the log file so we can dig in';
+
+  @override
   String get devOptionsShorebirdTitle => 'Shorebird پیچز';
 
   @override
@@ -4478,13 +4485,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'کوئی بہتری یا نیا فیچر تجویز کریں';
 
   @override
-  String get supportSaveLogs => 'لاگز محفوظ کریں';
-
-  @override
-  String get supportSaveLogsSubtitle =>
-      'دستی بھیجنے کے لیے لاگز فائل میں ایکسپورٹ کریں';
-
-  @override
   String get supportFaq => 'عمومی سوالات';
 
   @override
@@ -4518,18 +4518,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'لاگز ایکسپورٹ نہیں ہو سکے';
-
-  @override
-  String get supportCopyLogs => 'Copy Logs';
-
-  @override
-  String get supportCopyLogsSubtitle => 'Put the recent ones on your clipboard';
-
-  @override
-  String get supportLogsCopied => 'Logs copied';
-
-  @override
-  String get supportCopyLogsFailed => 'Couldn\'t copy the logs';
 
   @override
   String get supportNoLogsToExport =>

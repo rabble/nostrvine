@@ -484,13 +484,12 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
-  // Support Center log copy (#8112 / #8113 / #8114). Left in English until a
+  // Log-export copy (#8112 / #8113 / #8114 / #8127). Left in English until a
   // human translation pass; machine-translating a diagnostic instruction the
-  // user has to follow exactly is how it stops meaning what it says.
-  'supportCopyLogs',
-  'supportCopyLogsSubtitle',
-  'supportLogsCopied',
-  'supportCopyLogsFailed',
+  // user has to follow exactly is how it stops meaning what it says. The
+  // devOptions pair is developer-only surface behind the seven-tap unlock.
+  'devOptionsExportLogs',
+  'devOptionsExportLogsSubtitle',
   'supportNoLogsToExport',
   'supportExportLogsUnconfirmed',
   // Account-enforcement translation remains tracked in #7765. The policy copy

@@ -3,29 +3,17 @@
 // ABOUTME: depends on the device's Downloads directory and LogCaptureService
 // ABOUTME: file IO that is awkward to mock in pure unit tests.
 
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show LogEntry, LogLevel;
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 import 'package:openvine/utils/app_uptime.dart';
 import 'package:openvine/utils/device_memory_util.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:unified_logger/unified_logger.dart' show LogCaptureService;
 
 class _MockStorageManagementService extends Mock
     implements StorageManagementService {}
-
-Future<PackageInfo> _loadPackageInfo() async => PackageInfo(
-  appName: 'Divine',
-  packageName: 'video.divine',
-  version: '1.0.21',
-  buildNumber: '849',
-);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -71,215 +59,6 @@ void main() {
       expect(failed.status, equals(LogExportStatus.failed));
       expect(noLogs.status, isNot(equals(failed.status)));
     });
-  });
-
-  group('buildLogClipboardText', () {
-    setUp(() async {
-      await LogCaptureService().clearAllLogs();
-    });
-
-    tearDown(() async {
-      await LogCaptureService().clearAllLogs();
-      AppUptime.reset();
-      DeviceMemoryUtil.resetCache();
-    });
-
-    // #8114: an empty buffer has to be reportable as "nothing captured"
-    // rather than handed over as a bare header the user would paste into a
-    // ticket believing it held their logs.
-    test('reports no logs when nothing has been captured', () async {
-      final result = await BugReportService(
-        packageInfoLoader: _loadPackageInfo,
-      ).buildLogClipboardText();
-
-      expect(result.status, equals(LogClipboardStatus.noLogs));
-      expect(result.text, isNull);
-    });
-
-    test('includes the header and the captured line', () async {
-      LogCaptureService().captureLog(
-        LogEntry(
-          timestamp: DateTime(2026, 8, 24),
-          level: LogLevel.error,
-          message: 'upload stalled at 40 percent',
-        ),
-      );
-
-      final result = await BugReportService(
-        packageInfoLoader: _loadPackageInfo,
-      ).buildLogClipboardText();
-
-      expect(result.status, equals(LogClipboardStatus.success));
-      expect(result.text, contains('OpenVine Comprehensive Log Export'));
-      expect(result.text, contains('App Version: 1.0.21+849'));
-      expect(result.text, contains('upload stalled at 40 percent'));
-    });
-
-    // #8112: the clipboard crosses a Binder transaction, so an uncapped
-    // copy of a full 5-10 MB buffer is the one outcome that cannot work.
-    test('caps the copy and keeps the newest entries', () async {
-      final filler = 'x' * 512;
-      for (var i = 0; i < 400; i++) {
-        LogCaptureService().captureLog(
-          LogEntry(
-            timestamp: DateTime(2026, 8, 24).add(Duration(seconds: i)),
-            level: LogLevel.info,
-            message: 'entry $i $filler',
-          ),
-        );
-      }
-
-      final result = await BugReportService(
-        packageInfoLoader: _loadPackageInfo,
-      ).buildLogClipboardText();
-      final text = result.text!;
-
-      expect(
-        utf8.encode(text).length,
-        lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
-      );
-      expect(text, contains('entry 399'));
-      expect(text, contains('earlier entries omitted'));
-      expect(text, isNot(contains('entry 0 ')));
-    });
-
-    test('includes the omission marker within the byte ceiling', () async {
-      for (var i = 0; i < 200; i++) {
-        LogCaptureService().captureLog(
-          LogEntry(
-            timestamp: DateTime(2026, 8, 24).add(Duration(seconds: i)),
-            level: LogLevel.info,
-            message: 'entry $i ${'x' * 1024}',
-          ),
-        );
-      }
-
-      final result = await BugReportService(
-        packageInfoLoader: _loadPackageInfo,
-      ).buildLogClipboardText();
-
-      expect(result.status, equals(LogClipboardStatus.success));
-      expect(
-        utf8.encode(result.text!).length,
-        lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
-      );
-      expect(result.text, contains('earlier entries omitted'));
-    });
-
-    test(
-      'keeps useful content when the newest line exceeds the budget',
-      () async {
-        LogCaptureService().captureLog(
-          LogEntry(
-            timestamp: DateTime(2026, 8, 24),
-            level: LogLevel.error,
-            message:
-                'newest failure ${'z' * BugReportService.logClipboardByteBudget}',
-          ),
-        );
-
-        final result = await BugReportService(
-          packageInfoLoader: _loadPackageInfo,
-        ).buildLogClipboardText();
-
-        expect(result.status, equals(LogClipboardStatus.success));
-        expect(result.text, contains('newest failure'));
-        // An ASCII cut never backs off, so the copy fills the ceiling exactly.
-        // A bound alone would leave a shrunken newest-line budget green.
-        expect(
-          utf8.encode(result.text!).length,
-          equals(BugReportService.logClipboardByteBudget),
-        );
-      },
-    );
-
-    // Exercise the clipboard assembly with non-ASCII content. Exact byte
-    // boundary behavior is covered deterministically below.
-    test(
-      'keeps multi-byte content within the clipboard byte ceiling',
-      () async {
-        const emoji = '\u{1F3AC}';
-        final emojiBytes = utf8.encode(emoji).length;
-        final reps =
-            BugReportService.logClipboardByteBudget ~/ emojiBytes + 500;
-        LogCaptureService().captureLog(
-          LogEntry(
-            timestamp: DateTime(2026, 8, 24),
-            level: LogLevel.error,
-            message: 'newest failure ${emoji * reps}',
-          ),
-        );
-
-        final result = await BugReportService(
-          packageInfoLoader: _loadPackageInfo,
-        ).buildLogClipboardText();
-
-        expect(result.status, equals(LogClipboardStatus.success));
-        expect(result.text, contains('newest failure'));
-        // The back-off costs at most a partial character, so the copy stays at
-        // the ceiling instead of collapsing toward it. Deriving the slack from
-        // the character keeps the bound tight if this test ever swaps it.
-        expect(
-          utf8.encode(result.text!).length,
-          inInclusiveRange(
-            BugReportService.logClipboardByteBudget - (emojiBytes - 1),
-            BugReportService.logClipboardByteBudget,
-          ),
-        );
-      },
-    );
-
-    for (final (label, unit) in const [
-      ('4-byte emoji', '\u{1F3AC}'),
-      ('3-byte CJK', '\u65E5'),
-      ('2-byte accent', '\u00E9'),
-    ]) {
-      test('backs off every incomplete $label sequence', () {
-        const prefix = 'ASCII prefix ';
-        const suffix = ' trailing text';
-        final value = '$prefix$unit$suffix';
-        final prefixBytes = utf8.encode(prefix).length;
-        final unitBytes = utf8.encode(unit).length;
-
-        for (
-          var includedBytes = 1;
-          includedBytes < unitBytes;
-          includedBytes++
-        ) {
-          expect(
-            BugReportService.truncateUtf8(value, prefixBytes + includedBytes),
-            equals(prefix),
-            reason: 'included $includedBytes of $unitBytes bytes',
-          );
-        }
-
-        expect(
-          BugReportService.truncateUtf8(value, prefixBytes + unitBytes),
-          equals('$prefix$unit'),
-        );
-      });
-    }
-
-    test(
-      'reports a header diagnostic failure separately from no logs',
-      () async {
-        LogCaptureService().captureLog(
-          LogEntry(
-            timestamp: DateTime(2026, 8, 24),
-            level: LogLevel.error,
-            message: 'captured before diagnostics failed',
-          ),
-        );
-
-        final result = await BugReportService(
-          packageInfoLoader: () async =>
-              throw StateError('diagnostics unavailable'),
-        ).buildLogClipboardText();
-
-        expect(result.status, equals(LogClipboardStatus.failed));
-        expect(result.text, isNull);
-      },
-    );
   });
 
   group('buildDeviceDescription', () {

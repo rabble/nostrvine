@@ -1,10 +1,7 @@
 // ABOUTME: Tests the Support Center resource links and account-deletion auth gate
 // ABOUTME: Regression cover for #6335, which was reported from this screen
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,7 +11,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -22,8 +18,6 @@ import 'package:url_launcher_platform_interface/url_launcher_platform_interface.
 import '../../helpers/url_launcher_test_double.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
-
-class _MockBugReportService extends Mock implements BugReportService {}
 
 class _MockAccountDeletionService extends Mock
     implements AccountDeletionService {}
@@ -34,14 +28,12 @@ const _pubkeyHex =
 void main() {
   group(SupportCenterScreen, () {
     late _MockAuthService authService;
-    late _MockBugReportService bugReportService;
     late _MockAccountDeletionService accountDeletionService;
     final en = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       ZendeskSupportService.resetForTesting();
       authService = _MockAuthService();
-      bugReportService = _MockBugReportService();
       accountDeletionService = _MockAccountDeletionService();
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
     });
@@ -60,7 +52,6 @@ void main() {
           overrides: [
             authServiceProvider.overrideWithValue(authService),
             currentAuthStateProvider.overrideWith((ref) => authState),
-            bugReportServiceProvider.overrideWithValue(bugReportService),
             accountDeletionServiceProvider.overrideWithValue(
               accountDeletionService,
             ),
@@ -94,202 +85,6 @@ void main() {
 
     // #6335 was filed from this screen by a user who could not find how to
     // delete their account. Deletion has to be reachable from here.
-    // #8112: the share sheet's Copy action copies EXTRA_TEXT on Android and
-    // never the attached file, so copying needs its own path. These pin the
-    // outcomes a user actually sees.
-    group('copy logs', () {
-      testWidgets('puts the built log text on the clipboard', (tester) async {
-        const logText = 'OpenVine Comprehensive Log Export\nupload stalled';
-        when(
-          () => bugReportService.buildLogClipboardText(
-            currentScreen: any(named: 'currentScreen'),
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) async => const LogClipboardResult.success(logText));
-
-        final clipboardWrites = <String>[];
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          (call) async {
-            if (call.method == 'Clipboard.setData') {
-              clipboardWrites.add((call.arguments as Map)['text'] as String);
-            }
-            if (call.method == 'Clipboard.getData') {
-              return <String, dynamic>{'text': clipboardWrites.last};
-            }
-            return null;
-          },
-        );
-        addTearDown(
-          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            SystemChannels.platform,
-            null,
-          ),
-        );
-
-        await pump(tester);
-        await tester.tap(find.text(en.supportCopyLogs));
-        await tester.pumpAndSettle();
-
-        expect(clipboardWrites, equals([logText]));
-        expect(find.text(en.supportLogsCopied), findsOneWidget);
-      });
-
-      // #8114: an empty buffer is the user's to fix by reproducing without
-      // restarting, so it must not read as a generic failure.
-      testWidgets('explains an empty buffer instead of reporting failure', (
-        tester,
-      ) async {
-        when(
-          () => bugReportService.buildLogClipboardText(
-            currentScreen: any(named: 'currentScreen'),
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) async => const LogClipboardResult.noLogs());
-
-        await pump(tester);
-        await tester.tap(find.text(en.supportCopyLogs));
-        await tester.pumpAndSettle();
-
-        expect(find.text(en.supportNoLogsToExport), findsOneWidget);
-        expect(find.text(en.supportCopyLogsFailed), findsNothing);
-      });
-
-      testWidgets('reports a diagnostic build failure', (tester) async {
-        when(
-          () => bugReportService.buildLogClipboardText(
-            currentScreen: any(named: 'currentScreen'),
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) async => const LogClipboardResult.failed());
-
-        await pump(tester);
-        await tester.tap(find.text(en.supportCopyLogs));
-        await tester.pumpAndSettle();
-
-        expect(find.text(en.supportCopyLogsFailed), findsOneWidget);
-        expect(find.text(en.supportNoLogsToExport), findsNothing);
-      });
-
-      testWidgets('reports when the clipboard refuses the logs', (
-        tester,
-      ) async {
-        const logText = 'OpenVine Comprehensive Log Export\nupload stalled';
-        when(
-          () => bugReportService.buildLogClipboardText(
-            currentScreen: any(named: 'currentScreen'),
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) async => const LogClipboardResult.success(logText));
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          (call) async {
-            if (call.method == 'Clipboard.getData') {
-              return <String, dynamic>{'text': 'device policy blocked this'};
-            }
-            return null;
-          },
-        );
-        addTearDown(
-          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            SystemChannels.platform,
-            null,
-          ),
-        );
-
-        await pump(tester);
-        await tester.tap(find.text(en.supportCopyLogs));
-        await tester.pumpAndSettle();
-
-        expect(find.text(en.supportCopyLogsFailed), findsOneWidget);
-        expect(find.text(en.supportLogsCopied), findsNothing);
-      });
-
-      testWidgets('shows progress and ignores a second tap while building', (
-        tester,
-      ) async {
-        final result = Completer<LogClipboardResult>();
-        when(
-          () => bugReportService.buildLogClipboardText(
-            currentScreen: any(named: 'currentScreen'),
-            userPubkey: any(named: 'userPubkey'),
-          ),
-        ).thenAnswer((_) => result.future);
-
-        await pump(tester);
-        await tester.tap(find.text(en.supportCopyLogs));
-        await tester.pump();
-        await tester.tap(find.text(en.supportCopyLogs));
-        await tester.pump();
-
-        expect(find.text(en.supportExportingLogs), findsOneWidget);
-        verify(
-          () => bugReportService.buildLogClipboardText(
-            currentScreen: 'SupportCenterScreen',
-            userPubkey: _pubkeyHex,
-          ),
-        ).called(1);
-
-        result.complete(const LogClipboardResult.noLogs());
-        await tester.pumpAndSettle();
-      });
-    });
-
-    group('save logs', () {
-      Future<void> tapSaveLogs(
-        WidgetTester tester,
-        LogExportResult result,
-      ) async {
-        when(
-          () => bugReportService.exportLogsToFile(
-            currentScreen: any(named: 'currentScreen'),
-            userPubkey: any(named: 'userPubkey'),
-            sharePositionOrigin: any(named: 'sharePositionOrigin'),
-          ),
-        ).thenAnswer((_) async => result);
-
-        await pump(tester);
-        await tester.tap(find.text(en.supportSaveLogs));
-        await tester.pumpAndSettle();
-      }
-
-      // #8113: share_plus returns `unavailable` on Android whenever it cannot
-      // attach to an Activity, even though the sheet opened and the share may
-      // well have completed. Reporting that as a failure is what told the
-      // user log export was broken.
-      testWidgets('does not report failure when the outcome is unknown', (
-        tester,
-      ) async {
-        await tapSaveLogs(tester, const LogExportResult.unconfirmed());
-
-        expect(find.text(en.supportExportLogsFailed), findsNothing);
-        expect(find.text(en.supportExportLogsUnconfirmed), findsOneWidget);
-      });
-
-      testWidgets('stays silent when the user backs out', (tester) async {
-        await tapSaveLogs(tester, const LogExportResult.cancelled());
-
-        expect(find.text(en.supportExportLogsFailed), findsNothing);
-        expect(find.text(en.supportExportLogsUnconfirmed), findsNothing);
-        expect(find.text(en.supportNoLogsToExport), findsNothing);
-      });
-
-      testWidgets('explains an empty buffer rather than failing', (
-        tester,
-      ) async {
-        await tapSaveLogs(tester, const LogExportResult.noLogs());
-
-        expect(find.text(en.supportNoLogsToExport), findsOneWidget);
-        expect(find.text(en.supportExportLogsFailed), findsNothing);
-      });
-
-      testWidgets('still reports a real failure', (tester) async {
-        await tapSaveLogs(tester, const LogExportResult.failed());
-
-        expect(find.text(en.supportExportLogsFailed), findsOneWidget);
-      });
-    });
-
     testWidgets('shows the delete-account entry when authenticated', (
       tester,
     ) async {
