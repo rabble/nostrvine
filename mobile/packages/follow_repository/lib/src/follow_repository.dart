@@ -30,6 +30,17 @@ typedef _CachedFollowerStats = ({
   DateTime cachedAt,
 });
 
+typedef _FollowerCountObservation = ({
+  int count,
+  bool isComplete,
+  String source,
+});
+
+typedef _WebSocketFollowerStats = ({
+  int following,
+  List<_FollowerCountObservation> followerCounts,
+});
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -54,6 +65,7 @@ class FollowRepository {
     RelayFactory? relayFactory,
     BlockedPubkeysCallback? blockedPubkeys,
     DateTime Function()? now,
+    Duration indexerQueryTimeout = const Duration(seconds: 8),
   }) : _nostrClient = nostrClient,
        _blockedPubkeys = blockedPubkeys,
        _isCacheInitialized = isCacheInitialized,
@@ -66,7 +78,8 @@ class FollowRepository {
        _indexerRelayUrls = indexerRelayUrls,
        _queryContactList = queryContactList ?? _defaultQueryContactList,
        _relayFactory = relayFactory ?? _defaultRelayFactory,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _indexerQueryTimeout = indexerQueryTimeout;
 
   final NostrClient _nostrClient;
   final IsCacheInitializedCallback? _isCacheInitialized;
@@ -100,6 +113,9 @@ class FollowRepository {
 
   /// Clock used by expiring caches and persisted-stat stabilization.
   final DateTime Function() _now;
+
+  /// Maximum time to wait for an indexer relay to finish a count query.
+  final Duration _indexerQueryTimeout;
 
   /// Default relay factory — creates a real [RelayBase].
   static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
@@ -954,42 +970,55 @@ class FollowRepository {
 
   /// Fetch follower stats from the network.
   ///
-  /// Runs REST API and WebSocket queries in parallel, then uses the
-  /// higher count from each source.
+  /// Runs REST API and WebSocket queries in parallel, records each source's
+  /// completion state, then selects the highest observed follower count.
   Future<FollowerStats> _fetchFollowerStats(String pubkey) async {
     // Run REST and WebSocket queries in parallel for best coverage
-    final results = await Future.wait([
+    final (restResult, wsResult) = await (
       _fetchFollowerStatsViaRest(pubkey),
       _fetchFollowerStatsViaWebSocket(pubkey),
-    ]);
+    ).wait;
+    final followerCounts = [
+      if (restResult != null)
+        (count: restResult.followers, isComplete: true, source: 'REST'),
+      ...wsResult.followerCounts,
+    ];
+    final followers = _selectFollowerCount(followerCounts);
+    final following = restResult == null
+        ? wsResult.following
+        : max(restResult.following, wsResult.following);
+    final observationSummary = followerCounts.isEmpty
+        ? 'none'
+        : followerCounts
+              .map(
+                (result) =>
+                    '${result.source}=${result.count}'
+                    '${result.isComplete ? '(complete)' : '(partial)'}',
+              )
+              .join(', ');
 
-    final restResult = results[0];
-    final wsResult = results[1]!;
-
-    if (restResult == null) {
-      return wsResult;
-    }
-
-    // Use the higher count from each source
-    final followers = restResult.followers > wsResult.followers
-        ? restResult.followers
-        : wsResult.followers;
-    final following = restResult.following > wsResult.following
-        ? restResult.following
-        : wsResult.following;
-
-    if (followers != restResult.followers ||
-        following != restResult.following) {
-      Log.info(
-        'Follower stats merged: REST=${restResult.followers}/'
-        '${restResult.following}, WS=${wsResult.followers}/'
-        '${wsResult.following} → using $followers/$following',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
-    }
+    Log.info(
+      'Follower count observations: $observationSummary, '
+      'using $followers for ${pubkeyForLogs(pubkey)}',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
 
     return FollowerStats(followers: followers, following: following);
+  }
+
+  /// Selects the best-covered follower count across all observations.
+  ///
+  /// Aggregate counts cannot distinguish a stale over-count from a source with
+  /// broader relay coverage. Completion only means that source finished
+  /// answering; it does not make its holdings globally authoritative. Until
+  /// reconciliation can compare event identities, a lower observation must not
+  /// discard a potentially better-covered source.
+  static int _selectFollowerCount(
+    List<_FollowerCountObservation> observations,
+  ) {
+    if (observations.isEmpty) return 0;
+    return observations.map((result) => result.count).reduce(max);
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -1029,21 +1058,29 @@ class FollowRepository {
   }
 
   /// Fetch follower stats via WebSocket queries (parallel).
-  Future<FollowerStats> _fetchFollowerStatsViaWebSocket(String pubkey) async {
+  Future<_WebSocketFollowerStats> _fetchFollowerStatsViaWebSocket(
+    String pubkey,
+  ) async {
     try {
-      final results = await Future.wait([
+      final (following, followerCounts) = await (
         _fetchFollowingCountViaWebSocket(pubkey),
         _fetchFollowersCountViaIndexers(pubkey),
-      ]);
+      ).wait;
 
-      return FollowerStats(following: results[0], followers: results[1]);
+      return (
+        following: following,
+        followerCounts: followerCounts,
+      );
     } catch (e) {
       Log.error(
         'Error fetching follower stats via WebSocket: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return FollowerStats.zero;
+      return (
+        following: 0,
+        followerCounts: const <_FollowerCountObservation>[],
+      );
     }
   }
 
@@ -1073,8 +1110,10 @@ class FollowRepository {
     return 0;
   }
 
-  /// Get followers count by querying indexer relays directly.
-  Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
+  /// Get follower-count observations by querying indexer relays directly.
+  Future<List<_FollowerCountObservation>> _fetchFollowersCountViaIndexers(
+    String pubkey,
+  ) async {
     final results = await Future.wait(
       _indexerRelayUrls.map(
         (url) =>
@@ -1085,29 +1124,16 @@ class FollowRepository {
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
-              return 0;
+              return null;
             }),
       ),
     );
 
-    // Use the highest count from any indexer
-    var best = 0;
-    for (final count in results) {
-      if (count > best) best = count;
-    }
-
-    Log.info(
-      'Indexer followers counts: $results, '
-      'using $best for ${pubkeyForLogs(pubkey)}',
-      name: 'FollowRepository',
-      category: LogCategory.system,
-    );
-
-    return best;
+    return results.whereType<_FollowerCountObservation>().toList();
   }
 
   /// Query a single indexer relay for kind 3 events mentioning pubkey.
-  Future<int> _queryIndexerForFollowerCount(
+  Future<_FollowerCountObservation?> _queryIndexerForFollowerCount(
     String indexerUrl,
     String pubkey,
   ) async {
@@ -1116,6 +1142,7 @@ class FollowRepository {
     final completer = Completer<int>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
+    var isComplete = false;
 
     relay.onMessage = (relay, jsonMsg) async {
       if (jsonMsg.isEmpty) return;
@@ -1130,6 +1157,7 @@ class FollowRepository {
         }
       } else if (messageType == 'EOSE') {
         if (!completer.isCompleted) {
+          isComplete = true;
           completer.complete(followerPubkeys.length);
         }
       }
@@ -1144,11 +1172,11 @@ class FollowRepository {
 
       final connected = await relay.connect();
       if (!connected) {
-        return 0;
+        return null;
       }
 
       final result = await completer.future.timeout(
-        const Duration(seconds: 8),
+        _indexerQueryTimeout,
         onTimeout: () => followerPubkeys.length,
       );
 
@@ -1159,14 +1187,24 @@ class FollowRepository {
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return result;
+      return (
+        count: result,
+        isComplete: isComplete,
+        source: indexerUrl,
+      );
     } catch (e) {
       Log.warning(
         'Error querying $indexerUrl for followers: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return followerPubkeys.length;
+      return followerPubkeys.isEmpty
+          ? null
+          : (
+              count: followerPubkeys.length,
+              isComplete: isComplete,
+              source: indexerUrl,
+            );
     } finally {
       try {
         await relay.disconnect();
