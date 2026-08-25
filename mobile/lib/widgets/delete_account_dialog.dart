@@ -541,7 +541,7 @@ Future<void> executeAccountDeletion({
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
   final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionUnavailableText = context.l10n.deleteAccountDeletionUnavailable;
-  final contactSupportText = context.l10n.supportContactSupport;
+  final reportBugText = context.l10n.supportReportBug;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
   final handleLabel = ownedUsername != null
       ? '@${ownedUsername.name}.divine.video'
@@ -639,9 +639,12 @@ Future<void> executeAccountDeletion({
         message,
         error: true,
         duration: offerSupport ? const Duration(seconds: 12) : null,
-        actionLabel: offerSupport ? contactSupportText : null,
+        actionLabel: offerSupport ? reportBugText : null,
         onActionPressed: offerSupport
-            ? () => context.push(RoutePaths.supportReportBug)
+            ? () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                context.push(RoutePaths.supportReportBug);
+              }
             : null,
       ),
     );

@@ -1402,7 +1402,7 @@ void main() {
 
       final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
-      expect(find.text(l10n.supportContactSupport), findsOneWidget);
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
       expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
@@ -1412,7 +1412,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text(l10n.supportContactSupport));
+      await tester.tap(find.text(l10n.supportReportBug));
       await tester.pumpAndSettle();
       expect(find.text('Bug report form'), findsOneWidget);
     });
