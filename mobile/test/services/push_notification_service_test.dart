@@ -90,6 +90,7 @@ void main() {
 
   PushNotificationService buildService({
     String? token = testToken,
+    Future<String?> Function()? getToken,
     FutureOr<bool> Function()? isCurrent,
   }) {
     return PushNotificationService(
@@ -97,7 +98,7 @@ void main() {
       nostrClient: mockNostrClient,
       notificationService: mockNotificationService,
       environmentConfig: testEnvironment,
-      getToken: () async => token,
+      getToken: getToken ?? () async => token,
       isCurrent: isCurrent,
     );
   }
@@ -204,7 +205,10 @@ void main() {
         );
 
         final service = buildService();
-        await service.register(testPubkey);
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.published,
+        );
 
         expect(capturedTags, isNotNull);
 
@@ -239,7 +243,10 @@ void main() {
 
       test('does nothing when FCM token is null', () async {
         final service = buildService(token: null);
-        await service.register(testPubkey);
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.terminalFailure,
+        );
 
         verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
         verifyNever(
@@ -248,6 +255,19 @@ void main() {
             content: any(named: 'content'),
           ),
         );
+        service.dispose();
+      });
+
+      test('returns terminal failure when FCM token lookup throws', () async {
+        final service = buildService(
+          getToken: () => throw StateError('apns-token-not-set'),
+        );
+
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.terminalFailure,
+        );
+        verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
         service.dispose();
       });
 
@@ -262,7 +282,10 @@ void main() {
             getToken: () async => testToken,
           );
 
-          await service.register(testPubkey);
+          expect(
+            await service.register(testPubkey),
+            PushRegistrationResult.terminalFailure,
+          );
 
           verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
           verifyNever(
@@ -282,7 +305,10 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final service = buildService();
-        await service.register(testPubkey);
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.terminalFailure,
+        );
 
         verifyNever(
           () => mockAuthService.createAndSignEvent(
@@ -307,7 +333,10 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final service = buildService();
-        await service.register(testPubkey);
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.terminalFailure,
+        );
 
         verifyNever(
           () => mockNostrClient.publishEventAwaitOk(
@@ -320,7 +349,7 @@ void main() {
       });
 
       test(
-        'completes without error when registration publish receives no OK response',
+        'returns uncertain failure when registration publish receives no OK response',
         () async {
           when(
             () => mockNostrSigner.nip44Encrypt(any(), any()),
@@ -351,13 +380,16 @@ void main() {
           );
 
           final service = buildService();
-          await expectLater(service.register(testPubkey), completes);
+          expect(
+            await service.register(testPubkey),
+            PushRegistrationResult.uncertainFailure,
+          );
           service.dispose();
         },
       );
 
       test(
-        'completes without error when registration publish is rejected',
+        'returns terminal failure when registration publish is rejected',
         () async {
           when(
             () => mockNostrSigner.nip44Encrypt(any(), any()),
@@ -388,10 +420,78 @@ void main() {
           );
 
           final service = buildService();
-          await expectLater(service.register(testPubkey), completes);
+          expect(
+            await service.register(testPubkey),
+            PushRegistrationResult.terminalFailure,
+          );
           service.dispose();
         },
       );
+
+      test('retries when no relay received the registration', () async {
+        final fakeEvent = _FakeEvent();
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => fakeEvent);
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            fakeEvent,
+            targetRelays: [testEnvironment.relayUrl],
+            timeout: pushPublishTimeout,
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: fakeEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+
+        final service = buildService();
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.retryableFailure,
+        );
+        service.dispose();
+      });
+
+      test('retries when the configured relay is unreachable', () async {
+        final fakeEvent = _FakeEvent();
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => fakeEvent);
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            fakeEvent,
+            targetRelays: [testEnvironment.relayUrl],
+            timeout: pushPublishTimeout,
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: fakeEvent.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+            unreachableTargets: [testEnvironment.relayUrl],
+          ),
+        );
+
+        final service = buildService();
+        expect(
+          await service.register(testPubkey),
+          PushRegistrationResult.retryableFailure,
+        );
+        service.dispose();
+      });
     });
 
     group('deregister', () {
