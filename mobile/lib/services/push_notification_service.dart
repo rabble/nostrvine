@@ -423,7 +423,9 @@ class PushNotificationService {
     if (outcome.noResponseFrom.isNotEmpty) {
       return PushRegistrationResult.uncertainFailure;
     }
-    // An all-empty outcome means no connected relay received the event.
+    // Nothing accepted, rejected or stayed silent: the event was never written
+    // to a relay. The named relay lands in unreachableTargets, so the outcome
+    // is not literally empty.
     return PushRegistrationResult.retryableFailure;
   }
 
@@ -441,7 +443,9 @@ class PushNotificationService {
 
     final outcomeDetails =
         'eventId=${event.id}, relay=$relayUrl, acceptedBy=${outcome.acceptedBy}, '
-        'rejectedBy=${outcome.rejectedBy}, noResponseFrom=${outcome.noResponseFrom}';
+        'rejectedBy=${outcome.rejectedBy}, '
+        'noResponseFrom=${outcome.noResponseFrom}, '
+        'unreachableTargets=${outcome.unreachableTargets}';
 
     if (outcome.confirmed) {
       Log.info(
