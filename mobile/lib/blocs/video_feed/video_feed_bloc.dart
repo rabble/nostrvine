@@ -364,7 +364,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(source, emit, revalidate: true);
+    await _loadVideos(
+      source,
+      emit,
+      revalidate: true,
+      startsNewFeedSession: true,
+    );
   }
 
   bool _listsEqual(List<String> a, List<String> b) {
@@ -508,7 +513,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(state.source, emit, skipCache: true);
+    await _loadVideos(
+      state.source,
+      emit,
+      skipCache: true,
+      startsNewFeedSession: true,
+    );
   }
 
   /// Handle auto-refresh request (dispatched by UI on app resume).
@@ -557,6 +567,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       emit,
       skipCache: state.source.type != VideoFeedSourceType.newVideos,
       revalidate: state.source.type == VideoFeedSourceType.newVideos,
+      startsNewFeedSession: true,
     );
   }
 
@@ -593,7 +604,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     }
 
     // Silent refresh — keep current videos visible, replace when done.
-    await _loadVideos(state.source, emit, skipCache: true);
+    await _loadVideos(
+      state.source,
+      emit,
+      skipCache: true,
+      startsNewFeedSession: true,
+    );
   }
 
   /// Handle curated list subscription changes from [CuratedListRepository].
@@ -646,7 +662,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(nextSource, emit, skipCache: true);
+    await _loadVideos(
+      nextSource,
+      emit,
+      skipCache: true,
+      startsNewFeedSession: true,
+    );
   }
 
   /// Handle blocklist changes.
@@ -698,8 +719,17 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     Emitter<VideoFeedBlocState> emit, {
     bool skipCache = false,
     bool revalidate = false,
+    bool startsNewFeedSession = false,
   }) async {
-    final servedCache = await _maybeServeCachedFeed(source, emit, skipCache);
+    final nextFeedSessionRevision = startsNewFeedSession
+        ? state.feedSessionRevision + 1
+        : state.feedSessionRevision;
+    final servedCache = await _maybeServeCachedFeed(
+      source,
+      emit,
+      skipCache,
+      feedSessionRevision: nextFeedSessionRevision,
+    );
     if (!_canEmitForSource(source, emit)) return;
 
     try {
@@ -761,6 +791,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           listOnlyVideoIds: result.listOnlyVideoIds,
           paginationCursor: result.paginationCursor,
           clearPaginationCursor: result.paginationCursor == null,
+          feedSessionRevision: nextFeedSessionRevision,
         ),
       );
 
@@ -818,8 +849,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   Future<bool> _maybeServeCachedFeed(
     VideoFeedSource source,
     Emitter<VideoFeedBlocState> emit,
-    bool skipCache,
-  ) async {
+    bool skipCache, {
+    required int feedSessionRevision,
+  }) async {
     if (skipCache || !_serveCachedHomeFeed || !_usesHomeFeedCache(source)) {
       return false;
     }
@@ -843,6 +875,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         hasMore: true,
         clearPaginationCursor: true,
         clearError: true,
+        feedSessionRevision: feedSessionRevision,
       ),
     );
     _feedTracker?.markFeedDisplayed(mode, cachedValid.length);

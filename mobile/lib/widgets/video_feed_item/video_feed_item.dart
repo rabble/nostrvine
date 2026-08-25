@@ -355,6 +355,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                   top: 31,
                                   child: VideoFollowButton(
                                     pubkey: authorPubkey,
+                                    videoId: video.id,
                                   ),
                                 ),
                             ],
@@ -809,7 +810,7 @@ class VideoAuthorRow extends ConsumerWidget {
         ),
         // Follow button (handles own video check internally)
         const SizedBox(width: 8),
-        VideoFollowButton(pubkey: video.pubkey),
+        VideoFollowButton(pubkey: video.pubkey, videoId: video.id),
       ],
     );
   }

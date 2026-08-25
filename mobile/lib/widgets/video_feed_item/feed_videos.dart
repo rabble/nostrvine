@@ -68,6 +68,7 @@ class FeedVideos extends ConsumerStatefulWidget {
     this.onActiveVideoChanged,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.feedSessionRevision = 0,
     super.key,
   });
 
@@ -108,6 +109,12 @@ class FeedVideos extends ConsumerStatefulWidget {
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
 
+  /// Identifies one feed-depth session.
+  ///
+  /// Change this when a source or full collection reload succeeds. Pagination
+  /// keeps the same revision so unique-video depth continues across pages.
+  final int feedSessionRevision;
+
   @override
   ConsumerState<FeedVideos> createState() => FeedVideosState();
 }
@@ -146,6 +153,14 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   late final ConsumptionAnalyticsTracker _consumptionAnalytics;
   final Set<String> _seenVideoIds = {};
 
+  void _resetSeenVideos() {
+    _seenVideoIds.clear();
+    if (widget.currentIndex >= 0 &&
+        widget.currentIndex < widget.videos.length) {
+      _seenVideoIds.add(widget.videos[widget.currentIndex].id);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -153,10 +168,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       subtitleVisibilityOverrideProvider.notifier,
     );
     _consumptionAnalytics = ref.read(consumptionAnalyticsTrackerProvider);
-    if (widget.currentIndex >= 0 &&
-        widget.currentIndex < widget.videos.length) {
-      _seenVideoIds.add(widget.videos[widget.currentIndex].id);
-    }
+    _resetSeenVideos();
   }
 
   void _syncScopedSubtitleVisibility(String videoId, {bool defer = false}) {
@@ -266,6 +278,11 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.feedSessionRevision != oldWidget.feedSessionRevision ||
+        widget.trafficSource != oldWidget.trafficSource ||
+        widget.sourceDetail != oldWidget.sourceDetail) {
+      _resetSeenVideos();
+    }
     if (widget.isActive) {
       final currentIndex =
           _feedKey.currentState?.currentIndex ?? widget.currentIndex;
@@ -419,7 +436,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           _syncScopedSubtitleVisibility(video.id);
           _resumeAutoAdvanceAfterSwipe();
           final isProgrammaticActivation = index == widget.currentIndex;
-          if (_seenVideoIds.add(video.id) && !isProgrammaticActivation) {
+          if (!isProgrammaticActivation && _seenVideoIds.add(video.id)) {
             unawaited(
               _consumptionAnalytics.feedScrolled(
                 trafficSource: widget.trafficSource,

@@ -1402,6 +1402,7 @@ void main() {
           likesRepository: mockLikesA,
           commentsRepository: mockCommentsA,
           repostsRepository: mockRepostsA,
+          consumptionAnalytics: mockConsumptionAnalytics,
         );
         final blocB = VideoInteractionsBloc(
           eventId: 'event-b',
@@ -1409,6 +1410,7 @@ void main() {
           likesRepository: mockLikesB,
           commentsRepository: mockCommentsB,
           repostsRepository: mockRepostsB,
+          consumptionAnalytics: mockConsumptionAnalytics,
         );
         addTearDown(() async {
           await blocA.close();
