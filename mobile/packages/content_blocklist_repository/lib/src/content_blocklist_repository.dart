@@ -883,16 +883,32 @@ class ContentBlocklistRepository {
         _runtimeBlocklist.contains(pubkey);
   }
 
+  /// The buckets recording a hide **this account chose**: the operator list,
+  /// our own blocks, and the mutes we authored on our own kind 10000 list
+  /// (possibly from another client).
+  ///
+  /// DM surfaces filter on these alone. A direct message already received is
+  /// the viewer's own copy, and a third party must not be able to remove it
+  /// by publishing a list — see [_hideBuckets] and #7345.
+  late final List<Set<String>> _viewerHideBuckets = [
+    _internalBlocklist,
+    _runtimeBlocklist,
+    _mutedPubkeys,
+  ];
+
   /// The buckets whose union is hidden from feeds, held as live references
   /// to the underlying sets. Every instance is stable for the repository's
   /// lifetime — the `const` internal list plus four `final` sets that are
   /// only ever mutated in place — so both [feedHiddenPubkeys] and
-  /// [shouldFilterFromFeeds] derive from this one list and cannot drift. A
-  /// new hide-bucket is added here exactly once.
+  /// [shouldFilterFromFeeds] derive from this one list and cannot drift.
+  ///
+  /// This is a strict superset of [_viewerHideBuckets]: it adds the two
+  /// buckets fed by *other people's* lists, which suppress our content in
+  /// feeds but must never reach a DM surface. A new bucket is added in
+  /// exactly one place — [_viewerHideBuckets] when the viewer chose the hide
+  /// and it should apply everywhere, here when it is feeds-only.
   late final List<Set<String>> _hideBuckets = [
-    _internalBlocklist,
-    _runtimeBlocklist,
-    _mutedPubkeys,
+    ..._viewerHideBuckets,
     _mutualMuteBlocklist,
     _blockedByOthers,
   ];
@@ -904,10 +920,10 @@ class ContentBlocklistRepository {
   /// - Users who blocked us (kind 30000, d=block) — hides our content
   ///   from their feeds and their content from ours
   ///
-  /// This is the canonical feed-hide set. UI surfaces that need the
-  /// materialized set — e.g. DM reaction filtering in `conversation_view`
-  /// — read this rather than re-deriving the union by hand, so they stay
-  /// in lockstep with [shouldFilterFromFeeds].
+  /// This is the canonical feed-hide set. Feed surfaces that need the
+  /// materialized set read this rather than re-deriving the union by hand,
+  /// so they stay in lockstep with [shouldFilterFromFeeds]. DM surfaces read
+  /// [dmHiddenPubkeys] instead.
   Set<String> get feedHiddenPubkeys => {
     for (final bucket in _hideBuckets) ...bucket,
   };
@@ -922,6 +938,34 @@ class ContentBlocklistRepository {
   bool shouldFilterFromFeeds(String pubkey) {
     for (var i = 0; i < _hideBuckets.length; i++) {
       if (_hideBuckets[i].contains(pubkey)) return true;
+    }
+    return false;
+  }
+
+  /// The union of every pubkey hidden from **DM surfaces**:
+  /// - Users we blocked (internal + runtime blocklist)
+  /// - Users we muted on our own kind 10000 mute list
+  ///
+  /// Deliberately excludes the two buckets fed by other people's lists
+  /// (`_mutualMuteBlocklist`, `_blockedByOthers`). Publishing a kind 10000
+  /// mute or a kind 30000 `d=block` naming the viewer used to remove the
+  /// viewer's own copy of a thread from every DM surface at once, including
+  /// messages already received and stored on the device (#7345).
+  ///
+  /// Counterpart to [feedHiddenPubkeys]; both derive from [_hideBuckets] /
+  /// [_viewerHideBuckets] so the DM set stays a strict subset of the feed set.
+  Set<String> get dmHiddenPubkeys => {
+    for (final bucket in _viewerHideBuckets) ...bucket,
+  };
+
+  /// Whether [pubkey] is in [dmHiddenPubkeys] and so should be filtered from
+  /// DM surfaces.
+  ///
+  /// Same short-circuiting scan as [shouldFilterFromFeeds], over the narrower
+  /// bucket list.
+  bool shouldFilterFromDms(String pubkey) {
+    for (var i = 0; i < _viewerHideBuckets.length; i++) {
+      if (_viewerHideBuckets[i].contains(pubkey)) return true;
     }
     return false;
   }
@@ -1083,6 +1127,10 @@ class ContentBlocklistRepository {
   ///
   /// [userPubkey] is the current user's pubkey, used to identify which
   /// participant is "the other one" in each conversation.
+  ///
+  /// Filters on [shouldFilterFromDms], not [shouldFilterFromFeeds]: a thread
+  /// the viewer already received stays reachable even when the counterparty
+  /// mutes or blocks them (#7345).
   List<DmConversation> filterBlockedConversations(
     List<DmConversation> conversations, {
     required String userPubkey,
@@ -1094,7 +1142,7 @@ class ContentBlocklistRepository {
       );
       // Exclude self-conversations (no "other" participant found).
       if (otherPubkey.isEmpty) return false;
-      return !shouldFilterFromFeeds(otherPubkey);
+      return !shouldFilterFromDms(otherPubkey);
     }).toList();
   }
 
