@@ -184,9 +184,11 @@ void main() {
 
         expect(result.status, equals(LogClipboardStatus.success));
         expect(result.text, contains('newest failure'));
+        // An ASCII cut never backs off, so the copy fills the ceiling exactly.
+        // A bound alone would leave a shrunken newest-line budget green.
         expect(
           utf8.encode(result.text!).length,
-          lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+          equals(BugReportService.logClipboardByteBudget),
         );
       },
     );
@@ -196,12 +198,15 @@ void main() {
     test(
       'keeps multi-byte content within the clipboard byte ceiling',
       () async {
-        const reps = BugReportService.logClipboardByteBudget ~/ 4 + 500;
+        const emoji = '\u{1F3AC}';
+        final emojiBytes = utf8.encode(emoji).length;
+        final reps =
+            BugReportService.logClipboardByteBudget ~/ emojiBytes + 500;
         LogCaptureService().captureLog(
           LogEntry(
             timestamp: DateTime(2026, 8, 24),
             level: LogLevel.error,
-            message: 'newest failure ${'\u{1F3AC}' * reps}',
+            message: 'newest failure ${emoji * reps}',
           ),
         );
 
@@ -211,9 +216,15 @@ void main() {
 
         expect(result.status, equals(LogClipboardStatus.success));
         expect(result.text, contains('newest failure'));
+        // The back-off costs at most a partial character, so the copy stays at
+        // the ceiling instead of collapsing toward it. Deriving the slack from
+        // the character keeps the bound tight if this test ever swaps it.
         expect(
           utf8.encode(result.text!).length,
-          lessThanOrEqualTo(BugReportService.logClipboardByteBudget),
+          inInclusiveRange(
+            BugReportService.logClipboardByteBudget - (emojiBytes - 1),
+            BugReportService.logClipboardByteBudget,
+          ),
         );
       },
     );
