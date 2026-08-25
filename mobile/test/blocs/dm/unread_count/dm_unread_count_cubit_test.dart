@@ -104,6 +104,14 @@ void _settle(FakeAsync fake) {
   fake.elapse(Duration.zero);
 }
 
+/// Closes [cubit] from inside the fake zone.
+///
+/// Deliberately not `addTearDown(cubit.close)`: tear-downs run after
+/// `fakeAsync` has returned, and awaiting `close()` there never completes —
+/// the cubit's rxdart subscription belongs to the discarded zone — so the
+/// suite hangs instead of failing. Called inline, the upstream cancel is
+/// synchronous, which is what leaves the shared controllers listener-free for
+/// the group `tearDown`.
 void _close(FakeAsync fake, DmUnreadCountCubit cubit) {
   cubit.close();
   fake.flushMicrotasks();
