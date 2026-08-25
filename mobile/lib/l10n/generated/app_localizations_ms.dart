@@ -6839,10 +6839,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Anda menukar akaun, jadi tiada apa yang dipadam. Buka semula pemadaman untuk akaun yang mahu anda alih keluar.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Sebahagian permintaan pemadaman diterima, tetapi pembersihan terhenti kerana anda menukar akaun. Log masuk semula ke akaun asal untuk menyelesaikannya.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Tidak dapat melepaskan nama pengguna anda. Akaun anda tidak dipadam. Cuba lagi, atau nyah tanda pilihan itu.';
 
@@ -6863,18 +6859,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Taip nama pengguna anda';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Gagal memadam kandungan daripada relay';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Kami tidak dapat mengesahkan pemadaman akaun dengan mana-mana relay. Semak sambungan anda dan cuba lagi.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Padam Semua Kandungan';
@@ -6934,7 +6918,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan. Cuba lagi kemudian.';
+      'Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -6977,10 +6961,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi sebentar lagi.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Log masuk semula untuk melengkapkannya.';
 
   @override
   String get deleteAccountSuccess =>

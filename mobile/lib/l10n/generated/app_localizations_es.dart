@@ -6893,10 +6893,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cambiaste de cuenta, así que no se eliminó nada. Volvé a abrir la eliminación para la cuenta que querés borrar.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Se aceptaron algunas solicitudes de borrado, pero la limpieza se detuvo porque cambiaste de cuenta. Vuelve a entrar en la cuenta original para terminar.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'No se pudo liberar tu nombre de usuario. Tu cuenta no fue eliminada. Probá de nuevo o desmarcá la opción.';
 
@@ -6918,18 +6914,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Escribí tu nombre de usuario';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'No se pudo eliminar el contenido de los relays';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'No pudimos confirmar el borrado de la cuenta con ningún relay. Revisa tu conexión e inténtalo de nuevo.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton =>
@@ -6990,7 +6974,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'La eliminación de cuentas no está disponible en este momento. No se eliminó nada. Probá de nuevo más tarde.';
+      'La eliminación de cuentas no está disponible en este momento. No se eliminó nada.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -7033,10 +7017,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Se enviaron las solicitudes de eliminación de tus publicaciones, pero no pudimos terminar de eliminar tu cuenta. Probá de nuevo en un rato.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Se enviaron las solicitudes de eliminación de tus publicaciones, pero no pudimos terminar de eliminar tu cuenta. Iniciá sesión de nuevo para terminar.';
 
   @override
   String get deleteAccountSuccess =>

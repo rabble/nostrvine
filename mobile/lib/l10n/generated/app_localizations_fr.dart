@@ -6917,10 +6917,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu as changé de compte, donc rien n\'a été supprimé. Rouvre la suppression pour le compte que tu veux retirer.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Certaines demandes de suppression ont été acceptées, mais le nettoyage s\'est arrêté parce que tu as changé de compte. Reconnecte-toi au compte d\'origine pour terminer.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Impossible de libérer ton nom d\'utilisateur. Ton compte n\'a pas été supprimé. Réessaie ou décoche l\'option.';
 
@@ -6942,18 +6938,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Tape ton nom d\'utilisateur';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Échec de la suppression du contenu des relays';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'On n\'a pas pu confirmer la suppression du compte auprès d\'un relais. Vérifie ta connexion et réessaie.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Supprimer tout le contenu';
@@ -7015,7 +6999,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'La suppression de compte n’est pas disponible pour le moment. Rien n’a été supprimé. Réessaie plus tard.';
+      'La suppression de compte n’est pas disponible pour le moment. Rien n’a été supprimé.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -7059,10 +7043,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Les demandes de suppression de tes publications ont été envoyées, mais on n\'a pas pu terminer la suppression de ton compte. Réessaie dans un moment.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Les demandes de suppression de tes publications ont été envoyées, mais on n\'a pas pu terminer la suppression de ton compte. Reconnecte-toi pour terminer.';
 
   @override
   String get deleteAccountSuccess =>

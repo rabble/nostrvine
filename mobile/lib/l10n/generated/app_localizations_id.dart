@@ -6754,10 +6754,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Kamu beralih akun, jadi tidak ada yang dihapus. Buka lagi penghapusan untuk akun yang ingin kamu hapus.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Sebagian permintaan hapus sudah diterima, tapi pembersihan berhenti karena kamu berganti akun. Masuk lagi ke akun awal untuk menyelesaikannya.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Tidak bisa melepaskan username-mu. Akunmu tidak jadi dihapus. Coba lagi, atau hapus centang pada opsinya.';
 
@@ -6778,18 +6774,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Ketik username-mu';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Gagal menghapus konten dari relay';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Kami tidak bisa memastikan penghapusan akun dengan relay mana pun. Periksa koneksimu dan coba lagi.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Hapus Semua Konten';
@@ -6849,7 +6833,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Penghapusan akun sedang tidak tersedia. Tidak ada yang dihapus. Coba lagi nanti.';
+      'Penghapusan akun sedang tidak tersedia. Tidak ada yang dihapus.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -6892,10 +6876,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Coba lagi sebentar lagi.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Masuk lagi untuk menyelesaikannya.';
 
   @override
   String get deleteAccountSuccess =>

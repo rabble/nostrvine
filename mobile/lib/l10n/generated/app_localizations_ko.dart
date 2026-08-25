@@ -6503,10 +6503,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '계정이 전환돼서 아무것도 삭제되지 않았어요. 삭제할 계정에서 삭제 화면을 다시 열어주세요.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      '일부 삭제 요청은 처리되었지만 계정을 전환해서 정리가 중단됐어요. 마무리하려면 원래 계정으로 다시 로그인하세요.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       '사용자명을 해제하지 못했어요. 계정은 삭제되지 않았어요. 다시 시도하거나 옵션 선택을 해제해주세요.';
 
@@ -6526,17 +6522,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => '사용자명 입력';
-
-  @override
-  String get deleteAccountContentDeletionFailed => '릴레이에서 콘텐츠를 삭제하지 못했어요';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      '어떤 릴레이에서도 계정 삭제를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
@@ -6595,7 +6580,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      '지금은 계정을 삭제할 수 없어요. 삭제된 항목은 없어요. 나중에 다시 시도해주세요.';
+      '지금은 계정을 삭제할 수 없어요. 삭제된 항목은 없어요.';
 
   @override
   String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
@@ -6636,10 +6621,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       '게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 잠시 후 다시 시도해주세요.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      '게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 다시 로그인해서 마무리해주세요.';
 
   @override
   String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';

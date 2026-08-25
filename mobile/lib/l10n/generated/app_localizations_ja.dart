@@ -6484,10 +6484,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'アカウントが切り替わったから、何も削除されていないよ。削除したいアカウントで削除画面を開き直してね。';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      '一部の削除リクエストは受理されましたが、アカウントを切り替えたためクリーンアップが停止しました。完了するには元のアカウントに再度ログインしてください。';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'ユーザー名を解放できなかったよ。アカウントは削除されていないよ。もう一回試すか、オプションのチェックを外してね。';
 
@@ -6507,17 +6503,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'ユーザー名を入力してね';
-
-  @override
-  String get deleteAccountContentDeletionFailed => 'リレーからのコンテンツ削除に失敗したよ';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'どのリレーでもアカウント削除を確認できませんでした。接続を確認してもう一度お試しください。';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'すべてのコンテンツを削除';
@@ -6577,7 +6562,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'アカウント削除は現在利用できません。何も削除されていません。後でもう一度お試しください。';
+      'アカウント削除は現在利用できません。何も削除されていません。';
 
   @override
   String get deleteAccountDeletionIncomplete => 'アカウントの削除を完了できなかったよ。もう一回試してね。';
@@ -6618,10 +6603,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       '投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。少ししてからもう一回試してね。';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      '投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。もう一度サインインして完了してね。';
 
   @override
   String get deleteAccountSuccess => '削除リクエストを送信したよ。このデバイスからサインアウトしたよ。';

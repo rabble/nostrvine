@@ -6756,10 +6756,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesap değiştirdin, bu yüzden hiçbir şey silinmedi. Kaldırmak istediğin hesap için silme ekranını yeniden aç.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Bazı silme istekleri kabul edildi ama hesap değiştirdiğin için temizlik durdu. Tamamlamak için orijinal hesaba tekrar giriş yap.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Kullanıcı adın serbest bırakılamadı. Hesabın silinmedi. Tekrar dene ya da seçeneğin işaretini kaldır.';
 
@@ -6780,18 +6776,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Kullanıcı adını yaz';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'İçerik rölelerden silinemedi';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Hesap silmeyi hiçbir röleyle doğrulayamadık. Bağlantını kontrol edip tekrar dene.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Tüm İçeriği Sil';
@@ -6851,7 +6835,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Hesap silme şu anda kullanılamıyor. Hiçbir şey silinmedi. Daha sonra tekrar dene.';
+      'Hesap silme şu anda kullanılamıyor. Hiçbir şey silinmedi.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -6894,10 +6878,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Gönderilerin için silme istekleri gönderildi ama hesabını silme işlemini tamamlayamadık. Birazdan tekrar dene.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Gönderilerin için silme istekleri gönderildi ama hesabını silme işlemini tamamlayamadık. Tamamlamak için tekrar giriş yap.';
 
   @override
   String get deleteAccountSuccess =>

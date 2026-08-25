@@ -6822,10 +6822,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du bytte konto, så ingenting raderades. Öppna raderingen igen för kontot du vill ta bort.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'En del raderingsbegäranden godtogs, men uppstädningen stoppades för att du bytte konto. Logga in på det ursprungliga kontot igen för att slutföra.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Kunde inte frigöra ditt användarnamn. Ditt konto raderades inte. Försök igen eller avmarkera alternativet.';
 
@@ -6846,18 +6842,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Skriv ditt användarnamn';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Kunde inte ta bort innehåll från relerna';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Vi kunde inte bekräfta kontoraderingen med något relä. Kontrollera anslutningen och försök igen.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Ta bort allt innehåll';
@@ -6917,7 +6901,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Kontoborttagning är inte tillgänglig just nu. Ingenting har tagits bort. Försök igen senare.';
+      'Kontoborttagning är inte tillgänglig just nu. Ingenting har tagits bort.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -6960,10 +6944,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Försök igen om en stund.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Logga in igen för att slutföra.';
 
   @override
   String get deleteAccountSuccess =>

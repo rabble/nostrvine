@@ -3795,7 +3795,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "Sebahagian permintaan pemadaman diterima, tetapi pembersihan terhenti kerana anda menukar akaun. Log masuk semula ke akaun asal untuk menyelesaikannya.",
   "deleteAccountBurnUsernameFailed": "Tidak dapat melepaskan nama pengguna anda. Akaun anda tidak dipadam. Cuba lagi, atau nyah tanda pilihan itu.",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -3822,10 +3821,8 @@
   "@deleteAccountConfirmationHintUsername": {
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
-  "deleteAccountContentDeletionFailed": "Gagal memadam kandungan daripada relay",
-  "deleteAccountRelayConfirmationFailed": "Kami tidak dapat mengesahkan pemadaman akaun dengan mana-mana relay. Semak sambungan anda dan cuba lagi.",
   "deleteAccountDeleteAllContentButton": "Padam Semua Kandungan",
-  "deleteAccountDeletionUnavailable": "Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan. Cuba lagi kemudian.",
+  "deleteAccountDeletionUnavailable": "Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan.",
   "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.",
   "@deleteAccountDeletionIncomplete": {
@@ -3862,10 +3859,6 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi sebentar lagi.",
-  "deleteAccountServerDeletionRequiresReauth": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Log masuk semula untuk melengkapkannya.",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
-  },
   "deleteAccountSuccess": "Permintaan pemadaman dihantar. Anda telah dilog keluar pada peranti ini.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."

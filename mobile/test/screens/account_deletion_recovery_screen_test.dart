@@ -196,6 +196,26 @@ void main() {
       verify(cubit.signOut).called(1);
     });
 
+    testWidgets('Keycast terminal failure explains deletion is incomplete', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.terminalFailure,
+          attempt: AccountDeletionAttempt(
+            id: 'attempt-id',
+            status: AccountDeletionAttemptStatus.terminalFailure,
+            failureCode: 'keycast_deletion_failed',
+          ),
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.deleteAccountServerDeletionFailed), findsOneWidget);
+      expect(find.text(l10n.accountDeletionTerminalFailureBody), findsNothing);
+    });
+
     testWidgets('fail-closed load error keeps retry and sign out reachable', (
       tester,
     ) async {

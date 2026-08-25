@@ -6876,10 +6876,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nagpalit ka ng account, kaya walang na-delete. Buksan ulit ang pag-delete para sa account na gusto mong alisin.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'May ilang delete request na tinanggap, pero huminto ang paglilinis dahil nagpalit ka ng account. Mag-sign in ulit sa orihinal na account para matapos ito.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Hindi ma-release ang username mo. Hindi na-delete ang account mo. Subukan ulit, o alisin ang check sa option.';
 
@@ -6900,18 +6896,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'I-type ang username mo';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Hindi nabura ang content mula sa mga relay';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Hindi namin nakumpirma sa kahit anong relay ang pagbura ng account. Tingnan ang koneksyon mo at subukan ulit.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Burahin Lahat ng Content';
@@ -6972,7 +6956,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Hindi available ngayon ang pag-delete ng account. Walang na-delete. Subukan ulit mamaya.';
+      'Hindi available ngayon ang pag-delete ng account. Walang na-delete.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -7016,10 +7000,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Subukan ulit mamaya.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Mag-sign in ulit para tapusin.';
 
   @override
   String get deleteAccountSuccess =>

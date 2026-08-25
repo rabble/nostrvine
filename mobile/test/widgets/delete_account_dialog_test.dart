@@ -70,11 +70,11 @@ _MockAccountDeletionRecoveryRepository _successfulRecoveryRepository() {
   return repository;
 }
 
-Future<void> executeAccountDeletion({
+Future<void> runDeletion({
   required BuildContext context,
   required AccountDeletionService deletionService,
   required AuthService authService,
-  AccountDeletionRecoveryRepository? deletionRecoveryRepository,
+  required AccountDeletionRecoveryRepository deletionRecoveryRepository,
   bool burnUsername = false,
   ({String name, String canonical})? ownedUsername,
   String? confirmedPubkey,
@@ -83,8 +83,7 @@ Future<void> executeAccountDeletion({
   context: context,
   deletionService: deletionService,
   authService: authService,
-  deletionRecoveryRepository:
-      deletionRecoveryRepository ?? _successfulRecoveryRepository(),
+  deletionRecoveryRepository: deletionRecoveryRepository,
   burnUsername: burnUsername,
   ownedUsername: ownedUsername,
   confirmedPubkey: confirmedPubkey,
@@ -247,9 +246,6 @@ void _stubSuccessfulDeletion(
       expectedPubkey: any(named: 'expectedPubkey'),
     ),
   ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-  when(authService.deleteKeycastAccount).thenAnswer(
-    (_) async => (success: true, error: null, requiresReauthentication: false),
-  );
 }
 
 /// Collects what the deletion flow hands to screen readers.
@@ -795,10 +791,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenThrow(
@@ -819,10 +811,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _successfulRecoveryRepository(),
       );
       await tester.pumpAndSettle();
 
@@ -855,10 +848,11 @@ void main() {
         final announced = _captureAnnouncements(tester);
 
         final capturedContext = await _pumpSignOutRedirectApp(tester, redirect);
-        final deletion = executeAccountDeletion(
+        final deletion = runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
         );
         await tester.pumpAndSettle();
         expect(find.text(_welcomeMarker), findsOneWidget);
@@ -890,10 +884,11 @@ void main() {
         });
 
         final capturedContext = await _pumpSignOutRedirectApp(tester, redirect);
-        final deletion = executeAccountDeletion(
+        final deletion = runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
         );
         // Stop one frame past the redirect, with the outgoing route still
         // animating away: the caller context is then still mounted when
@@ -955,10 +950,11 @@ void main() {
           ),
         );
 
-        final deletion = executeAccountDeletion(
+        final deletion = runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
         );
         // Not pumpAndSettle: the sheet's progress indicator never goes quiet.
         await tester.pump();
@@ -1011,10 +1007,11 @@ void main() {
           ),
         );
 
-        final deletion = executeAccountDeletion(
+        final deletion = runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
@@ -1067,10 +1064,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -1087,7 +1080,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1110,7 +1103,6 @@ void main() {
           vanishEventId: 'event-id',
         ),
       ).called(1);
-      verifyNever(authService.deleteKeycastAccount);
     });
 
     testWidgets('does not release the username when burn is not opted in', (
@@ -1130,10 +1122,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -1159,7 +1147,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1215,7 +1203,7 @@ void main() {
           ),
         );
 
-        await executeAccountDeletion(
+        await runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
@@ -1269,14 +1257,6 @@ void main() {
         ).thenAnswer(
           (_) async => DeleteAccountResult.createSuccess('event-id'),
         );
-        when(authService.deleteKeycastAccount).thenAnswer(
-          (_) async => (
-            success: false,
-            error: 'fk error',
-            requiresReauthentication: false,
-          ),
-        );
-        when(() => authService.isRegistered).thenReturn(true);
 
         late BuildContext capturedContext;
         await tester.pumpWidget(
@@ -1290,7 +1270,7 @@ void main() {
           ),
         );
 
-        await executeAccountDeletion(
+        await runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
@@ -1352,7 +1332,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1408,7 +1388,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1458,7 +1438,7 @@ void main() {
           ),
         );
 
-        await executeAccountDeletion(
+        await runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
@@ -1514,7 +1494,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1568,7 +1548,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1620,7 +1600,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1669,7 +1649,7 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1717,7 +1697,7 @@ void main() {
 
       // Opted in (burnUsername: true) but ownedUsername omitted (null): the
       // burn cannot be honored, so deletion must abort, not proceed.
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
@@ -1777,10 +1757,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _MockAccountDeletionRecoveryRepository(),
         burnUsername: true,
         ownedUsername: (name: 'rabble', canonical: 'rabble'),
         confirmedPubkey: _pubkeyHex,
@@ -1851,10 +1832,11 @@ void main() {
           ),
         );
 
-        await executeAccountDeletion(
+        await runDeletion(
           context: capturedContext,
           deletionService: deletionService,
           authService: authService,
+          deletionRecoveryRepository: _successfulRecoveryRepository(),
           confirmedPubkey: _pubkeyHex,
         );
         await tester.pumpAndSettle();
@@ -1864,7 +1846,6 @@ void main() {
           find.text(l10n.accountDeletionCancelAttemptBody),
           findsOneWidget,
         );
-        verifyNever(authService.deleteKeycastAccount);
         verifyNever(
           () =>
               authService.signOut(deleteKeys: true, deleteLocalUserData: true),
@@ -1900,10 +1881,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _MockAccountDeletionRecoveryRepository(),
         confirmedPubkey: _pubkeyHex,
       );
       await tester.pumpAndSettle();
@@ -1915,7 +1897,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       );
-      verifyNever(authService.deleteKeycastAccount);
       verifyNever(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       );
@@ -1944,10 +1925,6 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(authService.deleteKeycastAccount).thenAnswer(
-        (_) async =>
-            (success: true, error: null, requiresReauthentication: false),
-      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -1964,10 +1941,11 @@ void main() {
         ),
       );
 
-      await executeAccountDeletion(
+      await runDeletion(
         context: capturedContext,
         deletionService: deletionService,
         authService: authService,
+        deletionRecoveryRepository: _successfulRecoveryRepository(),
         confirmedPubkey: _pubkeyHex,
       );
       await tester.pumpAndSettle();

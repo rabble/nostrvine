@@ -6451,10 +6451,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '你切换了账号，因此没有删除任何内容。请为要删除的账号重新打开删除流程。';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      '部分删除请求已被接受，但因为你切换了账号，清理已停止。请重新登录原账号以完成。';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       '无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。';
 
@@ -6474,17 +6470,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => '输入你的用户名';
-
-  @override
-  String get deleteAccountContentDeletionFailed => '从中继删除内容失败';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      '我们无法通过中继确认账号删除。请检查网络连接后重试。';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
@@ -6537,7 +6522,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
-  String get deleteAccountDeletionUnavailable => '账号删除功能目前不可用。未删除任何内容。请稍后重试。';
+  String get deleteAccountDeletionUnavailable => '账号删除功能目前不可用。未删除任何内容。';
 
   @override
   String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
@@ -6577,10 +6562,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       '你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      '你的帖子删除请求已发送，但我们没能完成账号删除。请重新登录以完成。';
 
   @override
   String get deleteAccountSuccess => '删除请求已发送。你已在此设备上退出登录。';

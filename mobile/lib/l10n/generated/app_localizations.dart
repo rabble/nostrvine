@@ -11708,12 +11708,6 @@ abstract class AppLocalizations {
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
   String get deleteAccountAccountChanged;
 
-  /// Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish.
-  ///
-  /// In en, this message translates to:
-  /// **'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.'**
-  String get deleteAccountAccountChangedAfterDeletion;
-
   /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
   ///
   /// In en, this message translates to:
@@ -11749,24 +11743,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type your username'**
   String get deleteAccountConfirmationHintUsername;
-
-  /// No description provided for @deleteAccountContentDeletionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content from relays'**
-  String get deleteAccountContentDeletionFailed;
-
-  /// Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out.
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn\'t confirm account deletion with a relay. Check your connection and try again.'**
-  String get deleteAccountRelayConfirmationFailed;
-
-  /// Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned.
-  ///
-  /// In en, this message translates to:
-  /// **'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.'**
-  String get deleteAccountAccountRestricted;
 
   /// No description provided for @deleteAccountDeleteAllContentButton.
   ///
@@ -11861,7 +11837,7 @@ abstract class AppLocalizations {
   /// Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred.
   ///
   /// In en, this message translates to:
-  /// **'Account deletion isn\'t available right now. Nothing was deleted. Try again later.'**
+  /// **'Account deletion isn\'t available right now. Nothing was deleted.'**
   String get deleteAccountDeletionUnavailable;
 
   /// Neutral error when account deletion could not complete and no claim about username state is safe.
@@ -11929,12 +11905,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Try again in a bit.'**
   String get deleteAccountServerDeletionFailed;
-
-  /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays.
-  ///
-  /// In en, this message translates to:
-  /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Sign in again to finish.'**
-  String get deleteAccountServerDeletionRequiresReauth;
 
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///

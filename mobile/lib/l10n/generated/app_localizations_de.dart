@@ -6912,10 +6912,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du hast das Konto gewechselt, also wurde nichts gelöscht. Öffne das Löschen erneut für das Konto, das du entfernen willst.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Einige Löschanfragen wurden angenommen, aber die Bereinigung wurde gestoppt, weil du das Konto gewechselt hast. Melde dich wieder im ursprünglichen Konto an, um sie abzuschließen.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Dein Benutzername konnte nicht freigegeben werden. Dein Konto wurde nicht gelöscht. Versuch es erneut oder deaktiviere die Option.';
 
@@ -6937,18 +6933,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Benutzername eingeben';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Inhalte konnten nicht von den Relays gelöscht werden';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Wir konnten die Kontolöschung mit keinem Relay bestätigen. Prüfe deine Verbindung und versuch es erneut.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Alle Inhalte löschen';
@@ -7008,7 +6992,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Die Kontolöschung ist gerade nicht verfügbar. Es wurde nichts gelöscht. Versuch es später noch einmal.';
+      'Die Kontolöschung ist gerade nicht verfügbar. Es wurde nichts gelöscht.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -7051,10 +7035,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Versuch es später noch mal.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Melde dich erneut an, um das abzuschließen.';
 
   @override
   String get deleteAccountSuccess =>

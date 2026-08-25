@@ -6998,10 +6998,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai schimbat contul, așa că nimic nu a fost șters. Redeschide ștergerea pentru contul pe care vrei să-l elimini.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Unele cereri de ștergere au fost acceptate, dar curățarea s-a oprit fiindcă ai schimbat contul. Autentifică-te din nou în contul inițial ca să finalizezi.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
 
@@ -7023,18 +7019,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Scrie numele tău de utilizator';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Nu am putut șterge conținutul de pe relay-uri';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Nu am putut confirma ștergerea contului cu niciun releu. Verifică conexiunea și încearcă din nou.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Șterge tot conținutul';
@@ -7095,7 +7079,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'Ștergerea contului nu este disponibilă momentan. Nu s-a șters nimic. Încearcă din nou mai târziu.';
+      'Ștergerea contului nu este disponibilă momentan. Nu s-a șters nimic.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -7138,10 +7122,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Încearcă din nou în scurt timp.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Conectează-te din nou pentru a finaliza.';
 
   @override
   String get deleteAccountSuccess =>

@@ -6777,10 +6777,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'لقد بدّلت الحسابات، لذا لم يُحذف أي شيء. أعد فتح الحذف للحساب الذي تريد إزالته.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'تم قبول بعض طلبات الحذف، لكن التنظيف توقف لأنك بدّلت الحسابات. سجّل الدخول مجددًا إلى الحساب الأصلي لإتمام العملية.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.';
 
@@ -6802,18 +6798,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'اكتب اسم المستخدم الخاص بك';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'فشل حذف المحتوى من المحوّلات';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'تعذّر علينا تأكيد حذف الحساب مع أي ريلاي. تحقق من اتصالك وحاول مرة أخرى.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'حذف كل المحتوى';
@@ -6873,7 +6857,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionUnavailable =>
-      'حذف الحساب غير متاح الآن. لم يتم حذف أي شيء. حاول مرة أخرى لاحقًا.';
+      'حذف الحساب غير متاح الآن. لم يتم حذف أي شيء.';
 
   @override
   String get deleteAccountDeletionIncomplete =>
@@ -6915,10 +6899,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. حاول مرّة أخرى بعد قليل.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. سجّل الدخول مرّة أخرى لإكمال العملية.';
 
   @override
   String get deleteAccountSuccess =>
