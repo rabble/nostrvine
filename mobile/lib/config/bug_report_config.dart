@@ -57,14 +57,8 @@ const _credentialValue =
 
 /// Configuration for bug report system
 class BugReportConfig {
-  /// Email address for receiving bug reports (fallback only)
-  static const String supportEmail = 'contact@divine.video';
-
   /// Maximum log entries to include in bug report
   static const int maxLogEntries = 5000;
-
-  /// Maximum bug report size in bytes (~1MB)
-  static const int maxReportSizeBytes = 1024 * 1024;
 
   /// Max characters per individual log entry in the Zendesk summary.
   /// 500 chars is enough for error type + message context without
