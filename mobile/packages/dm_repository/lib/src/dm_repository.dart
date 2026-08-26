@@ -5144,6 +5144,20 @@ class DmRepository {
       );
     }
 
+    // Already retracted — stop before the signer round trip. `getMessageById`
+    // has no `isDeleted` predicate (the row is kept as dedup evidence), so
+    // without this a repeat delete of the same rumor sails through both
+    // checks above and signs + publishes a SECOND kind 5. That is reachable
+    // from the UI: the bubble only disappears once this method finishes, so
+    // a user who taps Delete and still sees the bubble taps it again.
+    if (row.isDeleted) {
+      Log.info(
+        'Message $rumorId already deleted — skipping duplicate kind 5',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     // Resolve conversation participants so the kind 5 event carries `p` tags.
     // This ensures the relay subscription (filtered by `#p`) delivers the
     // deletion to the other party.

@@ -10640,6 +10640,47 @@ void main() {
           ).called(1);
         },
       );
+
+      // Regression for #7322: `getMessageById` has no `isDeleted`
+      // predicate, so without the early return a repeat delete of the same
+      // rumor passed both guards above and signed + published a SECOND
+      // kind 5. Reachable from the UI — the bubble only disappears once the
+      // first delete finishes, so an impatient user taps Delete again.
+      test(
+        'returns early on an already soft-deleted row without signing or '
+        'publishing a duplicate kind 5',
+        () async {
+          final repo = createRepository();
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: true,
+            ),
+          );
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
     });
 
     // -----------------------------------------------------------------
