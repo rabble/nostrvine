@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
@@ -80,7 +81,6 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
     final publishRestriction = widget.publishRestrictionConfirmed
         ? AccountEnforcementKind.unknownRestriction
         : null;
-
     AccountEnforcementKind effectiveKind(AccountEnforcementKind kind) {
       if (kind.isEnforced || kind == AccountEnforcementKind.signedOut) {
         return kind;
@@ -111,8 +111,11 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _StatusBody(kind: publishRestriction),
             // Keep a confirmed restriction through a failed read so its appeal
-            // and exit paths remain available. Never keep a stale all-clear:
-            // an account may have become restricted before the failed refresh.
+            // and exit paths survive a bad connection. A read that fails with
+            // nothing confirmed has no restriction to report, so it lands on
+            // the all-clear rather than on the failure: the relay answers at
+            // the moment of action, and reporting the fetch instead would
+            // describe Divine's plumbing rather than the user's account.
             error: (_, _) {
               final cachedKind = async.value?.kind;
               final retainedKind = cachedKind?.isEnforced ?? false
@@ -121,7 +124,10 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
               return _StatusBody(
                 kind: retainedKind,
                 isLastKnown: retainedKind != null,
-                onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
+                // Nothing to retry once the screen has nothing to report.
+                onRetry: retainedKind == null
+                    ? null
+                    : () => ref.invalidate(accountEnforcementStatusProvider),
               );
             },
             data: (status) => _StatusBody(kind: effectiveKind(status.kind)),
@@ -139,28 +145,37 @@ class _StatusBody extends StatelessWidget {
   final bool isLastKnown;
   final VoidCallback? onRetry;
 
+  /// Whether relay enforcement has anything to say about this account.
+  ///
+  /// A null kind (the status could not be read) and [unverified] both mean no
+  /// restriction to report; the relay reports a real one at the moment of
+  /// action, so neither is worth telling the user Divine does not know.
+  bool get _hasEnforcementToReport =>
+      kind != null && kind != AccountEnforcementKind.unverified;
+
   @override
   Widget build(BuildContext context) {
+    if (!_hasEnforcementToReport) return const _AllClearBody();
+
     final l10n = context.l10n;
-    final isEnforced = kind?.isEnforced ?? false;
+    final isEnforced = kind!.isEnforced;
     final colors = context.vineColors;
+    final body = l10n.accountEnforcementBody(kind!);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          kind == null
-              ? l10n.accountStatusUnknownHeading
-              : l10n.accountEnforcementHeading(kind!),
+          l10n.accountEnforcementHeading(kind!),
           style: VineTheme.headlineSmallFont(color: colors.primaryText),
         ),
-        const SizedBox(height: 8),
-        Text(
-          kind == null
-              ? l10n.accountStatusUnknownBody
-              : l10n.accountEnforcementBody(kind!),
-          style: VineTheme.bodyMediumFont(color: colors.primaryText),
-        ),
+        if (body != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            body,
+            style: VineTheme.bodyMediumFont(color: colors.primaryText),
+          ),
+        ],
         if (isLastKnown) ...[
           const SizedBox(height: 16),
           Text(
@@ -219,6 +234,42 @@ class _StatusBody extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Shown when there is no restriction to report.
+///
+/// Sticker and heading only. A second line here could only describe how
+/// Divine checks an account, and the screen exists to stay out of that.
+class _AllClearBody extends StatelessWidget {
+  const _AllClearBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 24,
+        children: [
+          // Decorative: the heading below carries the whole message.
+          ExcludeSemantics(
+            child: SvgPicture.asset(
+              'assets/stickers/hang_loose.svg',
+              height: 132,
+              width: 132,
+            ),
+          ),
+          Text(
+            context.l10n.accountStatusAllClearHeading,
+            style: VineTheme.headlineSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
