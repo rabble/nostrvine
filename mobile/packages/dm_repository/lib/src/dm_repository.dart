@@ -3349,18 +3349,23 @@ class DmRepository {
         String? protocol;
         var persistedLocally = false;
         await _conversationsDao.runInTransaction(() async {
-          // Cancel interlock (mirrors _recoverFullSendLocked): the user may
-          // have deleted the send (cancelOutgoingSend) during the publish
-          // window — OK-confirmation can legitimately take tens of seconds.
-          // The wire copy is out and receiver dedup keeps it single, but do
-          // NOT resurrect the message locally from a row that no longer
-          // exists.
+          // Cancel interlock (mirrors _recoverFullSendLocked): the row may be
+          // gone by the time this publish lands — the user deleted the send
+          // (cancelOutgoingSend) during the publish window (OK-confirmation
+          // can legitimately take tens of seconds), or the retry sweep's
+          // interrupted arm recovered and finalized the same rumor. The wire
+          // copy is out and receiver dedup keeps it single, but do NOT
+          // resurrect the message locally from a row that no longer exists.
+          //
+          // Naming only the cancel here actively misled: before #7326 a
+          // colliding same-second sibling deleted the row, and this line
+          // reported a cancellation that never happened.
           if (outgoingDao != null &&
               await outgoingDao.getById(rumor.id) == null) {
             Log.info(
               'Publish for ${rumor.id} landed after the queue row was '
-              'already removed (cancelled mid-flight); skipping local '
-              'persist.',
+              'already removed (cancelled mid-flight, or finalized by a '
+              'concurrent recovery); skipping local persist.',
               category: LogCategory.system,
             );
             return;
