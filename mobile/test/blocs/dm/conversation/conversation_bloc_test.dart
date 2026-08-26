@@ -101,8 +101,9 @@ void main() {
       when(
         () => mockDmRepository.getOutgoing(any()),
       ).thenAnswer((_) async => const <OutgoingDm>[]);
-      // Default to "no queued siblings existed" so persisted-delete tests
-      // keep their original semantics.
+      // Delete stops the bubble's whole durable batch before the kind-5
+      // publish; default to "no rows existed" so persisted-delete tests keep
+      // their original semantics.
       when(
         () => mockDmRepository.cancelOutgoingBatch(
           rumorId: any(named: 'rumorId'),
@@ -1686,7 +1687,7 @@ void main() {
       late Completer<void> releaseFirstDelete;
 
       blocTest<ConversationBloc, ConversationState>(
-        'cancels queued siblings after deleteMessageForEveryone succeeds',
+        'cancels queued siblings before deleteMessageForEveryone',
         setUp: () {
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
@@ -1697,10 +1698,10 @@ void main() {
             bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
         verify: (_) {
           verifyInOrder([
-            () => mockDmRepository.deleteMessageForEveryone(messageId),
             () => mockDmRepository.cancelOutgoingBatch(
               rumorId: messageId,
             ),
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
           ]);
         },
       );
@@ -1776,11 +1777,64 @@ void main() {
         ],
         errors: () => [isA<DmDeletionNotConfirmed>()],
         verify: (_) {
-          verifyNever(
-            () => mockDmRepository.cancelOutgoingBatch(
-              rumorId: messageId,
+          verifyInOrder([
+            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ]);
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'resets to idle so two consecutive failed deletes both emit a result',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(
+            const DmDeletionNotConfirmed(
+              messageId,
+              PublishOutcome(
+                eventId: 'eid',
+                acceptedBy: [],
+                rejectedBy: {},
+                noResponseFrom: ['wss://relay.divine.video'],
+              ),
             ),
           );
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await untilCalled(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+        },
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.deleteStatus,
+            'first failure',
+            DeleteStatus.failed,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.deleteStatus,
+            'reset before retry',
+            DeleteStatus.idle,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.deleteStatus,
+            'second failure',
+            DeleteStatus.failed,
+          ),
+        ],
+        errors: () => [
+          isA<DmDeletionNotConfirmed>(),
+          isA<DmDeletionNotConfirmed>(),
+        ],
+        verify: (_) {
+          verify(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).called(2);
         },
       );
 
@@ -1879,10 +1933,10 @@ void main() {
         errors: () => const <Object>[],
         verify: (_) {
           verifyInOrder([
-            () => mockDmRepository.deleteMessageForEveryone(messageId),
             () => mockDmRepository.cancelOutgoingBatch(
               rumorId: messageId,
             ),
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
           ]);
         },
       );

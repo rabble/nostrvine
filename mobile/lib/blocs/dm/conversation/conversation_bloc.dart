@@ -178,28 +178,23 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       emit(state.copyWith(deleteStatus: DeleteStatus.idle));
     }
 
-    Future<bool> cancelQueuedBatch() async {
-      try {
-        return await _dmRepository.cancelOutgoingBatch(
-              rumorId: event.rumorId,
-            ) >
-            0;
-      } on Object catch (e, stackTrace) {
-        // StateError = queue DAO not wired (legacy fixtures); ArgumentError =
-        // foreign-owner row. Both are handled by the persisted-delete result.
-        if (e is! StateError && e is! ArgumentError) {
-          addError(e, stackTrace);
-        }
-        return false;
+    // Stop every still-queued sibling before waiting for the relay retraction.
+    // This is intentionally not rolled back when the kind 5 fails: a Delete
+    // tap must not make the message reach more recipients via the retry sweep.
+    var cancelledQueueRow = false;
+    try {
+      cancelledQueueRow =
+          await _dmRepository.cancelOutgoingBatch(rumorId: event.rumorId) > 0;
+    } on Object catch (e, stackTrace) {
+      // StateError = queue DAO not wired (legacy fixtures); ArgumentError =
+      // foreign-owner row. Neither blocks the kind-5 delete below.
+      if (e is! StateError && e is! ArgumentError) {
+        addError(e, stackTrace);
       }
     }
 
     try {
       await _dmRepository.deleteMessageForEveryone(event.rumorId);
-      // Only discard sibling retry rows after a relay accepted the kind 5.
-      // Otherwise a persisted group bubble would remain visible while losing
-      // its pending/failed status and resend affordance permanently.
-      await cancelQueuedBatch();
       // The watchMessages stream automatically excludes deleted messages,
       // so the UI updates reactively — no manual state mutation needed.
     } on DmDeletionNotConfirmed catch (e, stackTrace) {
@@ -222,10 +217,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       );
     } on Object catch (e, stackTrace) {
       if (e is ArgumentError) {
-        // No persisted row: cancellation is the first state change for a
-        // queue-only optimistic/failed bubble. The repository resolves and
-        // drops the whole group batch so no sibling can be retried later.
-        if (await cancelQueuedBatch()) return;
+        // No persisted row. For a queue-only bubble whose row we just
+        // cancelled this is the EXPECTED outcome, not an error.
+        if (cancelledQueueRow) return;
         // Rumor gone or not ours — recoverable; matrix-NO.
         addError(e, stackTrace);
         return;
