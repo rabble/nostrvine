@@ -9717,10 +9717,11 @@ class DirectMessageRow extends DataClass
 
   /// Durable, collision-proof identity of one send invocation. Set on the
   /// sender's local message for 1:1 sends and shared by the single local
-  /// message representing a group fan-out; NULL for received and legacy
-  /// messages. It gives same-second 1:1 sends distinct rumor ids and lets group
-  /// recovery and optimistic UI grouping match a fan-out by an exact value
-  /// instead of the collision-prone `(sender, content, created_at ±5s)` tuple.
+  /// message representing a group fan-out. A self-wrap received on another
+  /// device preserves it; peer-authored and legacy messages leave it NULL. It
+  /// gives same-second 1:1 sends distinct rumor ids and lets group recovery and
+  /// optimistic UI grouping match a fan-out by an exact value instead of the
+  /// collision-prone `(sender, content, created_at ±5s)` tuple.
   final String? sendBatchId;
   const DirectMessageRow({
     required this.id,

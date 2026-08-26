@@ -254,9 +254,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// this to avoid inserting a second copy.
   ///
   /// Scoped by strict `owner_pubkey` equality (not `_ownedOrLegacy`): generated
-  /// send ids are only stamped on self-sent messages with a non-null owner, so
-  /// the NULL-owner legacy branch would only widen the match with nothing to
-  /// gain.
+  /// send ids are only stamped on the owner's sends, including self-wrap echoes
+  /// received on another device, so the NULL-owner legacy branch would only
+  /// widen the match with nothing to gain.
   Future<bool> hasMessageWithSendBatchId({
     required String batchId,
     required String ownerPubkey,

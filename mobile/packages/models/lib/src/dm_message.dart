@@ -73,9 +73,10 @@ class DmMessage extends Equatable {
 
   /// Durable, collision-proof id of the send invocation. Non-null for the
   /// sender's own persisted 1:1 message and for the single message representing
-  /// a group fan-out; null for received and legacy messages. The conversation
-  /// state additionally uses a group message's value to collapse its
-  /// per-recipient bubbles and aggregate their delivery status.
+  /// a group fan-out. A self-wrap received on another device preserves it;
+  /// peer-authored and legacy messages leave it null. The conversation state
+  /// additionally uses a group message's value to collapse its per-recipient
+  /// bubbles and aggregate their delivery status.
   final String? sendBatchId;
 
   /// Whether this is a file message (kind 15).

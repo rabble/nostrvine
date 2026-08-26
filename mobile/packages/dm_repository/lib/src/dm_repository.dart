@@ -3278,8 +3278,9 @@ class DmRepository {
     // and a re-mint between enqueue and publish would defeat it.
     //
     // The batch tag is deliberately NOT part of [rumorTags]: that list is what
-    // gets persisted as the local row's `tagsJson`, and the group path
-    // likewise keeps its wire-only token out of the persisted tags.
+    // the happy path persists as the local row's `tagsJson`, and the group path
+    // likewise keeps its wire-only token out of the happy-path persisted tags.
+    // Recovery reconstructs `tagsJson` from the full stored rumor instead.
     final rumor = _messageService!.buildRumor(
       recipientPubkey: recipientPubkey,
       content: content,
@@ -5012,8 +5013,9 @@ class DmRepository {
         if (liveSuccessIndexes.isEmpty) {
           Log.info(
             'Group publish landed after every successful sibling row was '
-            'already removed (cancelled mid-flight); skipping local persist '
-            'for conversation $conversationId.',
+            'already removed (cancelled mid-flight, or finalized by a '
+            'concurrent recovery); skipping local persist for conversation '
+            '$conversationId.',
             category: LogCategory.system,
           );
           return;

@@ -16403,10 +16403,12 @@ void main() {
           // surfaces as a dropped row rather than being hidden by a permissive
           // stub.
           final store = <OutgoingDm>[];
+          final enqueuedBatchIds = <String?>[];
           when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
             final dm = inv.positionalArguments.first as OutgoingDm;
             if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
             store.add(dm);
+            enqueuedBatchIds.add(dm.sendBatchId);
           });
           when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
             final id = inv.positionalArguments.first as String;
@@ -16497,12 +16499,14 @@ void main() {
           // Distinct wire rumors: two sends, two ids.
           expect(sentRumorIds, hasLength(2));
           expect(sentRumorIds.toSet(), hasLength(2));
+          expect(enqueuedBatchIds, equals(tokens));
 
           // Two local bubbles. Under the collision this is 1: the second
           // send's insertMessage carries the colliding rumor id, and the dao's
           // insertOrIgnore drops it. The user typed two messages and sees one.
           expect(persisted, hasLength(2));
           expect(persisted.map((m) => m.id).toSet(), hasLength(2));
+          expect(persisted.map((m) => m.batchId), orderedEquals(tokens));
         },
       );
 
