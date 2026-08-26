@@ -5197,6 +5197,7 @@ class DmRepository {
   /// Throws [StateError] if not initialized.
   /// Throws [ArgumentError] if the message doesn't exist or the current
   /// user is not the sender.
+  /// Throws [DmDeletionNotConfirmed] if no relay accepted the retraction.
   Future<void> deleteMessageForEveryone(String rumorId) async {
     _assertInitialized();
 

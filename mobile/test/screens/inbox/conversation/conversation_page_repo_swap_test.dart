@@ -6,7 +6,8 @@
 //
 // Mirrors `pooled_video_feed_item_repo_swap_test.dart` (#3503). The
 // production site is `conversation_page.dart`'s `BlocProvider<
-// ConversationBloc>(key: ValueKey((dmRepository, currentPubkey)), …)`.
+// ConversationBloc>(key: ValueKey((dmRepository, currentPubkey,
+// trustedRelayUrl)), …)`.
 // Without this key, a `dmRepository` captured during a brief
 // unauthenticated window scopes all message reads/writes by the wrong
 // `_userPubkey` for the lifetime of the bloc, reproducing the

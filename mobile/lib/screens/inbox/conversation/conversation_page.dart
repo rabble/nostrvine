@@ -178,7 +178,7 @@ class _ConversationBlocScope extends ConsumerWidget {
         // dependencies into BlocProvider" and the canonical four sites in
         // `video_feed_page.dart` / `pooled_fullscreen_video_feed_screen.dart`.
         BlocProvider<ConversationBloc>(
-          key: ValueKey((dmRepository, currentPubkey)),
+          key: ValueKey((dmRepository, currentPubkey, trustedRelayUrl)),
           create: (_) => ConversationBloc(
             dmRepository: dmRepository,
             conversationId: conversationId,
