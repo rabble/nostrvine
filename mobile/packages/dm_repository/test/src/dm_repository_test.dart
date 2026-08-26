@@ -10877,7 +10877,12 @@ void main() {
           await repo.deleteMessageForEveryone(_rumorEventId);
 
           verifyNever(() => signer.signEvent(any()));
-          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
           verifyNever(
             () => mockDirectMessagesDao.markMessageDeleted(
               _rumorEventId,
@@ -13784,10 +13789,6 @@ void main() {
           );
 
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
-
-          when(
             () => mockDirectMessagesDao.markMessageDeleted(
               _rumorEventId,
               ownerPubkey: any(named: 'ownerPubkey'),
@@ -13891,10 +13892,6 @@ void main() {
               createdAt: 1700000000,
             ),
           );
-
-          when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
           when(
             () => mockDirectMessagesDao.markMessageDeleted(
