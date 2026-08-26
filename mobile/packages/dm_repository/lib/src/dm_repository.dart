@@ -1719,36 +1719,9 @@ class DmRepository {
     try {
       for (final tag in deletionEvent.tags) {
         if (tag.length < 2 || tag[0] != 'e') continue;
-        final rumorId = tag[1];
-
-        final row = await _directMessagesDao.getMessageById(
-          rumorId,
-          ownerPubkey: _ownerPubkey,
-        );
-        if (row == null) continue;
-
-        // NIP-09: only the original author may delete.
-        if (row.senderPubkey != deletionEvent.pubkey) {
-          Log.debug(
-            'Ignoring kind 5 for $rumorId: author mismatch '
-            '(event=${pubkeyForLogs(deletionEvent.pubkey)}, '
-            'sender=${pubkeyForLogs(row.senderPubkey)})',
-            category: LogCategory.system,
-          );
-          continue;
-        }
-
-        if (row.isDeleted) continue; // Already processed.
-
-        await _directMessagesDao.markMessageDeleted(
-          rumorId,
-          ownerPubkey: _ownerPubkey,
-        );
-        await _refreshConversationPreview(row.conversationId);
-
-        Log.debug(
-          'Applied kind 5 deletion for message $rumorId',
-          category: LogCategory.system,
+        await _applyMessageDeletion(
+          rumorId: tag[1],
+          deleterPubkey: deletionEvent.pubkey,
         );
       }
     } on Object catch (e, stackTrace) {
@@ -1759,6 +1732,60 @@ class DmRepository {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Soft-deletes the message [rumorId] on behalf of [deleterPubkey], the
+  /// single place the NIP-09 author rule is enforced for messages.
+  ///
+  /// Returns [DmWrapOutcome.deferred] only when the target message has not
+  /// synced yet, so a wrapped caller leaves the gift wrap out of the
+  /// processed-wrap ledger and re-applies once the message lands. NIP-59
+  /// randomizes gift-wrap `created_at`, so a deletion really can drain ahead
+  /// of the message it names; recording it terminally would lose the deletion
+  /// for good. Mirrors the reaction side's unsynced-target handling (#5452).
+  ///
+  /// Every other outcome is [DmWrapOutcome.processed] — applied, already
+  /// deleted, or refused for author mismatch. A mismatch will never become
+  /// valid, so re-decrypting it forever buys nothing.
+  ///
+  /// [deleterPubkey] must be the rumor's authenticated author. For a wrapped
+  /// deletion that is `rumor.pubkey`, which `getRumorEvent` rebuilds from the
+  /// signed seal — never the gift wrap's own pubkey, which is an ephemeral
+  /// NIP-59 key carrying no identity.
+  Future<DmWrapOutcome> _applyMessageDeletion({
+    required String rumorId,
+    required String deleterPubkey,
+  }) async {
+    final row = await _directMessagesDao.getMessageById(
+      rumorId,
+      ownerPubkey: _ownerPubkey,
+    );
+    if (row == null) return DmWrapOutcome.deferred;
+
+    // NIP-09: only the original author may delete.
+    if (row.senderPubkey != deleterPubkey) {
+      Log.debug(
+        'Ignoring kind 5 for $rumorId: author mismatch '
+        '(event=${pubkeyForLogs(deleterPubkey)}, '
+        'sender=${pubkeyForLogs(row.senderPubkey)})',
+        category: LogCategory.system,
+      );
+      return DmWrapOutcome.processed;
+    }
+
+    if (row.isDeleted) return DmWrapOutcome.processed; // Already processed.
+
+    await _directMessagesDao.markMessageDeleted(
+      rumorId,
+      ownerPubkey: _ownerPubkey,
+    );
+    await _refreshConversationPreview(row.conversationId);
+
+    Log.debug(
+      'Applied kind 5 deletion for message $rumorId',
+      category: LogCategory.system,
+    );
+    return DmWrapOutcome.processed;
   }
 
   /// Pre-decrypt dedup: has this gift wrap (or NIP-04 event) already been
