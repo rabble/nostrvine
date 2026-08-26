@@ -6,34 +6,36 @@ import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/services/account_status_api_client.dart';
 
 void main() {
-  test('active reports no restriction', () {
-    final status = AccountEnforcementStatus.fromFunnelcake(
-      FunnelcakeAccountStatus.active,
-    );
-    expect(status.kind, AccountEnforcementKind.noRestrictionReported);
-    expect(status.isEnforced, isFalse);
-  });
+  group('AccountEnforcementStatus.fromFunnelcake', () {
+    test('active reports no restriction', () {
+      final status = AccountEnforcementStatus.fromFunnelcake(
+        FunnelcakeAccountStatus.active,
+      );
+      expect(status.kind, AccountEnforcementKind.noRestrictionReported);
+      expect(status.isEnforced, isFalse);
+    });
 
-  test('suspended and banned are enforced', () {
-    expect(
-      AccountEnforcementStatus.fromFunnelcake(
-        FunnelcakeAccountStatus.suspended,
-      ).kind,
-      AccountEnforcementKind.suspended,
-    );
-    expect(
-      AccountEnforcementStatus.fromFunnelcake(
-        FunnelcakeAccountStatus.banned,
-      ).kind,
-      AccountEnforcementKind.banned,
-    );
-  });
+    test('suspended and banned are enforced', () {
+      expect(
+        AccountEnforcementStatus.fromFunnelcake(
+          FunnelcakeAccountStatus.suspended,
+        ).kind,
+        AccountEnforcementKind.suspended,
+      );
+      expect(
+        AccountEnforcementStatus.fromFunnelcake(
+          FunnelcakeAccountStatus.banned,
+        ).kind,
+        AccountEnforcementKind.banned,
+      );
+    });
 
-  test('unrecognized successful status is a generic restriction', () {
-    final status = AccountEnforcementStatus.fromFunnelcake(
-      FunnelcakeAccountStatus.unknown,
-    );
-    expect(status.kind, AccountEnforcementKind.unknownRestriction);
-    expect(status.isEnforced, isTrue);
+    test('unrecognized successful status is a generic restriction', () {
+      final status = AccountEnforcementStatus.fromFunnelcake(
+        FunnelcakeAccountStatus.unknown,
+      );
+      expect(status.kind, AccountEnforcementKind.unknownRestriction);
+      expect(status.isEnforced, isTrue);
+    });
   });
 }

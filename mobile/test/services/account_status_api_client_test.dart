@@ -33,113 +33,117 @@ AccountStatusApiClient _client({
 }
 
 void main() {
-  test('signs and sends the exact API URL', () async {
-    final client = _client(
-      handler: (request) async {
-        expect(request.headers['Authorization'], 'Nostr signed-token');
-        return http.Response('{"pubkey":"$_pubkey","status":"active"}', 200);
-      },
-    );
+  group('AccountStatusApiClient.fetchStatus', () {
+    test('signs and sends the exact API URL', () async {
+      final client = _client(
+        handler: (request) async {
+          expect(request.headers['Authorization'], 'Nostr signed-token');
+          return http.Response('{"pubkey":"$_pubkey","status":"active"}', 200);
+        },
+      );
 
-    expect(
-      await client.fetchStatus(expectedPubkey: _pubkey),
-      FunnelcakeAccountStatus.active,
-    );
-  });
+      expect(
+        await client.fetchStatus(expectedPubkey: _pubkey),
+        FunnelcakeAccountStatus.active,
+      );
+    });
 
-  test('maps all recognized and future status strings', () async {
-    for (final entry in {
-      'active': FunnelcakeAccountStatus.active,
-      'suspended': FunnelcakeAccountStatus.suspended,
-      'banned': FunnelcakeAccountStatus.banned,
-      'future': FunnelcakeAccountStatus.unknown,
-    }.entries) {
+    test('maps all recognized and future status strings', () async {
+      for (final entry in {
+        'active': FunnelcakeAccountStatus.active,
+        'suspended': FunnelcakeAccountStatus.suspended,
+        'banned': FunnelcakeAccountStatus.banned,
+        'future': FunnelcakeAccountStatus.unknown,
+      }.entries) {
+        final client = _client(
+          handler: (_) async => http.Response(
+            '{"pubkey":"$_pubkey","status":"${entry.key}"}',
+            200,
+          ),
+        );
+        expect(await client.fetchStatus(expectedPubkey: _pubkey), entry.value);
+      }
+    });
+
+    test('accepts matching pubkey case-insensitively', () async {
+      final client = _client(
+        handler: (_) async => http.Response(
+          '{"pubkey":"${_pubkey.toUpperCase()}","status":"active"}',
+          200,
+        ),
+      );
+      expect(
+        await client.fetchStatus(expectedPubkey: _pubkey),
+        FunnelcakeAccountStatus.active,
+      );
+    });
+
+    test('rejects a response for another account', () async {
+      final other = List.filled(64, 'b').join();
       final client = _client(
         handler: (_) async =>
-            http.Response('{"pubkey":"$_pubkey","status":"${entry.key}"}', 200),
+            http.Response('{"pubkey":"$other","status":"active"}', 200),
       );
-      expect(await client.fetchStatus(expectedPubkey: _pubkey), entry.value);
-    }
-  });
-
-  test('accepts matching pubkey case-insensitively', () async {
-    final client = _client(
-      handler: (_) async => http.Response(
-        '{"pubkey":"${_pubkey.toUpperCase()}","status":"active"}',
-        200,
-      ),
-    );
-    expect(
-      await client.fetchStatus(expectedPubkey: _pubkey),
-      FunnelcakeAccountStatus.active,
-    );
-  });
-
-  test('rejects a response for another account', () async {
-    final other = List.filled(64, 'b').join();
-    final client = _client(
-      handler: (_) async =>
-          http.Response('{"pubkey":"$other","status":"active"}', 200),
-    );
-    await expectLater(
-      client.fetchStatus(expectedPubkey: _pubkey),
-      throwsA(
-        isA<AccountStatusApiException>().having(
-          (error) => error.kind,
-          'kind',
-          AccountStatusApiFailureKind.invalidResponse,
+      await expectLater(
+        client.fetchStatus(expectedPubkey: _pubkey),
+        throwsA(
+          isA<AccountStatusApiException>().having(
+            (error) => error.kind,
+            'kind',
+            AccountStatusApiFailureKind.invalidResponse,
+          ),
         ),
-      ),
-    );
-  });
+      );
+    });
 
-  test('rejects malformed and incomplete 200 responses', () async {
-    for (final body in ['not-json', '{}', '[]', '{"pubkey":"$_pubkey"}']) {
-      final client = _client(handler: (_) async => http.Response(body, 200));
+    test('rejects malformed and incomplete 200 responses', () async {
+      for (final body in ['not-json', '{}', '[]', '{"pubkey":"$_pubkey"}']) {
+        final client = _client(handler: (_) async => http.Response(body, 200));
+        await expectLater(
+          client.fetchStatus(expectedPubkey: _pubkey),
+          throwsA(isA<AccountStatusApiException>()),
+        );
+      }
+    });
+
+    test('does not map non-2xx responses to active', () async {
+      for (final code in [401, 404, 500, 503]) {
+        final client = _client(
+          handler: (_) async => http.Response('unavailable', code),
+        );
+        await expectLater(
+          client.fetchStatus(expectedPubkey: _pubkey),
+          throwsA(isA<AccountStatusApiException>()),
+        );
+      }
+    });
+
+    test('reports missing signer, transport failure, and timeout', () async {
+      final unsigned = _client(
+        auth: ({required url, required method}) async => null,
+        handler: (_) async => http.Response('', 500),
+      );
       await expectLater(
-        client.fetchStatus(expectedPubkey: _pubkey),
+        unsigned.fetchStatus(expectedPubkey: _pubkey),
         throwsA(isA<AccountStatusApiException>()),
       );
-    }
-  });
 
-  test('does not map non-2xx responses to active', () async {
-    for (final code in [401, 404, 500, 503]) {
-      final client = _client(
-        handler: (_) async => http.Response('unavailable', code),
+      final transportFailure = _client(
+        handler: (_) async => throw http.ClientException('offline'),
       );
       await expectLater(
-        client.fetchStatus(expectedPubkey: _pubkey),
+        transportFailure.fetchStatus(expectedPubkey: _pubkey),
         throwsA(isA<AccountStatusApiException>()),
       );
-    }
-  });
 
-  test('reports missing signer, transport failure, and timeout', () async {
-    final unsigned = _client(
-      auth: ({required url, required method}) async => null,
-      handler: (_) async => http.Response('', 500),
-    );
-    await expectLater(
-      unsigned.fetchStatus(expectedPubkey: _pubkey),
-      throwsA(isA<AccountStatusApiException>()),
-    );
-
-    final transportFailure = _client(
-      handler: (_) async => throw http.ClientException('offline'),
-    );
-    await expectLater(
-      transportFailure.fetchStatus(expectedPubkey: _pubkey),
-      throwsA(isA<AccountStatusApiException>()),
-    );
-
-    final timedOut = _client(
-      timeout: Duration.zero,
-      handler: (_) => Completer<http.Response>().future,
-    );
-    await expectLater(
-      timedOut.fetchStatus(expectedPubkey: _pubkey),
-      throwsA(isA<AccountStatusApiException>()),
-    );
+      final timedOut = _client(
+        timeout: Duration.zero,
+        handler: (_) => Completer<http.Response>().future,
+      );
+      await expectLater(
+        timedOut.fetchStatus(expectedPubkey: _pubkey),
+        throwsA(isA<AccountStatusApiException>()),
+      );
+    });
   });
 }

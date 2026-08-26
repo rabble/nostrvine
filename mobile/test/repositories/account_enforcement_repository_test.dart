@@ -23,33 +23,35 @@ AccountEnforcementRepository _repository(String body, {int statusCode = 200}) {
 }
 
 void main() {
-  test(
-    'maps active, suspended, banned, and unknown successful values',
-    () async {
-      for (final entry in {
-        'active': AccountEnforcementKind.noRestrictionReported,
-        'suspended': AccountEnforcementKind.suspended,
-        'banned': AccountEnforcementKind.banned,
-        'future_restriction': AccountEnforcementKind.unknownRestriction,
-      }.entries) {
-        final repository = _repository(
-          '{"pubkey":"$_pubkey","status":"${entry.key}"}',
-        );
-        final result = await repository.fetchCurrentStatus(pubkey: _pubkey);
-        expect(result.kind, entry.value);
-      }
-    },
-  );
+  group('AccountEnforcementRepository.fetchCurrentStatus', () {
+    test(
+      'maps active, suspended, banned, and unknown successful values',
+      () async {
+        for (final entry in {
+          'active': AccountEnforcementKind.noRestrictionReported,
+          'suspended': AccountEnforcementKind.suspended,
+          'banned': AccountEnforcementKind.banned,
+          'future_restriction': AccountEnforcementKind.unknownRestriction,
+        }.entries) {
+          final repository = _repository(
+            '{"pubkey":"$_pubkey","status":"${entry.key}"}',
+          );
+          final result = await repository.fetchCurrentStatus(pubkey: _pubkey);
+          expect(result.kind, entry.value);
+        }
+      },
+    );
 
-  test('maps request and response failures to unavailable', () async {
-    for (final repository in [
-      _repository('{}'),
-      _repository('unavailable', statusCode: 503),
-    ]) {
-      await expectLater(
-        repository.fetchCurrentStatus(pubkey: _pubkey),
-        throwsA(isA<AccountStatusUnavailable>()),
-      );
-    }
+    test('maps request and response failures to unavailable', () async {
+      for (final repository in [
+        _repository('{}'),
+        _repository('unavailable', statusCode: 503),
+      ]) {
+        await expectLater(
+          repository.fetchCurrentStatus(pubkey: _pubkey),
+          throwsA(isA<AccountStatusUnavailable>()),
+        );
+      }
+    });
   });
 }

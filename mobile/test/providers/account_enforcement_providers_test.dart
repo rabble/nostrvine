@@ -64,82 +64,125 @@ ProviderContainer _container({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('signed out resolves without a request', () async {
-    final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
-    final container = ProviderContainer(
-      overrides: [
-        currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
-        currentAuthRpcCapabilityProvider.overrideWithValue(
-          AuthRpcCapability.unavailable,
-        ),
-        accountEnforcementRepositoryProvider.overrideWithValue(
-          AccountEnforcementRepository(apiClient: client),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    final result = await container.read(
-      accountEnforcementStatusProvider.future,
-    );
-    expect(result.kind, AccountEnforcementKind.signedOut);
-    expect(client.requestedPubkeys, isEmpty);
-  });
-
-  test('every signer-backed authentication source uses Funnelcake', () async {
-    for (final source in AuthenticationSource.values.where(
-      (source) => source != AuthenticationSource.none,
-    )) {
-      final authService = _MockAuthService();
-      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
-      when(() => authService.canPublishNostrWritesNow).thenReturn(true);
-      when(() => authService.authenticationSource).thenReturn(source);
-      final client = _QueueStatusClient([FunnelcakeAccountStatus.suspended]);
-      final container = _container(authService: authService, client: client);
+  group('accountEnforcementStatusProvider', () {
+    test('signed out resolves without a request', () async {
+      final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.unavailable,
+          ),
+          accountEnforcementRepositoryProvider.overrideWithValue(
+            AccountEnforcementRepository(apiClient: client),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
       final result = await container.read(
         accountEnforcementStatusProvider.future,
       );
-      expect(result.kind, AccountEnforcementKind.suspended, reason: '$source');
-      expect(client.requestedPubkeys, [_pubkeyA], reason: '$source');
-      container.dispose();
-    }
-  });
+      expect(result.kind, AccountEnforcementKind.signedOut);
+      expect(client.requestedPubkeys, isEmpty);
+    });
 
-  test('pubkey-only identity is indeterminate without a request', () async {
-    final authService = _MockAuthService();
-    when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
-    when(() => authService.canPublishNostrWritesNow).thenReturn(false);
-    final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
-    final container = _container(authService: authService, client: client);
-    addTearDown(container.dispose);
-    final subscription = container.listen(
-      accountEnforcementStatusProvider,
-      (_, _) {},
+    test('every signer-backed authentication source uses Funnelcake', () async {
+      for (final source in AuthenticationSource.values.where(
+        (source) => source != AuthenticationSource.none,
+      )) {
+        final authService = _MockAuthService();
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        when(() => authService.authenticationSource).thenReturn(source);
+        final client = _QueueStatusClient([FunnelcakeAccountStatus.suspended]);
+        final container = _container(authService: authService, client: client);
+
+        final result = await container.read(
+          accountEnforcementStatusProvider.future,
+        );
+        expect(
+          result.kind,
+          AccountEnforcementKind.suspended,
+          reason: '$source',
+        );
+        expect(client.requestedPubkeys, [_pubkeyA], reason: '$source');
+        container.dispose();
+      }
+    });
+
+    test('pubkey-only identity is indeterminate without a request', () async {
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+      when(() => authService.canPublishNostrWritesNow).thenReturn(false);
+      final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
+      final container = _container(authService: authService, client: client);
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        accountEnforcementStatusProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+
+      await expectLater(
+        container.read(accountEnforcementStatusProvider.future),
+        throwsA(isA<AccountStatusUnavailable>()),
+      );
+      expect(client.requestedPubkeys, isEmpty);
+    });
+
+    test(
+      'failed refresh preserves restriction across provider disposal',
+      () async {
+        final authService = _MockAuthService();
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        final memory = AccountRestrictionMemory();
+        final client = _QueueStatusClient([
+          FunnelcakeAccountStatus.suspended,
+          const AccountStatusApiException(
+            AccountStatusApiFailureKind.unavailable,
+            'offline',
+          ),
+        ]);
+        final container = _container(
+          authService: authService,
+          client: client,
+          memory: memory,
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
+        );
+        await container.read(accountEnforcementStatusProvider.future);
+        subscription.close();
+        await Future<void>.delayed(Duration.zero);
+
+        final failedSubscription = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
+        );
+        await expectLater(
+          container.read(accountEnforcementStatusProvider.future),
+          throwsA(isA<AccountStatusUnavailable>()),
+        );
+        failedSubscription.close();
+        expect(memory.read(_pubkeyA)?.isEnforced, isTrue);
+      },
     );
-    addTearDown(subscription.close);
 
-    await expectLater(
-      container.read(accountEnforcementStatusProvider.future),
-      throwsA(isA<AccountStatusUnavailable>()),
-    );
-    expect(client.requestedPubkeys, isEmpty);
-  });
-
-  test(
-    'failed refresh preserves restriction across provider disposal',
-    () async {
+    test('successful active response clears retained restriction', () async {
       final authService = _MockAuthService();
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
       when(() => authService.canPublishNostrWritesNow).thenReturn(true);
-      final memory = AccountRestrictionMemory();
-      final client = _QueueStatusClient([
-        FunnelcakeAccountStatus.suspended,
-        const AccountStatusApiException(
-          AccountStatusApiFailureKind.unavailable,
-          'offline',
-        ),
-      ]);
+      final memory = AccountRestrictionMemory()
+        ..record(
+          _pubkeyA,
+          const AccountEnforcementStatus(kind: AccountEnforcementKind.banned),
+        );
+      final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
       final container = _container(
         authService: authService,
         client: client,
@@ -147,55 +190,20 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final subscription = container.listen(
-        accountEnforcementStatusProvider,
-        (_, _) {},
-      );
       await container.read(accountEnforcementStatusProvider.future);
-      subscription.close();
-      await Future<void>.delayed(Duration.zero);
+      expect(memory.read(_pubkeyA), isNull);
+    });
 
-      final failedSubscription = container.listen(
-        accountEnforcementStatusProvider,
-        (_, _) {},
-      );
-      await expectLater(
-        container.read(accountEnforcementStatusProvider.future),
-        throwsA(isA<AccountStatusUnavailable>()),
-      );
-      failedSubscription.close();
+    test('retained restriction never leaks to another account', () {
+      final memory = AccountRestrictionMemory()
+        ..record(
+          _pubkeyA,
+          const AccountEnforcementStatus(
+            kind: AccountEnforcementKind.suspended,
+          ),
+        );
       expect(memory.read(_pubkeyA)?.isEnforced, isTrue);
-    },
-  );
-
-  test('successful active response clears retained restriction', () async {
-    final authService = _MockAuthService();
-    when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
-    when(() => authService.canPublishNostrWritesNow).thenReturn(true);
-    final memory = AccountRestrictionMemory()
-      ..record(
-        _pubkeyA,
-        const AccountEnforcementStatus(kind: AccountEnforcementKind.banned),
-      );
-    final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
-    final container = _container(
-      authService: authService,
-      client: client,
-      memory: memory,
-    );
-    addTearDown(container.dispose);
-
-    await container.read(accountEnforcementStatusProvider.future);
-    expect(memory.read(_pubkeyA), isNull);
-  });
-
-  test('retained restriction never leaks to another account', () {
-    final memory = AccountRestrictionMemory()
-      ..record(
-        _pubkeyA,
-        const AccountEnforcementStatus(kind: AccountEnforcementKind.suspended),
-      );
-    expect(memory.read(_pubkeyA)?.isEnforced, isTrue);
-    expect(memory.read(_pubkeyB), isNull);
+      expect(memory.read(_pubkeyB), isNull);
+    });
   });
 }
