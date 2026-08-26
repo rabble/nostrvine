@@ -82,10 +82,9 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('an unrecognized restriction still gets the appeal path', (
+    testWidgets('a publish-confirmed unknown restriction gets an appeal path', (
       tester,
     ) async {
-      // The fail-closed state must not lose the way to contest it.
       await _pumpWith(tester, AccountEnforcementKind.unknownRestriction);
 
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);

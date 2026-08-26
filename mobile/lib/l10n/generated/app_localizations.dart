@@ -19840,13 +19840,13 @@ abstract class AppLocalizations {
   /// **'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.'**
   String get accountStatusBannedBody;
 
-  /// Heading shown when the account is under an enforcement state this app version does not recognize.
+  /// Heading shown when a publish rejection confirms a restriction this app version does not recognize.
   ///
   /// In en, this message translates to:
   /// **'Your account is restricted'**
   String get accountStatusRestrictedHeading;
 
-  /// Body for an unrecognized enforcement state, which usually means the app is older than the server.
+  /// Body shown when a publish rejection confirms a restriction this app version does not recognize.
   ///
   /// In en, this message translates to:
   /// **'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.'**
