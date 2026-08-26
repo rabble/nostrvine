@@ -12523,7 +12523,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           final repository = createRepository(
             reactionsRepository: mockReactionsRepository,
@@ -12676,7 +12676,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           var decryptCount = 0;
           final repository = createRepository(
@@ -12713,7 +12713,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           var decryptCount = 0;
           final repository = createRepository(
@@ -12747,7 +12747,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.deferred);
+          ).thenAnswer((_) async => DmWrapOutcome.deferred);
 
           var decryptCount = 0;
           final repository = createRepository(
@@ -13457,7 +13457,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           final repository = createRepository(
             processedGiftWrapsDao: ledger,

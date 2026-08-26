@@ -1967,7 +1967,7 @@ class DmRepository {
         );
         // Record only terminal outcomes: a reaction whose target message has
         // not synced is left out so it re-decrypts and lands later. #5452.
-        if (outcome == DmReactionWrapOutcome.processed) {
+        if (outcome == DmWrapOutcome.processed) {
           await _recordProcessedWrap(
             giftWrapEvent.id,
             ownerPubkey: ownerPubkey,
@@ -1980,7 +1980,7 @@ class DmRepository {
           rumorEvent: rumor,
           giftWrapId: giftWrapEvent.id,
         );
-        if (outcome == DmReactionWrapOutcome.processed) {
+        if (outcome == DmWrapOutcome.processed) {
           await _recordProcessedWrap(
             giftWrapEvent.id,
             ownerPubkey: ownerPubkey,

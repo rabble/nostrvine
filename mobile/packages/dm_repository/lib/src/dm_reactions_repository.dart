@@ -54,19 +54,24 @@ class DmReactionPublishResult {
   final bool optimisticInsertSucceeded;
 }
 
-/// Outcome of ingesting an incoming wrapped reaction/deletion rumor, used by
-/// `DmRepository` to decide whether to record the gift wrap in the
-/// processed-wrap dedup ledger (#5452).
-enum DmReactionWrapOutcome {
+/// Outcome of ingesting an incoming wrapped rumor — a reaction, or a kind-5
+/// deletion targeting either a reaction or a message — used by `DmRepository`
+/// to decide whether to record the gift wrap in the processed-wrap dedup
+/// ledger (#5452).
+enum DmWrapOutcome {
   /// The wrap reached a terminal state — persisted, or permanently dropped for
-  /// a reason that will not change (malformed content/tags, no matching row).
+  /// a reason that will not change (malformed content/tags, author mismatch).
   /// Safe to record so the wrap is never re-decrypted.
   processed,
 
-  /// The wrap could not be applied yet (signer not ready, the reaction's
-  /// target message has not synced, or a deletion's target reaction has not
-  /// synced). Must NOT be recorded so it re-decrypts on a later launch once the
-  /// target exists — preserving eventual consistency.
+  /// The wrap could not be applied yet: the signer is not ready, or the target
+  /// the rumor names has not synced. Must NOT be recorded so it re-decrypts on
+  /// a later launch once the target exists — preserving eventual consistency.
+  ///
+  /// Prefer this whenever the outcome is in doubt. `ProcessedGiftWrapsDao`
+  /// reads the ledger globally rather than per-owner, so a wrap recorded
+  /// terminally by mistake is suppressed for *every* account on the device,
+  /// and switching accounts away and back does not recover it.
   deferred,
 }
 
@@ -794,18 +799,18 @@ class DmReactionsRepository {
   /// Persist an incoming kind-7 reaction rumor. Called from
   /// `DmRepository._handleGiftWrapEvent` after rumor extraction.
   ///
-  /// Returns [DmReactionWrapOutcome.processed] when the wrap reached a terminal
+  /// Returns [DmWrapOutcome.processed] when the wrap reached a terminal
   /// state (persisted, or permanently dropped for malformed content/tags), and
-  /// [DmReactionWrapOutcome.deferred] when it could not be applied yet (signer
+  /// [DmWrapOutcome.deferred] when it could not be applied yet (signer
   /// not ready, or the target message has not synced) so the caller leaves it
   /// out of the dedup ledger and lets it re-decrypt later. See #5452.
-  Future<DmReactionWrapOutcome> persistIncoming({
+  Future<DmWrapOutcome> persistIncoming({
     required Event rumorEvent,
     required String giftWrapId,
   }) async {
-    if (_userPubkey.isEmpty) return DmReactionWrapOutcome.deferred;
+    if (_userPubkey.isEmpty) return DmWrapOutcome.deferred;
     if (rumorEvent.kind != EventKind.reaction) {
-      return DmReactionWrapOutcome.processed;
+      return DmWrapOutcome.processed;
     }
     final content = rumorEvent.content;
     if (content.isEmpty || content.length > _maxReactionContentLength) {
@@ -814,7 +819,7 @@ class DmReactionsRepository {
         '(content length: ${content.length})',
         category: LogCategory.system,
       );
-      return DmReactionWrapOutcome.processed;
+      return DmWrapOutcome.processed;
     }
     String? targetMessageId;
     String? targetAuthor;
@@ -833,7 +838,7 @@ class DmReactionsRepository {
         'Dropping reaction rumor ${rumorEvent.id} — missing/invalid e tag',
         category: LogCategory.system,
       );
-      return DmReactionWrapOutcome.processed;
+      return DmWrapOutcome.processed;
     }
     targetAuthor ??= rumorEvent.pubkey;
     final conversationId = await _resolveConversationIdForReaction(
@@ -843,7 +848,7 @@ class DmReactionsRepository {
     );
     // Target message not synced yet: leave undecided so a later launch retries
     // and the reaction lands once the message arrives. See #5452 (D4-terminal).
-    if (conversationId == null) return DmReactionWrapOutcome.deferred;
+    if (conversationId == null) return DmWrapOutcome.deferred;
     try {
       await _reactionsDao.upsertIncoming(
         id: rumorEvent.id,
@@ -856,7 +861,7 @@ class DmReactionsRepository {
         giftWrapId: giftWrapId,
         ownerPubkey: _userPubkey,
       );
-      return DmReactionWrapOutcome.processed;
+      return DmWrapOutcome.processed;
     } on Object catch (e, st) {
       _errorReporter?.call(
         e,
@@ -864,7 +869,7 @@ class DmReactionsRepository {
         site: DmReactionsRepositoryReportableSites.persistIncomingDaoUpsert,
       );
       // Transient DAO failure — let it retry rather than cement a skip.
-      return DmReactionWrapOutcome.deferred;
+      return DmWrapOutcome.deferred;
     }
   }
 
@@ -874,29 +879,29 @@ class DmReactionsRepository {
   /// This handler is specifically for wrapped deletions emitted by the
   /// reactions feature, which tag the deleted event with `k=7`.
   ///
-  /// Returns [DmReactionWrapOutcome.deferred] — leaving the wrap out of the
+  /// Returns [DmWrapOutcome.deferred] — leaving the wrap out of the
   /// dedup ledger so it re-decrypts on a later launch — when the signer is not
   /// ready, when a targeted reaction row has not synced yet, or on a transient
   /// soft-delete failure. Gift wraps carry NIP-59 randomized `created_at`, so a
   /// deletion can drain before the reaction it removes; recording it as
   /// terminal then would let the reaction insert live afterwards and never be
-  /// soft-deleted. Otherwise returns [DmReactionWrapOutcome.processed]
+  /// soft-deleted. Otherwise returns [DmWrapOutcome.processed]
   /// (terminal): the deletion applied, the target was already deleted, or the
   /// deletion is invalid (author mismatch). The soft-delete is idempotent, so
   /// re-applying on a benign re-decrypt is safe. #5452.
-  Future<DmReactionWrapOutcome> handleIncomingDeletion({
+  Future<DmWrapOutcome> handleIncomingDeletion({
     required Event rumorEvent,
     required String giftWrapId,
   }) async {
-    if (_userPubkey.isEmpty) return DmReactionWrapOutcome.deferred;
+    if (_userPubkey.isEmpty) return DmWrapOutcome.deferred;
     if (rumorEvent.kind != EventKind.eventDeletion) {
-      return DmReactionWrapOutcome.processed;
+      return DmWrapOutcome.processed;
     }
     if (!_targetsReactionKind(rumorEvent.tags)) {
-      return DmReactionWrapOutcome.processed;
+      return DmWrapOutcome.processed;
     }
 
-    var outcome = DmReactionWrapOutcome.processed;
+    var outcome = DmWrapOutcome.processed;
     for (final tag in rumorEvent.tags) {
       if (tag.length < 2 || tag[0] != 'e') continue;
       final rumorId = tag[1];
@@ -911,7 +916,7 @@ class DmReactionsRepository {
       // created_at). Symmetric with persistIncoming's unsynced-target handling.
       // #5452.
       if (row == null) {
-        outcome = DmReactionWrapOutcome.deferred;
+        outcome = DmWrapOutcome.deferred;
         continue;
       }
       if (row.isDeleted) continue;
@@ -938,7 +943,7 @@ class DmReactionsRepository {
               .handleIncomingDeletionSoftDelete,
         );
         // Transient DAO failure — let it retry rather than cement a skip.
-        outcome = DmReactionWrapOutcome.deferred;
+        outcome = DmWrapOutcome.deferred;
       }
     }
     return outcome;

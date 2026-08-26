@@ -1200,8 +1200,8 @@ void main() {
         giftWrapId: _giftWrapId,
       );
 
-      expect(emptyContentOutcome, DmReactionWrapOutcome.processed);
-      expect(missingTagOutcome, DmReactionWrapOutcome.processed);
+      expect(emptyContentOutcome, DmWrapOutcome.processed);
+      expect(missingTagOutcome, DmWrapOutcome.processed);
 
       verifyNever(
         () => mockDao.upsertIncoming(
@@ -1239,7 +1239,7 @@ void main() {
         giftWrapId: _giftWrapId,
       );
 
-      expect(outcome, DmReactionWrapOutcome.processed);
+      expect(outcome, DmWrapOutcome.processed);
       verify(
         () => mockDao.upsertIncoming(
           id: _reactionRumorId,
@@ -1278,7 +1278,7 @@ void main() {
 
       // A transient DAO failure must NOT cement a skip — leave it deferred so
       // the wrap retries on a later launch. #5452.
-      expect(outcome, DmReactionWrapOutcome.deferred);
+      expect(outcome, DmWrapOutcome.deferred);
       expect(
         reporterSites,
         contains(
@@ -1309,7 +1309,7 @@ void main() {
           giftWrapId: _giftWrapId,
         );
 
-        expect(outcome, DmReactionWrapOutcome.deferred);
+        expect(outcome, DmWrapOutcome.deferred);
         verifyNever(
           () => mockDao.upsertIncoming(
             id: any(named: 'id'),
@@ -1355,7 +1355,7 @@ void main() {
 
         // Terminal: the deletion wrap is recorded so it is not re-decrypted on
         // every launch. #5452.
-        expect(outcome, DmReactionWrapOutcome.processed);
+        expect(outcome, DmWrapOutcome.processed);
         verify(
           () => mockDao.softDelete(
             id: _reactionRumorId,
@@ -1385,7 +1385,7 @@ void main() {
 
       // An invalid deletion (author mismatch) will never apply — it is
       // terminal, so the wrap is recorded and not re-decrypted. #5452.
-      expect(outcome, DmReactionWrapOutcome.processed);
+      expect(outcome, DmWrapOutcome.processed);
       verifyNever(
         () => mockDao.softDelete(
           id: any(named: 'id'),
@@ -1420,7 +1420,7 @@ void main() {
           giftWrapId: _giftWrapId,
         );
 
-        expect(outcome, DmReactionWrapOutcome.deferred);
+        expect(outcome, DmWrapOutcome.deferred);
         verifyNever(
           () => mockDao.softDelete(
             id: any(named: 'id'),
@@ -1459,7 +1459,7 @@ void main() {
 
         // A transient DAO failure must NOT cement a skip — leave it deferred so
         // the wrap retries on a later launch. #5452.
-        expect(outcome, DmReactionWrapOutcome.deferred);
+        expect(outcome, DmWrapOutcome.deferred);
         expect(
           reporterSites,
           contains(
