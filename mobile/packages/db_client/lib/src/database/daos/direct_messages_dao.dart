@@ -8,6 +8,29 @@ import 'package:drift/drift.dart';
 
 part 'direct_messages_dao.g.dart';
 
+/// Which arrival protocol a stored `direct_messages` row must have for
+/// [DirectMessagesDao.hasMatchingMessage] to treat it as a duplicate.
+///
+/// This is not `Conversations.dmProtocol`, which classifies a whole
+/// *conversation* for send routing. This names one stored *row*, and it is
+/// derived rather than stored: the NIP-04 receive path writes the wire event
+/// id into both `id` and `gift_wrap_id`, while every NIP-17 path writes a
+/// rumor id distinct from its gift-wrap id.
+enum DmDedupCounterpart {
+  /// Only a row that arrived over NIP-04 counts. Asked by the NIP-17 receive
+  /// path: a near-identical row from its *own* protocol is a genuine earlier
+  /// message, not this one.
+  nip04Copy,
+
+  /// Only a row that arrived over NIP-17 counts. Mirror of [nip04Copy], asked
+  /// by the NIP-04 receive path.
+  nip17Copy,
+
+  /// No arrival constraint. For the self-send paths that match the user's own
+  /// persisted message rather than a cross-protocol twin.
+  unconstrained,
+}
+
 @DriftAccessor(tables: [DirectMessages])
 class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     with _$DirectMessagesDaoMixin {
@@ -208,21 +231,52 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return present;
   }
 
-  /// Check if a message with the same sender and content already exists in a
-  /// conversation within a ±5 second window. Used for cross-protocol dedup
-  /// when both a NIP-17 and NIP-04 copy of the same message arrive.
+  /// Restricts a dedup match to rows that arrived over [counterpart]'s
+  /// protocol, read off the two id columns.
   ///
-  /// The window is deliberately narrow: a genuine repeat of the same text
-  /// (e.g. "ok") is only collapsed when it lands within ±[windowSeconds],
-  /// which is still wide enough for dual-send duplicates, whose timestamps
-  /// differ by at most a few seconds. Widening it drops more legitimate
-  /// repeats — it does not gain a retry signal, because a re-minted rumor
-  /// is indistinguishable from a genuine second send.
+  /// The NIP-04 receive path stores the wire event id in BOTH `id` and
+  /// `gift_wrap_id`; every NIP-17 path stores a rumor id distinct from its
+  /// gift-wrap id. Both columns are `NOT NULL`, so `id = gift_wrap_id` is a
+  /// plain two-valued predicate and its negation is exact.
+  Expression<bool> _arrivedOverCounterpart(DmDedupCounterpart counterpart) {
+    final arrivedOverNip04 = directMessages.id.equalsExp(
+      directMessages.giftWrapId,
+    );
+    return switch (counterpart) {
+      DmDedupCounterpart.nip04Copy => arrivedOverNip04,
+      DmDedupCounterpart.nip17Copy => arrivedOverNip04.not(),
+      DmDedupCounterpart.unconstrained => const Constant(true),
+    };
+  }
+
+  /// Whether a message with the same sender and content is already stored in
+  /// [conversationId] within ±[windowSeconds] **and** arrived over the
+  /// protocol named by [counterpart].
+  ///
+  /// This is cross-protocol dedup. A dual-send puts one message on the wire
+  /// twice — a NIP-17 rumor and a NIP-04 event with unrelated ids — so
+  /// [hasGiftWrap] cannot collapse them and only `(sender, content, ~time)`
+  /// can.
+  ///
+  /// [counterpart] is what stops that heuristic eating real messages. A
+  /// NIP-17 rumor is a duplicate only of a stored NIP-04 copy, and a NIP-04
+  /// event only of a stored NIP-17 copy; a genuine second send of the same
+  /// text seconds later is same-protocol, so it no longer matches and is kept
+  /// (#7324). Same-protocol replays need no help here — the primary key on
+  /// `id` and the UNIQUE index on `gift_wrap_id` already make [insertMessage]
+  /// a no-op for them.
+  ///
+  /// A group send is the one self-authored case that needs
+  /// [DmDedupCounterpart.unconstrained]: its siblings carry distinct rumor
+  /// ids, so the primary key does not collapse their self-wrap echoes.
+  /// Prefer [hasMessageWithSendBatchId] there when the batch token is
+  /// available — it matches exactly instead of heuristically.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
     required String content,
     required int createdAt,
+    required DmDedupCounterpart counterpart,
     int windowSeconds = 5,
     String? ownerPubkey,
   }) async {
@@ -237,6 +291,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
             directMessages.createdAt.isSmallerOrEqualValue(
               createdAt + windowSeconds,
             ) &
+            _arrivedOverCounterpart(counterpart) &
             _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
       )
       ..addColumns([directMessages.id])
