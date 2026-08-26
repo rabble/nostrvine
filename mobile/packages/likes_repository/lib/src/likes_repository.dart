@@ -504,6 +504,20 @@ class LikesRepository {
     }
   }
 
+  void _logSocialPublishFailure(
+    String message,
+    SocialPublishException error,
+    StackTrace stackTrace,
+  ) {
+    Log.error(
+      message,
+      name: 'LikesRepository',
+      category: LogCategory.relay,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
   Future<void> _rollbackLikeIfCurrent({
     required String eventId,
     required String placeholderId,
@@ -733,6 +747,13 @@ class LikesRepository {
       } on SocialPublishException catch (e, stackTrace) {
         _inFlightLikePublishPlaceholders.remove(placeholderId);
         _unlikeRequestedWhilePending.remove(placeholderId);
+        if (_queueOfflineAction == null || e.result.accountRestricted) {
+          _logSocialPublishFailure(
+            'Like publish was not accepted',
+            e,
+            stackTrace,
+          );
+        }
         if (!e.result.accountRestricted) {
           if (_queueOfflineAction != null) {
             Log.error(
@@ -919,6 +940,11 @@ class LikesRepository {
         targetKind: targetKind,
       );
     } on SocialPublishException catch (e, stackTrace) {
+      _logSocialPublishFailure(
+        'Queued like publish was not accepted',
+        e,
+        stackTrace,
+      );
       if (e.result.accountRestricted) {
         Error.throwWithStackTrace(
           const LikeAccountRestrictedException(),
@@ -1067,6 +1093,13 @@ class LikesRepository {
           );
         }
       } on SocialPublishException catch (e, stackTrace) {
+        if (_queueOfflineAction == null || e.result.accountRestricted) {
+          _logSocialPublishFailure(
+            'Unlike publish was not accepted',
+            e,
+            stackTrace,
+          );
+        }
         if (!e.result.accountRestricted) {
           if (_queueOfflineAction != null) {
             Log.error(
@@ -1189,6 +1222,11 @@ class LikesRepository {
     try {
       deletionEvent = await _nostrClient.deleteEvent(record.reactionEventId);
     } on SocialPublishException catch (e, stackTrace) {
+      _logSocialPublishFailure(
+        'Queued unlike publish was not accepted',
+        e,
+        stackTrace,
+      );
       if (e.result.accountRestricted) {
         Error.throwWithStackTrace(
           const LikeAccountRestrictedException(),
@@ -1707,6 +1745,11 @@ class LikesRepository {
     } on SocialPublishException catch (e, stackTrace) {
       _deindexDownvoteRecord(eventId);
       _emitDownvotedIds();
+      _logSocialPublishFailure(
+        'Downvote publish was not accepted',
+        e,
+        stackTrace,
+      );
       if (e.result.accountRestricted) {
         Error.throwWithStackTrace(
           const LikeAccountRestrictedException(),
@@ -1783,6 +1826,11 @@ class LikesRepository {
     } on SocialPublishException catch (e, stackTrace) {
       _indexDownvoteRecord(snapshotRecord);
       _emitDownvotedIds();
+      _logSocialPublishFailure(
+        'Downvote deletion was not accepted',
+        e,
+        stackTrace,
+      );
       if (e.result.accountRestricted) {
         Error.throwWithStackTrace(
           const LikeAccountRestrictedException(),
@@ -1835,6 +1883,11 @@ class LikesRepository {
     try {
       deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
     } on SocialPublishException catch (e, stackTrace) {
+      _logSocialPublishFailure(
+        'Reaction deletion was not accepted',
+        e,
+        stackTrace,
+      );
       if (e.result.accountRestricted) {
         Error.throwWithStackTrace(
           const LikeAccountRestrictedException(),
