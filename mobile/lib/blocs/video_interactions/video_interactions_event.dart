@@ -65,13 +65,15 @@ class _VideoInteractionsLikeSettled extends VideoInteractionsEvent {
   const _VideoInteractionsLikeSettled({
     required this.outcome,
     required this.wasCount,
+    required this.revision,
   });
 
   final _LikeSettleOutcome outcome;
   final int? wasCount;
+  final int revision;
 
   @override
-  List<Object?> get props => [outcome, wasCount];
+  List<Object?> get props => [outcome, wasCount, revision];
 }
 
 /// Internal event dispatched when a fire-and-forget repost publish settles.
@@ -127,6 +129,16 @@ class _LikeSettleNotLiked extends _LikeSettleOutcome {
 /// Publish threw an unexpected error — revert to the pre-tap baseline.
 class _LikeSettleFailed extends _LikeSettleOutcome {
   const _LikeSettleFailed({required this.wasLiked});
+
+  final bool wasLiked;
+
+  @override
+  List<Object?> get props => [wasLiked];
+}
+
+/// The authoritative relay rejected the action for account policy.
+class _LikeSettleRestricted extends _LikeSettleOutcome {
+  const _LikeSettleRestricted({required this.wasLiked});
 
   final bool wasLiked;
 

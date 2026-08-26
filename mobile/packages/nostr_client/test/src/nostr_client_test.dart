@@ -3008,27 +3008,38 @@ void main() {
     });
 
     group('sendLike', () {
-      test('sends like successfully', () async {
-        const eventId = 'event-to-like';
-        final likeEvent = _createTestEvent(kind: EventKind.reaction);
-
+      void stubOutcome(PublishOutcome outcome) {
         when(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((_) async => likeEvent);
+        ).thenAnswer((_) async => outcome);
+      }
+
+      test('sends like successfully', () async {
+        const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
+          ),
+        );
 
         final result = await client.sendLike(eventId);
 
-        expect(result, equals(likeEvent));
+        expect(result, isNotNull);
         final captured =
             verify(
-                  () => mockNostr.sendEvent(
+                  () => mockNostr.sendEventAwaitOk(
                     captureAny(),
                     tempRelays: any(named: 'tempRelays'),
                     targetRelays: any(named: 'targetRelays'),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as Event;
@@ -3047,24 +3058,24 @@ void main() {
       test('sends like with custom content', () async {
         const eventId = 'event-to-like';
         const content = '❤️';
-        final likeEvent = _createTestEvent(kind: EventKind.reaction);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
           ),
-        ).thenAnswer((_) async => likeEvent);
+        );
 
         await client.sendLike(eventId, content: content);
 
         final captured =
             verify(
-                  () => mockNostr.sendEvent(
+                  () => mockNostr.sendEventAwaitOk(
                     captureAny(),
                     tempRelays: any(named: 'tempRelays'),
                     targetRelays: any(named: 'targetRelays'),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as Event;
@@ -3075,15 +3086,14 @@ void main() {
         const eventId = 'event-to-like';
         final tempRelays = ['wss://temp.example.com'];
         final targetRelays = ['wss://target.example.com'];
-        final likeEvent = _createTestEvent(kind: EventKind.reaction);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://target.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
           ),
-        ).thenAnswer((_) async => likeEvent);
+        );
 
         await client.sendLike(
           eventId,
@@ -3092,28 +3102,141 @@ void main() {
         );
 
         verify(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: targetRelays,
             targetRelays: targetRelays,
+            timeout: any(named: 'timeout'),
           ),
         ).called(1);
       });
 
-      test('returns null when sendLike fails', () async {
+      test('throws a typed restricted result for trusted rejection', () async {
         const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {
+              'wss://relay.example.com/': 'blocked: pubkey is suspended',
+            },
+            noResponseFrom: [],
+          ),
+        );
+
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.accountRestricted,
+            ),
+          ),
+        );
+      });
+
+      test('any relay acceptance wins over a trusted rejection', () async {
+        const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://personal.example.com'],
+            rejectedBy: {
+              'wss://relay.example.com': 'blocked: pubkey is banned',
+            },
+            noResponseFrom: [],
+          ),
+        );
+
+        expect(await client.sendLike(eventId), isNotNull);
+      });
+
+      test('distinguishes rate limiting from unrelated rejection', () async {
+        const eventId = 'event-to-like';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {
+              'wss://relay.example.com': 'rate-limited: slow down',
+            },
+            noResponseFrom: [],
+          ),
+        );
+
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.rateLimited,
+            ),
+          ),
+        );
+
+        reset(mockNostr);
+        when(() => mockNostr.publicKey).thenReturn(testPublicKey);
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {
+              'wss://relay.example.com': 'blocked: event rejected by policy',
+            },
+            noResponseFrom: [],
+          ),
+        );
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.rejected,
+            ),
+          ),
+        );
+      });
+
+      test('distinguishes no relays from SDK send failure', () async {
+        const eventId = 'event-to-like';
+        when(() => mockRelayManager.connectedRelays).thenReturn(const []);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
+
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.noRelays,
+            ),
+          ),
+        );
 
         when(
-          () => mockNostr.sendEvent(
+          () => mockRelayManager.connectedRelays,
+        ).thenReturn(['wss://relay.example.com']);
+        when(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
           ),
         ).thenAnswer((_) async => null);
-
-        final result = await client.sendLike(eventId);
-
-        expect(result, isNull);
+        await expectLater(
+          client.sendLike(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.sendFailed,
+            ),
+          ),
+        );
       });
     });
 
@@ -3562,27 +3685,38 @@ void main() {
     });
 
     group('deleteEvent', () {
-      test('deletes event successfully', () async {
-        const eventId = 'event-to-delete';
-        final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
-
+      void stubOutcome(PublishOutcome outcome) {
         when(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((_) async => deleteEvent);
+        ).thenAnswer((_) async => outcome);
+      }
+
+      test('deletes event successfully', () async {
+        const eventId = 'event-to-delete';
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://relay.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
+          ),
+        );
 
         final result = await client.deleteEvent(eventId);
 
-        expect(result, equals(deleteEvent));
+        expect(result, isNotNull);
         final captured =
             verify(
-                  () => mockNostr.sendEvent(
+                  () => mockNostr.sendEventAwaitOk(
                     captureAny(),
                     tempRelays: any(named: 'tempRelays'),
                     targetRelays: any(named: 'targetRelays'),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as Event;
@@ -3602,15 +3736,14 @@ void main() {
         const eventId = 'event-to-delete';
         final tempRelays = ['wss://temp.example.com'];
         final targetRelays = ['wss://target.example.com'];
-        final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: ['wss://target.example.com'],
+            rejectedBy: {},
+            noResponseFrom: [],
           ),
-        ).thenAnswer((_) async => deleteEvent);
+        );
 
         await client.deleteEvent(
           eventId,
@@ -3619,28 +3752,36 @@ void main() {
         );
 
         verify(
-          () => mockNostr.sendEvent(
+          () => mockNostr.sendEventAwaitOk(
             any(),
             tempRelays: targetRelays,
             targetRelays: targetRelays,
+            timeout: any(named: 'timeout'),
           ),
         ).called(1);
       });
 
-      test('returns null when deleteEvent fails', () async {
+      test('throws a typed no-response result when no relay answers', () async {
         const eventId = 'event-to-delete';
-
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
+        stubOutcome(
+          const PublishOutcome(
+            eventId: eventId,
+            acceptedBy: [],
+            rejectedBy: {},
+            noResponseFrom: ['wss://relay.example.com'],
           ),
-        ).thenAnswer((_) async => null);
+        );
 
-        final result = await client.deleteEvent(eventId);
-
-        expect(result, isNull);
+        await expectLater(
+          client.deleteEvent(eventId),
+          throwsA(
+            isA<SocialPublishException>().having(
+              (error) => error.result.status,
+              'status',
+              SocialPublishStatus.noResponse,
+            ),
+          ),
+        );
       });
     });
 

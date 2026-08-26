@@ -850,6 +850,66 @@ void main() {
         expect(await repository.isLiked(testEventId), isFalse);
       });
 
+      test('restricted like rolls back and is never queued', () async {
+        final event = MockEvent();
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenThrow(
+          SocialPublishException(
+            SocialPublishResult(
+              status: SocialPublishStatus.accountRestricted,
+              event: event,
+              outcome: const PublishOutcome(
+                eventId: testReactionEventId,
+                acceptedBy: [],
+                rejectedBy: {
+                  'wss://relay.divine.video': 'blocked: pubkey is suspended',
+                },
+                noResponseFrom: [],
+              ),
+            ),
+          ),
+        );
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+
+        var queueCalls = 0;
+        repository = createRepository(
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queueCalls++;
+              },
+        );
+
+        await expectLater(
+          repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<LikeAccountRestrictedException>()),
+        );
+
+        expect(queueCalls, isZero);
+        expect(await repository.isLiked(testEventId), isFalse);
+        verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
+      });
+
       // Defense-in-depth: when the publish fails but the offline-action
       // callback is wired, the optimistic state must be preserved and the
       // action queued for retry. This covers the "device says online but
@@ -896,7 +956,7 @@ void main() {
 
         expect(
           result,
-          equals('pending_like_$testEventId'),
+          startsWith('pending_like_'),
           reason: 'must return placeholder ID, not throw',
         );
         expect(queueCalls, equals(1));
@@ -945,7 +1005,7 @@ void main() {
           authorPubkey: testAuthorPubkey,
         );
 
-        expect(result, equals('pending_like_$testEventId'));
+        expect(result, startsWith('pending_like_'));
         expect(queueCalls, equals(1));
         expect(await repository.isLiked(testEventId), isTrue);
       });

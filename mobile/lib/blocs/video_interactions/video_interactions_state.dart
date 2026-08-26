@@ -16,6 +16,9 @@ enum VideoInteractionsStatus {
 
   /// Failed to load data.
   failure,
+
+  /// An authoritative publish response confirmed account enforcement.
+  accountRestricted,
 }
 
 /// State for a single video's interactions.
@@ -42,6 +45,7 @@ class VideoInteractionsState extends Equatable {
     this.repostCount,
     this.commentCount,
     this.isCommentsInProgress = false,
+    this.accountRestrictionRevision = 0,
   });
 
   /// Current status of the bloc.
@@ -68,6 +72,10 @@ class VideoInteractionsState extends Equatable {
   /// Whether a comments operation is currently in progress.
   final bool isCommentsInProgress;
 
+  /// Increments for each restriction response so UI listeners fire once per
+  /// rejected action without carrying navigation or display strings in state.
+  final int accountRestrictionRevision;
+
   /// Whether interaction counts are still loading.
   bool get isLoading =>
       status == VideoInteractionsStatus.initial ||
@@ -85,6 +93,7 @@ class VideoInteractionsState extends Equatable {
     int? repostCount,
     int? commentCount,
     bool? isCommentsInProgress,
+    int? accountRestrictionRevision,
   }) {
     return VideoInteractionsState(
       status: status ?? this.status,
@@ -94,6 +103,8 @@ class VideoInteractionsState extends Equatable {
       repostCount: repostCount ?? this.repostCount,
       commentCount: commentCount ?? this.commentCount,
       isCommentsInProgress: isCommentsInProgress ?? this.isCommentsInProgress,
+      accountRestrictionRevision:
+          accountRestrictionRevision ?? this.accountRestrictionRevision,
     );
   }
 
@@ -106,5 +117,6 @@ class VideoInteractionsState extends Equatable {
     repostCount,
     commentCount,
     isCommentsInProgress,
+    accountRestrictionRevision,
   ];
 }

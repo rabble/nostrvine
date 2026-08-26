@@ -8,7 +8,6 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// User-facing class of an account deletion failure.
