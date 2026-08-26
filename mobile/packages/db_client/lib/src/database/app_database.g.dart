@@ -9312,6 +9312,29 @@ class $DirectMessagesTable extends DirectMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _deletionRumorJsonMeta = const VerificationMeta(
+    'deletionRumorJson',
+  );
+  @override
+  late final GeneratedColumn<String> deletionRumorJson =
+      GeneratedColumn<String>(
+        'deletion_rumor_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _deletionPublishStatusMeta =
+      const VerificationMeta('deletionPublishStatus');
+  @override
+  late final GeneratedColumn<String> deletionPublishStatus =
+      GeneratedColumn<String>(
+        'deletion_publish_status',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9337,6 +9360,8 @@ class $DirectMessagesTable extends DirectMessages
     isDeleted,
     ownerPubkey,
     sendBatchId,
+    deletionRumorJson,
+    deletionPublishStatus,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -9530,6 +9555,24 @@ class $DirectMessagesTable extends DirectMessages
         ),
       );
     }
+    if (data.containsKey('deletion_rumor_json')) {
+      context.handle(
+        _deletionRumorJsonMeta,
+        deletionRumorJson.isAcceptableOrUnknown(
+          data['deletion_rumor_json']!,
+          _deletionRumorJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deletion_publish_status')) {
+      context.handle(
+        _deletionPublishStatusMeta,
+        deletionPublishStatus.isAcceptableOrUnknown(
+          data['deletion_publish_status']!,
+          _deletionPublishStatusMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -9631,6 +9674,14 @@ class $DirectMessagesTable extends DirectMessages
         DriftSqlType.string,
         data['${effectivePrefix}send_batch_id'],
       ),
+      deletionRumorJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deletion_rumor_json'],
+      ),
+      deletionPublishStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deletion_publish_status'],
+      ),
     );
   }
 
@@ -9723,6 +9774,29 @@ class DirectMessageRow extends DataClass
   /// optimistic UI grouping match a fan-out by an exact value instead of the
   /// collision-prone `(sender, content, created_at ±5s)` tuple.
   final String? sendBatchId;
+
+  /// Serialized kind-5 rumor for an own delete-for-everyone still awaiting
+  /// confirmed delivery. Null for every other row.
+  ///
+  /// Stored rather than rebuilt so each retry replays a byte-identical rumor
+  /// id and the recipient's dedup treats repeats as idempotent. Mirrors
+  /// `DmReactions.rumorEventJson`, which serves the same purpose for a
+  /// reaction removal.
+  final String? deletionRumorJson;
+
+  /// Delivery state of the kind-5 in [deletionRumorJson]; null when the row
+  /// carries no own deletion. Values: `deletion_pending` (soft-deleted
+  /// locally, wrap awaiting a confirmed relay `OK`), `deletion_sent`
+  /// (confirmed, terminal), `deletion_blocked` (send policy refused the
+  /// recipient, terminal).
+  ///
+  /// `deletion_blocked` is deliberately distinct from `deletion_sent`, unlike
+  /// the reaction path which collapses the two. A blocked *reaction* removal
+  /// is moot because the reaction never arrived either; a *message* may well
+  /// have been delivered before the block took effect, so claiming the
+  /// deletion was sent would be a lie. The distinct value stops the sweep
+  /// without asserting delivery.
+  final String? deletionPublishStatus;
   const DirectMessageRow({
     required this.id,
     required this.conversationId,
@@ -9747,6 +9821,8 @@ class DirectMessageRow extends DataClass
     required this.isDeleted,
     this.ownerPubkey,
     this.sendBatchId,
+    this.deletionRumorJson,
+    this.deletionPublishStatus,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -9803,6 +9879,12 @@ class DirectMessageRow extends DataClass
     }
     if (!nullToAbsent || sendBatchId != null) {
       map['send_batch_id'] = Variable<String>(sendBatchId);
+    }
+    if (!nullToAbsent || deletionRumorJson != null) {
+      map['deletion_rumor_json'] = Variable<String>(deletionRumorJson);
+    }
+    if (!nullToAbsent || deletionPublishStatus != null) {
+      map['deletion_publish_status'] = Variable<String>(deletionPublishStatus);
     }
     return map;
   }
@@ -9862,6 +9944,12 @@ class DirectMessageRow extends DataClass
       sendBatchId: sendBatchId == null && nullToAbsent
           ? const Value.absent()
           : Value(sendBatchId),
+      deletionRumorJson: deletionRumorJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletionRumorJson),
+      deletionPublishStatus: deletionPublishStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletionPublishStatus),
     );
   }
 
@@ -9896,6 +9984,12 @@ class DirectMessageRow extends DataClass
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
       sendBatchId: serializer.fromJson<String?>(json['sendBatchId']),
+      deletionRumorJson: serializer.fromJson<String?>(
+        json['deletionRumorJson'],
+      ),
+      deletionPublishStatus: serializer.fromJson<String?>(
+        json['deletionPublishStatus'],
+      ),
     );
   }
   @override
@@ -9925,6 +10019,10 @@ class DirectMessageRow extends DataClass
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
       'sendBatchId': serializer.toJson<String?>(sendBatchId),
+      'deletionRumorJson': serializer.toJson<String?>(deletionRumorJson),
+      'deletionPublishStatus': serializer.toJson<String?>(
+        deletionPublishStatus,
+      ),
     };
   }
 
@@ -9952,6 +10050,8 @@ class DirectMessageRow extends DataClass
     bool? isDeleted,
     Value<String?> ownerPubkey = const Value.absent(),
     Value<String?> sendBatchId = const Value.absent(),
+    Value<String?> deletionRumorJson = const Value.absent(),
+    Value<String?> deletionPublishStatus = const Value.absent(),
   }) => DirectMessageRow(
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
@@ -9984,6 +10084,12 @@ class DirectMessageRow extends DataClass
     isDeleted: isDeleted ?? this.isDeleted,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
     sendBatchId: sendBatchId.present ? sendBatchId.value : this.sendBatchId,
+    deletionRumorJson: deletionRumorJson.present
+        ? deletionRumorJson.value
+        : this.deletionRumorJson,
+    deletionPublishStatus: deletionPublishStatus.present
+        ? deletionPublishStatus.value
+        : this.deletionPublishStatus,
   );
   DirectMessageRow copyWithCompanion(DirectMessagesCompanion data) {
     return DirectMessageRow(
@@ -10034,6 +10140,12 @@ class DirectMessageRow extends DataClass
       sendBatchId: data.sendBatchId.present
           ? data.sendBatchId.value
           : this.sendBatchId,
+      deletionRumorJson: data.deletionRumorJson.present
+          ? data.deletionRumorJson.value
+          : this.deletionRumorJson,
+      deletionPublishStatus: data.deletionPublishStatus.present
+          ? data.deletionPublishStatus.value
+          : this.deletionPublishStatus,
     );
   }
 
@@ -10062,7 +10174,9 @@ class DirectMessageRow extends DataClass
           ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('ownerPubkey: $ownerPubkey, ')
-          ..write('sendBatchId: $sendBatchId')
+          ..write('sendBatchId: $sendBatchId, ')
+          ..write('deletionRumorJson: $deletionRumorJson, ')
+          ..write('deletionPublishStatus: $deletionPublishStatus')
           ..write(')'))
         .toString();
   }
@@ -10092,6 +10206,8 @@ class DirectMessageRow extends DataClass
     isDeleted,
     ownerPubkey,
     sendBatchId,
+    deletionRumorJson,
+    deletionPublishStatus,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -10119,7 +10235,9 @@ class DirectMessageRow extends DataClass
           other.thumbnailUrl == this.thumbnailUrl &&
           other.isDeleted == this.isDeleted &&
           other.ownerPubkey == this.ownerPubkey &&
-          other.sendBatchId == this.sendBatchId);
+          other.sendBatchId == this.sendBatchId &&
+          other.deletionRumorJson == this.deletionRumorJson &&
+          other.deletionPublishStatus == this.deletionPublishStatus);
 }
 
 class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
@@ -10146,6 +10264,8 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<bool> isDeleted;
   final Value<String?> ownerPubkey;
   final Value<String?> sendBatchId;
+  final Value<String?> deletionRumorJson;
+  final Value<String?> deletionPublishStatus;
   final Value<int> rowid;
   const DirectMessagesCompanion({
     this.id = const Value.absent(),
@@ -10171,6 +10291,8 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.isDeleted = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.sendBatchId = const Value.absent(),
+    this.deletionRumorJson = const Value.absent(),
+    this.deletionPublishStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DirectMessagesCompanion.insert({
@@ -10197,6 +10319,8 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.isDeleted = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.sendBatchId = const Value.absent(),
+    this.deletionRumorJson = const Value.absent(),
+    this.deletionPublishStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        conversationId = Value(conversationId),
@@ -10228,6 +10352,8 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Expression<bool>? isDeleted,
     Expression<String>? ownerPubkey,
     Expression<String>? sendBatchId,
+    Expression<String>? deletionRumorJson,
+    Expression<String>? deletionPublishStatus,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10255,6 +10381,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (sendBatchId != null) 'send_batch_id': sendBatchId,
+      if (deletionRumorJson != null) 'deletion_rumor_json': deletionRumorJson,
+      if (deletionPublishStatus != null)
+        'deletion_publish_status': deletionPublishStatus,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10283,6 +10412,8 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<bool>? isDeleted,
     Value<String?>? ownerPubkey,
     Value<String?>? sendBatchId,
+    Value<String?>? deletionRumorJson,
+    Value<String?>? deletionPublishStatus,
     Value<int>? rowid,
   }) {
     return DirectMessagesCompanion(
@@ -10309,6 +10440,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       isDeleted: isDeleted ?? this.isDeleted,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       sendBatchId: sendBatchId ?? this.sendBatchId,
+      deletionRumorJson: deletionRumorJson ?? this.deletionRumorJson,
+      deletionPublishStatus:
+          deletionPublishStatus ?? this.deletionPublishStatus,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -10385,6 +10519,14 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     if (sendBatchId.present) {
       map['send_batch_id'] = Variable<String>(sendBatchId.value);
     }
+    if (deletionRumorJson.present) {
+      map['deletion_rumor_json'] = Variable<String>(deletionRumorJson.value);
+    }
+    if (deletionPublishStatus.present) {
+      map['deletion_publish_status'] = Variable<String>(
+        deletionPublishStatus.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -10417,6 +10559,8 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
           ..write('isDeleted: $isDeleted, ')
           ..write('ownerPubkey: $ownerPubkey, ')
           ..write('sendBatchId: $sendBatchId, ')
+          ..write('deletionRumorJson: $deletionRumorJson, ')
+          ..write('deletionPublishStatus: $deletionPublishStatus, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -22391,6 +22535,8 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<bool> isDeleted,
       Value<String?> ownerPubkey,
       Value<String?> sendBatchId,
+      Value<String?> deletionRumorJson,
+      Value<String?> deletionPublishStatus,
       Value<int> rowid,
     });
 typedef $$DirectMessagesTableUpdateCompanionBuilder =
@@ -22418,6 +22564,8 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<bool> isDeleted,
       Value<String?> ownerPubkey,
       Value<String?> sendBatchId,
+      Value<String?> deletionRumorJson,
+      Value<String?> deletionPublishStatus,
       Value<int> rowid,
     });
 
@@ -22542,6 +22690,16 @@ class $$DirectMessagesTableFilterComposer
 
   ColumnFilters<String> get sendBatchId => $composableBuilder(
     column: $table.sendBatchId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deletionRumorJson => $composableBuilder(
+    column: $table.deletionRumorJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deletionPublishStatus => $composableBuilder(
+    column: $table.deletionPublishStatus,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -22669,6 +22827,16 @@ class $$DirectMessagesTableOrderingComposer
     column: $table.sendBatchId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get deletionRumorJson => $composableBuilder(
+    column: $table.deletionRumorJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deletionPublishStatus => $composableBuilder(
+    column: $table.deletionPublishStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DirectMessagesTableAnnotationComposer
@@ -22772,6 +22940,16 @@ class $$DirectMessagesTableAnnotationComposer
     column: $table.sendBatchId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get deletionRumorJson => $composableBuilder(
+    column: $table.deletionRumorJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get deletionPublishStatus => $composableBuilder(
+    column: $table.deletionPublishStatus,
+    builder: (column) => column,
+  );
 }
 
 class $$DirectMessagesTableTableManager
@@ -22834,6 +23012,8 @@ class $$DirectMessagesTableTableManager
                 Value<bool> isDeleted = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<String?> sendBatchId = const Value.absent(),
+                Value<String?> deletionRumorJson = const Value.absent(),
+                Value<String?> deletionPublishStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion(
                 id: id,
@@ -22859,6 +23039,8 @@ class $$DirectMessagesTableTableManager
                 isDeleted: isDeleted,
                 ownerPubkey: ownerPubkey,
                 sendBatchId: sendBatchId,
+                deletionRumorJson: deletionRumorJson,
+                deletionPublishStatus: deletionPublishStatus,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -22886,6 +23068,8 @@ class $$DirectMessagesTableTableManager
                 Value<bool> isDeleted = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<String?> sendBatchId = const Value.absent(),
+                Value<String?> deletionRumorJson = const Value.absent(),
+                Value<String?> deletionPublishStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DirectMessagesCompanion.insert(
                 id: id,
@@ -22911,6 +23095,8 @@ class $$DirectMessagesTableTableManager
                 isDeleted: isDeleted,
                 ownerPubkey: ownerPubkey,
                 sendBatchId: sendBatchId,
+                deletionRumorJson: deletionRumorJson,
+                deletionPublishStatus: deletionPublishStatus,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
