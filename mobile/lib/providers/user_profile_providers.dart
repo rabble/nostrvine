@@ -22,6 +22,14 @@ final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
       .map((pubkeys) => pubkeys.toSet());
 });
 
+/// One-shot durable vanish lookup for imperative paths such as gesture
+/// handlers, where no mounted widget keeps [profileVanishedProvider] warm.
+// ignore: specify_nonobvious_property_types
+final profileVanishedSnapshotProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, pubkey) {
+      return ref.watch(databaseProvider).vanishedProfilesDao.isVanished(pubkey);
+    });
+
 // ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
     StreamProvider.family<ProfileStats?, String>((ref, pubkey) {

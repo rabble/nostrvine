@@ -50,6 +50,29 @@ void main() {
   const pubkey =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  group('profileVanishedSnapshotProvider', () {
+    test('reads the durable vanish row from a cold provider', () async {
+      final database = _MockAppDatabase();
+      final vanishedProfilesDao = _MockVanishedProfilesDao();
+      when(
+        () => database.vanishedProfilesDao,
+      ).thenReturn(vanishedProfilesDao);
+      when(
+        () => vanishedProfilesDao.isVanished(pubkey),
+      ).thenAnswer((_) async => true);
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        await container.read(profileVanishedSnapshotProvider(pubkey).future),
+        isTrue,
+      );
+      verify(() => vanishedProfilesDao.isVanished(pubkey)).called(1);
+    });
+  });
+
   group('userProfileReactiveProvider', () {
     late _MockProfileRepository profileRepository;
     late ProviderContainer container;

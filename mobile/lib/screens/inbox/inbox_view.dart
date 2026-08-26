@@ -973,28 +973,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     // has none at all — so the sheet would otherwise open labelled with the
     // generated fallback the row's own name exists to avoid.
     //
-    // `profileVanishedProvider` is autoDispose and stream-backed, which makes
-    // both obvious reads wrong here, and both were measured on device:
-    //
-    // - `ref.read(provider)` returns `AsyncLoading` whenever nothing is
-    //   currently watching that pubkey, so `orElse: false` reports a vanished
-    //   peer as live — the row said "Deleted account" while the sheet it
-    //   opened said the generated handle.
-    // - `ref.read(provider.future)` never completes, because the read does not
-    //   keep the provider alive and it is disposed before `Stream.value`
-    //   delivers its event. The sheet simply never opened.
-    //
-    // Holding a subscription across the await fixes both.
-    final vanishSubscription = ref.listenManual(
-      profileVanishedProvider(otherPubkey),
-      (_, _) {},
+    // The reactive provider intentionally renders false while its shared
+    // Drift stream is loading. An imperative read cannot use that placeholder:
+    // the sheet needs the durable answer before choosing a name.
+    final isVanished = await ref.read(
+      profileVanishedSnapshotProvider(otherPubkey).future,
     );
-    final bool isVanished;
-    try {
-      isVanished = await ref.read(profileVanishedProvider(otherPubkey).future);
-    } finally {
-      vanishSubscription.close();
-    }
     if (!context.mounted) return;
 
     final String displayName;

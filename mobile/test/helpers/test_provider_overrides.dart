@@ -436,6 +436,7 @@ List<dynamic> getStandardTestOverrides({
     // build. Tests that exercise the deleted-account treatment override it
     // again with `additionalOverrides`.
     profileVanishedProvider.overrideWith((ref, pubkey) => Stream.value(false)),
+    profileVanishedSnapshotProvider.overrideWith((ref, pubkey) async => false),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)

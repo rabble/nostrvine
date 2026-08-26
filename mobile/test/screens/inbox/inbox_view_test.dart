@@ -2067,6 +2067,9 @@ void main() {
               profileVanishedProvider(
                 otherPubkey,
               ).overrideWith((ref) => Stream.value(true)),
+              profileVanishedSnapshotProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => true),
             ],
           ),
         );
