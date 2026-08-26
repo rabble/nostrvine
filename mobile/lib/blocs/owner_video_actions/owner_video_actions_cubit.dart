@@ -42,16 +42,17 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
     with CloseGuardedEmit<OwnerVideoActionsState> {
   OwnerVideoActionsCubit({
     required Future<ContentDeletionService> contentDeletionServiceFuture,
-    required VideoEventService videoEventService,
-    required CreatorDeleteEnforcementRepository enforcementRepository,
+    required VideoEventService Function() videoEventService,
+    required CreatorDeleteEnforcementRepository Function()
+    enforcementRepository,
   }) : _contentDeletionServiceFuture = contentDeletionServiceFuture,
        _videoEventService = videoEventService,
        _enforcementRepository = enforcementRepository,
        super(const OwnerVideoActionsState());
 
   final Future<ContentDeletionService> _contentDeletionServiceFuture;
-  final VideoEventService _videoEventService;
-  final CreatorDeleteEnforcementRepository _enforcementRepository;
+  final VideoEventService Function() _videoEventService;
+  final CreatorDeleteEnforcementRepository Function() _enforcementRepository;
 
   Future<void> deleteVideo(VideoEvent video) async {
     if (state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
@@ -72,7 +73,7 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
       );
 
       if (result.success) {
-        _videoEventService.removeVideoEventCompletely(video);
+        _videoEventService().removeVideoEventCompletely(video);
         if (!emitIfOpen(
           OwnerVideoActionsState(
             deleteStatus: OwnerVideoDeleteStatus.success,
@@ -129,7 +130,7 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
       return;
     }
 
-    final result = await _enforcementRepository.enforce(kind5Id);
+    final result = await _enforcementRepository().enforce(kind5Id);
     emitIfOpen(
       OwnerVideoActionsState(
         deleteStatus: OwnerVideoDeleteStatus.success,

@@ -38,8 +38,8 @@ void main() {
 
     OwnerVideoActionsCubit buildCubit() => OwnerVideoActionsCubit(
       contentDeletionServiceFuture: Future.value(deletionService),
-      videoEventService: videoEventService,
-      enforcementRepository: enforcementRepository,
+      videoEventService: () => videoEventService,
+      enforcementRepository: () => enforcementRepository,
     );
 
     setUp(() {

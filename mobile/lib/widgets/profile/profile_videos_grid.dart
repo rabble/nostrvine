@@ -141,8 +141,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       contentDeletionServiceFuture: ref.read(
         contentDeletionServiceProvider.future,
       ),
-      videoEventService: ref.read(videoEventServiceProvider),
-      enforcementRepository: ref.read(
+      videoEventService: () => ref.read(videoEventServiceProvider),
+      enforcementRepository: () => ref.read(
         creatorDeleteEnforcementRepositoryProvider,
       ),
     );

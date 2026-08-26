@@ -60,8 +60,8 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
       contentDeletionServiceFuture: ref.read(
         contentDeletionServiceProvider.future,
       ),
-      videoEventService: ref.read(videoEventServiceProvider),
-      enforcementRepository: ref.read(
+      videoEventService: () => ref.read(videoEventServiceProvider),
+      enforcementRepository: () => ref.read(
         creatorDeleteEnforcementRepositoryProvider,
       ),
     );
