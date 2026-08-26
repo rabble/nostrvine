@@ -10,10 +10,8 @@ import 'package:openvine/services/nip98_auth_service.dart';
 
 enum CreatorDeleteEnforcementStatus { confirmed, delayed, failed }
 
-enum CreatorDeleteEnforcementFailure { permanent, clientContract }
-
 class CreatorDeleteEnforcementResult {
-  const CreatorDeleteEnforcementResult._({required this.status, this.failure});
+  const CreatorDeleteEnforcementResult._({required this.status});
 
   const CreatorDeleteEnforcementResult.confirmed()
     : this._(status: CreatorDeleteEnforcementStatus.confirmed);
@@ -21,15 +19,10 @@ class CreatorDeleteEnforcementResult {
   const CreatorDeleteEnforcementResult.delayed()
     : this._(status: CreatorDeleteEnforcementStatus.delayed);
 
-  const CreatorDeleteEnforcementResult.failed(
-    CreatorDeleteEnforcementFailure failure,
-  ) : this._(status: CreatorDeleteEnforcementStatus.failed, failure: failure);
+  const CreatorDeleteEnforcementResult.failed()
+    : this._(status: CreatorDeleteEnforcementStatus.failed);
 
   final CreatorDeleteEnforcementStatus status;
-  final CreatorDeleteEnforcementFailure? failure;
-
-  bool get isReportable =>
-      failure == CreatorDeleteEnforcementFailure.clientContract;
 }
 
 class CreatorDeleteEnforcementRepository {
@@ -37,6 +30,7 @@ class CreatorDeleteEnforcementRepository {
     required String baseUrl,
     required http.Client httpClient,
     required Nip98AuthService nip98AuthService,
+    bool enabled = true,
     Duration requestTimeout = const Duration(seconds: 15),
     Duration pollTimeout = const Duration(seconds: 30),
     Future<void> Function(Duration) delay = Future<void>.delayed,
@@ -46,6 +40,7 @@ class CreatorDeleteEnforcementRepository {
            : baseUrl,
        _httpClient = httpClient,
        _nip98AuthService = nip98AuthService,
+       _enabled = enabled,
        _requestTimeout = requestTimeout,
        _pollTimeout = pollTimeout,
        _delay = delay,
@@ -57,12 +52,14 @@ class CreatorDeleteEnforcementRepository {
   final String _baseUrl;
   final http.Client _httpClient;
   final Nip98AuthService _nip98AuthService;
+  final bool _enabled;
   final Duration _requestTimeout;
   final Duration _pollTimeout;
   final Future<void> Function(Duration) _delay;
   final void Function(Object, StackTrace)? _reportError;
 
   Future<CreatorDeleteEnforcementResult> enforce(String kind5Id) async {
+    if (!_enabled) return const CreatorDeleteEnforcementResult.delayed();
     try {
       return await _enforce(kind5Id);
     } on Object catch (error, stackTrace) {
@@ -74,26 +71,21 @@ class CreatorDeleteEnforcementRepository {
   Future<CreatorDeleteEnforcementResult> _enforce(String kind5Id) async {
     final postUri = _uri('/api/delete', kind5Id);
     final firstResponse = await _request(postUri, HttpMethod.post);
-    if (firstResponse?.statusCode == 429) {
-      await _delay(_initialBackoff);
-      final retryResponse = await _request(postUri, HttpMethod.post);
-      final retryResult = _terminalPostResult(retryResponse);
-      if (retryResult != null) return retryResult;
-      return _poll(kind5Id);
-    }
-
+    if (firstResponse?.statusCode == 202) return _poll(kind5Id);
     final result = _terminalPostResult(firstResponse);
     if (result != null) return result;
-    return _poll(kind5Id);
+    return const CreatorDeleteEnforcementResult.delayed();
   }
 
   CreatorDeleteEnforcementResult? _terminalPostResult(http.Response? response) {
-    if (response == null) return null;
-    if ({400, 401, 403}.contains(response.statusCode)) {
+    if (response == null ||
+        {401, 404, 429}.contains(response.statusCode) ||
+        response.statusCode >= 500) {
+      return const CreatorDeleteEnforcementResult.delayed();
+    }
+    if ({400, 403}.contains(response.statusCode)) {
       _reportContractFailure('POST rejected with ${response.statusCode}');
-      return const CreatorDeleteEnforcementResult.failed(
-        CreatorDeleteEnforcementFailure.clientContract,
-      );
+      return const CreatorDeleteEnforcementResult.failed();
     }
     if (response.statusCode != 200) return null;
     return _decodePostBody(response.body);
@@ -105,14 +97,10 @@ class CreatorDeleteEnforcementRepository {
       return const CreatorDeleteEnforcementResult.confirmed();
     }
     if (json?['status'] == 'failed') {
-      return const CreatorDeleteEnforcementResult.failed(
-        CreatorDeleteEnforcementFailure.permanent,
-      );
+      return const CreatorDeleteEnforcementResult.failed();
     }
     _reportContractFailure('POST returned an invalid terminal response');
-    return const CreatorDeleteEnforcementResult.failed(
-      CreatorDeleteEnforcementFailure.clientContract,
-    );
+    return const CreatorDeleteEnforcementResult.failed();
   }
 
   Future<CreatorDeleteEnforcementResult> _poll(String kind5Id) async {
@@ -153,20 +141,19 @@ class CreatorDeleteEnforcementRepository {
 
   CreatorDeleteEnforcementResult? _pollResult(http.Response? response) {
     if (response == null || response.statusCode == 404) return null;
-    if ({400, 401, 403}.contains(response.statusCode)) {
+    if (response.statusCode == 401) {
+      return const CreatorDeleteEnforcementResult.delayed();
+    }
+    if ({400, 403}.contains(response.statusCode)) {
       _reportContractFailure('GET rejected with ${response.statusCode}');
-      return const CreatorDeleteEnforcementResult.failed(
-        CreatorDeleteEnforcementFailure.clientContract,
-      );
+      return const CreatorDeleteEnforcementResult.failed();
     }
     if (response.statusCode != 200) return null;
     final json = _decodeObject(response.body);
     final targets = json?['targets'];
     if (targets is! List<Object?> || targets.isEmpty) {
       _reportContractFailure('GET returned no target states');
-      return const CreatorDeleteEnforcementResult.failed(
-        CreatorDeleteEnforcementFailure.clientContract,
-      );
+      return const CreatorDeleteEnforcementResult.failed();
     }
     final statuses = targets
         .whereType<Map<String, dynamic>>()
@@ -175,14 +162,10 @@ class CreatorDeleteEnforcementRepository {
         .toList();
     if (statuses.length != targets.length) {
       _reportContractFailure('GET returned malformed target states');
-      return const CreatorDeleteEnforcementResult.failed(
-        CreatorDeleteEnforcementFailure.clientContract,
-      );
+      return const CreatorDeleteEnforcementResult.failed();
     }
     if (statuses.any((status) => status.startsWith('failed:permanent:'))) {
-      return const CreatorDeleteEnforcementResult.failed(
-        CreatorDeleteEnforcementFailure.permanent,
-      );
+      return const CreatorDeleteEnforcementResult.failed();
     }
     if (statuses.every((status) => status == 'success')) {
       return const CreatorDeleteEnforcementResult.confirmed();

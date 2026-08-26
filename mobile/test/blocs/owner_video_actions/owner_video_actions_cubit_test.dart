@@ -37,7 +37,7 @@ void main() {
     late _MockEnforcementRepository enforcementRepository;
 
     OwnerVideoActionsCubit buildCubit() => OwnerVideoActionsCubit(
-      contentDeletionServiceFuture: Future.value(deletionService),
+      contentDeletionService: () async => deletionService,
       videoEventService: () => videoEventService,
       enforcementRepository: () => enforcementRepository,
     );
@@ -192,6 +192,38 @@ void main() {
             ),
       ],
     );
+
+    test('returns after relay success without waiting for cleanup', () async {
+      final cleanupCompleter = Completer<CreatorDeleteEnforcementResult>();
+      when(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer(
+        (_) async => DeleteResult.createSuccess(
+          'delete-event-id',
+          acceptance: DeleteAcceptance.everyRelay,
+        ),
+      );
+      when(
+        () => enforcementRepository.enforce('delete-event-id'),
+      ).thenAnswer((_) => cleanupCompleter.future);
+      final cubit = buildCubit();
+
+      final start = await cubit.deleteVideo(video);
+
+      expect(start, OwnerVideoDeleteStart.started);
+      expect(cubit.state.cleanupStatus, OwnerVideoCleanupStatus.inProgress);
+      expect(cubit.cleanupCompletion, isNotNull);
+
+      cleanupCompleter.complete(
+        const CreatorDeleteEnforcementResult.confirmed(),
+      );
+      final terminal = await cubit.cleanupCompletion;
+      expect(terminal!.cleanupStatus, OwnerVideoCleanupStatus.confirmed);
+      await cubit.close();
+    });
 
     test('ignores a second delete while the first is in flight', () async {
       final relayCompleter = Completer<DeleteResult>();

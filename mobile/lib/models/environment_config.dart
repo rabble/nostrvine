@@ -148,8 +148,9 @@ class EnvironmentConfig {
 
   /// Base URL for creator-delete enforcement in moderation-service.
   ///
-  /// This service has one production host across every app environment and is
-  /// not part of local_stack, matching [verifierBaseUrl].
+  /// This service has one production host and is not part of local_stack.
+  /// Creator-delete enforcement is disabled in LOCAL builds so locally
+  /// published kind-5 events are never sent to the production service.
   String get moderationApiBaseUrl => 'https://moderation-api.divine.video';
 
   /// Get blossom media server URL

@@ -1,11 +1,12 @@
 // ABOUTME: Cubit for owner-only video actions such as deleting own videos.
 // ABOUTME: Keeps service-layer calls out of feed UI widgets.
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/close_guard.dart';
-import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -14,6 +15,8 @@ import 'package:unified_logger/unified_logger.dart';
 enum OwnerVideoDeleteStatus { idle, deleting, success, failure }
 
 enum OwnerVideoCleanupStatus { idle, inProgress, confirmed, delayed, failed }
+
+enum OwnerVideoDeleteStart { started, busy }
 
 class OwnerVideoActionsState extends Equatable {
   const OwnerVideoActionsState({
@@ -41,23 +44,27 @@ class OwnerVideoActionsState extends Equatable {
 class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
     with CloseGuardedEmit<OwnerVideoActionsState> {
   OwnerVideoActionsCubit({
-    required Future<ContentDeletionService> contentDeletionServiceFuture,
+    required Future<ContentDeletionService> Function() contentDeletionService,
     required VideoEventService Function() videoEventService,
     required CreatorDeleteEnforcementRepository Function()
     enforcementRepository,
-  }) : _contentDeletionServiceFuture = contentDeletionServiceFuture,
+  }) : _contentDeletionService = contentDeletionService,
        _videoEventService = videoEventService,
        _enforcementRepository = enforcementRepository,
        super(const OwnerVideoActionsState());
 
-  final Future<ContentDeletionService> _contentDeletionServiceFuture;
+  final Future<ContentDeletionService> Function() _contentDeletionService;
   final VideoEventService Function() _videoEventService;
   final CreatorDeleteEnforcementRepository Function() _enforcementRepository;
+  Completer<OwnerVideoActionsState>? _cleanupCompleter;
 
-  Future<void> deleteVideo(VideoEvent video) async {
+  Future<OwnerVideoActionsState>? get cleanupCompletion =>
+      _cleanupCompleter?.future;
+
+  Future<OwnerVideoDeleteStart> deleteVideo(VideoEvent video) async {
     if (state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
         state.cleanupStatus == OwnerVideoCleanupStatus.inProgress) {
-      return;
+      return OwnerVideoDeleteStart.busy;
     }
     emit(
       const OwnerVideoActionsState(
@@ -66,7 +73,7 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
     );
 
     try {
-      final deletionService = await _contentDeletionServiceFuture;
+      final deletionService = await _contentDeletionService();
       final result = await deletionService.quickDelete(
         video: video,
         reason: DeleteReason.personalChoice,
@@ -74,6 +81,7 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
 
       if (result.success) {
         _videoEventService().removeVideoEventCompletely(video);
+        _cleanupCompleter = Completer<OwnerVideoActionsState>();
         if (!emitIfOpen(
           OwnerVideoActionsState(
             deleteStatus: OwnerVideoDeleteStatus.success,
@@ -81,9 +89,9 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
             deleteResult: result,
           ),
         )) {
-          return;
+          return OwnerVideoDeleteStart.started;
         }
-        await _confirmCleanup(result);
+        unawaited(_confirmCleanup(result));
       } else {
         emitIfOpen(
           OwnerVideoActionsState(
@@ -108,42 +116,25 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
         ),
       );
     }
+    return OwnerVideoDeleteStart.started;
   }
 
   Future<void> _confirmCleanup(DeleteResult deleteResult) async {
-    final kind5Id = deleteResult.deleteEventId;
-    if (kind5Id == null) {
-      addError(
-        Reportable<StateError>(
-          StateError('Successful creator delete omitted the kind-5 id'),
-          context: 'OwnerVideoActionsCubit._confirmCleanup',
-        ),
-        StackTrace.current,
-      );
-      emitIfOpen(
-        OwnerVideoActionsState(
-          deleteStatus: OwnerVideoDeleteStatus.success,
-          cleanupStatus: OwnerVideoCleanupStatus.failed,
-          deleteResult: deleteResult,
-        ),
-      );
-      return;
-    }
-
-    final result = await _enforcementRepository().enforce(kind5Id);
-    emitIfOpen(
-      OwnerVideoActionsState(
-        deleteStatus: OwnerVideoDeleteStatus.success,
-        cleanupStatus: switch (result.status) {
-          CreatorDeleteEnforcementStatus.confirmed =>
-            OwnerVideoCleanupStatus.confirmed,
-          CreatorDeleteEnforcementStatus.delayed =>
-            OwnerVideoCleanupStatus.delayed,
-          CreatorDeleteEnforcementStatus.failed =>
-            OwnerVideoCleanupStatus.failed,
-        },
-        deleteResult: deleteResult,
-      ),
+    final result = await _enforcementRepository().enforce(
+      deleteResult.deleteEventId!,
     );
+    final terminalState = OwnerVideoActionsState(
+      deleteStatus: OwnerVideoDeleteStatus.success,
+      cleanupStatus: switch (result.status) {
+        CreatorDeleteEnforcementStatus.confirmed =>
+          OwnerVideoCleanupStatus.confirmed,
+        CreatorDeleteEnforcementStatus.delayed =>
+          OwnerVideoCleanupStatus.delayed,
+        CreatorDeleteEnforcementStatus.failed => OwnerVideoCleanupStatus.failed,
+      },
+      deleteResult: deleteResult,
+    );
+    _cleanupCompleter?.complete(terminalState);
+    emitIfOpen(terminalState);
   }
 }

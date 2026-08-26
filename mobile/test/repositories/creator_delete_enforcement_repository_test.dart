@@ -55,13 +55,30 @@ void main() {
       expect(result.status, CreatorDeleteEnforcementStatus.confirmed);
     });
 
+    test('disabled enforcement does not contact the production API', () async {
+      var calls = 0;
+      final repository = CreatorDeleteEnforcementRepository(
+        baseUrl: 'https://moderation.example',
+        httpClient: MockClient((_) async {
+          calls++;
+          return http.Response('', 500);
+        }),
+        nip98AuthService: auth,
+        enabled: false,
+      );
+
+      final result = await repository.enforce('local-kind5');
+
+      expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+      expect(calls, 0);
+    });
+
     test('maps synchronous terminal failure to permanent failure', () async {
       final result = await build(
         (_) => http.Response('{"status":"failed"}', 200),
       ).enforce('kind5');
 
       expect(result.status, CreatorDeleteEnforcementStatus.failed);
-      expect(result.failure, CreatorDeleteEnforcementFailure.permanent);
     });
 
     test('polls after 202 and confirms all targets', () async {
@@ -80,7 +97,7 @@ void main() {
       expect(calls, 2);
     });
 
-    test('polls after read-after-write 404', () async {
+    test('returns delayed immediately after POST 404', () async {
       var calls = 0;
       final result = await build((request) {
         calls++;
@@ -92,10 +109,11 @@ void main() {
               );
       }).enforce('kind5');
 
-      expect(result.status, CreatorDeleteEnforcementStatus.confirmed);
+      expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+      expect(calls, 1);
     });
 
-    test('polls after 5xx and resolves delayed at the deadline', () async {
+    test('returns delayed immediately after 5xx', () async {
       final result = await build(
         (_) => http.Response('', 503),
       ).enforce('kind5');
@@ -103,7 +121,7 @@ void main() {
       expect(result.status, CreatorDeleteEnforcementStatus.delayed);
     });
 
-    test('polls after network failure and resolves delayed', () async {
+    test('returns delayed immediately after network failure', () async {
       final result = await build(
         (_) => throw http.ClientException('offline'),
       ).enforce('kind5');
@@ -111,7 +129,7 @@ void main() {
       expect(result.status, CreatorDeleteEnforcementStatus.delayed);
     });
 
-    test('retries 429 once before polling', () async {
+    test('returns delayed immediately after 429', () async {
       var calls = 0;
       final result = await build((_) {
         calls++;
@@ -123,22 +141,32 @@ void main() {
               );
       }).enforce('kind5');
 
-      expect(result.status, CreatorDeleteEnforcementStatus.confirmed);
-      expect(calls, 3);
+      expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+      expect(calls, 1);
     });
 
-    for (final statusCode in [400, 401, 403]) {
+    for (final statusCode in [400, 403]) {
       test('$statusCode is a reportable client-contract failure', () async {
         final result = await build(
           (_) => http.Response('', statusCode),
         ).enforce('kind5');
 
         expect(result.status, CreatorDeleteEnforcementStatus.failed);
-        expect(result.failure, CreatorDeleteEnforcementFailure.clientContract);
-        expect(result.isReportable, isTrue);
         expect(reports, hasLength(1));
       });
     }
+
+    test(
+      '401 is delayed without reporting a client contract failure',
+      () async {
+        final result = await build(
+          (_) => http.Response('', 401),
+        ).enforce('kind5');
+
+        expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+        expect(reports, isEmpty);
+      },
+    );
 
     test('maps a permanent target status from polling to failure', () async {
       var calls = 0;
@@ -152,7 +180,7 @@ void main() {
               );
       }).enforce('kind5');
 
-      expect(result.failure, CreatorDeleteEnforcementFailure.permanent);
+      expect(result.status, CreatorDeleteEnforcementStatus.failed);
     });
 
     test('keeps accepted and transient target rows pending', () async {
@@ -175,7 +203,8 @@ void main() {
         (_) => http.Response('{"unexpected":true}', 200),
       ).enforce('kind5');
 
-      expect(result.failure, CreatorDeleteEnforcementFailure.clientContract);
+      expect(result.status, CreatorDeleteEnforcementStatus.failed);
+      expect(reports, hasLength(1));
     });
 
     test(

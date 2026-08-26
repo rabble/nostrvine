@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
+import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
 
@@ -57,9 +58,8 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
   void initState() {
     super.initState();
     _ownerVideoActionsCubit = OwnerVideoActionsCubit(
-      contentDeletionServiceFuture: ref.read(
-        contentDeletionServiceProvider.future,
-      ),
+      contentDeletionService: () =>
+          ref.read(contentDeletionServiceProvider.future),
       videoEventService: () => ref.read(videoEventServiceProvider),
       enforcementRepository: () => ref.read(
         creatorDeleteEnforcementRepositoryProvider,
@@ -124,6 +124,7 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
 
     final state = ownerVideoActionsCubit.state;
     if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+      showOwnerVideoCleanupCompletion(context, ownerVideoActionsCubit);
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
         localizedOwnerVideoDeleteSuccessMessage(context, state),

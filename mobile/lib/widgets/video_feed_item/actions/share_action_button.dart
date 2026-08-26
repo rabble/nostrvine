@@ -29,6 +29,7 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
+import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/share_sheet.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
@@ -142,9 +143,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     super.initState();
     if (_isUserOwnContent()) {
       _ownerVideoActionsCubit = OwnerVideoActionsCubit(
-        contentDeletionServiceFuture: ref.read(
-          contentDeletionServiceProvider.future,
-        ),
+        contentDeletionService: () =>
+            ref.read(contentDeletionServiceProvider.future),
         videoEventService: () => ref.read(videoEventServiceProvider),
         enforcementRepository: () => ref.read(
           creatorDeleteEnforcementRepositoryProvider,
@@ -453,6 +453,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
     final state = ownerVideoActionsCubit.state;
     if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+      showOwnerVideoCleanupCompletion(context, ownerVideoActionsCubit);
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
         localizedOwnerVideoDeleteSuccessMessage(context, state),

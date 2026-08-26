@@ -9,15 +9,15 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
-import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
+import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
@@ -87,6 +87,7 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
 class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
+  late final OwnerVideoActionsCubit _ownerVideoActionsCubit;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -103,6 +104,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   @override
   void initState() {
     super.initState();
+    _ownerVideoActionsCubit = OwnerVideoActionsCubit(
+      contentDeletionService: () =>
+          ref.read(contentDeletionServiceProvider.future),
+      videoEventService: () => ref.read(videoEventServiceProvider),
+      enforcementRepository: () =>
+          ref.read(creatorDeleteEnforcementRepositoryProvider),
+    );
     initPagination();
   }
 
@@ -110,6 +118,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   void dispose() {
     disposePagination();
     _scrollController.dispose();
+    _ownerVideoActionsCubit.close();
     super.dispose();
   }
 
@@ -388,10 +397,6 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   /// Delete the video and confirm Divine-controlled media cleanup.
   Future<void> _deleteVideo(BuildContext context, VideoEvent video) async {
     try {
-      final deletionService = await ref.read(
-        contentDeletionServiceProvider.future,
-      );
-
       // Show loading snackbar
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -416,27 +421,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         );
       }
 
-      final result = await deletionService.quickDelete(
-        video: video,
-        reason: DeleteReason.personalChoice,
-      );
-
-      // Remove video from local feeds after successful deletion
-      if (result.success) {
-        final videoEventService = ref.read(videoEventServiceProvider);
-        videoEventService.removeVideoEventCompletely(video);
+      final start = await _ownerVideoActionsCubit.deleteVideo(video);
+      if (start == OwnerVideoDeleteStart.busy) return;
+      if (!context.mounted) return;
+      final state = _ownerVideoActionsCubit.state;
+      if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+        showOwnerVideoCleanupCompletion(context, _ownerVideoActionsCubit);
       }
-
-      final kind5Id = result.deleteEventId;
-      final enforcementResult = result.success
-          ? kind5Id == null
-                ? const CreatorDeleteEnforcementResult.failed(
-                    CreatorDeleteEnforcementFailure.clientContract,
-                  )
-                : await ref
-                      .read(creatorDeleteEnforcementRepositoryProvider)
-                      .enforce(kind5Id)
-          : null;
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -444,27 +435,31 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
             content: Row(
               children: [
                 Icon(
-                  result.success ? Icons.check_circle : Icons.error,
+                  state.deleteStatus == OwnerVideoDeleteStatus.success
+                      ? Icons.check_circle
+                      : Icons.error,
                   color: context.vineColors.primaryText,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    result.success
-                        ? localizedCreatorDeleteEnforcementMessage(
+                    state.deleteStatus == OwnerVideoDeleteStatus.success
+                        ? localizedOwnerVideoDeleteSuccessMessage(
                             context,
-                            result,
-                            enforcementResult!,
+                            state,
                           )
-                        : localizedDeleteFailureMessage(context, result),
+                        : state.deleteResult == null
+                        ? context.l10n.shareMenuDeleteFailedGeneric
+                        : localizedDeleteFailureMessage(
+                            context,
+                            state.deleteResult!,
+                          ),
                   ),
                 ),
               ],
             ),
             backgroundColor:
-                result.success &&
-                    enforcementResult?.status !=
-                        CreatorDeleteEnforcementStatus.failed
+                state.deleteStatus == OwnerVideoDeleteStatus.success
                 ? VineTheme.vineGreen
                 : VineTheme.error,
           ),

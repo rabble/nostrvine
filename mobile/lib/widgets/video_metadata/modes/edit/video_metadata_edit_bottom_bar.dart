@@ -8,15 +8,15 @@ import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
-import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
+import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Bottom action bar for the video metadata edit screen.
@@ -46,6 +46,25 @@ class _VideoMetadataEditBottomBarState
     extends ConsumerState<VideoMetadataEditBottomBar> {
   bool _isUpdating = false;
   bool _isDeleting = false;
+  late final OwnerVideoActionsCubit _ownerVideoActionsCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerVideoActionsCubit = OwnerVideoActionsCubit(
+      contentDeletionService: () =>
+          ref.read(contentDeletionServiceProvider.future),
+      videoEventService: () => ref.read(videoEventServiceProvider),
+      enforcementRepository: () =>
+          ref.read(creatorDeleteEnforcementRepositoryProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ownerVideoActionsCubit.close();
+    super.dispose();
+  }
 
   bool get _isBusy => _isUpdating || _isDeleting;
 
@@ -153,27 +172,13 @@ class _VideoMetadataEditBottomBarState
     setState(() => _isDeleting = true);
 
     try {
-      final deletionService = await ref.read(
-        contentDeletionServiceProvider.future,
-      );
+      final start = await _ownerVideoActionsCubit.deleteVideo(widget.video);
+      if (start == OwnerVideoDeleteStart.busy) return;
+      if (!mounted) return;
+      final state = _ownerVideoActionsCubit.state;
 
-      final result = await deletionService.quickDelete(
-        video: widget.video,
-        reason: DeleteReason.personalChoice,
-      );
-
-      if (result.success) {
-        final videoEventService = ref.read(videoEventServiceProvider);
-        videoEventService.removeVideoEventCompletely(widget.video);
-        final kind5Id = result.deleteEventId;
-        final enforcementResult = kind5Id == null
-            ? const CreatorDeleteEnforcementResult.failed(
-                CreatorDeleteEnforcementFailure.clientContract,
-              )
-            : await ref
-                  .read(creatorDeleteEnforcementRepositoryProvider)
-                  .enforce(kind5Id);
-
+      if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+        showOwnerVideoCleanupCompletion(context, _ownerVideoActionsCubit);
         Log.info(
           'Video deleted successfully: ${widget.video.id}',
           name: 'VideoMetadataEditBottomBar',
@@ -183,14 +188,8 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           final snackBar = DivineSnackbarContainer.snackBar(
-            localizedCreatorDeleteEnforcementMessage(
-              context,
-              result,
-              enforcementResult,
-            ),
-            error:
-                enforcementResult.status ==
-                CreatorDeleteEnforcementStatus.failed,
+            localizedOwnerVideoDeleteSuccessMessage(context, state),
+            error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
           );
           context.pop();
           messenger.showSnackBar(snackBar);
@@ -200,7 +199,9 @@ class _VideoMetadataEditBottomBarState
           setState(() => _isDeleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              localizedDeleteFailureMessage(context, result),
+              state.deleteResult == null
+                  ? context.l10n.shareMenuDeleteFailedGeneric
+                  : localizedDeleteFailureMessage(context, state.deleteResult!),
               error: true,
             ),
           );

@@ -22,6 +22,7 @@ import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
+import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:openvine/utils/video_identity.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
@@ -138,9 +139,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   void initState() {
     super.initState();
     _ownerVideoActionsCubit = OwnerVideoActionsCubit(
-      contentDeletionServiceFuture: ref.read(
-        contentDeletionServiceProvider.future,
-      ),
+      contentDeletionService: () =>
+          ref.read(contentDeletionServiceProvider.future),
       videoEventService: () => ref.read(videoEventServiceProvider),
       enforcementRepository: () => ref.read(
         creatorDeleteEnforcementRepositoryProvider,
@@ -232,6 +232,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     final state = cubit.state;
     final messenger = ScaffoldMessenger.of(context);
     if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
+      showOwnerVideoCleanupCompletion(context, cubit);
       // The service marks the video locally deleted; a refresh drops the
       // tile from the grid without waiting for relay propagation.
       context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
