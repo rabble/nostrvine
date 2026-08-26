@@ -12675,6 +12675,7 @@ void main() {
         String id, {
         String senderPubkey = _validPubkeyB,
         bool isDeleted = false,
+        int messageKind = EventKind.privateDirectMessage,
       }) {
         when(
           () => mockDirectMessagesDao.getMessageById(
@@ -12689,7 +12690,7 @@ void main() {
             content: 'Hello',
             createdAt: 1700000000,
             giftWrapId: _giftWrapEventId,
-            messageKind: 14,
+            messageKind: messageKind,
             isDeleted: isDeleted,
           ),
         );
@@ -12724,6 +12725,26 @@ void main() {
 
         final repository = await deliver(
           deletionRumor(targets: [_giftWrapEventId2]),
+        );
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        expect(ledger.recorded, contains(_giftWrapEventId));
+        await repository.stopListening();
+      });
+
+      test('applies a k=15 deletion to the file message it names', () async {
+        stubMessage(
+          _giftWrapEventId2,
+          messageKind: EventKind.fileMessage,
+        );
+
+        final repository = await deliver(
+          deletionRumor(targets: [_giftWrapEventId2], kTag: '15'),
         );
 
         verify(
@@ -12796,6 +12817,28 @@ void main() {
           await repository.stopListening();
         },
       );
+
+      test('applies a deferred deletion after the target syncs', () async {
+        stubNoMessage(_giftWrapEventId2);
+        final rumor = deletionRumor(targets: [_giftWrapEventId2]);
+        final repository = await deliver(rumor);
+
+        expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+
+        stubMessage(_giftWrapEventId2);
+        controller.add(giftWrap());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        expect(ledger.recorded, contains(_giftWrapEventId));
+        await repository.stopListening();
+      });
 
       test('refuses a wrapped message deletion from a non-author', () async {
         // NIP-09's one client MUST (09.md:41). Terminal, not deferred — a
