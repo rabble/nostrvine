@@ -111,11 +111,11 @@ class OutgoingDm {
   final DateTime queuedAt;
   final String ownerPubkey;
 
-  /// Durable, collision-proof id of the group-send fan-out this row belongs
-  /// to (the first sibling rumor's event id, stamped identically on every
-  /// per-recipient sibling). NULL for 1:1 sends, which have no siblings.
-  /// The repository and the conversation state key batch membership off this
-  /// instead of the collision-prone `(content, createdAt)` tuple.
+  /// Durable, collision-proof id of one send invocation. Unique for a 1:1
+  /// send and shared by every per-recipient sibling of a group fan-out. The
+  /// repository uses it to separate same-second identical sends, while the
+  /// conversation state also uses it for group batch membership. NULL only
+  /// for legacy rows.
   final String? sendBatchId;
 
   /// Whether **both** wraps have landed. The repository deletes the

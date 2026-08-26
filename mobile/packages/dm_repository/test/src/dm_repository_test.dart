@@ -16338,6 +16338,335 @@ void main() {
           );
         },
       );
+
+      test(
+        'two IDENTICAL 1:1 sends in the SAME Unix second BOTH enqueue and '
+        'BOTH persist under distinct rumor ids (regression: #7326 '
+        'same-second 1:1 rumor-id collision)',
+        () async {
+          // A rumor id is sha256([0, pubkey, created_at(seconds), kind, tags,
+          // content]) with no nonce, so without a per-invocation token two 1:1
+          // sends of byte-identical text in one Unix second build
+          // byte-identical rumors. Same event id ⇒ same queue-row PK, which
+          // `enqueue`'s insertOrIgnore drops ⇒ the second bubble never exists;
+          // and the loser's success transaction is skipped by the cancel
+          // interlock, because the winner's finalize already deleted the row
+          // it re-reads. Both calls still return success, so nothing surfaces
+          // to the user and nothing is left for the retry sweep to re-drive.
+          //
+          // sendGroupMessage was given a per-invocation batch token for this
+          // exact mechanism (#6046); this pins the 1:1 sibling.
+          //
+          // Drive REAL rumor-id hashing (the faithful buildRumor stub builds a
+          // real Event from the passed tags) under a frozen second, so this is
+          // a production-path proof rather than a stub that pre-distinguishes
+          // ids.
+          const frozenSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            // Ignore the wall-clock created_at so both invocations genuinely
+            // share one second — the collision case.
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: frozenSecond,
+            );
+          });
+
+          // Deterministic per-invocation tokens in the shape production mints
+          // (64 lowercase hex); a counter makes the assertions crisp.
+          final tokens = <String>['a' * 64, 'b' * 64];
+          var tokenIndex = 0;
+
+          // Model the durable queue faithfully: insertOrIgnore enqueue plus
+          // reads/deletes over the captured rows, so a rumor-id collision
+          // surfaces as a dropped row rather than being hidden by a permissive
+          // stub.
+          final store = <OutgoingDm>[];
+          final enqueuedBatchIds = <String?>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
+            final dm = inv.positionalArguments.first as OutgoingDm;
+            if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
+            store.add(dm);
+            enqueuedBatchIds.add(dm.sendBatchId);
+          });
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final r in store) {
+              if (r.id == id) return r;
+            }
+            return null;
+          });
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            final before = store.length;
+            store.removeWhere((r) => r.id == id);
+            return before - store.length;
+          });
+
+          // Model persisted messages with the same insertOrIgnore-on-id
+          // semantics the real dao has, so a rumor-id collision shows up as a
+          // missing local bubble.
+          final persisted = <({String id, String? batchId})>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            final id = inv.namedArguments[#id] as String;
+            // insertOrIgnore
+            if (persisted.any((m) => m.id == id)) return false;
+            persisted.add((
+              id: id,
+              batchId: inv.namedArguments[#sendBatchId] as String?,
+            ));
+            return true;
+          });
+
+          // Full delivery: the queue row is deleted on finalize, which is what
+          // leaves the second send's cancel interlock looking at an absent row.
+          final sentRumorIds = <String>[];
+          stubSendRumor((rumor, recipient) async {
+            sentRumorIds.add(rumor.id);
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-${rumor.id}',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+            sendBatchIdGenerator: () => tokens[tokenIndex++],
+          );
+
+          final first = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+          final second = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+
+          // Both calls report success — that is what makes the loss silent.
+          expect(first.success, isTrue);
+          expect(second.success, isTrue);
+
+          // Distinct wire rumors: two sends, two ids.
+          expect(sentRumorIds, hasLength(2));
+          expect(sentRumorIds.toSet(), hasLength(2));
+          expect(enqueuedBatchIds, equals(tokens));
+
+          // Two local bubbles. Under the collision this is 1: the second
+          // send's insertMessage carries the colliding rumor id, and the dao's
+          // insertOrIgnore drops it. The user typed two messages and sees one.
+          expect(persisted, hasLength(2));
+          expect(persisted.map((m) => m.id).toSet(), hasLength(2));
+          expect(persisted.map((m) => m.batchId), orderedEquals(tokens));
+        },
+      );
+
+      test(
+        'two OVERLAPPING identical 1:1 sends in the SAME Unix second keep '
+        'two queue rows and persist two bubbles (regression: #7326 '
+        'same-second 1:1 rumor-id collision, concurrent arm)',
+        () async {
+          // ConversationBloc registers ConversationMessageSent with
+          // `concurrent()`, so two sends genuinely overlap rather than
+          // serialising. This arm parks the first send mid-publish so the
+          // second enqueues while the first row is still live — the path where
+          // the collision is swallowed by the QUEUE (insertOrIgnore on the
+          // rumor-id PK) and then by the cancel interlock, rather than by
+          // insertMessage as in the back-to-back arm above.
+          const frozenSecond = 1700000000;
+          when(
+            () => mockMessageService.buildRumor(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((inv) {
+            final recipient = inv.namedArguments[#recipientPubkey] as String;
+            final content = inv.namedArguments[#content] as String;
+            final eventKind =
+                (inv.namedArguments[#eventKind] as int?) ??
+                EventKind.privateDirectMessage;
+            final additionalTags =
+                (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+                const <List<String>>[];
+            return Event(
+              _validPubkeyA,
+              eventKind,
+              [
+                ['p', recipient],
+                ...additionalTags,
+              ],
+              content,
+              createdAt: frozenSecond,
+            );
+          });
+
+          final tokens = <String>['a' * 64, 'b' * 64];
+          var tokenIndex = 0;
+
+          final store = <OutgoingDm>[];
+          final enqueuedIds = <String>[];
+          when(() => mockOutgoingDmsDao.enqueue(any())).thenAnswer((inv) async {
+            final dm = inv.positionalArguments.first as OutgoingDm;
+            if (store.any((r) => r.id == dm.id)) return; // insertOrIgnore
+            store.add(dm);
+            enqueuedIds.add(dm.id);
+          });
+          when(() => mockOutgoingDmsDao.getById(any())).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            for (final r in store) {
+              if (r.id == id) return r;
+            }
+            return null;
+          });
+          when(
+            () => mockOutgoingDmsDao.deleteById(any()),
+          ).thenAnswer((inv) async {
+            final id = inv.positionalArguments.first as String;
+            final before = store.length;
+            store.removeWhere((r) => r.id == id);
+            return before - store.length;
+          });
+
+          final persisted = <String>[];
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((inv) async {
+            final id = inv.namedArguments[#id] as String;
+            if (persisted.contains(id)) return false; // insertOrIgnore
+            persisted.add(id);
+            return true;
+          });
+
+          // Park the first publish so the second send's enqueue lands while
+          // the first row is still live, then release it after the second has
+          // finalized (and deleted the row it shares).
+          final firstPublishReached = Completer<void>();
+          final releaseFirstPublish = Completer<void>();
+          var publishCall = 0;
+          final sentRumorIds = <String>[];
+          stubSendRumor((rumor, recipient) async {
+            final call = ++publishCall;
+            sentRumorIds.add(rumor.id);
+            if (call == 1) {
+              firstPublishReached.complete();
+              await releaseFirstPublish.future;
+            }
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-${rumor.id}-$call',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+            sendBatchIdGenerator: () => tokens[tokenIndex++],
+          );
+
+          final firstSend = repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+          await firstPublishReached.future;
+          final secondSend = repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'ok',
+          );
+          final second = await secondSend;
+          releaseFirstPublish.complete();
+          final first = await firstSend;
+
+          expect(first.success, isTrue);
+          expect(second.success, isTrue);
+
+          // Two durable queue rows with distinct rumor-id PKs. Under the
+          // collision this is 1: the second enqueue is insertOrIgnore'd away,
+          // leaving that send with no durable trace for the retry sweep.
+          expect(enqueuedIds, hasLength(2));
+          expect(enqueuedIds.toSet(), hasLength(2));
+
+          // Two local bubbles. Under the collision this is 1: the loser's
+          // success transaction re-reads a row the winner's finalize already
+          // deleted, so the cancel interlock skips the persist outright.
+          expect(persisted, hasLength(2));
+          expect(persisted.toSet(), hasLength(2));
+        },
+      );
     });
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {

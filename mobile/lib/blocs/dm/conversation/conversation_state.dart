@@ -150,10 +150,11 @@ class ConversationState extends Equatable {
   static String _batchKeyOf(OutgoingDm q) =>
       q.sendBatchId ?? '${q.ownerPubkey}|${q.createdAt}|${q.content}';
 
-  /// Batch key for a persisted message, mirroring [_batchKeyOf]. A received
-  /// message or 1:1 send has a null `sendBatchId` and falls back to a tuple
-  /// keyed on its OWN sender — which no owner-scoped group queue row shares —
-  /// so it can never aggregate someone else's in-flight batch.
+  /// Batch key for a persisted message, mirroring [_batchKeyOf]. Received and
+  /// legacy messages have a null `sendBatchId` and fall back to a tuple keyed
+  /// on their OWN sender, which no owner-scoped group queue row shares. A 1:1
+  /// send has a unique id, but topology checks still keep it out of group
+  /// aggregation.
   static String _batchKeyOfMessage(DmMessage m) =>
       m.sendBatchId ?? '${m.senderPubkey}|${m.createdAt}|${m.content}';
 
