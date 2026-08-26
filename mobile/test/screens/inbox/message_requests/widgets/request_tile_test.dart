@@ -270,5 +270,64 @@ void main() {
         expect(wordmarkFinder(), findsNothing);
       });
     });
+
+    group('deleted accounts', () {
+      Future<void> pumpTile(
+        WidgetTester tester, {
+        required bool vanished,
+      }) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              userProfileReactiveProvider(otherPubkey).overrideWith(
+                (ref) => Stream.value(createTestProfile(displayName: 'Alice')),
+              ),
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(vanished)),
+            ],
+            home: Scaffold(
+              body: RequestTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('names a vanished requester for the state, not a handle', (
+        tester,
+      ) async {
+        await pumpTile(tester, vanished: true);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        // The vanish evicts the cached profile, so without the check this row
+        // renders a generated "Adjective Animal N" the viewer has never seen.
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+        expect(find.text('Alice'), findsNothing);
+      });
+
+      testWidgets('reads the deleted-account copy from l10n', (tester) async {
+        await pumpTile(tester, vanished: true);
+
+        final de = lookupAppLocalizations(const Locale('de'));
+        expect(find.text(de.profileDeletedAccountName), findsNothing);
+      });
+
+      testWidgets('leaves a live requester untouched', (tester) async {
+        await pumpTile(tester, vanished: false);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text('Alice'), findsOneWidget);
+        expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+      });
+    });
   });
 }

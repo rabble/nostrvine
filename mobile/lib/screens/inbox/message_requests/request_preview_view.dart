@@ -18,6 +18,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
@@ -100,10 +101,26 @@ class RequestPreviewView extends ConsumerWidget {
 
     final profile = profileAsync.asData?.value;
 
-    final displayName =
-        moderationDisplayName(context, otherPubkey) ??
-        profile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(otherPubkey);
+    // Same treatment as [ConversationTile]. This screen also links straight
+    // through to [OtherProfileScreen], which already names a vanished account
+    // for the state — so without this the same tap sequence showed a generated
+    // handle and then "Deleted account" (#8185).
+    final isDeleted = ref
+        .watch(profileVanishedProvider(otherPubkey))
+        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+
+    // Suppressing the profile object as well as the name matches
+    // [OtherProfileScreen], which nulls its own header profile on a vanish
+    // rather than pass a deleted account's avatar, handle and counts
+    // downstream.
+    final visibleProfile = isDeleted ? null : profile;
+
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      profile: visibleProfile,
+    );
 
     return Scaffold(
       backgroundColor: context.vineColors.surface,
@@ -121,7 +138,7 @@ class RequestPreviewView extends ConsumerWidget {
             Expanded(
               child: _ProfileContent(
                 displayName: displayName,
-                profile: profile,
+                profile: visibleProfile,
                 otherPubkey: otherPubkey,
                 currentPubkey: currentPubkey,
                 messageCount: messageCount,

@@ -2036,6 +2036,65 @@ void main() {
         expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
       });
 
+      // #8185, the same shape one layer out: `ConversationTile` short-circuits
+      // on the NIP-62 vanish before every other branch, and the sheet's own
+      // chain had no such branch. Applying a vanish evicts the cached profile,
+      // so the sheet did not fall back to the peer's last known name — it fell
+      // all the way to a generated "Adjective Animal N" and offered to block
+      // that, under a row reading "Deleted account".
+      testWidgets('names a vanished peer in the sheet its row opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final conversation = DmConversation(
+          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
+            ),
+            additionalOverrides: [
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(true)),
+            ],
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            l10n.inboxActionBlock(l10n.profileDeletedAccountName),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            l10n.inboxActionReport(l10n.profileDeletedAccountName),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+      });
+
       testWidgets('drops out of a search it does not match', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         final conversation = DmConversation(
