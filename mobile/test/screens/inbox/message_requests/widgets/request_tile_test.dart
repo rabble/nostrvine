@@ -23,10 +23,11 @@ void main() {
   final now = DateTime.now();
   final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
 
-  UserProfile createTestProfile({String? displayName}) {
+  UserProfile createTestProfile({String? displayName, String? picture}) {
     return UserProfile(
       pubkey: otherPubkey,
       displayName: displayName,
+      picture: picture,
       rawData: const {},
       createdAt: now,
       eventId:
@@ -275,12 +276,15 @@ void main() {
       Future<void> pumpTile(
         WidgetTester tester, {
         required bool vanished,
+        String? picture,
       }) async {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
               userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(createTestProfile(displayName: 'Alice')),
+                (ref) => Stream.value(
+                  createTestProfile(displayName: 'Alice', picture: picture),
+                ),
               ),
               profileVanishedProvider(
                 otherPubkey,
@@ -301,7 +305,11 @@ void main() {
       testWidgets('names a vanished requester for the state, not a handle', (
         tester,
       ) async {
-        await pumpTile(tester, vanished: true);
+        await pumpTile(
+          tester,
+          vanished: true,
+          picture: 'https://example.com/alice.jpg',
+        );
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
@@ -312,6 +320,10 @@ void main() {
           findsNothing,
         );
         expect(find.text('Alice'), findsNothing);
+        expect(
+          tester.widget<UserAvatar>(find.byType(UserAvatar)).imageUrl,
+          isNull,
+        );
       });
 
       testWidgets('reads the deleted-account copy from l10n', (tester) async {

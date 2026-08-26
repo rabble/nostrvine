@@ -22,8 +22,9 @@ final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
       .map((pubkeys) => pubkeys.toSet());
 });
 
-/// One-shot durable vanish lookup for imperative paths such as gesture
-/// handlers, where no mounted widget keeps [profileVanishedProvider] warm.
+/// One-shot durable vanish lookup for imperative paths that must resolve the
+/// state before acting instead of treating [profileVanishedProvider]'s loading
+/// placeholder as a live account.
 // ignore: specify_nonobvious_property_types
 final profileVanishedSnapshotProvider = FutureProvider.autoDispose
     .family<bool, String>((ref, pubkey) {

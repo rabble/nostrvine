@@ -1,4 +1,4 @@
-// ABOUTME: The one naming chain every DM surface uses for a conversation peer.
+// ABOUTME: Shared naming chain for inbox and request DM conversation peers.
 // ABOUTME: Vanished first, so a row and the sheet it opens cannot name two
 // ABOUTME: different accounts.
 
@@ -30,9 +30,9 @@ String? dmPeerNameWithoutProfile(
 /// The full chain: vanished, then [displayNameOverride], then moderation, then
 /// [profile], then the generated fallback.
 ///
-/// [isVanished] is required rather than defaulted so a new DM surface has to
-/// decide what to pass. Read it from `profileVanishedProvider`; every widget
-/// surface watches it, and `ConversationTile` is the reference call site.
+/// [isVanished] is required rather than defaulted so every caller has to decide
+/// what to pass. Reactive widgets read it from `profileVanishedProvider`, with
+/// `ConversationTile` as the reference call site.
 String dmPeerDisplayName(
   BuildContext context, {
   required String pubkeyHex,
