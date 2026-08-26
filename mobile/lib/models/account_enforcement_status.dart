@@ -16,11 +16,10 @@ enum AccountEnforcementKind {
   /// Content has been removed from Divine-operated surfaces.
   banned,
 
-  /// Restricted, but by a state this client build does not recognize.
+  /// Relay publishing confirmed a restriction whose exact state is unknown.
   ///
-  /// Funnelcake answered successfully with a status this client does not know.
-  /// Because the answer was not `active`, newer restriction states degrade to
-  /// generic restriction copy rather than to an all-clear.
+  /// This is not used for unknown status API values, which remain indeterminate
+  /// because a future value is not necessarily a restriction.
   unknownRestriction;
 
   bool get isEnforced =>
@@ -52,10 +51,6 @@ class AccountEnforcementStatus {
       case FunnelcakeAccountStatus.banned:
         return const AccountEnforcementStatus(
           kind: AccountEnforcementKind.banned,
-        );
-      case FunnelcakeAccountStatus.unknown:
-        return const AccountEnforcementStatus(
-          kind: AccountEnforcementKind.unknownRestriction,
         );
     }
   }

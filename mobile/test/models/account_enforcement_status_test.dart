@@ -1,5 +1,5 @@
 // ABOUTME: Tests mapping Funnelcake account status into client enforcement state.
-// ABOUTME: Unknown successful status values remain confirmed restrictions.
+// ABOUTME: Only recognized API statuses become account enforcement state.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
@@ -28,14 +28,6 @@ void main() {
         ).kind,
         AccountEnforcementKind.banned,
       );
-    });
-
-    test('unrecognized successful status is a generic restriction', () {
-      final status = AccountEnforcementStatus.fromFunnelcake(
-        FunnelcakeAccountStatus.unknown,
-      );
-      expect(status.kind, AccountEnforcementKind.unknownRestriction);
-      expect(status.isEnforced, isTrue);
     });
   });
 }

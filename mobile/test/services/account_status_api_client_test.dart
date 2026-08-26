@@ -48,12 +48,11 @@ void main() {
       );
     });
 
-    test('maps all recognized and future status strings', () async {
+    test('maps all recognized status strings', () async {
       for (final entry in {
         'active': FunnelcakeAccountStatus.active,
         'suspended': FunnelcakeAccountStatus.suspended,
         'banned': FunnelcakeAccountStatus.banned,
-        'future': FunnelcakeAccountStatus.unknown,
       }.entries) {
         final client = _client(
           handler: (_) async => http.Response(
@@ -63,6 +62,25 @@ void main() {
         );
         expect(await client.fetchStatus(expectedPubkey: _pubkey), entry.value);
       }
+    });
+
+    test('keeps an unknown future status indeterminate', () async {
+      final client = _client(
+        handler: (_) async => http.Response(
+          '{"pubkey":"$_pubkey","status":"future"}',
+          200,
+        ),
+      );
+      await expectLater(
+        client.fetchStatus(expectedPubkey: _pubkey),
+        throwsA(
+          isA<AccountStatusApiException>().having(
+            (error) => error.kind,
+            'kind',
+            AccountStatusApiFailureKind.invalidResponse,
+          ),
+        ),
+      );
     });
 
     test('accepts matching pubkey case-insensitively', () async {

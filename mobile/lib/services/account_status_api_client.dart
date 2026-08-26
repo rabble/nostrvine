@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:openvine/services/nip98_auth_service.dart';
 
-enum FunnelcakeAccountStatus { active, suspended, banned, unknown }
+enum FunnelcakeAccountStatus { active, suspended, banned }
 
 enum AccountStatusApiFailureKind {
   unauthorized,
@@ -121,7 +121,10 @@ class AccountStatusApiClient {
       'active' => FunnelcakeAccountStatus.active,
       'suspended' => FunnelcakeAccountStatus.suspended,
       'banned' => FunnelcakeAccountStatus.banned,
-      _ => FunnelcakeAccountStatus.unknown,
+      _ => throw const AccountStatusApiException(
+        AccountStatusApiFailureKind.invalidResponse,
+        'The account status response contained an unknown status.',
+      ),
     };
   }
 
