@@ -9715,14 +9715,12 @@ class DirectMessageRow extends DataClass
   /// NULL for legacy messages created before multi-account support.
   final String? ownerPubkey;
 
-  /// Durable, collision-proof identity of the group-send fan-out this message
-  /// belongs to (the first sibling rumor's event id). Set ONLY when persisting
-  /// a group send's single local message; NULL for 1:1 sends and every received
-  /// message. Lets the send / recovery dedup and the UI's optimistic grouping
-  /// match a batch by an exact stored value instead of the collision-prone
-  /// `(sender, content, created_at ±5s)` heuristic that `hasMatchingMessage`
-  /// uses — two distinct group sends of identical text seconds apart no longer
-  /// collapse into one.
+  /// Durable, collision-proof identity of one send invocation. Set on the
+  /// sender's local message for 1:1 sends and shared by the single local
+  /// message representing a group fan-out; NULL for received and legacy
+  /// messages. It gives same-second 1:1 sends distinct rumor ids and lets group
+  /// recovery and optimistic UI grouping match a fan-out by an exact value
+  /// instead of the collision-prone `(sender, content, created_at ±5s)` tuple.
   final String? sendBatchId;
   const DirectMessageRow({
     required this.id,
@@ -12680,12 +12678,12 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
   /// `direct_messages.owner_pubkey` for multi-account isolation.
   final String ownerPubkey;
 
-  /// Durable, collision-proof identity of the group-send fan-out this row
-  /// belongs to (the first sibling rumor's event id, stamped identically on
-  /// every per-recipient sibling by `sendGroupMessage`). NULL for 1:1 sends,
-  /// which have no siblings. Persistence dedup, optimistic grouping, sibling
-  /// lookup, and cancellation all key off this instead of the collision-prone
-  /// `(content, created_at)` tuple. See `DirectMessages.sendBatchId`.
+  /// Durable, collision-proof identity of one send invocation. A 1:1 send has
+  /// one unique value; `sendGroupMessage` stamps one shared value on every
+  /// per-recipient sibling. It separates same-second identical sends and lets
+  /// group persistence dedup, optimistic grouping, sibling lookup, and
+  /// cancellation use an exact value. NULL only for legacy rows. See
+  /// `DirectMessages.sendBatchId`.
   final String? sendBatchId;
   const OutgoingDmRow({
     required this.id,

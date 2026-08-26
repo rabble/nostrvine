@@ -236,7 +236,7 @@ void main() {
         expect(fetched!.sendBatchId, equals('batch-e'));
       });
 
-      test('leaves sendBatchId null for a 1:1 send', () async {
+      test('leaves sendBatchId null when the caller omits it', () async {
         await dao.enqueue(makeDm(id: 'solo'));
 
         final fetched = await dao.getById('solo');

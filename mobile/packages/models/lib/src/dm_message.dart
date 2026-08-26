@@ -71,12 +71,11 @@ class DmMessage extends Equatable {
   /// messages and for shares that carry only a URL and no event identity.
   final DmSharedVideoRef? sharedVideoRef;
 
-  /// Durable, collision-proof id of the group-send fan-out this message
-  /// belongs to. Non-null only for the sender's own persisted group-send
-  /// message (mirrors `DirectMessages.sendBatchId`); null for 1:1 sends and
-  /// every received message. The conversation state uses it to collapse a
-  /// group send's per-recipient bubbles into one and to aggregate their
-  /// delivery status, without colliding two distinct same-text sends.
+  /// Durable, collision-proof id of the send invocation. Non-null for the
+  /// sender's own persisted 1:1 message and for the single message representing
+  /// a group fan-out; null for received and legacy messages. The conversation
+  /// state additionally uses a group message's value to collapse its
+  /// per-recipient bubbles and aggregate their delivery status.
   final String? sendBatchId;
 
   /// Whether this is a file message (kind 15).

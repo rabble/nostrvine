@@ -362,9 +362,10 @@ class DmRepository {
   /// [ensureDmRelayListPublished] is a no-op (nothing to advertise).
   final String? _dmInboxRelayUrl;
 
-  /// Mints the durable, collision-proof identity for one group fan-out
-  /// ([sendGroupMessage]). Injected so tests can pin a deterministic value;
-  /// production defaults to [_defaultSendBatchId] (256 bits of secure random).
+  /// Mints the durable, collision-proof identity for one send invocation.
+  /// Group sends share it across the fan-out. Injected so tests can pin a
+  /// deterministic value; production defaults to [_defaultSendBatchId]
+  /// (256 bits of secure random).
   final String Function() _newSendBatchId;
 
   StreamSubscription<Event>? _giftWrapSubscription;
@@ -4089,9 +4090,9 @@ class DmRepository {
               giftWrapId: result.messageEventId!,
               messageKind: row.messageKind,
               replyToId: row.replyToId,
-              // Carry the row's batch label onto the persisted message so a
-              // later sibling's recovery dedups against it (null for 1:1 and
-              // legacy rows).
+              // Carry the row's send label onto the persisted message so a
+              // later group sibling's recovery dedups against it (null only
+              // for legacy rows).
               sendBatchId: batchId,
               // Reconstruct tagsJson from the rebuilt rumor so a recovered
               // row hydrates the same read-time-derived fields (e.g.
