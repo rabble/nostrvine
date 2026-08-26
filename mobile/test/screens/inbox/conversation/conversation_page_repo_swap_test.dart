@@ -15,6 +15,7 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -24,6 +25,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -201,6 +203,64 @@ void main() {
           reason:
               'Identical dmRepository identity should keep the same bloc '
               '— the record key prevents unnecessary churn on rebuilds.',
+        );
+      },
+    );
+
+    testWidgets(
+      'recreates ConversationBloc when the trusted relay URL changes',
+      (tester) async {
+        final nostrA = createMockNostrService();
+        final nostrB = createMockNostrService();
+        when(
+          () => nostrA.defaultRelayUrl,
+        ).thenReturn('wss://relay-a.example');
+        when(
+          () => nostrB.defaultRelayUrl,
+        ).thenReturn('wss://relay-b.example');
+        final relayClient = ValueNotifier(nostrA);
+        addTearDown(relayClient.dispose);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              isDmRestrictedProvider.overrideWithValue(false),
+              dmRepositoryProvider.overrideWith((ref) => mockRepoA),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: ValueListenableBuilder(
+              valueListenable: relayClient,
+              builder: (context, client, child) => ProviderScope(
+                overrides: [nostrServiceProvider.overrideWithValue(client)],
+                child: child!,
+              ),
+              child: const ConversationPage(
+                conversationId: testConversationId,
+                participantPubkeys: [otherPubkey],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final blocA = BlocProvider.of<ConversationBloc>(
+          tester.element(find.byType(ConversationView)),
+        );
+        relayClient.value = nostrB;
+        await tester.pump();
+
+        final blocB = BlocProvider.of<ConversationBloc>(
+          tester.element(find.byType(ConversationView)),
+        );
+        expect(
+          blocB,
+          isNot(same(blocA)),
+          reason:
+              'A changed trusted relay must recreate the bloc even when the '
+              'DmRepository identity is unchanged.',
         );
       },
     );
