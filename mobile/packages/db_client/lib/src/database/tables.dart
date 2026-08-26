@@ -824,6 +824,31 @@ class DirectMessages extends Table {
   /// collision-prone `(sender, content, created_at ±5s)` tuple.
   TextColumn get sendBatchId => text().nullable().named('send_batch_id')();
 
+  /// Serialized kind-5 rumor for an own delete-for-everyone still awaiting
+  /// confirmed delivery. Null for every other row.
+  ///
+  /// Stored rather than rebuilt so each retry replays a byte-identical rumor
+  /// id and the recipient's dedup treats repeats as idempotent. Mirrors
+  /// `DmReactions.rumorEventJson`, which serves the same purpose for a
+  /// reaction removal.
+  TextColumn get deletionRumorJson =>
+      text().nullable().named('deletion_rumor_json')();
+
+  /// Delivery state of the kind-5 in [deletionRumorJson]; null when the row
+  /// carries no own deletion. Values: `deletion_pending` (soft-deleted
+  /// locally, wrap awaiting a confirmed relay `OK`), `deletion_sent`
+  /// (confirmed, terminal), `deletion_blocked` (send policy refused the
+  /// recipient, terminal).
+  ///
+  /// `deletion_blocked` is deliberately distinct from `deletion_sent`, unlike
+  /// the reaction path which collapses the two. A blocked *reaction* removal
+  /// is moot because the reaction never arrived either; a *message* may well
+  /// have been delivered before the block took effect, so claiming the
+  /// deletion was sent would be a lie. The distinct value stops the sweep
+  /// without asserting delivery.
+  TextColumn get deletionPublishStatus =>
+      text().nullable().named('deletion_publish_status')();
+
   @override
   Set<Column> get primaryKey => {id};
 

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v10.dart' as v10;
 import 'generated/schema_v9.dart' as v9;
 
 void main() {
@@ -19,21 +20,54 @@ void main() {
   });
 
   group('schema validation', () {
-    test('current schema version is 9', () {
-      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 9);
+    test('current schema version is 10', () {
+      expect(AppDatabase(NativeDatabase.memory()).schemaVersion, 10);
     });
 
-    test('v9 schema is valid and up to date', () async {
-      final schema = await verifier.schemaAt(9);
+    test('v10 schema is valid and up to date', () async {
+      final schema = await verifier.schemaAt(10);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
-    test('v8 schema migrates to v9', () async {
+    test(
+      'a v9 direct message survives the upgrade with no pending deletion',
+      () async {
+        // The v10 columns are additive and nullable: an existing message must
+        // arrive at v10 carrying no deletion, so the retry sweep does not pick
+        // up every historical row as work. See #8165.
+        await verifier.testWithDataIntegrity(
+          oldVersion: 9,
+          newVersion: 10,
+          createOld: v9.DatabaseAtV9.new,
+          createNew: v10.DatabaseAtV10.new,
+          openTestedDatabase: AppDatabase.new,
+          createItems: (batch, oldDb) => batch.insert(
+            oldDb.directMessages,
+            v9.DirectMessagesCompanion.insert(
+              id: 'a' * 64,
+              conversationId: 'b' * 64,
+              senderPubkey: 'c' * 64,
+              content: 'a message that predates the deletion columns',
+              createdAt: 1700000000,
+              giftWrapId: 'd' * 64,
+            ),
+          ),
+          validateItems: (newDb) async {
+            final row = await newDb.select(newDb.directMessages).getSingle();
+            expect(row.content, 'a message that predates the deletion columns');
+            expect(row.deletionRumorJson, isNull);
+            expect(row.deletionPublishStatus, isNull);
+          },
+        );
+      },
+    );
+
+    test('v8 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(8);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       const conversationId =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -55,45 +89,45 @@ void main() {
       await db.close();
     });
 
-    test('v7 schema migrates to v9', () async {
+    test('v7 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(7);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
-    test('v6 schema migrates to v9', () async {
+    test('v6 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
-    test('v5 schema migrates to v9', () async {
+    test('v5 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(5);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
-    test('v3 schema migrates to v9', () async {
+    test('v3 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(3);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
-    test('v2 schema migrates to v9', () async {
+    test('v2 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(2);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
-    test('legacy v1 schema migrates to v9', () async {
+    test('legacy v1 schema migrates to v10', () async {
       final schema = await verifier.schemaAt(1);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
       await db.close();
     });
 
@@ -121,7 +155,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
 
       final rows = await db
           .customSelect(
@@ -144,9 +178,9 @@ void main() {
     test('v2 identity_events rows survive the upgrade unstamped', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 2,
-        newVersion: 9,
+        newVersion: 10,
         createOld: v2.DatabaseAtV2.new,
-        createNew: v9.DatabaseAtV9.new,
+        createNew: v10.DatabaseAtV10.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) => batch.insert(
           oldDb.identityEvents,
@@ -180,7 +214,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 9);
+        await verifier.migrateAndValidate(db, 10);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -201,7 +235,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 9);
+        await verifier.migrateAndValidate(db, 10);
 
         final migrated = await db.clipsDao.getClipById('clip-1');
         expect(migrated?.id, 'clip-1');
@@ -214,9 +248,9 @@ void main() {
     test('v6 copies a distinct pre-v5 vine id into the d-tag column', () async {
       await verifier.testWithDataIntegrity(
         oldVersion: 3,
-        newVersion: 9,
+        newVersion: 10,
         createOld: v3.DatabaseAtV3.new,
-        createNew: v9.DatabaseAtV9.new,
+        createNew: v10.DatabaseAtV10.new,
         openTestedDatabase: AppDatabase.new,
         createItems: (batch, oldDb) {
           batch
@@ -281,7 +315,7 @@ void main() {
       );
 
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
 
       final row = await db
           .customSelect(
@@ -336,7 +370,7 @@ void main() {
         );
 
         final db = AppDatabase(schema.newConnection());
-        await verifier.migrateAndValidate(db, 9);
+        await verifier.migrateAndValidate(db, 10);
 
         final row = await db
             .customSelect(
@@ -374,7 +408,7 @@ void main() {
 
       final schema = await verifier.schemaAt(6);
       final db = AppDatabase(schema.newConnection());
-      await verifier.migrateAndValidate(db, 9);
+      await verifier.migrateAndValidate(db, 10);
 
       final rows = await db
           .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
