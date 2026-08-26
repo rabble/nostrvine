@@ -966,8 +966,8 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       orElse: () => conversation.participantPubkeys.first,
     );
 
-    // Same chain [ConversationTile] resolves its title through, so the sheet
-    // cannot name a different account than the row that opened it (#7380).
+    // Match [ConversationTile]'s non-vanished identity chain, so moderation
+    // and profile fallbacks stay consistent between the row and sheet (#7380).
     // A known identity skips the lookup entirely: moderation's kind-0 resolves
     // late and a retired moderation key has none at all, so the sheet would
     // otherwise open labelled with the fallback the row's own name exists to
