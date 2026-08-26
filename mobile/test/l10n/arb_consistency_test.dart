@@ -504,6 +504,8 @@ const _knownUntranslatedDebt = <String>{
   'accountStatusRestrictedHeading',
   'accountStatusRestrictedBody',
   'accountStatusLastKnownBody',
+  'accountStatusUnavailableHeading',
+  'accountStatusUnavailableBody',
   'accountStatusSignedOutHeading',
   'accountStatusSignedOutBody',
   'accountStatusKeysUnaffectedHeading',

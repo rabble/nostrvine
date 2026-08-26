@@ -19804,7 +19804,7 @@ abstract class AppLocalizations {
   /// **'Your account is restricted'**
   String get accountStatusTileSubtitleRestricted;
 
-  /// Sole line on the account status screen when there is no restriction to report, including when the status could not be read. Deliberately has no body copy.
+  /// Sole line on the account status screen when Funnelcake confirms there is no restriction. Deliberately has no body copy.
   ///
   /// In en, this message translates to:
   /// **'Everything looks good!'**
@@ -19857,6 +19857,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t refresh your status. This is the last status we received.'**
   String get accountStatusLastKnownBody;
+
+  /// Heading shown when account enforcement status could not be checked and no confirmed restriction is retained.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check your status'**
+  String get accountStatusUnavailableHeading;
+
+  /// Body shown when account enforcement status could not be checked and no confirmed restriction is retained.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get accountStatusUnavailableBody;
 
   /// Heading shown when the account-status route is opened without a signed-in account.
   ///

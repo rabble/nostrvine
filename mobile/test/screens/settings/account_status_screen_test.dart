@@ -303,11 +303,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
+        expect(find.text(l10n.accountStatusAllClearHeading), findsNothing);
+        expect(find.text(l10n.accountStatusUnavailableHeading), findsOneWidget);
         expect(
           find.text(l10n.accountStatusRetry),
-          findsNothing,
-          reason: 'nothing to retry once the screen has nothing to report',
+          findsOneWidget,
+          reason: 'an indeterminate lookup must remain retryable',
         );
       },
     );
@@ -356,9 +357,7 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('an active account is offered no futile retry', (
-      tester,
-    ) async {
+    testWidgets('an active account is offered no futile retry', (tester) async {
       // The successful response is settled, so there is nothing to retry.
       await _pumpWith(tester, AccountEnforcementKind.noRestrictionReported);
 

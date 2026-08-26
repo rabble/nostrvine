@@ -109,28 +109,66 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _StatusBody(kind: publishRestriction),
             // Keep a confirmed restriction through a failed read so its appeal
-            // and exit paths survive a bad connection. A read that fails with
-            // nothing confirmed has no restriction to report, so it lands on
-            // the all-clear rather than on the failure: the relay answers at
-            // the moment of action, and reporting the fetch instead would
-            // describe Divine's plumbing rather than the user's account.
+            // and exit paths survive a bad connection. Without a confirmed
+            // result, report that the lookup is indeterminate rather than
+            // presenting an all-clear that Funnelcake never returned.
             error: (_, _) {
               final cachedKind = async.value?.kind;
               final retainedKind = cachedKind?.isEnforced ?? false
                   ? cachedKind
                   : publishRestriction;
+              if (retainedKind == null) {
+                return _UnavailableBody(
+                  onRetry: () =>
+                      ref.invalidate(accountEnforcementStatusProvider),
+                );
+              }
               return _StatusBody(
                 kind: retainedKind,
-                isLastKnown: retainedKind != null,
-                // Nothing to retry once the screen has nothing to report.
-                onRetry: retainedKind == null
-                    ? null
-                    : () => ref.invalidate(accountEnforcementStatusProvider),
+                isLastKnown: true,
+                onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
               );
             },
             data: (status) => _StatusBody(kind: effectiveKind(status.kind)),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _UnavailableBody extends StatelessWidget {
+  const _UnavailableBody({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.vineColors;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 16,
+        children: [
+          Text(
+            l10n.accountStatusUnavailableHeading,
+            style: VineTheme.headlineSmallFont(color: colors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            l10n.accountStatusUnavailableBody,
+            style: VineTheme.bodyMediumFont(color: colors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          DivineButton(
+            label: l10n.accountStatusRetry,
+            type: DivineButtonType.secondary,
+            expanded: true,
+            onPressed: onRetry,
+          ),
+        ],
       ),
     );
   }
