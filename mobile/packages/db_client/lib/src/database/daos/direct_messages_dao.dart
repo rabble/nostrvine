@@ -277,6 +277,27 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return rows > 0;
   }
 
+  /// Own deletions still awaiting confirmed delivery, oldest first — the
+  /// retry sweep's worklist.
+  ///
+  /// Scoped to rows this account authored *and* soft-deleted, so a peer's
+  /// deletion applied locally is never re-published from this device.
+  Future<List<DirectMessageRow>> getRetryableOwnMessageDeletions({
+    required String ownerPubkey,
+  }) {
+    return (select(directMessages)
+          ..where(
+            (t) =>
+                _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+                t.senderPubkey.equals(ownerPubkey) &
+                t.isDeleted.equals(true) &
+                t.deletionRumorJson.isNotNull() &
+                t.deletionPublishStatus.equals(_deletionPending),
+          )
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+        .get();
+  }
+
   /// Look up a message by rumor event ID.
   ///
   /// Used to validate sender pubkey before applying a kind 5 deletion.

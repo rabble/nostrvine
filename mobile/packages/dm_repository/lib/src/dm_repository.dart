@@ -224,6 +224,46 @@ enum _DmRelayListSource {
   remote,
 }
 
+/// Terminal state of one delete-for-everyone delivery attempt.
+enum DmMessageDeletionOutcome {
+  /// A relay confirmed the wrap. The row is settled; stop re-driving.
+  sent,
+
+  /// Send policy refused every recipient. Terminal, but NOT delivered —
+  /// the row records `deletion_blocked` rather than claiming a delivery.
+  blocked,
+
+  /// Nothing confirmed. The row stays pending for the next sweep.
+  unconfirmed,
+
+  /// Nothing to drive: no credentials, no row, no stored rumor, or no
+  /// recipient. Not an attempt, so it does not consume a retry budget.
+  unavailable,
+}
+
+/// A soft-deleted own message whose kind-5 wrap has not been confirmed,
+/// projected from its `direct_messages` row for the retry sweep.
+@immutable
+class DmMessageDeletionRetryTarget {
+  /// Construct a retry target.
+  const DmMessageDeletionRetryTarget({
+    required this.rumorId,
+    required this.conversationId,
+    required this.createdAt,
+  });
+
+  /// Rumor id of the deleted message — the argument
+  /// [DmRepository.retryMessageDeletion] expects.
+  final String rumorId;
+
+  /// Conversation the message belongs to; the wrap recipients are resolved
+  /// from its participant set.
+  final String conversationId;
+
+  /// Deleted message's `created_at` (unix seconds). Orders the sweep.
+  final int createdAt;
+}
+
 /// Repository for NIP-17 direct message operations.
 ///
 /// Manages the full DM lifecycle:
@@ -5410,7 +5450,7 @@ class DmRepository {
   /// a bare frame-accept, which is what makes the stored status honest: a
   /// wrap the relay never took leaves the row pending for the sweep instead
   /// of reporting the message retracted (#8165).
-  Future<void> _driveMessageDeletion({
+  Future<DmMessageDeletionOutcome> _driveMessageDeletion({
     required String rumorId,
     required Event deletion,
     required List<String> recipients,
@@ -5430,6 +5470,7 @@ class DmRepository {
             'Deleted message $rumorId via wrapped kind 5',
             category: LogCategory.system,
           );
+          return DmMessageDeletionOutcome.sent;
         case NIP17SendFailure(:final error, :final blocked):
           if (blocked) {
             await _directMessagesDao.markMessageDeletionBlocked(
@@ -5440,12 +5481,13 @@ class DmRepository {
               'Deletion of $rumorId refused by send policy; not retrying',
               category: LogCategory.system,
             );
-            return;
+            return DmMessageDeletionOutcome.blocked;
           }
           Log.warning(
             'Deletion of $rumorId unconfirmed ($error); left for the sweep',
             category: LogCategory.system,
           );
+          return DmMessageDeletionOutcome.unconfirmed;
       }
     } on Object catch (e, stackTrace) {
       // Leave the row pending: an exception here is exactly the case the
@@ -5456,7 +5498,70 @@ class DmRepository {
         error: e,
         stackTrace: stackTrace,
       );
+      return DmMessageDeletionOutcome.unconfirmed;
     }
+  }
+
+  /// Own message deletions still awaiting confirmed delivery, for the retry
+  /// sweep to re-drive via [retryMessageDeletion]. Empty when credentials
+  /// have not been wired.
+  Future<List<DmMessageDeletionRetryTarget>> retryableMessageDeletions() async {
+    if (_messageService == null || _userPubkey.isEmpty) return const [];
+    final rows = await _directMessagesDao.getRetryableOwnMessageDeletions(
+      ownerPubkey: _userPubkey,
+    );
+    return rows
+        .map(
+          (r) => DmMessageDeletionRetryTarget(
+            rumorId: r.id,
+            conversationId: r.conversationId,
+            createdAt: r.createdAt,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// Re-drive a delete-for-everyone that no relay confirmed.
+  ///
+  /// Replays the **stored** rumor rather than rebuilding one, so every
+  /// attempt carries a byte-identical rumor id and a recipient that already
+  /// received an earlier attempt dedups it. Rebuilding would mint a fresh id
+  /// on each pass and deliver the same retraction over and over.
+  Future<DmMessageDeletionOutcome> retryMessageDeletion({
+    required String rumorId,
+  }) async {
+    if (_messageService == null || _userPubkey.isEmpty) {
+      return DmMessageDeletionOutcome.unavailable;
+    }
+    final row = await _directMessagesDao.getMessageById(
+      rumorId,
+      ownerPubkey: _ownerPubkey,
+    );
+    final storedRumor = row?.deletionRumorJson;
+    if (row == null || storedRumor == null) {
+      return DmMessageDeletionOutcome.unavailable;
+    }
+    final recipients = await _deletionWrapRecipients(row.conversationId);
+    if (recipients.isEmpty) return DmMessageDeletionOutcome.unavailable;
+
+    final Event deletion;
+    try {
+      deletion = Event.fromJson(
+        jsonDecode(storedRumor) as Map<String, dynamic>,
+      );
+    } on Object catch (e) {
+      Log.warning(
+        'Stored deletion rumor for $rumorId is unreadable ($e)',
+        category: LogCategory.system,
+      );
+      return DmMessageDeletionOutcome.unavailable;
+    }
+
+    return _driveMessageDeletion(
+      rumorId: rumorId,
+      deletion: deletion,
+      recipients: recipients,
+    );
   }
 
   /// Wrap [deletion] to each recipient in turn.

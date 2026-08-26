@@ -192,6 +192,11 @@ class OutgoingDmRetryService {
   /// follow-up timer instead of stranding until the next external trigger.
   bool _nudgedDuringSweep = false;
 
+  /// Per-rumor attempt count and last-attempt time for the message-deletion
+  /// pass. Session-scoped: entries are pruned each sweep as rows settle.
+  final Map<String, int> _deletionAttempts = {};
+  final Map<String, DateTime> _deletionLastAttempt = {};
+
   bool get isInitialized => _isInitialized;
 
   @visibleForTesting
@@ -577,6 +582,8 @@ class OutgoingDmRetryService {
         }
       }
 
+      final deletions = await _sweepMessageDeletions();
+
       Log.info(
         'sweep complete: '
         'self-wrap-recovered=$processedSelfWrap '
@@ -590,7 +597,11 @@ class OutgoingDmRetryService {
         'interrupted-exhausted=$exhaustedInterrupted '
         'skipped-backoff=$skippedBackoff '
         'skipped-interrupted-too-young=$skippedInterruptedTooYoung '
-        'aborted-not-ready=$abortedNotReady',
+        'aborted-not-ready=$abortedNotReady '
+        'deletions(sent=${deletions.sent} blocked=${deletions.blocked} '
+        'unconfirmed=${deletions.unconfirmed} '
+        'skipped-backoff=${deletions.skippedBackoff} '
+        'skipped-exhausted=${deletions.skippedExhausted})',
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,
       );
@@ -607,7 +618,9 @@ class OutgoingDmRetryService {
             failedFullSend > 0 ||
             failedInterrupted > 0 ||
             skippedBackoff > 0 ||
-            skippedInterruptedTooYoung > 0,
+            skippedInterruptedTooYoung > 0 ||
+            deletions.unconfirmed > 0 ||
+            deletions.skippedBackoff > 0,
       );
     } on Object catch (e, stackTrace) {
       sweepThrew = true;
@@ -658,6 +671,101 @@ class OutgoingDmRetryService {
         _armFollowUpIfIdle();
       }
     }
+  }
+
+  /// One pass over the delete-for-everyone requests that no relay has
+  /// confirmed, re-driving each through [DmRepository.retryMessageDeletion].
+  ///
+  /// Attempt and backoff bookkeeping is in memory rather than on the row: a
+  /// `direct_messages` row carries no retry columns, and the sweep only needs
+  /// to avoid hammering within a session — the pending status itself is what
+  /// survives a restart. `DmReactionRetryService` tracks its own deletions
+  /// the same way.
+  Future<
+    ({
+      int sent,
+      int blocked,
+      int unconfirmed,
+      int skippedBackoff,
+      int skippedExhausted,
+    })
+  >
+  _sweepMessageDeletions() async {
+    final targets = await _dmRepository.retryableMessageDeletions();
+    _deletionAttempts.removeWhere(
+      (id, _) => !targets.any((t) => t.rumorId == id),
+    );
+    _deletionLastAttempt.removeWhere(
+      (id, _) => !targets.any((t) => t.rumorId == id),
+    );
+
+    var sent = 0;
+    var blocked = 0;
+    var unconfirmed = 0;
+    var skippedBackoff = 0;
+    var skippedExhausted = 0;
+
+    for (final target in targets) {
+      final attempts = _deletionAttempts[target.rumorId] ?? 0;
+      if (attempts >= _retryConfig.maxRetries) {
+        skippedExhausted++;
+        continue;
+      }
+      final lastAttempt = _deletionLastAttempt[target.rumorId];
+      if (lastAttempt != null &&
+          _now().difference(lastAttempt) < _retryConfig.backoffFor(attempts)) {
+        skippedBackoff++;
+        continue;
+      }
+
+      _deletionAttempts[target.rumorId] = attempts + 1;
+      _deletionLastAttempt[target.rumorId] = _now();
+
+      final DmMessageDeletionOutcome outcome;
+      try {
+        outcome = await _dmRepository.retryMessageDeletion(
+          rumorId: target.rumorId,
+        );
+      } on Object catch (e, stackTrace) {
+        unconfirmed++;
+        Log.error(
+          'retryMessageDeletion threw for ${target.rumorId}: $e',
+          name: 'OutgoingDmRetryService',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        unawaited(
+          _crashReporting.recordError(
+            e,
+            stackTrace,
+            reason: OutgoingDmRetryServiceReportableSites.perRowUnexpectedThrow,
+          ),
+        );
+        continue;
+      }
+
+      switch (outcome) {
+        case DmMessageDeletionOutcome.sent:
+          sent++;
+        case DmMessageDeletionOutcome.blocked:
+          blocked++;
+        case DmMessageDeletionOutcome.unconfirmed:
+          unconfirmed++;
+        case DmMessageDeletionOutcome.unavailable:
+          // Nothing was attempted, so refund the budget this row just spent
+          // rather than exhausting it on a state the sweep cannot influence.
+          _deletionAttempts[target.rumorId] = attempts;
+      }
+    }
+
+    return (
+      sent: sent,
+      blocked: blocked,
+      unconfirmed: unconfirmed,
+      skippedBackoff: skippedBackoff,
+      skippedExhausted: skippedExhausted,
+    );
   }
 
   /// Runs the injected connectivity probe, defaulting to online on any error

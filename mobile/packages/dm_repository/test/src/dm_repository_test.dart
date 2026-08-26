@@ -10967,6 +10967,253 @@ void main() {
       });
     });
 
+    group('retryMessageDeletion', () {
+      final conversationId = DmRepository.computeConversationId(
+        [_validPubkeyA, _validPubkeyB],
+      );
+
+      const storedRumorJson =
+          '{"id":"$_rumorEventId","pubkey":"$_validPubkeyA",'
+          '"created_at":1700000000,"kind":5,'
+          '"tags":[["e","$_rumorEventId"],["k","14"]],'
+          '"content":"","sig":""}';
+
+      void stubPendingDeletion({String? rumorJson = storedRumorJson}) {
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: conversationId,
+            senderPubkey: _validPubkeyA,
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: true,
+            deletionRumorJson: rumorJson,
+            deletionPublishStatus: 'deletion_pending',
+          ),
+        );
+        when(
+          () => mockConversationsDao.getConversation(
+            conversationId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: conversationId,
+            participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            isRead: true,
+            currentUserHasSent: true,
+          ),
+        );
+        when(
+          () => mockDirectMessagesDao.markMessageDeletionSent(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.markMessageDeletionBlocked(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+      }
+
+      test('replays the STORED rumor rather than minting a new one', () async {
+        // A rebuilt rumor would carry a fresh id every pass, so a recipient
+        // that already applied an earlier attempt could not dedup it and
+        // would see the same retraction arrive repeatedly.
+        final repo = createRepository();
+        stubPendingDeletion();
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
+
+        expect(outcome, equals(DmMessageDeletionOutcome.sent));
+        final captured =
+            verify(
+                  () => mockMessageService.sendRumor(
+                    rumorEvent: captureAny(named: 'rumorEvent'),
+                    recipientPubkey: any(named: 'recipientPubkey'),
+                    awaitRecipientOk: any(named: 'awaitRecipientOk'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.id, equals(_rumorEventId));
+        expect(captured.kind, equals(EventKind.eventDeletion));
+      });
+
+      test('requires a relay OK before settling the row', () async {
+        final repo = createRepository();
+        stubPendingDeletion();
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+
+        await repo.retryMessageDeletion(rumorId: _rumorEventId);
+
+        verify(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: true,
+          ),
+        ).called(1);
+      });
+
+      test('leaves the row pending when nothing confirms', () async {
+        final repo = createRepository();
+        stubPendingDeletion();
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) async => const NIP17SendResult.failure('no relay'));
+
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
+
+        expect(outcome, equals(DmMessageDeletionOutcome.unconfirmed));
+        verifyNever(
+          () => mockDirectMessagesDao.markMessageDeletionSent(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
+      test('records a refused deletion as blocked, never as sent', () async {
+        final repo = createRepository();
+        stubPendingDeletion();
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) async => const NIP17SendResult.blocked('blocked'));
+
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
+
+        expect(outcome, equals(DmMessageDeletionOutcome.blocked));
+        verify(
+          () => mockDirectMessagesDao.markMessageDeletionBlocked(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockDirectMessagesDao.markMessageDeletionSent(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
+      test('reports unavailable when no rumor was stored', () async {
+        final repo = createRepository();
+        stubPendingDeletion(rumorJson: null);
+
+        final outcome = await repo.retryMessageDeletion(
+          rumorId: _rumorEventId,
+        );
+
+        expect(outcome, equals(DmMessageDeletionOutcome.unavailable));
+        verifyNever(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        );
+      });
+    });
+
+    group('retryableMessageDeletions', () {
+      test('projects the pending rows the sweep should re-drive', () async {
+        final repo = createRepository();
+        when(
+          () => mockDirectMessagesDao.getRetryableOwnMessageDeletions(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: 'conv_1',
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: true,
+              deletionRumorJson: '{"kind":5}',
+              deletionPublishStatus: 'deletion_pending',
+            ),
+          ],
+        );
+
+        final targets = await repo.retryableMessageDeletions();
+
+        expect(targets, hasLength(1));
+        expect(targets.single.rumorId, equals(_rumorEventId));
+        expect(targets.single.conversationId, equals('conv_1'));
+        expect(targets.single.createdAt, equals(1700000000));
+      });
+
+      test('returns empty without credentials', () async {
+        final repo = DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        );
+
+        expect(await repo.retryableMessageDeletions(), isEmpty);
+        verifyNever(
+          () => mockDirectMessagesDao.getRetryableOwnMessageDeletions(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+    });
+
     // -----------------------------------------------------------------
     // Canonicalization: extra p-tags routing
     // -----------------------------------------------------------------

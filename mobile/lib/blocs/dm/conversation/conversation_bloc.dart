@@ -196,8 +196,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         addError(e, stackTrace);
         return;
       }
-      // Anything else (e.g. signer `StateError('Failed to sign kind 5
-      // deletion event')`) is an invariant violation — matrix-YES.
+      // Anything else (e.g. the uninitialized-repository `StateError`) is
+      // an invariant violation — matrix-YES. Signing no longer throws here:
+      // the wrap is built and published on the repository's retry-backed
+      // drive, so a signer failure leaves a pending row instead.
       addError(
         Reportable(
           e,

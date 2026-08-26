@@ -1717,11 +1717,11 @@ void main() {
 
       blocTest<ConversationBloc, ConversationState>(
         'wraps non-`ArgumentError` throws in Reportable — matrix-YES, '
-        'invariant (e.g. signer `StateError`)',
+        'invariant (e.g. an uninitialized repository `StateError`)',
         setUp: () {
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
-          ).thenThrow(StateError('Failed to sign kind 5 deletion event'));
+          ).thenThrow(StateError('DmRepository not initialized'));
         },
         build: buildBloc,
         act: (bloc) =>
