@@ -31,7 +31,6 @@ import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile_badge_explanation_sheet.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
@@ -739,78 +738,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           MoreActionButton(video: video, onInteracted: onInteracted),
         ],
       ),
-    );
-  }
-}
-
-/// Username and follow button row for video overlay.
-///
-/// Displays the video author's name (tappable to go to profile) and a follow button.
-class VideoAuthorRow extends ConsumerWidget {
-  const VideoAuthorRow({
-    required this.video,
-    super.key,
-    this.isFullscreen = false,
-  });
-
-  final VideoEvent video;
-  final bool isFullscreen;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Profile is unused here (UserName.fromPubKey handles display),
-    // but watching ensures the widget rebuilds when profile data arrives.
-    ref.watch(userProfileReactiveProvider(video.pubkey));
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Username chip (tappable to go to profile)
-        GestureDetector(
-          onTap: () {
-            Log.info(
-              '👤 User tapped profile: videoId=${video.id}, authorPubkey=${pubkeyForLogs(video.pubkey)}',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-            // Push other user's profile (fullscreen, no bottom nav)
-            final npub = normalizeToNpub(video.pubkey);
-            if (npub != null) {
-              context.push(OtherProfileScreen.pathForNpub(npub));
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: VineTheme.backgroundColor.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.user,
-                  size: 14,
-                  color: VineTheme.whiteText,
-                ),
-                const SizedBox(width: 6),
-                UserName.fromPubKey(
-                  video.pubkey,
-                  embeddedName: video.displayAuthorName,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // Follow button (handles own video check internally)
-        const SizedBox(width: 8),
-        VideoFollowButton(pubkey: video.pubkey),
-      ],
     );
   }
 }
