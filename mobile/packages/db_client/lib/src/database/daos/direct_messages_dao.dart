@@ -36,6 +36,15 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     with _$DirectMessagesDaoMixin {
   DirectMessagesDao(super.attachedDatabase);
 
+  /// Soft-deleted locally; the kind-5 wrap still needs a confirmed delivery.
+  static const String _deletionPending = 'deletion_pending';
+
+  /// A relay confirmed the wrap. Terminal.
+  static const String _deletionSent = 'deletion_sent';
+
+  /// Send policy refused every recipient. Terminal, but NOT delivered.
+  static const String _deletionBlocked = 'deletion_blocked';
+
   /// Build a filter expression that returns rows owned by [ownerPubkey]
   /// **or** legacy rows with no owner (NULL).
   Expression<bool> _ownedOrLegacy(
@@ -185,6 +194,86 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
                   _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
             ))
             .write(const DirectMessagesCompanion(isDeleted: Value(true)));
+    return rows > 0;
+  }
+
+  /// Soft-delete [rumorId] and durably record the kind-5 rumor that still
+  /// has to reach the recipient.
+  ///
+  /// One write, so a crash between hiding the bubble and storing the rumor
+  /// cannot lose the retraction. The row leaves the live set immediately
+  /// (`watchMessagesForConversation` excludes `is_deleted`), while
+  /// `deletion_publish_status = 'deletion_pending'` keeps it visible to the
+  /// retry sweep until a relay confirms the wrap. Mirrors
+  /// `DmReactionsDao.markOwnDeletionPending`.
+  ///
+  /// Returns `true` if the row was updated, `false` if [rumorId] was not
+  /// found.
+  Future<bool> markMessageDeletionPending(
+    String rumorId, {
+    required String deletionRumorJson,
+    String? ownerPubkey,
+  }) async {
+    final rows =
+        await (update(directMessages)..where(
+              (t) =>
+                  t.id.equals(rumorId) &
+                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            ))
+            .write(
+              DirectMessagesCompanion(
+                isDeleted: const Value(true),
+                deletionRumorJson: Value(deletionRumorJson),
+                deletionPublishStatus: const Value(_deletionPending),
+              ),
+            );
+    return rows > 0;
+  }
+
+  /// A relay confirmed the deletion wrap: drop the stored rumor and move the
+  /// row to the terminal `'deletion_sent'` status so the sweep stops.
+  Future<bool> markMessageDeletionSent(String rumorId, {String? ownerPubkey}) =>
+      _settleMessageDeletion(
+        rumorId,
+        status: _deletionSent,
+        ownerPubkey: ownerPubkey,
+      );
+
+  /// Send policy refused every recipient: stop re-driving a send that will
+  /// always be refused, but record it as `'deletion_blocked'` rather than
+  /// `'deletion_sent'`.
+  ///
+  /// The reaction path collapses these two, reasoning that a blocked peer
+  /// never received the reaction either so the removal is moot. That does not
+  /// transfer to a message, which may well have been delivered before the
+  /// block took effect — calling it sent would misreport a message the peer
+  /// still holds.
+  Future<bool> markMessageDeletionBlocked(
+    String rumorId, {
+    String? ownerPubkey,
+  }) => _settleMessageDeletion(
+    rumorId,
+    status: _deletionBlocked,
+    ownerPubkey: ownerPubkey,
+  );
+
+  Future<bool> _settleMessageDeletion(
+    String rumorId, {
+    required String status,
+    String? ownerPubkey,
+  }) async {
+    final rows =
+        await (update(directMessages)..where(
+              (t) =>
+                  t.id.equals(rumorId) &
+                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            ))
+            .write(
+              DirectMessagesCompanion(
+                deletionRumorJson: const Value(null),
+                deletionPublishStatus: Value(status),
+              ),
+            );
     return rows > 0;
   }
 

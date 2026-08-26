@@ -487,6 +487,129 @@ void main() {
       });
     });
 
+    group('message-deletion durability', () {
+      Future<void> insertOwnMessage() => dao.insertMessage(
+        id: 'msg_del',
+        conversationId: conversationId1,
+        senderPubkey: 'pubkey_alice',
+        content: 'Regrettable',
+        createdAt: 1700000000,
+        giftWrapId: 'gw_del',
+        ownerPubkey: 'pubkey_alice',
+      );
+
+      group('markMessageDeletionPending', () {
+        test('hides the row and stores the rumor in one write', () async {
+          await insertOwnMessage();
+
+          final updated = await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(updated, isTrue);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isTrue);
+          expect(row.deletionRumorJson, equals('{"kind":5}'));
+          expect(row.deletionPublishStatus, equals('deletion_pending'));
+        });
+
+        test('drops the bubble from the live conversation', () async {
+          await insertOwnMessage();
+
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final live = await dao.getMessagesForConversation(conversationId1);
+          expect(live, isEmpty);
+        });
+
+        test('reports false for an unknown rumor id', () async {
+          final updated = await dao.markMessageDeletionPending(
+            'msg_missing',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(updated, isFalse);
+        });
+
+        test("leaves another account's message untouched", () async {
+          await insertOwnMessage();
+
+          final updated = await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_bob',
+          );
+
+          expect(updated, isFalse);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isFalse);
+          expect(row.deletionRumorJson, isNull);
+        });
+      });
+
+      group('markMessageDeletionSent', () {
+        test('clears the stored rumor once a relay confirms', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final settled = await dao.markMessageDeletionSent(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(settled, isTrue);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.deletionPublishStatus, equals('deletion_sent'));
+          expect(row.deletionRumorJson, isNull);
+          expect(row.isDeleted, isTrue);
+        });
+      });
+
+      group('markMessageDeletionBlocked', () {
+        test('settles as blocked rather than as sent', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final settled = await dao.markMessageDeletionBlocked(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(settled, isTrue);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.deletionPublishStatus, equals('deletion_blocked'));
+          expect(row.deletionRumorJson, isNull);
+        });
+      });
+    });
+
     group('hasGiftWrap', () {
       test('returns true when gift wrap ID exists', () async {
         await dao.insertMessage(
