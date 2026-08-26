@@ -1,16 +1,14 @@
-// ABOUTME: Client-side account enforcement state derived from Keycast's
-// ABOUTME: account_status. Carries no moderation internals (s-t-s#200 R-7).
+// ABOUTME: Client-side account enforcement state derived from Funnelcake's relay-backed status.
+// ABOUTME: Carries no moderation internals; the API deliberately returns status only.
 
-import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/services/account_status_api_client.dart';
 
 enum AccountEnforcementKind {
   /// There is no signed-in account whose status can be checked.
   signedOut,
 
-  /// The client has no authoritative relay-backed status for this account.
-  /// Keycast may confirm a restriction, but an absent Keycast mirror cannot
-  /// prove that relay enforcement is absent.
-  unverified,
+  /// Funnelcake successfully reported that the account is active.
+  noRestrictionReported,
 
   /// Reversible: content is hidden, not deleted.
   suspended,
@@ -20,10 +18,9 @@ enum AccountEnforcementKind {
 
   /// Restricted, but by a state this client build does not recognize.
   ///
-  /// Keycast sets `account_status` only for a non-active account, so an
-  /// unrecognized value still means restricted. Mapping it to [unverified]
-  /// would hide a confirmed restriction, so newer server states degrade to
-  /// generic restriction copy rather than to an unknown status.
+  /// Funnelcake answered successfully with a status this client does not know.
+  /// Because the answer was not `active`, newer restriction states degrade to
+  /// generic restriction copy rather than to an all-clear.
   unknownRestriction;
 
   bool get isEnforced =>
@@ -32,41 +29,35 @@ enum AccountEnforcementKind {
       this == AccountEnforcementKind.unknownRestriction;
 }
 
-/// Enforcement state for the *authenticated* account, as reported by Keycast's
-/// `GET /api/user/account`.
+/// Enforcement state for the authenticated account, as reported by
+/// Funnelcake's self-authenticated status endpoint.
 ///
-/// Deliberately carries no `suspendedReason`. Keycast stores that as free text
-/// written by whatever called its admin API, so rendering it would leak
-/// moderation internals to the user (s-t-s#200 R-7). Copy is chosen from
-/// [kind] alone.
+/// Deliberately carries no reason or moderation metadata. The self-status API
+/// returns only the public enforcement state, and copy is chosen from [kind].
 class AccountEnforcementStatus {
   const AccountEnforcementStatus({required this.kind});
 
-  /// Maps a Keycast account status to enforcement state.
-  factory AccountEnforcementStatus.fromKeycast(KeycastAccountStatus status) {
-    final raw = status.accountStatus;
-    if (raw == null) {
-      // Keycast is a best-effort mirror of relay enforcement. Its absence is
-      // not authoritative evidence that the relay considers this account
-      // unrestricted, so never turn it into a positive all-clear.
-      return const AccountEnforcementStatus(
-        kind: AccountEnforcementKind.unverified,
-      );
-    }
-    switch (raw) {
-      case 'suspended':
+  factory AccountEnforcementStatus.fromFunnelcake(
+    FunnelcakeAccountStatus status,
+  ) {
+    switch (status) {
+      case FunnelcakeAccountStatus.active:
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.noRestrictionReported,
+        );
+      case FunnelcakeAccountStatus.suspended:
         return const AccountEnforcementStatus(
           kind: AccountEnforcementKind.suspended,
         );
-      case 'banned':
+      case FunnelcakeAccountStatus.banned:
         return const AccountEnforcementStatus(
           kind: AccountEnforcementKind.banned,
         );
+      case FunnelcakeAccountStatus.unknown:
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.unknownRestriction,
+        );
     }
-    // Fail closed: a value we do not recognize is still a non-active account.
-    return const AccountEnforcementStatus(
-      kind: AccountEnforcementKind.unknownRestriction,
-    );
   }
 
   final AccountEnforcementKind kind;

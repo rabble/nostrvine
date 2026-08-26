@@ -23,9 +23,8 @@ import 'package:openvine/utils/mounted_post_frame.dart';
 /// Reachable from settings without a failed post, so a restricted user can
 /// find out what happened rather than discovering it by failing repeatedly.
 ///
-/// Renders from [AccountEnforcementKind] alone. Keycast also returns a
-/// `suspended_reason`, but it is free text written by whatever called its
-/// admin API, so it is deliberately never fetched into state or shown here.
+/// Renders from [AccountEnforcementKind] alone. Funnelcake deliberately omits
+/// moderation reasons and administrative metadata from the self-status API.
 class AccountStatusScreen extends ConsumerStatefulWidget {
   static const routeName = 'account-status';
   static const String path = RoutePaths.accountStatus;
@@ -37,9 +36,8 @@ class AccountStatusScreen extends ConsumerStatefulWidget {
 
   /// Whether an authoritative publish response just confirmed enforcement.
   ///
-  /// This preserves the useful restriction and appeal surface for accounts
-  /// that have no Keycast status source. The publish result cannot distinguish
-  /// suspended from banned, so it uses the generic restriction copy.
+  /// The publish result cannot distinguish suspended from banned, so it uses
+  /// generic restriction copy while the status refresh resolves.
   final bool publishRestrictionConfirmed;
 
   @override
@@ -147,11 +145,11 @@ class _StatusBody extends StatelessWidget {
 
   /// Whether relay enforcement has anything to say about this account.
   ///
-  /// A null kind (the status could not be read) and [unverified] both mean no
+  /// A null kind and [AccountEnforcementKind.noRestrictionReported] mean no
   /// restriction to report; the relay reports a real one at the moment of
   /// action, so neither is worth telling the user Divine does not know.
   bool get _hasEnforcementToReport =>
-      kind != null && kind != AccountEnforcementKind.unverified;
+      kind != null && kind != AccountEnforcementKind.noRestrictionReported;
 
   @override
   Widget build(BuildContext context) {
@@ -227,10 +225,8 @@ class _StatusBody extends StatelessWidget {
             // openExternalLink rather than a raw launchUrl: it checks the URL
             // can be handled and routes divine.video links in-app, so the exit
             // path does not silently do nothing on a device without a browser.
-            onPressed: () => openExternalLink(
-              context,
-              AppConstants.accountPortabilityUrl,
-            ),
+            onPressed: () =>
+                openExternalLink(context, AppConstants.accountPortabilityUrl),
           ),
         ],
       ],

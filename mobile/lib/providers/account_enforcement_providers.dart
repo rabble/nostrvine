@@ -1,75 +1,100 @@
-// ABOUTME: Riverpod providers exposing the authenticated account's enforcement
-// ABOUTME: state, so the client can tell a restricted user what happened.
+// ABOUTME: Riverpod infrastructure exposing Funnelcake enforcement status for the active account.
+// ABOUTME: Retains only confirmed restrictions so unavailable refreshes cannot erase warnings.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/repositories/account_enforcement_repository.dart';
+import 'package:openvine/services/account_status_api_client.dart';
 import 'package:openvine/services/auth_service.dart';
 
-/// Repository reading `account_status` from Keycast for the current session.
+final accountStatusApiClientProvider = Provider<AccountStatusApiClient>((ref) {
+  final nip98 = ref.watch(nip98AuthServiceProvider);
+  final client = AccountStatusApiClient(
+    baseUri: Uri.parse(ref.watch(currentEnvironmentProvider).apiBaseUrl),
+    httpClient: ref.watch(instrumentedHttpClientFactoryProvider)(),
+    authHeaderProvider: ({required url, required method}) async {
+      final token = await nip98.createAuthToken(url: url, method: method);
+      return token?.authorizationHeader;
+    },
+  );
+  ref.onDispose(client.dispose);
+  return client;
+});
+
 final accountEnforcementRepositoryProvider =
     Provider<AccountEnforcementRepository>((ref) {
-      final oauthClient = ref.watch(oauthClientProvider);
       return AccountEnforcementRepository(
-        oauthClient: oauthClient,
-        // Owner-bound rather than a bare session read: a session left behind by
-        // another account must not answer the enforcement question for this one.
-        readAccessToken: ref
-            .watch(authServiceProvider)
-            .activeAccountKeycastToken,
+        apiClient: ref.watch(accountStatusApiClientProvider),
       );
     });
 
-/// Enforcement state for the authenticated account.
-///
-/// An unauthenticated app has no account to report on, so it resolves to a
-/// settled signed-out state instead of offering a network retry that cannot
-/// change the answer.
-///
-/// autoDispose so the status is re-read whenever nothing is listening any
-/// more, rather than cached for the life of the app. An account suspended
-/// after launch must not keep rendering an earlier answer until the user
-/// restarts. Call
-/// `ref.invalidate(accountEnforcementStatusProvider)` to force a refresh
-/// while it is still being watched.
+final accountRestrictionMemoryProvider = Provider<AccountRestrictionMemory>(
+  (_) => AccountRestrictionMemory(),
+);
+
+class AccountRestrictionMemory {
+  final Map<String, AccountEnforcementStatus> _byPubkey = {};
+
+  AccountEnforcementStatus? read(String pubkey) => _byPubkey[pubkey];
+
+  void record(String pubkey, AccountEnforcementStatus status) {
+    if (status.isEnforced) {
+      _byPubkey[pubkey] = status;
+    } else {
+      _byPubkey.remove(pubkey);
+    }
+  }
+}
+
+final activeEnforcementPubkeyProvider = Provider<String?>((ref) {
+  final authState = ref.watch(currentAuthStateProvider);
+  if (authState != AuthState.authenticated) return null;
+  return ref.watch(authServiceProvider).currentPublicKeyHex;
+});
+
 final FutureProvider<AccountEnforcementStatus>
 accountEnforcementStatusProvider =
-    FutureProvider.autoDispose<AccountEnforcementStatus>((ref) async {
-      final authState = ref.watch(currentAuthStateProvider);
-      if (authState != AuthState.authenticated) {
-        return const AccountEnforcementStatus(
-          kind: AccountEnforcementKind.signedOut,
-        );
-      }
-      // Only a divineOAuth account has a Keycast session. Relay enforcement is
-      // independent of key custody, but mobile has no user-facing relay-status
-      // endpoint yet, so make no status claim for other sign-in sources.
-      if (!ref.watch(authServiceProvider).isRegistered) {
-        return const AccountEnforcementStatus(
-          kind: AccountEnforcementKind.unverified,
-        );
-      }
-      return ref
-          .watch(accountEnforcementRepositoryProvider)
-          .fetchCurrentStatus();
-    });
+    FutureProvider.autoDispose<AccountEnforcementStatus>(
+      (ref) async {
+        final authState = ref.watch(currentAuthStateProvider);
+        final pubkey = ref.watch(activeEnforcementPubkeyProvider);
+        if (authState != AuthState.authenticated) {
+          return const AccountEnforcementStatus(
+            kind: AccountEnforcementKind.signedOut,
+          );
+        }
+        if (pubkey == null) throw const AccountStatusUnavailable();
 
-/// Convenience seam: true only on a *confirmed* enforced account.
-///
-/// autoDispose so watching this seam cannot pin the status provider alive and
-/// defeat its refetch.
-///
-/// Reads the last resolved value rather than the current async state, so a
-/// refresh in flight, or one that fails, does not clear a restriction marker
-/// the user has already earned. A warning must not be erased by an absent
-/// signal; only a successful read saying otherwise should lift it.
-///
-/// Unresolved resolves to false. Consumers that must fail safe should read
-/// [accountEnforcementStatusProvider] and branch on the kind themselves rather
-/// than relying on this.
+        final authService = ref.watch(authServiceProvider);
+        ref.watch(currentAuthRpcCapabilityProvider);
+        if (!authService.canPublishNostrWritesNow) {
+          throw const AccountStatusUnavailable();
+        }
+
+        final status = await ref
+            .watch(accountEnforcementRepositoryProvider)
+            .fetchCurrentStatus(pubkey: pubkey);
+        ref.read(accountRestrictionMemoryProvider).record(pubkey, status);
+        return status;
+      },
+      retry: (_, _) => null,
+    );
+
 final Provider<bool> isAccountEnforcedProvider = Provider.autoDispose<bool>((
   ref,
 ) {
-  return ref.watch(accountEnforcementStatusProvider).value?.isEnforced ?? false;
+  final pubkey = ref.watch(activeEnforcementPubkeyProvider);
+  if (pubkey == null) return false;
+  final asyncStatus = ref.watch(accountEnforcementStatusProvider);
+  final current = asyncStatus.hasValue ? asyncStatus.value : null;
+  return current?.isEnforced ??
+      ref.read(accountRestrictionMemoryProvider).read(pubkey)?.isEnforced ??
+      false;
 });
+
+void refreshAccountEnforcementAfterRestriction(ProviderContainer container) {
+  container.invalidate(accountEnforcementStatusProvider);
+}
