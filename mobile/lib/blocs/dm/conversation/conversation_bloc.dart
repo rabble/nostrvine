@@ -12,6 +12,7 @@ import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'conversation_event.dart';
@@ -35,8 +36,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ConversationBloc({
     required DmRepository dmRepository,
     required String conversationId,
+    required String trustedRelayUrl,
   }) : _dmRepository = dmRepository,
        _conversationId = conversationId,
+       _trustedRelayUrl = trustedRelayUrl,
        super(const ConversationState()) {
     on<ConversationStarted>(_onStarted, transformer: restartable());
     // Sends are optimistic and independent per rumor: `sequential()` made
@@ -79,6 +82,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
   final DmRepository _dmRepository;
   final String _conversationId;
+
+  /// The configured authoritative relay. Only this relay's rejection reason
+  /// is trusted to decide account standing — user-discovered relays can say
+  /// anything, so their text must not gate a retraction's retry affordance.
+  final String _trustedRelayUrl;
 
   Future<void> _onStarted(
     ConversationStarted event,
@@ -163,6 +171,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationMessageDeleted event,
     Emitter<ConversationState> emit,
   ) async {
+    // Clear the previous attempt's outcome first. The view's listener fires on
+    // a status *transition*, so without this a second failed delete would emit
+    // `failed` on top of `failed` and raise no toast at all.
+    if (state.deleteStatus != DeleteStatus.idle) {
+      emit(state.copyWith(deleteStatus: DeleteStatus.idle));
+    }
+
     // Drop every durable queue row of the bubble's batch first, whether the
     // bubble is queue-only (optimistic/failed — no persisted row yet, so the
     // kind-5 path below would no-op and the "deleted" bubble would keep
@@ -187,6 +202,24 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       await _dmRepository.deleteMessageForEveryone(event.rumorId);
       // The watchMessages stream automatically excludes deleted messages,
       // so the UI updates reactively — no manual state mutation needed.
+    } on DmDeletionNotConfirmed catch (e, stackTrace) {
+      // No relay took the retraction, so the repository left the row intact
+      // and the message is still on screen (#8165). Expected on a flaky
+      // network or a refusing relay — matrix-NO, so report it WITHOUT
+      // `Reportable`, or every dropped connection becomes a Crashlytics
+      // aggregate.
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          deleteStatus:
+              isAccountRestrictedOutcome(
+                e.outcome,
+                trustedRelayUrl: _trustedRelayUrl,
+              )
+              ? DeleteStatus.blocked
+              : DeleteStatus.failed,
+        ),
+      );
     } on Object catch (e, stackTrace) {
       if (e is ArgumentError) {
         // No persisted row. For a queue-only bubble whose row we just

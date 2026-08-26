@@ -122,6 +122,7 @@ void main() {
         final bloc = ConversationBloc(
           dmRepository: repo,
           conversationId: conversationId,
+          trustedRelayUrl: 'wss://relay.divine.video',
         );
         addTearDown(bloc.close);
 

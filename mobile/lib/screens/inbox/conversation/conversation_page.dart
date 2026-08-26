@@ -13,6 +13,7 @@ import 'package:openvine/blocs/dm/conversation/conversation_participants_cubit.d
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/router/route_paths.dart';
@@ -150,6 +151,10 @@ class _ConversationBlocScope extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
+    // Only the configured relay's rejection reason may decide account
+    // standing, and it resolves per environment (staging relay on
+    // staging), so it is read from the live client rather than a const.
+    final trustedRelayUrl = ref.watch(nostrServiceProvider).defaultRelayUrl;
     final reactionsRepository = ref.watch(dmReactionsRepositoryProvider);
     final inviteStateStore = ref.watch(collaboratorInviteStateStoreProvider);
     final inviteResponseService = ref.watch(
@@ -177,6 +182,7 @@ class _ConversationBlocScope extends ConsumerWidget {
           create: (_) => ConversationBloc(
             dmRepository: dmRepository,
             conversationId: conversationId,
+            trustedRelayUrl: trustedRelayUrl,
           )..add(const ConversationStarted()),
         ),
         // Qualifies the empty state: `watchMessages` is a local DB stream, so

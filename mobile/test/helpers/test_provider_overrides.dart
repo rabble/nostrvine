@@ -164,6 +164,12 @@ MockNostrClient createMockNostrService() {
   when(() => mockNostr.hasKeys).thenReturn(false);
   when(() => mockNostr.connectedRelayCount).thenReturn(1);
   when(() => mockNostr.configuredRelays).thenReturn(<String>[]);
+  // Resolves per environment in production. Stubbed here so widgets that read
+  // it — e.g. ConversationPage passing the trusted relay to ConversationBloc —
+  // do not get type 'Null' is not a subtype of type 'String'.
+  when(
+    () => mockNostr.defaultRelayUrl,
+  ).thenReturn('wss://relay.divine.video');
 
   // Stub subscribe() to return empty stream (never null) so
   // SubscriptionManager batch fetch does not get

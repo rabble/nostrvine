@@ -31,6 +31,18 @@ enum SendStatus {
   noRecipient,
 }
 
+/// Outcome of the most recent "Delete for everyone" attempt.
+///
+/// Both failure cases toast, because unlike a failed send there is no bubble
+/// affordance to lean on: the message simply stays on screen, which on its own
+/// is indistinguishable from a tap that never registered (#8165).
+///
+/// [failed] is retriable and says so — the row was never marked deleted, so
+/// tapping Delete again re-runs the whole path. [blocked] is an account-level
+/// refusal from the trusted relay, so it offers no retry: the same tap re-hits
+/// the same restriction.
+enum DeleteStatus { idle, failed, blocked }
+
 /// Per-bubble delivery status, derived from the durable `outgoing_dms`
 /// queue row (when present) merged with the persisted `direct_messages`
 /// row (when present).
@@ -85,6 +97,7 @@ class ConversationState extends Equatable {
     this.status = ConversationStatus.initial,
     this.messages = const [],
     this.sendStatus = SendStatus.idle,
+    this.deleteStatus = DeleteStatus.idle,
     this.lastPartialSend,
     this.pendingOutgoing = const <OutgoingDm>[],
   });
@@ -96,6 +109,9 @@ class ConversationState extends Equatable {
   /// Replaced wholesale on every watch tick.
   final List<DmMessage> messages;
   final SendStatus sendStatus;
+
+  /// Outcome of the most recent delete-for-everyone attempt.
+  final DeleteStatus deleteStatus;
 
   /// The last send attempt that delivered to recipients but failed to
   /// publish the sender self-addressed gift wrap, paired with the rumor
@@ -307,6 +323,7 @@ class ConversationState extends Equatable {
     ConversationStatus? status,
     List<DmMessage>? messages,
     SendStatus? sendStatus,
+    DeleteStatus? deleteStatus,
     PartialSend? lastPartialSend,
     List<OutgoingDm>? pendingOutgoing,
     bool clearLastPartialSend = false,
@@ -315,6 +332,7 @@ class ConversationState extends Equatable {
       status: status ?? this.status,
       messages: messages ?? this.messages,
       sendStatus: sendStatus ?? this.sendStatus,
+      deleteStatus: deleteStatus ?? this.deleteStatus,
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
@@ -327,6 +345,7 @@ class ConversationState extends Equatable {
     status,
     messages,
     sendStatus,
+    deleteStatus,
     lastPartialSend,
     pendingOutgoing,
   ];

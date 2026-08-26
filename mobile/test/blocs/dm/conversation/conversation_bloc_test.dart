@@ -10,6 +10,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/observability/reportable_error.dart';
 
@@ -118,6 +119,7 @@ void main() {
     ConversationBloc buildBloc() => ConversationBloc(
       dmRepository: mockDmRepository,
       conversationId: conversationId,
+      trustedRelayUrl: 'wss://relay.divine.video',
     );
 
     test('initial state is correct', () {
@@ -1735,6 +1737,79 @@ void main() {
         ],
       );
 
+      // #8165: a retraction that reached no relay used to soft-delete
+      // locally and report success. It now surfaces, and must NOT be
+      // Reportable — a dropped connection is expected, and wrapping it would
+      // turn every flaky network into a Crashlytics aggregate.
+      blocTest<ConversationBloc, ConversationState>(
+        'emits DeleteStatus.failed and reports a plain error when no relay '
+        'accepted the kind 5',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(
+            const DmDeletionNotConfirmed(
+              messageId,
+              PublishOutcome(
+                eventId: 'eid',
+                acceptedBy: [],
+                rejectedBy: {
+                  'wss://relay.divine.video':
+                      'error: server overloaded, try again later',
+                },
+                noResponseFrom: [],
+              ),
+            ),
+          );
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.deleteStatus,
+            'deleteStatus',
+            DeleteStatus.failed,
+          ),
+        ],
+        errors: () => [isA<DmDeletionNotConfirmed>()],
+      );
+
+      // Only the trusted relay may decide account standing. A suspension it
+      // reports is terminal, so the UI must not invite a retry.
+      blocTest<ConversationBloc, ConversationState>(
+        'emits DeleteStatus.blocked when the trusted relay reports the '
+        'account is suspended',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(
+            const DmDeletionNotConfirmed(
+              messageId,
+              PublishOutcome(
+                eventId: 'eid',
+                acceptedBy: [],
+                rejectedBy: {
+                  'wss://relay.divine.video': 'blocked: pubkey is suspended',
+                },
+                noResponseFrom: [],
+              ),
+            ),
+          );
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.deleteStatus,
+            'deleteStatus',
+            DeleteStatus.blocked,
+          ),
+        ],
+        errors: () => [isA<DmDeletionNotConfirmed>()],
+      );
+
       blocTest<ConversationBloc, ConversationState>(
         'deletes a queue-only bubble by cancelling its durable row; the '
         'persisted-delete ArgumentError is expected and silent',
@@ -2019,6 +2094,7 @@ void main() {
           ConversationStatus.initial,
           <DmMessage>[],
           SendStatus.idle,
+          DeleteStatus.idle,
           null,
           <OutgoingDm>[],
         ]),
