@@ -1810,6 +1810,45 @@ void main() {
         errors: () => [isA<DmDeletionNotConfirmed>()],
       );
 
+      // The same suspension text from a relay we did NOT configure must stay
+      // retriable: deletion publishes fan out to user-discovered relays, and
+      // their reason strings are attacker-controlled. Without this, any relay
+      // could strand a user on a terminal "your account is restricted" toast
+      // for a message that is merely unsent.
+      blocTest<ConversationBloc, ConversationState>(
+        'emits DeleteStatus.failed when an untrusted relay claims the '
+        'account is suspended',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(
+            const DmDeletionNotConfirmed(
+              messageId,
+              PublishOutcome(
+                eventId: 'eid',
+                acceptedBy: [],
+                rejectedBy: {
+                  'wss://relay.someone-elses-relay.example':
+                      'blocked: pubkey is suspended',
+                },
+                noResponseFrom: [],
+              ),
+            ),
+          );
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.deleteStatus,
+            'deleteStatus',
+            DeleteStatus.failed,
+          ),
+        ],
+        errors: () => [isA<DmDeletionNotConfirmed>()],
+      );
+
       blocTest<ConversationBloc, ConversationState>(
         'deletes a queue-only bubble by cancelling its durable row; the '
         'persisted-delete ArgumentError is expected and silent',
