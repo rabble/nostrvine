@@ -10870,6 +10870,19 @@ void main() {
         },
       );
 
+      test('nudges the retry sweep after storing the deletion', () async {
+        stubDeletableMessage();
+        stubSendRumor(
+          (_, _) => const NIP17SendResult.failure('no relay confirmed'),
+        );
+        final repo = createRepository();
+        final nudge = repo.retryableOutgoingWork.first;
+
+        await repo.deleteMessageForEveryone(_rumorEventId);
+
+        await expectLater(nudge, completes);
+      });
+
       test(
         'leaves the row pending when no relay confirms the wrap',
         () async {

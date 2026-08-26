@@ -594,12 +594,12 @@ class DmRepository {
   final StreamController<bool> _recoveryStateController =
       StreamController<bool>.broadcast();
 
-  /// Fires whenever a send or recovery leaves a retryable row behind in the
-  /// `outgoing_dms` queue — a soft-unconfirmed publish, a hard failure, or a
-  /// partial delivery whose self-wrap is still missing. The retry service
-  /// listens to bootstrap its in-session follow-up sweep: without this, a
-  /// row created while the app stays foregrounded on stable connectivity sat
-  /// pending (a delivered-looking bubble) until the next background/
+  /// Fires whenever a send, deletion, or recovery leaves durable outgoing work
+  /// behind — a soft-unconfirmed publish, a hard failure, a partial delivery
+  /// whose self-wrap is still missing, or a pending message deletion. The retry
+  /// service listens and bootstraps its in-session follow-up sweep. Without
+  /// this, a row created while the app stays foregrounded on stable connectivity
+  /// sat pending (a delivered-looking bubble) until the next background/
   /// foreground flip or connectivity change.
   ///
   /// Some emissions fire from inside a database transaction, so listeners
@@ -5404,6 +5404,7 @@ class DmRepository {
       deletionRumorJson: jsonEncode(deletion.toJson()),
       ownerPubkey: _ownerPubkey,
     );
+    _notifyRetryableWork();
 
     await _refreshConversationPreview(row.conversationId);
 
