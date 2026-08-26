@@ -132,6 +132,7 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => giftWraps.stream);
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
         when(() => nostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
         when(() => authService.isAuthenticated).thenReturn(true);
@@ -267,10 +268,6 @@ void main() {
         );
       }
 
-      /// Tears the container down inside the test body. `DmRepository` arms a
-      /// reconnect timer while it is listening, and the widget-tree invariant
-      /// that fails on a pending timer runs before `tearDown` does — so the
-      /// dispose that cancels it has to happen here.
       /// Tears the session down inside the test body. `DmRepository` arms a
       /// reconnect timer while it is listening and cancelling a Drift query
       /// stream posts a zero-duration `markAsClosed` timer — and the widget
