@@ -11174,7 +11174,7 @@ void main() {
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) async => const [
             DirectMessageRow(
               id: _rumorEventId,
               conversationId: 'conv_1',
