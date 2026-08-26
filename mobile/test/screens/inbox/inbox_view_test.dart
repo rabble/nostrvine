@@ -1944,6 +1944,98 @@ void main() {
         );
       });
 
+      // #7380: the long-press sheet resolves the peer name on its own, and
+      // that chain omits `moderationDisplayName`. The tile above it reads
+      // "Divine Moderation"; the sheet it opens must not disagree.
+      testWidgets('names moderation in the sheet a retired-key row opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final retiredConversation = DmConversation(
+          id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          participantPubkeys: [currentPubkey, kLegacyModerationPubkeys.first],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'You can reply to this message to appeal.',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [retiredConversation],
+              visibleConversations: [retiredConversation],
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        // The tile and the sheet it opened must name the same account.
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(
+          find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        // #7380: the peer used to resolve to the bare literal 'user', so the
+        // sheet offered to block "user" under a tile titled "Divine
+        // Moderation". No profile lookup can produce that string now.
+        expect(find.text(l10n.inboxActionBlock('user')), findsNothing);
+      });
+
+      // The other half of #7380. Blocking moderation suppresses the pin, so
+      // the thread falls back into the Blocked slice as an ordinary row — and
+      // that row is the one a user unblocks through. Its long-press is only
+      // live once the thread carries a message; a blocked account with no
+      // thread renders a placeholder whose long-press is null.
+      testWidgets('names moderation in the sheet the Blocked slice opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final blockedModeration = DmConversation(
+          id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          participantPubkeys: const [currentPubkey, moderationPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Your video was removed.',
+          lastMessageTimestamp: nowUnix,
+        );
+        final actionsCubit = _MockConversationActionsCubit();
+
+        final subject = buildSubject(
+          actionsCubit: actionsCubit,
+          state: ConversationListState(
+            status: ConversationListStatus.loaded,
+            filter: InboxFilter.blocked,
+            visibleConversations: [blockedModeration],
+            blockedConversations: [blockedModeration],
+            hasMore: false,
+          ),
+        );
+        // After buildSubject, which stubs isBlocked to false by default.
+        when(() => actionsCubit.isBlocked(any())).thenReturn(true);
+
+        await tester.pumpWidget(subject);
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.inboxActionUnblock(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
+      });
+
       testWidgets('drops out of a search it does not match', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         final conversation = DmConversation(
@@ -2399,7 +2491,13 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.inboxActionReport('user')));
+        await tester.tap(
+          find.text(
+            l10n.inboxActionReport(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
+        );
         await tester.pumpAndSettle();
       }
 
@@ -2410,7 +2508,14 @@ void main() {
         await longPressAndReport(tester);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.inboxReportedUser('user')), findsOneWidget);
+        expect(
+          find.text(
+            l10n.inboxReportedUser(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('surfaces an error when the report reached no channel', (
@@ -2429,7 +2534,14 @@ void main() {
           findsOneWidget,
         );
         // Silence is the regression, so the confirmation must not render.
-        expect(find.text(l10n.inboxReportedUser('user')), findsNothing);
+        expect(
+          find.text(
+            l10n.inboxReportedUser(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
+          findsNothing,
+        );
       });
     });
 
@@ -2477,7 +2589,11 @@ void main() {
 
         expect(find.text(l10n.inboxRemoveConfirmTitle), findsOneWidget);
         expect(
-          find.text(l10n.inboxRemoveConfirmBody('user')),
+          find.text(
+            l10n.inboxRemoveConfirmBody(
+              UserProfile.defaultDisplayNameFor(otherPubkey),
+            ),
+          ),
           findsOneWidget,
         );
       });

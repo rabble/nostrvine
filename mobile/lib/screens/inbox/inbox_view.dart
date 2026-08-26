@@ -36,6 +36,7 @@ import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_filter_chips.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -965,18 +966,25 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       orElse: () => conversation.participantPubkeys.first,
     );
 
-    // A known identity skips the lookup entirely: kind-0 for the moderation
-    // account resolves late, and the sheet would open labelled with the
-    // generated fallback name the row's own override exists to avoid.
+    // Match [ConversationTile]'s non-vanished identity chain, so moderation
+    // and profile fallbacks stay consistent between the row and sheet (#7380).
+    // A known identity skips the lookup entirely: moderation's kind-0 resolves
+    // late and a retired moderation key has none at all, so the sheet would
+    // otherwise open labelled with the fallback the row's own name exists to
+    // avoid.
     String displayName;
-    if (displayNameOverride != null) {
-      displayName = displayNameOverride;
+    final knownName =
+        displayNameOverride ?? moderationDisplayName(context, otherPubkey);
+    if (knownName != null) {
+      displayName = knownName;
     } else {
       final profile = await ref.read(
         fetchUserProfileProvider(otherPubkey).future,
       );
       if (!context.mounted) return;
-      displayName = profile?.bestDisplayName ?? 'user';
+      displayName =
+          profile?.bestDisplayName ??
+          UserProfile.defaultDisplayNameFor(otherPubkey);
     }
 
     if (!context.mounted) return;
