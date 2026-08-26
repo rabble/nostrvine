@@ -146,11 +146,12 @@ class DmUnreadCountCubit extends Cubit<int> with CloseGuardedEmit<int> {
     }
 
     // No count is defensible until the incoming repository can say whose
-    // messages these are; the old number belongs to whoever was signed in
-    // before. Only ever changes anything after a real account flip — at cold
-    // start and on the auth-ready wave the state is already 0. Reset AFTER the
-    // generation bump, so the outgoing subscription can no longer put its
-    // count back however this method is edited later.
+    // messages these are. This clears the old account's count during an
+    // account change; it can also show a conservative 0 while the same
+    // identity's Nostr client retries initialization, until the ready wave
+    // recomputes the count. Reset AFTER the generation bump, so the outgoing
+    // subscription can no longer put its count back however this method is
+    // edited later.
     if (dmRepository.userPubkey.isEmpty) emitIfOpen(0);
 
     // Recompute whenever the accepted conversations, the potential requests,
