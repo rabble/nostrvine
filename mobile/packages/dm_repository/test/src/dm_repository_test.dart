@@ -10650,7 +10650,8 @@ void main() {
         'returns early on an already soft-deleted row without signing or '
         'publishing a duplicate kind 5',
         () async {
-          final repo = createRepository();
+          final signer = _MockNostrSigner();
+          final repo = createRepository(signer: signer);
 
           when(
             () => mockDirectMessagesDao.getMessageById(
@@ -10672,6 +10673,7 @@ void main() {
 
           await repo.deleteMessageForEveryone(_rumorEventId);
 
+          verifyNever(() => signer.signEvent(any()));
           verifyNever(() => mockNostrClient.publishEvent(any()));
           verifyNever(
             () => mockDirectMessagesDao.markMessageDeleted(

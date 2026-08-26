@@ -1681,6 +1681,9 @@ void main() {
     });
 
     group('ConversationMessageDeleted', () {
+      late Completer<void> firstDeleteStarted;
+      late Completer<void> releaseFirstDelete;
+
       blocTest<ConversationBloc, ConversationState>(
         'calls deleteMessageForEveryone on the repository',
         setUp: () {
@@ -1770,23 +1773,27 @@ void main() {
         'deleting a second message while the first is still in flight still '
         'reaches the repository for both',
         setUp: () {
-          final firstInFlight = Completer<void>();
+          firstDeleteStarted = Completer<void>();
+          releaseFirstDelete = Completer<void>();
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
-          ).thenAnswer((_) => firstInFlight.future);
+          ).thenAnswer((_) async {
+            firstDeleteStarted.complete();
+            await releaseFirstDelete.future;
+          });
           when(
             () => mockDmRepository.deleteMessageForEveryone(otherMessageId),
           ).thenAnswer((_) async {});
-          // Release the first delete only after the second was dispatched,
-          // so the second is guaranteed to land inside the await window.
-          Timer(const Duration(milliseconds: 50), firstInFlight.complete);
         },
         build: buildBloc,
         act: (bloc) async {
           bloc.add(const ConversationMessageDeleted(rumorId: messageId));
-          await Future<void>.delayed(const Duration(milliseconds: 5));
+          await firstDeleteStarted.future;
           bloc.add(const ConversationMessageDeleted(rumorId: otherMessageId));
-          await Future<void>.delayed(const Duration(milliseconds: 250));
+          // Let the second event enter the transformer while the first handler
+          // is still suspended, then allow the sequential queue to advance.
+          await Future<void>.delayed(Duration.zero);
+          releaseFirstDelete.complete();
         },
         verify: (_) {
           verify(
