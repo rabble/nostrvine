@@ -5330,6 +5330,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '没有人会看到这个对话。请改为给 Divine Moderation 发私信。';
 
   @override
+  String get dmDeleteFailedMessage => '无法对所有人删除。你的消息还在——请再试一次。';
+
+  @override
+  String get dmDeleteBlockedMessage => '你的账号受限，无法删除这条消息。请联系支持团队。';
+
+  @override
   String get dmRetiredThreadClosedTitle => '此对话已关闭。';
 
   @override

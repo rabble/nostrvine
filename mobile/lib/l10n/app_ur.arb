@@ -3044,6 +3044,8 @@
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
   "dmSendBlockedRetiredMessage": "یہ گفتگو کوئی نہیں پڑھ رہا۔ اس کے بجائے Divine Moderation کو پیغام بھیجیں۔",
+  "dmDeleteFailedMessage": "سب کے لیے حذف نہیں ہو سکا۔ آپ کا پیغام اب بھی موجود ہے — دوبارہ کوشش کریں۔",
+  "dmDeleteBlockedMessage": "آپ کا اکاؤنٹ محدود ہے، اس لیے یہ پیغام حذف نہیں ہو سکا۔ مدد کے لیے سپورٹ سے رابطہ کریں۔",
   "dmRetiredThreadClosedTitle": "یہ گفتگو بند ہو چکی ہے۔",
   "dmRetiredThreadClosedBody": "ہم نے Divine Moderation کو نئے اکاؤنٹ پر منتقل کر دیا ہے۔ اسے اب کوئی نہیں پڑھتا۔",
   "dmRetiredThreadOpenSupport": "Divine Moderation کو پیغام بھیجیں",

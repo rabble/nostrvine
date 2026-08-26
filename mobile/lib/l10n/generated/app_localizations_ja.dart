@@ -5352,6 +5352,14 @@ class AppLocalizationsJa extends AppLocalizations {
       'このスレッドは誰も読んでいません。Divine Moderation にメッセージを送ってください。';
 
   @override
+  String get dmDeleteFailedMessage =>
+      '全員から削除できませんでした。メッセージはまだ残っています。もう一度お試しください。';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'アカウントが制限されているため、このメッセージを削除できませんでした。サポートにお問い合わせください。';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'このスレッドは終了しました。';
 
   @override

@@ -5586,6 +5586,14 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu sohbeti kimse okumuyor. Bunun yerine Divine Moderation\'a yazın.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'Herkesten silinemedi. Mesajın hâlâ duruyor — tekrar dene.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'Hesabın kısıtlı olduğu için bu mesaj silinemedi. Yardım için desteğe yaz.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Bu sohbet kapatıldı.';
 
   @override

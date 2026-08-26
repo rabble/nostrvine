@@ -5687,6 +5687,14 @@ class AppLocalizationsFil extends AppLocalizations {
       'Walang nagbabasa ng usapang ito. Mag-message na lang sa Divine Moderation.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'Hindi na-delete para sa lahat. Nandiyan pa rin ang mensahe mo — subukan ulit.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'Restricted ang account mo, kaya hindi na-delete ang mensaheng ito. Mag-contact sa support para sa tulong.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Sarado na ang usapang ito.';
 
   @override

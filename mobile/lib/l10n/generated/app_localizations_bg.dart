@@ -5705,6 +5705,14 @@ class AppLocalizationsBg extends AppLocalizations {
       'Никой не чете този разговор. Вместо това пишете на Divine Moderation.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'Изтриването за всички не се получи. Съобщението ти още е тук — опитай пак.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'Профилът ти е ограничен, затова съобщението не можа да бъде изтрито. Свържи се с поддръжката за помощ.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Този разговор е затворен.';
 
   @override

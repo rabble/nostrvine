@@ -9731,6 +9731,18 @@ abstract class AppLocalizations {
   /// **'Nobody is reading this conversation. Message Divine Moderation instead.'**
   String get dmSendBlockedRetiredMessage;
 
+  /// SnackBar text shown when a delete-for-everyone reached no relay (#8165). The message is deliberately left on screen rather than hidden, so the copy says so and points at the same Delete action to retry — there is no separate retry button.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete for everyone. Your message is still there — tap Delete again to retry.'**
+  String get dmDeleteFailedMessage;
+
+  /// SnackBar text shown when the trusted relay rejects a delete-for-everyone because the publishing account is suspended or banned. No retry is offered, since the same tap re-hits the same restriction.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted, so this message couldn\'t be deleted. Contact support for help.'**
+  String get dmDeleteBlockedMessage;
+
   /// Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416).
   ///
   /// In en, this message translates to:

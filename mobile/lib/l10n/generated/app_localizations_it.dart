@@ -5706,6 +5706,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuno legge questa conversazione. Scrivi a Divine Moderation.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'Non è stato possibile eliminare per tutti. Il tuo messaggio è ancora lì: riprova.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'Il tuo account è limitato, quindi non è stato possibile eliminare questo messaggio. Contatta l\'assistenza.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Questa conversazione è chiusa.';
 
   @override

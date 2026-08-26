@@ -3044,6 +3044,8 @@
     "description": "SnackBar text shown when a protected minor (13-15) tries to DM a non-approved account (#176). Neutral, no retry action."
   },
   "dmSendBlockedRetiredMessage": "Không ai đọc cuộc trò chuyện này. Hãy nhắn cho Divine Moderation.",
+  "dmDeleteFailedMessage": "Không xóa được với mọi người. Tin nhắn của bạn vẫn còn đó — hãy thử lại.",
+  "dmDeleteBlockedMessage": "Tài khoản của bạn đang bị hạn chế nên không thể xóa tin nhắn này. Hãy liên hệ bộ phận hỗ trợ.",
   "dmRetiredThreadClosedTitle": "Cuộc trò chuyện này đã đóng.",
   "dmRetiredThreadClosedBody": "Chúng tôi đã chuyển Divine Moderation sang một tài khoản mới. Không còn ai đọc tài khoản này nữa.",
   "dmRetiredThreadOpenSupport": "Nhắn tin cho Divine Moderation",

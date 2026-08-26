@@ -5604,6 +5604,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا أحد يقرأ هذه المحادثة. راسل Divine Moderation بدلاً من ذلك.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'تعذّر الحذف لدى الجميع. الرسالة ما زالت موجودة — يُرجى إعادة المحاولة.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'الحساب مقيّد، لذا تعذّر حذف هذه الرسالة. يُرجى التواصل مع الدعم للمساعدة.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'هذه المحادثة مغلقة.';
 
   @override

@@ -5807,6 +5807,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nimeni nu citește această conversație. Scrie către Divine Moderation.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'Ștergerea pentru toată lumea nu a reușit. Mesajul tău este încă aici — încearcă din nou.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'Contul tău este restricționat, așa că acest mesaj nu a putut fi șters. Contactează asistența pentru ajutor.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Această conversație este închisă.';
 
   @override

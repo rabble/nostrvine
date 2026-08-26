@@ -204,26 +204,43 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         listener: _onSharedVideoSaveState,
         child: Scaffold(
           backgroundColor: context.vineColors.surface,
-          body: BlocListener<ConversationBloc, ConversationState>(
-            // A hard failure is shown on the bubble itself (tap → resend/delete),
-            // so this listener only handles the toasts that have no bubble —
-            // a policy block, a recipient-less send (#7335), and a partial
-            // (self-wrap) delivery — plus a screen-reader announcement (no
-            // toast) for hard failures, since the red in-bubble row is silent
-            // to assistive tech until focused.
-            // Also fire on a sentPartial → sentPartial transition whose rumor-id
-            // set changed: with concurrent() sends, a second overlapping partial
-            // keeps the same sendStatus and would otherwise never surface its
-            // recovery snackbar.
-            listenWhen: (previous, current) =>
-                (previous.sendStatus != current.sendStatus ||
-                    (current.sendStatus == SendStatus.sentPartial &&
-                        previous.lastPartialSend != current.lastPartialSend)) &&
-                (current.sendStatus == SendStatus.sentPartial ||
-                    current.sendStatus == SendStatus.blocked ||
-                    current.sendStatus == SendStatus.noRecipient ||
-                    current.sendStatus == SendStatus.failed),
-            listener: _onSendOutcome,
+          body: MultiBlocListener(
+            listeners: [
+              BlocListener<ConversationBloc, ConversationState>(
+                // A hard failure is shown on the bubble itself (tap →
+                // resend/delete), so this listener only handles the toasts
+                // that have no bubble — a policy block, a recipient-less send
+                // (#7335), and a partial (self-wrap) delivery — plus a
+                // screen-reader announcement (no toast) for hard failures,
+                // since the red in-bubble row is silent to assistive tech
+                // until focused.
+                // Also fire on a sentPartial → sentPartial transition whose
+                // rumor-id set changed: with concurrent() sends, a second
+                // overlapping partial keeps the same sendStatus and would
+                // otherwise never surface its recovery snackbar.
+                listenWhen: (previous, current) =>
+                    (previous.sendStatus != current.sendStatus ||
+                        (current.sendStatus == SendStatus.sentPartial &&
+                            previous.lastPartialSend !=
+                                current.lastPartialSend)) &&
+                    (current.sendStatus == SendStatus.sentPartial ||
+                        current.sendStatus == SendStatus.blocked ||
+                        current.sendStatus == SendStatus.noRecipient ||
+                        current.sendStatus == SendStatus.failed),
+                listener: _onSendOutcome,
+              ),
+              // A failed retraction has no bubble affordance to lean on: the
+              // message simply stays on screen, which alone is
+              // indistinguishable from a tap that never registered (#8165).
+              // Both outcomes therefore toast. The bloc resets to `idle`
+              // before each attempt, so a repeat failure still transitions.
+              BlocListener<ConversationBloc, ConversationState>(
+                listenWhen: (previous, current) =>
+                    previous.deleteStatus != current.deleteStatus &&
+                    current.deleteStatus != DeleteStatus.idle,
+                listener: _onDeleteOutcome,
+              ),
+            ],
             child: Column(
               children: [
                 // Wrap the AppBar + messages region in a Listener so any
@@ -353,6 +370,27 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         if (context.mounted) context.read<SharedVideoSaveCubit>().reset();
         return;
     }
+  }
+
+  /// Surfaces the outcome of a delete-for-everyone that did not land (#8165).
+  ///
+  /// The repository leaves the row undeleted on failure, so the message is
+  /// still on screen and `isDeleted` is still false — which means the retry
+  /// affordance is the same Delete action, not a button on this toast.
+  void _onDeleteOutcome(BuildContext context, ConversationState state) {
+    final l10n = context.l10n;
+    final message = state.deleteStatus == DeleteStatus.blocked
+        ? l10n.dmDeleteBlockedMessage
+        : l10n.dmDeleteFailedMessage;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(DivineSnackbarContainer.snackBar(message, error: true));
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
   }
 
   void _onSendOutcome(BuildContext context, ConversationState state) {

@@ -3588,6 +3588,14 @@
   "@dmSendBlockedRetiredMessage": {
     "description": "SnackBar text shown when a send is refused because the recipient is a moderation account Divine has rotated away from (#6416). Used instead of `dmSendBlockedMessage`, whose copy is wrong here: a retired moderation key IS an official Divine account, it is just one nobody reads any more. Reached only by deep link, queue drain, or share-to-DM — the conversation itself shows `dmRetiredThreadClosedTitle` in place of the composer."
   },
+  "dmDeleteFailedMessage": "Couldn't delete for everyone. Your message is still there \u2014 tap Delete again to retry.",
+  "@dmDeleteFailedMessage": {
+    "description": "SnackBar text shown when a delete-for-everyone reached no relay (#8165). The message is deliberately left on screen rather than hidden, so the copy says so and points at the same Delete action to retry \u2014 there is no separate retry button."
+  },
+  "dmDeleteBlockedMessage": "Your account is restricted, so this message couldn't be deleted. Contact support for help.",
+  "@dmDeleteBlockedMessage": {
+    "description": "SnackBar text shown when the trusted relay rejects a delete-for-everyone because the publishing account is suspended or banned. No retry is offered, since the same tap re-hits the same restriction."
+  },
   "dmRetiredThreadClosedTitle": "This conversation is closed.",
   "@dmRetiredThreadClosedTitle": {
     "description": "Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416)."

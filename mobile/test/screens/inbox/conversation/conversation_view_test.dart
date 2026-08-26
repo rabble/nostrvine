@@ -1443,6 +1443,43 @@ void main() {
         expect(find.text(l10n.dmSendNoRecipientMessage), findsOneWidget);
       });
 
+      // #8165. A retraction that reached no relay leaves the message on
+      // screen, which alone is indistinguishable from a tap that never
+      // registered — so unlike a failed send there is no bubble to lean on
+      // and this outcome must toast.
+      testWidgets('shows a toast when a delete-for-everyone did not land', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(),
+            state: const ConversationState(deleteStatus: DeleteStatus.failed),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteFailedMessage), findsOneWidget);
+      });
+
+      testWidgets(
+        'shows the restricted-account copy, with no retry wording, when the '
+        'trusted relay refused the delete',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              previousState: const ConversationState(),
+              state: const ConversationState(
+                deleteStatus: DeleteStatus.blocked,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text(l10n.dmDeleteBlockedMessage), findsOneWidget);
+          expect(find.text(l10n.dmDeleteFailedMessage), findsNothing);
+        },
+      );
+
       testWidgets(
         'does not show a SnackBar when sendStatus stays non-failed '
         '(e.g. sending → sent)',

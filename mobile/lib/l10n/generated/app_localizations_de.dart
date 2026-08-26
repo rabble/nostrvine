@@ -5722,6 +5722,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Unterhaltung liest niemand. Schreib stattdessen an Divine Moderation.';
 
   @override
+  String get dmDeleteFailedMessage =>
+      'Für alle löschen hat nicht geklappt. Deine Nachricht ist noch da – versuch es noch mal.';
+
+  @override
+  String get dmDeleteBlockedMessage =>
+      'Dein Konto ist eingeschränkt, deshalb konnte diese Nachricht nicht gelöscht werden. Wende dich an den Support.';
+
+  @override
   String get dmRetiredThreadClosedTitle =>
       'Diese Unterhaltung ist geschlossen.';
 
