@@ -101,9 +101,8 @@ void main() {
       when(
         () => mockDmRepository.getOutgoing(any()),
       ).thenAnswer((_) async => const <OutgoingDm>[]);
-      // Delete now drops the bubble's whole durable batch before the kind-5
-      // publish; default to "no rows existed" so persisted-delete tests keep
-      // their original semantics.
+      // Default to "no queued siblings existed" so persisted-delete tests
+      // keep their original semantics.
       when(
         () => mockDmRepository.cancelOutgoingBatch(
           rumorId: any(named: 'rumorId'),
@@ -1687,7 +1686,7 @@ void main() {
       late Completer<void> releaseFirstDelete;
 
       blocTest<ConversationBloc, ConversationState>(
-        'calls deleteMessageForEveryone on the repository',
+        'cancels queued siblings after deleteMessageForEveryone succeeds',
         setUp: () {
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
@@ -1697,9 +1696,12 @@ void main() {
         act: (bloc) =>
             bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
         verify: (_) {
-          verify(
+          verifyInOrder([
             () => mockDmRepository.deleteMessageForEveryone(messageId),
-          ).called(1);
+            () => mockDmRepository.cancelOutgoingBatch(
+              rumorId: messageId,
+            ),
+          ]);
         },
       );
 
@@ -1773,6 +1775,13 @@ void main() {
           ),
         ],
         errors: () => [isA<DmDeletionNotConfirmed>()],
+        verify: (_) {
+          verifyNever(
+            () => mockDmRepository.cancelOutgoingBatch(
+              rumorId: messageId,
+            ),
+          );
+        },
       );
 
       // Only the trusted relay may decide account standing. A suspension it
@@ -1869,9 +1878,12 @@ void main() {
             bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
         errors: () => const <Object>[],
         verify: (_) {
-          verify(
-            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
-          ).called(1);
+          verifyInOrder([
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+            () => mockDmRepository.cancelOutgoingBatch(
+              rumorId: messageId,
+            ),
+          ]);
         },
       );
 
