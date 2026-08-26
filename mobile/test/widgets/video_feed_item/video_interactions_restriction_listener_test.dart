@@ -1,6 +1,8 @@
 // ABOUTME: Verifies restricted interaction publishes open Account Status.
 // ABOUTME: Pins the typed BLoC-state to UI-navigation boundary.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,7 +27,6 @@ void main() {
         status: VideoInteractionsStatus.success,
       );
       const restricted = VideoInteractionsState(
-        status: VideoInteractionsStatus.accountRestricted,
         accountRestrictionRevision: 1,
       );
       whenListen(bloc, Stream.value(restricted), initialState: initial);
@@ -43,7 +44,7 @@ void main() {
                 ),
           ),
           GoRoute(
-            path: '/account-status',
+            path: AccountStatusScreen.path,
             name: AccountStatusScreen.routeName,
             builder: (context, state) => Text('confirmed=${state.extra}'),
           ),
@@ -60,6 +61,55 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('confirmed=true'), findsOneWidget);
+    });
+
+    testWidgets('does not stack Account Status for another restriction', (
+      tester,
+    ) async {
+      final bloc = _MockVideoInteractionsBloc();
+      final states = StreamController<VideoInteractionsState>();
+      whenListen(
+        bloc,
+        states.stream,
+        initialState: const VideoInteractionsState(),
+      );
+
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) =>
+                BlocProvider<VideoInteractionsBloc>.value(
+                  value: bloc,
+                  child: const VideoInteractionsRestrictionListener(
+                    child: SizedBox(),
+                  ),
+                ),
+          ),
+          GoRoute(
+            path: AccountStatusScreen.path,
+            name: AccountStatusScreen.routeName,
+            builder: (context, state) => Text('confirmed=${state.extra}'),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      );
+      states.add(const VideoInteractionsState(accountRestrictionRevision: 1));
+      await tester.pumpAndSettle();
+      states.add(const VideoInteractionsState(accountRestrictionRevision: 2));
+      await tester.pumpAndSettle();
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/');
+      await states.close();
     });
   });
 }

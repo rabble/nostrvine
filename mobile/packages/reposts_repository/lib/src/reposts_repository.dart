@@ -567,6 +567,14 @@ class RepostsRepository {
         _cacheRepostCount(addressableId, previousCount);
       }
       _emitRepostedIds();
+      if (e is SocialPublishException) {
+        Error.throwWithStackTrace(
+          const UnrepostFailedException(
+            'Failed to publish unrepost deletion',
+          ),
+          stackTrace,
+        );
+      }
       rethrow;
     }
   }
@@ -597,7 +605,15 @@ class RepostsRepository {
     }
 
     // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(record.repostEventId);
+    final Event? deletionEvent;
+    try {
+      deletionEvent = await _nostrClient.deleteEvent(record.repostEventId);
+    } on SocialPublishException catch (_, stackTrace) {
+      Error.throwWithStackTrace(
+        const UnrepostFailedException('Failed to publish unrepost deletion'),
+        stackTrace,
+      );
+    }
 
     if (deletionEvent == null) {
       throw const UnrepostFailedException(

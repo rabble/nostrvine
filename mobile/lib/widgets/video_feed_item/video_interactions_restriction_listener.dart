@@ -25,7 +25,11 @@ class VideoInteractionsRestrictionListener extends StatelessWidget {
           previous.accountRestrictionRevision !=
           current.accountRestrictionRevision,
       listener: (context, state) {
-        context.pushNamed(AccountStatusScreen.routeName, extra: true);
+        final router = GoRouter.of(context);
+        if (router.routerDelegate.currentConfiguration.uri.path !=
+            AccountStatusScreen.path) {
+          context.pushNamed(AccountStatusScreen.routeName, extra: true);
+        }
       },
       child: child,
     );

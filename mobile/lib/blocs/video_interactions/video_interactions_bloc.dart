@@ -398,7 +398,6 @@ class VideoInteractionsBloc
       case _LikeSettleRestricted(:final wasLiked):
         emit(
           state.copyWith(
-            status: VideoInteractionsStatus.accountRestricted,
             isLiked: wasLiked,
             likeCount: event.wasCount,
             accountRestrictionRevision: state.accountRestrictionRevision + 1,

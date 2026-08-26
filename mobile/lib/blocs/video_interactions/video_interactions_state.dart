@@ -16,9 +16,6 @@ enum VideoInteractionsStatus {
 
   /// Failed to load data.
   failure,
-
-  /// An authoritative publish response confirmed account enforcement.
-  accountRestricted,
 }
 
 /// State for a single video's interactions.

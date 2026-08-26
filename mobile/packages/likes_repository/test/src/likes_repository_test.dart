@@ -985,6 +985,81 @@ void main() {
         },
       );
 
+      test(
+        'stale relay-failure rollback preserves a newer confirmed record',
+        () async {
+          LikeRecord? storedRecord;
+          final firstPublish = Completer<Event>();
+          final deleteStarted = Completer<void>();
+          final finishDelete = Completer<void>();
+          var publishCalls = 0;
+          final failedEvent = MockEvent();
+          final newerReaction = createMockReaction(
+            id: 'newer_reaction_id',
+            targetEventId: testEventId,
+          );
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) {
+            publishCalls++;
+            return publishCalls == 1
+                ? firstPublish.future
+                : Future.value(newerReaction);
+          });
+          when(() => mockLocalStorage.saveLikeRecord(any())).thenAnswer((
+            call,
+          ) async {
+            storedRecord = call.positionalArguments.single as LikeRecord;
+          });
+          when(() => mockLocalStorage.deleteLikeRecord(testEventId)).thenAnswer(
+            (
+              _,
+            ) async {
+              if (!deleteStarted.isCompleted) deleteStarted.complete();
+              await finishDelete.future;
+              storedRecord = null;
+              return true;
+            },
+          );
+          repository = createRepository();
+
+          final staleLike = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          final staleExpectation = expectLater(
+            staleLike,
+            throwsA(isA<LikeFailedException>()),
+          );
+          await Future<void>.delayed(Duration.zero);
+          firstPublish.completeError(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.noResponse,
+                event: failedEvent,
+              ),
+            ),
+          );
+          await deleteStarted.future;
+
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          finishDelete.complete();
+          await staleExpectation;
+
+          expect(storedRecord?.reactionEventId, 'newer_reaction_id');
+          expect(await repository.isLiked(testEventId), isTrue);
+        },
+      );
+
       // Defense-in-depth: when the publish fails but the offline-action
       // callback is wired, the optimistic state must be preserved and the
       // action queued for retry. This covers the "device says online but
@@ -1564,6 +1639,66 @@ void main() {
         expect(storedRecord, isNull);
         expect(await repository.isLiked(testEventId), isFalse);
       });
+
+      test('stale relay-failure restore preserves a newer unlike', () async {
+        LikeRecord? storedRecord = createLikeRecord();
+        final firstDeletion = Completer<Event>();
+        final saveStarted = Completer<void>();
+        final finishSave = Completer<void>();
+        var deletionCalls = 0;
+        final failedEvent = MockEvent();
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [storedRecord!]);
+        when(() => mockLocalStorage.deleteLikeRecord(testEventId)).thenAnswer((
+          _,
+        ) async {
+          storedRecord = null;
+          return true;
+        });
+        when(() => mockLocalStorage.saveLikeRecord(any())).thenAnswer((
+          call,
+        ) async {
+          if (!saveStarted.isCompleted) saveStarted.complete();
+          await finishSave.future;
+          storedRecord = call.positionalArguments.single as LikeRecord;
+        });
+        when(() => mockNostrClient.deleteEvent(testReactionEventId)).thenAnswer(
+          (
+            _,
+          ) {
+            deletionCalls++;
+            return deletionCalls == 1
+                ? firstDeletion.future
+                : Future.value(MockEvent());
+          },
+        );
+        repository = createRepository();
+        await repository.isLiked(testEventId);
+
+        final staleUnlike = repository.unlikeEvent(testEventId);
+        final staleExpectation = expectLater(
+          staleUnlike,
+          throwsA(isA<UnlikeFailedException>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        firstDeletion.completeError(
+          SocialPublishException(
+            SocialPublishResult(
+              status: SocialPublishStatus.noResponse,
+              event: failedEvent,
+            ),
+          ),
+        );
+        await saveStarted.future;
+
+        await repository.unlikeEvent(testEventId);
+        finishSave.complete();
+        await staleExpectation;
+
+        expect(storedRecord, isNull);
+        expect(await repository.isLiked(testEventId), isFalse);
+      });
     });
 
     group('toggleLike', () {
@@ -1889,6 +2024,67 @@ void main() {
 
         expect(await repository.isDownvoted(testEventId), isFalse);
       });
+
+      test(
+        'translates relay publish results to repository exceptions',
+        () async {
+          final event = MockEvent();
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.noResponse,
+                event: event,
+              ),
+            ),
+          );
+          repository = createRepository(withLocalStorage: false);
+
+          await expectLater(
+            repository.downvoteEvent(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+            throwsA(isA<LikeFailedException>()),
+          );
+        },
+      );
+
+      test('terminalizes a trusted account restriction', () async {
+        final event = MockEvent();
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenThrow(
+          SocialPublishException(
+            SocialPublishResult(
+              status: SocialPublishStatus.accountRestricted,
+              event: event,
+            ),
+          ),
+        );
+        repository = createRepository(withLocalStorage: false);
+
+        await expectLater(
+          repository.downvoteEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<LikeAccountRestrictedException>()),
+        );
+      });
     });
 
     group('removeDownvote', () {
@@ -2195,6 +2391,47 @@ void main() {
 
         expect(await repository.isDownvoted(testEventId), isTrue);
       });
+
+      test(
+        'translates typed relay failures to UnlikeFailedException',
+        () async {
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer(
+            (_) async => createMockReaction(
+              id: testReactionEventId,
+              targetEventId: testEventId,
+              content: '-',
+            ),
+          );
+          final failedEvent = MockEvent();
+          when(() => mockNostrClient.deleteEvent(any())).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.noResponse,
+                event: failedEvent,
+              ),
+            ),
+          );
+          repository = createRepository(withLocalStorage: false);
+          await repository.downvoteEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          await expectLater(
+            repository.removeDownvote(testEventId),
+            throwsA(isA<UnlikeFailedException>()),
+          );
+          expect(await repository.isDownvoted(testEventId), isTrue);
+        },
+      );
     });
 
     group('toggleDownvote', () {
@@ -2261,6 +2498,31 @@ void main() {
 
           expect(result, isFalse);
           expect(await repository.isDownvoted(testEventId), isFalse);
+        },
+      );
+    });
+
+    group('deleteReaction', () {
+      test(
+        'translates typed relay failures to UnlikeFailedException',
+        () async {
+          final failedEvent = MockEvent();
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.noResponse,
+                event: failedEvent,
+              ),
+            ),
+          );
+          repository = createRepository(withLocalStorage: false);
+
+          await expectLater(
+            repository.deleteReaction(testReactionEventId),
+            throwsA(isA<UnlikeFailedException>()),
+          );
         },
       );
     });

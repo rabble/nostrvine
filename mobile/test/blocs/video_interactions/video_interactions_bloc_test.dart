@@ -1113,7 +1113,7 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'rolls back and emits typed restriction status',
+        'rolls back and advances the account restriction revision',
         setUp: () {
           when(
             () => mockLikesRepository.toggleLike(
@@ -1135,7 +1135,7 @@ void main() {
             likeCount: 11,
           ),
           const VideoInteractionsState(
-            status: VideoInteractionsStatus.accountRestricted,
+            status: VideoInteractionsStatus.success,
             likeCount: 10,
             accountRestrictionRevision: 1,
           ),

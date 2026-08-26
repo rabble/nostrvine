@@ -1701,7 +1701,13 @@ class NostrClient {
         event,
         targetRelays: targetRelays,
       );
-    } on Object {
+    } on Object catch (error, stackTrace) {
+      log(
+        'Social event dispatch failed before relay acknowledgement',
+        name: 'NostrClient',
+        error: error,
+        stackTrace: stackTrace,
+      );
       return SocialPublishResult(
         status: SocialPublishStatus.sendFailed,
         event: event,
