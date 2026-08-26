@@ -1991,6 +1991,51 @@ void main() {
         expect(find.text(l10n.inboxActionBlock('user')), findsNothing);
       });
 
+      // The other half of #7380. Blocking moderation suppresses the pin, so
+      // the thread falls back into the Blocked slice as an ordinary row — and
+      // that row is the one a user unblocks through. Its long-press is only
+      // live once the thread carries a message; a blocked account with no
+      // thread renders a placeholder whose long-press is null.
+      testWidgets('names moderation in the sheet the Blocked slice opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final blockedModeration = DmConversation(
+          id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          participantPubkeys: const [currentPubkey, moderationPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Your video was removed.',
+          lastMessageTimestamp: nowUnix,
+        );
+        final actionsCubit = _MockConversationActionsCubit();
+
+        final subject = buildSubject(
+          actionsCubit: actionsCubit,
+          state: ConversationListState(
+            status: ConversationListStatus.loaded,
+            filter: InboxFilter.blocked,
+            visibleConversations: [blockedModeration],
+            blockedConversations: [blockedModeration],
+            hasMore: false,
+          ),
+        );
+        // After buildSubject, which stubs isBlocked to false by default.
+        when(() => actionsCubit.isBlocked(any())).thenReturn(true);
+
+        await tester.pumpWidget(subject);
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.inboxActionUnblock(l10n.inboxSupportRowTitle)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
+      });
+
       testWidgets('drops out of a search it does not match', (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         final conversation = DmConversation(
