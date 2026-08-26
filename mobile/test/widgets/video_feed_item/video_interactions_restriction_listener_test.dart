@@ -16,48 +16,50 @@ class _MockVideoInteractionsBloc
     implements VideoInteractionsBloc {}
 
 void main() {
-  testWidgets('opens Account Status with confirmed-publish evidence', (
-    tester,
-  ) async {
-    final bloc = _MockVideoInteractionsBloc();
-    const initial = VideoInteractionsState(
-      status: VideoInteractionsStatus.success,
-    );
-    const restricted = VideoInteractionsState(
-      status: VideoInteractionsStatus.accountRestricted,
-      accountRestrictionRevision: 1,
-    );
-    whenListen(bloc, Stream.value(restricted), initialState: initial);
+  group('navigation', () {
+    testWidgets('opens Account Status with confirmed-publish evidence', (
+      tester,
+    ) async {
+      final bloc = _MockVideoInteractionsBloc();
+      const initial = VideoInteractionsState(
+        status: VideoInteractionsStatus.success,
+      );
+      const restricted = VideoInteractionsState(
+        status: VideoInteractionsStatus.accountRestricted,
+        accountRestrictionRevision: 1,
+      );
+      whenListen(bloc, Stream.value(restricted), initialState: initial);
 
-    final router = GoRouter(
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) =>
-              BlocProvider<VideoInteractionsBloc>.value(
-                value: bloc,
-                child: const VideoInteractionsRestrictionListener(
-                  child: SizedBox(),
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) =>
+                BlocProvider<VideoInteractionsBloc>.value(
+                  value: bloc,
+                  child: const VideoInteractionsRestrictionListener(
+                    child: SizedBox(),
+                  ),
                 ),
-              ),
-        ),
-        GoRoute(
-          path: '/account-status',
-          name: AccountStatusScreen.routeName,
-          builder: (context, state) => Text('confirmed=${state.extra}'),
-        ),
-      ],
-    );
+          ),
+          GoRoute(
+            path: '/account-status',
+            name: AccountStatusScreen.routeName,
+            builder: (context, state) => Text('confirmed=${state.extra}'),
+          ),
+        ],
+      );
 
-    await tester.pumpWidget(
-      MaterialApp.router(
-        routerConfig: router,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('confirmed=true'), findsOneWidget);
+      expect(find.text('confirmed=true'), findsOneWidget);
+    });
   });
 }
