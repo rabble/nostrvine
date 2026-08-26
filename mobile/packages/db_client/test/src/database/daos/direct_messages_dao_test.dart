@@ -549,13 +549,16 @@ void main() {
       test(
         'matches cross-protocol duplicates within the default 5s window',
         () async {
+          // A NIP-04 arrival: the receive path writes the wire event id into
+          // BOTH columns, which is what marks the row as the twin a NIP-17
+          // rumor may collapse onto.
           await dao.insertMessage(
-            id: 'msg_original',
+            id: 'ev_nip04_original',
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'Retryable message',
             createdAt: 1700000000,
-            giftWrapId: 'gw_original',
+            giftWrapId: 'ev_nip04_original',
             ownerPubkey: 'pubkey_owner',
           );
 
@@ -565,6 +568,7 @@ void main() {
             content: 'Retryable message',
             createdAt: 1700000004,
             ownerPubkey: 'pubkey_owner',
+            counterpart: DmDedupCounterpart.nip04Copy,
           );
 
           expect(duplicate, isTrue);
@@ -584,12 +588,15 @@ void main() {
             ownerPubkey: 'pubkey_owner',
           );
 
+          // Counterpart matches the stored row's shape, so the window is the
+          // only thing that can reject it — keeping this a window test.
           final duplicate = await dao.hasMatchingMessage(
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'ok',
             createdAt: 1700000030,
             ownerPubkey: 'pubkey_owner',
+            counterpart: DmDedupCounterpart.nip17Copy,
           );
 
           expect(duplicate, isFalse);
@@ -657,6 +664,7 @@ void main() {
             content: text,
             createdAt: retryCreatedAt,
             ownerPubkey: recipientPubkey,
+            counterpart: DmDedupCounterpart.nip17Copy,
           ),
           isFalse,
           reason: '13s apart is outside the ±5s window',
@@ -668,9 +676,26 @@ void main() {
             content: text,
             createdAt: firstCreatedAt + 4,
             ownerPubkey: recipientPubkey,
+            counterpart: DmDedupCounterpart.nip17Copy,
           ),
           isTrue,
-          reason: 'positive control: the ±5s window still fires inside 5s',
+          reason:
+              'positive control: an arriving NIP-04 copy still collapses onto '
+              'its stored NIP-17 twin inside 5s',
+        );
+        expect(
+          await dao.hasMatchingMessage(
+            conversationId: conversationId,
+            senderPubkey: senderPubkey,
+            content: text,
+            createdAt: firstCreatedAt + 4,
+            ownerPubkey: recipientPubkey,
+            counterpart: DmDedupCounterpart.nip04Copy,
+          ),
+          isFalse,
+          reason:
+              '#7324: an arriving NIP-17 rumor must NOT collapse onto a row '
+              'that also arrived over NIP-17 — that is a genuine repeat',
         );
 
         // The bug: a fresh retry mints a second rumor id. Nothing collapses it.
@@ -690,6 +715,71 @@ void main() {
           reason: 'two rumor ids for one message render as two bubbles',
         );
         expect(rendered.map((m) => m.content).toSet(), {text});
+      });
+
+      test(
+        'a NIP-04 event does not collapse onto another NIP-04 row (#7324, '
+        'mirrored onto the legacy protocol)',
+        () async {
+          await dao.insertMessage(
+            id: 'ev_nip04_first',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'ok',
+            createdAt: 1700000000,
+            giftWrapId: 'ev_nip04_first',
+            ownerPubkey: 'pubkey_owner',
+          );
+
+          expect(
+            await dao.hasMatchingMessage(
+              conversationId: conversationId1,
+              senderPubkey: 'pubkey_peer',
+              content: 'ok',
+              createdAt: 1700000002,
+              ownerPubkey: 'pubkey_owner',
+              counterpart: DmDedupCounterpart.nip17Copy,
+            ),
+            isFalse,
+            reason: 'a second kind-4 two seconds later is a genuine repeat',
+          );
+        },
+      );
+
+      test('unconstrained matches either arrival shape', () async {
+        await dao.insertMessage(
+          id: 'rumor_nip17',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_owner',
+          content: 'ok',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_nip17',
+          ownerPubkey: 'pubkey_owner',
+        );
+        await dao.insertMessage(
+          id: 'ev_nip04',
+          conversationId: conversationId2,
+          senderPubkey: 'pubkey_owner',
+          content: 'ok',
+          createdAt: 1700000000,
+          giftWrapId: 'ev_nip04',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        for (final conversationId in [conversationId1, conversationId2]) {
+          expect(
+            await dao.hasMatchingMessage(
+              conversationId: conversationId,
+              senderPubkey: 'pubkey_owner',
+              content: 'ok',
+              createdAt: 1700000002,
+              ownerPubkey: 'pubkey_owner',
+              counterpart: DmDedupCounterpart.unconstrained,
+            ),
+            isTrue,
+            reason: 'the self-send paths opt out of the arrival filter',
+          );
+        }
       });
     });
 
