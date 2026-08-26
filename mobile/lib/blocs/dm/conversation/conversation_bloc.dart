@@ -47,7 +47,22 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // handlers stay per-rumor isolated; `sendStatus` is last-writer-wins,
     // which only drives the bubble-less toasts (blocked / partial).
     on<ConversationMessageSent>(_onMessageSent, transformer: concurrent());
-    on<ConversationMessageDeleted>(_onMessageDeleted, transformer: droppable());
+    // `droppable()` here dropped a delete for message B whenever a delete
+    // for message A was still in flight: bloc_concurrency's droppable
+    // discards on subscription state alone and never inspects the payload,
+    // so the rumor id was irrelevant. The handler awaits a signer round trip
+    // (measured 215-493ms against Keycast) plus a relay publish that can
+    // first await `retryDisconnectedRelays()`, so deleting a short burst of
+    // messages retracted only the first — silently, since no path here
+    // emits. `sequential()` queues them instead; a same-rumor repeat is
+    // idempotent because `deleteMessageForEveryone` returns early on an
+    // already soft-deleted row. Head-of-line blocking is the accepted cost
+    // and is why this is not `concurrent()`: concurrent handlers would race
+    // that same-rumor guard and publish two kind-5s for one message.
+    on<ConversationMessageDeleted>(
+      _onMessageDeleted,
+      transformer: sequential(),
+    );
     on<ConversationSelfWrapRecoveryRequested>(
       _onSelfWrapRecoveryRequested,
       transformer: sequential(),
