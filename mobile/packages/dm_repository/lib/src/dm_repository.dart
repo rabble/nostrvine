@@ -1721,36 +1721,9 @@ class DmRepository {
     try {
       for (final tag in deletionEvent.tags) {
         if (tag.length < 2 || tag[0] != 'e') continue;
-        final rumorId = tag[1];
-
-        final row = await _directMessagesDao.getMessageById(
-          rumorId,
-          ownerPubkey: _ownerPubkey,
-        );
-        if (row == null) continue;
-
-        // NIP-09: only the original author may delete.
-        if (row.senderPubkey != deletionEvent.pubkey) {
-          Log.debug(
-            'Ignoring kind 5 for $rumorId: author mismatch '
-            '(event=${pubkeyForLogs(deletionEvent.pubkey)}, '
-            'sender=${pubkeyForLogs(row.senderPubkey)})',
-            category: LogCategory.system,
-          );
-          continue;
-        }
-
-        if (row.isDeleted) continue; // Already processed.
-
-        await _directMessagesDao.markMessageDeleted(
-          rumorId,
-          ownerPubkey: _ownerPubkey,
-        );
-        await _refreshConversationPreview(row.conversationId);
-
-        Log.debug(
-          'Applied kind 5 deletion for message $rumorId',
-          category: LogCategory.system,
+        await _applyMessageDeletion(
+          rumorId: tag[1],
+          deleterPubkey: deletionEvent.pubkey,
         );
       }
     } on Object catch (e, stackTrace) {
@@ -1761,6 +1734,126 @@ class DmRepository {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Applies a wrapped NIP-09 kind-5 rumor to whichever store holds each
+  /// target it names — the reaction rows, the message rows, or both.
+  ///
+  /// Routing resolves each `e` target against local state rather than
+  /// believing the rumor's `k` tag. `k` is only a hint for which store to try
+  /// first. Three reasons, and each one has bitten:
+  ///
+  ///  * NIP-09 makes `k` a SHOULD (`09.md:9`), so a conforming foreign client
+  ///    may omit it entirely (#7329).
+  ///  * Our own sender hardcodes `['k','14']` even when deleting a kind-15
+  ///    file message, so the tag is already wrong on our own wire.
+  ///  * Before this, *every* wrapped kind-5 went to the reactions handler,
+  ///    which answered `processed` for anything not tagged `['k','7']`. That
+  ///    recorded the wrap terminally and lost message deletions for good
+  ///    (#7809).
+  ///
+  /// The outcome across targets is a conjunction that only ever downgrades:
+  /// [DmWrapOutcome.processed] requires *every* target to have reached a
+  /// terminal state. NIP-09 permits several `e` tags, and a rumor naming one
+  /// known and one unsynced target must not be recorded — doing so would lose
+  /// the unsynced one permanently, which is the very bug this fixes.
+  Future<DmWrapOutcome> _routeWrappedDeletion({
+    required Event rumor,
+    required String giftWrapId,
+  }) async {
+    final reactions = _reactionsRepository;
+    final tryReactionsFirst = _hasKindHint(rumor.tags, EventKind.reaction);
+
+    var outcome = DmWrapOutcome.processed;
+    for (final tag in rumor.tags) {
+      if (tag.length < 2 || tag[0] != 'e') continue;
+      final rumorId = tag[1];
+
+      Future<DmWrapOutcome?> asReaction() async => reactions?.applyDeletion(
+        rumorId: rumorId,
+        deleterPubkey: rumor.pubkey,
+        giftWrapId: giftWrapId,
+      );
+      Future<DmWrapOutcome?> asMessage() async => _applyMessageDeletion(
+        rumorId: rumorId,
+        deleterPubkey: rumor.pubkey,
+      );
+
+      final resolved = tryReactionsFirst
+          ? await asReaction() ?? await asMessage()
+          : await asMessage() ?? await asReaction();
+
+      // Neither store holds the target — it may still arrive, since NIP-59
+      // randomizes gift-wrap `created_at` and a deletion can drain ahead of
+      // the event it names. A null `_reactionsRepository` (legacy fixtures)
+      // lands here too: that is "cannot resolve", not "nothing to do", and
+      // cementing it would burn the wrap for every account on the device.
+      if ((resolved ?? DmWrapOutcome.deferred) == DmWrapOutcome.deferred) {
+        outcome = DmWrapOutcome.deferred;
+      }
+    }
+    return outcome;
+  }
+
+  /// Whether [tags] carries a `['k', <kind>]` hint naming [kind].
+  static bool _hasKindHint(List<List<String>> tags, int kind) {
+    final wanted = kind.toString();
+    for (final tag in tags) {
+      if (tag.length >= 2 && tag[0] == 'k' && tag[1] == wanted) return true;
+    }
+    return false;
+  }
+
+  /// Soft-deletes the message [rumorId] on behalf of [deleterPubkey], the
+  /// single place the NIP-09 author rule is enforced for messages.
+  ///
+  /// Returns `null` when this account holds no message with that id, so the
+  /// wrapped classifier can try the reaction store instead — the apply
+  /// doubles as the probe, keeping routing to one DAO read when the `k` hint
+  /// is right.
+  ///
+  /// Every other outcome is [DmWrapOutcome.processed] — applied, already
+  /// deleted, or refused for author mismatch. A mismatch will never become
+  /// valid, so re-decrypting it forever buys nothing.
+  ///
+  /// [deleterPubkey] must be the rumor's authenticated author. For a wrapped
+  /// deletion that is `rumor.pubkey`, which `getRumorEvent` rebuilds from the
+  /// signed seal — never the gift wrap's own pubkey, which is an ephemeral
+  /// NIP-59 key carrying no identity.
+  Future<DmWrapOutcome?> _applyMessageDeletion({
+    required String rumorId,
+    required String deleterPubkey,
+  }) async {
+    final row = await _directMessagesDao.getMessageById(
+      rumorId,
+      ownerPubkey: _ownerPubkey,
+    );
+    if (row == null) return null;
+
+    // NIP-09: only the original author may delete.
+    if (row.senderPubkey != deleterPubkey) {
+      Log.debug(
+        'Ignoring kind 5 for $rumorId: author mismatch '
+        '(event=${pubkeyForLogs(deleterPubkey)}, '
+        'sender=${pubkeyForLogs(row.senderPubkey)})',
+        category: LogCategory.system,
+      );
+      return DmWrapOutcome.processed;
+    }
+
+    if (row.isDeleted) return DmWrapOutcome.processed; // Already processed.
+
+    await _directMessagesDao.markMessageDeleted(
+      rumorId,
+      ownerPubkey: _ownerPubkey,
+    );
+    await _refreshConversationPreview(row.conversationId);
+
+    Log.debug(
+      'Applied kind 5 deletion for message $rumorId',
+      category: LogCategory.system,
+    );
+    return DmWrapOutcome.processed;
   }
 
   /// Pre-decrypt dedup: has this gift wrap (or NIP-04 event) already been
@@ -1969,7 +2062,7 @@ class DmRepository {
         );
         // Record only terminal outcomes: a reaction whose target message has
         // not synced is left out so it re-decrypts and lands later. #5452.
-        if (outcome == DmReactionWrapOutcome.processed) {
+        if (outcome == DmWrapOutcome.processed) {
           await _recordProcessedWrap(
             giftWrapEvent.id,
             ownerPubkey: ownerPubkey,
@@ -1978,11 +2071,11 @@ class DmRepository {
         return;
       }
       if (rumor.kind == EventKind.eventDeletion) {
-        final outcome = await _reactionsRepository?.handleIncomingDeletion(
-          rumorEvent: rumor,
+        final outcome = await _routeWrappedDeletion(
+          rumor: rumor,
           giftWrapId: giftWrapEvent.id,
         );
-        if (outcome == DmReactionWrapOutcome.processed) {
+        if (outcome == DmWrapOutcome.processed) {
           await _recordProcessedWrap(
             giftWrapEvent.id,
             ownerPubkey: ownerPubkey,

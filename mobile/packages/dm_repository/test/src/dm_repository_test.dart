@@ -476,6 +476,10 @@ const _giftWrapEventId =
 const _giftWrapEventId2 =
     '06789012345678901234567890abcdef1234567890123456789012ab12c3d4e5';
 
+/// A second message rumor id, for a wrapped deletion naming two targets.
+const _secondTargetRumorId =
+    '16789012345678901234567890abcdef1234567890123456789012ab12c3d4e5';
+
 void main() {
   group(DmRepository, () {
     late _MockNostrClient mockNostrClient;
@@ -12584,11 +12588,12 @@ void main() {
             () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
           ).thenAnswer((_) async => false);
           when(
-            () => mockReactionsRepository.handleIncomingDeletion(
-              rumorEvent: any(named: 'rumorEvent'),
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: any(named: 'rumorId'),
+              deleterPubkey: any(named: 'deleterPubkey'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           final repository = createRepository(
             reactionsRepository: mockReactionsRepository,
@@ -12611,8 +12616,9 @@ void main() {
           await Future<void>.delayed(Duration.zero);
 
           verify(
-            () => mockReactionsRepository.handleIncomingDeletion(
-              rumorEvent: any(named: 'rumorEvent'),
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: any(named: 'rumorId'),
+              deleterPubkey: any(named: 'deleterPubkey'),
               giftWrapId: _giftWrapEventId,
             ),
           ).called(1);
@@ -12647,6 +12653,377 @@ void main() {
           await repository.stopListening();
         },
       );
+
+      test(
+        'routes a tag-less wrapped deletion to a matching reaction',
+        () async {
+          final controller = StreamController<Event>();
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          stubWrappedDeleteSubscription(controller);
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _giftWrapEventId2,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: _giftWrapEventId2,
+              deleterPubkey: _validPubkeyB,
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
+
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async => Event.fromJson({
+              'id': _rumorEventId,
+              'pubkey': _validPubkeyB,
+              'created_at': 1700000000,
+              'kind': EventKind.eventDeletion,
+              'tags': [
+                ['e', _giftWrapEventId2],
+              ],
+              'content': '',
+              'sig': '',
+            }),
+          );
+          await repository.startListening();
+
+          controller.add(createGiftWrapDeletionRumor());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: _giftWrapEventId2,
+              deleterPubkey: _validPubkeyB,
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+    });
+
+    group('receive pipeline - wrapped message deletion (#7809, #7329)', () {
+      final participants = [_validPubkeyA, _validPubkeyB]..sort();
+      final convId = DmRepository.computeConversationId(participants);
+
+      late StreamController<Event> controller;
+      late _InMemoryProcessedGiftWrapsDao ledger;
+
+      setUp(() {
+        controller = StreamController<Event>();
+        ledger = _InMemoryProcessedGiftWrapsDao();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            convId,
+            limit: 1,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockConversationsDao.getConversation(
+            convId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        // No reaction row anywhere unless a test says otherwise, so the
+        // reaction arm reports "not mine" and routing falls through.
+        when(
+          () => mockReactionsRepository.applyDeletion(
+            rumorId: any(named: 'rumorId'),
+            deleterPubkey: any(named: 'deleterPubkey'),
+            giftWrapId: any(named: 'giftWrapId'),
+          ),
+        ).thenAnswer((_) async => null);
+      });
+
+      Event giftWrap() => Event.fromJson({
+        'id': _giftWrapEventId,
+        'pubkey': _validPubkeyC,
+        'created_at': 1700000100,
+        'kind': EventKind.giftWrap,
+        'tags': [
+          ['p', _validPubkeyA],
+        ],
+        'content': 'wrapped',
+        'sig': '',
+      });
+
+      /// A wrapped kind-5 authored by [authorPubkey] naming [targets].
+      /// [kTag] is the NIP-09 `k` hint; `null` omits it entirely.
+      Event deletionRumor({
+        required List<String> targets,
+        String? kTag = '14',
+        String authorPubkey = _validPubkeyB,
+      }) => Event.fromJson({
+        'id': _rumorEventId,
+        'pubkey': authorPubkey,
+        'created_at': 1700000000,
+        'kind': EventKind.eventDeletion,
+        'tags': [
+          for (final t in targets) ['e', t],
+          if (kTag != null) ['k', kTag],
+        ],
+        'content': '',
+        'sig': '',
+      });
+
+      void stubMessage(
+        String id, {
+        String senderPubkey = _validPubkeyB,
+        bool isDeleted = false,
+        int messageKind = EventKind.privateDirectMessage,
+      }) {
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            id,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: id,
+            conversationId: convId,
+            senderPubkey: senderPubkey,
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: messageKind,
+            isDeleted: isDeleted,
+          ),
+        );
+      }
+
+      void stubNoMessage(String id) {
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            id,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+      }
+
+      Future<DmRepository> deliver(Event rumor) async {
+        final repository = createRepository(
+          processedGiftWrapsDao: ledger,
+          reactionsRepository: mockReactionsRepository,
+          rumorDecryptor: (_, _) async => rumor,
+        );
+        await repository.startListening();
+        controller.add(giftWrap());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        return repository;
+      }
+
+      tearDown(() async => controller.close());
+
+      test('applies a k=14 deletion to the message it names', () async {
+        stubMessage(_giftWrapEventId2);
+
+        final repository = await deliver(
+          deletionRumor(targets: [_giftWrapEventId2]),
+        );
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        expect(ledger.recorded, contains(_giftWrapEventId));
+        await repository.stopListening();
+      });
+
+      test('applies a k=15 deletion to the file message it names', () async {
+        stubMessage(
+          _giftWrapEventId2,
+          messageKind: EventKind.fileMessage,
+        );
+
+        final repository = await deliver(
+          deletionRumor(targets: [_giftWrapEventId2], kTag: '15'),
+        );
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        expect(ledger.recorded, contains(_giftWrapEventId));
+        await repository.stopListening();
+      });
+
+      test('resolves a deletion carrying no k tag at all', () async {
+        // NIP-09 makes `k` a SHOULD (09.md:9), so a conforming foreign client
+        // may omit it. Routing must fall back to local resolution. #7329.
+        stubMessage(_giftWrapEventId2);
+
+        final repository = await deliver(
+          deletionRumor(targets: [_giftWrapEventId2], kTag: null),
+        );
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        await repository.stopListening();
+      });
+
+      test('resolves locally when the k tag contradicts the target', () async {
+        // k=7 naming a MESSAGE id. The reaction store answers "not mine" and
+        // routing falls through, so the hint orders the lookups and never
+        // gates them. This is the test that stops the k-gate coming back.
+        stubMessage(_giftWrapEventId2);
+
+        final repository = await deliver(
+          deletionRumor(targets: [_giftWrapEventId2], kTag: '7'),
+        );
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        await repository.stopListening();
+      });
+
+      test(
+        'leaves the wrap unrecorded when no store holds the target',
+        () async {
+          // The permanent-loss guard. Recording here would suppress this wrap
+          // for EVERY account on the device, with no TTL and no recovery by
+          // switching accounts, so a deletion that merely arrived early would
+          // be lost for good.
+          stubNoMessage(_giftWrapEventId2);
+
+          final repository = await deliver(
+            deletionRumor(targets: [_giftWrapEventId2]),
+          );
+
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          await repository.stopListening();
+        },
+      );
+
+      test('applies a deferred deletion after the target syncs', () async {
+        stubNoMessage(_giftWrapEventId2);
+        final rumor = deletionRumor(targets: [_giftWrapEventId2]);
+        final repository = await deliver(rumor);
+
+        expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+
+        stubMessage(_giftWrapEventId2);
+        controller.add(giftWrap());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            _giftWrapEventId2,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        expect(ledger.recorded, contains(_giftWrapEventId));
+        await repository.stopListening();
+      });
+
+      test('refuses a wrapped message deletion from a non-author', () async {
+        // NIP-09's one client MUST (09.md:41). Terminal, not deferred — a
+        // mismatch never becomes valid, so re-decrypting forever buys nothing.
+        stubMessage(_giftWrapEventId2, senderPubkey: _validPubkeyA);
+
+        final repository = await deliver(
+          deletionRumor(targets: [_giftWrapEventId2]),
+        );
+
+        verifyNever(
+          () => mockDirectMessagesDao.markMessageDeleted(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+        expect(ledger.recorded, contains(_giftWrapEventId));
+        await repository.stopListening();
+      });
+
+      test(
+        'defers the whole wrap when one of two targets is unsynced',
+        () async {
+          // NIP-09 permits several `e` tags. Recording the wrap because the
+          // first target resolved would lose the second one permanently.
+          stubMessage(_giftWrapEventId2);
+          stubNoMessage(_secondTargetRumorId);
+
+          final repository = await deliver(
+            deletionRumor(targets: [_giftWrapEventId2, _secondTargetRumorId]),
+          );
+
+          verify(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _giftWrapEventId2,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+          await repository.stopListening();
+        },
+      );
+
+      test('defers when no reactions repository is wired', () async {
+        // Legacy fixtures pass null. That is "cannot resolve", not "nothing
+        // to do" — cementing it would burn the wrap for every account.
+        stubNoMessage(_giftWrapEventId2);
+
+        final repository = createRepository(
+          processedGiftWrapsDao: ledger,
+          rumorDecryptor: (_, _) async =>
+              deletionRumor(targets: [_giftWrapEventId2], kTag: '7'),
+        );
+        await repository.startListening();
+        controller.add(giftWrap());
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+        await repository.stopListening();
+      });
     });
 
     group('receive pipeline - processed-wrap dedup ledger (#5452)', () {
@@ -12741,7 +13118,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           var decryptCount = 0;
           final repository = createRepository(
@@ -12774,11 +13151,12 @@ void main() {
         'a re-delivered deletion wrap is decrypted only once',
         () async {
           when(
-            () => mockReactionsRepository.handleIncomingDeletion(
-              rumorEvent: any(named: 'rumorEvent'),
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: any(named: 'rumorId'),
+              deleterPubkey: any(named: 'deleterPubkey'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           var decryptCount = 0;
           final repository = createRepository(
@@ -12812,7 +13190,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.deferred);
+          ).thenAnswer((_) async => DmWrapOutcome.deferred);
 
           var decryptCount = 0;
           final repository = createRepository(
@@ -13527,7 +13905,7 @@ void main() {
               rumorEvent: any(named: 'rumorEvent'),
               giftWrapId: _giftWrapEventId,
             ),
-          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
 
           final repository = createRepository(
             processedGiftWrapsDao: ledger,
