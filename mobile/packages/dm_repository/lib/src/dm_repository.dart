@@ -404,15 +404,16 @@ class DmRepository {
   final Duration _readMarkerDebounceDelay;
   static const _defaultReadMarkerDebounceDelay = Duration(seconds: 3);
 
-  /// Rumor tag key carrying the per-send batch token (see [sendGroupMessage]).
-  /// Client-internal: injected only so two identical group sends in the same
-  /// Unix second produce distinct rumor ids. Divine's own receive path and
-  /// other clients ignore unrecognised rumor tags, so it is inert on the wire.
+  /// Rumor tag key carrying the per-send token that [sendMessage] and
+  /// [sendGroupMessage] both mint. Client-internal: injected only so two
+  /// identical sends in the same Unix second produce distinct rumor ids.
+  /// Divine's own receive path and other clients ignore unrecognised rumor
+  /// tags, so it is inert on the wire.
   static const _sendBatchTagKey = 'batch';
 
   /// Default [_newSendBatchId]: a 256-bit secure-random, event-id-shaped hex
   /// token. Independent of rumor content, so two byte-identical same-second
-  /// group sends never share a batch id.
+  /// sends never share a token.
   static String _defaultSendBatchId() {
     const hexDigits = '0123456789abcdef';
     final random = Random.secure();
@@ -3251,13 +3252,40 @@ class DmRepository {
     final participants = [_userPubkey, recipientPubkey]..sort();
     final conversationId = computeConversationId(participants);
 
+    // Durable, collision-proof identity for this send, minted BEFORE the
+    // rumor is built — the 1:1 counterpart of the token [sendGroupMessage]
+    // mints, for the same reason. A rumor's event id is
+    // sha256([0, pubkey, created_at(seconds), kind, tags, content]) with no
+    // nonce, so two sends of byte-identical text to the same recipient in the
+    // SAME Unix second would otherwise build byte-identical rumors, and every
+    // layer below keys on that id: the queue row PK (`OutgoingDm.id`, enqueued
+    // with insertOrIgnore), the local message PK (likewise insertOrIgnore),
+    // and — beyond this device — the RECIPIENT's own rumor-id dedup. The
+    // second send would report success while vanishing from the queue, from
+    // local history, and from the recipient, leaving no failure status and
+    // nothing for the retry sweep to re-drive.
+    //
+    // The token is injected into the rumor as the same client-internal `batch`
+    // tag the group path uses, so both paths stay symmetric and the ingest
+    // side needs no new case. It rides inside the encrypted gift-wrapped rumor
+    // (only the recipient and the sender's own self-wrap ever decrypt it) and
+    // is independent secure random, so it discloses nothing. See #7326.
+    final sendBatchId = _newSendBatchId();
+
     // Build the rumor up front so the queue row PK matches the rumor id
     // the relay will see — receiver-side gift-wrap dedup keys on this id
     // and a re-mint between enqueue and publish would defeat it.
+    //
+    // The batch tag is deliberately NOT part of [rumorTags]: that list is what
+    // gets persisted as the local row's `tagsJson`, and the group path
+    // likewise keeps its wire-only token out of the persisted tags.
     final rumor = _messageService!.buildRumor(
       recipientPubkey: recipientPubkey,
       content: content,
-      additionalTags: rumorTags,
+      additionalTags: [
+        ...rumorTags,
+        [_sendBatchTagKey, sendBatchId],
+      ],
     );
 
     // Enqueue before publish so an app crash mid-send leaves a
@@ -3279,6 +3307,11 @@ class DmRepository {
           selfWrapStatus: OutgoingWrapStatus.pending,
           queuedAt: DateTime.now(),
           ownerPubkey: _userPubkey,
+          // Stamped verbatim, as the group path stamps its siblings: a 1:1
+          // row has no siblings, but carrying the token makes a deleted
+          // bubble's cancellation match by exact value instead of falling
+          // back to the collision-prone `(createdAt, content)` tuple.
+          sendBatchId: sendBatchId,
         ),
       );
     }
@@ -3346,6 +3379,7 @@ class DmRepository {
             replyToId: replyToId,
             tagsJson: rumorTags.isEmpty ? null : jsonEncode(rumorTags),
             ownerPubkey: _userPubkey,
+            sendBatchId: sendBatchId,
           );
 
           final existingSend = await _conversationsDao.getConversation(
