@@ -489,6 +489,7 @@ void main() {
       registerFallbackValue(_FakeEvent());
       registerFallbackValue(_FakeOutgoingDm());
       registerFallbackValue(OutgoingWrapStatus.pending);
+      registerFallbackValue(DmDedupCounterpart.nip04Copy);
     });
 
     setUp(() {
@@ -568,6 +569,7 @@ void main() {
       // and by the legacy null-batch fallback in group recovery.
       when(
         () => mockDirectMessagesDao.hasMatchingMessage(
+          counterpart: any(named: 'counterpart'),
           conversationId: any(named: 'conversationId'),
           senderPubkey: any(named: 'senderPubkey'),
           content: any(named: 'content'),
@@ -1551,6 +1553,7 @@ void main() {
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -4911,6 +4914,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -5737,6 +5741,7 @@ void main() {
         );
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -8010,6 +8015,7 @@ void main() {
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -8177,6 +8183,7 @@ void main() {
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -8724,6 +8731,7 @@ void main() {
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -9094,6 +9102,7 @@ void main() {
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -9159,6 +9168,7 @@ void main() {
         ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: DmDedupCounterpart.nip17Copy,
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -9224,6 +9234,7 @@ void main() {
         ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -9320,6 +9331,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -9384,6 +9396,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -9522,6 +9535,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -9619,6 +9633,7 @@ void main() {
           ).thenAnswer((_) async => hasGiftWrapCalls++ > 0);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -10073,6 +10088,7 @@ void main() {
         ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -10190,6 +10206,7 @@ void main() {
       void stubDaoInserts() {
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -10702,6 +10719,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -10863,6 +10881,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -11002,6 +11021,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -11168,6 +11188,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -11330,6 +11351,7 @@ void main() {
         ).thenAnswer((_) async => false);
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
             content: any(named: 'content'),
@@ -12776,6 +12798,7 @@ void main() {
         () async {
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: DmDedupCounterpart.nip04Copy,
               conversationId: any(named: 'conversationId'),
               senderPubkey: _validPubkeyB,
               content: 'Retried peer message',
@@ -12839,6 +12862,7 @@ void main() {
         () async {
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: _validPubkeyB,
               content: 'Retried peer message',
@@ -12986,6 +13010,7 @@ void main() {
         final removedConversationsDao = _MockRemovedConversationsDao();
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: _validPubkeyB,
             content: 'Retried peer message',
@@ -13064,6 +13089,7 @@ void main() {
         final removedConversationsDao = _MockRemovedConversationsDao();
         when(
           () => mockDirectMessagesDao.hasMatchingMessage(
+            counterpart: any(named: 'counterpart'),
             conversationId: any(named: 'conversationId'),
             senderPubkey: _validPubkeyB,
             content: 'Retried peer message',
@@ -13182,6 +13208,7 @@ void main() {
           ).thenAnswer((_) async => false);
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: any(named: 'counterpart'),
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),
@@ -19045,6 +19072,7 @@ void main() {
           ).thenAnswer((_) async => queuedRow());
           when(
             () => mockDirectMessagesDao.hasMatchingMessage(
+              counterpart: DmDedupCounterpart.unconstrained,
               conversationId: any(named: 'conversationId'),
               senderPubkey: any(named: 'senderPubkey'),
               content: any(named: 'content'),

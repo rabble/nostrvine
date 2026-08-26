@@ -2075,13 +2075,35 @@ class DmRepository {
       // processed first (network reordering), skip the duplicate. Record the
       // wrap so the skipped NIP-17 copy is not re-decrypted every launch.
       // #5452.
-      final isDuplicate = await _directMessagesDao.hasMatchingMessage(
-        conversationId: conversationId,
-        senderPubkey: rumor.pubkey,
-        content: rumor.content,
-        createdAt: persistedCreatedAt,
-        ownerPubkey: ownerPubkey,
-      );
+      //
+      // Only a NIP-04 copy may suppress a peer's rumor: a row that also
+      // arrived over NIP-17 is a genuine earlier message (#7324).
+      //
+      // Our own self-wrap echo is the exception. A group send persists one
+      // row but publishes one rumor per recipient, so the rumor-id primary
+      // key collapses only the first sibling's echo — the rest dedup on the
+      // batch token, or the unfiltered window when the send predates it
+      // (#6046).
+      final isSentByMe = rumor.pubkey == ownerPubkey;
+      final isGroup = participants.length > 2;
+      final bool isDuplicate;
+      if (isSentByMe && sendBatchId != null) {
+        isDuplicate = await _directMessagesDao.hasMessageWithSendBatchId(
+          batchId: sendBatchId,
+          ownerPubkey: ownerPubkey,
+        );
+      } else {
+        isDuplicate = await _directMessagesDao.hasMatchingMessage(
+          conversationId: conversationId,
+          senderPubkey: rumor.pubkey,
+          content: rumor.content,
+          createdAt: persistedCreatedAt,
+          ownerPubkey: ownerPubkey,
+          counterpart: isSentByMe && isGroup
+              ? DmDedupCounterpart.unconstrained
+              : DmDedupCounterpart.nip04Copy,
+        );
+      }
       if (isDuplicate) {
         await _recordProcessedWrap(giftWrapEvent.id, ownerPubkey: ownerPubkey);
         Log.debug(
@@ -2097,8 +2119,6 @@ class DmRepository {
       // Persist message + conversation atomically inside a transaction.
       // The inner hasGiftWrap re-check guards against TOCTOU races where
       // a poll and subscription event both pass the outer fast-path check.
-      final isGroup = participants.length > 2;
-      final isSentByMe = rumor.pubkey == ownerPubkey;
       final previewContent = rumor.kind == EventKind.fileMessage
           ? _filePreviewText(fileMetadata?.fileType)
           : rumor.content;
@@ -2729,12 +2749,17 @@ class DmRepository {
       // Match on sender+content within hasMatchingMessage's narrow createdAt
       // window because the NIP-17 rumor and NIP-04 event may have slightly
       // different timestamps.
+      //
+      // Only the NIP-17 copy may suppress this event. Another NIP-04 row with
+      // the same text is a genuine earlier message — the mirror of #7324 on
+      // this side of the dual-send.
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
         senderPubkey: senderPubkey,
         content: plaintext,
         createdAt: persistedCreatedAt,
         ownerPubkey: _userPubkey,
+        counterpart: DmDedupCounterpart.nip17Copy,
       );
       if (isDuplicate) {
         Log.debug(
@@ -4036,6 +4061,9 @@ class DmRepository {
                       content: row.content,
                       createdAt: row.createdAt,
                       ownerPubkey: _userPubkey,
+                      // Matches our OWN persisted send, not a cross-protocol
+                      // twin, so the arrival-shape filter does not apply.
+                      counterpart: DmDedupCounterpart.unconstrained,
                     ));
 
           if (!alreadyPersisted) {
