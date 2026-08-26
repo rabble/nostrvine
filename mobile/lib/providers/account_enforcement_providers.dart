@@ -57,31 +57,29 @@ final activeEnforcementPubkeyProvider = Provider<String?>((ref) {
 
 final FutureProvider<AccountEnforcementStatus>
 accountEnforcementStatusProvider =
-    FutureProvider.autoDispose<AccountEnforcementStatus>(
-      (ref) async {
-        final authState = ref.watch(currentAuthStateProvider);
-        final pubkey = ref.watch(activeEnforcementPubkeyProvider);
-        if (authState != AuthState.authenticated) {
-          return const AccountEnforcementStatus(
-            kind: AccountEnforcementKind.signedOut,
-          );
-        }
-        if (pubkey == null) throw const AccountStatusUnavailable();
+    FutureProvider.autoDispose<AccountEnforcementStatus>((ref) async {
+      final authState = ref.watch(currentAuthStateProvider);
+      final pubkey = ref.watch(activeEnforcementPubkeyProvider);
+      if (authState != AuthState.authenticated) {
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.signedOut,
+        );
+      }
+      if (pubkey == null) throw const AccountStatusUnavailable();
 
-        final authService = ref.watch(authServiceProvider);
-        ref.watch(currentAuthRpcCapabilityProvider);
-        if (!authService.canPublishNostrWritesNow) {
-          throw const AccountStatusUnavailable();
-        }
+      final authService = ref.watch(authServiceProvider);
+      ref.watch(currentAuthRpcCapabilityProvider);
+      if (!authService.canPublishNostrWritesNow) {
+        throw const AccountStatusUnavailable();
+      }
 
-        final status = await ref
-            .watch(accountEnforcementRepositoryProvider)
-            .fetchCurrentStatus(pubkey: pubkey);
-        ref.read(accountRestrictionMemoryProvider).record(pubkey, status);
-        return status;
-      },
-      retry: (_, _) => null,
-    );
+      final repository = ref.watch(accountEnforcementRepositoryProvider);
+      final memory = ref.read(accountRestrictionMemoryProvider);
+      final status = await repository.fetchCurrentStatus(pubkey: pubkey);
+      if (!ref.mounted) return status;
+      memory.record(pubkey, status);
+      return status;
+    }, retry: (_, _) => null);
 
 final Provider<bool> isAccountEnforcedProvider = Provider.autoDispose<bool>((
   ref,

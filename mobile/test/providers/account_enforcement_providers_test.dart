@@ -1,6 +1,8 @@
 // ABOUTME: Tests all-account Funnelcake enforcement provider behavior.
 // ABOUTME: Covers signer gating, account isolation, and retained restrictions.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,6 +35,21 @@ class _QueueStatusClient extends AccountStatusApiClient {
     if (result is FunnelcakeAccountStatus) return result;
     throw result;
   }
+}
+
+class _ControlledStatusClient extends AccountStatusApiClient {
+  _ControlledStatusClient(this.results)
+    : super(
+        baseUri: Uri.parse('https://api.divine.video'),
+        authHeaderProvider: ({required url, required method}) async => null,
+      );
+
+  final List<Completer<FunnelcakeAccountStatus>> results;
+
+  @override
+  Future<FunnelcakeAccountStatus> fetchStatus({
+    required String expectedPubkey,
+  }) => results.removeAt(0).future;
 }
 
 const _pubkeyA =
@@ -193,6 +210,55 @@ void main() {
       await container.read(accountEnforcementStatusProvider.future);
       expect(memory.read(_pubkeyA), isNull);
     });
+
+    test(
+      'superseded refresh cannot overwrite newer restriction memory',
+      () async {
+        final authService = _MockAuthService();
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        final stale = Completer<FunnelcakeAccountStatus>();
+        final current = Completer<FunnelcakeAccountStatus>();
+        final memory = AccountRestrictionMemory();
+        final client = _ControlledStatusClient([stale, current]);
+        final container = ProviderContainer(
+          overrides: [
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+            currentAuthRpcCapabilityProvider.overrideWithValue(
+              AuthRpcCapability.rpcReady,
+            ),
+            authServiceProvider.overrideWithValue(authService),
+            accountEnforcementRepositoryProvider.overrideWithValue(
+              AccountEnforcementRepository(apiClient: client),
+            ),
+            accountRestrictionMemoryProvider.overrideWithValue(memory),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        final staleResult = container.read(
+          accountEnforcementStatusProvider.future,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        container.invalidate(accountEnforcementStatusProvider);
+        final currentResult = container.read(
+          accountEnforcementStatusProvider.future,
+        );
+        current.complete(FunnelcakeAccountStatus.suspended);
+        expect((await currentResult).kind, AccountEnforcementKind.suspended);
+        expect(memory.read(_pubkeyA)?.kind, AccountEnforcementKind.suspended);
+
+        stale.complete(FunnelcakeAccountStatus.active);
+        await staleResult;
+        expect(memory.read(_pubkeyA)?.kind, AccountEnforcementKind.suspended);
+      },
+    );
 
     test('retained restriction never leaks to another account', () {
       final memory = AccountRestrictionMemory()
