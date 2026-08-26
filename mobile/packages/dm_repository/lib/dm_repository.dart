@@ -2,6 +2,7 @@ export 'src/collaborator_invite_recovery.dart';
 export 'src/dm_batch_send_budget.dart';
 export 'src/dm_decrypt_isolate.dart';
 export 'src/dm_decryption_worker.dart';
+export 'src/dm_deletion_exceptions.dart';
 export 'src/dm_reactions_repository.dart';
 export 'src/dm_reactions_repository_reportable_sites.dart';
 export 'src/dm_repository.dart';

@@ -503,6 +503,21 @@ void main() {
       // Stub relay properties used by startListening() log.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
+      // Default: a publish the relay confirmed. Tests that care about an
+      // unconfirmed retraction (#8165) override this.
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments.first as Event).id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const <String, String>{},
+          noResponseFrom: const [],
+        ),
+      );
 
       // Stub getNewestMessageTimestamp for startListening() windowing.
       when(
@@ -10596,10 +10611,6 @@ void main() {
           );
 
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
-
-          when(
             () => mockDirectMessagesDao.markMessageDeleted(
               _rumorEventId,
               ownerPubkey: any(named: 'ownerPubkey'),
@@ -10635,7 +10646,7 @@ void main() {
           // Verify kind 5 was published
           final captured =
               verify(
-                    () => mockNostrClient.publishEvent(captureAny()),
+                    () => mockNostrClient.publishEventAwaitOk(captureAny()),
                   ).captured.single
                   as Event;
           expect(captured.kind, equals(EventKind.eventDeletion));
@@ -10649,6 +10660,181 @@ void main() {
           );
 
           // Verify soft-delete
+          verify(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).called(1);
+        },
+      );
+
+      // Regression for #8165: the publish result was discarded, so a
+      // retraction that reached no relay still soft-deleted locally and
+      // logged success. The sender watched the bubble vanish while the
+      // recipient still held the message — the inverse of what
+      // "Delete for everyone" promises.
+      test(
+        'throws and does not soft-delete when no relay accepted the kind 5',
+        () async {
+          final repo = createRepository();
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+              isGroup: false,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'eid',
+              acceptedBy: [],
+              rejectedBy: {
+                'wss://relay.divine.video':
+                    'error: server overloaded, try again later',
+              },
+              noResponseFrom: [],
+            ),
+          );
+
+          await expectLater(
+            repo.deleteMessageForEveryone(_rumorEventId),
+            throwsA(isA<DmDeletionNotConfirmed>()),
+          );
+
+          // The row must stay undeleted: that is what keeps the bubble on
+          // screen AND leaves `isDeleted` false so a re-tap can retry.
+          verifyNever(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+        },
+      );
+
+      // One acceptance is the bar, not all of them: NIP-09 deletion is a
+      // request relays SHOULD honour, so demanding every targeted relay
+      // would cost the user the feature whenever one refuses.
+      test(
+        'soft-deletes when one relay accepted even though another rejected',
+        () async {
+          final repo = createRepository();
+
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+            ),
+          );
+
+          when(
+            () => mockConversationsDao.getConversation(
+              conversationId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => ConversationRow(
+              id: conversationId,
+              participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+              isGroup: false,
+              createdAt: 1700000000,
+              isRead: true,
+              currentUserHasSent: true,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.markMessageDeleted(
+              _rumorEventId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'eid',
+              acceptedBy: ['wss://relay.divine.video'],
+              rejectedBy: {'wss://other.relay': 'blocked: kind not allowed'},
+              noResponseFrom: [],
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+            ),
+          ).thenAnswer((_) async {});
+
+          await repo.deleteMessageForEveryone(_rumorEventId);
+
           verify(
             () => mockDirectMessagesDao.markMessageDeleted(
               _rumorEventId,

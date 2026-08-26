@@ -18,6 +18,7 @@ import 'package:dm_repository/src/dm_batch_send_budget.dart';
 import 'package:dm_repository/src/dm_clock.dart';
 import 'package:dm_repository/src/dm_decrypt_isolate.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
+import 'package:dm_repository/src/dm_deletion_exceptions.dart';
 import 'package:dm_repository/src/dm_reactions_repository.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_send_budget.dart';
@@ -5260,8 +5261,34 @@ class DmRepository {
       throw StateError('Failed to sign kind 5 deletion event');
     }
 
-    // Publish to relays (best-effort — client-side processing is primary).
-    await _nostrClient.publishEvent(signed);
+    // Await the relay OK rather than the socket write. `publishEvent` reports
+    // success as soon as a relay's WebSocket takes the frame — the SDK's
+    // `relay_pool.send` says so itself — so `rate-limited:`, `blocked:` and
+    // `invalid:` all arrive there as success. A retraction no relay accepted
+    // must not be presented to the sender as one that happened (#8165).
+    final outcome = await _nostrClient.publishEventAwaitOk(signed);
+
+    // Counts only, never relay URLs, so this can stay on in every build and
+    // still answer "how often is a retraction only partly taken?".
+    Log.info(
+      'Kind 5 retraction for $rumorId: '
+      'accepted=${outcome.acceptedBy.length}/${outcome.targetCount} '
+      'rejected=${outcome.rejectedBy.length} '
+      'silent=${outcome.noResponseFrom.length} '
+      'unreachable=${outcome.unreachableTargets.length}',
+      category: LogCategory.system,
+    );
+
+    // One acceptance is the bar, not all of them. NIP-09 deletion is a request
+    // relays SHOULD honour, so no acknowledgement ever proves the message is
+    // gone; demanding every targeted relay would buy a guarantee that does not
+    // exist and cost the user the feature whenever one relay is unreachable.
+    //
+    // Throwing leaves the row untouched, which is the point: `isDeleted` stays
+    // false, so the bubble remains and tapping Delete again re-runs this path.
+    if (outcome.failed) {
+      throw DmDeletionNotConfirmed(rumorId, outcome);
+    }
 
     // Soft-delete locally so the UI updates immediately.
     await _directMessagesDao.markMessageDeleted(
