@@ -461,14 +461,24 @@ class NostrClient {
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
 
+  /// Adds Divine's NIP-89 `client` tag before publishing, unless [event]
+  /// already carries a signature.
+  ///
+  /// Appending the tag rebuilds the event, which changes its id and so
+  /// invalidates any signature already on it. `nostr_sdk` signs whenever `sig`
+  /// is blank, so clobbering it here silently buys a second signature — with a
+  /// remote signer, a whole extra network round trip per publish (#8166).
+  ///
+  /// Events signed through `SignerFactory.createAndSignEvent` already carry the
+  /// tag, so the only events skipped here are the ones a call site signed
+  /// itself with a raw signer. Those forfeit attribution rather than a round
+  /// trip; NIP-89 makes the tag optional.
   Future<void> _prepareEventForPublish(Event event) async {
-    final changed = await Nip89ClientTag.applyToEvent(event);
-    if (!changed) {
+    if (event.sig.isNotEmpty) {
       return;
     }
 
-    // publishEvent()/publishEventAwaitOk() both delegate signing to nostr_sdk
-    // when sig is blank, so clearing the signature is enough here.
+    await Nip89ClientTag.applyToEvent(event);
   }
 
   /// Completes the first time [initialize] finishes, so consumers can await
