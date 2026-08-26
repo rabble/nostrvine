@@ -13,7 +13,9 @@ import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -383,7 +385,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     }
   }
 
-  /// Delete video using ContentDeletionService
+  /// Delete the video and confirm Divine-controlled media cleanup.
   Future<void> _deleteVideo(BuildContext context, VideoEvent video) async {
     try {
       final deletionService = await ref.read(
@@ -425,6 +427,17 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
         videoEventService.removeVideoEventCompletely(video);
       }
 
+      final kind5Id = result.deleteEventId;
+      final enforcementResult = result.success
+          ? kind5Id == null
+                ? const CreatorDeleteEnforcementResult.failed(
+                    CreatorDeleteEnforcementFailure.clientContract,
+                  )
+                : await ref
+                      .read(creatorDeleteEnforcementRepositoryProvider)
+                      .enforce(kind5Id)
+          : null;
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -438,14 +451,20 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 Expanded(
                   child: Text(
                     result.success
-                        ? localizedPartialDeleteMessage(context, result) ??
-                              context.l10n.shareMenuVideoDeletionRequested
+                        ? localizedCreatorDeleteEnforcementMessage(
+                            context,
+                            result,
+                            enforcementResult!,
+                          )
                         : localizedDeleteFailureMessage(context, result),
                   ),
                 ),
               ],
             ),
-            backgroundColor: result.success
+            backgroundColor:
+                result.success &&
+                    enforcementResult?.status !=
+                        CreatorDeleteEnforcementStatus.failed
                 ? VineTheme.vineGreen
                 : VineTheme.error,
           ),

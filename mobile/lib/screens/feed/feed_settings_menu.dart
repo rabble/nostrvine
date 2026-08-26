@@ -6,12 +6,14 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
@@ -43,7 +45,7 @@ class FeedSettingsMenu extends ConsumerStatefulWidget {
 class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
-  OwnerVideoActionsCubit? _ownerVideoActionsCubit;
+  late final OwnerVideoActionsCubit _ownerVideoActionsCubit;
 
   /// Mirrors [_controller.isShowing] so the trigger button can rebuild via a
   /// [ValueListenableBuilder] without setState on the whole subtree.
@@ -52,11 +54,22 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
   final ValueNotifier<bool> _isShowing = ValueNotifier(false);
 
   @override
+  void initState() {
+    super.initState();
+    _ownerVideoActionsCubit = OwnerVideoActionsCubit(
+      contentDeletionServiceFuture: ref.read(
+        contentDeletionServiceProvider.future,
+      ),
+      videoEventService: ref.read(videoEventServiceProvider),
+      enforcementRepository: ref.read(
+        creatorDeleteEnforcementRepositoryProvider,
+      ),
+    );
+  }
+
+  @override
   void dispose() {
-    final ownerVideoActionsCubit = _ownerVideoActionsCubit;
-    if (ownerVideoActionsCubit != null) {
-      unawaited(ownerVideoActionsCubit.close());
-    }
+    unawaited(_ownerVideoActionsCubit.close());
     _isShowing.dispose();
     super.dispose();
   }
@@ -104,13 +117,7 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
   }
 
   Future<void> _deleteVideo(VideoEvent video) async {
-    final ownerVideoActionsCubit = _ownerVideoActionsCubit ??=
-        OwnerVideoActionsCubit(
-          contentDeletionServiceFuture: ref.read(
-            contentDeletionServiceProvider.future,
-          ),
-          videoEventService: ref.read(videoEventServiceProvider),
-        );
+    final ownerVideoActionsCubit = _ownerVideoActionsCubit;
     await ownerVideoActionsCubit.deleteVideo(video);
 
     if (!mounted) return;
@@ -119,8 +126,8 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
     if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
-        localizedPartialDeleteMessage(context, state.deleteResult) ??
-            context.l10n.shareMenuVideoDeletionRequested,
+        localizedOwnerVideoDeleteSuccessMessage(context, state),
+        error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
       );
       _close();
       messenger.showSnackBar(snackBar);
@@ -142,13 +149,21 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
       link: _link,
       child: OverlayPortal(
         controller: _controller,
-        overlayChildBuilder: (_) => _FeedSettingsOverlay(
-          link: _link,
-          onClose: _close,
-          isOwnVideo: _isOwnVideo,
-          onEditVideo: _editVideo,
-          onDeleteVideo: _confirmDeleteVideo,
-          videoId: widget.videoId ?? widget.video?.id,
+        overlayChildBuilder: (_) => BlocProvider.value(
+          value: _ownerVideoActionsCubit,
+          child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
+            builder: (context, state) => _FeedSettingsOverlay(
+              link: _link,
+              onClose: _close,
+              isOwnVideo: _isOwnVideo,
+              isDeleting:
+                  state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
+                  state.cleanupStatus == OwnerVideoCleanupStatus.inProgress,
+              onEditVideo: _editVideo,
+              onDeleteVideo: _confirmDeleteVideo,
+              videoId: widget.videoId ?? widget.video?.id,
+            ),
+          ),
         ),
         child: ValueListenableBuilder<bool>(
           valueListenable: _isShowing,
@@ -175,6 +190,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
     required this.link,
     required this.onClose,
     required this.isOwnVideo,
+    required this.isDeleting,
     required this.onEditVideo,
     required this.onDeleteVideo,
     required this.videoId,
@@ -183,6 +199,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
   final LayerLink link;
   final VoidCallback onClose;
   final bool isOwnVideo;
+  final bool isDeleting;
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
   final String? videoId;
@@ -223,6 +240,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
                     _OwnerVideoActionsPill(
                       onEditVideo: onEditVideo,
                       onDeleteVideo: onDeleteVideo,
+                      isDeleting: isDeleting,
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -241,10 +259,12 @@ class _OwnerVideoActionsPill extends StatelessWidget {
   const _OwnerVideoActionsPill({
     required this.onEditVideo,
     required this.onDeleteVideo,
+    required this.isDeleting,
   });
 
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
+  final bool isDeleting;
 
   @override
   Widget build(BuildContext context) {
@@ -271,6 +291,7 @@ class _OwnerVideoActionsPill extends StatelessWidget {
               label: context.l10n.shareMenuDeleteVideo,
               onTap: onDeleteVideo,
               isDestructive: true,
+              isBusy: isDeleting,
             ),
           ],
         ),
@@ -285,12 +306,14 @@ class _OwnerVideoAction extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isDestructive = false,
+    this.isBusy = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
   final bool isDestructive;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -299,10 +322,11 @@ class _OwnerVideoAction extends StatelessWidget {
         : context.vineColors.onSurface;
     return Semantics(
       button: true,
+      enabled: !isBusy,
       label: label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: isBusy ? null : onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: VineTheme.scrim15,
@@ -314,7 +338,13 @@ class _OwnerVideoAction extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 6,
               children: [
-                DivineIcon(icon: icon, color: color, size: 18),
+                if (isBusy)
+                  const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  DivineIcon(icon: icon, color: color, size: 18),
                 Text(label, style: VineTheme.labelSmallFont(color: color)),
               ],
             ),

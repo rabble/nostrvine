@@ -3871,7 +3871,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Hapus Video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video dihapus';
+  String get shareMenuDeleteCleanupInProgress => 'Menghapus video…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Video dihapus dari Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Video dihapus. Pembersihan media mungkin memerlukan waktu lebih lama.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Video dihapus, tetapi pembersihan media gagal. Hubungi dukungan.';
 
   @override
   String get authSessionExpired =>

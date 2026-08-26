@@ -18,6 +18,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
@@ -116,8 +117,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     with GridPrefetchMixin, ScrollPaginationMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
 
-  /// Created lazily on the first own-video delete; closed in [dispose].
-  OwnerVideoActionsCubit? _ownerVideoActionsCubit;
+  late final OwnerVideoActionsCubit _ownerVideoActionsCubit;
 
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
   ScrollController? _primaryScrollController;
@@ -137,6 +137,15 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   @override
   void initState() {
     super.initState();
+    _ownerVideoActionsCubit = OwnerVideoActionsCubit(
+      contentDeletionServiceFuture: ref.read(
+        contentDeletionServiceProvider.future,
+      ),
+      videoEventService: ref.read(videoEventServiceProvider),
+      enforcementRepository: ref.read(
+        creatorDeleteEnforcementRepositoryProvider,
+      ),
+    );
     // Prefetch visible grid videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -158,7 +167,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   void dispose() {
-    _ownerVideoActionsCubit?.close();
+    _ownerVideoActionsCubit.close();
     disposePagination();
     super.dispose();
   }
@@ -192,9 +201,17 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         context.l10n.videoGridOptionsTitle,
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
-      body: _OwnVideoActionsSheetBody(
-        onEditVideo: () => _editVideo(video),
-        onDeleteVideo: () => _confirmDeleteVideo(video),
+      body: BlocProvider.value(
+        value: _ownerVideoActionsCubit,
+        child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
+          builder: (context, state) => _OwnVideoActionsSheetBody(
+            onEditVideo: () => _editVideo(video),
+            onDeleteVideo: () => _confirmDeleteVideo(video),
+            isDeleting:
+                state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
+                state.cleanupStatus == OwnerVideoCleanupStatus.inProgress,
+          ),
+        ),
       ),
     );
   }
@@ -207,12 +224,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
     if (!confirmed || !mounted) return;
 
-    final cubit = _ownerVideoActionsCubit ??= OwnerVideoActionsCubit(
-      contentDeletionServiceFuture: ref.read(
-        contentDeletionServiceProvider.future,
-      ),
-      videoEventService: ref.read(videoEventServiceProvider),
-    );
+    final cubit = _ownerVideoActionsCubit;
     await cubit.deleteVideo(video);
 
     if (!mounted) return;
@@ -223,10 +235,12 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       // The service marks the video locally deleted; a refresh drops the
       // tile from the grid without waiting for relay propagation.
       context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
+      await Navigator.of(context).maybePop();
+      if (!mounted) return;
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
-          localizedPartialDeleteMessage(context, state.deleteResult) ??
-              context.l10n.shareMenuVideoDeletionRequested,
+          localizedOwnerVideoDeleteSuccessMessage(context, state),
+          error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
         ),
       );
     } else {
@@ -538,10 +552,12 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
   const _OwnVideoActionsSheetBody({
     required this.onEditVideo,
     required this.onDeleteVideo,
+    required this.isDeleting,
   });
 
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
+  final bool isDeleting;
 
   @override
   Widget build(BuildContext context) {
@@ -561,6 +577,8 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
           title: context.l10n.videoGridDeleteVideo,
           subtitle: context.l10n.videoGridDeleteVideoSubtitle,
           onTap: onDeleteVideo,
+          isBusy: isDeleting,
+          closeBeforeTap: false,
         ),
         SizedBox(height: MediaQuery.viewPaddingOf(context).bottom + 16),
       ],
@@ -575,6 +593,8 @@ class _OwnVideoActionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isBusy = false,
+    this.closeBeforeTap = true,
   });
 
   final DivineIconName icon;
@@ -582,6 +602,8 @@ class _OwnVideoActionTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isBusy;
+  final bool closeBeforeTap;
 
   @override
   Widget build(BuildContext context) {
@@ -590,6 +612,7 @@ class _OwnVideoActionTile extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       child: ListTile(
+        enabled: !isBusy,
         leading: Container(
           width: 40,
           height: 40,
@@ -598,7 +621,9 @@ class _OwnVideoActionTile extends StatelessWidget {
             color: context.vineColors.card,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: DivineIcon(icon: icon, color: iconColor, size: 20),
+          child: isBusy
+              ? const CircularProgressIndicator(strokeWidth: 2)
+              : DivineIcon(icon: icon, color: iconColor, size: 20),
         ),
         title: Text(
           title,
@@ -612,10 +637,12 @@ class _OwnVideoActionTile extends StatelessWidget {
             color: context.vineColors.secondaryText,
           ),
         ),
-        onTap: () {
-          Navigator.of(context).pop();
-          onTap();
-        },
+        onTap: isBusy
+            ? null
+            : () {
+                if (closeBeforeTap) Navigator.of(context).pop();
+                onTap();
+              },
       ),
     );
   }

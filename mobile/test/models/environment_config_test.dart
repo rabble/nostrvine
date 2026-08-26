@@ -279,6 +279,18 @@ void main() {
       });
     });
 
+    group('moderationApiBaseUrl', () {
+      test('uses the same service host for every environment', () {
+        for (final environment in AppEnvironment.values) {
+          final config = EnvironmentConfig(environment: environment);
+          expect(
+            config.moderationApiBaseUrl,
+            'https://moderation-api.divine.video',
+          );
+        }
+      });
+    });
+
     group('inviteBaseUrl', () {
       // These exercise the no-define path. The
       // `bool.hasEnvironment('INVITE_SERVER_URL')` override branch cannot be

@@ -2090,7 +2090,10 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "ویڈیو حذف کریں؟",
-  "shareMenuVideoDeletionRequested": "ویڈیو حذف ہو گئی",
+  "shareMenuDeleteCleanupInProgress": "ویڈیو ہٹائی جا رہی ہے…",
+  "shareMenuDeleteCleanupConfirmed": "ویڈیو Divine سے ہٹا دی گئی",
+  "shareMenuDeleteCleanupDelayed": "ویڈیو ہٹا دی گئی۔ میڈیا کی صفائی میں کچھ مزید وقت لگ سکتا ہے۔",
+  "shareMenuDeleteCleanupFailed": "ویڈیو ہٹا دی گئی، لیکن میڈیا کی صفائی ناکام رہی۔ سپورٹ سے رابطہ کریں۔",
   "authSessionExpired": "آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔",
   "authSignInFailed": "سائن ان نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "webAuthNotSupportedSecureMode": "محفوظ موڈ میں ویب تصدیق تعاون یافتہ نہیں ہے۔ محفوظ کلید مینجمنٹ کے لیے براہ کرم موبائل ایپ استعمال کریں۔",

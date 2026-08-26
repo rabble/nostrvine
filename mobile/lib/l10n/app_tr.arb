@@ -1439,7 +1439,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
-    "shareMenuVideoDeletionRequested": "Video silindi",
+    "shareMenuDeleteCleanupInProgress": "Video kaldırılıyor…",
+    "shareMenuDeleteCleanupConfirmed": "Video Divine'dan kaldırıldı",
+    "shareMenuDeleteCleanupDelayed": "Video kaldırıldı. Medya temizliği biraz daha uzun sürebilir.",
+    "shareMenuDeleteCleanupFailed": "Video kaldırıldı ancak medya temizliği başarısız oldu. Destekle iletişime geç.",
     "authSessionExpired": "Oturumun sona erdi. Lütfen tekrar giriş yap.",
     "authSignInFailed": "Giriş başarısız. Lütfen tekrar dene.",
     "webAuthNotSupportedSecureMode": "Web kimlik doğrulaması güvenli modda desteklenmiyor. Güvenli anahtar yönetimi için lütfen mobil uygulamayı kullan.",

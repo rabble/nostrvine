@@ -3938,7 +3938,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Ta bort video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video borttagen';
+  String get shareMenuDeleteCleanupInProgress => 'Tar bort videon…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed =>
+      'Videon har tagits bort från Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Videon har tagits bort. Medierensningen kan ta lite längre tid.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Videon har tagits bort, men medierensningen misslyckades. Kontakta supporten.';
 
   @override
   String get authSessionExpired => 'Din session har löpt ut. Logga in igen.';

@@ -1432,7 +1432,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
-    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
+    "shareMenuDeleteCleanupInProgress": "جارٍ إزالة الفيديو…",
+    "shareMenuDeleteCleanupConfirmed": "تمت إزالة الفيديو من Divine",
+    "shareMenuDeleteCleanupDelayed": "تمت إزالة الفيديو. قد يستغرق تنظيف الوسائط وقتًا أطول قليلًا.",
+    "shareMenuDeleteCleanupFailed": "تمت إزالة الفيديو، لكن تعذّر تنظيف الوسائط. تواصل مع الدعم.",
     "authSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.",
     "authSignInFailed": "فشل تسجيل الدخول. حاول مرّة أخرى.",
     "webAuthNotSupportedSecureMode": "مصادقة الويب غير مدعومة في الوضع الآمن. يرجى استخدام تطبيق الجوال لإدارة المفاتيح بأمان.",

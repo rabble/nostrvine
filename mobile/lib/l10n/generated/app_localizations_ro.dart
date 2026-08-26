@@ -4063,7 +4063,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Ștergi videoclipul?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Videoclip șters';
+  String get shareMenuDeleteCleanupInProgress => 'Se elimină videoclipul…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed =>
+      'Videoclip eliminat de pe Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Videoclip eliminat. Curățarea fișierelor media poate dura puțin mai mult.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Videoclip eliminat, dar curățarea fișierelor media a eșuat. Contactează asistența.';
 
   @override
   String get authSessionExpired =>

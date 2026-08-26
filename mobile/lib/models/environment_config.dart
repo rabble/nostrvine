@@ -146,6 +146,12 @@ class EnvironmentConfig {
   /// has no staging deployment and is not part of local_stack.
   String get nameServerBaseUrl => 'https://names.divine.video';
 
+  /// Base URL for creator-delete enforcement in moderation-service.
+  ///
+  /// This service has one production host across every app environment and is
+  /// not part of local_stack, matching [verifierBaseUrl].
+  String get moderationApiBaseUrl => 'https://moderation-api.divine.video';
+
   /// Get blossom media server URL
   String get blossomUrl {
     if (environment == AppEnvironment.local) {

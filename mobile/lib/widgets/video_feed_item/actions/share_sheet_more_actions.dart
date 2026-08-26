@@ -17,6 +17,7 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onCopyEventJson,
     required this.onCopyEventId,
     this.isSavePending = false,
+    this.isDeletePending = false,
     this.onEditVideo,
     this.onDeleteVideo,
     this.onAddVideoToClips,
@@ -29,6 +30,7 @@ class _MoreActionsSection extends ConsumerWidget {
 
   /// Whether the bookmark toggle is mid-flight (#7073).
   final bool isSavePending;
+  final bool isDeletePending;
   final ShareSheetBookmarkStatus bookmarkStatus;
   final VoidCallback onSave;
   final Future<void> Function()? onSaveOriginal;
@@ -72,6 +74,7 @@ class _MoreActionsSection extends ConsumerWidget {
           icon: DivineIconName.trash,
           label: context.l10n.shareMenuDeleteVideo,
           onTap: onDeleteVideo!,
+          isPending: isDeletePending,
         ),
       // `unknown` deliberately renders as "Save": an unresolved read must not
       // claim the video is unsaved, and "Save" is the pre-existing wording.

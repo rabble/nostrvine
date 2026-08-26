@@ -1446,7 +1446,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "¿Eliminar video?",
-    "shareMenuVideoDeletionRequested": "Video eliminado",
+    "shareMenuDeleteCleanupInProgress": "Eliminando video…",
+    "shareMenuDeleteCleanupConfirmed": "Video eliminado de Divine",
+    "shareMenuDeleteCleanupDelayed": "Video eliminado. La limpieza de archivos puede tardar un poco más.",
+    "shareMenuDeleteCleanupFailed": "Video eliminado, pero falló la limpieza de archivos. Contacta con soporte.",
     "authSessionExpired": "Tu sesión expiró. Iniciá sesión de nuevo.",
     "authSignInFailed": "No se pudo iniciar sesión. Probá de nuevo.",
     "webAuthNotSupportedSecureMode": "La autenticación web no está soportada en modo seguro. Usá la app móvil para gestionar claves de forma segura.",

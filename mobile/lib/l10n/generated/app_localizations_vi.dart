@@ -3911,7 +3911,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Xóa video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Đã xóa video';
+  String get shareMenuDeleteCleanupInProgress => 'Đang xóa video…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Đã xóa video khỏi Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Đã xóa video. Việc dọn dẹp tệp có thể mất thêm một chút thời gian.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Đã xóa video nhưng không thể dọn dẹp tệp. Hãy liên hệ bộ phận hỗ trợ.';
 
   @override
   String get authSessionExpired =>

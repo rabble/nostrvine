@@ -19,6 +19,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
@@ -140,6 +141,15 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   void initState() {
     super.initState();
     if (_isUserOwnContent()) {
+      _ownerVideoActionsCubit = OwnerVideoActionsCubit(
+        contentDeletionServiceFuture: ref.read(
+          contentDeletionServiceProvider.future,
+        ),
+        videoEventService: ref.read(videoEventServiceProvider),
+        enforcementRepository: ref.read(
+          creatorDeleteEnforcementRepositoryProvider,
+        ),
+      );
       _crosspostCubit = VideoCrosspostCubit(
         client: ref.read(crossposterApiClientProvider),
         eventId: widget.video.id,
@@ -212,6 +222,13 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       onAddVideoToClips: canAddVideoToClips ? _handleAddVideoToClips : null,
       onCrosspost: _crosspostCubit != null ? _handleCrosspost : null,
     );
+    final ownerAwareSheetView = switch (_ownerVideoActionsCubit) {
+      null => sheetView,
+      final cubit => BlocProvider<OwnerVideoActionsCubit>.value(
+        value: cubit,
+        child: sheetView,
+      ),
+    };
 
     return BlocProvider.value(
       value: _shareSheetBloc,
@@ -241,10 +258,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           ),
         ],
         child: switch (_crosspostCubit) {
-          null => sheetView,
+          null => ownerAwareSheetView,
           final cubit => BlocProvider<VideoCrosspostCubit>.value(
             value: cubit,
-            child: sheetView,
+            child: ownerAwareSheetView,
           ),
         },
       ),
@@ -428,13 +445,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _deleteVideo() async {
-    final ownerVideoActionsCubit = _ownerVideoActionsCubit ??=
-        OwnerVideoActionsCubit(
-          contentDeletionServiceFuture: ref.read(
-            contentDeletionServiceProvider.future,
-          ),
-          videoEventService: ref.read(videoEventServiceProvider),
-        );
+    final ownerVideoActionsCubit = _ownerVideoActionsCubit;
+    if (ownerVideoActionsCubit == null) return;
     await ownerVideoActionsCubit.deleteVideo(widget.video);
 
     if (!mounted) return;
@@ -443,8 +455,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
-        localizedPartialDeleteMessage(context, state.deleteResult) ??
-            context.l10n.shareMenuVideoDeletionRequested,
+        localizedOwnerVideoDeleteSuccessMessage(context, state),
+        error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
       );
       _safePop(context);
       messenger.showSnackBar(snackBar);
@@ -679,6 +691,13 @@ class _UnifiedShareSheetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDeletePending =
+        isOwnContent &&
+        context.select<OwnerVideoActionsCubit, bool>(
+          (cubit) =>
+              cubit.state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
+              cubit.state.cleanupStatus == OwnerVideoCleanupStatus.inProgress,
+        );
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.5);
@@ -743,6 +762,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         video: video,
                         isOwnContent: isOwnContent,
                         isSavePending: state.isSaving,
+                        isDeletePending: isDeletePending,
                         bookmarkStatus: state.bookmarkStatus,
                         onCrosspost: onCrosspost,
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),

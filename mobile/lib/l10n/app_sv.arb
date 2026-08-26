@@ -1442,7 +1442,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
-    "shareMenuVideoDeletionRequested": "Video borttagen",
+    "shareMenuDeleteCleanupInProgress": "Tar bort videon…",
+    "shareMenuDeleteCleanupConfirmed": "Videon har tagits bort från Divine",
+    "shareMenuDeleteCleanupDelayed": "Videon har tagits bort. Medierensningen kan ta lite längre tid.",
+    "shareMenuDeleteCleanupFailed": "Videon har tagits bort, men medierensningen misslyckades. Kontakta supporten.",
     "authSessionExpired": "Din session har löpt ut. Logga in igen.",
     "authSignInFailed": "Kunde inte logga in. Försök igen.",
     "webAuthNotSupportedSecureMode": "Webbautentisering stöds inte i säkert läge. Använd mobilappen för säker nyckelhantering.",

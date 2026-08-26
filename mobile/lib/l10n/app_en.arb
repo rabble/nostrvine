@@ -2468,7 +2468,10 @@
     "description": "Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely."
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
-  "shareMenuVideoDeletionRequested": "Video deleted",
+  "shareMenuDeleteCleanupInProgress": "Removing video…",
+  "shareMenuDeleteCleanupConfirmed": "Video removed from Divine",
+  "shareMenuDeleteCleanupDelayed": "Video removed. Media cleanup may take a little longer.",
+  "shareMenuDeleteCleanupFailed": "Video removed, but media cleanup failed. Contact support.",
   "authSessionExpired": "Your session has expired. Please sign in again.",
   "authAccountRestoreFailed": "We couldn't unlock that account on this device. Sign in again.",
   "@authAccountRestoreFailed": {

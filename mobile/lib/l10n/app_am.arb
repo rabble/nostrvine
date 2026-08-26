@@ -1812,7 +1812,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "ቪዲዮ ይሰረዝ?",
-    "shareMenuVideoDeletionRequested": "ቪዲዮ ተሰርዟል።",
+    "shareMenuDeleteCleanupInProgress": "ቪዲዮው እየተወገደ ነው…",
+    "shareMenuDeleteCleanupConfirmed": "ቪዲዮው ከDivine ተወግዷል",
+    "shareMenuDeleteCleanupDelayed": "ቪዲዮው ተወግዷል። የሚዲያ ማጽዳት ትንሽ ተጨማሪ ጊዜ ሊወስድ ይችላል።",
+    "shareMenuDeleteCleanupFailed": "ቪዲዮው ተወግዷል፣ ግን የሚዲያ ማጽዳት አልተሳካም። ድጋፍን ያነጋግሩ።",
     "authSessionExpired": "ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።",
     "authSignInFailed": "መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     "webAuthNotSupportedSecureMode": "የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።",

@@ -3965,7 +3965,18 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Burahin ang Video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Nabura ang video';
+  String get shareMenuDeleteCleanupInProgress => 'Inaalis ang video…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Inalis ang video sa Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Inalis ang video. Maaaring mas tumagal nang kaunti ang paglilinis ng media.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Inalis ang video, pero nabigo ang paglilinis ng media. Makipag-ugnayan sa support.';
 
   @override
   String get authSessionExpired =>

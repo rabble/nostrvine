@@ -3983,7 +3983,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '¿Eliminar video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video eliminado';
+  String get shareMenuDeleteCleanupInProgress => 'Eliminando video…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Video eliminado de Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Video eliminado. La limpieza de archivos puede tardar un poco más.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Video eliminado, pero falló la limpieza de archivos. Contacta con soporte.';
 
   @override
   String get authSessionExpired => 'Tu sesión expiró. Iniciá sesión de nuevo.';

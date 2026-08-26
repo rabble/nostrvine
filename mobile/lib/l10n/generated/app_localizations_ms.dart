@@ -3937,7 +3937,19 @@ class AppLocalizationsMs extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Padam Video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video dipadam';
+  String get shareMenuDeleteCleanupInProgress => 'Mengalih keluar video…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed =>
+      'Video dialih keluar daripada Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Video dialih keluar. Pembersihan media mungkin mengambil masa lebih lama.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Video dialih keluar, tetapi pembersihan media gagal. Hubungi sokongan.';
 
   @override
   String get authSessionExpired =>

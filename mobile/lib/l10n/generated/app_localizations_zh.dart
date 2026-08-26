@@ -3692,7 +3692,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '删除视频？';
 
   @override
-  String get shareMenuVideoDeletionRequested => '视频已删除';
+  String get shareMenuDeleteCleanupInProgress => '正在移除视频…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => '视频已从 Divine 移除';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed => '视频已移除。媒体清理可能还需要一点时间。';
+
+  @override
+  String get shareMenuDeleteCleanupFailed => '视频已移除，但媒体清理失败。请联系支持团队。';
 
   @override
   String get authSessionExpired => '你的登录已过期，请重新登录。';

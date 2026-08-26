@@ -3907,7 +3907,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'حذف الفيديو؟';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'تم حذف الفيديو';
+  String get shareMenuDeleteCleanupInProgress => 'جارٍ إزالة الفيديو…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'تمت إزالة الفيديو من Divine';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'تمت إزالة الفيديو. قد يستغرق تنظيف الوسائط وقتًا أطول قليلًا.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'تمت إزالة الفيديو، لكن تعذّر تنظيف الوسائط. تواصل مع الدعم.';
 
   @override
   String get authSessionExpired => 'انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.';

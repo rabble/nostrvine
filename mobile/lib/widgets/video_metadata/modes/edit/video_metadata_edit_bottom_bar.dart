@@ -10,7 +10,9 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
@@ -163,6 +165,14 @@ class _VideoMetadataEditBottomBarState
       if (result.success) {
         final videoEventService = ref.read(videoEventServiceProvider);
         videoEventService.removeVideoEventCompletely(widget.video);
+        final kind5Id = result.deleteEventId;
+        final enforcementResult = kind5Id == null
+            ? const CreatorDeleteEnforcementResult.failed(
+                CreatorDeleteEnforcementFailure.clientContract,
+              )
+            : await ref
+                  .read(creatorDeleteEnforcementRepositoryProvider)
+                  .enforce(kind5Id);
 
         Log.info(
           'Video deleted successfully: ${widget.video.id}',
@@ -173,8 +183,14 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           final snackBar = DivineSnackbarContainer.snackBar(
-            localizedPartialDeleteMessage(context, result) ??
-                context.l10n.shareMenuVideoDeletionRequested,
+            localizedCreatorDeleteEnforcementMessage(
+              context,
+              result,
+              enforcementResult,
+            ),
+            error:
+                enforcementResult.status ==
+                CreatorDeleteEnforcementStatus.failed,
           );
           context.pop();
           messenger.showSnackBar(snackBar);

@@ -1442,7 +1442,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
-    "shareMenuVideoDeletionRequested": "Film usunięty",
+    "shareMenuDeleteCleanupInProgress": "Usuwanie filmu…",
+    "shareMenuDeleteCleanupConfirmed": "Film usunięty z Divine",
+    "shareMenuDeleteCleanupDelayed": "Film usunięty. Czyszczenie multimediów może potrwać nieco dłużej.",
+    "shareMenuDeleteCleanupFailed": "Film usunięty, ale czyszczenie multimediów nie powiodło się. Skontaktuj się z pomocą.",
     "authSessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",
     "authSignInFailed": "Nie udało się zalogować. Spróbuj ponownie.",
     "webAuthNotSupportedSecureMode": "Uwierzytelnianie przez WWW nie jest obsługiwane w trybie bezpiecznym. Użyj aplikacji mobilnej do bezpiecznego zarządzania kluczami.",
