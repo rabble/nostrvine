@@ -9930,17 +9930,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Buka halaman semakan';
 
   @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Anda boleh bawa akaun anda bersama';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Anda masih boleh guna identiti Divine anda pada infrastruktur lain. Alihkan akaun anda atau muat turun arkib anda.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Alihkan akaun anda';
-
-  @override
   String get minorAccountReviewCheckAgain => 'Semak Semula';
 
   @override

@@ -9835,16 +9835,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'Buka halaman peninjauan';
 
   @override
-  String get minorAccountReviewMoveAccountTitle => 'Kamu bisa membawa akunmu';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Kamu tetap bisa memakai identitas Divine-mu di infrastruktur lain. Pindahkan akunmu atau unduh arsipmu.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Pindahkan akunmu';
-
-  @override
   String get minorAccountReviewCheckAgain => 'Periksa lagi';
 
   @override

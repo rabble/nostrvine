@@ -9433,16 +9433,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => '審査ページを開く';
 
   @override
-  String get minorAccountReviewMoveAccountTitle => 'アカウントは持ち出せます';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Divine のアイデンティティは他のインフラでも引き続き使えます。アカウントを移すか、アーカイブをダウンロードしてください。';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'アカウントを移す';
-
-  @override
   String get minorAccountReviewCheckAgain => 'もう一度確認';
 
   @override

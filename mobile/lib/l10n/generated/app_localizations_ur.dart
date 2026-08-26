@@ -9911,17 +9911,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'جائزہ صفحہ کھولیں';
 
   @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'آپ اپنا اکاؤنٹ ساتھ لے جا سکتے ہیں';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'آپ اپنی Divine شناخت دوسرے انفراسٹرکچر پر بھی استعمال کر سکتے ہیں۔ اپنا اکاؤنٹ منتقل کریں یا اپنا آرکائیو ڈاؤن لوڈ کریں۔';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'اپنا اکاؤنٹ منتقل کریں';
-
-  @override
   String get minorAccountReviewCheckAgain => 'دوبارہ چیک کریں';
 
   @override

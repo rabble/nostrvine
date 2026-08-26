@@ -9834,17 +9834,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get minorAccountReviewOpenReviewPage => 'İnceleme sayfasını aç';
 
   @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Hesabını yanında götürebilirsin';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Divine kimliğini başka bir altyapıda kullanmaya devam edebilirsin. Hesabını taşı veya arşivini indir.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Hesabını taşı';
-
-  @override
   String get minorAccountReviewCheckAgain => 'Tekrar kontrol et';
 
   @override

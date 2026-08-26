@@ -16840,24 +16840,6 @@ abstract class AppLocalizations {
   /// **'Open review page'**
   String get minorAccountReviewOpenReviewPage;
 
-  /// Card title on the restricted-account review screen introducing the account portability flow. Moving is not deletion and is available regardless of review state.
-  ///
-  /// In en, this message translates to:
-  /// **'You can take your account with you'**
-  String get minorAccountReviewMoveAccountTitle;
-
-  /// No description provided for @minorAccountReviewMoveAccountBody.
-  ///
-  /// In en, this message translates to:
-  /// **'You can still use your Divine identity on other infrastructure. Move your account or download your archive.'**
-  String get minorAccountReviewMoveAccountBody;
-
-  /// No description provided for @minorAccountReviewMoveAccountCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Move your account'**
-  String get minorAccountReviewMoveAccountCta;
-
   /// No description provided for @minorAccountReviewCheckAgain.
   ///
   /// In en, this message translates to:
