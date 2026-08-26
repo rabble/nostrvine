@@ -598,8 +598,9 @@ class DmRepository {
   /// behind — a soft-unconfirmed publish, a hard failure, a partial delivery
   /// whose self-wrap is still missing, or a pending message deletion. The retry
   /// service listens and bootstraps its in-session follow-up sweep. Without
-  /// this, a row created while the app stays foregrounded on stable connectivity
-  /// sat pending (a delivered-looking bubble) until the next background/
+  /// this, a row created while the app stays foregrounded on stable
+  /// connectivity sat pending (a delivered-looking bubble) until the next
+  /// background/
   /// foreground flip or connectivity change.
   ///
   /// Some emissions fire from inside a database transaction, so listeners
