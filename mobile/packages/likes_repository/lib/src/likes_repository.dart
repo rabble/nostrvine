@@ -675,6 +675,16 @@ class LikesRepository {
           description: 'rolling back a restricted like placeholder',
           site: LikesRepositoryReportableSites.likeEventRollbackPlaceholder,
         );
+        if (_interactionRevisions[eventId] != interactionRevision) {
+          final currentRecord = _likeRecords[eventId];
+          if (currentRecord != null) {
+            await _bestEffortLocalStorage(
+              () async => _localStorage?.saveLikeRecord(currentRecord),
+              description: 'preserving the newer like record',
+              site: LikesRepositoryReportableSites.likeEventSaveConfirmed,
+            );
+          }
+        }
         if (_interactionRevisions[eventId] == interactionRevision) {
           if (previousCount != null) {
             _writeCachedLikeCount(
@@ -829,13 +839,24 @@ class LikesRepository {
     }
 
     // Publish Kind 7 reaction event via NostrClient
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _likeContent,
-      addressableId: addressableId,
-      targetAuthorPubkey: authorPubkey,
-      targetKind: targetKind,
-    );
+    final Event? reactionEvent;
+    try {
+      reactionEvent = await _nostrClient.sendLike(
+        eventId,
+        content: _likeContent,
+        addressableId: addressableId,
+        targetAuthorPubkey: authorPubkey,
+        targetKind: targetKind,
+      );
+    } on SocialPublishException catch (e, stackTrace) {
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      rethrow;
+    }
 
     if (reactionEvent == null) {
       throw const LikeFailedException('Failed to publish like reaction');
@@ -1015,6 +1036,22 @@ class LikesRepository {
           description: 'restoring a restricted unlike record',
           site: LikesRepositoryReportableSites.unlikeEventRestoreRecord,
         );
+        if (_interactionRevisions[eventId] != interactionRevision) {
+          final currentRecord = _likeRecords[resolvedEventId];
+          if (currentRecord == null) {
+            await _bestEffortLocalStorage(
+              () async => _localStorage?.deleteLikeRecord(resolvedEventId),
+              description: 'preserving the newer unlike state',
+              site: LikesRepositoryReportableSites.unlikeEventDeleteRecord,
+            );
+          } else {
+            await _bestEffortLocalStorage(
+              () async => _localStorage?.saveLikeRecord(currentRecord),
+              description: 'preserving the newer like record',
+              site: LikesRepositoryReportableSites.unlikeEventRestoreRecord,
+            );
+          }
+        }
         if (_interactionRevisions[eventId] == interactionRevision) {
           if (previousCount != null) {
             _writeCachedLikeCount(
@@ -1107,9 +1144,18 @@ class LikesRepository {
     }
 
     // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
-      record.reactionEventId,
-    );
+    final Event? deletionEvent;
+    try {
+      deletionEvent = await _nostrClient.deleteEvent(record.reactionEventId);
+    } on SocialPublishException catch (e, stackTrace) {
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      rethrow;
+    }
 
     if (deletionEvent == null) {
       throw const UnlikeFailedException('Failed to publish unlike deletion');

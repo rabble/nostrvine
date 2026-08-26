@@ -910,6 +910,81 @@ void main() {
         verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
 
+      test(
+        'stale restricted rollback preserves a newer confirmed record',
+        () async {
+          LikeRecord? storedRecord;
+          final firstPublish = Completer<Event>();
+          final deleteStarted = Completer<void>();
+          final finishDelete = Completer<void>();
+          var publishCalls = 0;
+          final restrictedEvent = MockEvent();
+          final newerReaction = createMockReaction(
+            id: 'newer_reaction_id',
+            targetEventId: testEventId,
+          );
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) {
+            publishCalls++;
+            return publishCalls == 1
+                ? firstPublish.future
+                : Future.value(newerReaction);
+          });
+          when(() => mockLocalStorage.saveLikeRecord(any())).thenAnswer((
+            call,
+          ) async {
+            storedRecord = call.positionalArguments.single as LikeRecord;
+          });
+          when(() => mockLocalStorage.deleteLikeRecord(testEventId)).thenAnswer(
+            (
+              _,
+            ) async {
+              if (!deleteStarted.isCompleted) deleteStarted.complete();
+              await finishDelete.future;
+              storedRecord = null;
+              return true;
+            },
+          );
+          repository = createRepository();
+
+          final staleLike = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          final staleExpectation = expectLater(
+            staleLike,
+            throwsA(isA<LikeAccountRestrictedException>()),
+          );
+          await Future<void>.delayed(Duration.zero);
+          firstPublish.completeError(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.accountRestricted,
+                event: restrictedEvent,
+              ),
+            ),
+          );
+          await deleteStarted.future;
+
+          await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+          finishDelete.complete();
+          await staleExpectation;
+
+          expect(storedRecord?.reactionEventId, 'newer_reaction_id');
+          expect(await repository.isLiked(testEventId), isTrue);
+        },
+      );
+
       // Defense-in-depth: when the publish fails but the offline-action
       // callback is wired, the optimistic state must be preserved and the
       // action queued for retry. This covers the "device says online but
@@ -1427,6 +1502,66 @@ void main() {
         await repository.unlikeEvent(testEventId);
 
         expect(queueCalls, equals(1));
+        expect(await repository.isLiked(testEventId), isFalse);
+      });
+
+      test('stale restricted restore preserves a newer unlike', () async {
+        LikeRecord? storedRecord = createLikeRecord();
+        final firstDeletion = Completer<Event>();
+        final saveStarted = Completer<void>();
+        final finishSave = Completer<void>();
+        var deletionCalls = 0;
+        final restrictedEvent = MockEvent();
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [storedRecord!]);
+        when(() => mockLocalStorage.deleteLikeRecord(testEventId)).thenAnswer((
+          _,
+        ) async {
+          storedRecord = null;
+          return true;
+        });
+        when(() => mockLocalStorage.saveLikeRecord(any())).thenAnswer((
+          call,
+        ) async {
+          if (!saveStarted.isCompleted) saveStarted.complete();
+          await finishSave.future;
+          storedRecord = call.positionalArguments.single as LikeRecord;
+        });
+        when(() => mockNostrClient.deleteEvent(testReactionEventId)).thenAnswer(
+          (
+            _,
+          ) {
+            deletionCalls++;
+            return deletionCalls == 1
+                ? firstDeletion.future
+                : Future.value(MockEvent());
+          },
+        );
+        repository = createRepository();
+        await repository.isLiked(testEventId);
+
+        final staleUnlike = repository.unlikeEvent(testEventId);
+        final staleExpectation = expectLater(
+          staleUnlike,
+          throwsA(isA<LikeAccountRestrictedException>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        firstDeletion.completeError(
+          SocialPublishException(
+            SocialPublishResult(
+              status: SocialPublishStatus.accountRestricted,
+              event: restrictedEvent,
+            ),
+          ),
+        );
+        await saveStarted.future;
+
+        await repository.unlikeEvent(testEventId);
+        finishSave.complete();
+        await staleExpectation;
+
+        expect(storedRecord, isNull);
         expect(await repository.isLiked(testEventId), isFalse);
       });
     });
@@ -4830,6 +4965,45 @@ void main() {
           throwsA(isA<LikeFailedException>()),
         );
       });
+
+      test(
+        'terminalizes a trusted account restriction during replay',
+        () async {
+          final event = MockEvent();
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.accountRestricted,
+                event: event,
+              ),
+            ),
+          );
+
+          repository = createRepository();
+
+          await expectLater(
+            repository.executeLikeAction(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+            throwsA(
+              isA<LikeAccountRestrictedException>().having(
+                (error) => error,
+                'terminal marker',
+                isA<TerminalSocialActionException>(),
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('executeUnlikeAction', () {
@@ -4957,6 +5131,36 @@ void main() {
           throwsA(isA<UnlikeFailedException>()),
         );
       });
+
+      test(
+        'terminalizes a trusted account restriction during replay',
+        () async {
+          final event = MockEvent();
+          when(
+            () => mockLocalStorage.getLikeRecord(testEventId),
+          ).thenAnswer((_) async => createLikeRecord());
+          when(() => mockNostrClient.deleteEvent(any())).thenThrow(
+            SocialPublishException(
+              SocialPublishResult(
+                status: SocialPublishStatus.accountRestricted,
+                event: event,
+              ),
+            ),
+          );
+          repository = createRepository();
+
+          await expectLater(
+            repository.executeUnlikeAction(testEventId),
+            throwsA(
+              isA<LikeAccountRestrictedException>().having(
+                (error) => error,
+                'terminal marker',
+                isA<TerminalSocialActionException>(),
+              ),
+            ),
+          );
+        },
+      );
 
       test('falls back to local storage when not in cache', () async {
         final record = createLikeRecord();

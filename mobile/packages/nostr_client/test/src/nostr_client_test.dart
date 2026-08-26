@@ -892,6 +892,46 @@ void main() {
         ).called(1);
       });
 
+      test('rolls back optimistic cache when SDK dispatch throws', () async {
+        final mockDbClient = _MockAppDbClient();
+        final mockDatabase = _MockAppDatabase();
+        final mockNostrEventsDao = _MockNostrEventsDao();
+        when(() => mockDbClient.database).thenReturn(mockDatabase);
+        when(() => mockDatabase.nostrEventsDao).thenReturn(mockNostrEventsDao);
+        when(
+          () => mockNostrEventsDao.upsertEvent(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNostrEventsDao.deleteEventsByIds(any()),
+        ).thenAnswer((_) async => 1);
+
+        final clientWithCache = NostrClient.forTesting(
+          nostr: mockNostr,
+          relayManager: mockRelayManager,
+          dbClient: mockDbClient,
+        );
+        final event = _createTestEvent(kind: EventKind.reaction);
+        final error = StateError('SDK dispatch failed');
+        when(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenThrow(error);
+
+        await expectLater(
+          clientWithCache.publishEventAwaitOk(event),
+          throwsA(same(error)),
+        );
+
+        verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
+        verify(
+          () => mockNostrEventsDao.deleteEventsByIds([event.id]),
+        ).called(1);
+      });
+
       test('returns failed outcome without attempting send when no relays are '
           'reachable', () async {
         final event = _createTestEvent();
@@ -3238,6 +3278,32 @@ void main() {
           ),
         );
       });
+
+      test(
+        'maps a thrown SDK failure to the typed send-failed result',
+        () async {
+          const eventId = 'event-to-like';
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenThrow(StateError('SDK dispatch failed'));
+
+          await expectLater(
+            client.sendLike(eventId),
+            throwsA(
+              isA<SocialPublishException>().having(
+                (error) => error.result.status,
+                'status',
+                SocialPublishStatus.sendFailed,
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('sendProfileAwaitOk', () {

@@ -802,19 +802,27 @@ class NostrClient {
       }
     }
 
-    final outcome =
-        await _nostr.sendEventAwaitOk(
-          event,
-          targetRelays: effectiveTargets,
-          tempRelays: effectiveTargets,
-          timeout: timeout,
-        ) ??
-        PublishOutcome(
-          eventId: event.id,
-          acceptedBy: const [],
-          rejectedBy: const {},
-          noResponseFrom: const [],
-        );
+    PublishOutcome outcome;
+    try {
+      outcome =
+          await _nostr.sendEventAwaitOk(
+            event,
+            targetRelays: effectiveTargets,
+            tempRelays: effectiveTargets,
+            timeout: timeout,
+          ) ??
+          PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          );
+    } on Object {
+      if (useOptimisticCache) {
+        _rollbackCachedEvent(event.id);
+      }
+      rethrow;
+    }
 
     if (outcome.failed) {
       return rollbackOnFailure(outcome);
@@ -1687,10 +1695,18 @@ class NostrClient {
       }
     }
 
-    final outcome = await publishEventAwaitOk(
-      event,
-      targetRelays: targetRelays,
-    );
+    final PublishOutcome outcome;
+    try {
+      outcome = await publishEventAwaitOk(
+        event,
+        targetRelays: targetRelays,
+      );
+    } on Object {
+      return SocialPublishResult(
+        status: SocialPublishStatus.sendFailed,
+        event: event,
+      );
+    }
     final status = switch (outcome) {
       PublishOutcome(:final acceptedBy) when acceptedBy.isNotEmpty =>
         SocialPublishStatus.accepted,
