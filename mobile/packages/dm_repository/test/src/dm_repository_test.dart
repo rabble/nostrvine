@@ -12588,6 +12588,65 @@ void main() {
           await repository.stopListening();
         },
       );
+
+      test(
+        'routes a tag-less wrapped deletion to a matching reaction',
+        () async {
+          final controller = StreamController<Event>();
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          stubWrappedDeleteSubscription(controller);
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              _giftWrapEventId2,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: _giftWrapEventId2,
+              deleterPubkey: _validPubkeyB,
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmWrapOutcome.processed);
+
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async => Event.fromJson({
+              'id': _rumorEventId,
+              'pubkey': _validPubkeyB,
+              'created_at': 1700000000,
+              'kind': EventKind.eventDeletion,
+              'tags': [
+                ['e', _giftWrapEventId2],
+              ],
+              'content': '',
+              'sig': '',
+            }),
+          );
+          await repository.startListening();
+
+          controller.add(createGiftWrapDeletionRumor());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockReactionsRepository.applyDeletion(
+              rumorId: _giftWrapEventId2,
+              deleterPubkey: _validPubkeyB,
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
     });
 
     group('receive pipeline - wrapped message deletion (#7809, #7329)', () {
