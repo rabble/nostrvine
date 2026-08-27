@@ -764,6 +764,12 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.newline,
           textCapitalization: TextCapitalization.sentences,
+          // Android keyboards offer image/GIF insertion this field can't accept
+          // (the OS drops the media). NO_SUGGESTIONS removes that affordance
+          // while keeping the field multiline. iOS keeps its defaults.
+          autocorrect: Theme.of(context).platform != TargetPlatform.android,
+          enableSuggestions:
+              Theme.of(context).platform != TargetPlatform.android,
           onChanged: _onChanged,
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,
