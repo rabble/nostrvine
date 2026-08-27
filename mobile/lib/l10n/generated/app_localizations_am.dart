@@ -9653,6 +9653,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ድጋፍና የቁጥጥር መልእክትህ አሁንም ይገኛሉ';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => 'የድጋፍ ማዕከልን ክፈት';
 
   @override

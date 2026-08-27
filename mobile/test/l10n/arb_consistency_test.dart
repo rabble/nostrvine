@@ -459,6 +459,10 @@ const _knownUntranslatedDebt = <String>{
   'accountStatusContactSupport',
   'accountStatusMoveAccount',
   'accountStatusRetry',
+  // Restricted-minor age/deletion copy (#8238). This is load-bearing copy,
+  // so non-English locales fall back to English until speaker review.
+  'minorAccountReviewContentTitle',
+  'minorAccountReviewContentBody',
   // Inbox Badges tab and its All-tab banner. Translation deferred to the next
   // l10n pass.
   'notificationsTabBadges',

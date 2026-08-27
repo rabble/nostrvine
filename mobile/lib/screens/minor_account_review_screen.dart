@@ -300,6 +300,11 @@ class _LoadedView extends ConsumerWidget {
           l10n.minorAccountReviewRestrictionSupport,
         ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
+        _InfoCard(
+          title: l10n.minorAccountReviewContentTitle,
+          body: l10n.minorAccountReviewContentBody,
+        ),
+        const SizedBox(height: 24),
         _InfoCard(title: infoCard.title, body: infoCard.body),
         const SizedBox(height: 24),
         _InfoCard(

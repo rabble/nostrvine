@@ -9432,6 +9432,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get minorAccountReviewRestrictionSupport => '지원과 검수 메시지는 계속 이용 가능';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => '지원 센터 열기';
 
   @override
