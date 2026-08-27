@@ -63,12 +63,12 @@ void main() {
       '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
 
   const testEnvironment = _ConfiguredEnvironmentConfig(
-    environment: AppEnvironment.test,
+    environment: AppEnvironment.staging,
     configuredPushServicePubkey: configuredPushServicePubkey,
   );
 
   const placeholderEnvironment = _ConfiguredEnvironmentConfig(
-    environment: AppEnvironment.test,
+    environment: AppEnvironment.staging,
     configuredPushServicePubkey: 'TODO_TEST_PUBKEY',
   );
 

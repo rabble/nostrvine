@@ -47,7 +47,7 @@ void main() {
       expect(service.currentConfig.environment, AppEnvironment.poc);
     });
 
-    test('loads test environment from SharedPreferences', () async {
+    test('falls back to production for retired test environment', () async {
       SharedPreferences.setMockInitialValues({
         'developer_mode_enabled': true,
         'app_environment': 'test',
@@ -56,7 +56,7 @@ void main() {
       service = EnvironmentService();
       await service.initialize();
 
-      expect(service.currentConfig.environment, AppEnvironment.test);
+      expect(service.currentConfig.environment, AppEnvironment.production);
     });
 
     test('enableDeveloperMode persists state', () async {
@@ -118,18 +118,6 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('app_environment'), 'poc');
-    });
-
-    test('setEnvironment to test persists correctly', () async {
-      service = EnvironmentService();
-      await service.initialize();
-
-      await service.setEnvironment(AppEnvironment.test);
-
-      expect(service.currentConfig.environment, AppEnvironment.test);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('app_environment'), 'test');
     });
 
     test('setEnvironment clears configured_relays', () async {

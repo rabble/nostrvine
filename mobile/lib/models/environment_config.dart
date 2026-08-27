@@ -1,4 +1,4 @@
-// ABOUTME: Environment configuration model for poc/staging/test/production/local
+// ABOUTME: Environment configuration model for poc/staging/production/local
 // ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
 import 'package:flutter/foundation.dart';
@@ -60,8 +60,6 @@ AppEnvironment get buildTimeDefaultEnvironment {
       return AppEnvironment.poc;
     case 'STAGING':
       return AppEnvironment.staging;
-    case 'TEST':
-      return AppEnvironment.test;
     case 'LOCAL':
       return AppEnvironment.local;
     case 'PRODUCTION':
@@ -71,7 +69,7 @@ AppEnvironment get buildTimeDefaultEnvironment {
 }
 
 /// Available app environments
-enum AppEnvironment { poc, staging, test, production, local }
+enum AppEnvironment { poc, staging, production, local }
 
 /// Configuration for the current app environment
 @immutable
@@ -92,8 +90,6 @@ class EnvironmentConfig {
         return 'wss://relay.poc.dvines.org';
       case AppEnvironment.staging:
         return 'wss://relay.staging.divine.video';
-      case AppEnvironment.test:
-        return 'wss://relay.test.dvines.org';
       case AppEnvironment.local:
         return 'ws://$localHost:$localRelayPort';
       case AppEnvironment.production:
@@ -190,7 +186,6 @@ class EnvironmentConfig {
       case AppEnvironment.local:
         return 'http://$localHost:$localRelayManagerPort';
       case AppEnvironment.poc:
-      case AppEnvironment.test:
       case AppEnvironment.staging:
         return 'https://api-relay-staging.divine.video';
       case AppEnvironment.production:
@@ -208,8 +203,6 @@ class EnvironmentConfig {
         return 'POC';
       case AppEnvironment.staging:
         return 'Staging';
-      case AppEnvironment.test:
-        return 'Test';
       case AppEnvironment.local:
         return 'Local';
       case AppEnvironment.production:
@@ -226,8 +219,6 @@ class EnvironmentConfig {
         return '2fc7d43fc02ae951a226108d3a31330bd26f37c1ef88eaa91948251de98b049d';
       case AppEnvironment.staging:
         return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
-      case AppEnvironment.test:
-        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
       case AppEnvironment.local:
         return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
       case AppEnvironment.production:
@@ -242,8 +233,6 @@ class EnvironmentConfig {
         return 0xFFFF7640; // accentOrange
       case AppEnvironment.staging:
         return 0xFFFFF140; // accentYellow
-      case AppEnvironment.test:
-        return 0xFF34BBF1; // accentBlue
       case AppEnvironment.local:
         return 0xFFE040FB; // accentPurple
       case AppEnvironment.production:

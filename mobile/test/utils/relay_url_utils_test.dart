@@ -229,7 +229,6 @@ void main() {
         isTrue,
       );
       expect(isDivineHostedRelayUrl('wss://relay.poc.dvines.org'), isTrue);
-      expect(isDivineHostedRelayUrl('wss://relay.test.dvines.org'), isTrue);
     });
 
     test('accepts loopback relays (local environment)', () {
