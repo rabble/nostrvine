@@ -33,6 +33,9 @@ class _FakeRelay extends RelayBase {
     super.url,
     super.relayStatus, {
     this.shouldConnect = true,
+    this.neverConnects = false,
+    this.neverCloses = false,
+    this.neverDisconnects = false,
     this.throwOnSend = false,
     this.throwOnDisconnect = false,
   });
@@ -43,6 +46,15 @@ class _FakeRelay extends RelayBase {
   /// Whether [connect] should succeed.
   final bool shouldConnect;
 
+  /// Whether [connect] should remain pending forever.
+  final bool neverConnects;
+
+  /// Whether a CLOSE request should remain pending forever.
+  final bool neverCloses;
+
+  /// Whether [disconnect] should remain pending forever.
+  final bool neverDisconnects;
+
   /// Whether [send] should throw.
   final bool throwOnSend;
 
@@ -51,6 +63,7 @@ class _FakeRelay extends RelayBase {
 
   @override
   Future<bool> doConnect() async {
+    if (neverConnects) return Completer<bool>().future;
     if (!shouldConnect) return false;
     // Fire fake responses to trigger onMessage handlers
     for (final msg in fakeResponses) {
@@ -70,11 +83,15 @@ class _FakeRelay extends RelayBase {
     if (throwOnSend && message.isNotEmpty && message[0] == 'CLOSE') {
       throw Exception('Send failed');
     }
+    if (neverCloses && message.isNotEmpty && message[0] == 'CLOSE') {
+      return Completer<bool>().future;
+    }
     return true;
   }
 
   @override
   Future<void> disconnect() async {
+    if (neverDisconnects) return Completer<void>().future;
     if (throwOnDisconnect) throw Exception('Disconnect failed');
   }
 }
@@ -1665,6 +1682,18 @@ void main() {
           expect(followers, isEmpty);
         });
       });
+
+      test('does not cache an empty snapshot when a source fails', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenThrow(Exception('Relays unavailable'));
+
+        await expectLater(
+          repository.watchOthersFollowersCached(testTargetPubkey),
+          emitsError(isA<Exception>()),
+        );
+        expect(cacheDao.length, isZero);
+      });
     });
 
     group('follower ordering', () {
@@ -2308,6 +2337,29 @@ void main() {
     });
 
     group('getOthersFollowing', () {
+      test('times out when the relay query never completes', () {
+        fakeAsync((async) {
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) => Completer<List<Event>>().future);
+          Object? error;
+
+          unawaited(
+            repository
+                .getOthersFollowing(testTargetPubkey)
+                .then<void>(
+                  (_) {},
+                  onError: (Object caught) => error = caught,
+                ),
+          );
+          async
+            ..elapse(const Duration(seconds: 8))
+            ..flushMicrotasks();
+
+          expect(error, isA<TimeoutException>());
+        });
+      });
+
       test('returns empty snapshot when no events found', () async {
         when(
           () => mockNostrClient.queryEvents(any()),
@@ -3037,7 +3089,7 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('returns false on error', () async {
+      test('returns false when every follower source fails', () async {
         // Set up: we follow testTargetPubkey
         SharedPreferences.setMockInitialValues({
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
@@ -3053,7 +3105,8 @@ void main() {
 
         await repository.initialize();
 
-        // Mock: relay query throws
+        // No REST or indexer sources are configured, so this makes the only
+        // network source fail and exercises isMutualFollow's public guard.
         when(
           () => mockNostrClient.queryEvents(any()),
         ).thenThrow(Exception('Network error'));
@@ -5478,6 +5531,57 @@ void main() {
     });
 
     group('getFollowers with API branch', () {
+      test('keeps relay results when the API fails', () async {
+        const relayFollower =
+            'bb00000000000000000000000000000000000000000000000000000000000002';
+        final api = _MockFunnelcakeApiClient();
+        when(() => api.isAvailable).thenReturn(true);
+        when(
+          () => api.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => throw Exception('API unavailable'));
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              relayFollower,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          funnelcakeApiClient: api,
+          indexerRelayUrls: const [],
+        );
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, [relayFollower]);
+      });
+
+      test('throws instead of returning empty when all sources fail', () {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer(
+          (_) => Future<List<Event>>.error(Exception('Relay unavailable')),
+        );
+
+        expect(
+          repository.getFollowers(testTargetPubkey),
+          throwsException,
+        );
+      });
+
       test(
         'merges API results with relay results',
         () async {
@@ -5593,18 +5697,75 @@ void main() {
       RelayFactory fakeRelayFactory({
         List<List<dynamic>> responses = const [],
         bool shouldConnect = true,
+        bool neverCloses = false,
+        bool neverDisconnects = false,
       }) {
         return (String url, RelayStatus status) {
           final relay = _FakeRelay(
             url,
             status,
             shouldConnect: shouldConnect,
+            neverCloses: neverCloses,
+            neverDisconnects: neverDisconnects,
           )..fakeResponses = responses;
           return relay;
         };
       }
 
       group('_fetchFollowersCountViaIndexers', () {
+        test('keeps REST count when an indexer never connects', () async {
+          final api = _MockFunnelcakeApiClient();
+          when(() => api.isAvailable).thenReturn(true);
+          when(() => api.getSocialCounts(testTargetPubkey)).thenAnswer(
+            (_) async => const SocialCounts(
+              pubkey: testTargetPubkey,
+              followerCount: 50,
+              followingCount: 7,
+            ),
+          );
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: api,
+            indexerRelayUrls: const [indexerUrl],
+            indexerOperationTimeout: const Duration(milliseconds: 20),
+            relayFactory: (url, status) =>
+                _FakeRelay(url, status, neverConnects: true),
+          );
+
+          final stats = await repository
+              .getFollowerStats(testTargetPubkey)
+              .timeout(const Duration(milliseconds: 200));
+
+          expect(stats, const FollowerStats(followers: 50, following: 7));
+        });
+
+        test('bounds CLOSE and disconnect after a count response', () async {
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [indexerUrl],
+            indexerOperationTimeout: const Duration(milliseconds: 20),
+            relayFactory: fakeRelayFactory(
+              responses: const [
+                ['EOSE', 'sub1'],
+              ],
+              neverCloses: true,
+              neverDisconnects: true,
+            ),
+          );
+
+          final stats = await repository
+              .getFollowerStats(testTargetPubkey)
+              .timeout(const Duration(milliseconds: 200));
+
+          expect(stats.followers, 0);
+        });
+
         test(
           'returns follower count from indexer relay',
           () async {
@@ -5991,6 +6152,71 @@ void main() {
       });
 
       group('_fetchFollowerRefsFromIndexers', () {
+        test('keeps REST followers when an indexer never connects', () async {
+          final api = _MockFunnelcakeApiClient();
+          when(() => api.isAvailable).thenReturn(true);
+          when(
+            () => api.getFollowers(
+              pubkey: testTargetPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => const PaginatedPubkeys(pubkeys: [followerPubkey1]),
+          );
+          final connectedRelay = Completer<List<Event>>();
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) => connectedRelay.future);
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: api,
+            indexerRelayUrls: const [indexerUrl],
+            indexerOperationTimeout: const Duration(milliseconds: 20),
+            relayFactory: (url, status) =>
+                _FakeRelay(url, status, neverConnects: true),
+          );
+
+          final followersFuture = repository.getFollowers(testTargetPubkey);
+          await Future<void>.delayed(Duration.zero);
+          connectedRelay.completeError(
+            Exception('connected relay unavailable'),
+          );
+          final followers = await followersFuture.timeout(
+            const Duration(milliseconds: 200),
+          );
+
+          expect(followers, [followerPubkey1]);
+        });
+
+        test('bounds CLOSE after follower refs complete', () async {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [],
+          );
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [indexerUrl],
+            indexerOperationTimeout: const Duration(milliseconds: 20),
+            relayFactory: fakeRelayFactory(
+              responses: const [
+                ['EOSE', 'sub1'],
+              ],
+              neverCloses: true,
+            ),
+          );
+
+          final followers = await repository
+              .getFollowers(testTargetPubkey)
+              .timeout(const Duration(milliseconds: 200));
+
+          expect(followers, isEmpty);
+        });
+
         test(
           'orders indexer followers by their contact-list timestamp',
           () async {
@@ -7033,6 +7259,46 @@ void main() {
       );
 
       test(
+        '_loadContactListFromIndexer is bounded when connect never completes',
+        () async {
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => const Stream<Event>.empty());
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const ['wss://idx.test'],
+            indexerOperationTimeout: const Duration(milliseconds: 20),
+            relayFactory: (url, status) =>
+                _FakeRelay(url, status, neverConnects: true),
+            queryContactList:
+                ({
+                  required eventStream,
+                  required pubkey,
+                  fallbackTimeoutSeconds = 10,
+                }) async => null,
+          );
+
+          await repository.initialize().timeout(
+            const Duration(milliseconds: 200),
+          );
+
+          expect(repository.followingCount, 0);
+        },
+      );
+
+      test(
         '_queryIndexerForContactList timeout returns bestEvent',
         () async {
           // Create a relay that sends an EVENT but no EOSE
@@ -7069,9 +7335,10 @@ void main() {
             getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
             cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://idx.test'],
+            indexerOperationTimeout: const Duration(milliseconds: 20),
             relayFactory: (url, status) {
               // EVENT but no EOSE → timeout fires
-              return _FakeRelay(url, status)
+              return _FakeRelay(url, status, neverCloses: true)
                 ..fakeResponses = [
                   ['EVENT', 'sub1', contactListJson],
                   // No EOSE — completer times out

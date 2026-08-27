@@ -25,6 +25,12 @@ import 'package:unified_logger/unified_logger.dart';
 /// API does not expose event timestamps.
 typedef _FollowerRef = ({String pubkey, int? followedAt});
 
+typedef _FollowerSourceResult = ({
+  List<_FollowerRef> refs,
+  Object? error,
+  StackTrace? stackTrace,
+});
+
 typedef _CachedFollowerStats = ({
   FollowerStats stats,
   DateTime cachedAt,
@@ -66,6 +72,7 @@ class FollowRepository {
     BlockedPubkeysCallback? blockedPubkeys,
     DateTime Function()? now,
     Duration indexerQueryTimeout = const Duration(seconds: 8),
+    Duration indexerOperationTimeout = const Duration(seconds: 12),
   }) : _nostrClient = nostrClient,
        _blockedPubkeys = blockedPubkeys,
        _isCacheInitialized = isCacheInitialized,
@@ -79,7 +86,8 @@ class FollowRepository {
        _queryContactList = queryContactList ?? _defaultQueryContactList,
        _relayFactory = relayFactory ?? _defaultRelayFactory,
        _now = now ?? DateTime.now,
-       _indexerQueryTimeout = indexerQueryTimeout;
+       _indexerQueryTimeout = indexerQueryTimeout,
+       _indexerOperationTimeout = indexerOperationTimeout;
 
   final NostrClient _nostrClient;
   final IsCacheInitializedCallback? _isCacheInitialized;
@@ -116,6 +124,49 @@ class FollowRepository {
 
   /// Maximum time to wait for an indexer relay to finish a count query.
   final Duration _indexerQueryTimeout;
+
+  /// Maximum time for connect, response collection, and cleanup combined.
+  final Duration _indexerOperationTimeout;
+
+  Duration _remainingIndexerTime(
+    DateTime deadline, {
+    Duration? cap,
+  }) {
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining <= Duration.zero) return Duration.zero;
+    if (cap != null && cap < remaining) return cap;
+    return remaining;
+  }
+
+  Future<T> _awaitIndexerOperation<T>(
+    Future<T> future,
+    DateTime deadline, {
+    required FutureOr<T> Function() onTimeout,
+    Duration? cap,
+  }) => future.timeout(
+    _remainingIndexerTime(deadline, cap: cap),
+    onTimeout: onTimeout,
+  );
+
+  Future<void> _disconnectIndexer(
+    RelayBase relay,
+    String indexerUrl,
+    DateTime deadline,
+  ) async {
+    try {
+      await _awaitIndexerOperation<void>(
+        relay.disconnect(),
+        deadline,
+        onTimeout: () {},
+      );
+    } catch (e) {
+      Log.warning(
+        'Error disconnecting from $indexerUrl: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
 
   /// Default relay factory — creates a real [RelayBase].
   static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
@@ -447,9 +498,11 @@ class FollowRepository {
   /// Returns a [FollowingSnapshot] with the deduplicated list of followed
   /// pubkeys. Returns an empty snapshot if no event is found.
   Future<FollowingSnapshot> getOthersFollowing(String pubkey) async {
-    final events = await _nostrClient.queryEvents([
-      Filter(authors: [pubkey], kinds: const [3], limit: 1),
-    ]);
+    final events = await _nostrClient
+        .queryEvents([
+          Filter(authors: [pubkey], kinds: const [3], limit: 1),
+        ])
+        .timeout(_fetchFollowersTimeout);
 
     final following = <String>[];
     if (events.isNotEmpty) {
@@ -1137,6 +1190,7 @@ class FollowRepository {
     String indexerUrl,
     String pubkey,
   ) async {
+    final deadline = DateTime.now().add(_indexerOperationTimeout);
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<int>();
@@ -1170,17 +1224,27 @@ class FollowRepository {
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
 
-      final connected = await relay.connect();
+      final connected = await _awaitIndexerOperation<bool>(
+        relay.connect(),
+        deadline,
+        onTimeout: () => false,
+      );
       if (!connected) {
         return null;
       }
 
-      final result = await completer.future.timeout(
-        _indexerQueryTimeout,
+      final result = await _awaitIndexerOperation<int>(
+        completer.future,
+        deadline,
+        cap: _indexerQueryTimeout,
         onTimeout: () => followerPubkeys.length,
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      await _awaitIndexerOperation<bool>(
+        relay.send(<dynamic>['CLOSE', subscriptionId]),
+        deadline,
+        onTimeout: () => false,
+      );
       Log.debug(
         'Indexer $indexerUrl returned $result '
         'followers for ${pubkeyForLogs(pubkey)}',
@@ -1206,15 +1270,7 @@ class FollowRepository {
               source: indexerUrl,
             );
     } finally {
-      try {
-        await relay.disconnect();
-      } catch (e) {
-        Log.warning(
-          'Error disconnecting from $indexerUrl: $e',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
-      }
+      await _disconnectIndexer(relay, indexerUrl, deadline);
     }
   }
 
@@ -1232,7 +1288,9 @@ class FollowRepository {
   ///
   /// Ordering comes from [_newestFirst].
   ///
-  /// Returns empty list on timeout or failure.
+  /// Returns an empty list when every successful source reports no followers.
+  /// Propagates a source error when no source returns a usable follower, since
+  /// callers cannot distinguish that result from a genuinely empty list.
   Future<List<String>> _fetchFollowers(String pubkey) async =>
       (await _fetchOrderedFollowers(pubkey)).pubkeys;
 
@@ -1247,17 +1305,14 @@ class FollowRepository {
       return (pubkeys: <String>[], datedCount: 0);
     }
 
-    // The API and indexer sources are best-effort here; a connected-relay
-    // failure still fails the whole call, as it always has.
-    final sources = _followerSources(pubkey);
-    final results = await Future.wait<List<_FollowerRef>>([
-      sources[0].catchError((_) => <_FollowerRef>[]),
-      sources[1],
-      sources[2].catchError((_) => <_FollowerRef>[]),
-    ]);
-    final apiFollowers = results[0];
-    final relayFollowers = results[1];
-    final indexerFollowers = results[2];
+    // One unavailable source must not discard usable observations from the
+    // others, but total failure is not evidence that the user has no followers.
+    final results = await Future.wait<_FollowerSourceResult>(
+      _followerSources(pubkey).map(_guardFollowerSource),
+    );
+    final apiFollowers = results[0].refs;
+    final relayFollowers = results[1].refs;
+    final indexerFollowers = results[2].refs;
 
     // Merge all sources (union of pubkeys)
     final merged = _newestFirst([
@@ -1265,6 +1320,17 @@ class FollowRepository {
       ...relayFollowers,
       ...indexerFollowers,
     ]);
+
+    _FollowerSourceResult? failed;
+    for (final result in results) {
+      if (result.error != null) failed = result;
+    }
+    if (merged.pubkeys.isEmpty && failed != null) {
+      Error.throwWithStackTrace(
+        failed.error!,
+        failed.stackTrace ?? StackTrace.empty,
+      );
+    }
 
     // Unique per source, not raw events: the relay and indexer paths hand
     // back one ref per kind 3 they saw, so a follower whose superseded event
@@ -1377,7 +1443,7 @@ class FollowRepository {
     final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
         ? _funnelcakeApiClient!
               .getFollowers(pubkey: pubkey, limit: 5000)
-              .then(
+              .then<List<_FollowerRef>>(
                 (r) => [
                   for (final follower in r.pubkeys)
                     (pubkey: follower, followedAt: null),
@@ -1391,6 +1457,17 @@ class FollowRepository {
       _fetchFollowerRefsFromIndexers(pubkey),
     ];
   }
+
+  Future<_FollowerSourceResult> _guardFollowerSource(
+    Future<List<_FollowerRef>> source,
+  ) => source.then<_FollowerSourceResult>(
+    (refs) => (refs: refs, error: null, stackTrace: null),
+    onError: (Object error, StackTrace stackTrace) => (
+      refs: const <_FollowerRef>[],
+      error: error,
+      stackTrace: stackTrace,
+    ),
+  );
 
   /// Streams the current user's followers as each source resolves.
   ///
@@ -1425,18 +1502,12 @@ class FollowRepository {
     Object? lastError;
     StackTrace? lastStackTrace;
 
-    final guarded = _followerSources(pubkey).map(
-      (source) => source.then<(List<_FollowerRef>, Object?, StackTrace?)>(
-        (refs) => (refs, null, null),
-        onError: (Object error, StackTrace stackTrace) =>
-            (const <_FollowerRef>[], error, stackTrace),
-      ),
-    );
+    final guarded = _followerSources(pubkey).map(_guardFollowerSource);
 
-    await for (final (refs, error, stackTrace)
-        in Stream<(List<_FollowerRef>, Object?, StackTrace?)>.fromFutures(
-          guarded,
-        )) {
+    await for (final result in Stream<_FollowerSourceResult>.fromFutures(
+      guarded,
+    )) {
+      final (:refs, :error, :stackTrace) = result;
       if (error != null) {
         lastError = error;
         lastStackTrace = stackTrace;
@@ -1558,6 +1629,7 @@ class FollowRepository {
     String indexerUrl,
     String pubkey,
   ) async {
+    final deadline = DateTime.now().add(_indexerOperationTimeout);
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<List<_FollowerRef>>();
@@ -1594,17 +1666,27 @@ class FollowRepository {
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
 
-      final connected = await relay.connect();
+      final connected = await _awaitIndexerOperation<bool>(
+        relay.connect(),
+        deadline,
+        onTimeout: () => false,
+      );
       if (!connected) {
         return [];
       }
 
-      final result = await completer.future.timeout(
-        _fetchFollowersTimeout,
+      final result = await _awaitIndexerOperation<List<_FollowerRef>>(
+        completer.future,
+        deadline,
+        cap: _fetchFollowersTimeout,
         onTimeout: () => List<_FollowerRef>.of(followers),
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      await _awaitIndexerOperation<bool>(
+        relay.send(<dynamic>['CLOSE', subscriptionId]),
+        deadline,
+        onTimeout: () => false,
+      );
       return result;
     } catch (e) {
       Log.warning(
@@ -1614,9 +1696,7 @@ class FollowRepository {
       );
       return List<_FollowerRef>.of(followers);
     } finally {
-      try {
-        await relay.disconnect();
-      } catch (_) {}
+      await _disconnectIndexer(relay, indexerUrl, deadline);
     }
   }
 
@@ -2374,6 +2454,7 @@ class FollowRepository {
     String indexerUrl,
     String pubkey,
   ) async {
+    final deadline = DateTime.now().add(_indexerOperationTimeout);
     final relayStatus = RelayStatus(indexerUrl);
     final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<Event?>();
@@ -2415,15 +2496,25 @@ class FollowRepository {
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
 
-      final connected = await relay.connect();
+      final connected = await _awaitIndexerOperation<bool>(
+        relay.connect(),
+        deadline,
+        onTimeout: () => false,
+      );
       if (!connected) return null;
 
-      final result = await completer.future.timeout(
-        const Duration(seconds: 5),
+      final result = await _awaitIndexerOperation<Event?>(
+        completer.future,
+        deadline,
+        cap: const Duration(seconds: 5),
         onTimeout: () => bestEvent,
       );
 
-      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      await _awaitIndexerOperation<bool>(
+        relay.send(<dynamic>['CLOSE', subscriptionId]),
+        deadline,
+        onTimeout: () => false,
+      );
       return result;
     } catch (e) {
       Log.warning(
@@ -2434,9 +2525,7 @@ class FollowRepository {
       );
       return bestEvent;
     } finally {
-      try {
-        await relay.disconnect();
-      } catch (_) {}
+      await _disconnectIndexer(relay, indexerUrl, deadline);
     }
   }
 
