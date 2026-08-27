@@ -2346,6 +2346,7 @@ void main() {
       labels = DmPeerLabels(
         deletedAccount: l10n.profileDeletedAccountName,
         moderation: l10n.inboxSupportRowTitle,
+        retiredConversationClosed: l10n.dmRetiredThreadClosedTitle,
       );
 
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
@@ -2380,6 +2381,8 @@ void main() {
         followRepository: mockFollowRepository,
         profileRepository: mockProfileRepository,
         recomputeDebounce: Duration.zero,
+        moderationAccount: isModerationAccount,
+        retiredModerationAccount: isRetiredModerationAccount,
       );
       if (withLabels != null) {
         bloc.add(ConversationListPeerLabelsChanged(withLabels));
@@ -2519,7 +2522,58 @@ void main() {
 
         expect(state.visibleConversations, isEmpty);
       });
+
+      test('is found by the closed subtitle the row shows', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'retired',
+              participantPubkeys: [_testPubkey1, retired],
+              lastMessageContent: 'Your video was removed',
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(bloc, labels.retiredConversationClosed);
+
+        expect(state.visibleConversations.map((c) => c.id).toList(), [
+          'retired',
+        ]);
+      });
+
+      test('is not found by hidden last-message content', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'retired',
+              participantPubkeys: [_testPubkey1, retired],
+              lastMessageContent: 'Your video was removed',
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(bloc, 'removed');
+
+        expect(state.visibleConversations, isEmpty);
+      });
     });
+
+    blocTest<ConversationListBloc, ConversationListState>(
+      'routes vanished-stream IO errors through the bloc error channel',
+      setUp: () {
+        when(
+          () => mockProfileRepository.watchVanishedPubkeys(),
+        ).thenAnswer((_) => Stream.error(Exception('db failure')));
+      },
+      build: createBloc,
+      errors: () => [isA<Exception>()],
+    );
 
     test('a live counterparty still matches its generated name', () async {
       stubVanished(const {});
@@ -2594,6 +2648,7 @@ void main() {
           DmPeerLabels(
             deletedAccount: german.profileDeletedAccountName,
             moderation: german.inboxSupportRowTitle,
+            retiredConversationClosed: german.dmRetiredThreadClosedTitle,
           ),
         ),
       );

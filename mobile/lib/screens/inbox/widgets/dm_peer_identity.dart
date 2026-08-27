@@ -5,8 +5,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/dm_peer_name.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 
 /// The peer's name when it resolves without a profile lookup.
 ///
@@ -24,9 +24,12 @@ String? dmPeerNameWithoutProfile(
   required String pubkeyHex,
   required bool isVanished,
   String? displayNameOverride,
-}) => isVanished
-    ? context.l10n.profileDeletedAccountName
-    : displayNameOverride ?? moderationDisplayName(context, pubkeyHex);
+}) => dmPeerSubstituteName(
+  isVanished: isVanished,
+  isModeration: isModerationAccount(pubkeyHex),
+  labels: dmPeerLabels(context),
+  displayNameOverride: displayNameOverride,
+);
 
 /// The localized labels [dmPeerName] needs, read from this [context].
 ///
@@ -36,6 +39,7 @@ String? dmPeerNameWithoutProfile(
 DmPeerLabels dmPeerLabels(BuildContext context) => DmPeerLabels(
   deletedAccount: context.l10n.profileDeletedAccountName,
   moderation: context.l10n.inboxSupportRowTitle,
+  retiredConversationClosed: context.l10n.dmRetiredThreadClosedTitle,
 );
 
 /// The full chain: vanished, then [displayNameOverride], then moderation, then
@@ -56,6 +60,7 @@ String dmPeerDisplayName(
 }) => dmPeerName(
   pubkeyHex: pubkeyHex,
   isVanished: isVanished,
+  isModeration: isModerationAccount(pubkeyHex),
   labels: dmPeerLabels(context),
   profileName: profile?.bestDisplayName,
   displayNameOverride: displayNameOverride,

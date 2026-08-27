@@ -4,7 +4,6 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
-import 'package:openvine/config/official_accounts.dart';
 
 /// The localized strings [dmPeerName] substitutes for a peer whose own name
 /// must not be shown.
@@ -12,9 +11,14 @@ import 'package:openvine/config/official_accounts.dart';
 /// Injected rather than read from `context.l10n`, because the search index
 /// that matches on them lives in a BLoC. Both values are already-translated
 /// ARB keys: [deletedAccount] is `profileDeletedAccountName`, [moderation] is
-/// `inboxSupportRowTitle`.
+/// `inboxSupportRowTitle`, and [retiredConversationClosed] is
+/// `dmRetiredThreadClosedTitle`.
 class DmPeerLabels extends Equatable {
-  const DmPeerLabels({required this.deletedAccount, required this.moderation});
+  const DmPeerLabels({
+    required this.deletedAccount,
+    required this.moderation,
+    required this.retiredConversationClosed,
+  });
 
   /// Shown instead of the name of an account that published a NIP-62 vanish.
   final String deletedAccount;
@@ -22,8 +26,28 @@ class DmPeerLabels extends Equatable {
   /// Shown instead of the kind-0 name of a Divine Moderation key.
   final String moderation;
 
+  /// Shown instead of message content for a retired moderation thread.
+  final String retiredConversationClosed;
+
   @override
-  List<Object?> get props => [deletedAccount, moderation];
+  List<Object?> get props => [
+    deletedAccount,
+    moderation,
+    retiredConversationClosed,
+  ];
+}
+
+/// Resolves the profile-independent prefix shared by the row and action sheet.
+String? dmPeerSubstituteName({
+  required bool isVanished,
+  required bool isModeration,
+  required DmPeerLabels labels,
+  String? displayNameOverride,
+}) {
+  if (isVanished) return labels.deletedAccount;
+  if (displayNameOverride != null) return displayNameOverride;
+  if (isModeration) return labels.moderation;
+  return null;
 }
 
 /// The peer's name, in the precedence every DM surface has to agree on:
@@ -48,14 +72,17 @@ class DmPeerLabels extends Equatable {
 String dmPeerName({
   required String pubkeyHex,
   required bool isVanished,
+  required bool isModeration,
   required DmPeerLabels labels,
   String? profileName,
   String? displayNameOverride,
 }) {
-  if (isVanished) return labels.deletedAccount;
-  if (displayNameOverride != null) return displayNameOverride;
-  // Answers for retired keys too, via `isModerationAccount`: a rotated-away
-  // thread stays an ordinary inbox row and has no kind 0 of its own.
-  if (isModerationAccount(pubkeyHex)) return labels.moderation;
+  final substitute = dmPeerSubstituteName(
+    isVanished: isVanished,
+    isModeration: isModeration,
+    labels: labels,
+    displayNameOverride: displayNameOverride,
+  );
+  if (substitute != null) return substitute;
   return profileName ?? UserProfile.defaultDisplayNameFor(pubkeyHex);
 }

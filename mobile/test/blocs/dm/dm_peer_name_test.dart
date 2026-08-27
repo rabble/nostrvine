@@ -9,6 +9,7 @@ import 'package:openvine/config/official_accounts.dart';
 const _labels = DmPeerLabels(
   deletedAccount: 'Deleted account',
   moderation: 'Divine Moderation',
+  retiredConversationClosed: 'This conversation is closed.',
 );
 
 const _ordinaryPubkey =
@@ -22,6 +23,7 @@ void main() {
           dmPeerName(
             pubkeyHex: kModerationPubkeyHex,
             isVanished: true,
+            isModeration: true,
             labels: _labels,
             profileName: 'Kind Zero Name',
             displayNameOverride: 'Override',
@@ -35,6 +37,7 @@ void main() {
           dmPeerName(
             pubkeyHex: kModerationPubkeyHex,
             isVanished: false,
+            isModeration: true,
             labels: _labels,
             profileName: 'Kind Zero Name',
             displayNameOverride: 'Override',
@@ -48,6 +51,7 @@ void main() {
           dmPeerName(
             pubkeyHex: kModerationPubkeyHex,
             isVanished: false,
+            isModeration: true,
             labels: _labels,
             profileName: 'Kind Zero Name',
           ),
@@ -60,6 +64,7 @@ void main() {
           dmPeerName(
             pubkeyHex: _ordinaryPubkey,
             isVanished: false,
+            isModeration: false,
             labels: _labels,
             profileName: 'Kind Zero Name',
           ),
@@ -72,6 +77,7 @@ void main() {
           dmPeerName(
             pubkeyHex: _ordinaryPubkey,
             isVanished: false,
+            isModeration: false,
             labels: _labels,
           ),
           equals(UserProfile.defaultDisplayNameFor(_ordinaryPubkey)),
@@ -90,6 +96,7 @@ void main() {
           dmPeerName(
             pubkeyHex: retired,
             isVanished: false,
+            isModeration: true,
             labels: _labels,
           ),
           equals(_labels.moderation),
@@ -101,6 +108,7 @@ void main() {
           dmPeerName(
             pubkeyHex: _ordinaryPubkey,
             isVanished: false,
+            isModeration: false,
             labels: _labels,
           ),
           isNot(equals(_labels.moderation)),
@@ -112,15 +120,37 @@ void main() {
   group(DmPeerLabels, () {
     test('compares by value, so a redelivery of the same copy is a no-op', () {
       expect(
-        const DmPeerLabels(deletedAccount: 'a', moderation: 'b'),
-        equals(const DmPeerLabels(deletedAccount: 'a', moderation: 'b')),
+        const DmPeerLabels(
+          deletedAccount: 'a',
+          moderation: 'b',
+          retiredConversationClosed: 'c',
+        ),
+        equals(
+          const DmPeerLabels(
+            deletedAccount: 'a',
+            moderation: 'b',
+            retiredConversationClosed: 'c',
+          ),
+        ),
       );
     });
 
     test('differs when the locale changes the copy', () {
       expect(
-        const DmPeerLabels(deletedAccount: 'a', moderation: 'b'),
-        isNot(equals(const DmPeerLabels(deletedAccount: 'z', moderation: 'b'))),
+        const DmPeerLabels(
+          deletedAccount: 'a',
+          moderation: 'b',
+          retiredConversationClosed: 'c',
+        ),
+        isNot(
+          equals(
+            const DmPeerLabels(
+              deletedAccount: 'z',
+              moderation: 'b',
+              retiredConversationClosed: 'c',
+            ),
+          ),
+        ),
       );
     });
   });

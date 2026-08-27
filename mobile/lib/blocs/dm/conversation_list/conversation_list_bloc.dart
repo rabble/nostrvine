@@ -22,6 +22,10 @@ import 'package:rxdart/rxdart.dart';
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
 
+typedef DmPeerAccountPredicate = bool Function(String pubkeyHex);
+
+bool _neverDmPeerAccount(String _) => false;
+
 class ConversationListBloc
     extends Bloc<ConversationListEvent, ConversationListState> {
   ConversationListBloc({
@@ -32,6 +36,8 @@ class ConversationListBloc
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
     String? supportRowPubkey,
+    DmPeerAccountPredicate moderationAccount = _neverDmPeerAccount,
+    DmPeerAccountPredicate retiredModerationAccount = _neverDmPeerAccount,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
@@ -39,6 +45,8 @@ class ConversationListBloc
        _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
        _supportRowPubkey = supportRowPubkey,
+       _moderationAccount = moderationAccount,
+       _retiredModerationAccount = retiredModerationAccount,
        super(const ConversationListState()) {
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
@@ -93,6 +101,11 @@ class ConversationListBloc
   /// Moderation pubkey the pinned support row targets, injected rather than
   /// imported so this bloc stays free of app-layer config (#6283).
   final String? _supportRowPubkey;
+
+  /// App-configured identity predicates, injected so this bloc does not import
+  /// release-pinned account configuration directly (#6283).
+  final DmPeerAccountPredicate _moderationAccount;
+  final DmPeerAccountPredicate _retiredModerationAccount;
 
   /// Window over which bursty conversation writes are coalesced before the
   /// list is re-composed. The combined stream re-runs `classifyPotentialRequests`
@@ -691,7 +704,7 @@ class ConversationListBloc
   /// [conversations] is the COMPLETE accepted-union-followed set, so a filter
   /// result is always complete — "You're all caught up" and "No matches" can no
   /// longer be statements about just the loaded page.
-  static List<DmConversation> _computeVisible(
+  List<DmConversation> _computeVisible(
     List<DmConversation> conversations, {
     required List<DmConversation> blockedConversations,
     required InboxFilter filter,
@@ -734,7 +747,7 @@ class ConversationListBloc
     );
   }
 
-  static List<DmConversation> _applyFilters(
+  List<DmConversation> _applyFilters(
     List<DmConversation> conversations, {
     required bool unreadOnly,
     required String query,
@@ -755,7 +768,9 @@ class ConversationListBloc
         vanishedPubkeys: vanishedPubkeys,
         peerLabels: peerLabels,
       ).toLowerCase();
-      final preview = c.lastMessageContent?.toLowerCase() ?? '';
+      final preview = peerLabels != null && _retiredModerationAccount(other)
+          ? peerLabels.retiredConversationClosed.toLowerCase()
+          : c.lastMessageContent?.toLowerCase() ?? '';
       return name.contains(normalized) || preview.contains(normalized);
     }).toList();
   }
@@ -766,7 +781,7 @@ class ConversationListBloc
   /// Falls back to the profile-or-generated value while [peerLabels] is null,
   /// which is the pre-delivery window only — matching the substitutes needs the
   /// strings, and there is nothing better to match on until they arrive.
-  static String _peerName(
+  String _peerName(
     String pubkey, {
     required Map<String, String> profileNames,
     required Set<String> vanishedPubkeys,
@@ -779,6 +794,7 @@ class ConversationListBloc
     return dmPeerName(
       pubkeyHex: pubkey,
       isVanished: vanishedPubkeys.contains(pubkey),
+      isModeration: _moderationAccount(pubkey),
       labels: peerLabels,
       profileName: profileName,
     );
@@ -882,6 +898,10 @@ class ConversationListBloc
       // A stream callback resumes outside the handler that started it, so the
       // add has to be guarded — `close()` does not cancel it.
       (pubkeys) => addIfOpen(_ConversationListVanishedPubkeysChanged(pubkeys)),
+      onError: (Object error, StackTrace stackTrace) {
+        // Drift / IO failures are expected and are not Reportable.
+        addError(error, stackTrace);
+      },
     );
   }
 
@@ -889,8 +909,7 @@ class ConversationListBloc
     _ConversationListVanishedPubkeysChanged event,
     Emitter<ConversationListState> emit,
   ) {
-    // Exact set equality without reaching for a Flutter import: this bloc
-    // must stay free of the Flutter SDK.
+    // Exact set equality without adding another dependency to this BLoC.
     if (event.pubkeys.length == state.vanishedPubkeys.length &&
         event.pubkeys.containsAll(state.vanishedPubkeys)) {
       return;
