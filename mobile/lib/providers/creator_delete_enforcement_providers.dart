@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -19,7 +18,7 @@ final creatorDeleteEnforcementRepositoryProvider =
       final environment = ref.watch(currentEnvironmentProvider);
       return CreatorDeleteEnforcementRepository(
         baseUrl: environment.moderationApiBaseUrl,
-        enabled: environment.environment != AppEnvironment.local,
+        enabled: environment.creatorDeleteEnforcementEnabled,
         httpClient: client,
         nip98AuthService: ref.watch(nip98AuthServiceProvider),
         reportError: (error, stackTrace) => unawaited(

@@ -12,8 +12,9 @@ import 'package:openvine/services/content_deletion_service.dart';
 void showOwnerVideoCleanupCompletion(
   BuildContext context,
   OwnerVideoActionsCubit cubit,
+  String videoId,
 ) {
-  final completion = cubit.cleanupCompletion;
+  final completion = cubit.cleanupCompletionFor(videoId);
   if (completion == null) return;
 
   final messenger = ScaffoldMessenger.of(context);
@@ -23,21 +24,22 @@ void showOwnerVideoCleanupCompletion(
   final partial = context.l10n.shareMenuDeletePartiallyConfirmed;
 
   unawaited(
-    completion.then((state) {
-      final message = switch (state.cleanupStatus) {
+    completion.then((operation) {
+      final message = switch (operation.cleanupStatus) {
         OwnerVideoCleanupStatus.confirmed =>
-          state.deleteResult?.acceptance == DeleteAcceptance.someRelays
+          operation.deleteResult?.acceptance == DeleteAcceptance.someRelays
               ? partial
               : confirmed,
         OwnerVideoCleanupStatus.delayed => delayed,
         OwnerVideoCleanupStatus.failed => failed,
-        OwnerVideoCleanupStatus.idle || OwnerVideoCleanupStatus.inProgress =>
-          throw StateError('Cleanup completion was not terminal'),
+        OwnerVideoCleanupStatus.unavailable => confirmed,
+        OwnerVideoCleanupStatus.idle ||
+        OwnerVideoCleanupStatus.inProgress => delayed,
       };
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
           message,
-          error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
+          error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
         ),
       );
     }),

@@ -69,9 +69,36 @@ void main() {
 
       final result = await repository.enforce('local-kind5');
 
-      expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+      expect(result.status, CreatorDeleteEnforcementStatus.unavailable);
       expect(calls, 0);
     });
+
+    test(
+      'missing auth token delays cleanup without making a request',
+      () async {
+        var calls = 0;
+        when(
+          () => auth.createAuthToken(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async => null);
+        final repository = CreatorDeleteEnforcementRepository(
+          baseUrl: 'https://moderation.example',
+          httpClient: MockClient((_) async {
+            calls++;
+            return http.Response('', 200);
+          }),
+          nip98AuthService: auth,
+        );
+
+        final result = await repository.enforce('kind5');
+
+        expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+        expect(calls, 0);
+      },
+    );
 
     test('maps synchronous terminal failure to permanent failure', () async {
       final result = await build(

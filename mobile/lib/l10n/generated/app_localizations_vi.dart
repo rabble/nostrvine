@@ -3918,11 +3918,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Đã xóa video. Việc dọn dẹp tệp có thể mất thêm một chút thời gian.';
+      'Đã xóa video. Có thể mất một lúc để video biến mất ở mọi nơi.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Đã xóa video nhưng không thể dọn dẹp tệp. Hãy liên hệ bộ phận hỗ trợ.';
+      'Đã xóa video nhưng chúng tôi không thể xóa mọi bản sao. Hãy liên hệ bộ phận hỗ trợ.';
 
   @override
   String get authSessionExpired =>

@@ -31,6 +31,15 @@ void main() {
       timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
       videoUrl: 'https://example.com/video.mp4',
     );
+    final secondVideo = VideoEvent(
+      id: '123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0',
+      pubkey:
+          'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+      createdAt: 1757385264,
+      content: 'Second test video',
+      timestamp: DateTime.fromMillisecondsSinceEpoch(1757385264 * 1000),
+      videoUrl: 'https://example.com/second.mp4',
+    );
 
     late _MockContentDeletionService deletionService;
     late _MockVideoEventService videoEventService;
@@ -69,33 +78,35 @@ void main() {
       },
       act: (cubit) => cubit.deleteVideo(video),
       expect: () => [
-        const OwnerVideoActionsState(
-          deleteStatus: OwnerVideoDeleteStatus.deleting,
+        isA<OwnerVideoActionsState>().having(
+          (state) => state.forVideo(video.id).deleteStatus,
+          'deleteStatus',
+          OwnerVideoDeleteStatus.deleting,
         ),
         isA<OwnerVideoActionsState>()
             .having(
-              (state) => state.deleteStatus,
+              (state) => state.forVideo(video.id).deleteStatus,
               'deleteStatus',
               OwnerVideoDeleteStatus.success,
             )
             .having(
-              (state) => state.deleteResult?.success,
+              (state) => state.forVideo(video.id).deleteResult?.success,
               'deleteResult.success',
               isTrue,
             )
             .having(
-              (state) => state.deleteResult?.deleteEventId,
+              (state) => state.forVideo(video.id).deleteResult?.deleteEventId,
               'deleteResult.deleteEventId',
               'delete-event-id',
             ),
         isA<OwnerVideoActionsState>()
             .having(
-              (state) => state.deleteStatus,
+              (state) => state.forVideo(video.id).deleteStatus,
               'deleteStatus',
               OwnerVideoDeleteStatus.success,
             )
             .having(
-              (state) => state.cleanupStatus,
+              (state) => state.forVideo(video.id).cleanupStatus,
               'cleanupStatus',
               OwnerVideoCleanupStatus.confirmed,
             ),
@@ -125,22 +136,24 @@ void main() {
       },
       act: (cubit) => cubit.deleteVideo(video),
       expect: () => [
-        const OwnerVideoActionsState(
-          deleteStatus: OwnerVideoDeleteStatus.deleting,
+        isA<OwnerVideoActionsState>().having(
+          (state) => state.forVideo(video.id).deleteStatus,
+          'deleteStatus',
+          OwnerVideoDeleteStatus.deleting,
         ),
         isA<OwnerVideoActionsState>()
             .having(
-              (state) => state.deleteStatus,
+              (state) => state.forVideo(video.id).deleteStatus,
               'deleteStatus',
               OwnerVideoDeleteStatus.failure,
             )
             .having(
-              (state) => state.deleteResult?.success,
+              (state) => state.forVideo(video.id).deleteResult?.success,
               'deleteResult.success',
               isFalse,
             )
             .having(
-              (state) => state.deleteResult?.failureKind,
+              (state) => state.forVideo(video.id).deleteResult?.failureKind,
               'deleteResult.failureKind',
               DeleteFailureKind.relayRejected,
             ),
@@ -171,22 +184,24 @@ void main() {
       },
       act: (cubit) => cubit.deleteVideo(video),
       expect: () => [
-        const OwnerVideoActionsState(
-          deleteStatus: OwnerVideoDeleteStatus.deleting,
+        isA<OwnerVideoActionsState>().having(
+          (state) => state.forVideo(video.id).deleteStatus,
+          'deleteStatus',
+          OwnerVideoDeleteStatus.deleting,
         ),
         isA<OwnerVideoActionsState>().having(
-          (state) => state.cleanupStatus,
+          (state) => state.forVideo(video.id).cleanupStatus,
           'cleanupStatus',
           OwnerVideoCleanupStatus.inProgress,
         ),
         isA<OwnerVideoActionsState>()
             .having(
-              (state) => state.deleteStatus,
+              (state) => state.forVideo(video.id).deleteStatus,
               'deleteStatus',
               OwnerVideoDeleteStatus.success,
             )
             .having(
-              (state) => state.cleanupStatus,
+              (state) => state.forVideo(video.id).cleanupStatus,
               'cleanupStatus',
               OwnerVideoCleanupStatus.delayed,
             ),
@@ -214,13 +229,16 @@ void main() {
       final start = await cubit.deleteVideo(video);
 
       expect(start, OwnerVideoDeleteStart.started);
-      expect(cubit.state.cleanupStatus, OwnerVideoCleanupStatus.inProgress);
-      expect(cubit.cleanupCompletion, isNotNull);
+      expect(
+        cubit.state.forVideo(video.id).cleanupStatus,
+        OwnerVideoCleanupStatus.inProgress,
+      );
+      expect(cubit.cleanupCompletionFor(video.id), isNotNull);
 
       cleanupCompleter.complete(
         const CreatorDeleteEnforcementResult.confirmed(),
       );
-      final terminal = await cubit.cleanupCompletion;
+      final terminal = await cubit.cleanupCompletionFor(video.id);
       expect(terminal!.cleanupStatus, OwnerVideoCleanupStatus.confirmed);
       await cubit.close();
     });
@@ -252,6 +270,95 @@ void main() {
       await cubit.close();
     });
 
+    test('allows different videos to delete concurrently', () async {
+      final firstRelay = Completer<DeleteResult>();
+      final secondRelay = Completer<DeleteResult>();
+      when(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer((_) => firstRelay.future);
+      when(
+        () => deletionService.quickDelete(
+          video: secondVideo,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer((_) => secondRelay.future);
+      final cubit = buildCubit();
+
+      final first = cubit.deleteVideo(video);
+      final second = cubit.deleteVideo(secondVideo);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.isDeleteInProgress(video.id), isTrue);
+      expect(cubit.isDeleteInProgress(secondVideo.id), isTrue);
+      verify(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).called(1);
+      verify(
+        () => deletionService.quickDelete(
+          video: secondVideo,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).called(1);
+
+      firstRelay.complete(
+        DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+      );
+      secondRelay.complete(
+        DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+      );
+      await Future.wait([first, second]);
+      await cubit.close();
+    });
+
+    test('keeps resolved dependencies alive after the cubit closes', () async {
+      final relayCompleter = Completer<DeleteResult>();
+      var surfaceDisposed = false;
+      when(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer((_) => relayCompleter.future);
+      final cubit = OwnerVideoActionsCubit(
+        contentDeletionService: () {
+          if (surfaceDisposed) throw StateError('surface disposed');
+          return Future.value(deletionService);
+        },
+        videoEventService: () {
+          if (surfaceDisposed) throw StateError('surface disposed');
+          return videoEventService;
+        },
+        enforcementRepository: () {
+          if (surfaceDisposed) throw StateError('surface disposed');
+          return enforcementRepository;
+        },
+      );
+
+      final deletion = cubit.deleteVideo(video);
+      await Future<void>.delayed(Duration.zero);
+      surfaceDisposed = true;
+      await cubit.close();
+      relayCompleter.complete(
+        DeleteResult.createSuccess(
+          'delete-event-id',
+          acceptance: DeleteAcceptance.everyRelay,
+        ),
+      );
+      await deletion;
+      await cubit.cleanupCompletionFor(video.id);
+
+      verify(
+        () => videoEventService.removeVideoEventCompletely(video),
+      ).called(1);
+      verify(() => enforcementRepository.enforce('delete-event-id')).called(1);
+    });
+
     blocTest<OwnerVideoActionsCubit, OwnerVideoActionsState>(
       'reports unknown failure when delete throws',
       build: buildCubit,
@@ -265,22 +372,24 @@ void main() {
       },
       act: (cubit) => cubit.deleteVideo(video),
       expect: () => [
-        const OwnerVideoActionsState(
-          deleteStatus: OwnerVideoDeleteStatus.deleting,
+        isA<OwnerVideoActionsState>().having(
+          (state) => state.forVideo(video.id).deleteStatus,
+          'deleteStatus',
+          OwnerVideoDeleteStatus.deleting,
         ),
         isA<OwnerVideoActionsState>()
             .having(
-              (state) => state.deleteStatus,
+              (state) => state.forVideo(video.id).deleteStatus,
               'deleteStatus',
               OwnerVideoDeleteStatus.failure,
             )
             .having(
-              (state) => state.deleteResult?.success,
+              (state) => state.forVideo(video.id).deleteResult?.success,
               'deleteResult.success',
               isFalse,
             )
             .having(
-              (state) => state.deleteResult?.failureKind,
+              (state) => state.forVideo(video.id).deleteResult?.failureKind,
               'deleteResult.failureKind',
               DeleteFailureKind.unknown,
             ),

@@ -118,26 +118,34 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
 
   Future<void> _deleteVideo(VideoEvent video) async {
     final ownerVideoActionsCubit = _ownerVideoActionsCubit;
-    await ownerVideoActionsCubit.deleteVideo(video);
+    final start = await ownerVideoActionsCubit.deleteVideo(video);
+    if (start == OwnerVideoDeleteStart.busy) return;
 
     if (!mounted) return;
 
-    final state = ownerVideoActionsCubit.state;
-    if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
-      showOwnerVideoCleanupCompletion(context, ownerVideoActionsCubit);
+    final operation = ownerVideoActionsCubit.state.forVideo(video.id);
+    if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
+      showOwnerVideoCleanupCompletion(
+        context,
+        ownerVideoActionsCubit,
+        video.id,
+      );
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
-        localizedOwnerVideoDeleteSuccessMessage(context, state),
-        error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
+        localizedOwnerVideoDeleteSuccessMessage(context, operation),
+        error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
       );
       _close();
       messenger.showSnackBar(snackBar);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          state.deleteResult == null
+          operation.deleteResult == null
               ? context.l10n.shareMenuDeleteFailedGeneric
-              : localizedDeleteFailureMessage(context, state.deleteResult!),
+              : localizedDeleteFailureMessage(
+                  context,
+                  operation.deleteResult!,
+                ),
           error: true,
         ),
       );
@@ -153,17 +161,21 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
         overlayChildBuilder: (_) => BlocProvider.value(
           value: _ownerVideoActionsCubit,
           child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
-            builder: (context, state) => _FeedSettingsOverlay(
-              link: _link,
-              onClose: _close,
-              isOwnVideo: _isOwnVideo,
-              isDeleting:
-                  state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
-                  state.cleanupStatus == OwnerVideoCleanupStatus.inProgress,
-              onEditVideo: _editVideo,
-              onDeleteVideo: _confirmDeleteVideo,
-              videoId: widget.videoId ?? widget.video?.id,
-            ),
+            builder: (context, state) {
+              final operation = state.forVideo(widget.video?.id ?? '');
+              return _FeedSettingsOverlay(
+                link: _link,
+                onClose: _close,
+                isOwnVideo: _isOwnVideo,
+                isDeleting:
+                    operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
+                    operation.cleanupStatus ==
+                        OwnerVideoCleanupStatus.inProgress,
+                onEditVideo: _editVideo,
+                onDeleteVideo: _confirmDeleteVideo,
+                videoId: widget.videoId ?? widget.video?.id,
+              );
+            },
           ),
         ),
         child: ValueListenableBuilder<bool>(

@@ -4071,11 +4071,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Videoclip eliminat. Curățarea fișierelor media poate dura puțin mai mult.';
+      'Videoclip eliminat. Poate dura puțin până dispare de peste tot.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Videoclip eliminat, dar curățarea fișierelor media a eșuat. Contactează asistența.';
+      'Videoclip eliminat, dar nu am putut șterge fiecare copie. Contactează asistența.';
 
   @override
   String get authSessionExpired =>

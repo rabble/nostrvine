@@ -3949,11 +3949,11 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'ویڈیو ہٹا دی گئی۔ میڈیا کی صفائی میں کچھ مزید وقت لگ سکتا ہے۔';
+      'ویڈیو حذف کر دی گئی۔ اسے ہر جگہ سے غائب ہونے میں کچھ وقت لگ سکتا ہے۔';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'ویڈیو ہٹا دی گئی، لیکن میڈیا کی صفائی ناکام رہی۔ سپورٹ سے رابطہ کریں۔';
+      'ویڈیو حذف کر دی گئی، لیکن ہم ہر نقل کو نہیں ہٹا سکے۔ سپورٹ سے رابطہ کریں۔';
 
   @override
   String get authSessionExpired =>

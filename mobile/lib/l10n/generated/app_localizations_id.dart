@@ -3878,11 +3878,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Video dihapus. Pembersihan media mungkin memerlukan waktu lebih lama.';
+      'Video dihapus. Mungkin perlu waktu hingga video menghilang dari semua tempat.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Video dihapus, tetapi pembersihan media gagal. Hubungi dukungan.';
+      'Video dihapus, tetapi kami tidak dapat menghapus semua salinannya. Hubungi dukungan.';
 
   @override
   String get authSessionExpired =>

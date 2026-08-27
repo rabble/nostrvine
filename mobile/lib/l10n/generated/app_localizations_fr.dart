@@ -4008,11 +4008,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Vidéo supprimée. Le nettoyage des médias peut prendre un peu plus de temps.';
+      'Vidéo supprimée. Elle peut mettre un peu de temps à disparaître partout.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Vidéo supprimée, mais le nettoyage des médias a échoué. Contactez l’assistance.';
+      'Vidéo supprimée, mais nous n’avons pas pu retirer toutes les copies. Contactez l’assistance.';
 
   @override
   String get authSessionExpired => 'Ta session a expiré. Reconnecte-toi.';

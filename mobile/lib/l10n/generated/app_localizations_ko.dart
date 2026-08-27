@@ -3721,11 +3721,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      '영상을 삭제했어요. 미디어 정리에 시간이 조금 더 걸릴 수 있어요.';
+      '영상을 삭제했어요. 모든 곳에서 사라질 때까지 시간이 조금 걸릴 수 있어요.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      '영상은 삭제했지만 미디어 정리에 실패했어요. 지원팀에 문의해 주세요.';
+      '영상은 삭제했지만 모든 사본을 지우지는 못했어요. 지원팀에 문의해 주세요.';
 
   @override
   String get authSessionExpired => '세션이 만료됐어요. 다시 로그인해주세요.';

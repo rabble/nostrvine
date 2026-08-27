@@ -3974,11 +3974,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Vídeo removido. A limpeza dos ficheiros pode demorar um pouco mais.';
+      'Vídeo eliminado. Pode demorar um pouco até desaparecer de todo o lado.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Vídeo removido, mas a limpeza dos ficheiros falhou. Contacta o suporte.';
+      'Vídeo eliminado, mas não conseguimos remover todas as cópias. Contacta o suporte.';
 
   @override
   String get authSessionExpired => 'Sua sessão expirou. Entre novamente.';

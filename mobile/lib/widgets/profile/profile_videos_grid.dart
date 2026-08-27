@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
@@ -201,15 +202,21 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         context.l10n.videoGridOptionsTitle,
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
-      body: BlocProvider.value(
-        value: _ownerVideoActionsCubit,
-        child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
-          builder: (context, state) => _OwnVideoActionsSheetBody(
-            onEditVideo: () => _editVideo(video),
-            onDeleteVideo: () => _confirmDeleteVideo(video),
-            isDeleting:
-                state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
-                state.cleanupStatus == OwnerVideoCleanupStatus.inProgress,
+      body: Builder(
+        builder: (sheetContext) => BlocProvider.value(
+          value: _ownerVideoActionsCubit,
+          child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
+            builder: (context, state) {
+              final operation = state.forVideo(video.id);
+              return _OwnVideoActionsSheetBody(
+                onEditVideo: () => _editVideo(video),
+                onDeleteVideo: () => _confirmDeleteVideo(video, sheetContext),
+                isDeleting:
+                    operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
+                    operation.cleanupStatus ==
+                        OwnerVideoCleanupStatus.inProgress,
+              );
+            },
           ),
         ),
       ),
@@ -220,36 +227,45 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
   }
 
-  Future<void> _confirmDeleteVideo(VideoEvent video) async {
+  Future<void> _confirmDeleteVideo(
+    VideoEvent video,
+    BuildContext sheetContext,
+  ) async {
     final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
     if (!confirmed || !mounted) return;
 
     final cubit = _ownerVideoActionsCubit;
-    await cubit.deleteVideo(video);
+    final start = await cubit.deleteVideo(video);
+    if (start == OwnerVideoDeleteStart.busy) return;
 
     if (!mounted) return;
 
-    final state = cubit.state;
+    final operation = cubit.state.forVideo(video.id);
     final messenger = ScaffoldMessenger.of(context);
-    if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
-      showOwnerVideoCleanupCompletion(context, cubit);
+    if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
+      showOwnerVideoCleanupCompletion(context, cubit, video.id);
       // The service marks the video locally deleted; a refresh drops the
       // tile from the grid without waiting for relay propagation.
       context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
-      await Navigator.of(context).maybePop();
+      if (sheetContext.mounted) {
+        sheetContext.popModalIfMounted();
+      }
       if (!mounted) return;
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
-          localizedOwnerVideoDeleteSuccessMessage(context, state),
-          error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
+          localizedOwnerVideoDeleteSuccessMessage(context, operation),
+          error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
         ),
       );
     } else {
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
-          state.deleteResult == null
+          operation.deleteResult == null
               ? context.l10n.shareMenuDeleteFailedGeneric
-              : localizedDeleteFailureMessage(context, state.deleteResult!),
+              : localizedDeleteFailureMessage(
+                  context,
+                  operation.deleteResult!,
+                ),
           error: true,
         ),
       );

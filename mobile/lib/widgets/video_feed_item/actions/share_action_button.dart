@@ -205,7 +205,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isOwnContent = _isUserOwnContent();
+    // Provider scope and owner actions must come from the same decision made
+    // in initState. Auth can change while the sheet is open; recomputing here
+    // could expose owner UI without installing its cubit.
+    final isOwnContent = _ownerVideoActionsCubit != null;
     final canAddVideoToClips =
         (widget.video.isOriginalVine || isOwnContent) && !kIsWeb;
 
@@ -447,26 +450,34 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   Future<void> _deleteVideo() async {
     final ownerVideoActionsCubit = _ownerVideoActionsCubit;
     if (ownerVideoActionsCubit == null) return;
-    await ownerVideoActionsCubit.deleteVideo(widget.video);
+    final start = await ownerVideoActionsCubit.deleteVideo(widget.video);
+    if (start == OwnerVideoDeleteStart.busy) return;
 
     if (!mounted) return;
 
-    final state = ownerVideoActionsCubit.state;
-    if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
-      showOwnerVideoCleanupCompletion(context, ownerVideoActionsCubit);
+    final operation = ownerVideoActionsCubit.state.forVideo(widget.video.id);
+    if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
+      showOwnerVideoCleanupCompletion(
+        context,
+        ownerVideoActionsCubit,
+        widget.video.id,
+      );
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
-        localizedOwnerVideoDeleteSuccessMessage(context, state),
-        error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
+        localizedOwnerVideoDeleteSuccessMessage(context, operation),
+        error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
       );
       _safePop(context);
       messenger.showSnackBar(snackBar);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          state.deleteResult == null
+          operation.deleteResult == null
               ? context.l10n.shareMenuDeleteFailedGeneric
-              : localizedDeleteFailureMessage(context, state.deleteResult!),
+              : localizedDeleteFailureMessage(
+                  context,
+                  operation.deleteResult!,
+                ),
           error: true,
         ),
       );
@@ -694,11 +705,11 @@ class _UnifiedShareSheetView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDeletePending =
         isOwnContent &&
-        context.select<OwnerVideoActionsCubit, bool>(
-          (cubit) =>
-              cubit.state.deleteStatus == OwnerVideoDeleteStatus.deleting ||
-              cubit.state.cleanupStatus == OwnerVideoCleanupStatus.inProgress,
-        );
+        context.select<OwnerVideoActionsCubit, bool>((cubit) {
+          final operation = cubit.state.forVideo(video.id);
+          return operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
+              operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
+        });
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.5);

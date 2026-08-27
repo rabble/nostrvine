@@ -3961,11 +3961,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Video verwijderd. Het opruimen van media kan iets langer duren.';
+      'Video verwijderd. Het kan even duren voordat die overal verdwenen is.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Video verwijderd, maar het opruimen van media is mislukt. Neem contact op met support.';
+      'Video verwijderd, maar we konden niet elke kopie weghalen. Neem contact op met support.';
 
   @override
   String get authSessionExpired => 'Je sessie is verlopen. Log opnieuw in.';

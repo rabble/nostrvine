@@ -3861,11 +3861,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'ቪዲዮው ተወግዷል። የሚዲያ ማጽዳት ትንሽ ተጨማሪ ጊዜ ሊወስድ ይችላል።';
+      'ቪዲዮው ተሰርዟል። ከሁሉም ቦታ ለመጥፋት ትንሽ ጊዜ ሊወስድ ይችላል።';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'ቪዲዮው ተወግዷል፣ ግን የሚዲያ ማጽዳት አልተሳካም። ድጋፍን ያነጋግሩ።';
+      'ቪዲዮው ተሰርዟል፣ ግን ሁሉንም ቅጂዎች ማስወገድ አልቻልንም። ድጋፍን ያነጋግሩ።';
 
   @override
   String get authSessionExpired => 'ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።';

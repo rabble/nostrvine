@@ -47,21 +47,27 @@ String? localizedPartialDeleteMessage(
 
 String localizedOwnerVideoDeleteSuccessMessage(
   BuildContext context,
-  OwnerVideoActionsState state,
+  OwnerVideoOperationState operation,
 ) {
-  if (state.cleanupStatus == OwnerVideoCleanupStatus.failed) {
+  if (operation.cleanupStatus == OwnerVideoCleanupStatus.failed) {
     return context.l10n.shareMenuDeleteCleanupFailed;
   }
-  if (state.cleanupStatus == OwnerVideoCleanupStatus.delayed) {
+  if (operation.cleanupStatus == OwnerVideoCleanupStatus.delayed) {
     return context.l10n.shareMenuDeleteCleanupDelayed;
   }
-  final partial = localizedPartialDeleteMessage(context, state.deleteResult);
+  final partial = localizedPartialDeleteMessage(
+    context,
+    operation.deleteResult,
+  );
   if (partial != null) return partial;
-  return switch (state.cleanupStatus) {
+  return switch (operation.cleanupStatus) {
     OwnerVideoCleanupStatus.confirmed =>
       context.l10n.shareMenuDeleteCleanupConfirmed,
-    OwnerVideoCleanupStatus.delayed ||
-    OwnerVideoCleanupStatus.failed => throw StateError('Handled above'),
+    OwnerVideoCleanupStatus.delayed =>
+      context.l10n.shareMenuDeleteCleanupDelayed,
+    OwnerVideoCleanupStatus.failed => context.l10n.shareMenuDeleteCleanupFailed,
+    OwnerVideoCleanupStatus.unavailable =>
+      context.l10n.shareMenuDeleteCleanupConfirmed,
     OwnerVideoCleanupStatus.idle || OwnerVideoCleanupStatus.inProgress =>
       context.l10n.shareMenuDeleteCleanupInProgress,
   };

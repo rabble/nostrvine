@@ -3887,11 +3887,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Video kaldırıldı. Medya temizliği biraz daha uzun sürebilir.';
+      'Video silindi. Her yerden kaybolması biraz zaman alabilir.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Video kaldırıldı ancak medya temizliği başarısız oldu. Destekle iletişime geç.';
+      'Video silindi ancak her kopyayı kaldıramadık. Lütfen destek ekibiyle iletişime geç.';
 
   @override
   String get authSessionExpired =>

@@ -397,6 +397,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   /// Delete the video and confirm Divine-controlled media cleanup.
   Future<void> _deleteVideo(BuildContext context, VideoEvent video) async {
     try {
+      if (_ownerVideoActionsCubit.isDeleteInProgress(video.id)) return;
       // Show loading snackbar
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -424,9 +425,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       final start = await _ownerVideoActionsCubit.deleteVideo(video);
       if (start == OwnerVideoDeleteStart.busy) return;
       if (!context.mounted) return;
-      final state = _ownerVideoActionsCubit.state;
-      if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
-        showOwnerVideoCleanupCompletion(context, _ownerVideoActionsCubit);
+      final operation = _ownerVideoActionsCubit.state.forVideo(video.id);
+      if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
+        showOwnerVideoCleanupCompletion(
+          context,
+          _ownerVideoActionsCubit,
+          video.id,
+        );
       }
 
       if (context.mounted) {
@@ -435,7 +440,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
             content: Row(
               children: [
                 Icon(
-                  state.deleteStatus == OwnerVideoDeleteStatus.success
+                  operation.deleteStatus == OwnerVideoDeleteStatus.success
                       ? Icons.check_circle
                       : Icons.error,
                   color: context.vineColors.primaryText,
@@ -443,23 +448,23 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    state.deleteStatus == OwnerVideoDeleteStatus.success
+                    operation.deleteStatus == OwnerVideoDeleteStatus.success
                         ? localizedOwnerVideoDeleteSuccessMessage(
                             context,
-                            state,
+                            operation,
                           )
-                        : state.deleteResult == null
+                        : operation.deleteResult == null
                         ? context.l10n.shareMenuDeleteFailedGeneric
                         : localizedDeleteFailureMessage(
                             context,
-                            state.deleteResult!,
+                            operation.deleteResult!,
                           ),
                   ),
                 ),
               ],
             ),
             backgroundColor:
-                state.deleteStatus == OwnerVideoDeleteStatus.success
+                operation.deleteStatus == OwnerVideoDeleteStatus.success
                 ? VineTheme.vineGreen
                 : VineTheme.error,
           ),

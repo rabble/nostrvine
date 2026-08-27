@@ -3705,11 +3705,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      '動画を削除しました。メディアのクリーンアップにはもう少し時間がかかる場合があります。';
+      '動画を削除しました。すべての場所から消えるまで少し時間がかかる場合があります。';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      '動画は削除されましたが、メディアのクリーンアップに失敗しました。サポートにお問い合わせください。';
+      '動画を削除しましたが、すべてのコピーを削除できませんでした。サポートにお問い合わせください。';
 
   @override
   String get authSessionExpired => 'セッションが切れちゃった。もう一回サインインしてね。';

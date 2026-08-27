@@ -289,6 +289,17 @@ void main() {
           );
         }
       });
+
+      test('enables creator-delete enforcement only in production', () {
+        for (final environment in AppEnvironment.values) {
+          final config = EnvironmentConfig(environment: environment);
+          expect(
+            config.creatorDeleteEnforcementEnabled,
+            environment == AppEnvironment.production,
+            reason: environment.name,
+          );
+        }
+      });
     });
 
     group('inviteBaseUrl', () {

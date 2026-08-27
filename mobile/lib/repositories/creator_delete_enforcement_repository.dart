@@ -8,7 +8,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:openvine/services/nip98_auth_service.dart';
 
-enum CreatorDeleteEnforcementStatus { confirmed, delayed, failed }
+enum CreatorDeleteEnforcementStatus { confirmed, delayed, failed, unavailable }
 
 class CreatorDeleteEnforcementResult {
   const CreatorDeleteEnforcementResult._({required this.status});
@@ -21,6 +21,9 @@ class CreatorDeleteEnforcementResult {
 
   const CreatorDeleteEnforcementResult.failed()
     : this._(status: CreatorDeleteEnforcementStatus.failed);
+
+  const CreatorDeleteEnforcementResult.unavailable()
+    : this._(status: CreatorDeleteEnforcementStatus.unavailable);
 
   final CreatorDeleteEnforcementStatus status;
 }
@@ -59,7 +62,7 @@ class CreatorDeleteEnforcementRepository {
   final void Function(Object, StackTrace)? _reportError;
 
   Future<CreatorDeleteEnforcementResult> enforce(String kind5Id) async {
-    if (!_enabled) return const CreatorDeleteEnforcementResult.delayed();
+    if (!_enabled) return const CreatorDeleteEnforcementResult.unavailable();
     try {
       return await _enforce(kind5Id);
     } on Object catch (error, stackTrace) {

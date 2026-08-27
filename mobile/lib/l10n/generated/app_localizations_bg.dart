@@ -3997,11 +3997,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Видеото е премахнато. Почистването на файловете може да отнеме още малко време.';
+      'Видеото е изтрито. Може да отнеме малко време, докато изчезне отвсякъде.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Видеото е премахнато, но почистването на файловете не бе успешно. Свържете се с поддръжката.';
+      'Видеото е изтрито, но не успяхме да премахнем всяко копие. Свържете се с поддръжката.';
 
   @override
   String get authSessionExpired => 'Сесията ти изтече. Влез отново.';

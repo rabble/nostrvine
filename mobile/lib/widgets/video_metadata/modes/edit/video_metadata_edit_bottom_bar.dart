@@ -175,10 +175,14 @@ class _VideoMetadataEditBottomBarState
       final start = await _ownerVideoActionsCubit.deleteVideo(widget.video);
       if (start == OwnerVideoDeleteStart.busy) return;
       if (!mounted) return;
-      final state = _ownerVideoActionsCubit.state;
+      final operation = _ownerVideoActionsCubit.state.forVideo(widget.video.id);
 
-      if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
-        showOwnerVideoCleanupCompletion(context, _ownerVideoActionsCubit);
+      if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
+        showOwnerVideoCleanupCompletion(
+          context,
+          _ownerVideoActionsCubit,
+          widget.video.id,
+        );
         Log.info(
           'Video deleted successfully: ${widget.video.id}',
           name: 'VideoMetadataEditBottomBar',
@@ -188,8 +192,8 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           final snackBar = DivineSnackbarContainer.snackBar(
-            localizedOwnerVideoDeleteSuccessMessage(context, state),
-            error: state.cleanupStatus == OwnerVideoCleanupStatus.failed,
+            localizedOwnerVideoDeleteSuccessMessage(context, operation),
+            error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
           );
           context.pop();
           messenger.showSnackBar(snackBar);
@@ -199,9 +203,12 @@ class _VideoMetadataEditBottomBarState
           setState(() => _isDeleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              state.deleteResult == null
+              operation.deleteResult == null
                   ? context.l10n.shareMenuDeleteFailedGeneric
-                  : localizedDeleteFailureMessage(context, state.deleteResult!),
+                  : localizedDeleteFailureMessage(
+                      context,
+                      operation.deleteResult!,
+                    ),
               error: true,
             ),
           );
@@ -222,6 +229,10 @@ class _VideoMetadataEditBottomBarState
             error: true,
           ),
         );
+      }
+    } finally {
+      if (mounted && _isDeleting) {
+        setState(() => _isDeleting = false);
       }
     }
   }

@@ -6740,19 +6740,19 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteCleanupConfirmed.
   ///
   /// In en, this message translates to:
-  /// **'Video removed from Divine'**
+  /// **'Video deleted.'**
   String get shareMenuDeleteCleanupConfirmed;
 
   /// No description provided for @shareMenuDeleteCleanupDelayed.
   ///
   /// In en, this message translates to:
-  /// **'Video removed. Media cleanup may take a little longer.'**
+  /// **'Video deleted. It may take a little while to disappear everywhere.'**
   String get shareMenuDeleteCleanupDelayed;
 
   /// No description provided for @shareMenuDeleteCleanupFailed.
   ///
   /// In en, this message translates to:
-  /// **'Video removed, but media cleanup failed. Contact support.'**
+  /// **'Video deleted, but we couldn\'t remove every copy. Please contact support.'**
   String get shareMenuDeleteCleanupFailed;
 
   /// No description provided for @authSessionExpired.

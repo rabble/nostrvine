@@ -3972,11 +3972,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Inalis ang video. Maaaring mas tumagal nang kaunti ang paglilinis ng media.';
+      'Na-delete ang video. Maaaring matagalan nang kaunti bago ito mawala sa lahat ng lugar.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Inalis ang video, pero nabigo ang paglilinis ng media. Makipag-ugnayan sa support.';
+      'Na-delete ang video, pero hindi namin naalis ang lahat ng kopya. Makipag-ugnayan sa support.';
 
   @override
   String get authSessionExpired =>

@@ -3990,11 +3990,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Video eliminado. La limpieza de archivos puede tardar un poco más.';
+      'Video eliminado. Puede tardar un poco en desaparecer de todas partes.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Video eliminado, pero falló la limpieza de archivos. Contacta con soporte.';
+      'Video eliminado, pero no pudimos borrar todas las copias. Contacta con soporte.';
 
   @override
   String get authSessionExpired => 'Tu sesión expiró. Iniciá sesión de nuevo.';

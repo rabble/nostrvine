@@ -3996,11 +3996,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Video entfernt. Die Medienbereinigung kann etwas länger dauern.';
+      'Video gelöscht. Es kann etwas dauern, bis es überall verschwindet.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Video entfernt, aber die Medienbereinigung ist fehlgeschlagen. Kontaktiere den Support.';
+      'Video gelöscht, aber wir konnten nicht jede Kopie entfernen. Kontaktiere bitte den Support.';
 
   @override
   String get authSessionExpired =>

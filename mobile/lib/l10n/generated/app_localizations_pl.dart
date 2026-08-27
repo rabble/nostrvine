@@ -4054,11 +4054,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Film usunięty. Czyszczenie multimediów może potrwać nieco dłużej.';
+      'Film usunięty. Może minąć trochę czasu, zanim zniknie wszędzie.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Film usunięty, ale czyszczenie multimediów nie powiodło się. Skontaktuj się z pomocą.';
+      'Film usunięty, ale nie udało nam się usunąć każdej kopii. Skontaktuj się z pomocą.';
 
   @override
   String get authSessionExpired => 'Twoja sesja wygasła. Zaloguj się ponownie.';

@@ -3945,11 +3945,11 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'Video dialih keluar. Pembersihan media mungkin mengambil masa lebih lama.';
+      'Video dipadamkan. Ia mungkin mengambil sedikit masa untuk hilang dari semua tempat.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Video dialih keluar, tetapi pembersihan media gagal. Hubungi sokongan.';
+      'Video dipadamkan, tetapi kami tidak dapat mengalih keluar setiap salinan. Hubungi sokongan.';
 
   @override
   String get authSessionExpired =>

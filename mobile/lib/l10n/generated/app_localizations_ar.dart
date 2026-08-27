@@ -3914,11 +3914,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupDelayed =>
-      'تمت إزالة الفيديو. قد يستغرق تنظيف الوسائط وقتًا أطول قليلًا.';
+      'تم حذف الفيديو. قد يستغرق اختفاؤه من كل مكان بعض الوقت.';
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'تمت إزالة الفيديو، لكن تعذّر تنظيف الوسائط. تواصل مع الدعم.';
+      'تم حذف الفيديو، لكننا لم نتمكن من إزالة كل نسخة. تواصل مع الدعم.';
 
   @override
   String get authSessionExpired => 'انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.';
