@@ -5272,10 +5272,11 @@ void main() {
           expect(capturedUntil.first, 100);
           expect(capturedUntil.last! < 50, isTrue);
 
-          // But nothing is persisted past that window, so the next run
-          // re-requests it instead of resuming below it.
-          expect(syncState.persistedDrainCursors, isEmpty);
-          expect(syncState.drainCursorOverride, isNull);
+          // The resume point is pinned at the top of the unsettled window and
+          // never moves below it, so the next run re-requests that window
+          // whole instead of resuming underneath it.
+          expect(syncState.persistedDrainCursors, [100]);
+          expect(syncState.drainCursorOverride, 100);
 
           // And the authoritative empty page that followed cannot latch
           // completion over the gap.
@@ -5298,6 +5299,14 @@ void main() {
           final repository = createRepository(syncState: syncState);
 
           await repository.backfillHistoryIfNeeded();
+
+          // Persisting the partial page's own gift wraps / NIP-04 messages
+          // drags oldestSyncedAt down to their timestamps (recordSeen, from
+          // _persistDecryptedGiftWrap and _handleNip04Event). The drain must
+          // not depend on that boundary to find its way back: it seeds from
+          // `historyDrainCursor ?? oldestSyncedAt ?? now`.
+          syncState.oldestOverride = 50;
+
           capturedUntil.clear();
           await repository.backfillHistoryIfNeeded();
 
@@ -5356,6 +5365,40 @@ void main() {
             reason: 'the drain must still be armed after an unanswered page',
           );
           expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        'pins the resume cursor when a page goes unanswered, so a sync '
+        'boundary that moves meanwhile cannot pull the next run below the '
+        'window still owed (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(timedOut: true);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Deferring is not enough on its own: the drain seeds from
+          // `historyDrainCursor ?? oldestSyncedAt ?? now`, so a run that
+          // defers without persisting anything comes back to whatever
+          // oldestSyncedAt has become.
+          expect(syncState.drainCursorOverride, 100);
+
+          // The live subscription keeps ingesting while the drain is deferred,
+          // and recordSeen drags oldestSyncedAt below the window the drain
+          // still owes.
+          syncState.oldestOverride = 50;
+
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+          await repository.backfillHistoryIfNeeded();
+
+          expect(capturedUntil.first, 100);
         },
       );
 

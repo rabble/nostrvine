@@ -1564,12 +1564,18 @@ class DmRepository {
           // relays that did answer. Marking the drain complete on any of those
           // permanently strands unrecovered history (#5202 root cause, #8209).
           // Defer instead: leave historyDrainComplete unset and resume on the
-          // next inbox open from the last boundary this run persisted.
+          // next inbox open from the window this run pins below.
           if (!historyPage.authoritative) {
+            // Pin the resume point at this window before giving up on the
+            // run. Falling back to the seed is not safe: with no cursor
+            // persisted the next run seeds from oldestSyncedAt, which this
+            // run's own persisted messages drag downward (recordSeen), so the
+            // window would be skipped by the very events it did return.
+            await syncState.setHistoryDrainCursor(pubkey, cursor);
             Log.warning(
               'DM history drain saw an empty page that no relay answered for '
-              '${pubkeyForLogs(pubkey)}; deferring completion to the next '
-              'inbox open.',
+              '${pubkeyForLogs(pubkey)}; holding the resume cursor at $cursor '
+              'and deferring completion to the next inbox open.',
               category: LogCategory.system,
             );
             return;
@@ -1595,6 +1601,11 @@ class DmRepository {
           // this one (dedup absorbs the overlap); and do not complete off this
           // run. See #8209.
           if (!sawUnansweredPage) {
+            // Pin the resume point at the top of this window, for the same
+            // reason as the empty case above: an unpinned run falls back to
+            // oldestSyncedAt, which this page's own persisted messages have
+            // already dragged below the window we still need to re-read.
+            await syncState.setHistoryDrainCursor(pubkey, cursor);
             Log.warning(
               'DM history drain saw a page not every relay settled for '
               '${pubkeyForLogs(pubkey)}; holding the resume cursor at '
