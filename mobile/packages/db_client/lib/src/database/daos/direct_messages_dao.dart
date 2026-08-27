@@ -236,8 +236,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       _settleMessageDeletion(
         rumorId,
         status: _deletionSent,
-        // Delivered, so there is nothing left to replay. Dropping the payload
-        // also stops a retraction sitting in the clear on disk forever.
+        // Delivered, so there is nothing left to replay.
         retainRumor: false,
         ownerPubkey: ownerPubkey,
       );
@@ -251,11 +250,18 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// transfer to a message, which may well have been delivered before the
   /// block took effect — calling it sent would misreport a message the peer
   /// still holds.
-  /// The rumor is **kept**. A block is the one terminal state that can be
-  /// lifted from outside the app — a moderation account un-retires, a minor's
-  /// restriction is approved, the server-side signer stops refusing — and the
-  /// stored rumor is the only payload a later replay could use. Dropping it
-  /// makes the row permanently unrepairable, including in the mixed case
+  ///
+  /// The rumor is **kept**. A block is the one terminal state that can lift
+  /// while the build is running — the minor restriction reads live remote
+  /// state, and a server-side signer refusal clears on re-authorization. (The
+  /// retired-moderation-account case cannot: that list is a compile-time
+  /// `const`, so lifting it needs a new build.)
+  ///
+  /// The stored rumor is also the idempotency token, not merely a payload. A
+  /// replay of the stored JSON carries a byte-identical rumor id that the
+  /// recipient dedups; a rebuilt one carries a fresh id, and so lands as a
+  /// second, distinct retraction. Dropping it therefore leaves the row
+  /// unrepairable rather than merely un-retried — including in the mixed case
   /// where some recipients already received the retraction (#8226).
   ///
   /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
