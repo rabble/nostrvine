@@ -241,9 +241,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         ownerPubkey: ownerPubkey,
       );
 
-  /// Send policy refused every recipient: stop re-driving a send that will
-  /// always be refused, but record it as `'deletion_blocked'` rather than
-  /// `'deletion_sent'`.
+  /// Send policy blocked every failed recipient: stop re-driving a send that
+  /// will always be refused, but record it as `'deletion_blocked'` rather than
+  /// `'deletion_sent'`. Other recipients may already have succeeded.
   ///
   /// The reaction path collapses these two, reasoning that a blocked peer
   /// never received the reaction either so the removal is moot. That does not

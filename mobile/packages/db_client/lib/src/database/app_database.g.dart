@@ -9775,8 +9775,8 @@ class DirectMessageRow extends DataClass
   /// collision-prone `(sender, content, created_at ±5s)` tuple.
   final String? sendBatchId;
 
-  /// Serialized kind-5 rumor for an own delete-for-everyone still awaiting
-  /// confirmed delivery. Null for every other row.
+  /// Serialized kind-5 rumor for an own delete-for-everyone that is awaiting
+  /// confirmed delivery or was blocked. Null for every other row.
   ///
   /// Stored rather than rebuilt so each retry replays a byte-identical rumor
   /// id and the recipient's dedup treats repeats as idempotent. Mirrors
