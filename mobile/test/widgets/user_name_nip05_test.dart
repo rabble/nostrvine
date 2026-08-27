@@ -7,13 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_name.dart';
-
-import '../helpers/former_profile_checkmark_pubkeys.dart';
 
 Finder _specialCheckmark() => find.byWidgetPredicate(
   (w) => w is DivineIcon && w.icon == DivineIconName.check,
@@ -73,17 +72,18 @@ void main() {
       expect(_specialCheckmark(), findsOneWidget);
     });
 
-    for (final (index, pubkey) in formerProfileCheckmarkPubkeys.indexed) {
-      testWidgets('does not show a checkmark for former profile ${index + 1}', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildSubject(pubkey: pubkey));
-        await tester.pump();
+    testWidgets('does not show a checkmark for a non-team beta tester', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await tester.pumpWidget(buildSubject(pubkey: pubkey));
+      await tester.pump();
 
-        expect(find.text('Alice'), findsOneWidget);
-        expect(_specialCheckmark(), findsNothing);
-      });
-    }
+      expect(find.text('Alice'), findsOneWidget);
+      expect(_specialCheckmark(), findsNothing);
+    });
 
     testWidgets('matches a Divine team pubkey case-insensitively', (
       tester,

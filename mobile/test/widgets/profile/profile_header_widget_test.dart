@@ -57,7 +57,6 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import '../../helpers/former_profile_checkmark_pubkeys.dart';
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
 import '../../helpers/test_pubkeys.dart';
@@ -651,26 +650,27 @@ void main() {
       expect(find.text(l10n.commonClose), findsOneWidget);
     });
 
-    for (final (index, pubkey) in formerProfileCheckmarkPubkeys.indexed) {
-      testWidgets('shows OG Beta Tester for former profile ${index + 1}', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: pubkey,
-            isOwnProfile: false,
-            suppliedProfile: createTestProfile(
-              displayName: 'Beta User',
-              pubkey: pubkey,
-            ),
+    testWidgets('shows OG Beta Tester for a non-team roster member', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: pubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: pubkey,
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.byType(SpecialProfileCheckmark), findsNothing);
-        expect(find.byType(OgBetaBadge), findsOneWidget);
-      });
-    }
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+    });
 
     testWidgets('hides the OG Beta Tester chit behind the team checkmark', (
       tester,

@@ -20,8 +20,6 @@ import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../helpers/former_profile_checkmark_pubkeys.dart';
-
 void main() {
   final rosterPubkey = ogBetaTesterPubkeys.first;
   const strangerPubkey =
@@ -83,17 +81,18 @@ void main() {
       handle.dispose();
     });
 
-    for (final (index, pubkey) in formerProfileCheckmarkPubkeys.indexed) {
-      testWidgets('shows OG Beta Tester for former profile ${index + 1}', (
-        tester,
-      ) async {
-        await tester.pumpWidget(await buildSubject(pubkey: pubkey));
-        await tester.pump();
+    testWidgets('shows OG Beta Tester for a non-team roster member', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await tester.pumpWidget(await buildSubject(pubkey: pubkey));
+      await tester.pump();
 
-        expect(find.byType(SpecialProfileCheckmark), findsNothing);
-        expect(find.byType(OgBetaBadge), findsOneWidget);
-      });
-    }
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+    });
 
     testWidgets('a screen reader can open the explainer, not just a finger', (
       tester,

@@ -7,6 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 
@@ -23,6 +25,18 @@ Widget _buildSubject() {
 }
 
 void main() {
+  group('visibility', () {
+    test('only team members on the OG Beta Tester roster get a checkmark', () {
+      for (final pubkey in ogBetaTesterPubkeys) {
+        expect(
+          shouldShowSpecialProfileCheckmark(pubkey),
+          kDivineTeamPubkeys.contains(pubkey),
+          reason: 'checkmark visibility must be derived from team membership',
+        );
+      }
+    });
+  });
+
   group('renders', () {
     testWidgets('renders an accessible non-tappable checkmark', (tester) async {
       final handle = tester.ensureSemantics();
