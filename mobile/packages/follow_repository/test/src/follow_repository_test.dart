@@ -2325,6 +2325,29 @@ void main() {
     });
 
     group('getOthersFollowing', () {
+      test('times out when the relay query never completes', () {
+        fakeAsync((async) {
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) => Completer<List<Event>>().future);
+          Object? error;
+
+          unawaited(
+            repository
+                .getOthersFollowing(testTargetPubkey)
+                .then<void>(
+                  (_) {},
+                  onError: (Object caught) => error = caught,
+                ),
+          );
+          async
+            ..elapse(const Duration(seconds: 8))
+            ..flushMicrotasks();
+
+          expect(error, isA<TimeoutException>());
+        });
+      });
+
       test('returns empty snapshot when no events found', () async {
         when(
           () => mockNostrClient.queryEvents(any()),
@@ -5495,6 +5518,57 @@ void main() {
     });
 
     group('getFollowers with API branch', () {
+      test('keeps relay results when the API fails', () async {
+        const relayFollower =
+            'bb00000000000000000000000000000000000000000000000000000000000002';
+        final api = _MockFunnelcakeApiClient();
+        when(() => api.isAvailable).thenReturn(true);
+        when(
+          () => api.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => throw Exception('API unavailable'));
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              relayFollower,
+              3,
+              [
+                ['p', testTargetPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          funnelcakeApiClient: api,
+          indexerRelayUrls: const [],
+        );
+
+        final followers = await repository.getFollowers(testTargetPubkey);
+
+        expect(followers, [relayFollower]);
+      });
+
+      test('throws instead of returning empty when all sources fail', () {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer(
+          (_) => Future<List<Event>>.error(Exception('Relay unavailable')),
+        );
+
+        expect(
+          repository.getFollowers(testTargetPubkey),
+          throwsException,
+        );
+      });
+
       test(
         'merges API results with relay results',
         () async {

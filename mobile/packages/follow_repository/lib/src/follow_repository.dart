@@ -492,9 +492,11 @@ class FollowRepository {
   /// Returns a [FollowingSnapshot] with the deduplicated list of followed
   /// pubkeys. Returns an empty snapshot if no event is found.
   Future<FollowingSnapshot> getOthersFollowing(String pubkey) async {
-    final events = await _nostrClient.queryEvents([
-      Filter(authors: [pubkey], kinds: const [3], limit: 1),
-    ]);
+    final events = await _nostrClient
+        .queryEvents([
+          Filter(authors: [pubkey], kinds: const [3], limit: 1),
+        ])
+        .timeout(_fetchFollowersTimeout);
 
     final following = <String>[];
     if (events.isNotEmpty) {
@@ -1295,17 +1297,20 @@ class FollowRepository {
       return (pubkeys: <String>[], datedCount: 0);
     }
 
-    // Every source is best-effort. One unavailable relay must not discard
-    // usable follower observations from the others.
-    final sources = _followerSources(pubkey);
-    final results = await Future.wait<List<_FollowerRef>>([
-      sources[0].catchError((_) => <_FollowerRef>[]),
-      sources[1].catchError((_) => <_FollowerRef>[]),
-      sources[2].catchError((_) => <_FollowerRef>[]),
-    ]);
-    final apiFollowers = results[0];
-    final relayFollowers = results[1];
-    final indexerFollowers = results[2];
+    // One unavailable source must not discard usable observations from the
+    // others, but total failure is not evidence that the user has no followers.
+    final results = await Future.wait(
+      _followerSources(pubkey).map(
+        (source) => source.then<(List<_FollowerRef>, Object?, StackTrace?)>(
+          (refs) => (refs, null, null),
+          onError: (Object error, StackTrace stackTrace) =>
+              (const <_FollowerRef>[], error, stackTrace),
+        ),
+      ),
+    );
+    final apiFollowers = results[0].$1;
+    final relayFollowers = results[1].$1;
+    final indexerFollowers = results[2].$1;
 
     // Merge all sources (union of pubkeys)
     final merged = _newestFirst([
@@ -1313,6 +1318,14 @@ class FollowRepository {
       ...relayFollowers,
       ...indexerFollowers,
     ]);
+
+    if (merged.pubkeys.isEmpty) {
+      for (final (_, error, stackTrace) in results.reversed) {
+        if (error != null) {
+          Error.throwWithStackTrace(error, stackTrace ?? StackTrace.empty);
+        }
+      }
+    }
 
     // Unique per source, not raw events: the relay and indexer paths hand
     // back one ref per kind 3 they saw, so a follower whose superseded event
@@ -1425,7 +1438,7 @@ class FollowRepository {
     final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
         ? _funnelcakeApiClient!
               .getFollowers(pubkey: pubkey, limit: 5000)
-              .then(
+              .then<List<_FollowerRef>>(
                 (r) => [
                   for (final follower in r.pubkeys)
                     (pubkey: follower, followedAt: null),
@@ -1689,12 +1702,21 @@ class FollowRepository {
     if (!isFollowing(pubkey)) return false;
 
     // Step 2: Check if they follow us (requires relay query)
-    final theirFollowers = await _fetchFollowers(_nostrClient.publicKey);
-    return theirFollowers.contains(pubkey) ||
-        // They follow us means their contact list mentions our pubkey.
-        // _fetchFollowers returns authors of events mentioning us in p-tags,
-        // so we check if the target pubkey is among those authors.
-        await _checkIfTheyFollowUs(pubkey);
+    try {
+      final theirFollowers = await _fetchFollowers(_nostrClient.publicKey);
+      return theirFollowers.contains(pubkey) ||
+          // They follow us means their contact list mentions our pubkey.
+          // _fetchFollowers returns authors of events mentioning us in p-tags,
+          // so we check if the target pubkey is among those authors.
+          await _checkIfTheyFollowUs(pubkey);
+    } catch (e) {
+      Log.warning(
+        'Failed to check mutual follow for ${pubkeyForLogs(pubkey)}: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
   }
 
   /// Check if [pubkey] follows the current user by querying their Kind 3 event.
