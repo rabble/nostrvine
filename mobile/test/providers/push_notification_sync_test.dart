@@ -181,7 +181,7 @@ void main() {
   const pushServicePubkey =
       '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
   const pushEnvironment = _ConfiguredEnvironmentConfig(
-    environment: AppEnvironment.test,
+    environment: AppEnvironment.staging,
     configuredPushServicePubkey: pushServicePubkey,
   );
   const stagingEnvironment = _ConfiguredEnvironmentConfig(
@@ -410,7 +410,8 @@ void main() {
               _MockNotificationService(),
             ),
             currentEnvironmentProvider.overrideWith(
-              (_) => const EnvironmentConfig(environment: AppEnvironment.test),
+              (_) =>
+                  const EnvironmentConfig(environment: AppEnvironment.staging),
             ),
             nostrSessionProvider.overrideWith(() => nostrSession),
           ],
@@ -2283,7 +2284,7 @@ void main() {
               _MockNotificationService(),
             ),
             currentEnvironmentProvider.overrideWithValue(
-              const EnvironmentConfig(environment: AppEnvironment.test),
+              const EnvironmentConfig(environment: AppEnvironment.staging),
             ),
             nostrSessionProvider.overrideWith(
               () => _TestNostrSession(const NostrSessionReadiness.signedOut()),
@@ -2325,7 +2326,7 @@ void main() {
               _MockNotificationService(),
             ),
             currentEnvironmentProvider.overrideWithValue(
-              const EnvironmentConfig(environment: AppEnvironment.test),
+              const EnvironmentConfig(environment: AppEnvironment.staging),
             ),
             nostrSessionProvider.overrideWith(
               () => _TestNostrSession(

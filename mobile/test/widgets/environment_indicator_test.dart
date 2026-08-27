@@ -13,8 +13,6 @@ void main() {
 
   const pocConfig = EnvironmentConfig(environment: AppEnvironment.poc);
 
-  const testConfig = EnvironmentConfig(environment: AppEnvironment.test);
-
   group('EnvironmentBadge', () {
     testWidgets('shows STG badge for staging environment', (
       WidgetTester tester,
@@ -58,27 +56,6 @@ void main() {
       expect(find.byType(Container), findsOneWidget);
     });
 
-    testWidgets('shows TEST badge for test environment', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => testConfig),
-            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: Stack(children: [EnvironmentBadge()])),
-          ),
-        ),
-      );
-
-      expect(find.text('TEST'), findsOneWidget);
-      expect(find.byType(Container), findsOneWidget);
-    });
-
     testWidgets('hides badge for production environment', (
       WidgetTester tester,
     ) async {
@@ -100,7 +77,6 @@ void main() {
 
       expect(find.text('STG'), findsNothing);
       expect(find.text('POC'), findsNothing);
-      expect(find.text('TEST'), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
@@ -181,34 +157,6 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, Color(pocConfig.indicatorColorValue));
     });
-
-    testWidgets('badge has correct styling for test', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => testConfig),
-            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: Stack(children: [EnvironmentBadge()])),
-          ),
-        ),
-      );
-
-      final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(EnvironmentBadge),
-          matching: find.byType(Container),
-        ),
-      );
-
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.color, Color(testConfig.indicatorColorValue));
-    });
   });
 
   group('EnvironmentBanner', () {
@@ -258,28 +206,6 @@ void main() {
       );
 
       expect(find.text('Environment: POC - Tap for options'), findsOneWidget);
-    });
-
-    testWidgets('shows test banner with correct text', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => testConfig),
-            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Stack(children: [EnvironmentBanner(onTap: () {})]),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Environment: Test - Tap for options'), findsOneWidget);
     });
 
     testWidgets('hides banner for production environment', (
@@ -423,35 +349,6 @@ void main() {
       );
 
       expect(container.color, Color(pocConfig.indicatorColorValue));
-    });
-
-    testWidgets('banner has correct styling for test', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => testConfig),
-            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Stack(children: [EnvironmentBanner(onTap: () {})]),
-            ),
-          ),
-        ),
-      );
-
-      final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(GestureDetector),
-          matching: find.byType(Container),
-        ),
-      );
-
-      expect(container.color, Color(testConfig.indicatorColorValue));
     });
   });
 }

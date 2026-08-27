@@ -148,7 +148,6 @@ class _DeveloperOptionsScreenState
     const environments = [
       EnvironmentConfig.production,
       EnvironmentConfig(environment: AppEnvironment.staging),
-      EnvironmentConfig(environment: AppEnvironment.test),
       EnvironmentConfig(environment: AppEnvironment.poc),
     ];
 

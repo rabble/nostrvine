@@ -17,7 +17,7 @@
 #   - ZENDESK_CLIENT_ID
 #   - ZENDESK_URL
 # 6 - DEFAULT_ENV is configured via build inputs (dropdown) when starting a build
-#   - Options: PRODUCTION, STAGING, TEST, POC
+#   - Options: PRODUCTION, STAGING, POC
 #   - Defaults to PRODUCTION for automatic builds
 # 7 - Create environment variable group "proofmode_credentials" with:
 #   - PROOFMODE_SIGNING_SERVER_ENDPOINT
@@ -923,7 +923,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Upload IPA to GitHub Release (for direct distribution)
@@ -1005,7 +1004,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1047,7 +1045,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Create a GitHub Release with APK artifacts (for Zapstore)
@@ -1164,7 +1161,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1256,7 +1252,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1308,7 +1303,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Upload DMG to GitHub Release (for direct distribution)

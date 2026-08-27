@@ -13,13 +13,12 @@ import '../../scripts/lib/coordinator_route_probe.dart';
 
 const currentConfigFixture = r'''
 const productionApiBaseUrl = 'https://api.divine.video';
-enum AppEnvironment { poc, staging, test, production, local }
+enum AppEnvironment { poc, staging, production, local }
 class EnvironmentConfig {
   String get relayUrl {
     switch (environment) {
       case AppEnvironment.poc: return 'wss://relay.poc.dvines.org';
       case AppEnvironment.staging: return 'wss://relay.staging.divine.video';
-      case AppEnvironment.test: return 'wss://relay.test.dvines.org';
       case AppEnvironment.local: return 'ws://$localHost:47777';
       case AppEnvironment.production: return 'wss://relay.divine.video';
     }
@@ -45,7 +44,6 @@ void main() {
       expect(targets.map((target) => target.environment), [
         'POC',
         'STAGING',
-        'TEST',
         'PRODUCTION',
       ]);
     });
@@ -58,7 +56,6 @@ void main() {
         [
           'POC:https://relay.poc.dvines.org',
           'STAGING:https://relay.staging.divine.video',
-          'TEST:https://relay.test.dvines.org',
           'PRODUCTION:https://api.divine.video',
         ],
       );
