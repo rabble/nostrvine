@@ -540,6 +540,12 @@ class _ReportFormBody extends StatelessWidget {
                       color: context.vineColors.accentPositive,
                     ),
                   ),
+                  Text(
+                    l10n.reportDetailsTextOnly,
+                    style: VineTheme.labelSmallFont(
+                      color: context.vineColors.onSurfaceVariant,
+                    ),
+                  ),
                   _CappedDetailsField(
                     fieldKey: detailsFieldKey,
                     controller: detailsController,
@@ -777,12 +783,6 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           decoration: const InputDecoration(
             border: InputBorder.none,
             isCollapsed: true,
-          ),
-        ),
-        Text(
-          context.l10n.reportDetailsTextOnly,
-          style: VineTheme.labelSmallFont(
-            color: context.vineColors.onSurfaceVariant,
           ),
         ),
         if (_truncated)
