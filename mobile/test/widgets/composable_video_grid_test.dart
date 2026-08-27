@@ -435,7 +435,6 @@ void main() {
           expect(find.text(l10n.shareMenuDeleteConfirmation), findsOneWidget);
         },
       );
-
       testWidgets('shows the relay failure result after delete', (
         tester,
       ) async {
@@ -515,6 +514,109 @@ void main() {
           find.text(l10n.shareMenuDeleteFailedRelayRejected),
           findsOneWidget,
         );
+      });
+      testWidgets('re-enables Delete when cleanup finishes while open', (
+        tester,
+      ) async {
+        final mockNostr = createMockNostrService();
+        final deletionService = _MockContentDeletionService();
+        final enforcementRepository = _MockEnforcementRepository();
+        final videoEventService = _MockVideoEventService();
+        final cleanupCompleter = Completer<CreatorDeleteEnforcementResult>();
+        when(() => mockNostr.publicKey).thenReturn(_ownPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final video = VideoEvent(
+          id: 'owned-video',
+          pubkey: _ownPubkey,
+          content: 'Owned video',
+          title: 'Owned video',
+          authorName: 'Creator',
+          videoUrl: 'https://example.com/owned.mp4',
+          thumbnailUrl: 'https://example.com/owned.jpg',
+          duration: 5,
+          createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          timestamp: DateTime(2026),
+        );
+        when(
+          () => deletionService.quickDelete(
+            video: video,
+            reason: DeleteReason.personalChoice,
+          ),
+        ).thenAnswer(
+          (_) async => DeleteResult.createSuccess(
+            'delete-event-id',
+            acceptance: DeleteAcceptance.everyRelay,
+          ),
+        );
+        when(
+          () => enforcementRepository.enforce('delete-event-id'),
+        ).thenAnswer((_) => cleanupCompleter.future);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              brokenVideoTrackerProvider.overrideWith(
+                (ref) async => mockTracker,
+              ),
+              subscribedListVideoCacheProvider.overrideWithValue(null),
+              nostrServiceProvider.overrideWithValue(mockNostr),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(null),
+              ),
+              contentDeletionServiceProvider.overrideWith(
+                (ref) async => deletionService,
+              ),
+              creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                enforcementRepository,
+              ),
+              videoEventServiceProvider.overrideWithValue(videoEventService),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: [video],
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        final tile = find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1));
+        await tester.longPress(tile);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.videoGridDeleteVideo));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.shareMenuDelete));
+        await tester.pumpAndSettle();
+
+        await tester.longPress(tile);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        var deleteTile = tester.widget<ListTile>(
+          find.ancestor(
+            of: find.text(l10n.videoGridDeleteVideo),
+            matching: find.byType(ListTile),
+          ),
+        );
+        expect(deleteTile.enabled, isFalse);
+
+        cleanupCompleter.complete(
+          const CreatorDeleteEnforcementResult.confirmed(),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        deleteTile = tester.widget<ListTile>(
+          find.ancestor(
+            of: find.text(l10n.videoGridDeleteVideo),
+            matching: find.byType(ListTile),
+          ),
+        );
+        expect(deleteTile.enabled, isTrue);
       });
     });
 

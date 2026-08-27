@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:models/models.dart' hide AspectRatio;
@@ -261,12 +262,6 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     final nostrService = ref.read(nostrServiceProvider);
     final userPubkey = nostrService.publicKey;
     final isOwnVideo = userPubkey == video.pubkey;
-    final operation = _ownerVideoActionsCubit.state.forVideo(video.id);
-    final isDeletePublishing =
-        operation.deleteStatus == OwnerVideoDeleteStatus.deleting;
-    final isDeleteInProgress =
-        isDeletePublishing ||
-        operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
 
     // Only show context menu for own videos
     if (!isOwnVideo) {
@@ -276,127 +271,140 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.vineColors.background,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
+      builder: (sheetContext) => BlocProvider.value(
+        value: _ownerVideoActionsCubit,
+        child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
+          builder: (_, state) {
+            final operation = state.forVideo(video.id);
+            final isDeletePublishing =
+                operation.deleteStatus == OwnerVideoDeleteStatus.deleting;
+            final isDeleteInProgress =
+                isDeletePublishing ||
+                operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  DivineIcon(
-                    icon: DivineIconName.dotsThreeVertical,
-                    color: sheetContext.vineColors.primaryText,
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        DivineIcon(
+                          icon: DivineIconName.dotsThreeVertical,
+                          color: sheetContext.vineColors.primaryText,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            sheetContext.l10n.videoGridOptionsTitle,
+                            style: TextStyle(
+                              color: sheetContext.vineColors.primaryText,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => sheetContext.popModalIfMounted(),
+                          icon: DivineIcon(
+                            icon: DivineIconName.x,
+                            color: sheetContext.vineColors.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      sheetContext.l10n.videoGridOptionsTitle,
-                      style: TextStyle(
-                        color: sheetContext.vineColors.primaryText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+
+                  // Edit option
+                  ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: sheetContext.vineColors.card,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => sheetContext.popModalIfMounted(),
-                    icon: DivineIcon(
-                      icon: DivineIconName.x,
-                      color: sheetContext.vineColors.secondaryText,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Edit option
-            ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: sheetContext.vineColors.card,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DivineIcon(
-                  icon: DivineIconName.pencilSimple,
-                  color: sheetContext.vineColors.accentPositive,
-                  size: 20,
-                ),
-              ),
-              title: Text(
-                sheetContext.l10n.videoGridEditVideo,
-                style: TextStyle(
-                  color: sheetContext.vineColors.primaryText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              subtitle: Text(
-                sheetContext.l10n.videoGridEditVideoSubtitle,
-                style: TextStyle(
-                  color: sheetContext.vineColors.secondaryText,
-                  fontSize: 12,
-                ),
-              ),
-              enabled: !isDeletePublishing,
-              onTap: isDeletePublishing
-                  ? null
-                  : () {
-                      if (_ownerVideoActionsCubit.state
-                              .forVideo(video.id)
-                              .deleteStatus ==
-                          OwnerVideoDeleteStatus.deleting) {
-                        return;
-                      }
-                      if (!sheetContext.popModalIfMounted()) return;
-                      showEditDialogForVideo(context, video);
-                    },
-            ),
-
-            // Delete option
-            ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: sheetContext.vineColors.card,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: isDeleteInProgress
-                    ? const CircularProgressIndicator(strokeWidth: 2)
-                    : const DivineIcon(
-                        icon: DivineIconName.trash,
-                        color: VineTheme.error,
+                      child: DivineIcon(
+                        icon: DivineIconName.pencilSimple,
+                        color: sheetContext.vineColors.accentPositive,
                         size: 20,
                       ),
-              ),
-              title: Text(
-                sheetContext.l10n.videoGridDeleteVideo,
-                style: TextStyle(
-                  color: sheetContext.vineColors.primaryText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              subtitle: Text(
-                sheetContext.l10n.videoGridDeleteVideoSubtitle,
-                style: TextStyle(
-                  color: sheetContext.vineColors.secondaryText,
-                  fontSize: 12,
-                ),
-              ),
-              enabled: !isDeleteInProgress,
-              onTap: isDeleteInProgress
-                  ? null
-                  : () {
-                      if (!sheetContext.popModalIfMounted()) return;
-                      _showDeleteConfirmation(context, video);
-                    },
-            ),
+                    ),
+                    title: Text(
+                      sheetContext.l10n.videoGridEditVideo,
+                      style: TextStyle(
+                        color: sheetContext.vineColors.primaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      sheetContext.l10n.videoGridEditVideoSubtitle,
+                      style: TextStyle(
+                        color: sheetContext.vineColors.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                    enabled: !isDeletePublishing,
+                    onTap: isDeletePublishing
+                        ? null
+                        : () {
+                            if (_ownerVideoActionsCubit.state
+                                    .forVideo(video.id)
+                                    .deleteStatus ==
+                                OwnerVideoDeleteStatus.deleting) {
+                              return;
+                            }
+                            if (!sheetContext.popModalIfMounted()) return;
+                            showEditDialogForVideo(context, video);
+                          },
+                  ),
 
-            const SizedBox(height: 16),
-          ],
+                  // Delete option
+                  ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: sheetContext.vineColors.card,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: isDeleteInProgress
+                          ? const CircularProgressIndicator(strokeWidth: 2)
+                          : const DivineIcon(
+                              icon: DivineIconName.trash,
+                              color: VineTheme.error,
+                              size: 20,
+                            ),
+                    ),
+                    title: Text(
+                      sheetContext.l10n.videoGridDeleteVideo,
+                      style: TextStyle(
+                        color: sheetContext.vineColors.primaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      sheetContext.l10n.videoGridDeleteVideoSubtitle,
+                      style: TextStyle(
+                        color: sheetContext.vineColors.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                    enabled: !isDeleteInProgress,
+                    onTap: isDeleteInProgress
+                        ? null
+                        : () {
+                            if (!sheetContext.popModalIfMounted()) return;
+                            _showDeleteConfirmation(context, video);
+                          },
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
