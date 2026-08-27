@@ -389,7 +389,12 @@
     "profileMyLibraryLabel": "የእኔ ቤተ-መጽሐፍት",
     "profileMessageLabel": "መልእክት",
     "profileDeletedAccountName": "የተሰረዘ መለያ",
-    "inboxVanishedAccountReference": "ይህን መለያ",
+    "inboxActionReportVanishedAccount": "ሪፖርት ይህን መለያ",
+    "inboxActionBlockVanishedAccount": "አግድ ይህን መለያ",
+    "inboxActionUnblockVanishedAccount": "እገዳን አንሳ ይህን መለያ",
+    "inboxReportedVanishedAccount": "ሪፖርት ተደርጓል ይህን መለያ",
+    "inboxBlockedVanishedAccount": "ታግዷል ይህን መለያ",
+    "inboxUnblockedVanishedAccount": "እገዳው ተነስቷል ይህን መለያ",
     "inboxConversationDeletedAccountSubtitle": "ይህ መለያ ተሰርዟል",
     "profileUserFallback": "ተጠቃሚ",
     "@profileUserFallback": {

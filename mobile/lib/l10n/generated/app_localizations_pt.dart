@@ -840,7 +840,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileDeletedAccountName => 'Conta excluída';
 
   @override
-  String get inboxVanishedAccountReference => 'esta conta';
+  String get inboxActionReportVanishedAccount => 'Denunciar esta conta';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Bloquear esta conta';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Desbloquear esta conta';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Esta conta foi denunciada';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Esta conta foi bloqueada';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Esta conta foi desbloqueada';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

@@ -3091,7 +3091,12 @@
     "profileMyLibraryLabel": "マイライブラリ",
     "profileMessageLabel": "メッセージ",
     "profileDeletedAccountName": "削除されたアカウント",
-    "inboxVanishedAccountReference": "このアカウント",
+    "inboxActionReportVanishedAccount": "このアカウントを報告",
+    "inboxActionBlockVanishedAccount": "このアカウントをブロック",
+    "inboxActionUnblockVanishedAccount": "このアカウントのブロックを解除",
+    "inboxReportedVanishedAccount": "このアカウントを報告したよ",
+    "inboxBlockedVanishedAccount": "このアカウントをブロックしたよ",
+    "inboxUnblockedVanishedAccount": "このアカウントのブロックを解除したよ",
     "inboxConversationDeletedAccountSubtitle": "このアカウントは削除されました",
     "profileUserFallback": "ユーザー",
     "@profileUserFallback": {

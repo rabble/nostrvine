@@ -834,7 +834,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileDeletedAccountName => 'Verwijderd account';
 
   @override
-  String get inboxVanishedAccountReference => 'dit account';
+  String get inboxActionReportVanishedAccount => 'Dit account rapporteren';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Dit account blokkeren';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Dit account deblokkeren';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Dit account is gerapporteerd';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Dit account is geblokkeerd';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Dit account is gedeblokkeerd';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

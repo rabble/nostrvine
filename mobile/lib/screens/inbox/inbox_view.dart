@@ -1046,9 +1046,20 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     if (knownName != null) {
       displayName = knownName;
     } else {
-      final profile = await ref.read(
-        fetchUserProfileProvider(otherPubkey).future,
-      );
+      UserProfile? profile;
+      try {
+        profile = await ref.read(fetchUserProfileProvider(otherPubkey).future);
+      } catch (error, stackTrace) {
+        // A profile-cache failure must not suppress safety actions either.
+        Log.warning(
+          'Could not read the conversation peer profile; opening conversation '
+          'actions with the generated identity fallback',
+          name: 'InboxView',
+          category: LogCategory.ui,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
       if (!context.mounted) return;
       displayName = dmPeerDisplayName(
         context,
@@ -1066,10 +1077,6 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
-    final actionDisplayName = isVanished
-        ? context.l10n.inboxVanishedAccountReference
-        : displayName;
-
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
@@ -1108,7 +1115,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   reported
-                      ? context.l10n.inboxReportedUser(actionDisplayName)
+                      ? isVanished
+                            ? context.l10n.inboxReportedVanishedAccount
+                            : context.l10n.inboxReportedUser(displayName)
                       : context.l10n.reportNotSent,
                 ),
               ),
@@ -1126,8 +1135,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   isBlocked
-                      ? context.l10n.inboxUnblockedUser(actionDisplayName)
-                      : context.l10n.inboxBlockedUser(actionDisplayName),
+                      ? isVanished
+                            ? context.l10n.inboxUnblockedVanishedAccount
+                            : context.l10n.inboxUnblockedUser(displayName)
+                      : isVanished
+                      ? context.l10n.inboxBlockedVanishedAccount
+                      : context.l10n.inboxBlockedUser(displayName),
                 ),
               ),
             );

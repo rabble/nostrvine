@@ -2451,7 +2451,7 @@ void main() {
       );
 
       testWidgets(
-        'keeps safety actions available when the vanish lookup fails',
+        'keeps safety actions available when identity lookups fail',
         (
           tester,
         ) async {
@@ -2460,29 +2460,52 @@ void main() {
             buildSubject(
               state: ConversationListState(
                 status: ConversationListStatus.loaded,
-                pinnedSupport: supportPin(
-                  isPersisted: true,
-                  lastMessageContent: 'We looked into your report',
-                ),
+                conversations: [
+                  DmConversation(
+                    id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+                    participantPubkeys: const [currentPubkey, otherPubkey],
+                    isGroup: false,
+                    createdAt: nowUnix,
+                    lastMessageContent: 'Hello',
+                    lastMessageTimestamp: nowUnix,
+                  ),
+                ],
+                visibleConversations: [
+                  DmConversation(
+                    id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+                    participantPubkeys: const [currentPubkey, otherPubkey],
+                    isGroup: false,
+                    createdAt: nowUnix,
+                    lastMessageContent: 'Hello',
+                    lastMessageTimestamp: nowUnix,
+                  ),
+                ],
+                hasMore: false,
               ),
               additionalOverrides: [
-                profileVanishedSnapshotProvider(moderationPubkey).overrideWith(
+                profileVanishedSnapshotProvider(otherPubkey).overrideWith(
                   (ref) => Future<bool>.error(StateError('database closed')),
+                ),
+                fetchUserProfileProvider(otherPubkey).overrideWith(
+                  (ref) => Future<UserProfile?>.error(
+                    StateError('profile cache closed'),
+                  ),
                 ),
               ],
             ),
           );
           await openMessages(tester);
 
-          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.longPress(find.byType(ConversationTile));
           await tester.pumpAndSettle();
 
+          final fallback = UserProfile.defaultDisplayNameFor(otherPubkey);
           expect(
-            find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+            find.text(l10n.inboxActionReport(fallback)),
             findsOneWidget,
           );
           expect(
-            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            find.text(l10n.inboxActionBlock(fallback)),
             findsOneWidget,
           );
         },

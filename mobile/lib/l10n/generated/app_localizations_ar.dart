@@ -814,7 +814,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileDeletedAccountName => 'حساب محذوف';
 
   @override
-  String get inboxVanishedAccountReference => 'هذا الحساب';
+  String get inboxActionReportVanishedAccount => 'الإبلاغ عن هذا الحساب';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'حظر هذا الحساب';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'إلغاء حظر هذا الحساب';
+
+  @override
+  String get inboxReportedVanishedAccount => 'تم الإبلاغ عن هذا الحساب';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'تم حظر هذا الحساب';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'تم إلغاء حظر هذا الحساب';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => 'تم حذف هذا الحساب';

@@ -2559,7 +2559,12 @@
     "profileMyLibraryLabel": "내 라이브러리",
     "profileMessageLabel": "메시지",
     "profileDeletedAccountName": "삭제된 계정",
-    "inboxVanishedAccountReference": "이 계정",
+    "inboxActionReportVanishedAccount": "이 계정 신고",
+    "inboxActionBlockVanishedAccount": "이 계정 차단",
+    "inboxActionUnblockVanishedAccount": "이 계정 차단 해제",
+    "inboxReportedVanishedAccount": "이 계정을 신고했어요",
+    "inboxBlockedVanishedAccount": "이 계정을 차단했어요",
+    "inboxUnblockedVanishedAccount": "이 계정의 차단을 해제했어요",
     "inboxConversationDeletedAccountSubtitle": "이 계정은 삭제되었습니다",
     "profileUserFallback": "사용자",
     "@profileUserFallback": {

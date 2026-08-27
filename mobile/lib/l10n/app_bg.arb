@@ -364,7 +364,12 @@
     "profileMyLibraryLabel": "Моята библиотека",
     "profileMessageLabel": "Съобщение",
     "profileDeletedAccountName": "Изтрит акаунт",
-    "inboxVanishedAccountReference": "този акаунт",
+    "inboxActionReportVanishedAccount": "Докладвай този акаунт",
+    "inboxActionBlockVanishedAccount": "Блокирай този акаунт",
+    "inboxActionUnblockVanishedAccount": "Отблокирай този акаунт",
+    "inboxReportedVanishedAccount": "Този акаунт е докладван",
+    "inboxBlockedVanishedAccount": "Този акаунт е блокиран",
+    "inboxUnblockedVanishedAccount": "Този акаунт е отблокиран",
     "inboxConversationDeletedAccountSubtitle": "Този акаунт е изтрит",
     "profileUserFallback": "Потребител",
     "@profileUserFallback": {

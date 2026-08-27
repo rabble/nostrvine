@@ -16,8 +16,10 @@ void main() {
       bool isBlocked = false,
       String displayName = 'Alice',
       bool isVanished = false,
+      Locale? locale,
     }) {
       return testMaterialApp(
+        locale: locale,
         home: Builder(
           builder: (context) {
             return Scaffold(
@@ -83,6 +85,25 @@ void main() {
         expect(find.text('Block this account'), findsOneWidget);
         expect(find.text('Report Deleted account'), findsNothing);
         expect(find.text('Block Deleted account'), findsNothing);
+      });
+
+      testWidgets('localizes vanished actions as complete sentences', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            onResult: (_) {},
+            displayName: 'Deleted account',
+            isVanished: true,
+            locale: const Locale('fil'),
+          ),
+        );
+
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('I-report ang account na ito'), findsOneWidget);
+        expect(find.text('I-report si ang account na ito'), findsNothing);
       });
 
       testWidgets('renders $SwitchListTile for mute toggle', (tester) async {

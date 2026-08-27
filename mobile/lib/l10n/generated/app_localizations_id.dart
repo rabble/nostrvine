@@ -773,7 +773,22 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileDeletedAccountName => 'Akun dihapus';
 
   @override
-  String get inboxVanishedAccountReference => 'akun ini';
+  String get inboxActionReportVanishedAccount => 'Laporkan akun ini';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Blokir akun ini';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Buka blokir akun ini';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Akun ini dilaporkan';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Akun ini diblokir';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Blokir akun ini dibuka';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

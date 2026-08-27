@@ -544,10 +544,12 @@
   "profileMyLibraryLabel": "My Library",
   "profileMessageLabel": "Message",
   "profileDeletedAccountName": "Deleted account",
-  "inboxVanishedAccountReference": "this account",
-  "@inboxVanishedAccountReference": {
-    "description": "Identity-neutral account reference inserted into Report, Block, Unblock, and confirmation copy when a DM peer has vanished. Safety actions remain available even though the peer's name is no longer shown."
-  },
+  "inboxActionReportVanishedAccount": "Report this account",
+  "inboxActionBlockVanishedAccount": "Block this account",
+  "inboxActionUnblockVanishedAccount": "Unblock this account",
+  "inboxReportedVanishedAccount": "Reported this account",
+  "inboxBlockedVanishedAccount": "Blocked this account",
+  "inboxUnblockedVanishedAccount": "Unblocked this account",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

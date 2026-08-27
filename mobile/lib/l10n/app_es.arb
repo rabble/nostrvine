@@ -3106,7 +3106,12 @@
     "profileMyLibraryLabel": "Mi biblioteca",
     "profileMessageLabel": "Mensaje",
     "profileDeletedAccountName": "Cuenta eliminada",
-    "inboxVanishedAccountReference": "esta cuenta",
+    "inboxActionReportVanishedAccount": "Reportar esta cuenta",
+    "inboxActionBlockVanishedAccount": "Bloquear esta cuenta",
+    "inboxActionUnblockVanishedAccount": "Desbloquear esta cuenta",
+    "inboxReportedVanishedAccount": "Reportaste esta cuenta",
+    "inboxBlockedVanishedAccount": "Bloqueaste esta cuenta",
+    "inboxUnblockedVanishedAccount": "Desbloqueaste esta cuenta",
     "inboxConversationDeletedAccountSubtitle": "Esta cuenta fue eliminada",
     "profileUserFallback": "usuario",
     "@profileUserFallback": {

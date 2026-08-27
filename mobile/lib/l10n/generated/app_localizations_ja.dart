@@ -734,7 +734,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileDeletedAccountName => '削除されたアカウント';
 
   @override
-  String get inboxVanishedAccountReference => 'このアカウント';
+  String get inboxActionReportVanishedAccount => 'このアカウントを報告';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'このアカウントをブロック';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'このアカウントのブロックを解除';
+
+  @override
+  String get inboxReportedVanishedAccount => 'このアカウントを報告したよ';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'このアカウントをブロックしたよ';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'このアカウントのブロックを解除したよ';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => 'このアカウントは削除されました';

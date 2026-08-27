@@ -803,7 +803,22 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileDeletedAccountName => 'Tài khoản đã xóa';
 
   @override
-  String get inboxVanishedAccountReference => 'tài khoản này';
+  String get inboxActionReportVanishedAccount => 'Báo cáo tài khoản này';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Chặn tài khoản này';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Bỏ chặn tài khoản này';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Đã báo cáo tài khoản này';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Đã chặn tài khoản này';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Đã bỏ chặn tài khoản này';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

@@ -3098,7 +3098,12 @@
     "profileMyLibraryLabel": "Pustakaku",
     "profileMessageLabel": "Pesan",
     "profileDeletedAccountName": "Akun dihapus",
-    "inboxVanishedAccountReference": "akun ini",
+    "inboxActionReportVanishedAccount": "Laporkan akun ini",
+    "inboxActionBlockVanishedAccount": "Blokir akun ini",
+    "inboxActionUnblockVanishedAccount": "Buka blokir akun ini",
+    "inboxReportedVanishedAccount": "Akun ini dilaporkan",
+    "inboxBlockedVanishedAccount": "Akun ini diblokir",
+    "inboxUnblockedVanishedAccount": "Blokir akun ini dibuka",
     "inboxConversationDeletedAccountSubtitle": "Akun ini telah dihapus",
     "profileUserFallback": "pengguna",
     "@profileUserFallback": {

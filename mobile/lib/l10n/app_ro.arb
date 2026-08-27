@@ -3098,7 +3098,12 @@
     "profileMyLibraryLabel": "Biblioteca mea",
     "profileMessageLabel": "Mesaj",
     "profileDeletedAccountName": "Cont șters",
-    "inboxVanishedAccountReference": "acest cont",
+    "inboxActionReportVanishedAccount": "Raportează acest cont",
+    "inboxActionBlockVanishedAccount": "Blochează acest cont",
+    "inboxActionUnblockVanishedAccount": "Deblochează acest cont",
+    "inboxReportedVanishedAccount": "Acest cont a fost raportat",
+    "inboxBlockedVanishedAccount": "Acest cont a fost blocat",
+    "inboxUnblockedVanishedAccount": "Acest cont a fost deblocat",
     "inboxConversationDeletedAccountSubtitle": "Acest cont a fost șters",
     "profileUserFallback": "utilizator",
     "@profileUserFallback": {

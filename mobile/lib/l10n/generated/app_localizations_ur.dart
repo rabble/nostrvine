@@ -834,7 +834,22 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileDeletedAccountName => 'حذف شدہ اکاؤنٹ';
 
   @override
-  String get inboxVanishedAccountReference => 'یہ اکاؤنٹ';
+  String get inboxActionReportVanishedAccount => 'اس اکاؤنٹ کی رپورٹ کریں';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'اس اکاؤنٹ کو بلاک کریں';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'اس اکاؤنٹ کو ان بلاک کریں';
+
+  @override
+  String get inboxReportedVanishedAccount => 'اس اکاؤنٹ کی رپورٹ کی';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'اس اکاؤنٹ کو بلاک کیا';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'اس اکاؤنٹ کو ان بلاک کیا';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => 'یہ اکاؤنٹ حذف ہو گیا';

@@ -3098,7 +3098,12 @@
     "profileMyLibraryLabel": "La mia libreria",
     "profileMessageLabel": "Messaggio",
     "profileDeletedAccountName": "Account eliminato",
-    "inboxVanishedAccountReference": "questo account",
+    "inboxActionReportVanishedAccount": "Segnala questo account",
+    "inboxActionBlockVanishedAccount": "Blocca questo account",
+    "inboxActionUnblockVanishedAccount": "Sblocca questo account",
+    "inboxReportedVanishedAccount": "Questo account è stato segnalato",
+    "inboxBlockedVanishedAccount": "Questo account è stato bloccato",
+    "inboxUnblockedVanishedAccount": "Questo account è stato sbloccato",
     "inboxConversationDeletedAccountSubtitle": "Questo account è stato eliminato",
     "profileUserFallback": "utente",
     "@profileUserFallback": {

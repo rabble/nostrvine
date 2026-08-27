@@ -3098,7 +3098,12 @@
     "profileMyLibraryLabel": "Mitt bibliotek",
     "profileMessageLabel": "Meddelande",
     "profileDeletedAccountName": "Raderat konto",
-    "inboxVanishedAccountReference": "det här kontot",
+    "inboxActionReportVanishedAccount": "Rapportera det här kontot",
+    "inboxActionBlockVanishedAccount": "Blockera det här kontot",
+    "inboxActionUnblockVanishedAccount": "Avblockera det här kontot",
+    "inboxReportedVanishedAccount": "Det här kontot har rapporterats",
+    "inboxBlockedVanishedAccount": "Det här kontot har blockerats",
+    "inboxUnblockedVanishedAccount": "Det här kontot har avblockerats",
     "inboxConversationDeletedAccountSubtitle": "Det här kontot har raderats",
     "profileUserFallback": "användare",
     "@profileUserFallback": {
