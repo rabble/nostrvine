@@ -4534,6 +4534,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportDetailsRequired => 'يرجى وصف المشكلة';
 
   @override
+  String get reportDetailsTextOnly =>
+      'نص فقط — لا يمكن إرفاق الصور أو ملفات GIF هنا.';
+
+  @override
   String get reportReasonSpam => 'محتوى غير مرغوب فيه أو مزعج';
 
   @override

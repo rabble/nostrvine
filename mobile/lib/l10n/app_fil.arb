@@ -1159,6 +1159,7 @@
     "reportSelectReason": "Pumili ng dahilan para i-report ang content na ito",
     "reportOtherRequiresDetails": "Pakilarawan ang problema kapag pinili mo ang Iba pa",
     "reportDetailsRequired": "Pakilarawan ang problema",
+    "reportDetailsTextOnly": "Text lang — hindi puwedeng mag-attach ng mga litrato o GIF dito.",
     "reportReasonSpam": "Spam o Hindi Gustong Content",
     "reportReasonHarassment": "Harassment, Bullying, o Pagbabanta",
     "reportReasonViolence": "Marahas o Extremist na Content",

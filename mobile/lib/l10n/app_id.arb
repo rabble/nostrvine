@@ -1673,6 +1673,7 @@
     "reportSelectReason": "Silakan pilih alasan untuk melaporkan konten ini",
     "reportOtherRequiresDetails": "Jelaskan masalahnya kalau memilih Lainnya",
     "reportDetailsRequired": "Jelaskan masalahnya",
+    "reportDetailsTextOnly": "Hanya teks — foto dan GIF tidak dapat dilampirkan di sini.",
     "reportReasonSpam": "Spam atau Konten Tidak Diinginkan",
     "reportReasonHarassment": "Pelecehan, Perundungan, atau Ancaman",
     "reportReasonViolence": "Konten Kekerasan atau Ekstremis",

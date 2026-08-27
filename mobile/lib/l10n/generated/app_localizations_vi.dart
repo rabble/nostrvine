@@ -4543,6 +4543,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reportDetailsRequired => 'Vui lòng mô tả vấn đề';
 
   @override
+  String get reportDetailsTextOnly =>
+      'Chỉ văn bản — không thể đính kèm ảnh hoặc GIF ở đây.';
+
+  @override
   String get reportReasonSpam => 'Spam hoặc nội dung không mong muốn';
 
   @override

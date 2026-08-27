@@ -1666,6 +1666,7 @@
     "reportSelectReason": "يُرجى اختيار سبب للإبلاغ عن هذا المحتوى",
     "reportOtherRequiresDetails": "يرجى وصف المشكلة عند اختيار «أخرى»",
     "reportDetailsRequired": "يرجى وصف المشكلة",
+    "reportDetailsTextOnly": "نص فقط — لا يمكن إرفاق الصور أو ملفات GIF هنا.",
     "reportReasonSpam": "محتوى غير مرغوب فيه أو مزعج",
     "reportReasonHarassment": "تحرُّش أو تنمُّر أو تهديدات",
     "reportReasonViolence": "محتوى عنيف أو متطرف",

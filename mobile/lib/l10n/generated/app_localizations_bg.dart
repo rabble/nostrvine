@@ -4623,6 +4623,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportDetailsRequired => 'Моля, опиши проблема';
 
   @override
+  String get reportDetailsTextOnly =>
+      'Само текст — тук не могат да се прикачват снимки или GIF файлове.';
+
+  @override
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override

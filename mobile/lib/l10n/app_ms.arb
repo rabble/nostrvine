@@ -2432,6 +2432,7 @@
   "reportSelectReason": "Sila pilih sebab untuk melaporkan kandungan ini",
   "reportOtherRequiresDetails": "Sila terangkan isu itu apabila memilih Lain-lain",
   "reportDetailsRequired": "Sila terangkan isu itu",
+  "reportDetailsTextOnly": "Teks sahaja — foto dan GIF tidak boleh dilampirkan di sini.",
   "reportReasonSpam": "Spam atau Kandungan Tidak Diingini",
   "reportReasonSpamSubtitle": "Kandungan tidak diingini atau berulang",
   "reportReasonHarassment": "Gangguan, Buli atau Ancaman",

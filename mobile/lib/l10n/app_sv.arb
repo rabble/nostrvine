@@ -1676,6 +1676,7 @@
     "reportSelectReason": "Välj en anledning för att rapportera det här innehållet",
     "reportOtherRequiresDetails": "Beskriv problemet när du väljer Övrigt",
     "reportDetailsRequired": "Beskriv problemet",
+    "reportDetailsTextOnly": "Endast text – foton och GIF-bilder kan inte bifogas här.",
     "reportReasonSpam": "Skräppost eller ovälkommet innehåll",
     "reportReasonHarassment": "Trakasserier, mobbning eller hot",
     "reportReasonViolence": "Våldsamt eller extremistiskt innehåll",

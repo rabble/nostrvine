@@ -2432,6 +2432,7 @@
   "reportSelectReason": "Vui lòng chọn lý do báo cáo nội dung này",
   "reportOtherRequiresDetails": "Vui lòng mô tả vấn đề khi chọn Khác",
   "reportDetailsRequired": "Vui lòng mô tả vấn đề",
+  "reportDetailsTextOnly": "Chỉ văn bản — không thể đính kèm ảnh hoặc GIF ở đây.",
   "reportReasonSpam": "Spam hoặc nội dung không mong muốn",
   "reportReasonSpamSubtitle": "Nội dung không mong muốn hoặc lặp lại",
   "reportReasonHarassment": "Quấy rối, bắt nạt hoặc đe dọa",

@@ -1876,6 +1876,7 @@
     "reportSelectReason": "Избери причина за докладване на това съдържание",
     "reportOtherRequiresDetails": "Моля, опиши проблема, когато избираш „Друго“",
     "reportDetailsRequired": "Моля, опиши проблема",
+    "reportDetailsTextOnly": "Само текст — тук не могат да се прикачват снимки или GIF файлове.",
     "reportReasonSpam": "Спам или нежелано съдържание",
     "reportReasonHarassment": "Тормоз, малтретиране или заплахи",
     "reportReasonViolence": "Насилствено или екстремистко съдържание",

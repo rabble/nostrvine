@@ -2064,6 +2064,7 @@
     "reportSelectReason": "እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ",
     "reportOtherRequiresDetails": "«ሌላ» ስትመርጥ እባክህ ችግሩን ግለጽ",
     "reportDetailsRequired": "እባክህ ችግሩን ግለጽ",
+    "reportDetailsTextOnly": "ጽሑፍ ብቻ — ፎቶዎችን እና GIF-ዎችን እዚህ ማያያዝ አይቻልም።",
     "reportReasonSpam": "አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት",
     "reportReasonHarassment": "ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት",
     "reportReasonViolence": "የጥቃት ወይም ጽንፈኛ ይዘት",

@@ -761,6 +761,9 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           enableInteractiveSelection: true,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          textCapitalization: TextCapitalization.sentences,
           onChanged: _onChanged,
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,
@@ -774,6 +777,12 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           decoration: const InputDecoration(
             border: InputBorder.none,
             isCollapsed: true,
+          ),
+        ),
+        Text(
+          context.l10n.reportDetailsTextOnly,
+          style: VineTheme.labelSmallFont(
+            color: context.vineColors.onSurfaceVariant,
           ),
         ),
         if (_truncated)

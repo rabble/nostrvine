@@ -4605,6 +4605,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get reportDetailsRequired => 'Pakilarawan ang problema';
 
   @override
+  String get reportDetailsTextOnly =>
+      'Text lang — hindi puwedeng mag-attach ng mga litrato o GIF dito.';
+
+  @override
   String get reportReasonSpam => 'Spam o Hindi Gustong Content';
 
   @override

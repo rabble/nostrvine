@@ -4473,6 +4473,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportDetailsRequired => 'እባክህ ችግሩን ግለጽ';
 
   @override
+  String get reportDetailsTextOnly =>
+      'ጽሑፍ ብቻ — ፎቶዎችን እና GIF-ዎችን እዚህ ማያያዝ አይቻልም።';
+
+  @override
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
 
   @override

@@ -4631,6 +4631,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportDetailsRequired => 'Bitte beschreib das Problem';
 
   @override
+  String get reportDetailsTextOnly =>
+      'Nur Text – Fotos und GIFs können hier nicht angehängt werden.';
+
+  @override
   String get reportReasonSpam => 'Spam oder unerwünschte Inhalte';
 
   @override

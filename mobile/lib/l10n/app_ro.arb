@@ -1676,6 +1676,7 @@
     "reportSelectReason": "Alege un motiv pentru raportarea acestui conținut",
     "reportOtherRequiresDetails": "Descrie problema când alegi „Altele”",
     "reportDetailsRequired": "Descrie problema",
+    "reportDetailsTextOnly": "Doar text — fotografiile și GIF-urile nu pot fi atașate aici.",
     "reportReasonSpam": "Spam sau conținut nedorit",
     "reportReasonHarassment": "Hărțuire, bullying sau amenințări",
     "reportReasonViolence": "Conținut violent sau extremist",

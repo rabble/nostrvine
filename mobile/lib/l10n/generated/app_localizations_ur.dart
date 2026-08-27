@@ -4582,6 +4582,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get reportDetailsRequired => 'براہ کرم مسئلہ بیان کریں';
 
   @override
+  String get reportDetailsTextOnly =>
+      'صرف متن — یہاں تصاویر یا GIF منسلک نہیں کیے جا سکتے۔';
+
+  @override
   String get reportReasonSpam => 'اسپیم یا ناپسندیدہ مواد';
 
   @override

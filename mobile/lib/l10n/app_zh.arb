@@ -2432,6 +2432,7 @@
   "reportSelectReason": "请选择举报该内容的原因",
   "reportOtherRequiresDetails": "选择“其他”时请描述问题",
   "reportDetailsRequired": "请描述问题",
+  "reportDetailsTextOnly": "仅限文字——无法在此附加照片或 GIF。",
   "reportReasonSpam": "垃圾或不受欢迎的内容",
   "reportReasonSpamSubtitle": "不受欢迎或重复的内容",
   "reportReasonHarassment": "骚扰、霸凌或威胁",

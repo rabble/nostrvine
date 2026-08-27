@@ -1676,6 +1676,7 @@
     "reportSelectReason": "Selecteer een reden om deze inhoud te melden",
     "reportOtherRequiresDetails": "Beschrijf het probleem als je Overig kiest",
     "reportDetailsRequired": "Beschrijf het probleem",
+    "reportDetailsTextOnly": "Alleen tekst — je kunt hier geen foto's of GIF's toevoegen.",
     "reportReasonSpam": "Spam of ongewenste inhoud",
     "reportReasonHarassment": "Intimidatie, pesten of bedreigingen",
     "reportReasonViolence": "Gewelddadige of extremistische inhoud",

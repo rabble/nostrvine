@@ -1680,6 +1680,7 @@
     "reportSelectReason": "Elegí un motivo para reportar este contenido",
     "reportOtherRequiresDetails": "Describe el problema cuando elijas Otro",
     "reportDetailsRequired": "Describe el problema",
+    "reportDetailsTextOnly": "Solo texto: aquí no se pueden adjuntar fotos ni GIF.",
     "reportReasonSpam": "Spam o contenido no deseado",
     "reportReasonHarassment": "Acoso, bullying o amenazas",
     "reportReasonViolence": "Contenido violento o extremista",

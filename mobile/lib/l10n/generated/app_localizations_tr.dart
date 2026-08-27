@@ -4516,6 +4516,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportDetailsRequired => 'Lütfen sorunu açıkla';
 
   @override
+  String get reportDetailsTextOnly =>
+      'Yalnızca metin — buraya fotoğraf veya GIF eklenemez.';
+
+  @override
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';
 
   @override
