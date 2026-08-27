@@ -2016,6 +2016,12 @@ void main() {
         when(
           () => actionsCubit.blockUser(otherPubkey),
         ).thenAnswer((_) async {});
+        when(
+          () => actionsCubit.unblockUser(otherPubkey),
+        ).thenAnswer((_) async {});
+        when(
+          () => actionsCubit.reportUser(otherPubkey),
+        ).thenAnswer((_) async => true);
         final conversation = DmConversation(
           id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
           participantPubkeys: const [currentPubkey, otherPubkey],
@@ -2059,10 +2065,30 @@ void main() {
           findsNothing,
         );
 
-        await tester.tap(find.text('Block this account'));
+        await tester.tap(find.text('Report this account'));
         await tester.pumpAndSettle();
 
+        expect(find.text('Reported this account'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Block this account'));
+        await tester.pumpAndSettle();
         expect(find.text('Blocked this account'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+
+        when(() => actionsCubit.isBlocked(otherPubkey)).thenReturn(true);
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Unblock this account'), findsOneWidget);
+        await tester.tap(find.text('Unblock this account'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Unblocked this account'), findsOneWidget);
       });
 
       testWidgets('drops out of a search it does not match', (tester) async {

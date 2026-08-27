@@ -1410,37 +1410,37 @@ abstract class AppLocalizations {
   /// **'Deleted account'**
   String get profileDeletedAccountName;
 
-  /// No description provided for @inboxActionReportVanishedAccount.
+  /// Report action for a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
   /// **'Report this account'**
   String get inboxActionReportVanishedAccount;
 
-  /// No description provided for @inboxActionBlockVanishedAccount.
+  /// Block action for a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
   /// **'Block this account'**
   String get inboxActionBlockVanishedAccount;
 
-  /// No description provided for @inboxActionUnblockVanishedAccount.
+  /// Unblock action for a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
   /// **'Unblock this account'**
   String get inboxActionUnblockVanishedAccount;
 
-  /// No description provided for @inboxReportedVanishedAccount.
+  /// Confirmation after reporting a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
   /// **'Reported this account'**
   String get inboxReportedVanishedAccount;
 
-  /// No description provided for @inboxBlockedVanishedAccount.
+  /// Confirmation after blocking a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
   /// **'Blocked this account'**
   String get inboxBlockedVanishedAccount;
 
-  /// No description provided for @inboxUnblockedVanishedAccount.
+  /// Confirmation after unblocking a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
   /// **'Unblocked this account'**
