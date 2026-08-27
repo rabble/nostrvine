@@ -376,11 +376,14 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// `id` and the UNIQUE index on `gift_wrap_id` already make [insertMessage]
   /// a no-op for them.
   ///
-  /// A group send is the one self-authored case that needs
-  /// [DmDedupCounterpart.unconstrained]: its siblings carry distinct rumor
-  /// ids, so the primary key does not collapse their self-wrap echoes.
-  /// Prefer [hasMessageWithSendBatchId] there when the batch token is
-  /// available — it matches exactly instead of heuristically.
+  /// Two self-authored cases need [DmDedupCounterpart.unconstrained], because
+  /// both match the user's OWN persisted send rather than a cross-protocol
+  /// twin. A group send's siblings carry distinct rumor ids, so the primary
+  /// key does not collapse their self-wrap echoes — prefer
+  /// [hasMessageWithSendBatchId] there when the batch token is available,
+  /// since it matches exactly instead of heuristically. And the user's own
+  /// replayed NIP-04 fallback may match a send written before #2654, which
+  /// stored the gift-wrap id in both columns and so reads as NIP-04 (#8211).
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
