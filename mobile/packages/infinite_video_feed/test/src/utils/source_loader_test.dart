@@ -350,7 +350,7 @@ void main() {
         controller: controller,
         sources: ['derivedMp4', 'hlsUrl'],
         log: logs.add,
-        stopOnTypedNonFailoverError: false,
+        applyTypedFailoverPolicy: false,
       );
 
       expect(result, equals(('hlsUrl', 1)));
@@ -446,34 +446,41 @@ void main() {
       },
     );
 
-    test('does not fail over typed auth-required errors', () async {
-      final clips = <VideoClip>[];
-      final authError = PlatformException(
-        code: 'COMPOSITION_ERROR',
-        message: 'NSURLErrorDomain error -1013',
-        details: const <String, Object?>{'errorCode': 'auth_required'},
-      );
-      final controller = _RecordingControllerWithFailures(
-        clips.add,
-        failures: [authError],
-      );
-      addTearDown(controller.dispose);
+    test(
+      'keeps auth terminal when typed failover policy is disabled',
+      () async {
+        final clips = <VideoClip>[];
+        final authError = PlatformException(
+          code: 'COMPOSITION_ERROR',
+          message: 'NSURLErrorDomain error -1013',
+          details: const <String, Object?>{'errorCode': 'auth_required'},
+        );
+        final controller = _RecordingControllerWithFailures(
+          clips.add,
+          failures: [authError],
+        );
+        addTearDown(controller.dispose);
 
-      await expectLater(
-        () => setSourceWithFallbacks(
-          index: 0,
-          controller: controller,
-          sources: ['optimizedUrl', 'hlsUrl'],
-          log: logs.add,
-        ),
-        throwsA(same(authError)),
-      );
+        await expectLater(
+          () => setSourceWithFallbacks(
+            index: 0,
+            controller: controller,
+            sources: ['optimizedUrl', 'hlsUrl'],
+            log: logs.add,
+            applyTypedFailoverPolicy: false,
+          ),
+          throwsA(same(authError)),
+        );
 
-      expect(clips.map((clip) => clip.uri), equals(['optimizedUrl']));
-      expect(logs, hasLength(1));
-      expect(logs.single, contains('Source failed without failover'));
-      expect(logs.single, contains('code=NativePlayerErrorCode.authRequired'));
-    });
+        expect(clips.map((clip) => clip.uri), equals(['optimizedUrl']));
+        expect(logs, hasLength(1));
+        expect(logs.single, contains('Source failed without failover'));
+        expect(
+          logs.single,
+          contains('code=NativePlayerErrorCode.authRequired'),
+        );
+      },
+    );
 
     test(
       'preserves the original stack trace for non-failover errors',

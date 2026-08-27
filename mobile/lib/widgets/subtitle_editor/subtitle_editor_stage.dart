@@ -54,7 +54,7 @@ Future<void> loadSubtitlePreviewSources({
     isLoadCurrent: isLoadCurrent,
     // Preserve the editor's pre-feed-policy behavior: an alternate rendition
     // may still decode even when the first candidate does not.
-    stopOnTypedNonFailoverError: false,
+    applyTypedFailoverPolicy: false,
     // The feed trims the loop seam; the editor cannot. Its timeline is drawn
     // from the container duration, so a clamp to the shorter of the two tracks
     // would put the last half-second of the axis out of the preview's reach —

@@ -33,9 +33,10 @@ class SourceLoadAborted implements Exception {
 /// source fails.
 ///
 /// Authentication errors always stop the source ladder immediately. When
-/// [stopOnTypedNonFailoverError] is true, other typed player errors whose
-/// policy disallows failover also stop immediately and preserve their original
-/// error and stack trace.
+/// [applyTypedFailoverPolicy] is true, other typed player errors that cannot be
+/// fixed by changing sources also stop immediately and preserve their original
+/// error and stack trace. Media-processing errors remain eligible for fallback
+/// because another rendition may already be ready.
 ///
 /// [maxPlaybackDuration] becomes the clip's end position, so the native
 /// player stops (and loops) there. Sources shorter than the cap are
@@ -55,7 +56,7 @@ Future<(String, int)> setSourceWithFallbacks({
   bool Function()? isLoadCurrent,
   Duration? maxPlaybackDuration,
   bool trimToCommonTrackEnd = true,
-  bool stopOnTypedNonFailoverError = true,
+  bool applyTypedFailoverPolicy = true,
   Future<void> Function(Duration duration) delay = Future<void>.delayed,
   void Function(String source)? onFailoverSourceFailure,
   void Function(String source)? onSourceLoadFailure,
@@ -93,7 +94,7 @@ Future<(String, int)> setSourceWithFallbacks({
       final nativeErrorCode = nativePlayerErrorCodeFromError(error);
       final isTypedNonFailoverError =
           nativeErrorCode == NativePlayerErrorCode.authRequired ||
-          (stopOnTypedNonFailoverError &&
+          (applyTypedFailoverPolicy &&
               nativeErrorCode != null &&
               nativeErrorCode != NativePlayerErrorCode.unknown &&
               nativeErrorCode != NativePlayerErrorCode.mediaProcessing &&
