@@ -315,19 +315,25 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// compile-time `const`, so lifting it needs a new build.)
   ///
   /// The stored rumor is also the retraction's event identity, not merely a
-  /// payload. Replaying the stored JSON keeps every attempt one kind-5;
-  /// rebuilding would mint a fresh id per attempt and put N distinct
-  /// retractions on the wire for one user action. Nothing on the receive side
-  /// collapses them — dedup is keyed on gift-wrap id, and NIP-59 gives every
-  /// wrap a fresh ephemeral key and `created_at`, so a replay is always a new
-  /// wrap; what makes it safe is that re-applying a deletion is a no-op.
-  /// Dropping the rumor therefore leaves the row unrepairable rather than
-  /// merely un-retried — including in the mixed case where some recipients
-  /// already received the retraction (#8226).
+  /// payload. Replaying the stored JSON would keep every attempt one kind-5;
+  /// rebuilding mints a fresh id per attempt and puts N distinct retractions on
+  /// the wire for one user action. Nothing on the receive side collapses them —
+  /// dedup is keyed on gift-wrap id, and NIP-59 gives every wrap a fresh
+  /// ephemeral key and `created_at`, so a replay is always a new wrap; what
+  /// makes it safe is that re-applying a deletion is a no-op. Dropping the
+  /// rumor therefore leaves the row unrepairable rather than merely un-retried
+  /// — including in the mixed case where some recipients already received the
+  /// retraction (#8226).
   ///
+  /// It is retained as groundwork, not because anything replays it yet.
   /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
   /// additionally requires `deletion_pending`, so a blocked row stays off the
-  /// worklist whether or not the rumor is present.
+  /// worklist whether or not the rumor is present. The re-tap that restoring
+  /// the message re-enables goes through `deleteMessageForEveryone`, which
+  /// mints a fresh rumor and overwrites this one. Making the retained rumor
+  /// load-bearing means routing an explicit retry through
+  /// `retryMessageDeletion` so the replay carries a byte-identical id; that is
+  /// gated on the retry UX decision on #8201.
   ///
   /// The message is also **returned to the thread** (#8201). It was hidden
   /// optimistically when the deletion was enqueued; leaving it hidden once the
