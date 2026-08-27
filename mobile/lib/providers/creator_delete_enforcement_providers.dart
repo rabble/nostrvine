@@ -21,6 +21,12 @@ final creatorDeleteEnforcementRepositoryProvider =
         enabled: environment.creatorDeleteEnforcementEnabled,
         httpClient: client,
         nip98AuthService: ref.watch(nip98AuthServiceProvider),
+        shouldBoundSigning: () =>
+            ref
+                .read(authServiceProvider)
+                .currentIdentity
+                ?.signsRemotelyNonInteractive ??
+            false,
         reportError: (error, stackTrace) => unawaited(
           CrashReportingService.instance.recordError(
             Reportable(error, context: 'CreatorDeleteEnforcementRepository'),

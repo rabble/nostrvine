@@ -4000,7 +4000,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'Видеото е изтрито, но не успяхме да премахнем всяко копие. Свържете се с поддръжката.';
+      'Видеото е изтрито, но не успяхме да премахнем всяко копие. Свържи се с поддръжката.';
 
   @override
   String get authSessionExpired => 'Сесията ти изтече. Влез отново.';

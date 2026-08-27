@@ -253,5 +253,58 @@ void main() {
         expect(reports, hasLength(1));
       },
     );
+
+    test('bounds a non-interactive signer that never completes', () async {
+      final signer = Completer<Nip98Token?>();
+      when(
+        () => auth.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) => signer.future);
+      final repository = CreatorDeleteEnforcementRepository(
+        baseUrl: 'https://moderation.example',
+        httpClient: MockClient((_) async => http.Response('', 200)),
+        nip98AuthService: auth,
+        requestTimeout: const Duration(milliseconds: 10),
+      );
+
+      final result = await repository
+          .enforce('kind5')
+          .timeout(const Duration(milliseconds: 100));
+
+      expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+    });
+
+    test('does not time out a human-approved signer', () async {
+      final signer = Completer<Nip98Token?>();
+      when(
+        () => auth.createAuthToken(
+          url: any(named: 'url'),
+          method: any(named: 'method'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) => signer.future);
+      final repository = CreatorDeleteEnforcementRepository(
+        baseUrl: 'https://moderation.example',
+        httpClient: MockClient(
+          (_) async => http.Response('{"status":"success"}', 200),
+        ),
+        nip98AuthService: auth,
+        requestTimeout: const Duration(milliseconds: 10),
+        shouldBoundSigning: () => false,
+      );
+
+      final resultFuture = repository.enforce('kind5');
+      var completed = false;
+      unawaited(resultFuture.then((_) => completed = true));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(completed, isFalse);
+
+      signer.complete(token);
+      final result = await resultFuture;
+      expect(result.status, CreatorDeleteEnforcementStatus.delayed);
+    });
   });
 }

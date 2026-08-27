@@ -3918,7 +3918,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteCleanupFailed =>
-      'تم حذف الفيديو، لكننا لم نتمكن من إزالة كل نسخة. تواصل مع الدعم.';
+      'تم حذف الفيديو، لكننا لم نتمكن من إزالة كل نسخة. التواصل مع الدعم.';
 
   @override
   String get authSessionExpired => 'انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.';

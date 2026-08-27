@@ -30,9 +30,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
+import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 
@@ -40,6 +44,14 @@ import '../helpers/test_provider_overrides.dart';
 
 const _ownPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+class _MockContentDeletionService extends Mock
+    implements ContentDeletionService {}
+
+class _MockEnforcementRepository extends Mock
+    implements CreatorDeleteEnforcementRepository {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
   group('ComposableVideoGrid', () {
@@ -423,6 +435,87 @@ void main() {
           expect(find.text(l10n.shareMenuDeleteConfirmation), findsOneWidget);
         },
       );
+
+      testWidgets('shows the relay failure result after delete', (
+        tester,
+      ) async {
+        final mockNostr = createMockNostrService();
+        when(() => mockNostr.publicKey).thenReturn(_ownPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final deletionService = _MockContentDeletionService();
+        final enforcementRepository = _MockEnforcementRepository();
+        final videoEventService = _MockVideoEventService();
+        final video = VideoEvent(
+          id: 'owned-video',
+          pubkey: _ownPubkey,
+          content: 'Owned video',
+          title: 'Owned video',
+          authorName: 'Creator',
+          videoUrl: 'https://example.com/owned.mp4',
+          thumbnailUrl: 'https://example.com/owned.jpg',
+          duration: 5,
+          createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          timestamp: DateTime(2026),
+        );
+        when(
+          () => deletionService.quickDelete(
+            video: video,
+            reason: DeleteReason.personalChoice,
+          ),
+        ).thenAnswer(
+          (_) async => DeleteResult.failure(
+            'relay rejected',
+            DeleteFailureKind.relayRejected,
+          ),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              brokenVideoTrackerProvider.overrideWith(
+                (ref) async => mockTracker,
+              ),
+              subscribedListVideoCacheProvider.overrideWithValue(null),
+              nostrServiceProvider.overrideWithValue(mockNostr),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(null),
+              ),
+              contentDeletionServiceProvider.overrideWith(
+                (ref) async => deletionService,
+              ),
+              creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                enforcementRepository,
+              ),
+              videoEventServiceProvider.overrideWithValue(videoEventService),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: [video],
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.longPress(
+          find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.videoGridDeleteVideo));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.shareMenuDelete));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.shareMenuDeleteFailedRelayRejected),
+          findsOneWidget,
+        );
+      });
     });
 
     group('load-more footer', () {

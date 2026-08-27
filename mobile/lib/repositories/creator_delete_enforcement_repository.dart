@@ -36,6 +36,7 @@ class CreatorDeleteEnforcementRepository {
     bool enabled = true,
     Duration requestTimeout = const Duration(seconds: 15),
     Duration pollTimeout = const Duration(seconds: 30),
+    bool Function()? shouldBoundSigning,
     Future<void> Function(Duration) delay = Future<void>.delayed,
     void Function(Object, StackTrace)? reportError,
   }) : _baseUrl = baseUrl.endsWith('/')
@@ -46,6 +47,7 @@ class CreatorDeleteEnforcementRepository {
        _enabled = enabled,
        _requestTimeout = requestTimeout,
        _pollTimeout = pollTimeout,
+       _shouldBoundSigning = shouldBoundSigning ?? _alwaysBoundSigning,
        _delay = delay,
        _reportError = reportError;
 
@@ -58,6 +60,7 @@ class CreatorDeleteEnforcementRepository {
   final bool _enabled;
   final Duration _requestTimeout;
   final Duration _pollTimeout;
+  final bool Function() _shouldBoundSigning;
   final Future<void> Function(Duration) _delay;
   final void Function(Object, StackTrace)? _reportError;
 
@@ -181,25 +184,31 @@ class CreatorDeleteEnforcementRepository {
     HttpMethod method, {
     Duration? timeout,
   }) async {
-    final token = await _nip98AuthService.createAuthToken(
-      url: uri.toString(),
-      method: method,
-      payload: method == HttpMethod.post ? '' : null,
-    );
-    if (token == null) {
-      return http.Response('', 401);
-    }
-    final headers = {'Authorization': token.authorizationHeader};
+    final requestBudget = timeout ?? _requestTimeout;
+    final stopwatch = Stopwatch()..start();
     try {
+      final tokenFuture = _nip98AuthService.createAuthToken(
+        url: uri.toString(),
+        method: method,
+        payload: method == HttpMethod.post ? '' : null,
+      );
+      // Keycast signing is an unattended network request and must share the
+      // request budget. Human-approved signers remain unbounded so the user
+      // can read and approve their prompt without an arbitrary deadline.
+      final token = _shouldBoundSigning()
+          ? await tokenFuture.timeout(requestBudget)
+          : await tokenFuture;
+      if (token == null) {
+        return http.Response('', 401);
+      }
+      final remaining = requestBudget - stopwatch.elapsed;
+      if (remaining <= Duration.zero) return null;
+      final headers = {'Authorization': token.authorizationHeader};
       return await switch (method) {
         HttpMethod.get =>
-          _httpClient
-              .get(uri, headers: headers)
-              .timeout(timeout ?? _requestTimeout),
+          _httpClient.get(uri, headers: headers).timeout(remaining),
         HttpMethod.post =>
-          _httpClient
-              .post(uri, headers: headers)
-              .timeout(timeout ?? _requestTimeout),
+          _httpClient.post(uri, headers: headers).timeout(remaining),
         _ => throw ArgumentError.value(method, 'method'),
       };
     } on TimeoutException {
@@ -225,4 +234,6 @@ class CreatorDeleteEnforcementRepository {
   void _reportContractFailure(String message) {
     _reportError?.call(StateError(message), StackTrace.current);
   }
+
+  static bool _alwaysBoundSigning() => true;
 }
