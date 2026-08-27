@@ -605,6 +605,30 @@ void main() {
       expect(await bootstrap.resolveCipherKey(), isNull);
     });
 
+    test(
+      'fails closed and preserves the key when classification is unknown',
+      () async {
+        const existing =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        const error = DatabaseClassificationException(
+          stage: DatabaseClassificationStage.readSchema,
+          resultCode: 5,
+          extendedResultCode: 5,
+        );
+        store[dbCipherKeyStorageKey] = existing;
+        final bootstrap = DatabaseEncryptionBootstrap(
+          secureStorage: storage,
+          ensureRuntime: () async {},
+          isCipherAvailable: () => true,
+          migrate: (_) async => throw error,
+          deleteDatabase: () async {},
+        );
+
+        await expectLater(bootstrap.resolveCipherKey(), throwsA(same(error)));
+        expect(store[dbCipherKeyStorageKey], existing);
+      },
+    );
+
     test('fails closed instead of handing back a null key for an unreadable '
         'database', () async {
       // The gap #6897 closes: this used to share the plaintext deferral's

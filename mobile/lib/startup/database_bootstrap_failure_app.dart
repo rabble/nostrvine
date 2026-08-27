@@ -1,3 +1,4 @@
+import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -464,6 +465,10 @@ enum DatabaseBootstrapDiagnosis {
   /// recognizably encrypted.
   databaseUnreadable('db-unreadable'),
 
+  /// A transient SQLite failure prevented the file format from being safely
+  /// classified. Restarting may recover; deleting data is not justified.
+  classificationUnavailable('db-classification-unavailable'),
+
   /// Anything else. Read the exception from Crashlytics for this one.
   bootstrapFailed('db-bootstrap-failed');
 
@@ -492,7 +497,7 @@ enum DatabaseBootstrapDiagnosis {
   /// choice deliberately instead of defaulting into a destructive offer.
   bool get allowsLocalDatabaseReset => switch (this) {
     cipherMismatch || databaseUnreadable || bootstrapFailed => true,
-    cipherUnavailable || secureStorage => false,
+    cipherUnavailable || secureStorage || classificationUnavailable => false,
   };
 }
 
@@ -514,6 +519,9 @@ DatabaseBootstrapDiagnosis databaseBootstrapDiagnosis(Object error) {
   }
   if (error is DatabaseUnreadableError) {
     return DatabaseBootstrapDiagnosis.databaseUnreadable;
+  }
+  if (error is DatabaseClassificationException) {
+    return DatabaseBootstrapDiagnosis.classificationUnavailable;
   }
 
   final message = error.toString();

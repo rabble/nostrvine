@@ -56,6 +56,20 @@ enum CipherMigrationOutcome {
   unreadable,
 }
 
+enum DatabaseClassificationStage { openDatabase, readSchema }
+
+class DatabaseClassificationException implements Exception {
+  const DatabaseClassificationException({
+    required this.stage,
+    required this.resultCode,
+    required this.extendedResultCode,
+  });
+
+  final DatabaseClassificationStage stage;
+  final int resultCode;
+  final int extendedResultCode;
+}
+
 /// Stub implementation - will be replaced by conditional imports
 Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   required String rawKeyHex,
