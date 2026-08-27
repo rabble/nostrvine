@@ -6977,15 +6977,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przełączono konto, więc nic nie zostało usunięte. Otwórz ponownie usuwanie dla konta, które chcesz usunąć.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Nie udało się zwolnić twojej nazwy użytkownika. Twoje konto nie zostało usunięte. Spróbuj ponownie albo odznacz tę opcję.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Zrezygnuj też trwale z $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Aby potwierdzić, wpisz:';
 
   @override

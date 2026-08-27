@@ -6888,15 +6888,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Смени акаунта, затова нищо не беше изтрито. Отвори отново изтриването за акаунта, който искаш да премахнеш.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Не успяхме да освободим потребителското ти име. Акаунтът ти не беше изтрит. Опитай пак или махни отметката от опцията.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Също окончателно се откажи от $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'За потвърждение напиши:';
 
   @override

@@ -6908,15 +6908,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu as changé de compte, donc rien n\'a été supprimé. Rouvre la suppression pour le compte que tu veux retirer.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Impossible de libérer ton nom d\'utilisateur. Ton compte n\'a pas été supprimé. Réessaie ou décoche l\'option.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Abandonner aussi définitivement $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Pour confirmer, tape :';
 
   @override

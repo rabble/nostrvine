@@ -6989,15 +6989,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai schimbat contul, așa că nimic nu a fost șters. Redeschide ștergerea pentru contul pe care vrei să-l elimini.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Renunță definitiv și la $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Pentru a confirma, scrie:';
 
   @override

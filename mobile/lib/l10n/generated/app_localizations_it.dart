@@ -6888,15 +6888,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Hai cambiato account, quindi non è stato eliminato nulla. Riapri l\'eliminazione per l\'account che vuoi rimuovere.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Impossibile rilasciare il tuo nome utente. Il tuo account non è stato eliminato. Riprova o deseleziona l\'opzione.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Rinuncia definitivamente anche a $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Per confermare, digita:';
 
   @override

@@ -6846,15 +6846,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je bent van account gewisseld, dus er is niets verwijderd. Open de verwijdering opnieuw voor het account dat je wilt verwijderen.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Je gebruikersnaam kon niet worden vrijgegeven. Je account is niet verwijderd. Probeer het opnieuw of vink de optie uit.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Geef $username ook definitief op';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Typ ter bevestiging:';
 
   @override

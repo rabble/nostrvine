@@ -3796,19 +3796,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountBurnUsernameFailed": "无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。",
-  "@deleteAccountBurnUsernameFailed": {
-    "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
-  },
-  "deleteAccountBurnUsernameToggle": "同时永久放弃 {username}",
-  "@deleteAccountBurnUsernameToggle": {
-    "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountConfirmDeletePrompt": "请输入以下内容确认：",
   "@deleteAccountConfirmDeletePrompt": {
     "description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."

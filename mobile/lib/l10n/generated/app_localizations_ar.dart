@@ -6768,15 +6768,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'لقد بدّلت الحسابات، لذا لم يُحذف أي شيء. أعد فتح الحذف للحساب الذي تريد إزالته.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'تخلَّ نهائيًا أيضًا عن $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'للتأكيد، اكتب:';
 
   @override

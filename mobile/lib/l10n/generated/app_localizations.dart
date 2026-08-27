@@ -11690,18 +11690,6 @@ abstract class AppLocalizations {
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
   String get deleteAccountAccountChanged;
 
-  /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.'**
-  String get deleteAccountBurnUsernameFailed;
-
-  /// Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.
-  ///
-  /// In en, this message translates to:
-  /// **'Also permanently give up {username}'**
-  String deleteAccountBurnUsernameToggle(String username);
-
   /// Prompt above the confirmation field when the account has no username; the user types the word DELETE.
   ///
   /// In en, this message translates to:

@@ -3796,19 +3796,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountBurnUsernameFailed": "Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.",
-  "@deleteAccountBurnUsernameFailed": {
-    "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
-  },
-  "deleteAccountBurnUsernameToggle": "Cũng từ bỏ vĩnh viễn {username}",
-  "@deleteAccountBurnUsernameToggle": {
-    "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountConfirmDeletePrompt": "Để xác nhận, gõ:",
   "@deleteAccountConfirmDeletePrompt": {
     "description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."

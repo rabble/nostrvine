@@ -6442,15 +6442,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '你切换了账号，因此没有删除任何内容。请为要删除的账号重新打开删除流程。';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      '无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '同时永久放弃 $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => '请输入以下内容确认：';
 
   @override

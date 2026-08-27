@@ -4441,19 +4441,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountBurnUsernameFailed": "Couldn't release your username. Your account was not deleted. Try again, or uncheck the option.",
-  "@deleteAccountBurnUsernameFailed": {
-    "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
-  },
-  "deleteAccountBurnUsernameToggle": "Also permanently give up {username}",
-  "@deleteAccountBurnUsernameToggle": {
-    "description": "Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.",
-    "placeholders": {
-      "username": {
-        "type": "String"
-      }
-    }
-  },
   "deleteAccountConfirmDeletePrompt": "To confirm, type:",
   "@deleteAccountConfirmDeletePrompt": {
     "description": "Prompt above the confirmation field when the account has no username; the user types the word DELETE."

@@ -6884,15 +6884,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cambiaste de cuenta, así que no se eliminó nada. Volvé a abrir la eliminación para la cuenta que querés borrar.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'No se pudo liberar tu nombre de usuario. Tu cuenta no fue eliminada. Probá de nuevo o desmarcá la opción.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'También renunciar a $username para siempre';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Para confirmar, escribí:';
 
   @override

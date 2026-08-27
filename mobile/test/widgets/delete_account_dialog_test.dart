@@ -75,7 +75,6 @@ Future<void> runDeletion({
   required AccountDeletionService deletionService,
   required AuthService authService,
   required AccountDeletionRecoveryRepository deletionRecoveryRepository,
-  bool burnUsername = false,
   ({String name, String canonical})? ownedUsername,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
@@ -84,7 +83,6 @@ Future<void> runDeletion({
   deletionService: deletionService,
   authService: authService,
   deletionRecoveryRepository: deletionRecoveryRepository,
-  burnUsername: burnUsername,
   ownedUsername: ownedUsername,
   confirmedPubkey: confirmedPubkey,
   screenName: screenName,
@@ -134,11 +132,7 @@ Widget _wrapWithRouter(Widget child) {
 Future<void> _showSheet(
   WidgetTester tester, {
   DeleteAccountConfirmation? confirmation,
-  void Function({
-    required bool burnUsername,
-    ({String name, String canonical})? ownedUsername,
-  })?
-  onConfirm,
+  void Function({({String name, String canonical})? ownedUsername})? onConfirm,
   ({String name, String canonical})? ownedUsername,
 }) async {
   await tester.pumpWidget(
@@ -153,10 +147,7 @@ Future<void> _showSheet(
               ownedUsernameFuture: Future.value(ownedUsername),
               onConfirm:
                   onConfirm ??
-                  ({
-                    required bool burnUsername,
-                    ({String name, String canonical})? ownedUsername,
-                  }) {},
+                  ({({String name, String canonical})? ownedUsername}) {},
             ),
             child: const Text('Open'),
           ),
@@ -272,13 +263,6 @@ List<Object?> _captureAnnouncements(WidgetTester tester) {
         ),
   );
   return announced;
-}
-
-Future<void> _tapBurnUsernameCheckbox(WidgetTester tester) async {
-  final tile = find.byType(DivineRowCheckbox);
-  await tester.ensureVisible(tile);
-  await tester.pumpAndSettle();
-  await tester.tap(tile);
 }
 
 void main() {
@@ -423,11 +407,8 @@ void main() {
       var confirmCalls = 0;
       await _showSheet(
         tester,
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => confirmCalls++,
+        onConfirm: ({({String name, String canonical})? ownedUsername}) =>
+            confirmCalls++,
       );
 
       await tester.enterText(find.byType(TextField), 'DELETE');
@@ -450,11 +431,8 @@ void main() {
       var confirmCalls = 0;
       await _showSheet(
         tester,
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => confirmCalls++,
+        onConfirm: ({({String name, String canonical})? ownedUsername}) =>
+            confirmCalls++,
       );
 
       await tester.enterText(find.byType(TextField), 'DELETE');
@@ -539,11 +517,8 @@ void main() {
       var called = false;
       await _showSheet(
         tester,
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => called = true,
+        onConfirm: ({({String name, String canonical})? ownedUsername}) =>
+            called = true,
       );
 
       await tester.enterText(find.byType(TextField), 'delete');
@@ -555,69 +530,33 @@ void main() {
       expect(called, isTrue);
     });
 
-    testWidgets('burn toggle is hidden when no username is owned', (
+    testWidgets('shows no burn toggle when no username is owned', (
       tester,
     ) async {
       await _showSheet(tester);
       expect(find.byType(DivineRowCheckbox), findsNothing);
     });
 
-    testWidgets('burn toggle is shown when a username is owned', (
+    testWidgets('shows no burn toggle even when a username is owned', (
       tester,
     ) async {
       await _showSheet(
         tester,
         ownedUsername: (name: 'Alice', canonical: 'alice'),
       );
-      expect(find.byType(DivineRowCheckbox), findsOneWidget);
-      // Pin the consent label naming the exact handle (display form, not
-      // canonical) so swapping the interpolated variable can't slip through.
-      expect(
-        find.text(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).deleteAccountBurnUsernameToggle('@Alice.divine.video'),
-        ),
-        findsOneWidget,
-      );
+      // Release is mandatory now — there is no opt-in choice to render.
+      expect(find.byType(DivineRowCheckbox), findsNothing);
     });
 
-    testWidgets('checking burn toggle passes burnUsername true on confirm', (
+    testWidgets('confirming forwards the resolved handle to onConfirm', (
       tester,
     ) async {
-      bool? received;
+      ({String name, String canonical})? receivedOwned;
       await _showSheet(
         tester,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => received = burnUsername,
-      );
-
-      await _tapBurnUsernameCheckbox(tester);
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), 'delete');
-      await tester.pump();
-      await tester.tap(_deleteAllContentButton());
-      await tester.pumpAndSettle();
-
-      expect(received, isTrue);
-    });
-
-    testWidgets('leaving burn toggle unchecked passes burnUsername false', (
-      tester,
-    ) async {
-      bool? received;
-      await _showSheet(
-        tester,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) => received = burnUsername,
+        ownedUsername: (name: 'Alice', canonical: 'alice'),
+        onConfirm: ({({String name, String canonical})? ownedUsername}) =>
+            receivedOwned = ownedUsername,
       );
 
       await tester.enterText(find.byType(TextField), 'delete');
@@ -625,11 +564,34 @@ void main() {
       await tester.tap(_deleteAllContentButton());
       await tester.pumpAndSettle();
 
-      expect(received, isFalse);
+      // Mandatory release: the sheet hands the resolved handle straight back,
+      // with no opt-in choice in between.
+      expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
     });
 
-    testWidgets('sheet opens before the lookup resolves and reveals the '
-        'toggle only once it completes', (tester) async {
+    testWidgets('confirming with no owned handle forwards null', (
+      tester,
+    ) async {
+      ({String name, String canonical})? receivedOwned;
+      var confirmed = false;
+      await _showSheet(
+        tester,
+        onConfirm: ({({String name, String canonical})? ownedUsername}) {
+          confirmed = true;
+          receivedOwned = ownedUsername;
+        },
+      );
+
+      await tester.enterText(find.byType(TextField), 'delete');
+      await tester.pump();
+      await tester.tap(_deleteAllContentButton());
+      await tester.pumpAndSettle();
+
+      expect(confirmed, isTrue);
+      expect(receivedOwned, isNull);
+    });
+
+    testWidgets('sheet opens before the lookup resolves', (tester) async {
       final completer = Completer<({String name, String canonical})?>();
       await tester.pumpWidget(
         _wrapWithRouter(
@@ -642,10 +604,7 @@ void main() {
                   confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
                   onConfirm:
-                      ({
-                        required bool burnUsername,
-                        ({String name, String canonical})? ownedUsername,
-                      }) {},
+                      ({({String name, String canonical})? ownedUsername}) {},
                 ),
                 child: const Text('Open'),
               ),
@@ -656,19 +615,17 @@ void main() {
       await tester.tap(find.byKey(const Key('open')));
       await tester.pumpAndSettle();
 
-      // Sheet is already open (lookup still pending) but no toggle yet.
+      // The sheet is usable while the handle lookup is still pending, so a slow
+      // name-server call never blocks the tap.
       expect(_deleteAllContentButton(), findsOneWidget);
-      expect(find.byType(DivineRowCheckbox), findsNothing);
 
       completer.complete((name: 'Alice', canonical: 'alice'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(DivineRowCheckbox), findsOneWidget);
+      expect(_deleteAllContentButton(), findsOneWidget);
     });
 
-    testWidgets('a failed lookup leaves the toggle hidden without crashing', (
-      tester,
-    ) async {
+    testWidgets('a failed lookup does not crash the sheet', (tester) async {
       final completer = Completer<({String name, String canonical})?>();
       await tester.pumpWidget(
         _wrapWithRouter(
@@ -681,10 +638,7 @@ void main() {
                   confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
                   onConfirm:
-                      ({
-                        required bool burnUsername,
-                        ({String name, String canonical})? ownedUsername,
-                      }) {},
+                      ({({String name, String canonical})? ownedUsername}) {},
                 ),
                 child: const Text('Open'),
               ),
@@ -700,37 +654,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_deleteAllContentButton(), findsOneWidget);
-      expect(find.byType(DivineRowCheckbox), findsNothing);
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('confirm passes the resolved handle back to onConfirm', (
-      tester,
-    ) async {
-      ({String name, String canonical})? receivedOwned;
-      var receivedBurn = false;
-      await _showSheet(
-        tester,
-        ownedUsername: (name: 'Alice', canonical: 'alice'),
-        onConfirm:
-            ({
-              required bool burnUsername,
-              ({String name, String canonical})? ownedUsername,
-            }) {
-              receivedBurn = burnUsername;
-              receivedOwned = ownedUsername;
-            },
-      );
-
-      await _tapBurnUsernameCheckbox(tester);
-      await tester.pump();
-      await tester.enterText(find.byType(TextField), 'delete');
-      await tester.pump();
-      await tester.tap(_deleteAllContentButton());
-      await tester.pumpAndSettle();
-
-      expect(receivedBurn, isTrue);
-      expect(receivedOwned, (name: 'Alice', canonical: 'alice'));
     });
 
     testWidgets('shows the identity (name + handle) and username prompt', (
@@ -1044,7 +968,7 @@ void main() {
       },
     );
 
-    testWidgets('opted-in burn success proceeds with deletion', (tester) async {
+    testWidgets('releases the username when the user owns one', (tester) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
       // The pre-flight gate runs on every path; default it to ready so
@@ -1089,7 +1013,6 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: recoveryRepository,
-        burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
@@ -1109,7 +1032,7 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('does not release the username when burn is not opted in', (
+    testWidgets('does not release the username when the user owns no name', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1156,7 +1079,6 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: recoveryRepository,
-        ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
@@ -1171,7 +1093,7 @@ void main() {
     });
 
     testWidgets(
-      'discloses the release when content deletion fails after burn',
+      'discloses the release when content deletion fails',
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
@@ -1212,7 +1134,6 @@ void main() {
           deletionService: deletionService,
           authService: authService,
           deletionRecoveryRepository: recoveryRepository,
-          burnUsername: true,
           ownedUsername: (name: 'alice', canonical: 'alice'),
         );
         await tester.pumpAndSettle();
@@ -1279,7 +1200,6 @@ void main() {
           deletionService: deletionService,
           authService: authService,
           deletionRecoveryRepository: recoveryRepository,
-          burnUsername: true,
           ownedUsername: (name: 'alice', canonical: 'alice'),
         );
         await tester.pumpAndSettle();
@@ -1303,7 +1223,7 @@ void main() {
       },
     );
 
-    testWidgets('username preparation failure keeps username guidance', (
+    testWidgets('username preparation failure surfaces incomplete guidance', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1341,7 +1261,6 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: recoveryRepository,
-        burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
@@ -1356,7 +1275,7 @@ void main() {
         find.text(
           lookupAppLocalizations(
             const Locale('en'),
-          ).deleteAccountBurnUsernameFailed,
+          ).deleteAccountDeletionIncomplete,
         ),
         findsOneWidget,
       );
@@ -1404,7 +1323,6 @@ void main() {
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
       expect(find.text(l10n.supportReportBug), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
-      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -1418,7 +1336,7 @@ void main() {
     });
 
     testWidgets(
-      'an absent coordinator ignores burn option when choosing guidance',
+      'a missing coordinator route shows unavailable even when a name is owned',
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
@@ -1452,7 +1370,6 @@ void main() {
           deletionService: deletionService,
           authService: authService,
           deletionRecoveryRepository: recoveryRepository,
-          burnUsername: true,
           ownedUsername: (name: 'alice', canonical: 'alice'),
         );
         await tester.pumpAndSettle();
@@ -1462,7 +1379,6 @@ void main() {
           find.text(l10n.deleteAccountDeletionUnavailable),
           findsOneWidget,
         );
-        expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
         expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
         verifyNever(
           () => deletionService.deleteAccount(
@@ -1514,7 +1430,6 @@ void main() {
       final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
-      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -1523,7 +1438,7 @@ void main() {
       );
     });
 
-    testWidgets('a coordinator without username support says to uncheck it', (
+    testWidgets('a coordinator without username support fails as unavailable', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1532,10 +1447,9 @@ void main() {
       when(
         authService.checkAccountDeletionReadiness,
       ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      // The coordinator answers this only for a username-bearing attempt, and
-      // a username-free deletion succeeds against the same server — so the
-      // 503 here has to keep the uncheck guidance rather than read as an
-      // outage nothing can fix.
+      // The coordinator answers this 503 only for a username-bearing attempt.
+      // Release is mandatory now, so there is no opt-out to fall back on — the
+      // deletion fails closed and reads as unavailable, with nothing deleted.
       when(() => recoveryRepository.prepare(username: 'alice')).thenThrow(
         const AccountDeletionRecoveryException(
           'Deletion attempt request failed (503)',
@@ -1562,65 +1476,13 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: recoveryRepository,
-        burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
 
       final l10n = _englishL10n();
-      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsOneWidget);
-      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
+      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
-      verifyNever(
-        () => deletionService.deleteAccount(
-          onProgress: any(named: 'onProgress'),
-          expectedPubkey: any(named: 'expectedPubkey'),
-        ),
-      );
-    });
-
-    testWidgets('username support failure stays neutral when burn is off', (
-      tester,
-    ) async {
-      final deletionService = _MockAccountDeletionService();
-      final authService = _MockAuthService();
-      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
-      when(
-        authService.checkAccountDeletionReadiness,
-      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-      when(recoveryRepository.prepare).thenThrow(
-        const AccountDeletionRecoveryException(
-          'Deletion attempt request failed (503)',
-          code: 'username_recovery_unavailable',
-          stage: AccountDeletionRecoveryStage.coordinatorAttempt,
-          statusCode: 503,
-        ),
-      );
-
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const Scaffold(body: SizedBox.shrink());
-            },
-          ),
-        ),
-      );
-
-      await runDeletion(
-        context: capturedContext,
-        deletionService: deletionService,
-        authService: authService,
-        deletionRecoveryRepository: recoveryRepository,
-      );
-      await tester.pumpAndSettle();
-
-      final l10n = _englishL10n();
-      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
-      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
-      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -1663,7 +1525,6 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: recoveryRepository,
-        burnUsername: true,
         ownedUsername: (name: 'alice', canonical: 'alice'),
       );
       await tester.pumpAndSettle();
@@ -1671,7 +1532,6 @@ void main() {
       final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
-      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -1680,53 +1540,9 @@ void main() {
       );
     });
 
-    testWidgets('opted-in burn aborts when no username is owned', (
+    testWidgets('aborts before release when the account changed', (
       tester,
     ) async {
-      final deletionService = _MockAccountDeletionService();
-      final authService = _MockAuthService();
-      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
-      // The pre-flight gate runs on every path; default it to ready so
-      // these tests exercise the behaviour under test, not the gate.
-      when(
-        authService.checkAccountDeletionReadiness,
-      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-
-      late BuildContext capturedContext;
-      await tester.pumpWidget(
-        _wrapWithRouter(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              return const Scaffold(body: SizedBox.shrink());
-            },
-          ),
-        ),
-      );
-
-      // Opted in (burnUsername: true) but ownedUsername omitted (null): the
-      // burn cannot be honored, so deletion must abort, not proceed.
-      await runDeletion(
-        context: capturedContext,
-        deletionService: deletionService,
-        authService: authService,
-        deletionRecoveryRepository: recoveryRepository,
-        burnUsername: true,
-      );
-      await tester.pumpAndSettle();
-
-      verifyNever(
-        () => deletionService.deleteAccount(
-          onProgress: any(named: 'onProgress'),
-          expectedPubkey: any(named: 'expectedPubkey'),
-        ),
-      );
-      final l10n = _englishL10n();
-      expect(find.text(l10n.deleteAccountBurnUsernameFailed), findsOneWidget);
-      expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
-    });
-
-    testWidgets('aborts before burn when the account changed', (tester) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
       // The pre-flight gate runs on every path; default it to ready so
@@ -1771,7 +1587,6 @@ void main() {
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: _MockAccountDeletionRecoveryRepository(),
-        burnUsername: true,
         ownedUsername: (name: 'rabble', canonical: 'rabble'),
         confirmedPubkey: _pubkeyHex,
       );

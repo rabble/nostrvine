@@ -6830,15 +6830,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Anda menukar akaun, jadi tiada apa yang dipadam. Buka semula pemadaman untuk akaun yang mahu anda alih keluar.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Tidak dapat melepaskan nama pengguna anda. Akaun anda tidak dipadam. Cuba lagi, atau nyah tanda pilihan itu.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Juga serahkan $username secara kekal';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Untuk mengesahkan, taip:';
 
   @override
