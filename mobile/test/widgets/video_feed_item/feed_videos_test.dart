@@ -55,6 +55,7 @@ import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/player_gesture_surface.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
@@ -854,6 +855,75 @@ void main() {
         );
       } finally {
         semantics.dispose();
+      }
+    });
+
+    testWidgets('the profile target stops at the author content', (
+      tester,
+    ) async {
+      InfiniteVideoFeed.debugIsSupportedOverride = true;
+
+      final video = _makeVideo();
+      final cubit = _MockVideoPlaybackStatusCubit()
+        ..stub(PlaybackStatus.ready, video.id);
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        videoPlaybackStatusCubit: cubit,
+      );
+      await tester.pump(const Duration(seconds: 4));
+
+      final target = find
+          .ancestor(
+            of: find.bySemanticsIdentifier('video_author_name'),
+            matching: find.byType(GestureDetector),
+          )
+          .first;
+      final targetRect = tester.getRect(target);
+      expect(
+        targetRect.height,
+        greaterThanOrEqualTo(48),
+        reason: 'sanity: this is the 48dp profile target, not an inner one',
+      );
+
+      // The surface returns false from its own hit test — both of its
+      // GestureDetectors are translucent, and a translucent box adds itself to
+      // the path but reports a miss. So ownership has to be read off the path,
+      // and against the whole subtree rather than its root proxy, which never
+      // gets added at all.
+      final surface = <RenderObject>{};
+      void collect(Element element) {
+        final renderObject = element.renderObject;
+        if (renderObject != null) surface.add(renderObject);
+        element.visitChildren(collect);
+      }
+
+      collect(find.byType(PlayerGestureSurface).evaluate().single);
+
+      bool videoOwns(Offset point) => tester
+          .hitTestOnBinding(point)
+          .path
+          .any((entry) => surface.contains(entry.target));
+
+      // Inside the target the profile wins, across the FULL 58dp — 2dp above
+      // the bottom edge is below the meta text, so deferring to the child
+      // would drop it and leave only the ~20dp name line really tappable.
+      expect(
+        videoOwns(Offset(targetRect.left + 4, targetRect.bottom - 2)),
+        isFalse,
+        reason: 'the whole 48dp target must navigate to the profile',
+      );
+
+      // Past its trailing edge the video takes over again. An opaque detector
+      // filling the Expanded reported false here for another 400dp, taking
+      // double-tap-to-like and press-and-hold-to-peek off empty video.
+      for (final beyond in [2.0, 40.0, 200.0]) {
+        expect(
+          videoOwns(Offset(targetRect.right + beyond, targetRect.center.dy)),
+          isTrue,
+          reason: 'video keeps its gestures ${beyond}dp past the author text',
+        );
       }
     });
 

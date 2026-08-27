@@ -377,31 +377,44 @@ class VideoOverlayActions extends ConsumerWidget {
                         const SizedBox(width: 6),
                         // User name and loop count (tappable to go to profile)
                         Expanded(
-                          child: GestureDetector(
-                            // Opaque, so the whole author strip navigates to
-                            // the profile rather than only the painted glyphs.
-                            // This widens an existing target; it adds no new
-                            // destination.
-                            behavior: HitTestBehavior.opaque,
-                            onTap: navigateToProfile,
-                            // The name + meta column is intrinsically 44dp,
-                            // which failed androidTapTargetGuideline (48) on
-                            // device. Constrained to the avatar block and
-                            // centred, so the text sits where it always has
-                            // while the target clears 48dp. minHeight, not a
-                            // fixed height, so it still grows with the system
-                            // font scale (.claude/rules/accessibility.md).
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minHeight: _avatarClusterSize,
-                              ),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
+                          child: Align(
+                            // Aligned OUTSIDE the detector so the target hugs
+                            // the author content. Inside it, the detector
+                            // filled the whole Expanded, and an opaque hit box
+                            // that wide swallowed the empty video to the right
+                            // of a short name — taking double-tap-to-like and
+                            // press-and-hold-to-peek with it.
+                            alignment: AlignmentDirectional.centerStart,
+                            child: GestureDetector(
+                              // Opaque, so the target is tappable across its
+                              // full height rather than only on the painted
+                              // glyphs: deferring to the child leaves the 58dp
+                              // node it advertises just 20dp of real target.
+                              behavior: HitTestBehavior.opaque,
+                              onTap: navigateToProfile,
+                              // The name + meta column is intrinsically 44dp,
+                              // which failed androidTapTargetGuideline (48) on
+                              // device. Constrained to the avatar block and
+                              // centred, so the text sits where it always has
+                              // while the target clears 48dp. minHeight, not a
+                              // fixed height, so it still grows with the system
+                              // font scale (.claude/rules/accessibility.md);
+                              // minWidth covers a display name too short to
+                              // reach the minimum on its own.
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: kMinInteractiveDimension,
+                                  minHeight: _avatarClusterSize,
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Row(
+                                      // Hugs the name and its badges, so the
+                                      // detector above can hug in turn.
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Flexible(
                                           child: Semantics(
