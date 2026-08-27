@@ -389,6 +389,7 @@
     "profileMyLibraryLabel": "የእኔ ቤተ-መጽሐፍት",
     "profileMessageLabel": "መልእክት",
     "profileDeletedAccountName": "የተሰረዘ መለያ",
+    "inboxVanishedAccountReference": "ይህን መለያ",
     "inboxConversationDeletedAccountSubtitle": "ይህ መለያ ተሰርዟል",
     "profileUserFallback": "ተጠቃሚ",
     "@profileUserFallback": {

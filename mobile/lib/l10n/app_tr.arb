@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Kütüphanem",
     "profileMessageLabel": "Mesaj",
     "profileDeletedAccountName": "Silinmiş hesap",
+    "inboxVanishedAccountReference": "bu hesap",
     "inboxConversationDeletedAccountSubtitle": "Bu hesap silindi",
     "profileUserFallback": "kullanıcı",
     "@profileUserFallback": {

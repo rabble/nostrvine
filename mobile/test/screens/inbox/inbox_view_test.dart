@@ -200,9 +200,7 @@ void main() {
               BlocProvider<NotificationBadgeCubit>.value(
                 value: mockNotifBadgeCubit,
               ),
-              BlocProvider<ConversationMuteCubit>.value(
-                value: mockMuteCubit,
-              ),
+              BlocProvider<ConversationMuteCubit>.value(value: mockMuteCubit),
               BlocProvider<ConversationActionsCubit>.value(
                 value: mockActionsCubit,
               ),
@@ -221,33 +219,27 @@ void main() {
         expect(find.byType(InboxSegmentedToggle), findsOneWidget);
       });
 
-      testWidgets(
-        'forwards DmUnreadCountCubit state to '
-        '$InboxSegmentedToggle.messageCount',
-        (tester) async {
-          await tester.pumpWidget(buildSubject(dmUnreadCount: 5));
-          await tester.pump();
+      testWidgets('forwards DmUnreadCountCubit state to '
+          '$InboxSegmentedToggle.messageCount', (tester) async {
+        await tester.pumpWidget(buildSubject(dmUnreadCount: 5));
+        await tester.pump();
 
-          final toggle = tester.widget<InboxSegmentedToggle>(
-            find.byType(InboxSegmentedToggle),
-          );
-          expect(toggle.messageCount, equals(5));
-        },
-      );
+        final toggle = tester.widget<InboxSegmentedToggle>(
+          find.byType(InboxSegmentedToggle),
+        );
+        expect(toggle.messageCount, equals(5));
+      });
 
-      testWidgets(
-        'forwards NotificationBadgeCubit state to '
-        '$InboxSegmentedToggle.notificationCount',
-        (tester) async {
-          await tester.pumpWidget(buildSubject(notificationUnreadCount: 7));
-          await tester.pump();
+      testWidgets('forwards NotificationBadgeCubit state to '
+          '$InboxSegmentedToggle.notificationCount', (tester) async {
+        await tester.pumpWidget(buildSubject(notificationUnreadCount: 7));
+        await tester.pump();
 
-          final toggle = tester.widget<InboxSegmentedToggle>(
-            find.byType(InboxSegmentedToggle),
-          );
-          expect(toggle.notificationCount, equals(7));
-        },
-      );
+        final toggle = tester.widget<InboxSegmentedToggle>(
+          find.byType(InboxSegmentedToggle),
+        );
+        expect(toggle.notificationCount, equals(7));
+      });
 
       testWidgets('renders $FollowingBar in messages tab', (tester) async {
         await tester.pumpWidget(buildSubject());
@@ -261,10 +253,7 @@ void main() {
         // skipOffstage: false because the bar now lives in a sliver and this
         // subject follows nobody, so it collapses to SizedBox.shrink() — a
         // zero-extent sliver, which the default finder treats as offstage.
-        expect(
-          find.byType(FollowingBar, skipOffstage: false),
-          findsOneWidget,
-        );
+        expect(find.byType(FollowingBar, skipOffstage: false), findsOneWidget);
       });
 
       testWidgets('renders $CircularProgressIndicator when status is initial', (
@@ -486,121 +475,114 @@ void main() {
         expect(find.byType(InboxFilterChips), findsOneWidget);
       });
 
-      testWidgets(
-        'tapping the Unread chip dispatches '
-        '$ConversationListFilterChanged',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
+      testWidgets('tapping the Unread chip dispatches '
+          '$ConversationListFilterChanged', (tester) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                visibleConversations: [conversation],
-                hasMore: false,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.inboxFilterUnread));
-          await tester.pump();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxFilterUnread));
+        await tester.pump();
 
-          verify(
-            () => mockBloc.add(
-              const ConversationListFilterChanged(InboxFilter.unread),
+        verify(
+          () => mockBloc.add(
+            const ConversationListFilterChanged(InboxFilter.unread),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('tapping the already-active All chip dispatches nothing', (
+        tester,
+      ) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
             ),
-          ).called(1);
-        },
-      );
+          ),
+        );
+        await tester.pump();
 
-      testWidgets(
-        'tapping the already-active All chip dispatches nothing',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                visibleConversations: [conversation],
-                hasMore: false,
-              ),
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxFilterAll));
+        await tester.pump();
+
+        verifyNever(
+          () => mockBloc.add(
+            const ConversationListFilterChanged(InboxFilter.unread),
+          ),
+        );
+      });
+
+      testWidgets('shows caught-up state when unread filter is on and everything '
+          'is read', (tester) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              filter: InboxFilter.unread,
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.inboxFilterAll));
-          await tester.pump();
-
-          verifyNever(
-            () => mockBloc.add(
-              const ConversationListFilterChanged(InboxFilter.unread),
-            ),
-          );
-        },
-      );
-
-      testWidgets(
-        'shows caught-up state when unread filter is on and everything '
-        'is read',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
-
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                filter: InboxFilter.unread,
-                hasMore: false,
-              ),
-            ),
-          );
-          await tester.pump();
-
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text(l10n.inboxUnreadEmptyTitle), findsOneWidget);
-          expect(find.byType(ConversationTile), findsNothing);
-        },
-      );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.inboxUnreadEmptyTitle), findsOneWidget);
+        expect(find.byType(ConversationTile), findsNothing);
+      });
 
       testWidgets('typing in the search bar dispatches '
           '$ConversationListSearchQueryChanged', (tester) async {
@@ -678,49 +660,48 @@ void main() {
         expect(find.byType(ConversationTile), findsNothing);
       });
 
-      testWidgets(
-        'renders only visibleConversations, not the full list',
-        (tester) async {
-          DmConversation conversationWith({
-            required String id,
-            required bool isRead,
-          }) => DmConversation(
-            id: id,
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-            isRead: isRead,
-          );
+      testWidgets('renders only visibleConversations, not the full list', (
+        tester,
+      ) async {
+        DmConversation conversationWith({
+          required String id,
+          required bool isRead,
+        }) => DmConversation(
+          id: id,
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+          isRead: isRead,
+        );
 
-          final unread = conversationWith(id: 'unread-conv', isRead: false);
-          final read = conversationWith(id: 'read-conv', isRead: true);
+        final unread = conversationWith(id: 'unread-conv', isRead: false);
+        final read = conversationWith(id: 'read-conv', isRead: true);
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [unread, read],
-                visibleConversations: [unread],
-                filter: InboxFilter.unread,
-                hasMore: false,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [unread, read],
+              visibleConversations: [unread],
+              filter: InboxFilter.unread,
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-          expect(find.byType(ConversationTile), findsOneWidget);
-          final tile = tester.widget<ConversationTile>(
-            find.byType(ConversationTile),
-          );
-          expect(tile.conversation.id, equals('unread-conv'));
-        },
-      );
+        expect(find.byType(ConversationTile), findsOneWidget);
+        final tile = tester.widget<ConversationTile>(
+          find.byType(ConversationTile),
+        );
+        expect(tile.conversation.id, equals('unread-conv'));
+      });
 
       testWidgets(
         'suppresses the load-more spinner while a filter narrows the list',
@@ -1011,20 +992,14 @@ void main() {
               return found;
             }
 
-            expect(
-              hasConversationSemantics(),
-              isTrue,
-            );
+            expect(hasConversationSemantics(), isTrue);
 
             await tester.tap(find.text('Notifications'));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 350));
 
             expect(find.byType(ConversationTile), findsOneWidget);
-            expect(
-              hasConversationSemantics(),
-              isFalse,
-            );
+            expect(hasConversationSemantics(), isFalse);
           } finally {
             semantics.dispose();
           }
@@ -1499,10 +1474,7 @@ void main() {
         expect(find.byType(DivineSearchBar), findsOneWidget);
         final chipsBefore = tester.getTopLeft(find.byType(InboxFilterChips));
 
-        await tester.drag(
-          find.byType(CustomScrollView),
-          const Offset(0, -400),
-        );
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
         await tester.pump();
 
         // The search field is chrome now, not a fixed header: it leaves the
@@ -1655,10 +1627,7 @@ void main() {
       testWidgets('the pinned header fits the chips at the default text scale', (
         tester,
       ) async {
-        final size = await pumpChips(
-          tester,
-          textScaler: TextScaler.noScaling,
-        );
+        final size = await pumpChips(tester, textScaler: TextScaler.noScaling);
 
         // 48 = 8px padding either side of a DivineButtonSize.tiny chip, which
         // is itself 6 + a 20px line box + 6. Asserting the chips ASK for 48 is
@@ -1742,10 +1711,7 @@ void main() {
 
         // Focus alone reclaims the bar — no text needed. minSearchQueryLength
         // is 2, so a query-driven collapse would still be showing faces here.
-        expect(
-          find.byType(FollowingBar, skipOffstage: false),
-          findsNothing,
-        );
+        expect(find.byType(FollowingBar, skipOffstage: false), findsNothing);
         expect(
           tester.getTopLeft(find.text('Message 0')).dy,
           lessThan(firstTileBefore - 100),
@@ -2034,6 +2000,69 @@ void main() {
           findsOneWidget,
         );
         expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
+      });
+
+      // #8185, the same shape one layer out: `ConversationTile` short-circuits
+      // on the NIP-62 vanish before every other branch, and the sheet's own
+      // chain had no such branch. Applying a vanish evicts the cached profile,
+      // so the sheet did not fall back to the peer's last known name — it fell
+      // all the way to a generated "Adjective Animal N" and offered to block
+      // that, under a row reading "Deleted account".
+      testWidgets('names a vanished peer in the sheet its row opens', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final actionsCubit = _MockConversationActionsCubit();
+        when(
+          () => actionsCubit.blockUser(otherPubkey),
+        ).thenAnswer((_) async {});
+        final conversation = DmConversation(
+          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            wrapInScaffold: true,
+            actionsCubit: actionsCubit,
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              hasMore: false,
+            ),
+            additionalOverrides: [
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(true)),
+              profileVanishedSnapshotProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => true),
+            ],
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Block this account'), findsOneWidget);
+        expect(find.text('Report this account'), findsOneWidget);
+        expect(
+          find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+
+        await tester.tap(find.text('Block this account'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Blocked this account'), findsOneWidget);
       });
 
       testWidgets('drops out of a search it does not match', (tester) async {
@@ -2422,6 +2451,44 @@ void main() {
       );
 
       testWidgets(
+        'keeps safety actions available when the vanish lookup fails',
+        (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+              additionalOverrides: [
+                profileVanishedSnapshotProvider(moderationPubkey).overrideWith(
+                  (ref) => Future<bool>.error(StateError('database closed')),
+                ),
+              ],
+            ),
+          );
+          await openMessages(tester);
+
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
         "survives a search that matches the adopted pin's last message",
         (tester) async {
           final l10n = lookupAppLocalizations(const Locale('en'));
@@ -2529,10 +2596,7 @@ void main() {
         await longPressAndReport(tester);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.reportNotSent),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.reportNotSent), findsOneWidget);
         // Silence is the regression, so the confirmation must not render.
         expect(
           find.text(

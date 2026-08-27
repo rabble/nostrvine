@@ -803,6 +803,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileDeletedAccountName => 'Akaun dipadam';
 
   @override
+  String get inboxVanishedAccountReference => 'akaun ini';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Akaun ini telah dipadam';
 

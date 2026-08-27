@@ -2558,6 +2558,7 @@
     "profileMyLibraryLabel": "내 라이브러리",
     "profileMessageLabel": "메시지",
     "profileDeletedAccountName": "삭제된 계정",
+    "inboxVanishedAccountReference": "이 계정",
     "inboxConversationDeletedAccountSubtitle": "이 계정은 삭제되었습니다",
     "profileUserFallback": "사용자",
     "@profileUserFallback": {

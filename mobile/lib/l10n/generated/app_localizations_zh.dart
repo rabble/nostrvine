@@ -757,6 +757,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileDeletedAccountName => '已注销账号';
 
   @override
+  String get inboxVanishedAccountReference => '此账号';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => '该账号已注销';
 
   @override

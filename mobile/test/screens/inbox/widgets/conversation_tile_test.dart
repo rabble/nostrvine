@@ -1063,9 +1063,11 @@ void main() {
       Future<void> pumpTile(
         WidgetTester tester, {
         required bool vanished,
+        Locale? locale,
       }) async {
         await tester.pumpWidget(
           testMaterialApp(
+            locale: locale,
             additionalOverrides: [
               fetchUserProfileProvider(otherPubkey).overrideWith(
                 (ref) async => createTestProfile(displayName: 'meylis.divine'),
@@ -1100,11 +1102,13 @@ void main() {
       });
 
       testWidgets('reads the deleted-account copy from l10n', (tester) async {
-        await pumpTile(tester, vanished: true);
+        // Pump in German and require the German string. Asserting the German
+        // copy is *absent* from an English pump passes whether or not the
+        // widget reads l10n, so it proved nothing.
+        await pumpTile(tester, vanished: true, locale: const Locale('de'));
 
-        // Proves the widget resolves the string rather than hardcoding it.
         final de = lookupAppLocalizations(const Locale('de'));
-        expect(find.text(de.profileDeletedAccountName), findsNothing);
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
       });
 
       testWidgets('drops the avatar for a deleted account', (tester) async {

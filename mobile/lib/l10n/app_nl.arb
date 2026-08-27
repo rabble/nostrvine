@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Mijn bibliotheek",
     "profileMessageLabel": "Bericht",
     "profileDeletedAccountName": "Verwijderd account",
+    "inboxVanishedAccountReference": "dit account",
     "inboxConversationDeletedAccountSubtitle": "Dit account is verwijderd",
     "profileUserFallback": "gebruiker",
     "@profileUserFallback": {

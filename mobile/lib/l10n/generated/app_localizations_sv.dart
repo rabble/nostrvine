@@ -816,6 +816,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileDeletedAccountName => 'Raderat konto';
 
   @override
+  String get inboxVanishedAccountReference => 'det här kontot';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Det här kontot har raderats';
 

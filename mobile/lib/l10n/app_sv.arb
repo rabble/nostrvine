@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Mitt bibliotek",
     "profileMessageLabel": "Meddelande",
     "profileDeletedAccountName": "Raderat konto",
+    "inboxVanishedAccountReference": "det här kontot",
     "inboxConversationDeletedAccountSubtitle": "Det här kontot har raderats",
     "profileUserFallback": "användare",
     "@profileUserFallback": {

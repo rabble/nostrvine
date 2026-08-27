@@ -3090,6 +3090,7 @@
     "profileMyLibraryLabel": "マイライブラリ",
     "profileMessageLabel": "メッセージ",
     "profileDeletedAccountName": "削除されたアカウント",
+    "inboxVanishedAccountReference": "このアカウント",
     "inboxConversationDeletedAccountSubtitle": "このアカウントは削除されました",
     "profileUserFallback": "ユーザー",
     "@profileUserFallback": {

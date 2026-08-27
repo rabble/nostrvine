@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Meine Bibliothek",
     "profileMessageLabel": "Nachricht",
     "profileDeletedAccountName": "Gelöschtes Konto",
+    "inboxVanishedAccountReference": "dieses Konto",
     "inboxConversationDeletedAccountSubtitle": "Dieses Konto wurde gelöscht",
     "profileUserFallback": "Nutzer",
     "@profileUserFallback": {

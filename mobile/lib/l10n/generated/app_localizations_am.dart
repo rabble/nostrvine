@@ -814,6 +814,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileDeletedAccountName => 'የተሰረዘ መለያ';
 
   @override
+  String get inboxVanishedAccountReference => 'ይህን መለያ';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'ይህ መለያ ተሰርዟል';
 
   @override

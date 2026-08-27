@@ -736,6 +736,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileDeletedAccountName => '삭제된 계정';
 
   @override
+  String get inboxVanishedAccountReference => '이 계정';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => '이 계정은 삭제되었습니다';
 
   @override

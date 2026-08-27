@@ -841,6 +841,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileDeletedAccountName => 'Изтрит акаунт';
 
   @override
+  String get inboxVanishedAccountReference => 'този акаунт';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'Този акаунт е изтрит';
 
   @override

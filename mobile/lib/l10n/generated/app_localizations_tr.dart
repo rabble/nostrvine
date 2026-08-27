@@ -771,6 +771,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileDeletedAccountName => 'Silinmiş hesap';
 
   @override
+  String get inboxVanishedAccountReference => 'bu hesap';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'Bu hesap silindi';
 
   @override

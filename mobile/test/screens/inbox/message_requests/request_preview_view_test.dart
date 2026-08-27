@@ -255,6 +255,77 @@ void main() {
       });
     });
 
+    // #8185. The same screen links straight through to the profile, which
+    // already names a vanished account for the state — so this row rendering
+    // a generated handle put both names one tap apart.
+    group('deleted accounts', () {
+      Widget buildVanishedSubject({required bool vanished}) {
+        when(() => mockPreviewCubit.state).thenReturn(
+          const RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+            participantPubkeys: [otherPubkey],
+          ),
+        );
+
+        return testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockNostrService: mockNostrClient,
+          additionalOverrides: [
+            goRouterProvider.overrideWithValue(mockGoRouter),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            userProfileReactiveProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(testProfile)),
+            profileVanishedProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(vanished)),
+          ],
+          home: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RequestPreviewCubit>.value(
+                  value: mockPreviewCubit,
+                ),
+                BlocProvider<MessageRequestActionsCubit>.value(
+                  value: mockActionsCubit,
+                ),
+                BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                ),
+              ],
+              child: const RequestPreviewView(),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('names a vanished sender for the state everywhere', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildVanishedSubject(vanished: true));
+        await tester.pumpAndSettle();
+
+        // Header, the name under the avatar, the "wants to message you"
+        // sentence and the decline confirmation all read the same name.
+        expect(find.text(l10n.profileDeletedAccountName), findsWidgets);
+        expect(
+          find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+        expect(find.textContaining('TestUser'), findsNothing);
+      });
+
+      testWidgets('leaves a live sender untouched', (tester) async {
+        await tester.pumpWidget(buildVanishedSubject(vanished: false));
+        await tester.pumpAndSettle();
+
+        expect(find.text('TestUser'), findsWidgets);
+        expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+      });
+    });
+
     group('renders', () {
       testWidgets('renders app bar with display name as title', (tester) async {
         await tester.pumpWidget(buildSubject());

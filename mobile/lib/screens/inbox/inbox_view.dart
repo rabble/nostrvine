@@ -30,13 +30,13 @@ import 'package:openvine/screens/inbox/message_requests/widgets/message_requests
 import 'package:openvine/screens/inbox/new_message_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_filter_chips.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
-import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -966,15 +966,43 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       orElse: () => conversation.participantPubkeys.first,
     );
 
-    // Match [ConversationTile]'s non-vanished identity chain, so moderation
-    // and profile fallbacks stay consistent between the row and sheet (#7380).
-    // A known identity skips the lookup entirely: moderation's kind-0 resolves
-    // late and a retired moderation key has none at all, so the sheet would
-    // otherwise open labelled with the fallback the row's own name exists to
-    // avoid.
-    String displayName;
-    final knownName =
-        displayNameOverride ?? moderationDisplayName(context, otherPubkey);
+    // Match [ConversationTile]'s identity chain, so the row and the sheet it
+    // opens cannot name two different accounts (#7380, #8185). A known
+    // identity skips the lookup entirely: applying a vanish evicts the cached
+    // profile, moderation's kind-0 resolves late, and a retired moderation key
+    // has none at all — so the sheet would otherwise open labelled with the
+    // generated fallback the row's own name exists to avoid.
+    //
+    // The reactive provider intentionally renders false while its shared
+    // Drift stream is loading. An imperative read cannot use that placeholder:
+    // the sheet needs the durable answer before choosing a name.
+    bool isVanished;
+    try {
+      isVanished = await ref.read(
+        profileVanishedSnapshotProvider(otherPubkey).future,
+      );
+    } catch (error, stackTrace) {
+      // The sheet contains safety actions. A transient local-database failure
+      // must not make Report and Block disappear with the whole gesture.
+      Log.warning(
+        'Could not read durable vanish state; opening conversation actions '
+        'with the live-account identity fallback',
+        name: 'InboxView',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      isVanished = false;
+    }
+    if (!context.mounted) return;
+
+    final String displayName;
+    final knownName = dmPeerNameWithoutProfile(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isVanished,
+      displayNameOverride: displayNameOverride,
+    );
     if (knownName != null) {
       displayName = knownName;
     } else {
@@ -982,9 +1010,13 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         fetchUserProfileProvider(otherPubkey).future,
       );
       if (!context.mounted) return;
-      displayName =
-          profile?.bestDisplayName ??
-          UserProfile.defaultDisplayNameFor(otherPubkey);
+      displayName = dmPeerDisplayName(
+        context,
+        pubkeyHex: otherPubkey,
+        isVanished: isVanished,
+        displayNameOverride: displayNameOverride,
+        profile: profile,
+      );
     }
 
     if (!context.mounted) return;
@@ -994,12 +1026,16 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
+    final actionDisplayName = isVanished
+        ? context.l10n.inboxVanishedAccountReference
+        : displayName;
 
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
         context,
         displayName: displayName,
+        isVanished: isVanished,
         isMuted: isMuted,
         isBlocked: isBlocked,
       );
@@ -1032,7 +1068,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   reported
-                      ? context.l10n.inboxReportedUser(displayName)
+                      ? context.l10n.inboxReportedUser(actionDisplayName)
                       : context.l10n.reportNotSent,
                 ),
               ),
@@ -1050,8 +1086,8 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   isBlocked
-                      ? context.l10n.inboxUnblockedUser(displayName)
-                      : context.l10n.inboxBlockedUser(displayName),
+                      ? context.l10n.inboxUnblockedUser(actionDisplayName)
+                      : context.l10n.inboxBlockedUser(actionDisplayName),
                 ),
               ),
             );

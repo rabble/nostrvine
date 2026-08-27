@@ -2478,6 +2478,7 @@
     "profileMyLibraryLabel": "Aking Library",
     "profileMessageLabel": "Mensahe",
     "profileDeletedAccountName": "Tinanggal na account",
+    "inboxVanishedAccountReference": "ang account na ito",
     "inboxConversationDeletedAccountSubtitle": "Tinanggal na ang account na ito",
     "profileUserFallback": "user",
     "videoSettingsMenuOpen": "Buksan ang playback settings",

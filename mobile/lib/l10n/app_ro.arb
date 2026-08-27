@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Biblioteca mea",
     "profileMessageLabel": "Mesaj",
     "profileDeletedAccountName": "Cont șters",
+    "inboxVanishedAccountReference": "acest cont",
     "inboxConversationDeletedAccountSubtitle": "Acest cont a fost șters",
     "profileUserFallback": "utilizator",
     "@profileUserFallback": {

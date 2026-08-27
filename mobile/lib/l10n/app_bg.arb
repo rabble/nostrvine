@@ -364,6 +364,7 @@
     "profileMyLibraryLabel": "Моята библиотека",
     "profileMessageLabel": "Съобщение",
     "profileDeletedAccountName": "Изтрит акаунт",
+    "inboxVanishedAccountReference": "този акаунт",
     "inboxConversationDeletedAccountSubtitle": "Този акаунт е изтрит",
     "profileUserFallback": "Потребител",
     "@profileUserFallback": {

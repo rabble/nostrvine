@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Ma bibliothèque",
     "profileMessageLabel": "Message",
     "profileDeletedAccountName": "Compte supprimé",
+    "inboxVanishedAccountReference": "ce compte",
     "inboxConversationDeletedAccountSubtitle": "Ce compte a été supprimé",
     "profileUserFallback": "utilisateur",
     "@profileUserFallback": {

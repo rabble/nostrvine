@@ -773,6 +773,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileDeletedAccountName => 'Akun dihapus';
 
   @override
+  String get inboxVanishedAccountReference => 'akun ini';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Akun ini telah dihapus';
 

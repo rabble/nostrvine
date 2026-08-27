@@ -869,6 +869,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileDeletedAccountName => 'Cont șters';
 
   @override
+  String get inboxVanishedAccountReference => 'acest cont';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Acest cont a fost șters';
 

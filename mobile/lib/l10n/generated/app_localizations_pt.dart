@@ -840,6 +840,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileDeletedAccountName => 'Conta excluída';
 
   @override
+  String get inboxVanishedAccountReference => 'esta conta';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Esta conta foi excluída';
 
