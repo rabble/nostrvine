@@ -85,7 +85,12 @@ Future<(String, int)> setSourceWithFallbacks({
       lastStackTrace = stackTrace;
       onSourceLoadFailure?.call(source);
       final nativeErrorCode = nativePlayerErrorCodeFromError(error);
-      if (nativeErrorCode == NativePlayerErrorCode.authRequired) {
+      final isTypedNonFailoverError =
+          nativeErrorCode != null &&
+          nativeErrorCode != NativePlayerErrorCode.unknown &&
+          nativeErrorCode != NativePlayerErrorCode.mediaProcessing &&
+          !nativeErrorCode.shouldFailover;
+      if (isTypedNonFailoverError) {
         log(
           'Source failed without failover index $index: '
           'failedSource=$source '

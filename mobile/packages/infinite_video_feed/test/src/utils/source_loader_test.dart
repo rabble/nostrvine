@@ -278,30 +278,45 @@ void main() {
       },
     );
 
-    test('does not record transient timeout failure before failover', () async {
-      final controller = _RecordingControllerWithFailures(
-        (_) {},
-        failures: [
-          PlatformException(
-            code: 'PLAYER_ERROR',
-            message: 'timeout',
-            details: const <String, Object?>{'errorCode': 'timeout'},
+    for (final errorCode in [
+      NativePlayerErrorCode.networkError,
+      NativePlayerErrorCode.timeout,
+      NativePlayerErrorCode.decoderError,
+    ]) {
+      test('does not fail over typed ${errorCode.name} failures', () async {
+        final clips = <VideoClip>[];
+        final error = PlatformException(
+          code: 'PLAYER_ERROR',
+          message: errorCode.name,
+          details: <String, Object?>{
+            'errorCode': switch (errorCode) {
+              NativePlayerErrorCode.networkError => 'network_error',
+              NativePlayerErrorCode.timeout => 'timeout',
+              NativePlayerErrorCode.decoderError => 'decoder_error',
+              _ => throw StateError('unsupported test case'),
+            },
+          },
+        );
+        final controller = _RecordingControllerWithFailures(
+          clips.add,
+          failures: [error],
+        );
+        addTearDown(controller.dispose);
+
+        await expectLater(
+          () => setSourceWithFallbacks(
+            index: 2,
+            controller: controller,
+            sources: ['derivedMp4', 'hlsUrl'],
+            log: logs.add,
           ),
-        ],
-      );
-      addTearDown(controller.dispose);
-      final recordedFailures = <String>[];
+          throwsA(same(error)),
+        );
 
-      await setSourceWithFallbacks(
-        index: 2,
-        controller: controller,
-        sources: ['derivedMp4', 'hlsUrl'],
-        log: logs.add,
-        onFailoverSourceFailure: recordedFailures.add,
-      );
-
-      expect(recordedFailures, isEmpty);
-    });
+        expect(clips.map((clip) => clip.uri), equals(['derivedMp4']));
+        expect(logs.single, contains('Source failed without failover'));
+      });
+    }
 
     test('uses source headers when retrying after HTTP 202', () async {
       final clips = <VideoClip>[];
