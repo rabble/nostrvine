@@ -1,5 +1,7 @@
 // ABOUTME: Widget coverage for owner-delete behavior in the feed settings menu.
-// ABOUTME: Verifies the surface maps relay failures to user-facing feedback.
+// ABOUTME: Verifies relay feedback and pending-delete action gating.
+
+import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -99,6 +101,71 @@ void main() {
         find.text(l10n.shareMenuDeleteFailedRelayRejected),
         findsOneWidget,
       );
+    });
+
+    testWidgets('disables Edit without a spinner during relay deletion', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final authService = createMockAuthService();
+      final deletionService = _MockContentDeletionService();
+      final enforcementRepository = _MockEnforcementRepository();
+      final videoEventService = _MockVideoEventService();
+      final volumeCubit = _MockVideoVolumeCubit();
+      final relayCompleter = Completer<DeleteResult>();
+      when(() => authService.currentPublicKeyHex).thenReturn(ownPubkey);
+      when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
+      when(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer((_) => relayCompleter.future);
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: BlocProvider<VideoVolumeCubit>.value(
+            value: volumeCubit,
+            child: Scaffold(
+              body: Align(
+                alignment: Alignment.topRight,
+                child: FeedSettingsMenu(video: video),
+              ),
+            ),
+          ),
+          mockAuthService: authService,
+          additionalOverrides: [
+            contentDeletionServiceProvider.overrideWith(
+              (ref) async => deletionService,
+            ),
+            creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+              enforcementRepository,
+            ),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+          ],
+        ),
+      );
+
+      await tester.tap(find.bySemanticsLabel(l10n.videoSettingsMenuOpen));
+      await tester.pump();
+      await tester.tap(find.text(l10n.shareMenuDeleteVideo));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.shareMenuDelete));
+      await tester.pump();
+
+      final editGesture = find.ancestor(
+        of: find.text(l10n.shareMenuEditVideo),
+        matching: find.byType(GestureDetector),
+      );
+      expect(tester.widget<GestureDetector>(editGesture).onTap, isNull);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      relayCompleter.complete(
+        DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<GestureDetector>(editGesture).onTap, isNotNull);
     });
   });
 }

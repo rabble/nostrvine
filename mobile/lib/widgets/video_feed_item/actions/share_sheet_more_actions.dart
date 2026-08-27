@@ -70,7 +70,7 @@ class _MoreActionsSection extends ConsumerWidget {
           icon: DivineIconName.pencilSimpleLine,
           label: context.l10n.shareMenuEditVideo,
           onTap: onEditVideo!,
-          isPending: isDeletePublishing,
+          isDisabled: isDeletePublishing,
         ),
       if (onDeleteVideo != null)
         _ActionData(
@@ -175,6 +175,7 @@ class _MoreActionsSection extends ConsumerWidget {
                   label: action.label,
                   onTap: action.onTap,
                   isPending: action.isPending,
+                  isDisabled: action.isDisabled,
                 );
               },
             ),
@@ -191,6 +192,7 @@ class _ActionData {
     required this.label,
     required this.onTap,
     this.isPending = false,
+    this.isDisabled = false,
   });
 
   final DivineIconName icon;
@@ -200,6 +202,7 @@ class _ActionData {
   /// Whether the action is mid-flight, so the circle shows a spinner and stops
   /// responding to taps.
   final bool isPending;
+  final bool isDisabled;
 }
 
 class _ActionCircle extends StatelessWidget {
@@ -208,28 +211,34 @@ class _ActionCircle extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isPending = false,
+    this.isDisabled = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
   final bool isPending;
+  final bool isDisabled;
 
   static const double _circleSize = 48;
   static const double _iconSize = 22;
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = VineTheme.vineGreen.withValues(alpha: 0.15);
-    final iconColor = context.vineColors.accentPositive;
+    final bgColor = isDisabled
+        ? context.vineColors.surfaceContainer
+        : VineTheme.vineGreen.withValues(alpha: 0.15);
+    final iconColor = isDisabled
+        ? context.vineColors.secondaryText
+        : context.vineColors.accentPositive;
 
     return Semantics(
       button: true,
       label: label,
-      enabled: !isPending,
+      enabled: !isPending && !isDisabled,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: isPending ? null : onTap,
+        onTap: isPending || isDisabled ? null : onTap,
         child: SizedBox(
           width: 68,
           child: Column(

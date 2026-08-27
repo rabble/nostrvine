@@ -209,7 +209,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             builder: (context, state) {
               final operation = state.forVideo(video.id);
               return _OwnVideoActionsSheetBody(
-                onEditVideo: () => _editVideo(video),
+                onEditVideo: () => _editVideo(video, sheetContext),
                 onDeleteVideo: () => _confirmDeleteVideo(video, sheetContext),
                 isDeletePublishing:
                     operation.deleteStatus == OwnerVideoDeleteStatus.deleting,
@@ -225,11 +225,12 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     );
   }
 
-  void _editVideo(VideoEvent video) {
+  void _editVideo(VideoEvent video, BuildContext sheetContext) {
     if (_ownerVideoActionsCubit.state.forVideo(video.id).deleteStatus ==
         OwnerVideoDeleteStatus.deleting) {
       return;
     }
+    if (!sheetContext.popModalIfMounted()) return;
     context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
   }
 
@@ -595,7 +596,8 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
           title: context.l10n.videoGridEditVideo,
           subtitle: context.l10n.videoGridEditVideoSubtitle,
           onTap: onEditVideo,
-          isBusy: isDeletePublishing,
+          isDisabled: isDeletePublishing,
+          closeBeforeTap: false,
         ),
         _OwnVideoActionTile(
           icon: DivineIconName.trash,
@@ -620,6 +622,7 @@ class _OwnVideoActionTile extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.isBusy = false,
+    this.isDisabled = false,
     this.closeBeforeTap = true,
   });
 
@@ -629,16 +632,20 @@ class _OwnVideoActionTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final bool isBusy;
+  final bool isDisabled;
   final bool closeBeforeTap;
 
   @override
   Widget build(BuildContext context) {
+    final actionColor = isDisabled
+        ? context.vineColors.secondaryText
+        : iconColor;
     // The sheet paints its own background; a transparent Material keeps
     // ListTile's ink effects visible without double-painting a surface.
     return Material(
       type: MaterialType.transparency,
       child: ListTile(
-        enabled: !isBusy,
+        enabled: !isBusy && !isDisabled,
         leading: Container(
           width: 40,
           height: 40,
@@ -649,12 +656,14 @@ class _OwnVideoActionTile extends StatelessWidget {
           ),
           child: isBusy
               ? const CircularProgressIndicator(strokeWidth: 2)
-              : DivineIcon(icon: icon, color: iconColor, size: 20),
+              : DivineIcon(icon: icon, color: actionColor, size: 20),
         ),
         title: Text(
           title,
           style: VineTheme.titleMediumFont(
-            color: context.vineColors.primaryText,
+            color: isDisabled
+                ? context.vineColors.secondaryText
+                : context.vineColors.primaryText,
           ),
         ),
         subtitle: Text(
@@ -663,7 +672,7 @@ class _OwnVideoActionTile extends StatelessWidget {
             color: context.vineColors.secondaryText,
           ),
         ),
-        onTap: isBusy
+        onTap: isBusy || isDisabled
             ? null
             : () {
                 if (closeBeforeTap) Navigator.of(context).pop();

@@ -309,7 +309,7 @@ class _OwnerVideoActionsPill extends StatelessWidget {
               icon: DivineIconName.pencilSimpleLine,
               label: context.l10n.shareMenuEditVideo,
               onTap: onEditVideo,
-              isBusy: isDeletePublishing,
+              isDisabled: isDeletePublishing,
             ),
             _OwnerVideoAction(
               icon: DivineIconName.trash,
@@ -332,6 +332,7 @@ class _OwnerVideoAction extends StatelessWidget {
     required this.onTap,
     this.isDestructive = false,
     this.isBusy = false,
+    this.isDisabled = false,
   });
 
   final DivineIconName icon;
@@ -339,19 +340,22 @@ class _OwnerVideoAction extends StatelessWidget {
   final VoidCallback onTap;
   final bool isDestructive;
   final bool isBusy;
+  final bool isDisabled;
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive
+    final color = isDisabled
+        ? context.vineColors.secondaryText
+        : isDestructive
         ? VineTheme.error
         : context.vineColors.onSurface;
     return Semantics(
       button: true,
-      enabled: !isBusy,
+      enabled: !isBusy && !isDisabled,
       label: label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: isBusy ? null : onTap,
+        onTap: isBusy || isDisabled ? null : onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: VineTheme.scrim15,
