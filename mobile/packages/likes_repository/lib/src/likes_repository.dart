@@ -184,6 +184,13 @@ class LikesRepository {
   /// second one (#7001).
   final Set<String> _unlikeRequestedWhilePending = {};
 
+  /// Latest in-flight local intent token per target event.
+  ///
+  /// A relay response can arrive after a later tap. Reconciliation may only
+  /// mutate the optimistic record/count when its token is still current.
+  final Map<String, Object> _inFlightInteractions = {};
+  int _nextInteractionRevision = 0;
+
   /// In-memory cache of downvote records keyed by target event ID.
   ///
   /// Mirror of [_likeRecords] for kind-7 reactions whose content is `-`.
@@ -482,6 +489,120 @@ class LikesRepository {
     return _downvoteRecords[eventId];
   }
 
+  Object _beginInteraction(String eventId) {
+    final token = Object();
+    _inFlightInteractions[eventId] = token;
+    return token;
+  }
+
+  bool _isCurrentInteraction(String eventId, Object token) =>
+      identical(_inFlightInteractions[eventId], token);
+
+  void _completeInteraction(String eventId, Object token) {
+    if (_isCurrentInteraction(eventId, token)) {
+      _inFlightInteractions.remove(eventId);
+    }
+  }
+
+  void _logSocialPublishFailure(
+    String message,
+    SocialPublishException error,
+    StackTrace stackTrace,
+  ) {
+    Log.error(
+      message,
+      name: 'LikesRepository',
+      category: LogCategory.relay,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  Future<void> _rollbackLikeIfCurrent({
+    required String eventId,
+    required String placeholderId,
+    required Object interactionToken,
+    required int? previousCount,
+    required String? addressableId,
+  }) async {
+    if (!_isCurrentInteraction(eventId, interactionToken) ||
+        _likeRecords[eventId]?.reactionEventId != placeholderId) {
+      return;
+    }
+
+    _deindexLikeRecord(eventId);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.deleteLikeRecord(eventId),
+      description: 'rolling back the like placeholder',
+      site: LikesRepositoryReportableSites.likeEventRollbackPlaceholder,
+    );
+    if (!_isCurrentInteraction(eventId, interactionToken)) {
+      final currentRecord = _likeRecords[eventId];
+      if (currentRecord != null) {
+        await _bestEffortLocalStorage(
+          () async => _localStorage?.saveLikeRecord(currentRecord),
+          description: 'preserving the newer like record',
+          site: LikesRepositoryReportableSites.likeEventSaveConfirmed,
+        );
+      }
+      return;
+    }
+    if (previousCount != null) {
+      _writeCachedLikeCount(
+        eventId,
+        previousCount,
+        addressableId: addressableId,
+      );
+    }
+    _emitLikedIds();
+  }
+
+  Future<void> _restoreUnlikeIfCurrent({
+    required String eventId,
+    required String resolvedEventId,
+    required LikeRecord snapshotRecord,
+    required Object interactionToken,
+    required int? previousCount,
+    required String? addressableId,
+  }) async {
+    if (!_isCurrentInteraction(eventId, interactionToken) ||
+        _likeRecords.containsKey(resolvedEventId)) {
+      return;
+    }
+
+    _indexLikeRecord(snapshotRecord);
+    await _bestEffortLocalStorage(
+      () async => _localStorage?.saveLikeRecord(snapshotRecord),
+      description: 'restoring the like record',
+      site: LikesRepositoryReportableSites.unlikeEventRestoreRecord,
+    );
+    if (!_isCurrentInteraction(eventId, interactionToken)) {
+      final currentRecord = _likeRecords[resolvedEventId];
+      if (currentRecord == null) {
+        await _bestEffortLocalStorage(
+          () async => _localStorage?.deleteLikeRecord(resolvedEventId),
+          description: 'preserving the newer unlike state',
+          site: LikesRepositoryReportableSites.unlikeEventDeleteRecord,
+        );
+      } else {
+        await _bestEffortLocalStorage(
+          () async => _localStorage?.saveLikeRecord(currentRecord),
+          description: 'preserving the newer like record',
+          site: LikesRepositoryReportableSites.unlikeEventRestoreRecord,
+        );
+      }
+      return;
+    }
+    if (previousCount != null) {
+      _writeCachedLikeCount(
+        eventId,
+        previousCount,
+        addressableId: addressableId,
+      );
+    }
+    _emitLikedIds();
+  }
+
   /// Like an event.
   ///
   /// Creates and publishes a Kind 7 reaction event with content '+'.
@@ -511,7 +632,6 @@ class LikesRepository {
     int? targetKind,
   }) async {
     await _ensureInitialized();
-
     // Check if already liked — by event id, or (when addressableId is
     // known) by coordinate. The coordinate check catches the case where a
     // pre-edit version of this target was already liked under a different
@@ -526,114 +646,46 @@ class LikesRepository {
       throw AlreadyLikedException(eventId);
     }
 
-    // Snapshot for rollback if the network publish fails
-    final previousCount = _readCachedLikeCount(
-      eventId,
-      addressableId: addressableId,
-    );
-
-    // 1. Optimistic-first: write to memory + local storage and tick the
-    // watchLikedEventIds stream BEFORE any network I/O. The UI flips here.
-    // Mirrors FollowRepository.follow's order-of-operations so likes match
-    // the design rabble described — local DB first, network confirms.
-    // Storage write is awaited so the placeholder survives an app crash
-    // before sync; PendingActionService (offline) and executeLikeAction
-    // (sync) reconcile the placeholder ID with the real reaction event ID.
-    final placeholderId = 'pending_like_$eventId';
-    final placeholder = LikeRecord(
-      targetEventId: eventId,
-      reactionEventId: placeholderId,
-      createdAt: DateTime.now(),
-      addressableId: addressableId,
-    );
-    _indexLikeRecord(placeholder);
-    await _bestEffortLocalStorage(
-      () async => _localStorage?.saveLikeRecord(placeholder),
-      description: 'saving the like placeholder',
-      site: LikesRepositoryReportableSites.likeEventSavePlaceholder,
-    );
-    if (previousCount != null) {
-      _writeCachedLikeCount(
-        eventId,
-        previousCount + 1,
-        addressableId: addressableId,
-      );
-    }
-    _emitLikedIds();
-
-    // 2. Offline → leave the optimistic state in place; queue replays later
-    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
-      await _queueOfflineAction(
-        isLike: true,
-        eventId: eventId,
-        authorPubkey: authorPubkey,
-        addressableId: addressableId,
-        targetKind: targetKind,
-      );
-      return placeholderId;
-    }
-
-    // 3. Online → publish kind 7; on success swap placeholder for real id.
-    // On failure, prefer queuing via [_queueOfflineAction] when wired so the
-    // optimistic state survives transient relay-pool problems (e.g. all
-    // configured relays in `disconnected` state at publish time but
-    // [ConnectionStatusService] still reports online because at least one
-    // relay is technically connected). Without a wired callback, fall back
-    // to rollback + rethrow to preserve the original contract for tests
-    // and non-app embedders.
-    _inFlightLikePublishPlaceholders.add(placeholderId);
+    final interactionToken = _beginInteraction(eventId);
+    final interactionRevision = ++_nextInteractionRevision;
     try {
-      final reactionEvent = await _nostrClient.sendLike(
+      // Snapshot for rollback if the network publish fails
+      final previousCount = _readCachedLikeCount(
         eventId,
-        content: _likeContent,
         addressableId: addressableId,
-        targetAuthorPubkey: authorPubkey,
-        targetKind: targetKind,
       );
 
-      if (reactionEvent == null) {
-        throw const LikeFailedException('Failed to publish like reaction');
-      }
-
-      final confirmed = LikeRecord(
+      // 1. Optimistic-first: write to memory + local storage and tick the
+      // watchLikedEventIds stream BEFORE any network I/O. The UI flips here.
+      // Mirrors FollowRepository.follow's order-of-operations so likes match
+      // the design rabble described — local DB first, network confirms.
+      // Storage write is awaited so the placeholder survives an app crash
+      // before sync; PendingActionService (offline) and executeLikeAction
+      // (sync) reconcile the placeholder ID with the real reaction event ID.
+      final placeholderId = 'pending_like_${interactionRevision}_$eventId';
+      final placeholder = LikeRecord(
         targetEventId: eventId,
-        reactionEventId: reactionEvent.id,
-        createdAt: placeholder.createdAt,
+        reactionEventId: placeholderId,
+        createdAt: DateTime.now(),
         addressableId: addressableId,
       );
-
-      _inFlightLikePublishPlaceholders.remove(placeholderId);
-      if (_unlikeRequestedWhilePending.remove(placeholderId)) {
-        await _retractLikeUnlikedMidPublish(
-          confirmed: confirmed,
-          restoredCount: previousCount == null ? null : previousCount + 1,
-          countEventId: eventId,
-          countAddressableId: addressableId,
-        );
-        return reactionEvent.id;
-      }
-
-      _indexLikeRecord(confirmed);
+      _indexLikeRecord(placeholder);
       await _bestEffortLocalStorage(
-        () async => _localStorage?.saveLikeRecord(confirmed),
-        description: 'saving the confirmed like',
-        site: LikesRepositoryReportableSites.likeEventSaveConfirmed,
+        () async => _localStorage?.saveLikeRecord(placeholder),
+        description: 'saving the like placeholder',
+        site: LikesRepositoryReportableSites.likeEventSavePlaceholder,
       );
-
-      return reactionEvent.id;
-    } catch (e, stackTrace) {
-      _inFlightLikePublishPlaceholders.remove(placeholderId);
-      // The publish did not produce a reaction id this method can retract.
-      // Drop this attempt's intent so it cannot fire against a later like.
-      _unlikeRequestedWhilePending.remove(placeholderId);
-      if (_queueOfflineAction != null) {
-        Log.error(
-          'Like publish failed; queuing optimistic action for retry',
-          name: 'LikesRepository',
-          category: LogCategory.relay,
-          error: e,
-          stackTrace: stackTrace,
+      if (previousCount != null) {
+        _writeCachedLikeCount(
+          eventId,
+          previousCount + 1,
+          addressableId: addressableId,
         );
+      }
+      _emitLikedIds();
+
+      // 2. Offline → leave the optimistic state in place; queue replays later
+      if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
         await _queueOfflineAction(
           isLike: true,
           eventId: eventId,
@@ -643,21 +695,139 @@ class LikesRepository {
         );
         return placeholderId;
       }
-      _deindexLikeRecord(eventId);
-      await _bestEffortLocalStorage(
-        () async => _localStorage?.deleteLikeRecord(eventId),
-        description: 'rolling back the like placeholder',
-        site: LikesRepositoryReportableSites.likeEventRollbackPlaceholder,
-      );
-      if (previousCount != null) {
-        _writeCachedLikeCount(
+
+      // 3. Online → publish kind 7; on success swap placeholder for real id.
+      // On failure, prefer queuing via [_queueOfflineAction] when wired so the
+      // optimistic state survives transient relay-pool problems (e.g. all
+      // configured relays in `disconnected` state at publish time but
+      // [ConnectionStatusService] still reports online because at least one
+      // relay is technically connected). Without a wired callback, fall back
+      // to rollback + rethrow to preserve the original contract for tests
+      // and non-app embedders.
+      _inFlightLikePublishPlaceholders.add(placeholderId);
+      try {
+        final reactionEvent = await _nostrClient.sendLike(
           eventId,
-          previousCount,
+          content: _likeContent,
+          addressableId: addressableId,
+          targetAuthorPubkey: authorPubkey,
+          targetKind: targetKind,
+        );
+
+        if (reactionEvent == null) {
+          throw const LikeFailedException('Failed to publish like reaction');
+        }
+
+        final confirmed = LikeRecord(
+          targetEventId: eventId,
+          reactionEventId: reactionEvent.id,
+          createdAt: placeholder.createdAt,
           addressableId: addressableId,
         );
+
+        _inFlightLikePublishPlaceholders.remove(placeholderId);
+        if (_unlikeRequestedWhilePending.remove(placeholderId)) {
+          await _retractLikeUnlikedMidPublish(
+            confirmed: confirmed,
+            restoredCount: previousCount == null ? null : previousCount + 1,
+            countEventId: eventId,
+            countAddressableId: addressableId,
+          );
+          return reactionEvent.id;
+        }
+
+        _indexLikeRecord(confirmed);
+        await _bestEffortLocalStorage(
+          () async => _localStorage?.saveLikeRecord(confirmed),
+          description: 'saving the confirmed like',
+          site: LikesRepositoryReportableSites.likeEventSaveConfirmed,
+        );
+
+        return reactionEvent.id;
+      } on SocialPublishException catch (e, stackTrace) {
+        _inFlightLikePublishPlaceholders.remove(placeholderId);
+        _unlikeRequestedWhilePending.remove(placeholderId);
+        if (_queueOfflineAction == null || e.result.accountRestricted) {
+          _logSocialPublishFailure(
+            'Like publish was not accepted',
+            e,
+            stackTrace,
+          );
+        }
+        if (!e.result.accountRestricted) {
+          if (_queueOfflineAction != null) {
+            Log.error(
+              'Like publish failed; queuing optimistic action for retry',
+              name: 'LikesRepository',
+              category: LogCategory.relay,
+              error: e,
+              stackTrace: stackTrace,
+            );
+            await _queueOfflineAction(
+              isLike: true,
+              eventId: eventId,
+              authorPubkey: authorPubkey,
+              addressableId: addressableId,
+              targetKind: targetKind,
+            );
+            return placeholderId;
+          }
+          await _rollbackLikeIfCurrent(
+            eventId: eventId,
+            placeholderId: placeholderId,
+            interactionToken: interactionToken,
+            previousCount: previousCount,
+            addressableId: addressableId,
+          );
+          Error.throwWithStackTrace(
+            const LikeFailedException('Failed to publish like reaction'),
+            stackTrace,
+          );
+        }
+        await _rollbackLikeIfCurrent(
+          eventId: eventId,
+          placeholderId: placeholderId,
+          interactionToken: interactionToken,
+          previousCount: previousCount,
+          addressableId: addressableId,
+        );
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      } catch (e, stackTrace) {
+        _inFlightLikePublishPlaceholders.remove(placeholderId);
+        // The publish did not produce a reaction id this method can retract.
+        // Drop this attempt's intent so it cannot fire against a later like.
+        _unlikeRequestedWhilePending.remove(placeholderId);
+        if (_queueOfflineAction != null) {
+          Log.error(
+            'Like publish failed; queuing optimistic action for retry',
+            name: 'LikesRepository',
+            category: LogCategory.relay,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          await _queueOfflineAction(
+            isLike: true,
+            eventId: eventId,
+            authorPubkey: authorPubkey,
+            addressableId: addressableId,
+            targetKind: targetKind,
+          );
+          return placeholderId;
+        }
+        await _rollbackLikeIfCurrent(
+          eventId: eventId,
+          placeholderId: placeholderId,
+          interactionToken: interactionToken,
+          previousCount: previousCount,
+          addressableId: addressableId,
+        );
+        rethrow;
       }
-      _emitLikedIds();
-      rethrow;
+    } finally {
+      _completeInteraction(eventId, interactionToken);
     }
   }
 
@@ -760,13 +930,32 @@ class LikesRepository {
     }
 
     // Publish Kind 7 reaction event via NostrClient
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _likeContent,
-      addressableId: addressableId,
-      targetAuthorPubkey: authorPubkey,
-      targetKind: targetKind,
-    );
+    final Event? reactionEvent;
+    try {
+      reactionEvent = await _nostrClient.sendLike(
+        eventId,
+        content: _likeContent,
+        addressableId: addressableId,
+        targetAuthorPubkey: authorPubkey,
+        targetKind: targetKind,
+      );
+    } on SocialPublishException catch (e, stackTrace) {
+      _logSocialPublishFailure(
+        'Queued like publish was not accepted',
+        e,
+        stackTrace,
+      );
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      Error.throwWithStackTrace(
+        const LikeFailedException('Failed to publish like reaction'),
+        stackTrace,
+      );
+    }
 
     if (reactionEvent == null) {
       throw const LikeFailedException('Failed to publish like reaction');
@@ -808,7 +997,6 @@ class LikesRepository {
   /// Throws `NotLikedException` if the event is not currently liked.
   Future<void> unlikeEvent(String eventId, {String? addressableId}) async {
     await _ensureInitialized();
-
     // Try in-memory cache first (by event id, then by coordinate), then
     // fall back to database. This handles both the cache-not-populated-yet
     // case and the post-edit case where the record's real key is a
@@ -853,62 +1041,21 @@ class LikesRepository {
       addressableId: addressableId,
     );
 
-    // 1. Optimistic-first: remove from memory + local storage and tick the
-    // watchLikedEventIds stream BEFORE any network I/O (mirror of likeEvent).
-    _deindexLikeRecord(resolvedEventId);
-    await _bestEffortLocalStorage(
-      () async => _localStorage?.deleteLikeRecord(resolvedEventId),
-      description: 'deleting the like record',
-      site: LikesRepositoryReportableSites.unlikeEventDeleteRecord,
-    );
-    _decrementLikeCountCache(eventId, addressableId: addressableId);
-    _emitLikedIds();
-
-    // 2. Offline → leave the optimistic state in place; queue replays later
-    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
-      await _queueOfflineAction(
-        isLike: false,
-        eventId: resolvedEventId,
-        authorPubkey: '', // Not needed for unlike
-      );
-      return;
-    }
-
-    // 3. Online → publish kind 5 (deferred while the like is still in
-    // flight; see [_unlikeRequestedWhilePending]).
-    // On failure, prefer queuing via [_queueOfflineAction] when wired so the
-    // optimistic unlike survives transient relay-pool problems (mirror of
-    // [likeEvent]). Without a wired callback, fall back to rollback +
-    // rethrow to preserve the original contract.
-    if (snapshotRecord.reactionEventId.startsWith('pending_')) {
-      // The real reaction id does not exist yet, so nothing can be referenced
-      // in a Kind 5 here. If this placeholder belongs to a currently awaited
-      // publish, record the intent for that exact attempt — [likeEvent]
-      // retracts it the moment the publish resolves (#7001).
-      if (_inFlightLikePublishPlaceholders.contains(
-        snapshotRecord.reactionEventId,
-      )) {
-        _unlikeRequestedWhilePending.add(snapshotRecord.reactionEventId);
-      }
-      return;
-    }
-
+    final interactionToken = _beginInteraction(eventId);
     try {
-      final deletionEvent = await _nostrClient.deleteEvent(
-        snapshotRecord.reactionEventId,
+      // 1. Optimistic-first: remove from memory + local storage and tick the
+      // watchLikedEventIds stream BEFORE any network I/O (mirror of likeEvent).
+      _deindexLikeRecord(resolvedEventId);
+      await _bestEffortLocalStorage(
+        () async => _localStorage?.deleteLikeRecord(resolvedEventId),
+        description: 'deleting the like record',
+        site: LikesRepositoryReportableSites.unlikeEventDeleteRecord,
       );
-      if (deletionEvent == null) {
-        throw const UnlikeFailedException('Failed to publish unlike deletion');
-      }
-    } catch (e, stackTrace) {
-      if (_queueOfflineAction != null) {
-        Log.error(
-          'Unlike publish failed; queuing optimistic action for retry',
-          name: 'LikesRepository',
-          category: LogCategory.relay,
-          error: e,
-          stackTrace: stackTrace,
-        );
+      _decrementLikeCountCache(eventId, addressableId: addressableId);
+      _emitLikedIds();
+
+      // 2. Offline → leave the optimistic state in place; queue replays later
+      if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
         await _queueOfflineAction(
           isLike: false,
           eventId: resolvedEventId,
@@ -916,21 +1063,115 @@ class LikesRepository {
         );
         return;
       }
-      _indexLikeRecord(snapshotRecord);
-      await _bestEffortLocalStorage(
-        () async => _localStorage?.saveLikeRecord(snapshotRecord),
-        description: 'restoring the like record',
-        site: LikesRepositoryReportableSites.unlikeEventRestoreRecord,
-      );
-      if (previousCount != null) {
-        _writeCachedLikeCount(
-          eventId,
-          previousCount,
+
+      // 3. Online → publish kind 5 (deferred while the like is still in
+      // flight; see [_unlikeRequestedWhilePending]).
+      // On failure, prefer queuing via [_queueOfflineAction] when wired so the
+      // optimistic unlike survives transient relay-pool problems (mirror of
+      // [likeEvent]). Without a wired callback, fall back to rollback +
+      // rethrow to preserve the original contract.
+      if (snapshotRecord.reactionEventId.startsWith('pending_')) {
+        // The real reaction id does not exist yet, so nothing can be referenced
+        // in a Kind 5 here. If this placeholder belongs to a currently awaited
+        // publish, record the intent for that exact attempt — [likeEvent]
+        // retracts it the moment the publish resolves (#7001).
+        if (_inFlightLikePublishPlaceholders.contains(
+          snapshotRecord.reactionEventId,
+        )) {
+          _unlikeRequestedWhilePending.add(snapshotRecord.reactionEventId);
+        }
+        return;
+      }
+
+      try {
+        final deletionEvent = await _nostrClient.deleteEvent(
+          snapshotRecord.reactionEventId,
+        );
+        if (deletionEvent == null) {
+          throw const UnlikeFailedException(
+            'Failed to publish unlike deletion',
+          );
+        }
+      } on SocialPublishException catch (e, stackTrace) {
+        if (_queueOfflineAction == null || e.result.accountRestricted) {
+          _logSocialPublishFailure(
+            'Unlike publish was not accepted',
+            e,
+            stackTrace,
+          );
+        }
+        if (!e.result.accountRestricted) {
+          if (_queueOfflineAction != null) {
+            Log.error(
+              'Unlike publish failed; queuing optimistic action for retry',
+              name: 'LikesRepository',
+              category: LogCategory.relay,
+              error: e,
+              stackTrace: stackTrace,
+            );
+            await _queueOfflineAction(
+              isLike: false,
+              eventId: resolvedEventId,
+              authorPubkey: '',
+            );
+            return;
+          }
+          await _restoreUnlikeIfCurrent(
+            eventId: eventId,
+            resolvedEventId: resolvedEventId,
+            snapshotRecord: snapshotRecord,
+            interactionToken: interactionToken,
+            previousCount: previousCount,
+            addressableId: addressableId,
+          );
+          Error.throwWithStackTrace(
+            const UnlikeFailedException('Failed to publish unlike deletion'),
+            stackTrace,
+          );
+        }
+        // Funnelcake deliberately exempts Kind 5 erasure requests from account
+        // enforcement. Keep this terminal branch for other trusted deployments
+        // and for policy changes, but do not publish a compensating deletion.
+        await _restoreUnlikeIfCurrent(
+          eventId: eventId,
+          resolvedEventId: resolvedEventId,
+          snapshotRecord: snapshotRecord,
+          interactionToken: interactionToken,
+          previousCount: previousCount,
           addressableId: addressableId,
         );
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      } catch (e, stackTrace) {
+        if (_queueOfflineAction != null) {
+          Log.error(
+            'Unlike publish failed; queuing optimistic action for retry',
+            name: 'LikesRepository',
+            category: LogCategory.relay,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          await _queueOfflineAction(
+            isLike: false,
+            eventId: resolvedEventId,
+            authorPubkey: '', // Not needed for unlike
+          );
+          return;
+        }
+        await _restoreUnlikeIfCurrent(
+          eventId: eventId,
+          resolvedEventId: resolvedEventId,
+          snapshotRecord: snapshotRecord,
+          interactionToken: interactionToken,
+          previousCount: previousCount,
+          addressableId: addressableId,
+        );
+        rethrow;
       }
-      _emitLikedIds();
-      rethrow;
+    } finally {
+      _completeInteraction(eventId, interactionToken);
     }
   }
 
@@ -977,9 +1218,26 @@ class LikesRepository {
     }
 
     // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
-      record.reactionEventId,
-    );
+    final Event? deletionEvent;
+    try {
+      deletionEvent = await _nostrClient.deleteEvent(record.reactionEventId);
+    } on SocialPublishException catch (e, stackTrace) {
+      _logSocialPublishFailure(
+        'Queued unlike publish was not accepted',
+        e,
+        stackTrace,
+      );
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      Error.throwWithStackTrace(
+        const UnlikeFailedException('Failed to publish unlike deletion'),
+        stackTrace,
+      );
+    }
 
     if (deletionEvent == null) {
       throw const UnlikeFailedException('Failed to publish unlike deletion');
@@ -1484,6 +1742,24 @@ class LikesRepository {
       );
 
       return reactionEvent.id;
+    } on SocialPublishException catch (e, stackTrace) {
+      _deindexDownvoteRecord(eventId);
+      _emitDownvotedIds();
+      _logSocialPublishFailure(
+        'Downvote publish was not accepted',
+        e,
+        stackTrace,
+      );
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      Error.throwWithStackTrace(
+        const LikeFailedException('Failed to publish downvote reaction'),
+        stackTrace,
+      );
     } catch (_) {
       _deindexDownvoteRecord(eventId);
       _emitDownvotedIds();
@@ -1547,6 +1823,24 @@ class LikesRepository {
           'Failed to publish downvote deletion',
         );
       }
+    } on SocialPublishException catch (e, stackTrace) {
+      _indexDownvoteRecord(snapshotRecord);
+      _emitDownvotedIds();
+      _logSocialPublishFailure(
+        'Downvote deletion was not accepted',
+        e,
+        stackTrace,
+      );
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      Error.throwWithStackTrace(
+        const UnlikeFailedException('Failed to publish downvote deletion'),
+        stackTrace,
+      );
     } catch (_) {
       _indexDownvoteRecord(snapshotRecord);
       _emitDownvotedIds();
@@ -1585,7 +1879,26 @@ class LikesRepository {
   ///
   /// Used for vote switching (removing old vote before publishing new one).
   Future<void> deleteReaction(String reactionEventId) async {
-    final deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
+    final Event? deletionEvent;
+    try {
+      deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
+    } on SocialPublishException catch (e, stackTrace) {
+      _logSocialPublishFailure(
+        'Reaction deletion was not accepted',
+        e,
+        stackTrace,
+      );
+      if (e.result.accountRestricted) {
+        Error.throwWithStackTrace(
+          const LikeAccountRestrictedException(),
+          stackTrace,
+        );
+      }
+      Error.throwWithStackTrace(
+        const UnlikeFailedException('Failed to delete reaction'),
+        stackTrace,
+      );
+    }
     if (deletionEvent == null) {
       throw const UnlikeFailedException('Failed to delete reaction');
     }
@@ -2027,10 +2340,7 @@ class LikesRepository {
     List<String> eventIds, {
     required int kind,
   }) {
-    return _queryChunked(
-      eventIds,
-      (chunk) => Filter(kinds: [kind], e: chunk),
-    );
+    return _queryChunked(eventIds, (chunk) => Filter(kinds: [kind], e: chunk));
   }
 
   /// Runs [buildFilter] over [values] in chunks capped at [_reqEidChunkSize]

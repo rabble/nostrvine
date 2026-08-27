@@ -9,6 +9,8 @@ import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/nip89_client_tag.dart';
 import 'package:nostr_client/src/publish_result.dart';
 import 'package:nostr_client/src/relay_manager.dart';
+import 'package:nostr_client/src/relay_rejection_classifier.dart';
+import 'package:nostr_client/src/social_publish_result.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 import 'package:pool/pool.dart';
@@ -810,19 +812,27 @@ class NostrClient {
       }
     }
 
-    final outcome =
-        await _nostr.sendEventAwaitOk(
-          event,
-          targetRelays: effectiveTargets,
-          tempRelays: effectiveTargets,
-          timeout: timeout,
-        ) ??
-        PublishOutcome(
-          eventId: event.id,
-          acceptedBy: const [],
-          rejectedBy: const {},
-          noResponseFrom: const [],
-        );
+    PublishOutcome outcome;
+    try {
+      outcome =
+          await _nostr.sendEventAwaitOk(
+            event,
+            targetRelays: effectiveTargets,
+            tempRelays: effectiveTargets,
+            timeout: timeout,
+          ) ??
+          PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          );
+    } on Object {
+      if (useOptimisticCache) {
+        _rollbackCachedEvent(event.id);
+      }
+      rethrow;
+    }
 
     if (outcome.failed) {
       return rollbackOnFailure(outcome);
@@ -1515,14 +1525,12 @@ class NostrClient {
       content ?? '+',
     );
 
-    final result = await publishEvent(
+    final result = await publishSocialEventAwaitOk(
       likeEvent,
       targetRelays: targetRelays ?? tempRelays,
     );
-    if (result case PublishSuccess(:final event)) {
-      return event;
-    }
-    return null;
+    if (!result.accepted) throw SocialPublishException(result);
+    return likeEvent;
   }
 
   /// Sends a user profile (Kind 0 metadata event), waiting for relay
@@ -1670,14 +1678,71 @@ class NostrClient {
       ['e', eventId],
     ], 'delete');
 
-    final result = await publishEvent(
+    final result = await publishSocialEventAwaitOk(
       deletionEvent,
       targetRelays: targetRelays ?? tempRelays,
     );
-    if (result case PublishSuccess(:final event)) {
-      return event;
+    if (!result.accepted) throw SocialPublishException(result);
+    return deletionEvent;
+  }
+
+  /// Publishes a social event and classifies its relay acknowledgement.
+  ///
+  /// Any relay acceptance wins. Account restrictions are only classified
+  /// from the trusted default relay when no relay accepted the event.
+  Future<SocialPublishResult> publishSocialEventAwaitOk(
+    Event event, {
+    List<String>? targetRelays,
+  }) async {
+    final hasExplicitTargets = targetRelays != null && targetRelays.isNotEmpty;
+    if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        return SocialPublishResult(
+          status: SocialPublishStatus.noRelays,
+          event: event,
+        );
+      }
     }
-    return null;
+
+    final PublishOutcome outcome;
+    try {
+      outcome = await publishEventAwaitOk(
+        event,
+        targetRelays: targetRelays,
+      );
+    } on Object catch (error, stackTrace) {
+      log(
+        'Social event dispatch failed before relay acknowledgement',
+        name: 'NostrClient',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return SocialPublishResult(
+        status: SocialPublishStatus.sendFailed,
+        event: event,
+      );
+    }
+    final status = switch (outcome) {
+      PublishOutcome(:final acceptedBy) when acceptedBy.isNotEmpty =>
+        SocialPublishStatus.accepted,
+      _
+          when isAccountRestrictedOutcome(
+            outcome,
+            trustedRelayUrl: defaultRelayUrl,
+          ) =>
+        SocialPublishStatus.accountRestricted,
+      _ when isRateLimitedOutcome(outcome) => SocialPublishStatus.rateLimited,
+      PublishOutcome(:final rejectedBy) when rejectedBy.isNotEmpty =>
+        SocialPublishStatus.rejected,
+      PublishOutcome(:final noResponseFrom) when noResponseFrom.isNotEmpty =>
+        SocialPublishStatus.noResponse,
+      PublishOutcome(:final unreachableTargets)
+          when unreachableTargets.isNotEmpty =>
+        SocialPublishStatus.noRelays,
+      _ => SocialPublishStatus.sendFailed,
+    };
+    return SocialPublishResult(status: status, event: event, outcome: outcome);
   }
 
   /// Deletes multiple events

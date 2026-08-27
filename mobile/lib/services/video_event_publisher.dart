@@ -45,7 +45,6 @@ import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:openvine/utils/nostr_replacement_timestamp.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
-import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
