@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reactions_detail_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -52,8 +53,14 @@ void main() {
     );
   }
 
-  Widget host(_MockConversationReactionsCubit cubit) {
+  Widget host(
+    _MockConversationReactionsCubit cubit, {
+    List<dynamic> additionalOverrides = const <dynamic>[],
+    Locale? locale,
+  }) {
     return testMaterialApp(
+      additionalOverrides: additionalOverrides,
+      locale: locale,
       home: Scaffold(
         body: Builder(
           builder: (context) => Center(
@@ -324,6 +331,131 @@ void main() {
       );
 
       semantics.dispose();
+    });
+
+    group('deleted accounts', () {
+      const picture = 'https://example.com/alice.jpg';
+
+      UserProfile aliceProfile() => UserProfile(
+        pubkey: otherPubkey,
+        displayName: 'Alice',
+        picture: picture,
+        rawData: const {},
+        createdAt: DateTime(2026),
+        eventId:
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      );
+
+      Future<void> openWith(
+        WidgetTester tester, {
+        required bool vanished,
+        Locale? locale,
+      }) async {
+        primeState([
+          makeReaction(
+            id: 'other1',
+            reactorPubkey: otherPubkey,
+            emoji: '😂',
+            publishStatus: DmReactionPublishStatus.received,
+          ),
+        ]);
+
+        await tester.pumpWidget(
+          host(
+            cubit,
+            locale: locale,
+            additionalOverrides: [
+              // A profile row that outlived its vanish tombstone: `watchProfile`
+              // is an ungated `select(userProfiles)`, so the sheet sees it.
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(aliceProfile())),
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(vanished)),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('names a vanished reactor for the state, not a handle', (
+        tester,
+      ) async {
+        await openWith(tester, vanished: true);
+
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        expect(find.text('Alice'), findsNothing);
+        // The vanish evicts the cached profile, so a sheet without the check
+        // does not fall back to the last known name — it falls all the way
+        // through to a generated "Adjective Animal N" the viewer never saw.
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+      });
+
+      testWidgets("drops a vanished reactor's avatar", (tester) async {
+        await openWith(tester, vanished: true);
+
+        expect(
+          tester.widget<UserAvatar>(find.byType(UserAvatar)).imageUrl,
+          isNull,
+        );
+      });
+
+      testWidgets(
+        'names the vanished reactor for the state in the a11y label',
+        (
+          tester,
+        ) async {
+          await openWith(tester, vanished: true);
+
+          // The row's label is the only place the reactor's name reaches
+          // assistive tech, so it has to name the state too — a screen-reader
+          // user would otherwise hear the generated handle the sheet no longer
+          // shows.
+          // The row merges its label with the avatar's and the title's, so
+          // assert on the merged announcement rather than one node: every part
+          // of it has to name the state, and none of them may carry the
+          // identity the sheet stopped showing.
+          final announced = tester.semantics.find(find.byType(ListTile)).label;
+          expect(
+            announced,
+            contains(
+              l10n.dmReactionChipOtherA11yLabel(
+                l10n.profileDeletedAccountName,
+                '😂',
+              ),
+            ),
+          );
+          expect(announced, isNot(contains('Alice')));
+          expect(
+            announced,
+            isNot(contains(UserProfile.defaultDisplayNameFor(otherPubkey))),
+          );
+        },
+      );
+
+      testWidgets('reads the deleted-account copy from l10n', (tester) async {
+        await openWith(tester, vanished: true, locale: const Locale('de'));
+
+        final de = lookupAppLocalizations(const Locale('de'));
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
+      });
+
+      testWidgets('leaves a live reactor untouched', (tester) async {
+        await openWith(tester, vanished: false);
+
+        expect(find.text('Alice'), findsOneWidget);
+        expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+        expect(
+          tester.widget<UserAvatar>(find.byType(UserAvatar)).imageUrl,
+          picture,
+        );
+      });
     });
   });
 }
