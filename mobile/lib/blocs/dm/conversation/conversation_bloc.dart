@@ -143,13 +143,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (!_sameMessages(tick.messages, state.messages)) {
           unawaited(_dmRepository.markConversationAsRead(_conversationId));
         }
+        final refused = _refusedRetractions(tick.messages);
         return state.copyWith(
           status: ConversationStatus.loaded,
           messages: tick.messages,
           pendingOutgoing: tick.pendingOutgoing,
-          retractionStatus: _newlyRefusedRetraction(tick.messages)
-              ? RetractionStatus.blocked
-              : RetractionStatus.idle,
+          retractionStatus: refused.isEmpty
+              ? RetractionStatus.idle
+              : RetractionStatus.blocked,
+          awaitingRetraction: refused.isEmpty
+              ? state.awaitingRetraction
+              : state.awaitingRetraction.difference(refused),
         );
       },
       onError: (error, stackTrace) {
@@ -173,29 +177,37 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     return true;
   }
 
-  /// Whether this tick is the one that turned a retraction down (#8201).
+  /// Retractions this screen asked for that came back refused (#8201).
   ///
-  /// Keyed on the transition, not the flag: a refusal recorded in an earlier
-  /// session is already on the row when the thread opens, and reporting that
-  /// would announce old news on every cold open. A message the previous tick
-  /// did not carry at all is therefore not a transition either.
-  bool _newlyRefusedRetraction(List<DmMessage> next) {
-    if (state.messages.isEmpty) return false;
-    for (final message in next) {
-      if (!message.retractionBlocked) continue;
-      for (final previous in state.messages) {
-        if (previous.id != message.id) continue;
-        if (!previous.retractionBlocked) return true;
-        break;
-      }
-    }
-    return false;
+  /// Matched against what we asked for rather than against the previous tick,
+  /// because the message is HIDDEN in between: `markMessageDeletionPending`
+  /// soft-deletes it, so the thread ticks empty and the refused message that
+  /// reappears looks new rather than changed. Comparing consecutive ticks
+  /// therefore never sees the transition and the toast never fires — measured
+  /// on device, which is what this shape exists to fix.
+  Set<String> _refusedRetractions(List<DmMessage> next) {
+    if (state.awaitingRetraction.isEmpty) return const {};
+    return {
+      for (final message in next)
+        if (message.retractionBlocked &&
+            state.awaitingRetraction.contains(message.id))
+          message.id,
+    };
   }
 
   Future<void> _onMessageDeleted(
     ConversationMessageDeleted event,
     Emitter<ConversationState> emit,
   ) async {
+    // Remember what we asked for BEFORE the repository hides the message, so
+    // the refusal can be matched across the tick where it is absent (#8201).
+    emit(
+      state.copyWith(
+        retractionStatus: RetractionStatus.idle,
+        awaitingRetraction: {...state.awaitingRetraction, event.rumorId},
+      ),
+    );
+
     // Drop every durable queue row of the bubble's batch first, whether the
     // bubble is queue-only (optimistic/failed — no persisted row yet, so the
     // kind-5 path below would no-op and the "deleted" bubble would keep

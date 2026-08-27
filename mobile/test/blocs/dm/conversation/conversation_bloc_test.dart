@@ -261,43 +261,56 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
-      // #8201. A refused retraction returns the message to the thread. The
-      // bubble reappearing is the durable signal; this status is the transient
-      // one that lets the view explain why.
+      // #8201 regression, found on device: the message is transiently HIDDEN
+      // between the two visible states. `markMessageDeletionPending` soft-
+      // deletes it (so the thread ticks empty) and only `markMessageDeletion-
+      // Blocked` brings it back. A detector that compares against the
+      // immediately-previous tick therefore never sees a message go from
+      // unrefused to refused, and the toast never fires on its real path.
       blocTest<ConversationBloc, ConversationState>(
-        'reports a retraction the relay policy refused',
+        'reports a refusal even though the message is hidden in between',
         setUp: () {
-          final controller = StreamController<List<DmMessage>>();
+          _hiddenGapController = StreamController<List<DmMessage>>();
           when(
             () => mockDmRepository.markConversationAsRead(conversationId),
           ).thenAnswer((_) async {});
           when(
             () => mockDmRepository.watchMessages(conversationId),
-          ).thenAnswer((_) => controller.stream);
+          ).thenAnswer((_) => _hiddenGapController.stream);
           when(
             () => mockDmRepository.watchOutgoing(any()),
           ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
-          Future<void>.delayed(Duration.zero).then((_) {
-            controller.add([testMessage]);
-            controller.add([_blocked(testMessage)]);
-            controller.close();
-          });
+          when(
+            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {});
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(const ConversationStarted()),
-        expect: () => [
-          isA<ConversationState>(),
-          isA<ConversationState>().having(
-            (s) => s.retractionStatus,
-            'before the refusal',
-            RetractionStatus.idle,
-          ),
-          isA<ConversationState>().having(
-            (s) => s.retractionStatus,
-            'after the refusal',
-            RetractionStatus.blocked,
-          ),
-        ],
+        act: (bloc) async {
+          bloc.add(const ConversationStarted());
+          await Future<void>.delayed(Duration.zero);
+          _hiddenGapController.add([testMessage]);
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await untilCalled(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          // markMessageDeletionPending soft-deletes: the thread ticks EMPTY.
+          _hiddenGapController.add(const []);
+          await Future<void>.delayed(Duration.zero);
+          // markMessageDeletionBlocked un-hides it, now refused.
+          _hiddenGapController.add([_blocked(testMessage)]);
+          await Future<void>.delayed(Duration.zero);
+          await _hiddenGapController.close();
+        },
+        verify: (bloc) {
+          expect(bloc.state.retractionStatus, RetractionStatus.blocked);
+        },
       );
 
       // A refusal from an earlier session is already on the row when the
@@ -2185,6 +2198,7 @@ void main() {
           <DmMessage>[],
           SendStatus.idle,
           RetractionStatus.idle,
+          <String>{},
           null,
           <OutgoingDm>[],
         ]),
@@ -2602,3 +2616,5 @@ DmMessage _blocked(DmMessage m) => DmMessage(
   messageKind: m.messageKind,
   retractionBlocked: true,
 );
+
+late StreamController<List<DmMessage>> _hiddenGapController;

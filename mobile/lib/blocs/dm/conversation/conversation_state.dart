@@ -112,6 +112,7 @@ class ConversationState extends Equatable {
     this.messages = const [],
     this.sendStatus = SendStatus.idle,
     this.retractionStatus = RetractionStatus.idle,
+    this.awaitingRetraction = const <String>{},
     this.lastPartialSend,
     this.pendingOutgoing = const <OutgoingDm>[],
   });
@@ -126,6 +127,16 @@ class ConversationState extends Equatable {
 
   /// Whether a retraction was refused since the last tick (#8201).
   final RetractionStatus retractionStatus;
+
+  /// Rumor ids this screen asked to retract and has not yet heard back on.
+  ///
+  /// The outcome cannot be read off consecutive ticks: `markMessageDeletion-
+  /// Pending` soft-deletes the message, so the thread ticks EMPTY between the
+  /// tap and the refusal, and the message that comes back looks new rather
+  /// than changed. Remembering what we asked for spans that gap — and keeps a
+  /// refusal recorded in an earlier session quiet, since this set starts
+  /// empty on every open.
+  final Set<String> awaitingRetraction;
 
   /// The last send attempt that delivered to recipients but failed to
   /// publish the sender self-addressed gift wrap, paired with the rumor
@@ -343,6 +354,7 @@ class ConversationState extends Equatable {
     List<DmMessage>? messages,
     SendStatus? sendStatus,
     RetractionStatus? retractionStatus,
+    Set<String>? awaitingRetraction,
     PartialSend? lastPartialSend,
     List<OutgoingDm>? pendingOutgoing,
     bool clearLastPartialSend = false,
@@ -352,6 +364,7 @@ class ConversationState extends Equatable {
       messages: messages ?? this.messages,
       sendStatus: sendStatus ?? this.sendStatus,
       retractionStatus: retractionStatus ?? this.retractionStatus,
+      awaitingRetraction: awaitingRetraction ?? this.awaitingRetraction,
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
@@ -365,6 +378,7 @@ class ConversationState extends Equatable {
     messages,
     sendStatus,
     retractionStatus,
+    awaitingRetraction,
     lastPartialSend,
     pendingOutgoing,
   ];
