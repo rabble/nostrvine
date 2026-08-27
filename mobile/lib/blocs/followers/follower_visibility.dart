@@ -1,20 +1,7 @@
 // ABOUTME: Shared follower list visibility helpers.
 // ABOUTME: Keeps follower count and blocklist filtering semantics consistent.
 
-import 'dart:math';
-
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
-
-/// Computes the locally visible follower count from an authoritative count and
-/// the known hidden followers.
-int visibleFollowerCount({
-  required int visiblePubkeyCount,
-  required int rawPubkeyCount,
-  required int authoritativeFollowerCount,
-}) => max(
-  visiblePubkeyCount,
-  authoritativeFollowerCount - (rawPubkeyCount - visiblePubkeyCount),
-);
 
 /// Filters followers hidden from the current user's own follower list.
 List<String> filterMyFollowerPubkeys({

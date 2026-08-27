@@ -186,7 +186,10 @@ void main() {
             bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
         verify: (bloc) {
           expect(bloc.state.followersPubkeys, [validPubkey('follower1')]);
-          expect(bloc.state.followerCount, 1);
+          // The row is hidden locally, but the count stays the authoritative
+          // REST number (#8197) rather than being adjusted to match the
+          // rendered rows.
+          expect(bloc.state.followerCount, 2);
         },
       );
 
@@ -462,7 +465,7 @@ void main() {
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'keeps the visible count steady when the new follower is blocked',
+        'still counts a new follower the viewer has blocked',
         setUp: () {
           when(
             () => mockBlocklistRepository.isBlocked(validPubkey('new')),
@@ -479,12 +482,13 @@ void main() {
         act: (bloc) =>
             bloc.add(OthersFollowersIncrementRequested(validPubkey('new'))),
         verify: (bloc) {
-          // The target really did gain a follower, so the authoritative count
-          // moves; the viewer just cannot see that follower, so the displayed
-          // count must not.
+          // The target really did gain a follower, so the count moves. The
+          // viewer cannot see that follower's row, but blocking someone does
+          // not make them stop following (#8197): the count stays the
+          // authoritative REST number.
           expect(bloc.state.authoritativeFollowerCount, equals(501));
           expect(bloc.state.followersPubkeys, [validPubkey('existing')]);
-          expect(bloc.state.followerCount, equals(500));
+          expect(bloc.state.followerCount, equals(501));
         },
       );
 
@@ -624,7 +628,7 @@ void main() {
 
     group('OthersFollowersBlocklistChanged', () {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'subtracts newly hidden known followers from the visible count',
+        'hides newly blocked followers from the list without moving the count',
         setUp: () {
           when(
             () => mockBlocklistRepository.isBlocked(validPubkey('hidden')),
@@ -646,7 +650,8 @@ void main() {
             validPubkey('hidden'),
           ]);
           expect(bloc.state.followersPubkeys, [validPubkey('visible')]);
-          expect(bloc.state.followerCount, equals(499));
+          // Row hidden, count unchanged (#8197).
+          expect(bloc.state.followerCount, equals(500));
         },
       );
 

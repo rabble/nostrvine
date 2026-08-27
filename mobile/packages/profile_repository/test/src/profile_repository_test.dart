@@ -1322,6 +1322,11 @@ void main() {
           verify(
             () => mockProfileStatsDao.upsertStats(
               pubkey: testPubkey,
+              // REST social counts are cached alongside the other stats so
+              // the profile header can render them without waiting on any
+              // relay work (#8197).
+              followerCount: 12,
+              followingCount: 7,
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,

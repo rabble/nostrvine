@@ -736,8 +736,9 @@ class ProfileRepository implements ProfileReader {
     // so no switch is needed here.
     final stats = result.stats;
     final engagement = result.engagement;
+    final social = result.social;
 
-    if (stats == null && engagement == null) return;
+    if (stats == null && engagement == null && social == null) return;
 
     int? publicViewCount;
     if (engagement != null) {
@@ -748,6 +749,11 @@ class ProfileRepository implements ProfileReader {
 
     await dao.upsertStats(
       pubkey: pubkey,
+      // The REST social counts are the authoritative follower/following
+      // numbers (#8197) and the only ones available before any relay work
+      // finishes, so the profile header can render them immediately.
+      followerCount: social?.followerCount,
+      followingCount: social?.followingCount,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,

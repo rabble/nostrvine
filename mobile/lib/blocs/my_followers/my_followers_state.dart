@@ -61,17 +61,15 @@ final class MyFollowersState extends Equatable {
   /// list length.
   final int authoritativeFollowerCount;
 
-  /// Visible follower count after applying local blocklist filters.
+  /// Follower count shown in the UI.
   ///
-  /// Downloading all kind 3 events is limited by relay result caps, so
-  /// [authoritativeFollowerCount] may exceed the number of pubkeys actually
-  /// fetched. Followers we know are hidden locally are subtracted from it, and
-  /// the result never drops below the number of followers on screen.
-  int get followerCount => visibleFollowerCount(
-    visiblePubkeyCount: followersPubkeys.length,
-    rawPubkeyCount: rawFollowersPubkeys.length,
-    authoritativeFollowerCount: authoritativeFollowerCount,
-  );
+  /// This is the Funnelcake REST count verbatim (#8197): deterministic, and
+  /// available before any relay work finishes. It is deliberately NOT
+  /// adjusted by the fetched list — neither floored to its length nor
+  /// reduced by locally hidden rows — because both made the number depend on
+  /// which relays answered, which is the instability #8197 reports. The list
+  /// may therefore show more or fewer rows than this count states.
+  int get followerCount => authoritativeFollowerCount;
 
   /// True while cached data is shown but a fresh network fetch is in progress.
   final bool isRefreshing;
