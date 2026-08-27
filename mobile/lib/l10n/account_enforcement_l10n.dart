@@ -8,18 +8,14 @@ import 'package:openvine/models/account_enforcement_status.dart';
 ///
 /// Follows the project's l10n rule: state carries codes, never English copy.
 ///
-/// The mapping is exhaustive by design. [AccountEnforcementKind.unverified]
-/// resolves to the all-clear: Keycast is not authoritative for relay state, so
-/// the claim outruns the evidence, but the relay answers at the moment of
-/// action and routes its verdict back here. Telling someone with nothing to
-/// see that this screen merely has nothing to show is worse than being wrong
-/// on the rare visit that precedes their first blocked action.
+/// The mapping is exhaustive by design. A successful active response resolves
+/// to [AccountEnforcementKind.noRestrictionReported] and the all-clear copy.
 extension AccountEnforcementL10n on AppLocalizations {
   String accountEnforcementHeading(AccountEnforcementKind kind) {
     switch (kind) {
       case AccountEnforcementKind.signedOut:
         return accountStatusSignedOutHeading;
-      case AccountEnforcementKind.unverified:
+      case AccountEnforcementKind.noRestrictionReported:
         return accountStatusAllClearHeading;
       case AccountEnforcementKind.suspended:
         return accountStatusSuspendedHeading;
@@ -39,7 +35,7 @@ extension AccountEnforcementL10n on AppLocalizations {
     switch (kind) {
       case AccountEnforcementKind.signedOut:
         return accountStatusSignedOutBody;
-      case AccountEnforcementKind.unverified:
+      case AccountEnforcementKind.noRestrictionReported:
         return null;
       case AccountEnforcementKind.suspended:
         return accountStatusSuspendedBody;

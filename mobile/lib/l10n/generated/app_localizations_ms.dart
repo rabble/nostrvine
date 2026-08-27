@@ -11781,6 +11781,14 @@ class AppLocalizationsMs extends AppLocalizations {
       'We couldn\'t refresh your status. This is the last status we received.';
 
   @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
   String get accountStatusSignedOutHeading =>
       'Sign in to check your account status';
 

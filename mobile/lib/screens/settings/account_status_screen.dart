@@ -23,9 +23,8 @@ import 'package:openvine/utils/mounted_post_frame.dart';
 /// Reachable from settings without a failed post, so a restricted user can
 /// find out what happened rather than discovering it by failing repeatedly.
 ///
-/// Renders from [AccountEnforcementKind] alone. Keycast also returns a
-/// `suspended_reason`, but it is free text written by whatever called its
-/// admin API, so it is deliberately never fetched into state or shown here.
+/// Renders from [AccountEnforcementKind] alone. Funnelcake deliberately omits
+/// moderation reasons and administrative metadata from the self-status API.
 class AccountStatusScreen extends ConsumerStatefulWidget {
   static const routeName = 'account-status';
   static const String path = RoutePaths.accountStatus;
@@ -37,9 +36,8 @@ class AccountStatusScreen extends ConsumerStatefulWidget {
 
   /// Whether an authoritative publish response just confirmed enforcement.
   ///
-  /// This preserves the useful restriction and appeal surface for accounts
-  /// that have no Keycast status source. The publish result cannot distinguish
-  /// suspended from banned, so it uses the generic restriction copy.
+  /// The publish result cannot distinguish suspended from banned, so it uses
+  /// generic restriction copy while the status refresh resolves.
   final bool publishRestrictionConfirmed;
 
   @override
@@ -111,28 +109,66 @@ class _AccountStatusScreenState extends ConsumerState<AccountStatusScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _StatusBody(kind: publishRestriction),
             // Keep a confirmed restriction through a failed read so its appeal
-            // and exit paths survive a bad connection. A read that fails with
-            // nothing confirmed has no restriction to report, so it lands on
-            // the all-clear rather than on the failure: the relay answers at
-            // the moment of action, and reporting the fetch instead would
-            // describe Divine's plumbing rather than the user's account.
+            // and exit paths survive a bad connection. Without a confirmed
+            // result, report that the lookup is indeterminate rather than
+            // presenting an all-clear that Funnelcake never returned.
             error: (_, _) {
               final cachedKind = async.value?.kind;
               final retainedKind = cachedKind?.isEnforced ?? false
                   ? cachedKind
                   : publishRestriction;
+              if (retainedKind == null) {
+                return _UnavailableBody(
+                  onRetry: () =>
+                      ref.invalidate(accountEnforcementStatusProvider),
+                );
+              }
               return _StatusBody(
                 kind: retainedKind,
-                isLastKnown: retainedKind != null,
-                // Nothing to retry once the screen has nothing to report.
-                onRetry: retainedKind == null
-                    ? null
-                    : () => ref.invalidate(accountEnforcementStatusProvider),
+                isLastKnown: true,
+                onRetry: () => ref.invalidate(accountEnforcementStatusProvider),
               );
             },
             data: (status) => _StatusBody(kind: effectiveKind(status.kind)),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _UnavailableBody extends StatelessWidget {
+  const _UnavailableBody({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.vineColors;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 16,
+        children: [
+          Text(
+            l10n.accountStatusUnavailableHeading,
+            style: VineTheme.headlineSmallFont(color: colors.primaryText),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            l10n.accountStatusUnavailableBody,
+            style: VineTheme.bodyMediumFont(color: colors.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          DivineButton(
+            label: l10n.accountStatusRetry,
+            type: DivineButtonType.secondary,
+            expanded: true,
+            onPressed: onRetry,
+          ),
+        ],
       ),
     );
   }
@@ -147,11 +183,11 @@ class _StatusBody extends StatelessWidget {
 
   /// Whether relay enforcement has anything to say about this account.
   ///
-  /// A null kind (the status could not be read) and [unverified] both mean no
+  /// A null kind and [AccountEnforcementKind.noRestrictionReported] mean no
   /// restriction to report; the relay reports a real one at the moment of
   /// action, so neither is worth telling the user Divine does not know.
   bool get _hasEnforcementToReport =>
-      kind != null && kind != AccountEnforcementKind.unverified;
+      kind != null && kind != AccountEnforcementKind.noRestrictionReported;
 
   @override
   Widget build(BuildContext context) {
@@ -227,10 +263,8 @@ class _StatusBody extends StatelessWidget {
             // openExternalLink rather than a raw launchUrl: it checks the URL
             // can be handled and routes divine.video links in-app, so the exit
             // path does not silently do nothing on a device without a browser.
-            onPressed: () => openExternalLink(
-              context,
-              AppConstants.accountPortabilityUrl,
-            ),
+            onPressed: () =>
+                openExternalLink(context, AppConstants.accountPortabilityUrl),
           ),
         ],
       ],

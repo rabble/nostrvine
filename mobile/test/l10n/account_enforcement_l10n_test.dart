@@ -38,14 +38,18 @@ void main() {
     });
 
     test(
-      'unverified resolves to the all-clear, with no body to explain it',
+      'noRestrictionReported resolves to the all-clear, with no body to explain it',
       () {
         expect(
-          l10n.accountEnforcementHeading(AccountEnforcementKind.unverified),
+          l10n.accountEnforcementHeading(
+            AccountEnforcementKind.noRestrictionReported,
+          ),
           l10n.accountStatusAllClearHeading,
         );
         expect(
-          l10n.accountEnforcementBody(AccountEnforcementKind.unverified),
+          l10n.accountEnforcementBody(
+            AccountEnforcementKind.noRestrictionReported,
+          ),
           isNull,
           reason: 'a second line here could only describe how Divine checks',
         );
@@ -54,7 +58,7 @@ void main() {
 
     test('every other kind keeps a body', () {
       for (final kind in AccountEnforcementKind.values) {
-        if (kind == AccountEnforcementKind.unverified) continue;
+        if (kind == AccountEnforcementKind.noRestrictionReported) continue;
         expect(l10n.accountEnforcementBody(kind), isNotNull, reason: '$kind');
       }
     });

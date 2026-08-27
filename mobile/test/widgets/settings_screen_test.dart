@@ -170,6 +170,9 @@ void main() {
           ),
           currentAuthStateProvider.overrideWith((ref) => authState),
           knownAccountsProvider.overrideWith((ref) async => knownAccounts),
+          isAccountEnforcedProvider.overrideWithValue(
+            enforcement?.isEnforced ?? false,
+          ),
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(null),
           ),
@@ -1093,7 +1096,9 @@ void main() {
     group('account status tile', () {
       testWidgets('is hidden when no restriction is confirmed', (tester) async {
         await tester.pumpWidget(
-          buildSubject(enforcement: AccountEnforcementKind.unverified),
+          buildSubject(
+            enforcement: AccountEnforcementKind.noRestrictionReported,
+          ),
         );
         await tester.pumpAndSettle();
 

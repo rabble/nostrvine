@@ -82,10 +82,9 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('an unrecognized restriction still gets the appeal path', (
+    testWidgets('a publish-confirmed unknown restriction gets an appeal path', (
       tester,
     ) async {
-      // The fail-closed state must not lose the way to contest it.
       await _pumpWith(tester, AccountEnforcementKind.unknownRestriction);
 
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
@@ -94,7 +93,7 @@ void main() {
     testWidgets('an unrestricted account is greeted, not reported to', (
       tester,
     ) async {
-      await _pumpWith(tester, AccountEnforcementKind.unverified);
+      await _pumpWith(tester, AccountEnforcementKind.noRestrictionReported);
 
       expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusContactSupport), findsNothing);
@@ -102,11 +101,11 @@ void main() {
     });
 
     testWidgets(
-      'a publish-confirmed restriction survives an unverified status source',
+      'a publish-confirmed restriction overrides an active status response',
       (tester) async {
         await _pumpWith(
           tester,
-          AccountEnforcementKind.unverified,
+          AccountEnforcementKind.noRestrictionReported,
           publishRestrictionConfirmed: true,
         );
 
@@ -172,7 +171,7 @@ void main() {
           accountEnforcementStatusProvider.overrideWith((ref) async {
             call++;
             return const AccountEnforcementStatus(
-              kind: AccountEnforcementKind.unverified,
+              kind: AccountEnforcementKind.noRestrictionReported,
             );
           }),
         ],
@@ -225,7 +224,7 @@ void main() {
             if (call == 1) {
               return Future.value(
                 const AccountEnforcementStatus(
-                  kind: AccountEnforcementKind.unverified,
+                  kind: AccountEnforcementKind.noRestrictionReported,
                 ),
               );
             }
@@ -262,51 +261,56 @@ void main() {
       );
     });
 
-    testWidgets('a failed refresh discards a prior unverified result', (
-      tester,
-    ) async {
-      var call = 0;
-      final container = ProviderContainer(
-        overrides: [
-          accountEnforcementStatusProvider.overrideWith((ref) async {
-            call++;
-            if (call == 1) {
-              return const AccountEnforcementStatus(
-                kind: AccountEnforcementKind.unverified,
-              );
-            }
-            throw const AccountStatusUnavailable();
-          }),
-        ],
-      );
-      addTearDown(container.dispose);
+    testWidgets(
+      'a failed refresh discards a prior noRestrictionReported result',
+      (tester) async {
+        var call = 0;
+        final container = ProviderContainer(
+          overrides: [
+            accountEnforcementStatusProvider.overrideWith((ref) async {
+              call++;
+              if (call == 1) {
+                return const AccountEnforcementStatus(
+                  kind: AccountEnforcementKind.noRestrictionReported,
+                );
+              }
+              throw const AccountStatusUnavailable();
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final sub = container.listen(accountEnforcementStatusProvider, (_, _) {});
-      addTearDown(sub.close);
-      await container.read(accountEnforcementStatusProvider.future);
+        final sub = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+        await container.read(accountEnforcementStatusProvider.future);
 
-      tester.view.physicalSize = const Size(1080, 2600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: AccountStatusScreen(),
+        tester.view.physicalSize = const Size(1080, 2600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: AccountStatusScreen(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
-      expect(
-        find.text(l10n.accountStatusRetry),
-        findsNothing,
-        reason: 'nothing to retry once the screen has nothing to report',
-      );
-    });
+        expect(find.text(l10n.accountStatusAllClearHeading), findsNothing);
+        expect(find.text(l10n.accountStatusUnavailableHeading), findsOneWidget);
+        expect(
+          find.text(l10n.accountStatusRetry),
+          findsOneWidget,
+          reason: 'an indeterminate lookup must remain retryable',
+        );
+      },
+    );
 
     testWidgets('a failed refresh preserves a confirmed restriction', (
       tester,
@@ -352,11 +356,9 @@ void main() {
       expect(find.text(l10n.accountStatusContactSupport), findsOneWidget);
     });
 
-    testWidgets('a self-custody account is offered no futile retry', (
-      tester,
-    ) async {
-      // Retrying can never resolve this, so offering it would be a lie.
-      await _pumpWith(tester, AccountEnforcementKind.unverified);
+    testWidgets('an active account is offered no futile retry', (tester) async {
+      // The successful response is settled, so there is nothing to retry.
+      await _pumpWith(tester, AccountEnforcementKind.noRestrictionReported);
 
       expect(find.text(l10n.accountStatusAllClearHeading), findsOneWidget);
       expect(find.text(l10n.accountStatusRetry), findsNothing);

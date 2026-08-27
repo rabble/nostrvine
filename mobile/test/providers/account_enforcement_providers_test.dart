@@ -1,236 +1,275 @@
-// ABOUTME: Tests accountEnforcementStatusProvider: unauthenticated yields no
-// ABOUTME: signal, and the authenticated path threads the session token.
+// ABOUTME: Tests all-account Funnelcake enforcement provider behavior.
+// ABOUTME: Covers signer gating, account isolation, and retained restrictions.
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/account_enforcement_status.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/repositories/account_enforcement_repository.dart';
+import 'package:openvine/services/account_status_api_client.dart';
 import 'package:openvine/services/auth_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
-KeycastOAuth _oauthReturning(
-  String body, {
-  void Function(http.Request)? onCall,
-}) {
-  return KeycastOAuth(
-    config: const OAuthConfig(
-      serverUrl: 'https://login.divine.video',
-      clientId: 'c',
-      redirectUri: 'divine://cb',
-    ),
-    storage: MemoryKeycastStorage(),
-    httpClient: MockClient((req) async {
-      onCall?.call(req);
-      return http.Response(body, 200);
-    }),
-  );
+class _QueueStatusClient extends AccountStatusApiClient {
+  _QueueStatusClient(this.results)
+    : super(
+        baseUri: Uri.parse('https://api.divine.video'),
+        authHeaderProvider: ({required url, required method}) async => null,
+      );
+
+  final List<Object> results;
+  final List<String> requestedPubkeys = [];
+
+  @override
+  Future<FunnelcakeAccountStatus> fetchStatus({
+    required String expectedPubkey,
+  }) async {
+    requestedPubkeys.add(expectedPubkey);
+    final result = results.removeAt(0);
+    if (result is FunnelcakeAccountStatus) return result;
+    throw result;
+  }
 }
 
-const _activeBody =
-    '{"email":"a","email_verified":true,"public_key":"p",'
-    '"verified_minor":false}';
+class _ControlledStatusClient extends AccountStatusApiClient {
+  _ControlledStatusClient(this.results)
+    : super(
+        baseUri: Uri.parse('https://api.divine.video'),
+        authHeaderProvider: ({required url, required method}) async => null,
+      );
 
-const _suspendedBody =
-    '{"email":"a","email_verified":true,"public_key":"p",'
-    '"verified_minor":false,"account_status":"suspended"}';
+  final List<Completer<FunnelcakeAccountStatus>> results;
+
+  @override
+  Future<FunnelcakeAccountStatus> fetchStatus({
+    required String expectedPubkey,
+  }) => results.removeAt(0).future;
+}
+
+const _pubkeyA =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _pubkeyB =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+ProviderContainer _container({
+  required AuthService authService,
+  required _QueueStatusClient client,
+  AccountRestrictionMemory? memory,
+}) {
+  return ProviderContainer(
+    overrides: [
+      currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+      currentAuthRpcCapabilityProvider.overrideWithValue(
+        AuthRpcCapability.rpcReady,
+      ),
+      authServiceProvider.overrideWithValue(authService),
+      accountEnforcementRepositoryProvider.overrideWithValue(
+        AccountEnforcementRepository(apiClient: client),
+      ),
+      if (memory != null)
+        accountRestrictionMemoryProvider.overrideWithValue(memory),
+    ],
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('accountEnforcementStatusProvider', () {
-    test('unauthenticated resolves to signed out without any fetch', () async {
-      var requests = 0;
+    test('signed out resolves without a request', () async {
+      final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
       final container = ProviderContainer(
         overrides: [
           currentAuthStateProvider.overrideWithValue(AuthState.unauthenticated),
-          oauthClientProvider.overrideWithValue(
-            _oauthReturning(_activeBody, onCall: (_) => requests++),
+          currentAuthRpcCapabilityProvider.overrideWithValue(
+            AuthRpcCapability.unavailable,
+          ),
+          accountEnforcementRepositoryProvider.overrideWithValue(
+            AccountEnforcementRepository(apiClient: client),
           ),
         ],
       );
       addTearDown(container.dispose);
 
-      final status = await container.read(
+      final result = await container.read(
         accountEnforcementStatusProvider.future,
       );
-
-      expect(status.kind, AccountEnforcementKind.signedOut);
-      expect(requests, 0);
+      expect(result.kind, AccountEnforcementKind.signedOut);
+      expect(client.requestedPubkeys, isEmpty);
     });
 
-    test(
-      'authenticated: threads the session token and reports suspended',
-      () async {
+    test('every signer-backed authentication source uses Funnelcake', () async {
+      for (final source in AuthenticationSource.values.where(
+        (source) => source != AuthenticationSource.none,
+      )) {
         final authService = _MockAuthService();
-        when(() => authService.isRegistered).thenReturn(true);
-        when(
-          authService.activeAccountKeycastToken,
-        ).thenAnswer((_) async => 'tok123');
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        when(() => authService.authenticationSource).thenReturn(source);
+        final client = _QueueStatusClient([FunnelcakeAccountStatus.suspended]);
+        final container = _container(authService: authService, client: client);
 
-        final container = ProviderContainer(
-          overrides: [
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-            oauthClientProvider.overrideWithValue(
-              _oauthReturning(
-                _suspendedBody,
-                // Proves the provider threads the session token into the request
-                // rather than querying some other account.
-                onCall: (req) =>
-                    expect(req.headers['Authorization'], 'Bearer tok123'),
-              ),
-            ),
-            authServiceProvider.overrideWithValue(authService),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final status = await container.read(
+        final result = await container.read(
           accountEnforcementStatusProvider.future,
         );
+        expect(
+          result.kind,
+          AccountEnforcementKind.suspended,
+          reason: '$source',
+        );
+        expect(client.requestedPubkeys, [_pubkeyA], reason: '$source');
+        container.dispose();
+      }
+    });
 
-        expect(status.kind, AccountEnforcementKind.suspended);
-        expect(status.isEnforced, isTrue);
-      },
-    );
-
-    test('refetches after nothing is listening, so a mid-session suspension '
-        'is seen', () async {
-      // The status a user opens Settings to check must be current. Without
-      // autoDispose the first read caches for the whole app session, so an
-      // account suspended after launch keeps rendering an earlier answer until
-      // the app is restarted — the exact failure this surface exists to fix.
-      var requests = 0;
+    test('pubkey-only identity is indeterminate without a request', () async {
       final authService = _MockAuthService();
-      when(() => authService.isRegistered).thenReturn(true);
-      when(
-        authService.activeAccountKeycastToken,
-      ).thenAnswer((_) async => 'tok123');
-
-      final container = ProviderContainer(
-        overrides: [
-          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          oauthClientProvider.overrideWithValue(
-            _oauthReturning(_activeBody, onCall: (_) => requests++),
-          ),
-          authServiceProvider.overrideWithValue(authService),
-        ],
-      );
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+      when(() => authService.canPublishNostrWritesNow).thenReturn(false);
+      final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
+      final container = _container(authService: authService, client: client);
       addTearDown(container.dispose);
-
-      final first = container.listen(
+      final subscription = container.listen(
         accountEnforcementStatusProvider,
         (_, _) {},
       );
-      await container.read(accountEnforcementStatusProvider.future);
-      expect(requests, 1);
+      addTearDown(subscription.close);
 
-      first.close();
-      await Future<void>.delayed(Duration.zero);
-
-      await container.read(accountEnforcementStatusProvider.future);
-      expect(requests, 2, reason: 'status must be refetched, not served stale');
+      await expectLater(
+        container.read(accountEnforcementStatusProvider.future),
+        throwsA(isA<AccountStatusUnavailable>()),
+      );
+      expect(client.requestedPubkeys, isEmpty);
     });
 
     test(
-      'a self-custody account remains unverified without fetching',
+      'failed refresh preserves restriction across provider disposal',
       () async {
-        // Keycast cannot report relay enforcement for a self-custody key.
-        var requests = 0;
         final authService = _MockAuthService();
-        when(() => authService.isRegistered).thenReturn(false);
-
-        final container = ProviderContainer(
-          overrides: [
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-            oauthClientProvider.overrideWithValue(
-              _oauthReturning(_activeBody, onCall: (_) => requests++),
-            ),
-            authServiceProvider.overrideWithValue(authService),
-          ],
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        final memory = AccountRestrictionMemory();
+        final client = _QueueStatusClient([
+          FunnelcakeAccountStatus.suspended,
+          const AccountStatusApiException(
+            AccountStatusApiFailureKind.unavailable,
+            'offline',
+          ),
+        ]);
+        final container = _container(
+          authService: authService,
+          client: client,
+          memory: memory,
         );
         addTearDown(container.dispose);
 
-        final status = await container.read(
-          accountEnforcementStatusProvider.future,
+        final subscription = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
         );
-
-        expect(status.kind, AccountEnforcementKind.unverified);
-        expect(requests, 0, reason: 'no Keycast session to ask');
-      },
-    );
-
-    test(
-      'a failed refresh does not clear an earned restriction marker',
-      () async {
-        // The settings marker is a warning. An offline refresh must not erase it:
-        // only a successful read saying otherwise should lift it.
-        var call = 0;
-        final container = ProviderContainer(
-          overrides: [
-            accountEnforcementStatusProvider.overrideWith((ref) async {
-              call++;
-              if (call == 1) {
-                return const AccountEnforcementStatus(
-                  kind: AccountEnforcementKind.suspended,
-                );
-              }
-              throw const AccountStatusUnavailable();
-            }),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final sub = container.listen(isAccountEnforcedProvider, (_, _) {});
-        addTearDown(sub.close);
         await container.read(accountEnforcementStatusProvider.future);
-        expect(container.read(isAccountEnforcedProvider), isTrue);
+        subscription.close();
+        await Future<void>.delayed(Duration.zero);
 
-        container.invalidate(accountEnforcementStatusProvider);
+        final failedSubscription = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
+        );
         await expectLater(
           container.read(accountEnforcementStatusProvider.future),
           throwsA(isA<AccountStatusUnavailable>()),
         );
-
-        expect(
-          container.read(isAccountEnforcedProvider),
-          isTrue,
-          reason: 'a failed read must not lift a restriction we already saw',
-        );
+        failedSubscription.close();
+        expect(memory.read(_pubkeyA)?.isEnforced, isTrue);
       },
     );
 
+    test('successful active response clears retained restriction', () async {
+      final authService = _MockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+      when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+      final memory = AccountRestrictionMemory()
+        ..record(
+          _pubkeyA,
+          const AccountEnforcementStatus(kind: AccountEnforcementKind.banned),
+        );
+      final client = _QueueStatusClient([FunnelcakeAccountStatus.active]);
+      final container = _container(
+        authService: authService,
+        client: client,
+        memory: memory,
+      );
+      addTearDown(container.dispose);
+
+      await container.read(accountEnforcementStatusProvider.future);
+      expect(memory.read(_pubkeyA), isNull);
+    });
+
     test(
-      'authenticated: an absent Keycast mirror remains unverified',
+      'superseded refresh cannot overwrite newer restriction memory',
       () async {
         final authService = _MockAuthService();
-        when(() => authService.isRegistered).thenReturn(true);
-        when(
-          authService.activeAccountKeycastToken,
-        ).thenAnswer((_) async => 'tok123');
-
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyA);
+        when(() => authService.canPublishNostrWritesNow).thenReturn(true);
+        final stale = Completer<FunnelcakeAccountStatus>();
+        final current = Completer<FunnelcakeAccountStatus>();
+        final memory = AccountRestrictionMemory();
+        final client = _ControlledStatusClient([stale, current]);
         final container = ProviderContainer(
           overrides: [
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-            oauthClientProvider.overrideWithValue(_oauthReturning(_activeBody)),
+            currentAuthRpcCapabilityProvider.overrideWithValue(
+              AuthRpcCapability.rpcReady,
+            ),
             authServiceProvider.overrideWithValue(authService),
+            accountEnforcementRepositoryProvider.overrideWithValue(
+              AccountEnforcementRepository(apiClient: client),
+            ),
+            accountRestrictionMemoryProvider.overrideWithValue(memory),
           ],
         );
         addTearDown(container.dispose);
 
-        final status = await container.read(
+        final subscription = container.listen(
+          accountEnforcementStatusProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        final staleResult = container.read(
           accountEnforcementStatusProvider.future,
         );
+        await Future<void>.delayed(Duration.zero);
 
-        expect(status.kind, AccountEnforcementKind.unverified);
-        expect(status.isEnforced, isFalse);
+        container.invalidate(accountEnforcementStatusProvider);
+        final currentResult = container.read(
+          accountEnforcementStatusProvider.future,
+        );
+        current.complete(FunnelcakeAccountStatus.suspended);
+        expect((await currentResult).kind, AccountEnforcementKind.suspended);
+        expect(memory.read(_pubkeyA)?.kind, AccountEnforcementKind.suspended);
+
+        stale.complete(FunnelcakeAccountStatus.active);
+        await staleResult;
+        expect(memory.read(_pubkeyA)?.kind, AccountEnforcementKind.suspended);
       },
     );
+
+    test('retained restriction never leaks to another account', () {
+      final memory = AccountRestrictionMemory()
+        ..record(
+          _pubkeyA,
+          const AccountEnforcementStatus(
+            kind: AccountEnforcementKind.suspended,
+          ),
+        );
+      expect(memory.read(_pubkeyA)?.isEnforced, isTrue);
+      expect(memory.read(_pubkeyB), isNull);
+    });
   });
 }

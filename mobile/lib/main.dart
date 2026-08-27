@@ -60,6 +60,7 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -130,6 +131,7 @@ import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -3296,7 +3298,7 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
             .where((u) => newFailedIds.contains(u.draft.id))
             .toList();
 
-        _showFailureSheetsSequentially(navContext, newFailures);
+        _showFailureSheetsSequentially(container, navContext, newFailures);
       },
       child: widget.child,
     );
@@ -3419,11 +3421,17 @@ void _onConfirmationShare(
 
 /// Shows failure bottom sheets one after another for each failed upload.
 Future<void> _showFailureSheetsSequentially(
+  ProviderContainer container,
   BuildContext context,
   List<BackgroundUpload> failedUploads,
 ) async {
   for (final upload in failedUploads) {
     if (!context.mounted) return;
+    if (upload.result case PublishError(
+      kind: PublishErrorKind.accountRestricted,
+    )) {
+      refreshAccountEnforcementAfterRestriction(container);
+    }
     await showUploadFailureSheet(context, upload);
   }
 }
