@@ -261,6 +261,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     final nostrService = ref.read(nostrServiceProvider);
     final userPubkey = nostrService.publicKey;
     final isOwnVideo = userPubkey == video.pubkey;
+    final operation = _ownerVideoActionsCubit.state.forVideo(video.id);
+    final isDeletePublishing =
+        operation.deleteStatus == OwnerVideoDeleteStatus.deleting;
+    final isDeleteInProgress =
+        isDeletePublishing ||
+        operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
 
     // Only show context menu for own videos
     if (!isOwnVideo) {
@@ -334,10 +340,19 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   fontSize: 12,
                 ),
               ),
-              onTap: () {
-                if (!sheetContext.popModalIfMounted()) return;
-                showEditDialogForVideo(context, video);
-              },
+              enabled: !isDeletePublishing,
+              onTap: isDeletePublishing
+                  ? null
+                  : () {
+                      if (_ownerVideoActionsCubit.state
+                              .forVideo(video.id)
+                              .deleteStatus ==
+                          OwnerVideoDeleteStatus.deleting) {
+                        return;
+                      }
+                      if (!sheetContext.popModalIfMounted()) return;
+                      showEditDialogForVideo(context, video);
+                    },
             ),
 
             // Delete option
@@ -349,11 +364,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   color: sheetContext.vineColors.card,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const DivineIcon(
-                  icon: DivineIconName.trash,
-                  color: VineTheme.error,
-                  size: 20,
-                ),
+                child: isDeleteInProgress
+                    ? const CircularProgressIndicator(strokeWidth: 2)
+                    : const DivineIcon(
+                        icon: DivineIconName.trash,
+                        color: VineTheme.error,
+                        size: 20,
+                      ),
               ),
               title: Text(
                 sheetContext.l10n.videoGridDeleteVideo,
@@ -369,10 +386,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   fontSize: 12,
                 ),
               ),
-              onTap: () {
-                if (!sheetContext.popModalIfMounted()) return;
-                _showDeleteConfirmation(context, video);
-              },
+              enabled: !isDeleteInProgress,
+              onTap: isDeleteInProgress
+                  ? null
+                  : () {
+                      if (!sheetContext.popModalIfMounted()) return;
+                      _showDeleteConfirmation(context, video);
+                    },
             ),
 
             const SizedBox(height: 16),

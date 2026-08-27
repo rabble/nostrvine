@@ -211,6 +211,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               return _OwnVideoActionsSheetBody(
                 onEditVideo: () => _editVideo(video),
                 onDeleteVideo: () => _confirmDeleteVideo(video, sheetContext),
+                isDeletePublishing:
+                    operation.deleteStatus == OwnerVideoDeleteStatus.deleting,
                 isDeleting:
                     operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
                     operation.cleanupStatus ==
@@ -224,6 +226,10 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   }
 
   void _editVideo(VideoEvent video) {
+    if (_ownerVideoActionsCubit.state.forVideo(video.id).deleteStatus ==
+        OwnerVideoDeleteStatus.deleting) {
+      return;
+    }
     context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
   }
 
@@ -569,11 +575,13 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
   const _OwnVideoActionsSheetBody({
     required this.onEditVideo,
     required this.onDeleteVideo,
+    required this.isDeletePublishing,
     required this.isDeleting,
   });
 
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
+  final bool isDeletePublishing;
   final bool isDeleting;
 
   @override
@@ -587,6 +595,7 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
           title: context.l10n.videoGridEditVideo,
           subtitle: context.l10n.videoGridEditVideoSubtitle,
           onTap: onEditVideo,
+          isBusy: isDeletePublishing,
         ),
         _OwnVideoActionTile(
           icon: DivineIconName.trash,

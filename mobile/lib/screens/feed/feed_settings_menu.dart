@@ -102,6 +102,10 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
   void _editVideo() {
     final video = widget.video;
     if (video == null) return;
+    if (_ownerVideoActionsCubit.state.forVideo(video.id).deleteStatus ==
+        OwnerVideoDeleteStatus.deleting) {
+      return;
+    }
     _close();
     context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
   }
@@ -167,6 +171,8 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
                 link: _link,
                 onClose: _close,
                 isOwnVideo: _isOwnVideo,
+                isDeletePublishing:
+                    operation.deleteStatus == OwnerVideoDeleteStatus.deleting,
                 isDeleting:
                     operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
                     operation.cleanupStatus ==
@@ -203,6 +209,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
     required this.link,
     required this.onClose,
     required this.isOwnVideo,
+    required this.isDeletePublishing,
     required this.isDeleting,
     required this.onEditVideo,
     required this.onDeleteVideo,
@@ -212,6 +219,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
   final LayerLink link;
   final VoidCallback onClose;
   final bool isOwnVideo;
+  final bool isDeletePublishing;
   final bool isDeleting;
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
@@ -253,6 +261,7 @@ class _FeedSettingsOverlay extends StatelessWidget {
                     _OwnerVideoActionsPill(
                       onEditVideo: onEditVideo,
                       onDeleteVideo: onDeleteVideo,
+                      isDeletePublishing: isDeletePublishing,
                       isDeleting: isDeleting,
                     ),
                     const SizedBox(height: 8),
@@ -272,11 +281,13 @@ class _OwnerVideoActionsPill extends StatelessWidget {
   const _OwnerVideoActionsPill({
     required this.onEditVideo,
     required this.onDeleteVideo,
+    required this.isDeletePublishing,
     required this.isDeleting,
   });
 
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
+  final bool isDeletePublishing;
   final bool isDeleting;
 
   @override
@@ -298,6 +309,7 @@ class _OwnerVideoActionsPill extends StatelessWidget {
               icon: DivineIconName.pencilSimpleLine,
               label: context.l10n.shareMenuEditVideo,
               onTap: onEditVideo,
+              isBusy: isDeletePublishing,
             ),
             _OwnerVideoAction(
               icon: DivineIconName.trash,

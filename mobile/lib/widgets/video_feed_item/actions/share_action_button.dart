@@ -432,6 +432,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   void _handleEditVideo() {
+    if (_ownerVideoActionsCubit?.state.forVideo(widget.video.id).deleteStatus ==
+        OwnerVideoDeleteStatus.deleting) {
+      return;
+    }
     _presentAfterDismiss<void>((hostContext) async {
       hostContext.push(
         VideoMetadataEditScreen.pathFor(widget.video.id),
@@ -710,6 +714,13 @@ class _UnifiedShareSheetView extends StatelessWidget {
           return operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
               operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
         });
+    final isDeletePublishing =
+        isOwnContent &&
+        context.select<OwnerVideoActionsCubit, bool>(
+          (cubit) =>
+              cubit.state.forVideo(video.id).deleteStatus ==
+              OwnerVideoDeleteStatus.deleting,
+        );
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.5);
@@ -775,6 +786,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         isOwnContent: isOwnContent,
                         isSavePending: state.isSaving,
                         isDeletePending: isDeletePending,
+                        isDeletePublishing: isDeletePublishing,
                         bookmarkStatus: state.bookmarkStatus,
                         onCrosspost: onCrosspost,
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),

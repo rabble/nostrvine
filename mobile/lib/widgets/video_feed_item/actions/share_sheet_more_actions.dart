@@ -18,6 +18,7 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onCopyEventId,
     this.isSavePending = false,
     this.isDeletePending = false,
+    this.isDeletePublishing = false,
     this.onEditVideo,
     this.onDeleteVideo,
     this.onAddVideoToClips,
@@ -31,6 +32,7 @@ class _MoreActionsSection extends ConsumerWidget {
   /// Whether the bookmark toggle is mid-flight (#7073).
   final bool isSavePending;
   final bool isDeletePending;
+  final bool isDeletePublishing;
   final ShareSheetBookmarkStatus bookmarkStatus;
   final VoidCallback onSave;
   final Future<void> Function()? onSaveOriginal;
@@ -68,6 +70,7 @@ class _MoreActionsSection extends ConsumerWidget {
           icon: DivineIconName.pencilSimpleLine,
           label: context.l10n.shareMenuEditVideo,
           onTap: onEditVideo!,
+          isPending: isDeletePublishing,
         ),
       if (onDeleteVideo != null)
         _ActionData(
