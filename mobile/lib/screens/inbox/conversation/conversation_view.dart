@@ -27,7 +27,7 @@ import 'package:openvine/screens/feed/dm_reply_context.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/dm_video_target.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
-import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -166,11 +166,12 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final isDeleted = ref
         .watch(profileVanishedProvider(otherPubkey))
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
-    final displayName = isDeleted
-        ? context.l10n.profileDeletedAccountName
-        : moderationDisplayName(context, otherPubkey) ??
-              profile?.bestDisplayName ??
-              UserProfile.defaultDisplayNameFor(otherPubkey);
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      profile: profile,
+    );
     final claimedNip05 = profile?.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref

@@ -80,10 +80,7 @@ class ConversationTile extends ConsumerWidget {
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
       displayNameOverride: displayNameOverride,
-      profile: profileAsync.maybeWhen(
-        data: (profile) => profile,
-        orElse: () => null,
-      ),
+      profile: profileAsync.asData?.value,
     );
 
     final imageUrl = isDeleted

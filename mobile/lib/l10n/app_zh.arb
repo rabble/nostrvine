@@ -413,6 +413,7 @@
   "profileMyLibraryLabel": "我的作品库",
   "profileMessageLabel": "私信",
   "profileDeletedAccountName": "已注销账号",
+  "inboxVanishedAccountReference": "此账号",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

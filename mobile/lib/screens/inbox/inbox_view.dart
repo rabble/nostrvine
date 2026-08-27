@@ -976,9 +976,24 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     // The reactive provider intentionally renders false while its shared
     // Drift stream is loading. An imperative read cannot use that placeholder:
     // the sheet needs the durable answer before choosing a name.
-    final isVanished = await ref.read(
-      profileVanishedSnapshotProvider(otherPubkey).future,
-    );
+    bool isVanished;
+    try {
+      isVanished = await ref.read(
+        profileVanishedSnapshotProvider(otherPubkey).future,
+      );
+    } catch (error, stackTrace) {
+      // The sheet contains safety actions. A transient local-database failure
+      // must not make Report and Block disappear with the whole gesture.
+      Log.warning(
+        'Could not read durable vanish state; opening conversation actions '
+        'with the live-account identity fallback',
+        name: 'InboxView',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      isVanished = false;
+    }
     if (!context.mounted) return;
 
     final String displayName;
@@ -1011,12 +1026,16 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
+    final actionDisplayName = isVanished
+        ? context.l10n.inboxVanishedAccountReference
+        : displayName;
 
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
         context,
         displayName: displayName,
+        isVanished: isVanished,
         isMuted: isMuted,
         isBlocked: isBlocked,
       );
@@ -1049,7 +1068,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   reported
-                      ? context.l10n.inboxReportedUser(displayName)
+                      ? context.l10n.inboxReportedUser(actionDisplayName)
                       : context.l10n.reportNotSent,
                 ),
               ),
@@ -1067,8 +1086,8 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   isBlocked
-                      ? context.l10n.inboxUnblockedUser(displayName)
-                      : context.l10n.inboxBlockedUser(displayName),
+                      ? context.l10n.inboxUnblockedUser(actionDisplayName)
+                      : context.l10n.inboxBlockedUser(actionDisplayName),
                 ),
               ),
             );

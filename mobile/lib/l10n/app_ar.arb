@@ -3090,6 +3090,7 @@
     "profileMyLibraryLabel": "مكتبتي",
     "profileMessageLabel": "رسالة",
     "profileDeletedAccountName": "حساب محذوف",
+    "inboxVanishedAccountReference": "هذا الحساب",
     "inboxConversationDeletedAccountSubtitle": "تم حذف هذا الحساب",
     "profileUserFallback": "مستخدم",
     "@profileUserFallback": {

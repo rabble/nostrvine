@@ -1410,6 +1410,12 @@ abstract class AppLocalizations {
   /// **'Deleted account'**
   String get profileDeletedAccountName;
 
+  /// Identity-neutral account reference inserted into Report, Block, Unblock, and confirmation copy when a DM peer has vanished. Safety actions remain available even though the peer's name is no longer shown.
+  ///
+  /// In en, this message translates to:
+  /// **'this account'**
+  String get inboxVanishedAccountReference;
+
   /// Shown under the name in a direct-message conversation header when the other participant deleted their account. Replaces their handle.
   ///
   /// In en, this message translates to:

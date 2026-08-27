@@ -200,10 +200,7 @@ void main() {
     group('moderation identity', () {
       final l10n = lookupAppLocalizations(const Locale('en'));
 
-      Future<void> pumpTileFor(
-        WidgetTester tester,
-        String counterparty,
-      ) async {
+      Future<void> pumpTileFor(WidgetTester tester, String counterparty) async {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
@@ -277,9 +274,11 @@ void main() {
         WidgetTester tester, {
         required bool vanished,
         String? picture,
+        Locale? locale,
       }) async {
         await tester.pumpWidget(
           testMaterialApp(
+            locale: locale,
             additionalOverrides: [
               userProfileReactiveProvider(otherPubkey).overrideWith(
                 (ref) => Stream.value(
@@ -327,10 +326,10 @@ void main() {
       });
 
       testWidgets('reads the deleted-account copy from l10n', (tester) async {
-        await pumpTile(tester, vanished: true);
+        await pumpTile(tester, vanished: true, locale: const Locale('de'));
 
         final de = lookupAppLocalizations(const Locale('de'));
-        expect(find.text(de.profileDeletedAccountName), findsNothing);
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
       });
 
       testWidgets('leaves a live requester untouched', (tester) async {

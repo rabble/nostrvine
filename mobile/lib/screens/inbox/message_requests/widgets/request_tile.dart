@@ -50,10 +50,7 @@ class RequestTile extends ConsumerWidget {
       context,
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
-      profile: profileAsync.maybeWhen(
-        data: (profile) => profile,
-        orElse: () => null,
-      ),
+      profile: profileAsync.asData?.value,
     );
 
     final imageUrl = isDeleted

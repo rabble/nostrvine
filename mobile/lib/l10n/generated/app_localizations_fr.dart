@@ -849,6 +849,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileDeletedAccountName => 'Compte supprimé';
 
   @override
+  String get inboxVanishedAccountReference => 'ce compte';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Ce compte a été supprimé';
 

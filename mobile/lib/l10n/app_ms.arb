@@ -413,6 +413,7 @@
   "profileMyLibraryLabel": "Pustaka Saya",
   "profileMessageLabel": "Mesej",
   "profileDeletedAccountName": "Akaun dipadam",
+  "inboxVanishedAccountReference": "akaun ini",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

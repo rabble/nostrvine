@@ -834,6 +834,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileDeletedAccountName => 'Verwijderd account';
 
   @override
+  String get inboxVanishedAccountReference => 'dit account';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Dit account is verwijderd';
 

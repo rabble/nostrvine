@@ -810,6 +810,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileDeletedAccountName => 'Tinanggal na account';
 
   @override
+  String get inboxVanishedAccountReference => 'ang account na ito';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Tinanggal na ang account na ito';
 

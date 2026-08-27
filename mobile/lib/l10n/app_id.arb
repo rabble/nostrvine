@@ -3097,6 +3097,7 @@
     "profileMyLibraryLabel": "Pustakaku",
     "profileMessageLabel": "Pesan",
     "profileDeletedAccountName": "Akun dihapus",
+    "inboxVanishedAccountReference": "akun ini",
     "inboxConversationDeletedAccountSubtitle": "Akun ini telah dihapus",
     "profileUserFallback": "pengguna",
     "@profileUserFallback": {

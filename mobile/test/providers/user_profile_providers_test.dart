@@ -54,21 +54,25 @@ void main() {
     test('reads the durable vanish row from a cold provider', () async {
       final database = _MockAppDatabase();
       final vanishedProfilesDao = _MockVanishedProfilesDao();
-      when(
-        () => database.vanishedProfilesDao,
-      ).thenReturn(vanishedProfilesDao);
+      final lookup = Completer<bool>();
+      when(() => database.vanishedProfilesDao).thenReturn(vanishedProfilesDao);
       when(
         () => vanishedProfilesDao.isVanished(pubkey),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) => lookup.future);
       final container = ProviderContainer(
         overrides: [databaseProvider.overrideWithValue(database)],
       );
       addTearDown(container.dispose);
 
-      expect(
-        await container.read(profileVanishedSnapshotProvider(pubkey).future),
-        isTrue,
+      final result = container.read(
+        profileVanishedSnapshotProvider(pubkey).future,
       );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      lookup.complete(true);
+
+      expect(await result, isTrue);
       verify(() => vanishedProfilesDao.isVanished(pubkey)).called(1);
     });
   });
@@ -137,9 +141,7 @@ void main() {
       );
       addTearDown(sub.close);
 
-      await untilCalled(
-        () => profileRepository.watchProfile(pubkey: pubkey),
-      );
+      await untilCalled(() => profileRepository.watchProfile(pubkey: pubkey));
       await Future<void>.delayed(Duration.zero);
       liveController.add(cachedProfile);
       await Future<void>.delayed(Duration.zero);
@@ -215,9 +217,7 @@ void main() {
       'resolves to AsyncData(null) when no repository is available',
       () async {
         final emptyContainer = ProviderContainer(
-          overrides: [
-            profileReadRepositoryProvider.overrideWithValue(null),
-          ],
+          overrides: [profileReadRepositoryProvider.overrideWithValue(null)],
         );
         addTearDown(emptyContainer.dispose);
 
@@ -331,9 +331,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(emitted, [cachedProfile]);
-      verify(
-        () => profileRepository.watchProfile(pubkey: pubkey),
-      ).called(1);
+      verify(() => profileRepository.watchProfile(pubkey: pubkey)).called(1);
       verifyNever(
         () => profileRepository.fetchFreshProfile(pubkey: any(named: 'pubkey')),
       );
@@ -549,49 +547,46 @@ void main() {
   });
 
   group('read/write split (#6423)', () {
-    test(
-      'the reactive profile resolves from cache while the signing gate is '
-      'still shut',
-      () async {
-        final repository = _MockProfileRepository();
-        final cached = UserProfile(
-          pubkey: pubkey,
-          name: 'real-name',
-          rawData: const {},
-          createdAt: DateTime.utc(2026),
-          eventId: 'event-id',
-        );
-        when(
-          () => repository.getCachedProfile(pubkey: pubkey),
-        ).thenAnswer((_) async => cached);
-        when(
-          () => repository.watchProfile(pubkey: pubkey),
-        ).thenAnswer((_) => Stream<UserProfile?>.value(cached));
+    test('the reactive profile resolves from cache while the signing gate is '
+        'still shut', () async {
+      final repository = _MockProfileRepository();
+      final cached = UserProfile(
+        pubkey: pubkey,
+        name: 'real-name',
+        rawData: const {},
+        createdAt: DateTime.utc(2026),
+        eventId: 'event-id',
+      );
+      when(
+        () => repository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => cached);
+      when(
+        () => repository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => Stream<UserProfile?>.value(cached));
 
-        final container = ProviderContainer(
-          overrides: [
-            // The state the reporter was stuck in: identity known, relays not
-            // yet connected, so the signing-gated repository is null.
-            profileRepositoryProvider.overrideWithValue(null),
-            profileReadRepositoryProvider.overrideWithValue(repository),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          // The state the reporter was stuck in: identity known, relays not
+          // yet connected, so the signing-gated repository is null.
+          profileRepositoryProvider.overrideWithValue(null),
+          profileReadRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        final emitted = <AsyncValue<UserProfile?>>[];
-        final sub = container.listen(
-          userProfileReactiveProvider(pubkey),
-          (_, next) => emitted.add(next),
-          fireImmediately: true,
-        );
-        addTearDown(sub.close);
+      final emitted = <AsyncValue<UserProfile?>>[];
+      final sub = container.listen(
+        userProfileReactiveProvider(pubkey),
+        (_, next) => emitted.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
 
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(emitted.last.value?.name, 'real-name');
-      },
-    );
+      expect(emitted.last.value?.name, 'real-name');
+    });
   });
 
   group('profileStatsRepository gating (#5863)', () {
@@ -606,9 +601,7 @@ void main() {
     }
 
     test('is null when signed out', () {
-      final container = containerWith(
-        const NostrSessionReadiness.signedOut(),
-      );
+      final container = containerWith(const NostrSessionReadiness.signedOut());
       expect(container.read(profileReadRepositoryProvider), isNull);
     });
 
@@ -626,72 +619,65 @@ void main() {
       },
     );
 
-    test(
-      'preserves the stats repository instance from identity-known to '
-      'nostrReady for the same pubkey',
-      () async {
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-        final nostrClient = _MockNostrClient();
-        final database = _MockAppDatabase();
-        final userProfilesDao = _MockUserProfilesDao();
-        final profileStatsDao = _MockProfileStatsDao();
-        final pendingProfileSavesDao = _MockPendingProfileSavesDao();
-        final funnelcakeClient = FunnelcakeApiClient(
-          baseUrl: 'https://api.divine.video',
-        );
+    test('preserves the stats repository instance from identity-known to '
+        'nostrReady for the same pubkey', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final nostrClient = _MockNostrClient();
+      final database = _MockAppDatabase();
+      final userProfilesDao = _MockUserProfilesDao();
+      final profileStatsDao = _MockProfileStatsDao();
+      final pendingProfileSavesDao = _MockPendingProfileSavesDao();
+      final funnelcakeClient = FunnelcakeApiClient(
+        baseUrl: 'https://api.divine.video',
+      );
 
-        when(() => database.userProfilesDao).thenReturn(userProfilesDao);
-        when(() => database.profileStatsDao).thenReturn(profileStatsDao);
-        when(
-          () => database.pendingProfileSavesDao,
-        ).thenReturn(pendingProfileSavesDao);
-        when(
-          () => database.identityEventsDao,
-        ).thenReturn(_MockIdentityEventsDao());
-        final vanishedProfilesDao = _MockVanishedProfilesDao();
-        // The repository hydrates its vanish set on construction, so this has
-        // to resolve or the provider throws before it returns an instance.
-        when(vanishedProfilesDao.getAllPubkeys).thenAnswer(
-          (_) async => <String>[],
-        );
-        when(
-          () => database.vanishedProfilesDao,
-        ).thenReturn(vanishedProfilesDao);
+      when(() => database.userProfilesDao).thenReturn(userProfilesDao);
+      when(() => database.profileStatsDao).thenReturn(profileStatsDao);
+      when(
+        () => database.pendingProfileSavesDao,
+      ).thenReturn(pendingProfileSavesDao);
+      when(
+        () => database.identityEventsDao,
+      ).thenReturn(_MockIdentityEventsDao());
+      final vanishedProfilesDao = _MockVanishedProfilesDao();
+      // The repository hydrates its vanish set on construction, so this has
+      // to resolve or the provider throws before it returns an instance.
+      when(
+        vanishedProfilesDao.getAllPubkeys,
+      ).thenAnswer((_) async => <String>[]);
+      when(() => database.vanishedProfilesDao).thenReturn(vanishedProfilesDao);
 
-        final container = ProviderContainer(
-          overrides: [
-            nostrSessionProvider.overrideWith(
-              () => _TestNostrSession(
-                const NostrSessionReadiness.identityKnown(pubkey: pubkey),
-              ),
+      final container = ProviderContainer(
+        overrides: [
+          nostrSessionProvider.overrideWith(
+            () => _TestNostrSession(
+              const NostrSessionReadiness.identityKnown(pubkey: pubkey),
             ),
-            nostrServiceProvider.overrideWithValue(nostrClient),
-            databaseProvider.overrideWithValue(database),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            funnelcakeApiClientProvider.overrideWithValue(funnelcakeClient),
-          ],
-        );
-        addTearDown(container.dispose);
+          ),
+          nostrServiceProvider.overrideWithValue(nostrClient),
+          databaseProvider.overrideWithValue(database),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          funnelcakeApiClientProvider.overrideWithValue(funnelcakeClient),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        final identityKnownRepo = container.read(
-          profileReadRepositoryProvider,
-        );
-        expect(identityKnownRepo, isNotNull);
+      final identityKnownRepo = container.read(profileReadRepositoryProvider);
+      expect(identityKnownRepo, isNotNull);
 
-        container
-            .read(nostrSessionProvider.notifier)
-            .update(
-              NostrSessionReadiness.nostrReady(
-                pubkey: pubkey,
-                client: nostrClient,
-              ),
-            );
+      container
+          .read(nostrSessionProvider.notifier)
+          .update(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkey,
+              client: nostrClient,
+            ),
+          );
 
-        final nostrReadyRepo = container.read(profileReadRepositoryProvider);
-        expect(identical(identityKnownRepo, nostrReadyRepo), isTrue);
-      },
-    );
+      final nostrReadyRepo = container.read(profileReadRepositoryProvider);
+      expect(identical(identityKnownRepo, nostrReadyRepo), isTrue);
+    });
   });
 }
 

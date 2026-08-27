@@ -843,6 +843,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileDeletedAccountName => 'Account eliminato';
 
   @override
+  String get inboxVanishedAccountReference => 'questo account';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Questo account è stato eliminato';
 
