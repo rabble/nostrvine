@@ -219,6 +219,22 @@ class _InMemoryRemovedConversationsDao extends Mock
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+/// Shapes a `queryEventsDetailed` answer to a kind-10050 lookup that the relays
+/// actually gave: an empty [events] is genuine absence, which is the only thing
+/// the RC3 publisher may act on (#8212).
+({List<Event> events, bool timedOut, bool noRelays}) answeredList(
+  List<Event> events,
+) => (events: events, timedOut: false, noRelays: false);
+
+/// Shapes a kind-10050 lookup nothing answered: a fan-out no relay took
+/// ([noRelays]), or a relay that refused the REQ with `CLOSED` / a settle window
+/// that completed while the relay holding the list stayed silent ([timedOut]).
+/// The empty list means nothing — RC3 must NOT read it as absence (#8212).
+({List<Event> events, bool timedOut, bool noRelays}) unansweredList({
+  bool noRelays = false,
+  bool timedOut = false,
+}) => (events: const <Event>[], timedOut: timedOut, noRelays: noRelays);
+
 class _MockNIP17MessageService extends Mock implements NIP17MessageService {}
 
 class _MockDirectMessagesDao extends Mock implements DirectMessagesDao {}
@@ -501,6 +517,9 @@ void main() {
       registerFallbackValue(_FakeOutgoingDm());
       registerFallbackValue(OutgoingWrapStatus.pending);
       registerFallbackValue(DmDedupCounterpart.nip04Copy);
+      // `queryEventsDetailed` takes a `Duration timeout`, so any stub that
+      // matches on it needs a fallback (#8212).
+      registerFallbackValue(Duration.zero);
     });
 
     setUp(() {
@@ -536,9 +555,8 @@ void main() {
         () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
       ).thenAnswer((_) async => const <String>{});
 
-      // Default for resolveDmInboxRelays(), which sendMessage now calls on
-      // every send: recipient has no kind-10050 list, so the gift wrap
-      // falls back to the default relay pool (existing behavior).
+      // Default for the history drain's paged reads, which still go through
+      // queryEvents.
       when(
         () => mockNostrClient.queryEvents(
           any(),
@@ -546,6 +564,23 @@ void main() {
           useCache: any(named: 'useCache'),
         ),
       ).thenAnswer((_) async => <Event>[]);
+
+      // Default for every kind-10050 lookup — resolveDmInboxRelays() on the
+      // send path, the memoized own-inbox resolve, and the RC3 publish check.
+      // ANSWERED and empty: the relays replied and this pubkey genuinely has
+      // no list, which is what every test that does not care about the read
+      // assumed when it went through queryEvents. An UNANSWERED empty is a
+      // different outcome and must be stubbed explicitly (#8212).
+      when(
+        () => mockNostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async => answeredList(const <Event>[]));
 
       // Stub backfillCurrentUserHasSent for _backfillCurrentUserHasSent().
       when(
@@ -3766,16 +3801,26 @@ void main() {
         // Wait well beyond any former poll interval.
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // queryEvents is called EXACTLY once — the one-shot #4974 own
-        // kind-10050 inbox-relay resolve at subscription open — and never
-        // again: no background poller re-fetches events on a timer.
+        // The relay is read EXACTLY once — the one-shot #4974 own kind-10050
+        // inbox-relay resolve at subscription open — and never again: no
+        // background poller re-fetches events on a timer.
         verify(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+        verifyNever(
           () => mockNostrClient.queryEvents(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
           ),
-        ).called(1);
+        );
 
         await repository.stopListening();
         await controller.close();
@@ -3867,12 +3912,15 @@ void main() {
 
       void stubQuery(List<Event> events) {
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
           ),
-        ).thenAnswer((_) async => events);
+        ).thenAnswer((_) async => answeredList(events));
       }
 
       test('returns relay urls from the kind-10050 relay tags', () async {
@@ -4025,10 +4073,15 @@ void main() {
         await repository.resolveDmInboxRelays(_validPubkeyB);
         final captured =
             verify(
-                  () => mockNostrClient.queryEvents(
+                  () => mockNostrClient.queryEventsDetailed(
                     captureAny(),
                     subscriptionId: any(named: 'subscriptionId'),
                     useCache: any(named: 'useCache'),
+                    tempRelays: any(named: 'tempRelays'),
+                    requireAllRelaysSettled: any(
+                      named: 'requireAllRelaysSettled',
+                    ),
+                    timeout: any(named: 'timeout'),
                   ),
                 ).captured.single
                 as List<nostr_filter.Filter>;
@@ -4038,10 +4091,13 @@ void main() {
 
       test('returns null and does not throw when the query errors', () async {
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
           ),
         ).thenThrow(Exception('relay down'));
         final repository = createRepository();
@@ -4052,13 +4108,16 @@ void main() {
         // Some clients write `r` tags into a kind-10050; within a 10050 event
         // both denote DM inbox relays, so both must be read. See divine-web.
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) async => answeredList([
             Event(
               _validPubkeyB,
               EventKind.dmRelaysList,
@@ -4069,7 +4128,7 @@ void main() {
               '',
               createdAt: 1700000000,
             ),
-          ],
+          ]),
         );
         final repository = createRepository();
         expect(
@@ -4095,15 +4154,18 @@ void main() {
         'tempRelays and targetRelays',
         () async {
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => answeredList([
               ownInbox(['wss://own.example']),
-            ],
+            ]),
           );
           final controller = StreamController<Event>();
           when(
@@ -4174,6 +4236,22 @@ void main() {
         () async {
           final capturedDrainTempRelays = <List<String>?>[];
           when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => answeredList([
+              ownInbox(['wss://own.example']),
+            ]),
+          );
+          // The drain pages still read through queryEvents; only the own
+          // kind-10050 resolve moved to queryEventsDetailed (#8212).
+          when(
             () => mockNostrClient.queryEvents(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
@@ -4184,11 +4262,6 @@ void main() {
             final filter =
                 (inv.positionalArguments.first as List<nostr_filter.Filter>)
                     .single;
-            if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
-              return [
-                ownInbox(['wss://own.example']),
-              ];
-            }
             // Only the gift-wrap drain pages carry p:[self]; capture their
             // tempRelays (the NIP-04 recovery uses authors:[self] with no p
             // and is intentionally not 10050-targeted).
@@ -4227,12 +4300,17 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
             ),
           ).thenAnswer((_) => controller.stream);
+          // Answered on purpose: an unanswered read resolves to `failed`,
+          // which is deliberately NOT memoized, so the second consumer would
+          // re-query and this count would be 2 (#8212).
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
               tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer((inv) async {
             final filter =
@@ -4240,11 +4318,11 @@ void main() {
                     .single;
             if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
               resolveQueries++;
-              return [
+              return answeredList([
                 ownInbox(['wss://own.example']),
-              ];
+              ]);
             }
-            return const <Event>[];
+            return answeredList(const <Event>[]);
           });
 
           final syncState = _FakeDmSyncState()
@@ -4421,15 +4499,18 @@ void main() {
         'advertises a kind-10050',
         () async {
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => answeredList([
               existingInbox(['wss://own.example']),
-            ],
+            ]),
           );
 
           final syncState = _FakeDmSyncState();
@@ -4508,10 +4589,13 @@ void main() {
 
         // Gated before any work — no relay query, no signer round-trip.
         verifyNever(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
           ),
         );
         verifyNever(
@@ -4528,10 +4612,13 @@ void main() {
         '(transient) — never overwrites a real list',
         () async {
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenThrow(Exception('relay down'));
 
@@ -4555,15 +4642,18 @@ void main() {
         () async {
           var queries = 0;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer((_) async {
             queries++;
             if (queries == 1) throw Exception('relay down');
-            return const <Event>[]; // absent on the retry
+            return answeredList(const <Event>[]); // absent on the retry
           });
           when(
             () => mockNostrClient.publishEventAwaitOk(
@@ -4597,10 +4687,15 @@ void main() {
       );
 
       test(
-        'reuses the live subscription own-inbox resolve — one kind-10050 '
-        'query shared at login',
+        'does NOT reuse the live subscription resolve — the publish reads the '
+        'own kind-10050 authoritatively on its own (#8212)',
         () async {
-          var resolveQueries = 0;
+          // The live read is cached and satisfied by the first relay that
+          // answers, which is right for a caller that falls back to the
+          // default pool and wrong for one about to REPLACE what it read.
+          // Sharing one read between them is what made the publish guard
+          // unreachable, so the publish now pays its own query.
+          final settlementByRead = <bool?>[];
           final controller = StreamController<Event>();
           when(
             () => mockNostrClient.subscribe(
@@ -4611,19 +4706,24 @@ void main() {
             ),
           ).thenAnswer((_) => controller.stream);
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer((inv) async {
             final filter =
                 (inv.positionalArguments.first as List<nostr_filter.Filter>)
                     .single;
             if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
-              resolveQueries++;
+              settlementByRead.add(
+                inv.namedArguments[#requireAllRelaysSettled] as bool?,
+              );
             }
-            return const <Event>[];
+            return answeredList(const <Event>[]);
           });
           when(
             () => mockNostrClient.publishEventAwaitOk(
@@ -4637,12 +4737,262 @@ void main() {
           await repository.startListening();
           await repository.ensureDmRelayListPublished();
 
-          expect(resolveQueries, 1);
+          // The live read stays cheap; exactly one read is authoritative.
+          expect(settlementByRead, [false, true]);
 
           await repository.stopListening();
           await controller.close();
         },
       );
+
+      group('own kind-10050 authoritative read (#8212)', () {
+        void stubOwnInbox(
+          ({List<Event> events, bool timedOut, bool noRelays}) answer,
+        ) {
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => answer);
+        }
+
+        void stubAcceptedPublish() {
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => outcome(accepted: true));
+        }
+
+        test(
+          'does NOT publish when the own-inbox read reached no relay — a '
+          'fan-out nobody took is not evidence of absence',
+          () async {
+            stubOwnInbox(unansweredList(noRelays: true));
+            stubAcceptedPublish();
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
+
+            verifyNever(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            );
+            expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          },
+        );
+
+        test(
+          'does NOT publish when the own-inbox read did not settle — a relay '
+          'that refused the REQ is not evidence of absence',
+          () async {
+            stubOwnInbox(unansweredList(timedOut: true));
+            stubAcceptedPublish();
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
+
+            verifyNever(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            );
+            expect(syncState.dmRelayListPublishedPubkeys, isEmpty);
+          },
+        );
+
+        test(
+          'still publishes when the relays answered and the user genuinely '
+          'has no kind-10050',
+          () async {
+            stubOwnInbox(answeredList(const <Event>[]));
+            stubAcceptedPublish();
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
+
+            verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).called(1);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'a partially settled read that DID return the list is found, never '
+          'republished',
+          () async {
+            stubOwnInbox((
+              events: [
+                existingInbox(const ['wss://own.example']),
+              ],
+              timedOut: true,
+              noRelays: false,
+            ));
+            stubAcceptedPublish();
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
+
+            verifyNever(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            );
+            // `found`, not `failed` — the flag is recorded so the device stops
+            // re-checking.
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+
+        test(
+          'reads the own kind-10050 authoritatively: no cache, full relay '
+          'settlement',
+          () async {
+            stubOwnInbox(answeredList(const <Event>[]));
+            stubAcceptedPublish();
+
+            final repository = createRepository(syncState: _FakeDmSyncState());
+            await repository.ensureDmRelayListPublished();
+
+            final captured = verify(
+              () => mockNostrClient.queryEventsDetailed(
+                captureAny(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: captureAny(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: captureAny(
+                  named: 'requireAllRelaysSettled',
+                ),
+                timeout: any(named: 'timeout'),
+              ),
+            ).captured;
+
+            var sawOwnInboxRead = false;
+            for (var i = 0; i < captured.length; i += 3) {
+              final filters = captured[i] as List<nostr_filter.Filter>;
+              if (!(filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                  false)) {
+                continue;
+              }
+              sawOwnInboxRead = true;
+              expect(captured[i + 1], isFalse, reason: 'useCache');
+              expect(
+                captured[i + 2],
+                isTrue,
+                reason: 'requireAllRelaysSettled',
+              );
+            }
+            expect(sawOwnInboxRead, isTrue);
+          },
+        );
+
+        test(
+          'reads a recipient kind-10050 cheaply: cache on, first answer wins',
+          () async {
+            stubOwnInbox(answeredList(const <Event>[]));
+
+            final repository = createRepository(syncState: _FakeDmSyncState());
+            await repository.resolveDmInboxRelays(_validPubkeyB);
+
+            final captured = verify(
+              () => mockNostrClient.queryEventsDetailed(
+                captureAny(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: captureAny(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: captureAny(
+                  named: 'requireAllRelaysSettled',
+                ),
+                timeout: any(named: 'timeout'),
+              ),
+            ).captured;
+
+            var sawRecipientRead = false;
+            for (var i = 0; i < captured.length; i += 3) {
+              final filters = captured[i] as List<nostr_filter.Filter>;
+              if (!(filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                  false)) {
+                continue;
+              }
+              sawRecipientRead = true;
+              expect(captured[i + 1], isTrue, reason: 'useCache');
+              expect(
+                captured[i + 2],
+                isFalse,
+                reason: 'requireAllRelaysSettled',
+              );
+            }
+            expect(sawRecipientRead, isTrue);
+          },
+        );
+
+        test(
+          'an unanswered own-inbox read is not memoized — a later call '
+          're-queries and can publish',
+          () async {
+            var queries = 0;
+            when(
+              () => mockNostrClient.queryEventsDetailed(
+                any(),
+                subscriptionId: any(named: 'subscriptionId'),
+                useCache: any(named: 'useCache'),
+                tempRelays: any(named: 'tempRelays'),
+                requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+                timeout: any(named: 'timeout'),
+              ),
+            ).thenAnswer((_) async {
+              queries++;
+              // A read nothing answered — not an exception. This is the shape
+              // #8212 actually fails in; the throwing variant is a separate
+              // test. It must leave the path re-runnable just the same.
+              if (queries == 1) return unansweredList(timedOut: true);
+              return answeredList(const <Event>[]);
+            });
+            stubAcceptedPublish();
+
+            final syncState = _FakeDmSyncState();
+            final repository = createRepository(syncState: syncState);
+            await repository.ensureDmRelayListPublished();
+            await repository.ensureDmRelayListPublished();
+
+            expect(queries, 2);
+            verify(
+              () => mockNostrClient.publishEventAwaitOk(
+                any(),
+                targetRelays: any(named: 'targetRelays'),
+              ),
+            ).called(1);
+            expect(
+              syncState.dmRelayListPublishedPubkeys,
+              contains(_validPubkeyA),
+            );
+          },
+        );
+      });
     });
 
     group('backfillHistoryIfNeeded', () {
@@ -17950,17 +18300,20 @@ void main() {
           // author query); each wrap must route there with OK-confirm, not the
           // default pool.
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer((invocation) async {
             final filters =
                 invocation.positionalArguments.first
                     as List<nostr_filter.Filter>;
             final recipient = filters.single.authors!.single;
-            return [
+            return answeredList([
               Event(
                 recipient,
                 EventKind.dmRelaysList,
@@ -17970,7 +18323,7 @@ void main() {
                 '',
                 createdAt: 1700000000,
               ),
-            ];
+            ]);
           });
           stubSendRumor((_, recipient) async {
             return NIP17SendResult.success(
@@ -20828,13 +21181,16 @@ void main() {
           // OK-confirm is meaningful for an inbox-only reader, not satisfied
           // by an unrelated default-pool relay.
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+              timeout: any(named: 'timeout'),
             ),
           ).thenAnswer(
-            (_) async => [
+            (_) async => answeredList([
               Event(
                 _validPubkeyB,
                 EventKind.dmRelaysList,
@@ -20844,7 +21200,7 @@ void main() {
                 '',
                 createdAt: 1700000000,
               ),
-            ],
+            ]),
           );
           stubSendRumor(
             (_, recipientPubkey) async => NIP17SendResult.success(

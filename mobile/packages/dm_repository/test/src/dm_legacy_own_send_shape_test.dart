@@ -25,6 +25,10 @@ const _privateKey =
 const _baseCreatedAt = 1700000000;
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   // Drives the real DirectMessagesDao against a real database. The
   // mock suite stubs hasMatchingMessage to a constant in its top-level
   // setUp, so a test written there cannot observe this at all (#8170).
@@ -56,6 +60,19 @@ void main() {
           useCache: any(named: 'useCache'),
         ),
       ).thenAnswer((_) async => const <Event>[]);
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            (events: const <Event>[], timedOut: false, noRelays: false),
+      );
       when(() => nostrClient.unsubscribe(any())).thenAnswer((_) async {});
       when(
         () => nostrClient.subscribe(

@@ -151,6 +151,24 @@ const bool _classifyDiagnostics =
 /// See #4974.
 const Duration _dmRelayListSignTimeout = Duration(seconds: 10);
 
+/// Budget for an ordinary kind-10050 lookup — the recipient resolve on the
+/// send path and the memoized own-inbox read. Restates `NostrClient`'s own
+/// default so the two call shapes read alike; changing it changes nothing
+/// about which relays answer.
+const Duration _dmInboxQueryTimeout = Duration(seconds: 5);
+
+/// Budget for the authoritative own-inbox read that gates the RC3 publish.
+///
+/// Deliberately shorter than [_dmInboxQueryTimeout]. `requireAllRelaysSettled`
+/// waits for every relay that took the REQ, so one connected-but-silent relay
+/// spends the whole budget even after a healthy relay has answered (measured
+/// at 6004ms on a 6s budget). Every relay in the default pool that answers at
+/// all answers in 0.5-1.1s, so a shorter budget stays conclusive in the normal
+/// case and halves the cost of the pathological one. An expiry reports
+/// `timedOut`, which is `failed`, which does not publish — so erring short errs
+/// toward not overwriting. See #8212.
+const Duration _ownDmInboxAuthoritativeTimeout = Duration(seconds: 3);
+
 /// Hard backstop on a single NIP-17 message publish (wrap build + recipient
 /// wrap OK-confirm + self-wrap). On timeout the send is reported as a soft,
 /// retryable-pending failure (the frame may already be written), so the
@@ -952,18 +970,27 @@ class DmRepository {
   /// Resolves and memoizes the CURRENT user's own kind-10050 DM inbox
   /// resolution for the session (#4974 RC2).
   ///
-  /// Shared by the live subscription, the history drain, and the RC3
-  /// existence check, so the relay is queried at most once per login. A
-  /// `found`/`absent` outcome is cached; a `failed` (transient) outcome is
-  /// NOT — the memo clears itself once it resolves `failed` so the next
-  /// caller re-queries instead of degrading the whole session to the default
-  /// pool. [_resetState] clears the memo on account switch.
+  /// Shared by the live subscription, history drain, and read-marker publish.
+  /// The RC3 existence check deliberately performs its own authoritative read.
+  /// A `found`/`absent` outcome is cached; a `failed` (transient) outcome is NOT
+  /// — the memo clears itself once it resolves `failed` so the next caller
+  /// re-queries instead of degrading the whole session to the default pool.
+  /// [_resetState] clears the memo on account switch.
   Future<({_OwnDmInboxState state, List<String>? relays})>
   _resolveOwnDmInbox() {
     final cached = _ownInboxFuture;
     if (cached != null) return cached;
     final future = _queryOwnDmInbox(
       _userPubkey,
+      // Deliberately NOT authoritative. Every consumer of this memo — the live
+      // gift-wrap subscription, the history drain, the read-marker publish —
+      // falls back to the default pool on `absent` and `failed` alike, and
+      // `startListening` awaits it before opening the subscription. Making it
+      // strict would put a full timeout in front of DM delivery on every login
+      // and every reconnect to protect a write that happens at most once per
+      // device. The publish path reads authoritatively on its own instead.
+      // See #8212.
+      requireAuthoritative: false,
       source: _DmRelayListSource.selfAuthored,
     );
     _ownInboxFuture = future;
@@ -1719,9 +1746,7 @@ class DmRepository {
     });
   }
 
-  Future<void> _withGiftWrapProcessingLock(
-    Future<void> Function() body,
-  ) async {
+  Future<void> _withGiftWrapProcessingLock(Future<void> Function() body) async {
     while (_giftWrapProcessingLock != null) {
       await _giftWrapProcessingLock;
     }
@@ -1815,10 +1840,8 @@ class DmRepository {
         deleterPubkey: rumor.pubkey,
         giftWrapId: giftWrapId,
       );
-      Future<DmWrapOutcome?> asMessage() async => _applyMessageDeletion(
-        rumorId: rumorId,
-        deleterPubkey: rumor.pubkey,
-      );
+      Future<DmWrapOutcome?> asMessage() async =>
+          _applyMessageDeletion(rumorId: rumorId, deleterPubkey: rumor.pubkey);
 
       final resolved = tryReactionsFirst
           ? await asReaction() ?? await asMessage()
@@ -3057,8 +3080,14 @@ class DmRepository {
   /// this device carrying the gift wrap, so a counterparty decides neither
   /// how many hosts we dial nor whether any of them sit on the sender's own
   /// network (#6585).
+  ///
+  /// The read is deliberately non-authoritative: it runs on every send,
+  /// degrades to the default pool whether the list is absent or unreadable,
+  /// and overwrites nothing — so it keeps the cache and the first answer it
+  /// gets rather than waiting for full relay settlement (#8212). Reporting an
+  /// unreadable recipient inbox as delivery is a separate defect, #7317.
   Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
-    return (await _queryOwnDmInbox(pubkey)).relays;
+    return (await _queryOwnDmInbox(pubkey, requireAuthoritative: false)).relays;
   }
 
   /// Filters and bounds the relay URLs advertised in a kind-10050.
@@ -3124,23 +3153,77 @@ class DmRepository {
   /// [resolveDmInboxRelays] does) is safe for the send path and the live
   /// read (both fall back to the default pool either way), but RC3 must tell
   /// them apart — see [ensureDmRelayListPublished].
+  ///
+  /// [requireAuthoritative] is what makes `absent` trustworthy enough to
+  /// publish over. RC3 REPLACES whatever the user advertises, so it may only
+  /// act on an answer the relays actually gave: `useCache: false` stops a
+  /// stale local row standing in for a relay answer, and
+  /// `requireAllRelaysSettled: true` turns a fan-out nobody took and a REQ a
+  /// relay refused with `CLOSED` into `timedOut` rather than a prompt empty
+  /// list. Without it `queryEvents` reports every one of those as an ordinary
+  /// empty result, `absent` swallows them, and the publish guard below can
+  /// never fire — which is how a transient read replaced a real list (#8212).
+  ///
+  /// Resolving a COUNTERPARTY's inbox passes `false`: it runs on every send,
+  /// degrades to the default pool on either outcome, and overwrites nothing,
+  /// so it keeps the cache and the first answer it gets.
   Future<({_OwnDmInboxState state, List<String>? relays})> _queryOwnDmInbox(
     String pubkey, {
+    required bool requireAuthoritative,
     // Defaults to the strict reading so a call site added later fails closed.
     // Every path here except the signed-in user's own inbox is resolving
     // somebody else's list.
     _DmRelayListSource source = _DmRelayListSource.remote,
   }) async {
     try {
-      final events = await _nostrClient.queryEvents([
-        nostr_filter.Filter(
-          authors: [pubkey],
-          kinds: [EventKind.dmRelaysList],
-          limit: 1,
-        ),
-      ]);
+      final result = await _nostrClient.queryEventsDetailed(
+        [
+          nostr_filter.Filter(
+            authors: [pubkey],
+            kinds: [EventKind.dmRelaysList],
+            limit: 1,
+          ),
+        ],
+        useCache: !requireAuthoritative,
+        requireAllRelaysSettled: requireAuthoritative,
+        timeout: requireAuthoritative
+            ? _ownDmInboxAuthoritativeTimeout
+            : _dmInboxQueryTimeout,
+      );
+      final events = result.events;
+      // Computed here but applied ONLY at the two exits below where nothing
+      // matching came back. A read that DID return the list stays `found` even
+      // when some relay never settled: the list is in hand, and RC3's job is
+      // not to publish over it. Checking the flags before `events` — as the
+      // obvious form of this fix does — would discard a real answer from a
+      // relay that settled before another relay timed out.
+      final _OwnDmInboxState absentOrFailed;
+      String? inconclusiveReason;
+      if (requireAuthoritative && (result.noRelays || result.timedOut)) {
+        absentOrFailed = _OwnDmInboxState.failed;
+        // `noRelays` first: an offline device sets both flags, and reporting
+        // that as a timeout misreads it.
+        inconclusiveReason = result.noRelays
+            ? 'no relay took the REQ'
+            : 'not every relay settled';
+      } else {
+        absentOrFailed = _OwnDmInboxState.absent;
+      }
+
+      void logInconclusiveRead() {
+        final reason = inconclusiveReason;
+        if (reason == null) return;
+        Log.warning(
+          'Own kind-10050 lookup for ${pubkeyForLogs(pubkey)} was '
+          'inconclusive ($reason) — not publishing over a list we could not '
+          'read; will retry',
+          category: LogCategory.system,
+        );
+      }
+
       if (events.isEmpty) {
-        return (state: _OwnDmInboxState.absent, relays: null);
+        logInconclusiveRead();
+        return (state: absentOrFailed, relays: null);
       }
       final matchingEvents = [
         for (final event in events)
@@ -3153,7 +3236,8 @@ class DmRepository {
           '${pubkeyForLogs(pubkey)}',
           category: LogCategory.system,
         );
-        return (state: _OwnDmInboxState.absent, relays: null);
+        logInconclusiveRead();
+        return (state: absentOrFailed, relays: null);
       }
       // Newest wins for a replaceable event served from multiple relays.
       matchingEvents.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -3199,9 +3283,16 @@ class DmRepository {
   /// left untouched. The own-inbox lookup distinguishes `found` / `absent` /
   /// `failed`, so a transient relay failure (`failed`) NEVER triggers a
   /// publish that could overwrite a real list divine simply couldn't fetch —
-  /// it retries next login. The lookup is the shared session memo, so it
-  /// reuses the live subscription's resolve rather than issuing a second
-  /// query. Idempotent per (device, pubkey) via
+  /// it retries next login.
+  ///
+  /// The lookup is its OWN authoritative read, not the shared session memo.
+  /// The memo is tuned for the live read — cached, and satisfied by the first
+  /// relay that answers — which is right for a caller that falls back to the
+  /// default pool but not for one about to replace what it read. Sharing it
+  /// was what made the guard above unreachable (#8212). The extra query is
+  /// bounded: this method returns early once `dmRelayListPublished` is set, so
+  /// it runs at most once per (device, pubkey), and it is never awaited by
+  /// login. Idempotent per (device, pubkey) via
   /// `DmSyncState.dmRelayListPublished`, with the flag set ONLY on a confirmed
   /// relay `OK`. A relay that rejects kind-10050 or a slow/failed signer
   /// leaves the flag unset and the next login retries — the publish never
@@ -3223,8 +3314,13 @@ class DmRepository {
     try {
       if (syncState.dmRelayListPublished(pubkey)) return;
 
-      // Shared session memo — dedupes with the live subscription's resolve.
-      final resolution = await _resolveOwnDmInbox();
+      // Its own authoritative read, NOT the shared session memo: this is the
+      // one caller that replaces what it read. See #8212.
+      final resolution = await _queryOwnDmInbox(
+        pubkey,
+        requireAuthoritative: true,
+        source: _DmRelayListSource.selfAuthored,
+      );
       if (_disposed || _resetGeneration != gen) return;
       if (resolution.state == _OwnDmInboxState.found) {
         // Already advertising an inbox — never overwrite a richer list.
@@ -3273,9 +3369,12 @@ class DmRepository {
       }
 
       await syncState.markDmRelayListPublished(pubkey);
+      // The event id is the anchor: a relay serves only the newest revision of
+      // a replaceable kind for a coordinate query, so an id is the one handle
+      // that still reaches an earlier one. Logged whole.
       Log.info(
         'Published kind-10050 DM inbox relay list for ${pubkeyForLogs(pubkey)} '
-        '-> $relayUrl',
+        '-> $relayUrl (event ${signed.id})',
         category: LogCategory.system,
       );
     } on Object catch (e, stackTrace) {

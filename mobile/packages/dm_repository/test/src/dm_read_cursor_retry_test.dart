@@ -28,6 +28,10 @@ const _readMarkerDTag = 'divine/dm-read/v1';
 const _baseCreatedAt = 1700000000;
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   // Drives the real ConversationsDao against a real database. The mock suite
   // in dm_repository_test.dart stubs applyReadCursor to a constant `true` in
   // its top-level setUp, so the `!applied` retry branch never executes there
@@ -69,6 +73,19 @@ void main() {
             useCache: any(named: 'useCache'),
           ),
         ).thenAnswer((_) async => const <Event>[]);
+        when(
+          () => nostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              (events: const <Event>[], timedOut: false, noRelays: false),
+        );
         when(() => nostrClient.unsubscribe(any())).thenAnswer((_) async {});
         when(
           () => nostrClient.subscribe(
