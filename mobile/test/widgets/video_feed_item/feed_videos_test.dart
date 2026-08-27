@@ -829,30 +829,28 @@ void main() {
         );
         await tester.pump(const Duration(seconds: 4));
 
-        // The name + meta column is intrinsically 44dp and shipped that way:
-        // on an iPhone it reported Size(280.0, 44.0) and failed
-        // androidTapTargetGuideline (48). Walk the tree rather than matching a
-        // label, because the meta line's text is date-dependent.
-        final heights = <double>[];
-        void visit(SemanticsNode node) {
-          if (node.getSemanticsData().hasAction(SemanticsAction.tap)) {
-            heights.add(node.rect.height);
-          }
-          node.visitChildren((child) {
-            visit(child);
-            return true;
-          });
+        final authorName = find.bySemanticsIdentifier('video_author_name');
+        expect(authorName, findsOneWidget);
+
+        // The name node sits inside the row's tappable semantics node. Walk
+        // upward from that stable identifier so removing the profile action
+        // fails this test instead of silently dropping the row from a global
+        // list of tap targets.
+        SemanticsNode? authorRow = tester.getSemantics(authorName);
+        while (authorRow != null &&
+            !authorRow.getSemanticsData().hasAction(SemanticsAction.tap)) {
+          authorRow = authorRow.parent;
         }
 
-        visit(tester.getSemantics(find.byType(FeedVideos)));
-
-        // The author row is the only wide tappable in the header.
-        final authorRow = heights.where((h) => h > 20).toList();
-        expect(authorRow, isNotEmpty, reason: 'no header tap target found');
         expect(
-          authorRow.every((h) => h >= 48),
-          isTrue,
-          reason: 'header tap targets must be >= 48dp, got $authorRow',
+          authorRow,
+          isNotNull,
+          reason: 'the author row must expose a profile tap action',
+        );
+        expect(
+          authorRow!.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'the author row must be at least 48dp tall',
         );
       } finally {
         semantics.dispose();
