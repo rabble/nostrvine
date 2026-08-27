@@ -42,61 +42,63 @@ void main() {
     videoUrl: 'https://example.com/owned.mp4',
   );
 
-  testWidgets('shows the relay failure result after delete', (tester) async {
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    final authService = createMockAuthService();
-    final deletionService = _MockContentDeletionService();
-    final enforcementRepository = _MockEnforcementRepository();
-    final videoEventService = _MockVideoEventService();
-    final volumeCubit = _MockVideoVolumeCubit();
-    when(() => authService.currentPublicKeyHex).thenReturn(ownPubkey);
-    when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
-    when(
-      () => deletionService.quickDelete(
-        video: video,
-        reason: DeleteReason.personalChoice,
-      ),
-    ).thenAnswer(
-      (_) async => DeleteResult.failure(
-        'relay rejected',
-        DeleteFailureKind.relayRejected,
-      ),
-    );
+  group('owner delete', () {
+    testWidgets('shows the relay failure result after delete', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final authService = createMockAuthService();
+      final deletionService = _MockContentDeletionService();
+      final enforcementRepository = _MockEnforcementRepository();
+      final videoEventService = _MockVideoEventService();
+      final volumeCubit = _MockVideoVolumeCubit();
+      when(() => authService.currentPublicKeyHex).thenReturn(ownPubkey);
+      when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
+      when(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer(
+        (_) async => DeleteResult.failure(
+          'relay rejected',
+          DeleteFailureKind.relayRejected,
+        ),
+      );
 
-    await tester.pumpWidget(
-      testMaterialApp(
-        home: BlocProvider<VideoVolumeCubit>.value(
-          value: volumeCubit,
-          child: Scaffold(
-            body: Align(
-              alignment: Alignment.topRight,
-              child: FeedSettingsMenu(video: video),
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: BlocProvider<VideoVolumeCubit>.value(
+            value: volumeCubit,
+            child: Scaffold(
+              body: Align(
+                alignment: Alignment.topRight,
+                child: FeedSettingsMenu(video: video),
+              ),
             ),
           ),
+          mockAuthService: authService,
+          additionalOverrides: [
+            contentDeletionServiceProvider.overrideWith(
+              (ref) async => deletionService,
+            ),
+            creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+              enforcementRepository,
+            ),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+          ],
         ),
-        mockAuthService: authService,
-        additionalOverrides: [
-          contentDeletionServiceProvider.overrideWith(
-            (ref) async => deletionService,
-          ),
-          creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
-            enforcementRepository,
-          ),
-          videoEventServiceProvider.overrideWithValue(videoEventService),
-        ],
-      ),
-    );
+      );
 
-    await tester.tap(find.bySemanticsLabel(l10n.videoSettingsMenuOpen));
-    await tester.pump();
-    await tester.tap(find.text(l10n.shareMenuDeleteVideo));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.shareMenuDelete));
-    await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel(l10n.videoSettingsMenuOpen));
+      await tester.pump();
+      await tester.tap(find.text(l10n.shareMenuDeleteVideo));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.shareMenuDelete));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.text(l10n.shareMenuDeleteFailedRelayRejected),
-      findsOneWidget,
-    );
+      expect(
+        find.text(l10n.shareMenuDeleteFailedRelayRejected),
+        findsOneWidget,
+      );
+    });
   });
 }
