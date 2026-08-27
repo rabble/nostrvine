@@ -13370,6 +13370,103 @@ void main() {
         expect(order, equals(['durable', 'wire']));
       });
 
+      // #8201. A refused retraction leaves the row visible and un-deleted, so
+      // tapping Delete again must re-drive it. Nothing may special-case
+      // `deletion_blocked` into an early return — that would make the restored
+      // bubble's only affordance a no-op, which is the state this issue is
+      // about.
+      test('re-drives a message whose retraction was refused', () async {
+        final repo = createRepository();
+
+        when(
+          () => mockDirectMessagesDao.getMessageById(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DirectMessageRow(
+            id: _rumorEventId,
+            conversationId: conversationId,
+            senderPubkey: _validPubkeyA,
+            content: 'Hello',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: 14,
+            isDeleted: false,
+            deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+            deletionRumorJson: '{"kind":5}',
+          ),
+        );
+        when(
+          () => mockConversationsDao.getConversation(
+            conversationId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: conversationId,
+            participantPubkeys: '["$_validPubkeyA","$_validPubkeyB"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            isRead: true,
+            currentUserHasSent: true,
+          ),
+        );
+        stubSendRumor(
+          (rumorEvent, recipientPubkey) => NIP17SendResult.success(
+            rumorEventId: rumorEvent.id,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: recipientPubkey,
+          ),
+        );
+        when(
+          () => mockDirectMessagesDao.markMessageDeletionPending(
+            _rumorEventId,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.markMessageDeletionSent(
+            _rumorEventId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            conversationId,
+            limit: 1,
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await repo.deleteMessageForEveryone(_rumorEventId);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.markMessageDeletionPending(
+            _rumorEventId,
+            deletionRumorJson: any(named: 'deletionRumorJson'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+      });
+
       test('nudges the retry sweep after storing the deletion', () async {
         stubDeletableMessage();
         stubSendRumor(
