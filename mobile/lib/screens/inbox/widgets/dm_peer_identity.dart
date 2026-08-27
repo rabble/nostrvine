@@ -4,6 +4,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 
@@ -27,8 +28,21 @@ String? dmPeerNameWithoutProfile(
     ? context.l10n.profileDeletedAccountName
     : displayNameOverride ?? moderationDisplayName(context, pubkeyHex);
 
+/// The localized labels [dmPeerName] needs, read from this [context].
+///
+/// The one place the ARB keys behind the chain are named, so the inbox search
+/// index — which matches on the same strings from a BLoC — cannot drift onto
+/// different ones.
+DmPeerLabels dmPeerLabels(BuildContext context) => DmPeerLabels(
+  deletedAccount: context.l10n.profileDeletedAccountName,
+  moderation: context.l10n.inboxSupportRowTitle,
+);
+
 /// The full chain: vanished, then [displayNameOverride], then moderation, then
 /// [profile], then the generated fallback.
+///
+/// Thin `BuildContext` wrapper over [dmPeerName]; the precedence itself lives
+/// there so a non-widget caller can share it (#8204).
 ///
 /// [isVanished] is required rather than defaulted so every caller has to decide
 /// what to pass. Reactive widgets read it from `profileVanishedProvider`, with
@@ -39,12 +53,10 @@ String dmPeerDisplayName(
   required bool isVanished,
   UserProfile? profile,
   String? displayNameOverride,
-}) =>
-    dmPeerNameWithoutProfile(
-      context,
-      pubkeyHex: pubkeyHex,
-      isVanished: isVanished,
-      displayNameOverride: displayNameOverride,
-    ) ??
-    profile?.bestDisplayName ??
-    UserProfile.defaultDisplayNameFor(pubkeyHex);
+}) => dmPeerName(
+  pubkeyHex: pubkeyHex,
+  isVanished: isVanished,
+  labels: dmPeerLabels(context),
+  profileName: profile?.bestDisplayName,
+  displayNameOverride: displayNameOverride,
+);
