@@ -25,6 +25,12 @@ import 'package:unified_logger/unified_logger.dart';
 /// API does not expose event timestamps.
 typedef _FollowerRef = ({String pubkey, int? followedAt});
 
+typedef _FollowerSourceResult = ({
+  List<_FollowerRef> refs,
+  Object? error,
+  StackTrace? stackTrace,
+});
+
 typedef _CachedFollowerStats = ({
   FollowerStats stats,
   DateTime cachedAt,
@@ -1282,7 +1288,9 @@ class FollowRepository {
   ///
   /// Ordering comes from [_newestFirst].
   ///
-  /// Returns empty list on timeout or failure.
+  /// Returns an empty list when every successful source reports no followers.
+  /// Propagates a source error when no source returns a usable follower, since
+  /// callers cannot distinguish that result from a genuinely empty list.
   Future<List<String>> _fetchFollowers(String pubkey) async =>
       (await _fetchOrderedFollowers(pubkey)).pubkeys;
 
@@ -1299,18 +1307,12 @@ class FollowRepository {
 
     // One unavailable source must not discard usable observations from the
     // others, but total failure is not evidence that the user has no followers.
-    final results = await Future.wait(
-      _followerSources(pubkey).map(
-        (source) => source.then<(List<_FollowerRef>, Object?, StackTrace?)>(
-          (refs) => (refs, null, null),
-          onError: (Object error, StackTrace stackTrace) =>
-              (const <_FollowerRef>[], error, stackTrace),
-        ),
-      ),
+    final results = await Future.wait<_FollowerSourceResult>(
+      _followerSources(pubkey).map(_guardFollowerSource),
     );
-    final apiFollowers = results[0].$1;
-    final relayFollowers = results[1].$1;
-    final indexerFollowers = results[2].$1;
+    final apiFollowers = results[0].refs;
+    final relayFollowers = results[1].refs;
+    final indexerFollowers = results[2].refs;
 
     // Merge all sources (union of pubkeys)
     final merged = _newestFirst([
@@ -1319,12 +1321,15 @@ class FollowRepository {
       ...indexerFollowers,
     ]);
 
-    if (merged.pubkeys.isEmpty) {
-      for (final (_, error, stackTrace) in results.reversed) {
-        if (error != null) {
-          Error.throwWithStackTrace(error, stackTrace ?? StackTrace.empty);
-        }
-      }
+    _FollowerSourceResult? failed;
+    for (final result in results) {
+      if (result.error != null) failed = result;
+    }
+    if (merged.pubkeys.isEmpty && failed != null) {
+      Error.throwWithStackTrace(
+        failed.error!,
+        failed.stackTrace ?? StackTrace.empty,
+      );
     }
 
     // Unique per source, not raw events: the relay and indexer paths hand
@@ -1453,6 +1458,17 @@ class FollowRepository {
     ];
   }
 
+  Future<_FollowerSourceResult> _guardFollowerSource(
+    Future<List<_FollowerRef>> source,
+  ) => source.then<_FollowerSourceResult>(
+    (refs) => (refs: refs, error: null, stackTrace: null),
+    onError: (Object error, StackTrace stackTrace) => (
+      refs: const <_FollowerRef>[],
+      error: error,
+      stackTrace: stackTrace,
+    ),
+  );
+
   /// Streams the current user's followers as each source resolves.
   ///
   /// Every emission is the union of all sources that have answered so far, so
@@ -1486,18 +1502,12 @@ class FollowRepository {
     Object? lastError;
     StackTrace? lastStackTrace;
 
-    final guarded = _followerSources(pubkey).map(
-      (source) => source.then<(List<_FollowerRef>, Object?, StackTrace?)>(
-        (refs) => (refs, null, null),
-        onError: (Object error, StackTrace stackTrace) =>
-            (const <_FollowerRef>[], error, stackTrace),
-      ),
-    );
+    final guarded = _followerSources(pubkey).map(_guardFollowerSource);
 
-    await for (final (refs, error, stackTrace)
-        in Stream<(List<_FollowerRef>, Object?, StackTrace?)>.fromFutures(
-          guarded,
-        )) {
+    await for (final result in Stream<_FollowerSourceResult>.fromFutures(
+      guarded,
+    )) {
+      final (:refs, :error, :stackTrace) = result;
       if (error != null) {
         lastError = error;
         lastStackTrace = stackTrace;

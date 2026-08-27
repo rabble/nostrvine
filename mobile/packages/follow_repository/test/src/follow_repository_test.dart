@@ -1682,6 +1682,18 @@ void main() {
           expect(followers, isEmpty);
         });
       });
+
+      test('does not cache an empty snapshot when a source fails', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenThrow(Exception('Relays unavailable'));
+
+        await expectLater(
+          repository.watchOthersFollowersCached(testTargetPubkey),
+          emitsError(isA<Exception>()),
+        );
+        expect(cacheDao.length, isZero);
+      });
     });
 
     group('follower ordering', () {
@@ -3077,7 +3089,7 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('returns false on error', () async {
+      test('returns false when every follower source fails', () async {
         // Set up: we follow testTargetPubkey
         SharedPreferences.setMockInitialValues({
           'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
@@ -3093,7 +3105,8 @@ void main() {
 
         await repository.initialize();
 
-        // Mock: relay query throws
+        // No REST or indexer sources are configured, so this makes the only
+        // network source fail and exercises isMutualFollow's public guard.
         when(
           () => mockNostrClient.queryEvents(any()),
         ).thenThrow(Exception('Network error'));
