@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Modal sheet listing every reactor on a DM message.
@@ -142,9 +143,22 @@ class _ReactorRow extends ConsumerWidget {
       userProfileReactiveProvider(reaction.reactorPubkey),
     );
     final profile = profileAsync.asData?.value;
-    final name =
-        profile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(reaction.reactorPubkey);
+
+    // A reactor is a DM peer, so it resolves through the same chain as the
+    // conversation header and the inbox row — otherwise the one sheet a
+    // "Deleted account" thread can open names its reactors a different way.
+    // In a group thread the reactor need not be the counterparty at all, so
+    // this is the only DM surface that can name a third participant.
+    final isVanished = ref
+        .watch(profileVanishedProvider(reaction.reactorPubkey))
+        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+
+    final name = dmPeerDisplayName(
+      context,
+      pubkeyHex: reaction.reactorPubkey,
+      isVanished: isVanished,
+      profile: profile,
+    );
 
     final isFailed = reaction.publishStatus == DmReactionPublishStatus.failed;
     final isPending = reaction.publishStatus == DmReactionPublishStatus.pending;
@@ -173,7 +187,9 @@ class _ReactorRow extends ConsumerWidget {
           // also circular. Wrapping the rounded-square UserAvatar in ClipOval
           // would slice its border into arcs (the "cut border" artifact).
           leading: UserAvatar(
-            imageUrl: profile?.picture,
+            // `watchProfile` is an ungated `select(userProfiles)`, so a row
+            // that outlived its tombstone still streams a picture here.
+            imageUrl: isVanished ? null : profile?.picture,
             name: name,
             size: _avatarSize,
             cornerRadius: _avatarSize / 2,

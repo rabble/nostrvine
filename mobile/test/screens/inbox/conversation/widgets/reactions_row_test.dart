@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/reactions_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -64,8 +65,10 @@ void main() {
   Widget buildSubject(
     _MockConversationReactionsCubit cubit, {
     Set<String> blockedPubkeys = const <String>{},
+    List<dynamic> additionalOverrides = const <dynamic>[],
   }) {
     return testMaterialApp(
+      additionalOverrides: additionalOverrides,
       home: Scaffold(
         body: BlocProvider<ConversationReactionsCubit>.value(
           value: cubit,
@@ -472,6 +475,74 @@ void main() {
         expect(_emojiScale(tester, '🔥'), closeTo(1, 0.01));
       },
     );
+
+    group('deleted accounts', () {
+      const picture = 'https://example.com/alice.jpg';
+
+      Future<void> pumpPill(
+        WidgetTester tester, {
+        required bool vanished,
+      }) async {
+        primeState(
+          stateWith([
+            makeReaction(
+              id: 'other1',
+              reactorPubkey: otherPubkey,
+              emoji: '😂',
+              publishStatus: DmReactionPublishStatus.received,
+            ),
+          ]),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            cubit,
+            additionalOverrides: [
+              userProfileReactiveProvider(otherPubkey).overrideWith(
+                (ref) => Stream.value(
+                  UserProfile(
+                    pubkey: otherPubkey,
+                    displayName: 'Alice',
+                    picture: picture,
+                    rawData: const {},
+                    createdAt: DateTime(2026),
+                    eventId:
+                        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+                  ),
+                ),
+              ),
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(vanished)),
+            ],
+          ),
+        );
+        await tester.pump();
+      }
+
+      testWidgets("drops a vanished reactor's picture and initial", (
+        tester,
+      ) async {
+        await pumpPill(tester, vanished: true);
+
+        // The pill is what opens the reactor sheet. Leaving the photo here
+        // would put the account's face directly above a row that reads
+        // "Deleted account".
+        final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+        expect(avatar.imageUrl, isNull);
+        // The placeholder initial comes from `name`, so a stale row would
+        // still leak the account's first letter with the photo suppressed.
+        expect(avatar.name, l10n.profileDeletedAccountName);
+      });
+
+      testWidgets('leaves a live reactor untouched', (tester) async {
+        await pumpPill(tester, vanished: false);
+
+        final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+        expect(avatar.imageUrl, picture);
+        expect(avatar.name, 'Alice');
+      });
+    });
   });
 }
 
