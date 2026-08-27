@@ -162,9 +162,11 @@ class _VideoMetadataEditBottomBarState
       onSecondaryPressed: () => Navigator.of(context).pop(false),
     );
 
-    if (confirmed == true) {
-      await _deleteVideo();
-    }
+    // Guard against the edit surface being unmounted while the confirm sheet
+    // is open (external navigation): _deleteVideo calls setState. Matches the
+    // other owner-delete surfaces, which recheck mounted after their confirm.
+    if (confirmed != true || !mounted) return;
+    await _deleteVideo();
   }
 
   Future<void> _deleteVideo() async {
