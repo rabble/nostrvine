@@ -323,6 +323,44 @@ void _pushConversation(
   );
 }
 
+/// Hands `ConversationListBloc` the localized names it substitutes for peers
+/// whose own name must not be shown, so inbox search matches the string the
+/// row actually renders (#8204).
+///
+/// A widget of its own, mounted inside the Messages subtree, for two reasons.
+/// The bloc has no `context.l10n`, so the strings have to come from the UI —
+/// and `BlocProvider` is lazy, so reading the bloc anywhere higher would drag
+/// its creation earlier than the Messages tab being opened. Everything below
+/// the enclosing `BlocListener` is already a consumer, so nothing here changes
+/// when the bloc starts.
+///
+/// `didChangeDependencies` rather than `initState`: reading l10n registers a
+/// dependency on `Localizations`, so this fires again when the language
+/// changes. It can, without an app restart, via Settings -> General — and
+/// `BlocProvider.create:` runs once, so labels injected only at construction
+/// would leave search matching the previous language.
+class _PeerLabelSync extends StatefulWidget {
+  const _PeerLabelSync({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PeerLabelSync> createState() => _PeerLabelSyncState();
+}
+
+class _PeerLabelSyncState extends State<_PeerLabelSync> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<ConversationListBloc>().add(
+      ConversationListPeerLabelsChanged(dmPeerLabels(context)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// Content for the Messages tab: following bar + conversation list or
 /// empty state, with a FAB for composing new messages.
 class _MessagesContent extends ConsumerWidget {
@@ -360,7 +398,9 @@ class _MessagesContent extends ConsumerWidget {
       },
       child: Stack(
         children: [
-          _MessagesScrollView(currentUserPubkey: currentPubkey),
+          _PeerLabelSync(
+            child: _MessagesScrollView(currentUserPubkey: currentPubkey),
+          ),
           // FAB positioned bottom-right
           PositionedDirectional(
             end: _kFabInset,

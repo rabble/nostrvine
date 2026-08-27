@@ -346,6 +346,11 @@ void main() {
         (tester) async {
           stubInbox(mockDmRepository, userPubkey: testPubkey);
           final readyProfileRepo = _MockProfileRepository();
+          // The bloc subscribes to the vanished set on every repository swap,
+          // so the incoming instance has to answer for it.
+          when(
+            readyProfileRepo.watchVanishedPubkeys,
+          ).thenAnswer((_) => Stream.value(const <String>{}));
 
           await tester.pumpWidget(
             buildApp(mockDmRepository, readyProfileRepo: readyProfileRepo),

@@ -1116,6 +1116,55 @@ void main() {
             verify(() => mockVanishedDao.clearVanished(testPubkey)).called(1);
           });
 
+          group('watchVanishedPubkeys', () {
+            test('mirrors the durable table', () async {
+              when(
+                () => mockVanishedDao.watchAllPubkeys(),
+              ).thenAnswer((_) => Stream.value([testPubkey]));
+
+              expect(
+                await repoWithVanishDao.watchVanishedPubkeys().first,
+                equals({testPubkey}),
+              );
+            });
+
+            test(
+              'follows later writes, so a consumer cannot go stale',
+              () async {
+                final controller = StreamController<List<String>>();
+                addTearDown(controller.close);
+                when(
+                  () => mockVanishedDao.watchAllPubkeys(),
+                ).thenAnswer((_) => controller.stream);
+
+                // Subscribe before writing, then await: awaiting first would
+                // deadlock, since nothing has been added yet.
+                final settled = expectLater(
+                  repoWithVanishDao.watchVanishedPubkeys(),
+                  emitsInOrder([
+                    <String>{},
+                    {testPubkey},
+                  ]),
+                );
+
+                controller
+                  ..add([])
+                  ..add([testPubkey]);
+
+                await settled;
+              },
+            );
+
+            test('emits an empty set when no dao is wired', () async {
+              // Matches isVanished in the same configuration: a caller gets a
+              // usable answer rather than an error.
+              expect(
+                await profileRepository.watchVanishedPubkeys().first,
+                isEmpty,
+              );
+            });
+          });
+
           test('loadVanishedPubkeys hydrates the in-memory set', () async {
             when(
               () => mockVanishedDao.getAllPubkeys(),
