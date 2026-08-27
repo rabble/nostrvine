@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Bu kişi, Divine'ın arşivde bulduğu orijinal bir Vine paylaşmış. Bu bir hesap doğrulama rozeti değil.",
     "profileBadgeCheckmarkTitle": "Profil onay işareti",
-    "profileBadgeCheckmarkBody": "Divine bu onay işaretini ekip hesaplarına ve elle onaylanmış az sayıda profile veriyor. NIP-05'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.",
+    "profileBadgeCheckmarkBody": "Divine bu onay işaretini ekip hesaplarına veriyor. NIP-05'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.",
     "unfollowConfirmButton": "Takipten çık",
     "videoClipSaveFailed": "Klip kaydedilemedi",
     "videoClipSaveTo": "{destination} konumuna kaydet",

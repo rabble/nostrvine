@@ -7152,7 +7152,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'تمنح Divine هذه العلامة لحسابات الفريق ولمجموعة صغيرة من الملفات الشخصية المعتمدة يدويًا. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.';
+      'تمنح Divine هذه العلامة لحسابات الفريق. وهي منفصلة عن NIP-05 وروابط الحسابات الموثّقة وحالة OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'إلغاء المتابعة';

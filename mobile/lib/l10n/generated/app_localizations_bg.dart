@@ -7275,7 +7275,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine дава тази отметка на профилите на екипа и на малка група ръчно одобрени профили. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
+      'Divine дава тази отметка на профилите на екипа. Това е различно от NIP-05, потвърдените връзки към профила и статуса OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Спри да следваш';

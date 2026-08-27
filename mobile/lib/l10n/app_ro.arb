@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Persoana asta a postat un Vine original pe care Divine l-a găsit în arhivă. Nu e o insignă de verificare a contului.",
     "profileBadgeCheckmarkTitle": "Bifa de profil",
-    "profileBadgeCheckmarkBody": "Divine dă bifa asta conturilor echipei și unui număr mic de profiluri aprobate manual. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.",
+    "profileBadgeCheckmarkBody": "Divine dă bifa asta conturilor echipei. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.",
     "unfollowConfirmButton": "Nu mai urmări",
     "videoClipSaveFailed": "Nu am putut salva clipul",
     "videoClipSaveTo": "Salvează în {destination}",

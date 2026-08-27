@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Cette personne a publié un Vine original que Divine a retrouvé dans les archives. Ce n'est pas un badge de vérification de compte.",
     "profileBadgeCheckmarkTitle": "Coche de profil",
-    "profileBadgeCheckmarkBody": "Divine attribue cette coche aux comptes de l'équipe et à un petit nombre de profils approuvés manuellement. C'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.",
+    "profileBadgeCheckmarkBody": "Divine attribue cette coche aux comptes de l'équipe. C'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.",
     "unfollowConfirmButton": "Ne plus suivre",
     "videoClipSaveFailed": "Échec de l'enregistrement du clip",
     "videoClipSaveTo": "Enregistrer dans {destination}",

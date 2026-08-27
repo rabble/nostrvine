@@ -6864,7 +6864,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine는 이 체크마크를 팀 계정과 직접 승인한 소수의 프로필에 부여해요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
+      'Divine는 이 체크마크를 팀 계정에 부여해요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
 
   @override
   String get unfollowConfirmButton => '언팔로우';

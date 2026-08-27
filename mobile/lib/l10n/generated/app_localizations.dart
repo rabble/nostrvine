@@ -12293,10 +12293,10 @@ abstract class AppLocalizations {
   /// **'Profile checkmark'**
   String get profileBadgeCheckmarkTitle;
 
-  /// Body copy explaining that the special profile checkmark marks Divine team accounts and manually approved profiles, not NIP-05, verified-account links, or OG Viner status.
+  /// Body copy explaining that the special profile checkmark marks Divine team accounts, not NIP-05, verified-account links, or OG Viner status.
   ///
   /// In en, this message translates to:
-  /// **'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.'**
+  /// **'Divine gives this checkmark to team accounts. It is separate from NIP-05, verified account links, and OG Viner status.'**
   String get profileBadgeCheckmarkBody;
 
   /// No description provided for @unfollowConfirmButton.

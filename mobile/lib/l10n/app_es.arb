@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Esta persona publicó un Vine original que Divine encontró en el archivo. No es una insignia de verificación de cuenta.",
     "profileBadgeCheckmarkTitle": "Tilde de perfil",
-    "profileBadgeCheckmarkBody": "Divine da esta tilde a las cuentas del equipo y a un pequeño grupo de perfiles aprobados manualmente. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.",
+    "profileBadgeCheckmarkBody": "Divine da esta tilde a las cuentas del equipo. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.",
     "unfollowConfirmButton": "Dejar de seguir",
     "videoClipSaveFailed": "No se pudo guardar el clip",
     "videoClipSaveTo": "Guardar en {destination}",

@@ -7293,7 +7293,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
+      'Divine vergibt dieses Häkchen an Team-Konten. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.';
 
   @override
   String get unfollowConfirmButton => 'Nicht mehr folgen';

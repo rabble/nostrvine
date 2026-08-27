@@ -7367,7 +7367,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine przyznaje ten znacznik kontom zespołu i niewielkiej grupie ręcznie zatwierdzonych profili. To coś innego niż NIP-05, zweryfikowane linki konta i status OG Viner.';
+      'Divine przyznaje ten znacznik kontom zespołu. To coś innego niż NIP-05, zweryfikowane linki konta i status OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Przestań obserwować';

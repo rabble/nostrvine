@@ -123,27 +123,6 @@ const Set<String> kDivineTeamPubkeys = {
   kHqPubkeyHex,
 };
 
-/// Checkmarks that are not team membership.
-///
-/// Two are grandfathered: [kDivineTeamPubkeys] replaced a NIP-05-host rule, and
-/// dropping them would have stripped a badge someone already had. The third was
-/// granted here, so this is not purely a legacy set — it is every checkmark the
-/// team rule does not explain.
-///
-/// All of them render the same badge and the same explanation as the team, so
-/// each should either move into [kDivineTeamPubkeys] or go away once its status
-/// is settled.
-const Set<String> kLegacyProfileCheckmarkPubkeys = {
-  // Kirsten Swasey, granted in #3445 by NIP-05 host; resolved to her pubkey
-  // via kirstenswasey.divine.video/.well-known/nostr.json.
-  'cd4ce30f980c960757b46179608a4946fc06cad47f6dc8960f638e41312c1643',
-  // Added in #4537 as a bare npub with no owner named in the PR or its issue.
-  'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
-  // Improvising. Granted here, not grandfathered — it predates neither the
-  // team rule nor this set.
-  '5ab67f7d7fed4f781008c0ec0d26c8113f9fb46094a8346246c70c75e75db9fb',
-};
-
 /// Moderation pubkeys the account has rotated away from.
 ///
 /// A DM thread opened before a rotation stays keyed on the old pubkey. Those

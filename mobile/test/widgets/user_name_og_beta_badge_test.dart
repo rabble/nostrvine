@@ -81,6 +81,19 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('shows OG Beta Tester for a non-team roster member', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await tester.pumpWidget(await buildSubject(pubkey: pubkey));
+      await tester.pump();
+
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+    });
+
     testWidgets('a screen reader can open the explainer, not just a finger', (
       tester,
     ) async {
@@ -161,12 +174,11 @@ void main() {
     testWidgets('yields to the profile checkmark so only one chit renders', (
       tester,
     ) async {
-      // 15 of the 19 checkmark-bearing pubkeys are also on the beta roster,
-      // so this overlap is the default for Divine team accounts, not an edge.
-      final overlapping = {
-        ...kDivineTeamPubkeys,
-        ...kLegacyProfileCheckmarkPubkeys,
-      }.where(isOgBetaTesterPubkey).toList();
+      // Many team accounts also appear on the beta roster, so this overlap is
+      // the default for Divine team accounts, not an edge.
+      final overlapping = kDivineTeamPubkeys
+          .where(isOgBetaTesterPubkey)
+          .toList();
       expect(
         overlapping,
         isNotEmpty,

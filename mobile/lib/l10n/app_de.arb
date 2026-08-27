@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Diese Person hat ein Original-Vine gepostet, das Divine im Archiv gefunden hat. Das ist kein Verifizierungs-Badge fürs Konto.",
     "profileBadgeCheckmarkTitle": "Profil-Häkchen",
-    "profileBadgeCheckmarkBody": "Divine vergibt dieses Häkchen an Team-Konten und an eine kleine Zahl manuell freigegebener Profile. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.",
+    "profileBadgeCheckmarkBody": "Divine vergibt dieses Häkchen an Team-Konten. Das ist unabhängig von NIP-05, verifizierten Konto-Links und dem OG-Viner-Status.",
     "unfollowConfirmButton": "Nicht mehr folgen",
     "videoClipSaveFailed": "Clip konnte nicht gespeichert werden",
     "videoClipSaveTo": "In {destination} speichern",

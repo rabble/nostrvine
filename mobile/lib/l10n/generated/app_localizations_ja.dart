@@ -6847,7 +6847,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine はこのチェックマークをチームのアカウントと、手動で承認したごく少数のプロフィールに付けてるよ。 NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
+      'Divine はこのチェックマークをチームのアカウントに付けてるよ。 NIP-05、認証済みアカウントのリンク、OG Viner ステータスとは別物だよ。';
 
   @override
   String get unfollowConfirmButton => 'フォロー解除';

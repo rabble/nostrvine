@@ -7198,7 +7198,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine ger den här bocken till teamets konton och till ett litet antal manuellt godkända profiler. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
+      'Divine ger den här bocken till teamets konton. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.';
 
   @override
   String get unfollowConfirmButton => 'Sluta följa';

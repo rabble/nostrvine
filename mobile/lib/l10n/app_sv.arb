@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Den här personen postade en originalvine som Divine hittade i arkivet. Det är inte en verifieringsbadge för kontot.",
     "profileBadgeCheckmarkTitle": "Profilbock",
-    "profileBadgeCheckmarkBody": "Divine ger den här bocken till teamets konton och till ett litet antal manuellt godkända profiler. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.",
+    "profileBadgeCheckmarkBody": "Divine ger den här bocken till teamets konton. Det är skilt från NIP-05, verifierade kontolänkar och OG Viner-status.",
     "unfollowConfirmButton": "Sluta följa",
     "videoClipSaveFailed": "Kunde inte spara klipp",
     "videoClipSaveTo": "Spara till {destination}",

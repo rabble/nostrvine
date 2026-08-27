@@ -7131,7 +7131,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine memberikan centang ini kepada akun tim dan sejumlah kecil profil yang disetujui secara manual. Ini terpisah dari NIP-05, tautan akun terverifikasi, dan status OG Viner.';
+      'Divine memberikan centang ini kepada akun tim. Ini terpisah dari NIP-05, tautan akun terverifikasi, dan status OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Berhenti mengikuti';
