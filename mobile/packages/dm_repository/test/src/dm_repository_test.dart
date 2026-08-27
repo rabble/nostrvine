@@ -5690,6 +5690,32 @@ void main() {
       );
 
       test(
+        're-arms an install the pre-#8209 drain latched complete while '
+        'history was still on the relay',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          // 3 is the version that shipped the `connectedRelayCount` guard: an
+          // install that latched under it has historyDrainComplete set and
+          // returns before issuing a single query, so the corrected guard
+          // never reaches it. Only a currentDrainVersion bump does — this is
+          // hardcoded rather than `currentDrainVersion - 1` precisely so it
+          // fails if #8209 ships without one.
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..drainVersionOverride = 3;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(capturedUntil, isNotEmpty);
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
         'emits recovery true→false on historyRecoveryStream around an '
         'actual drain (#5202)',
         () async {
