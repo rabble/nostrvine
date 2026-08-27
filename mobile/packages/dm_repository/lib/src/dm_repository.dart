@@ -2886,16 +2886,26 @@ class DmRepository {
       // window because the NIP-17 rumor and NIP-04 event may have slightly
       // different timestamps.
       //
-      // Only the NIP-17 copy may suppress this event. Another NIP-04 row with
-      // the same text is a genuine earlier message — the mirror of #7324 on
-      // this side of the dual-send.
+      // Only the NIP-17 copy may suppress a PEER's event. Another NIP-04 row
+      // with the same text is a genuine earlier message — the mirror of #7324
+      // on this side of the dual-send.
+      //
+      // Our own replayed kind-4 is the exception, and takes no arrival-shape
+      // filter. It matches the user's own persisted send rather than a
+      // cross-protocol twin, and that send may carry either shape: every
+      // NIP-17 send path before #2654 wrote the gift-wrap id into BOTH
+      // columns, so a row from that window reads as NIP-04 and would be
+      // missed by nip17Copy — inserting a second bubble for a message the
+      // user already sent (#8211).
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
         senderPubkey: senderPubkey,
         content: plaintext,
         createdAt: persistedCreatedAt,
         ownerPubkey: _userPubkey,
-        counterpart: DmDedupCounterpart.nip17Copy,
+        counterpart: isSentByMe
+            ? DmDedupCounterpart.unconstrained
+            : DmDedupCounterpart.nip17Copy,
       );
       if (isDuplicate) {
         Log.debug(
