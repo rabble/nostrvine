@@ -647,9 +647,11 @@ void main() {
           buildSubject(
             previousState: const ConversationState(
               retractionStatus: RetractionStatus.blocked,
+              awaitingRetraction: {'first', 'second'},
             ),
             state: const ConversationState(
               retractionStatus: RetractionStatus.blocked,
+              awaitingRetraction: {'second'},
             ),
           ),
         );
@@ -742,7 +744,9 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             counterparty: retired,
-            previousState: const ConversationState(),
+            previousState: const ConversationState(
+              awaitingRetraction: {'message'},
+            ),
             state: const ConversationState(sendStatus: SendStatus.blocked),
           ),
         );
