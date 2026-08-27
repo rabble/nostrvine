@@ -1483,6 +1483,9 @@ void main() {
       final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionIncomplete), findsNothing);
+      // Same recourse as the missing-coordinator route: both unavailable states
+      // offer the bug report.
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
       verifyNever(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),

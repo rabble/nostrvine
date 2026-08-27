@@ -716,21 +716,17 @@ Future<void> executeAccountDeletion({
         // Release is mandatory, so a name-release failure fails the whole
         // deletion closed (nothing deleted). The unavailable 503 and the
         // missing-coordinator route both mean deletion is unavailable right now
-        // — not something a retry fixes — so both take the unavailable copy;
-        // other preparation failures surface as incomplete.
-        final message = switch (error.stage) {
-          AccountDeletionRecoveryStage.coordinatorAttempt
-              when error.indicatesUsernameRecoveryUnsupported ||
-                  error.indicatesMissingCoordinatorRoute =>
-            deletionUnavailableText,
-          _ => deletionIncompleteText,
-        };
+        // — not something a retry fixes — so both take the unavailable copy and
+        // offer the bug-report action; other preparation failures surface as
+        // incomplete. One bool drives copy and action so they cannot drift.
+        final isUnavailable =
+            error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
+            (error.indicatesUsernameRecoveryUnsupported ||
+                error.indicatesMissingCoordinatorRoute);
         abortPreparation(
           error,
-          message,
-          offerSupport:
-              error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
-              error.indicatesMissingCoordinatorRoute,
+          isUnavailable ? deletionUnavailableText : deletionIncompleteText,
+          offerSupport: isUnavailable,
         );
         return;
       } on Object catch (error) {
