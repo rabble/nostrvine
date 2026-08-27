@@ -323,8 +323,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     );
                     // The beta chit yields to both the checkmark and the OG
                     // Viner chit, so a name never carries two of them. The
-                    // Viner rosters are disjoint by construction; the
-                    // many team accounts also appear on the beta roster.
+                    // Viner rosters are disjoint by construction; many team
+                    // accounts also appear on the beta roster.
                     final isOgBetaTester =
                         !isOgViner &&
                         !showCheckmark &&
