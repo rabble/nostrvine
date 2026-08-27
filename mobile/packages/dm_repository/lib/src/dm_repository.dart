@@ -1023,7 +1023,12 @@ class DmRepository {
   /// the caller can advance its own pagination cursor by their outer
   /// `created_at`, or `null` if the user switched / the repository was torn
   /// down mid-fetch (so the caller stops paging for the stale user).
-  Future<List<Event>?> _fetchHistoryPage({
+  ///
+  /// `authoritative` is false when nothing answered this page — no relay took
+  /// the REQ, a relay refused it with `CLOSED`, the client was disposed, or
+  /// only some relays answered. An empty page is proof of exhaustion only when
+  /// it is authoritative; see the guard in [_runHistoryDrain]. See #8209.
+  Future<({List<Event> events, bool authoritative})?> _fetchHistoryPage({
     required int until,
     required int limit,
     required String subscriptionId,
@@ -1046,12 +1051,21 @@ class DmRepository {
     // default pool) so the #4953/#4973 history drain reads gift wraps a
     // sender delivered outside the default pool. `null` keeps the prior
     // default-pool-only behavior. See #4974.
-    final events = await _nostrClient.queryEvents(
+    //
+    // queryEventsDetailed, not queryEvents: the latter discards `timedOut` and
+    // `noRelays`, so a page nothing answered arrives as an ordinary empty one
+    // and the drain reads it as exhaustion. `requireAllRelaysSettled` is what
+    // makes a relay's `CLOSED` refusal and a partial fan-out surface as
+    // `timedOut` rather than completing on whichever relays did answer. #8209.
+    final result = await _nostrClient.queryEventsDetailed(
       [filter],
       subscriptionId: subscriptionId,
       useCache: false,
       tempRelays: tempRelays,
+      requireAllRelaysSettled: true,
     );
+    final events = result.events;
+    final authoritative = !result.noRelays && !result.timedOut;
     if (_ingestSessionEnded(pubkey, generation)) return null;
 
     // Pass 1 (off the _eventLock): batch-decrypt this page's gift wraps in one
@@ -1079,7 +1093,7 @@ class DmRepository {
       }
       await _maybeYieldDuringDrain(i);
     }
-    return events;
+    return (events: events, authoritative: authoritative);
   }
 
   /// Recovers the user's OWN outgoing NIP-04 (kind-4) messages after a wipe.
@@ -1094,19 +1108,19 @@ class DmRepository {
   /// already sets `currentUserHasSent` for self-authored messages. Bounded by
   /// [DmHistoryDrainConfig.maxPages].
   ///
-  /// Returns `true` when the pass completed against a live relay — genuine
-  /// exhaustion or the page budget — and `false` when it could not run: no
-  /// relay connected, the repository was torn down / the user switched, or a
-  /// relay error. A `false` result MUST NOT mark the drain complete, mirroring
-  /// the gift-wrap drain's `connectedRelayCount == 0` guard so a momentary
-  /// disconnect in this window doesn't silently skip recovery *and*
-  /// permanently strand the user's outgoing NIP-04 history. See #5304.
+  /// Returns `true` when the pass completed against a relay that actually
+  /// answered — genuine exhaustion or the page budget — and `false` when it
+  /// could not run: nothing answered the page, the repository was torn down /
+  /// the user switched, or a relay error. A `false` result MUST NOT mark the
+  /// drain complete, mirroring the gift-wrap drain's authoritative-page guard
+  /// so a momentary outage in this window doesn't silently skip recovery *and*
+  /// permanently strand the user's outgoing NIP-04 history. See #5304, #8209.
   Future<bool> _recoverOutgoingNip04(String pubkey, int generation) async {
     try {
       var cursor = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         if (_ingestSessionEnded(pubkey, generation)) return false;
-        final events = await _nostrClient.queryEvents(
+        final result = await _nostrClient.queryEventsDetailed(
           [
             nostr_filter.Filter(
               authors: [pubkey],
@@ -1117,15 +1131,18 @@ class DmRepository {
           ],
           subscriptionId: 'dm_drain_nip04_${pubkey}_$page',
           useCache: false,
+          requireAllRelaysSettled: true,
         );
+        final events = result.events;
         if (_ingestSessionEnded(pubkey, generation)) return false;
         if (events.isEmpty) {
-          // An empty page is genuine exhaustion only if a relay was actually
-          // connected to answer it. With 0 connected relays queryEvents
-          // short-circuits to [] — concluding "nothing to recover" and letting
-          // the caller mark the drain complete would permanently strand the
+          // An empty page is genuine exhaustion only if a relay actually
+          // ANSWERED it. Nothing answering — no relay took the REQ, a relay
+          // refused it with `CLOSED`, or only some answered — arrives as an
+          // ordinary empty list, and concluding "nothing to recover" would let
+          // the caller mark the drain complete and permanently strand the
           // user's outgoing NIP-04 (the #5202 failure mode, mirrored here).
-          return _nostrClient.connectedRelayCount > 0;
+          return !result.noRelays && !result.timedOut;
         }
         for (var i = 0; i < events.length; i++) {
           if (_ingestSessionEnded(pubkey, generation)) return false;
@@ -1514,7 +1531,7 @@ class DmRepository {
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         // Bail if the user switched or the repository was torn down.
         if (_ingestSessionEnded(pubkey, gen)) return;
-        final events = await _fetchHistoryPage(
+        final historyPage = await _fetchHistoryPage(
           until: cursor,
           limit: DmHistoryDrainConfig.pageSize,
           subscriptionId: 'dm_drain_${pubkey}_$page',
@@ -1522,7 +1539,8 @@ class DmRepository {
           generation: gen,
           tempRelays: ownInbox,
         );
-        if (events == null) return;
+        if (historyPage == null) return;
+        final events = historyPage.events;
         // _fetchHistoryPage's own guard sits at the top of its persist loop,
         // so the last event's persist and the yield after it are both
         // suspension points it cannot see past — it returns the page either
@@ -1532,17 +1550,20 @@ class DmRepository {
         pagesRun++;
         totalEvents += events.length;
         if (events.isEmpty) {
-          // An empty page is genuine history exhaustion ONLY if a relay was
-          // actually connected to answer it. With 0 connected relays the
-          // query short-circuits to [] — marking the drain complete then
-          // would permanently strand unrecovered history (the #5202 root
-          // cause). Defer instead: leave historyDrainComplete unset and the
-          // cursor persisted so the next inbox open resumes once relays
-          // are up.
-          if (_nostrClient.connectedRelayCount == 0) {
+          // An empty page is genuine history exhaustion ONLY if a relay
+          // actually ANSWERED it. Connected is not answered: a write-only
+          // relay and one whose socket died since its last status update both
+          // still count as connected, so the old `connectedRelayCount` test
+          // could not see a fan-out nobody took, a relay that refused the REQ
+          // with `CLOSED`, or a page the settle window completed on the
+          // relays that did answer. Marking the drain complete on any of those
+          // permanently strands unrecovered history (#5202 root cause, #8209).
+          // Defer instead: leave historyDrainComplete unset and the cursor
+          // persisted so the next inbox open resumes where this run stopped.
+          if (!historyPage.authoritative) {
             Log.warning(
-              'DM history drain saw an empty page with 0 connected relays '
-              'for ${pubkeyForLogs(pubkey)}; deferring completion to the next '
+              'DM history drain saw an empty page that no relay answered for '
+              '${pubkeyForLogs(pubkey)}; deferring completion to the next '
               'inbox open.',
               category: LogCategory.system,
             );
