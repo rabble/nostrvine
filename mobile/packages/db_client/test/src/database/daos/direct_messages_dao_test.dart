@@ -676,8 +676,7 @@ void main() {
             ownerPubkey: 'pubkey_alice',
           );
           expect(row!.deletionPublishStatus, equals('deletion_sent'));
-          // Delivered: nothing left to replay, and the retraction should not
-          // sit in the clear on disk. Unlike the blocked path (#8226).
+          // Delivered: nothing left to replay. Unlike the blocked path (#8226).
           expect(row.deletionRumorJson, isNull);
           expect(row.isDeleted, isTrue);
         });
