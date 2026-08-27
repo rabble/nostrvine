@@ -5623,6 +5623,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።';
 
   @override
+  String get dmDeleteRefusedMessage =>
+      'ለሁሉም ሰው መሰረዝ አልተቻለም። መልእክትዎ አሁንም አለ — እንደገና ለመሰረዝ ይሞክሩ።';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'ይህ ውይይት ተዘግቷል።';
 
   @override

@@ -56,6 +56,15 @@ enum SendStatus {
 /// success, [pending] → [deliveredSelfFailed] on a partial delivery,
 /// [pending] → [failed] on a recipient-side publish failure. Persisted
 /// rows with no queue row remaining are always [delivered].
+/// Outcome of the most recent "Delete for everyone" the send policy refused
+/// (#8201).
+///
+/// The durable signal is the message itself: a refused retraction returns to
+/// the thread, because it was never retracted. This transient status is what
+/// lets the view say so at the moment it happens, rather than leaving a bubble
+/// to silently reappear.
+enum RetractionStatus { idle, blocked }
+
 enum DmDeliveryStatus {
   /// Neither wrap has landed yet. Renders as a plain sent bubble — sends are
   /// optimistic, so there is no in-flight indicator (only [failed] is shown).
@@ -102,6 +111,7 @@ class ConversationState extends Equatable {
     this.status = ConversationStatus.initial,
     this.messages = const [],
     this.sendStatus = SendStatus.idle,
+    this.retractionStatus = RetractionStatus.idle,
     this.lastPartialSend,
     this.pendingOutgoing = const <OutgoingDm>[],
   });
@@ -113,6 +123,9 @@ class ConversationState extends Equatable {
   /// Replaced wholesale on every watch tick.
   final List<DmMessage> messages;
   final SendStatus sendStatus;
+
+  /// Whether a retraction was refused since the last tick (#8201).
+  final RetractionStatus retractionStatus;
 
   /// The last send attempt that delivered to recipients but failed to
   /// publish the sender self-addressed gift wrap, paired with the rumor
@@ -329,6 +342,7 @@ class ConversationState extends Equatable {
     ConversationStatus? status,
     List<DmMessage>? messages,
     SendStatus? sendStatus,
+    RetractionStatus? retractionStatus,
     PartialSend? lastPartialSend,
     List<OutgoingDm>? pendingOutgoing,
     bool clearLastPartialSend = false,
@@ -337,6 +351,7 @@ class ConversationState extends Equatable {
       status: status ?? this.status,
       messages: messages ?? this.messages,
       sendStatus: sendStatus ?? this.sendStatus,
+      retractionStatus: retractionStatus ?? this.retractionStatus,
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
@@ -349,6 +364,7 @@ class ConversationState extends Equatable {
     status,
     messages,
     sendStatus,
+    retractionStatus,
     lastPartialSend,
     pendingOutgoing,
   ];

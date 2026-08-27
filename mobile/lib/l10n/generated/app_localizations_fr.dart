@@ -5831,6 +5831,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Personne ne lit cette conversation. Écris plutôt à Divine Moderation.';
 
   @override
+  String get dmDeleteRefusedMessage =>
+      'La suppression pour tout le monde a échoué. Ton message est toujours là — réessaie.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Cette conversation est fermée.';
 
   @override

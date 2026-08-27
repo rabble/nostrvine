@@ -147,6 +147,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           status: ConversationStatus.loaded,
           messages: tick.messages,
           pendingOutgoing: tick.pendingOutgoing,
+          retractionStatus: _newlyRefusedRetraction(tick.messages)
+              ? RetractionStatus.blocked
+              : RetractionStatus.idle,
         );
       },
       onError: (error, stackTrace) {
@@ -168,6 +171,25 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       if (a[i] != b[i]) return false;
     }
     return true;
+  }
+
+  /// Whether this tick is the one that turned a retraction down (#8201).
+  ///
+  /// Keyed on the transition, not the flag: a refusal recorded in an earlier
+  /// session is already on the row when the thread opens, and reporting that
+  /// would announce old news on every cold open. A message the previous tick
+  /// did not carry at all is therefore not a transition either.
+  bool _newlyRefusedRetraction(List<DmMessage> next) {
+    if (state.messages.isEmpty) return false;
+    for (final message in next) {
+      if (!message.retractionBlocked) continue;
+      for (final previous in state.messages) {
+        if (previous.id != message.id) continue;
+        if (!previous.retractionBlocked) return true;
+        break;
+      }
+    }
+    return false;
   }
 
   Future<void> _onMessageDeleted(

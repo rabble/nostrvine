@@ -261,6 +261,73 @@ void main() {
         errors: () => [isA<Exception>()],
       );
 
+      // #8201. A refused retraction returns the message to the thread. The
+      // bubble reappearing is the durable signal; this status is the transient
+      // one that lets the view explain why.
+      blocTest<ConversationBloc, ConversationState>(
+        'reports a retraction the relay policy refused',
+        setUp: () {
+          final controller = StreamController<List<DmMessage>>();
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+          Future<void>.delayed(Duration.zero).then((_) {
+            controller.add([testMessage]);
+            controller.add([_blocked(testMessage)]);
+            controller.close();
+          });
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ConversationStarted()),
+        expect: () => [
+          isA<ConversationState>(),
+          isA<ConversationState>().having(
+            (s) => s.retractionStatus,
+            'before the refusal',
+            RetractionStatus.idle,
+          ),
+          isA<ConversationState>().having(
+            (s) => s.retractionStatus,
+            'after the refusal',
+            RetractionStatus.blocked,
+          ),
+        ],
+      );
+
+      // A refusal from an earlier session is already on the row when the
+      // thread opens. Announcing it then would toast on every cold open of
+      // any thread that ever had one.
+      blocTest<ConversationBloc, ConversationState>(
+        'stays quiet about a refusal that predates the thread opening',
+        setUp: () {
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => Stream.value([_blocked(testMessage)]));
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ConversationStarted()),
+        expect: () => [
+          isA<ConversationState>(),
+          isA<ConversationState>().having(
+            (s) => s.retractionStatus,
+            'retractionStatus',
+            RetractionStatus.idle,
+          ),
+        ],
+      );
+
       blocTest<ConversationBloc, ConversationState>(
         'emits updated messages when stream emits multiple times',
         setUp: () {
@@ -2117,6 +2184,7 @@ void main() {
           ConversationStatus.initial,
           <DmMessage>[],
           SendStatus.idle,
+          RetractionStatus.idle,
           null,
           <OutgoingDm>[],
         ]),
@@ -2523,3 +2591,14 @@ void main() {
     });
   });
 }
+
+DmMessage _blocked(DmMessage m) => DmMessage(
+  id: m.id,
+  conversationId: m.conversationId,
+  senderPubkey: m.senderPubkey,
+  content: m.content,
+  createdAt: m.createdAt,
+  giftWrapId: m.giftWrapId,
+  messageKind: m.messageKind,
+  retractionBlocked: true,
+);

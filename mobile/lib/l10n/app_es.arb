@@ -2163,6 +2163,7 @@
     "dmSendNoRecipientMessage": "No pudimos saber con quién es esta conversación. Ábrela de nuevo desde tu bandeja.",
     "dmSendBlockedMessage": "Solo puedes escribir a cuentas oficiales de Divine",
     "dmSendBlockedRetiredMessage": "Nadie lee esta conversación. Escribe a Divine Moderation en su lugar.",
+    "dmDeleteRefusedMessage": "No se pudo eliminar para todos. Tu mensaje sigue ahí: probá eliminarlo de nuevo.",
     "dmRetiredThreadClosedTitle": "Esta conversación está cerrada.",
     "messageRequestModerationNoticeCannotBeRemoved": "Este aviso de Divine Moderation no se puede eliminar.",
     "dmRetiredThreadClosedBody": "Movimos Divine Moderation a una cuenta nueva. Ya nadie lee esta.",

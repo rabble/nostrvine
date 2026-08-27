@@ -5784,6 +5784,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Niemand leest dit gesprek. Stuur in plaats daarvan een bericht naar Divine Moderation.';
 
   @override
+  String get dmDeleteRefusedMessage =>
+      'Verwijderen voor iedereen is niet gelukt. Je bericht staat er nog — probeer het opnieuw.';
+
+  @override
   String get dmRetiredThreadClosedTitle => 'Dit gesprek is gesloten.';
 
   @override
