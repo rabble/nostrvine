@@ -103,9 +103,7 @@ void main() {
       );
     });
 
-    testWidgets('disables Edit without a spinner during relay deletion', (
-      tester,
-    ) async {
+    testWidgets('keeps Edit disabled until cleanup finishes', (tester) async {
       final l10n = lookupAppLocalizations(const Locale('en'));
       final authService = createMockAuthService();
       final deletionService = _MockContentDeletionService();
@@ -113,6 +111,7 @@ void main() {
       final videoEventService = _MockVideoEventService();
       final volumeCubit = _MockVideoVolumeCubit();
       final relayCompleter = Completer<DeleteResult>();
+      final cleanupCompleter = Completer<CreatorDeleteEnforcementResult>();
       when(() => authService.currentPublicKeyHex).thenReturn(ownPubkey);
       when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
       when(
@@ -121,6 +120,9 @@ void main() {
           reason: DeleteReason.personalChoice,
         ),
       ).thenAnswer((_) => relayCompleter.future);
+      when(
+        () => enforcementRepository.enforce('delete-event-id'),
+      ).thenAnswer((_) => cleanupCompleter.future);
 
       await tester.pumpWidget(
         testMaterialApp(
@@ -161,11 +163,30 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       relayCompleter.complete(
-        DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+        DeleteResult.createSuccess(
+          'delete-event-id',
+          acceptance: DeleteAcceptance.everyRelay,
+        ),
       );
       await tester.pumpAndSettle();
 
-      expect(tester.widget<GestureDetector>(editGesture).onTap, isNotNull);
+      await tester.tap(find.bySemanticsLabel(l10n.videoSettingsMenuOpen));
+      await tester.pump();
+      final cleanupEditGesture = find.ancestor(
+        of: find.text(l10n.shareMenuEditVideo),
+        matching: find.byType(GestureDetector),
+      );
+      expect(tester.widget<GestureDetector>(cleanupEditGesture).onTap, isNull);
+
+      cleanupCompleter.complete(
+        const CreatorDeleteEnforcementResult.confirmed(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<GestureDetector>(cleanupEditGesture).onTap,
+        isNotNull,
+      );
     });
   });
 }

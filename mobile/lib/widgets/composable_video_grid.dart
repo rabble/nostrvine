@@ -345,14 +345,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                         fontSize: 12,
                       ),
                     ),
-                    enabled: !isDeletePublishing,
-                    onTap: isDeletePublishing
+                    enabled: !isDeleteInProgress,
+                    onTap: isDeleteInProgress
                         ? null
                         : () {
-                            if (_ownerVideoActionsCubit.state
-                                    .forVideo(video.id)
-                                    .deleteStatus ==
-                                OwnerVideoDeleteStatus.deleting) {
+                            if (_ownerVideoActionsCubit.isDeleteInProgress(
+                              video.id,
+                            )) {
                               return;
                             }
                             if (!sheetContext.popModalIfMounted()) return;

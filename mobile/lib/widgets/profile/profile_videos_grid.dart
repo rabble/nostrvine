@@ -143,9 +143,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       contentDeletionService: () =>
           ref.read(contentDeletionServiceProvider.future),
       videoEventService: () => ref.read(videoEventServiceProvider),
-      enforcementRepository: () => ref.read(
-        creatorDeleteEnforcementRepositoryProvider,
-      ),
+      enforcementRepository: () =>
+          ref.read(creatorDeleteEnforcementRepositoryProvider),
     );
     // Prefetch visible grid videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -211,8 +210,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               return _OwnVideoActionsSheetBody(
                 onEditVideo: () => _editVideo(video, sheetContext),
                 onDeleteVideo: () => _confirmDeleteVideo(video, sheetContext),
-                isDeletePublishing:
-                    operation.deleteStatus == OwnerVideoDeleteStatus.deleting,
                 isDeleting:
                     operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
                     operation.cleanupStatus ==
@@ -226,10 +223,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   }
 
   void _editVideo(VideoEvent video, BuildContext sheetContext) {
-    if (_ownerVideoActionsCubit.state.forVideo(video.id).deleteStatus ==
-        OwnerVideoDeleteStatus.deleting) {
-      return;
-    }
+    if (_ownerVideoActionsCubit.isDeleteInProgress(video.id)) return;
     if (!sheetContext.popModalIfMounted()) return;
     context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
   }
@@ -269,10 +263,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         DivineSnackbarContainer.snackBar(
           operation.deleteResult == null
               ? context.l10n.shareMenuDeleteFailedGeneric
-              : localizedDeleteFailureMessage(
-                  context,
-                  operation.deleteResult!,
-                ),
+              : localizedDeleteFailureMessage(context, operation.deleteResult!),
           error: true,
         ),
       );
@@ -576,13 +567,11 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
   const _OwnVideoActionsSheetBody({
     required this.onEditVideo,
     required this.onDeleteVideo,
-    required this.isDeletePublishing,
     required this.isDeleting,
   });
 
   final VoidCallback onEditVideo;
   final VoidCallback onDeleteVideo;
-  final bool isDeletePublishing;
   final bool isDeleting;
 
   @override
@@ -596,7 +585,7 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
           title: context.l10n.videoGridEditVideo,
           subtitle: context.l10n.videoGridEditVideoSubtitle,
           onTap: onEditVideo,
-          isDisabled: isDeletePublishing,
+          isDisabled: isDeleting,
         ),
         _OwnVideoActionTile(
           icon: DivineIconName.trash,

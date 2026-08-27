@@ -531,7 +531,7 @@ void main() {
           findsOneWidget,
         );
       });
-      testWidgets('re-enables Delete when cleanup finishes while open', (
+      testWidgets('keeps Edit and Delete blocked until cleanup finishes', (
         tester,
       ) async {
         final mockNostr = createMockNostrService();
@@ -619,6 +619,13 @@ void main() {
           ),
         );
         expect(deleteTile.enabled, isFalse);
+        var editTile = tester.widget<ListTile>(
+          find.ancestor(
+            of: find.text(l10n.videoGridEditVideo),
+            matching: find.byType(ListTile),
+          ),
+        );
+        expect(editTile.enabled, isFalse);
 
         cleanupCompleter.complete(
           const CreatorDeleteEnforcementResult.confirmed(),
@@ -633,6 +640,13 @@ void main() {
           ),
         );
         expect(deleteTile.enabled, isTrue);
+        editTile = tester.widget<ListTile>(
+          find.ancestor(
+            of: find.text(l10n.videoGridEditVideo),
+            matching: find.byType(ListTile),
+          ),
+        );
+        expect(editTile.enabled, isTrue);
       });
     });
 

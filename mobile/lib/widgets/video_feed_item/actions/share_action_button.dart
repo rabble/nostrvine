@@ -146,9 +146,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         contentDeletionService: () =>
             ref.read(contentDeletionServiceProvider.future),
         videoEventService: () => ref.read(videoEventServiceProvider),
-        enforcementRepository: () => ref.read(
-          creatorDeleteEnforcementRepositoryProvider,
-        ),
+        enforcementRepository: () =>
+            ref.read(creatorDeleteEnforcementRepositoryProvider),
       );
       _crosspostCubit = VideoCrosspostCubit(
         client: ref.read(crossposterApiClientProvider),
@@ -432,8 +431,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   void _handleEditVideo() {
-    if (_ownerVideoActionsCubit?.state.forVideo(widget.video.id).deleteStatus ==
-        OwnerVideoDeleteStatus.deleting) {
+    if (_ownerVideoActionsCubit?.isDeleteInProgress(widget.video.id) ?? false) {
       return;
     }
     _presentAfterDismiss<void>((hostContext) async {
@@ -478,10 +476,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         DivineSnackbarContainer.snackBar(
           operation.deleteResult == null
               ? context.l10n.shareMenuDeleteFailedGeneric
-              : localizedDeleteFailureMessage(
-                  context,
-                  operation.deleteResult!,
-                ),
+              : localizedDeleteFailureMessage(context, operation.deleteResult!),
           error: true,
         ),
       );
@@ -714,13 +709,6 @@ class _UnifiedShareSheetView extends StatelessWidget {
           return operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
               operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
         });
-    final isDeletePublishing =
-        isOwnContent &&
-        context.select<OwnerVideoActionsCubit, bool>(
-          (cubit) =>
-              cubit.state.forVideo(video.id).deleteStatus ==
-              OwnerVideoDeleteStatus.deleting,
-        );
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.5);
@@ -786,7 +774,6 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         isOwnContent: isOwnContent,
                         isSavePending: state.isSaving,
                         isDeletePending: isDeletePending,
-                        isDeletePublishing: isDeletePublishing,
                         bookmarkStatus: state.bookmarkStatus,
                         onCrosspost: onCrosspost,
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),

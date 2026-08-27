@@ -555,9 +555,7 @@ void main() {
 
       testWidgets(
         'delete stays disabled with a spinner while work is pending',
-        (
-          tester,
-        ) async {
+        (tester) async {
           when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
           final videos = _createTestVideos(pubkey: _ownPubkey);
           final l10n = lookupAppLocalizations(const Locale('en'));
@@ -613,6 +611,22 @@ void main() {
             DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
           );
           await tester.pumpAndSettle();
+
+          final recoveredEditTile = tester.widget<ListTile>(
+            find.ancestor(
+              of: find.text(l10n.videoGridEditVideo),
+              matching: find.byType(ListTile),
+            ),
+          );
+          final recoveredDeleteTile = tester.widget<ListTile>(
+            find.ancestor(
+              of: find.text(l10n.videoGridDeleteVideo),
+              matching: find.byType(ListTile),
+            ),
+          );
+          expect(recoveredEditTile.enabled, isTrue);
+          expect(recoveredDeleteTile.enabled, isTrue);
+
           verify(
             () => deletionService.quickDelete(
               video: videos.first,
