@@ -862,6 +862,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo account è stato sbloccato';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Questo rimuove la conversazione dalla tua posta in arrivo. Se ti scrive di nuovo, inizia una nuova conversazione.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Questo account è stato eliminato';
 

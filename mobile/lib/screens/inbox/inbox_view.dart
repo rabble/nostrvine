@@ -1077,6 +1077,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
+    final blockConfirmation = switch ((isBlocked, isVanished)) {
+      (true, true) => context.l10n.inboxUnblockedVanishedAccount,
+      (true, false) => context.l10n.inboxUnblockedUser(displayName),
+      (false, true) => context.l10n.inboxBlockedVanishedAccount,
+      (false, false) => context.l10n.inboxBlockedUser(displayName),
+    };
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
@@ -1131,24 +1137,18 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             actionsCubit.blockUser(otherPubkey);
           }
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isBlocked
-                      ? isVanished
-                            ? context.l10n.inboxUnblockedVanishedAccount
-                            : context.l10n.inboxUnblockedUser(displayName)
-                      : isVanished
-                      ? context.l10n.inboxBlockedVanishedAccount
-                      : context.l10n.inboxBlockedUser(displayName),
-                ),
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(blockConfirmation)));
           }
 
         case ConversationAction.remove:
           if (!context.mounted) return;
-          final confirmed = await _confirmRemove(context, displayName);
+          final confirmed = await _confirmRemove(
+            context,
+            displayName,
+            isVanished: isVanished,
+          );
           if (confirmed && context.mounted) {
             final removed = await actionsCubit.removeConversation(
               conversation.id,
@@ -1167,7 +1167,11 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     }
   }
 
-  Future<bool> _confirmRemove(BuildContext context, String displayName) async {
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    String displayName, {
+    required bool isVanished,
+  }) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1179,7 +1183,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           ),
         ),
         content: Text(
-          context.l10n.inboxRemoveConfirmBody(displayName),
+          isVanished
+              ? context.l10n.inboxRemoveConfirmBodyVanishedAccount
+              : context.l10n.inboxRemoveConfirmBody(displayName),
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
           ),

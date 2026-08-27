@@ -852,6 +852,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'اس اکاؤنٹ کو ان بلاک کیا';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'اس سے گفتگو آپ کے ان باکس سے ہٹ جائے گی۔ اگر وہ آپ کو دوبارہ پیغام بھیجیں تو نئی گفتگو شروع ہو جائے گی۔';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'یہ اکاؤنٹ حذف ہو گیا';
 
   @override

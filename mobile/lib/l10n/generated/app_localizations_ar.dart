@@ -832,6 +832,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'تم إلغاء حظر هذا الحساب';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'يؤدي هذا إلى إزالة المحادثة من صندوق الوارد. إذا راسلك مرة أخرى، تبدأ محادثة جديدة.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'تم حذف هذا الحساب';
 
   @override

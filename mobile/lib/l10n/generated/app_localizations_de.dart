@@ -857,6 +857,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Dieses Konto wurde entblockt';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Dadurch wird die Unterhaltung aus deinem Posteingang entfernt. Wenn dir diese Person wieder schreibt, beginnt eine neue Unterhaltung.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Dieses Konto wurde gelöscht';
 

@@ -1446,6 +1446,12 @@ abstract class AppLocalizations {
   /// **'Unblocked this account'**
   String get inboxUnblockedVanishedAccount;
 
+  /// Remove-conversation confirmation for a direct-message peer whose account was deleted. Complete copy without a display-name placeholder so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the conversation from your inbox. If they message you again, a new conversation starts.'**
+  String get inboxRemoveConfirmBodyVanishedAccount;
+
   /// Shown under the name in a direct-message conversation header when the other participant deleted their account. Replaces their handle.
   ///
   /// In en, this message translates to:

@@ -857,6 +857,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Desbloqueaste esta cuenta';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Esto quita la conversación de tu bandeja de entrada. Si te vuelve a escribir, se inicia una conversación nueva.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Esta cuenta fue eliminada';
 

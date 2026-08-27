@@ -3104,6 +3104,7 @@
     "inboxReportedVanishedAccount": "Akun ini dilaporkan",
     "inboxBlockedVanishedAccount": "Akun ini diblokir",
     "inboxUnblockedVanishedAccount": "Blokir akun ini dibuka",
+    "inboxRemoveConfirmBodyVanishedAccount": "Ini menghapus percakapan dari kotak masukmu. Jika dia mengirim pesan lagi, percakapan baru dimulai.",
     "inboxConversationDeletedAccountSubtitle": "Akun ini telah dihapus",
     "profileUserFallback": "pengguna",
     "@profileUserFallback": {

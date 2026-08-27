@@ -395,6 +395,7 @@
     "inboxReportedVanishedAccount": "ሪፖርት ተደርጓል ይህን መለያ",
     "inboxBlockedVanishedAccount": "ታግዷል ይህን መለያ",
     "inboxUnblockedVanishedAccount": "እገዳው ተነስቷል ይህን መለያ",
+    "inboxRemoveConfirmBodyVanishedAccount": "ይህ ውይይቱን ከመልእክት ሳጥንህ ያስወግዳል። እንደገና መልእክት ከላከልህ አዲስ ውይይት ይጀምራል።",
     "inboxConversationDeletedAccountSubtitle": "ይህ መለያ ተሰርዟል",
     "profileUserFallback": "ተጠቃሚ",
     "@profileUserFallback": {

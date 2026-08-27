@@ -419,6 +419,7 @@
   "inboxReportedVanishedAccount": "اس اکاؤنٹ کی رپورٹ کی",
   "inboxBlockedVanishedAccount": "اس اکاؤنٹ کو بلاک کیا",
   "inboxUnblockedVanishedAccount": "اس اکاؤنٹ کو ان بلاک کیا",
+  "inboxRemoveConfirmBodyVanishedAccount": "اس سے گفتگو آپ کے ان باکس سے ہٹ جائے گی۔ اگر وہ آپ کو دوبارہ پیغام بھیجیں تو نئی گفتگو شروع ہو جائے گی۔",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

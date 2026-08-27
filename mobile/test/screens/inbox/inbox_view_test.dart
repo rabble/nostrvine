@@ -1782,7 +1782,7 @@ void main() {
       });
     });
 
-    group('pinned support row (#6283)', () {
+    group('conversation identity and pinned support row (#6283)', () {
       const moderationPubkey = kModerationPubkeyHex;
 
       PinnedSupport supportPin({
@@ -1806,6 +1806,52 @@ void main() {
         await tester.tap(find.text('Messages'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
+      }
+
+      Future<void> pumpVanishedConversation(
+        WidgetTester tester, {
+        bool isBlocked = false,
+      }) async {
+        final actionsCubit = _MockConversationActionsCubit();
+        when(
+          () => actionsCubit.blockUser(otherPubkey),
+        ).thenAnswer((_) async {});
+        when(
+          () => actionsCubit.unblockUser(otherPubkey),
+        ).thenAnswer((_) async {});
+        when(
+          () => actionsCubit.reportUser(otherPubkey),
+        ).thenAnswer((_) async => true);
+        final conversation = DmConversation(
+          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+        final subject = buildSubject(
+          wrapInScaffold: true,
+          actionsCubit: actionsCubit,
+          state: ConversationListState(
+            status: ConversationListStatus.loaded,
+            conversations: [conversation],
+            visibleConversations: [conversation],
+            hasMore: false,
+          ),
+          additionalOverrides: [
+            profileVanishedProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(true)),
+            profileVanishedSnapshotProvider(
+              otherPubkey,
+            ).overrideWith((ref) async => true),
+          ],
+        );
+        when(() => actionsCubit.isBlocked(otherPubkey)).thenReturn(isBlocked);
+
+        await tester.pumpWidget(subject);
+        await openMessages(tester);
       }
 
       final wordmarkFinder = find.byWidgetPredicate(
@@ -2002,93 +2048,101 @@ void main() {
         expect(find.text(l10n.inboxActionUnblock('user')), findsNothing);
       });
 
-      // #8185, the same shape one layer out: `ConversationTile` short-circuits
-      // on the NIP-62 vanish before every other branch, and the sheet's own
-      // chain had no such branch. Applying a vanish evicts the cached profile,
-      // so the sheet did not fall back to the peer's last known name — it fell
-      // all the way to a generated "Adjective Animal N" and offered to block
-      // that, under a row reading "Deleted account".
-      testWidgets('names a vanished peer in the sheet its row opens', (
-        tester,
-      ) async {
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        final actionsCubit = _MockConversationActionsCubit();
-        when(
-          () => actionsCubit.blockUser(otherPubkey),
-        ).thenAnswer((_) async {});
-        when(
-          () => actionsCubit.unblockUser(otherPubkey),
-        ).thenAnswer((_) async {});
-        when(
-          () => actionsCubit.reportUser(otherPubkey),
-        ).thenAnswer((_) async => true);
-        final conversation = DmConversation(
-          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          participantPubkeys: const [currentPubkey, otherPubkey],
-          isGroup: false,
-          createdAt: nowUnix,
-          lastMessageContent: 'Hello',
-          lastMessageTimestamp: nowUnix,
-        );
+      group('vanished conversation actions', () {
+        // #8185, the same shape one layer out: `ConversationTile`
+        // short-circuits on the NIP-62 vanish before every other branch, and
+        // the sheet's own chain had no such branch. Applying a vanish evicts
+        // the cached profile, so the sheet did not fall back to the peer's
+        // last known name — it fell all the way to a generated
+        // "Adjective Animal N" and offered to block that, under a row reading
+        // "Deleted account".
+        testWidgets('names a vanished peer in the sheet its row opens', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
 
-        await tester.pumpWidget(
-          buildSubject(
-            wrapInScaffold: true,
-            actionsCubit: actionsCubit,
-            state: ConversationListState(
-              status: ConversationListStatus.loaded,
-              conversations: [conversation],
-              visibleConversations: [conversation],
-              hasMore: false,
+          expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.inboxActionBlockVanishedAccount),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.inboxActionReportVanishedAccount),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
+            findsNothing,
+          );
+        });
+
+        testWidgets('confirms reporting a vanished peer', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.inboxActionReportVanishedAccount));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxReportedVanishedAccount), findsOneWidget);
+        });
+
+        testWidgets('confirms blocking a vanished peer', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.inboxActionBlockVanishedAccount));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxBlockedVanishedAccount), findsOneWidget);
+        });
+
+        testWidgets('confirms unblocking a vanished peer', (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester, isBlocked: true);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          expect(
+            find.text(l10n.inboxActionUnblockVanishedAccount),
+            findsOneWidget,
+          );
+          await tester.tap(find.text(l10n.inboxActionUnblockVanishedAccount));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxUnblockedVanishedAccount), findsOneWidget);
+        });
+
+        testWidgets('removes a vanished peer without using a name template', (
+          tester,
+        ) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await pumpVanishedConversation(tester);
+
+          await tester.longPress(find.byType(ConversationTile));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.inboxActionRemove));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.inboxRemoveConfirmBodyVanishedAccount),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              l10n.inboxRemoveConfirmBody(l10n.profileDeletedAccountName),
             ),
-            additionalOverrides: [
-              profileVanishedProvider(
-                otherPubkey,
-              ).overrideWith((ref) => Stream.value(true)),
-              profileVanishedSnapshotProvider(
-                otherPubkey,
-              ).overrideWith((ref) async => true),
-            ],
-          ),
-        );
-        await openMessages(tester);
-
-        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
-
-        await tester.longPress(find.byType(ConversationTile));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Block this account'), findsOneWidget);
-        expect(find.text('Report this account'), findsOneWidget);
-        expect(
-          find.textContaining(UserProfile.defaultDisplayNameFor(otherPubkey)),
-          findsNothing,
-        );
-
-        await tester.tap(find.text('Report this account'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Reported this account'), findsOneWidget);
-        await tester.pump(const Duration(seconds: 5));
-        await tester.pumpAndSettle();
-
-        await tester.longPress(find.byType(ConversationTile));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Block this account'));
-        await tester.pumpAndSettle();
-        expect(find.text('Blocked this account'), findsOneWidget);
-        await tester.pump(const Duration(seconds: 5));
-        await tester.pumpAndSettle();
-
-        when(() => actionsCubit.isBlocked(otherPubkey)).thenReturn(true);
-        await tester.longPress(find.byType(ConversationTile));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Unblock this account'), findsOneWidget);
-        await tester.tap(find.text('Unblock this account'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Unblocked this account'), findsOneWidget);
+            findsNothing,
+          );
+        });
       });
 
       testWidgets('drops out of a search it does not match', (tester) async {
@@ -2477,65 +2531,92 @@ void main() {
       );
 
       testWidgets(
-        'keeps safety actions available when identity lookups fail',
-        (
-          tester,
-        ) async {
+        'keeps moderation safety actions named when the vanish lookup fails',
+        (tester) async {
           final l10n = lookupAppLocalizations(const Locale('en'));
           await tester.pumpWidget(
             buildSubject(
               state: ConversationListState(
                 status: ConversationListStatus.loaded,
-                conversations: [
-                  DmConversation(
-                    id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-                    participantPubkeys: const [currentPubkey, otherPubkey],
-                    isGroup: false,
-                    createdAt: nowUnix,
-                    lastMessageContent: 'Hello',
-                    lastMessageTimestamp: nowUnix,
-                  ),
-                ],
-                visibleConversations: [
-                  DmConversation(
-                    id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-                    participantPubkeys: const [currentPubkey, otherPubkey],
-                    isGroup: false,
-                    createdAt: nowUnix,
-                    lastMessageContent: 'Hello',
-                    lastMessageTimestamp: nowUnix,
-                  ),
-                ],
-                hasMore: false,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
               ),
               additionalOverrides: [
-                profileVanishedSnapshotProvider(otherPubkey).overrideWith(
+                profileVanishedSnapshotProvider(moderationPubkey).overrideWith(
                   (ref) => Future<bool>.error(StateError('database closed')),
-                ),
-                fetchUserProfileProvider(otherPubkey).overrideWith(
-                  (ref) => Future<UserProfile?>.error(
-                    StateError('profile cache closed'),
-                  ),
                 ),
               ],
             ),
           );
           await openMessages(tester);
 
-          await tester.longPress(find.byType(ConversationTile));
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
           await tester.pumpAndSettle();
 
-          final fallback = UserProfile.defaultDisplayNameFor(otherPubkey);
           expect(
-            find.text(l10n.inboxActionReport(fallback)),
+            find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
             findsOneWidget,
           );
           expect(
-            find.text(l10n.inboxActionBlock(fallback)),
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
             findsOneWidget,
           );
         },
       );
+
+      testWidgets('keeps safety actions available when identity lookups fail', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [
+                DmConversation(
+                  id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+                  participantPubkeys: const [currentPubkey, otherPubkey],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                  lastMessageContent: 'Hello',
+                  lastMessageTimestamp: nowUnix,
+                ),
+              ],
+              visibleConversations: [
+                DmConversation(
+                  id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+                  participantPubkeys: const [currentPubkey, otherPubkey],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                  lastMessageContent: 'Hello',
+                  lastMessageTimestamp: nowUnix,
+                ),
+              ],
+              hasMore: false,
+            ),
+            additionalOverrides: [
+              profileVanishedSnapshotProvider(otherPubkey).overrideWith(
+                (ref) => Future<bool>.error(StateError('database closed')),
+              ),
+              fetchUserProfileProvider(otherPubkey).overrideWith(
+                (ref) => Future<UserProfile?>.error(
+                  StateError('profile cache closed'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await openMessages(tester);
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        final fallback = UserProfile.defaultDisplayNameFor(otherPubkey);
+        expect(find.text(l10n.inboxActionReport(fallback)), findsOneWidget);
+        expect(find.text(l10n.inboxActionBlock(fallback)), findsOneWidget);
+      });
 
       testWidgets(
         "survives a search that matches the adopted pin's last message",

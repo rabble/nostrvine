@@ -821,6 +821,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Akaun ini dinyahsekat';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Ini mengalih keluar perbualan daripada peti masuk anda. Jika dia menghantar mesej lagi, perbualan baharu akan bermula.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Akaun ini telah dipadam';
 

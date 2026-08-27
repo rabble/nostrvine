@@ -860,6 +860,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Unblocked this account';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'This removes the conversation from your inbox. If they message you again, a new conversation starts.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'This account was deleted';
 

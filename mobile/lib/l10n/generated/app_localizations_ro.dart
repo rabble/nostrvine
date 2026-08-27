@@ -887,6 +887,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Acest cont a fost deblocat';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Astfel, conversația este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Acest cont a fost șters';
 

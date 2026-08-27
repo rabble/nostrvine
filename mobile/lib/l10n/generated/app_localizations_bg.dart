@@ -859,6 +859,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Този акаунт е отблокиран';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Това премахва разговора от входящата ти кутия. Ако ти пише отново, започва нов разговор.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'Този акаунт е изтрит';
 
   @override

@@ -873,6 +873,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Odblokowano to konto';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'To usuwa rozmowę z Twojej skrzynki odbiorczej. Jeśli ta osoba znów do Ciebie napisze, rozpocznie się nowa rozmowa.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'To konto zostało usunięte';
 

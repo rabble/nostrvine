@@ -2565,6 +2565,7 @@
     "inboxReportedVanishedAccount": "이 계정을 신고했어요",
     "inboxBlockedVanishedAccount": "이 계정을 차단했어요",
     "inboxUnblockedVanishedAccount": "이 계정의 차단을 해제했어요",
+    "inboxRemoveConfirmBodyVanishedAccount": "이 대화가 받은 편지함에서 삭제돼요. 상대방이 다시 메시지를 보내면 새 대화가 시작돼요.",
     "inboxConversationDeletedAccountSubtitle": "이 계정은 삭제되었습니다",
     "profileUserFallback": "사용자",
     "@profileUserFallback": {

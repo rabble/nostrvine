@@ -834,6 +834,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Det här kontot har avblockerats';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Det här tar bort konversationen från din inkorg. Om personen skriver till dig igen startar en ny konversation.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Det här kontot har raderats';
 

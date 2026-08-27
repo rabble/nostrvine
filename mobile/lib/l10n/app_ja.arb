@@ -3097,6 +3097,7 @@
     "inboxReportedVanishedAccount": "このアカウントを報告したよ",
     "inboxBlockedVanishedAccount": "このアカウントをブロックしたよ",
     "inboxUnblockedVanishedAccount": "このアカウントのブロックを解除したよ",
+    "inboxRemoveConfirmBodyVanishedAccount": "この会話が受信トレイから削除されます。相手からまたメッセージが届くと、新しい会話が始まります。",
     "inboxConversationDeletedAccountSubtitle": "このアカウントは削除されました",
     "profileUserFallback": "ユーザー",
     "@profileUserFallback": {

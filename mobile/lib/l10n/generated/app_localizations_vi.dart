@@ -821,6 +821,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Đã bỏ chặn tài khoản này';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Thao tác này xóa cuộc trò chuyện khỏi hộp thư đến. Nếu họ nhắn tin cho bạn lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Tài khoản này đã bị xóa';
 

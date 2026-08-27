@@ -568,6 +568,10 @@
   "@inboxUnblockedVanishedAccount": {
     "description": "Confirmation after unblocking a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar."
   },
+  "inboxRemoveConfirmBodyVanishedAccount": "This removes the conversation from your inbox. If they message you again, a new conversation starts.",
+  "@inboxRemoveConfirmBodyVanishedAccount": {
+    "description": "Remove-conversation confirmation for a direct-message peer whose account was deleted. Complete copy without a display-name placeholder so each locale controls its grammar."
+  },
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

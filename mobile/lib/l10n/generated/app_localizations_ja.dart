@@ -752,6 +752,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'このアカウントのブロックを解除したよ';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'この会話が受信トレイから削除されます。相手からまたメッセージが届くと、新しい会話が始まります。';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'このアカウントは削除されました';
 
   @override

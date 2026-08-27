@@ -791,6 +791,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Blokir akun ini dibuka';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Ini menghapus percakapan dari kotak masukmu. Jika dia mengirim pesan lagi, percakapan baru dimulai.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Akun ini telah dihapus';
 

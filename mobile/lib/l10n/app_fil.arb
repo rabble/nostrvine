@@ -2485,6 +2485,7 @@
     "inboxReportedVanishedAccount": "Na-report ang account na ito",
     "inboxBlockedVanishedAccount": "Na-block ang account na ito",
     "inboxUnblockedVanishedAccount": "Na-unblock ang account na ito",
+    "inboxRemoveConfirmBodyVanishedAccount": "Aalisin nito sa iyong inbox ang usapan. Kung magme-message ulit siya, magsisimula ng bagong usapan.",
     "inboxConversationDeletedAccountSubtitle": "Tinanggal na ang account na ito",
     "profileUserFallback": "user",
     "videoSettingsMenuOpen": "Buksan ang playback settings",

@@ -789,6 +789,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Bu hesabın engeli kaldırıldı';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Bu, sohbeti gelen kutundan kaldırır. Sana tekrar yazarsa yeni bir sohbet başlar.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'Bu hesap silindi';
 
   @override

@@ -829,6 +829,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'Na-unblock ang account na ito';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Aalisin nito sa iyong inbox ang usapan. Kung magme-message ulit siya, magsisimula ng bagong usapan.';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Tinanggal na ang account na ito';
 

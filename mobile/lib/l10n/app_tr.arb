@@ -3104,6 +3104,7 @@
     "inboxReportedVanishedAccount": "Bu hesap bildirildi",
     "inboxBlockedVanishedAccount": "Bu hesap engellendi",
     "inboxUnblockedVanishedAccount": "Bu hesabın engeli kaldırıldı",
+    "inboxRemoveConfirmBodyVanishedAccount": "Bu, sohbeti gelen kutundan kaldırır. Sana tekrar yazarsa yeni bir sohbet başlar.",
     "inboxConversationDeletedAccountSubtitle": "Bu hesap silindi",
     "profileUserFallback": "kullanıcı",
     "@profileUserFallback": {

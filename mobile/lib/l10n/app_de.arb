@@ -3104,6 +3104,7 @@
     "inboxReportedVanishedAccount": "Dieses Konto wurde gemeldet",
     "inboxBlockedVanishedAccount": "Dieses Konto wurde blockiert",
     "inboxUnblockedVanishedAccount": "Dieses Konto wurde entblockt",
+    "inboxRemoveConfirmBodyVanishedAccount": "Dadurch wird die Unterhaltung aus deinem Posteingang entfernt. Wenn dir diese Person wieder schreibt, beginnt eine neue Unterhaltung.",
     "inboxConversationDeletedAccountSubtitle": "Dieses Konto wurde gelöscht",
     "profileUserFallback": "Nutzer",
     "@profileUserFallback": {

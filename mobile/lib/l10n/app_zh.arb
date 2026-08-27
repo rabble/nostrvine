@@ -419,6 +419,7 @@
   "inboxReportedVanishedAccount": "已举报此账号",
   "inboxBlockedVanishedAccount": "已屏蔽此账号",
   "inboxUnblockedVanishedAccount": "已取消屏蔽此账号",
+  "inboxRemoveConfirmBodyVanishedAccount": "这会从你的收件箱中移除这段会话。如果对方再次给你发消息，会开始一个新会话。",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

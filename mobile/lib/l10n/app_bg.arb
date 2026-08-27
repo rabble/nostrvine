@@ -370,6 +370,7 @@
     "inboxReportedVanishedAccount": "Този акаунт е докладван",
     "inboxBlockedVanishedAccount": "Този акаунт е блокиран",
     "inboxUnblockedVanishedAccount": "Този акаунт е отблокиран",
+    "inboxRemoveConfirmBodyVanishedAccount": "Това премахва разговора от входящата ти кутия. Ако ти пише отново, започва нов разговор.",
     "inboxConversationDeletedAccountSubtitle": "Този акаунт е изтрит",
     "profileUserFallback": "Потребител",
     "@profileUserFallback": {

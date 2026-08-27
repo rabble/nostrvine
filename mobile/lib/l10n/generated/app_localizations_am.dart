@@ -832,6 +832,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxUnblockedVanishedAccount => 'እገዳው ተነስቷል ይህን መለያ';
 
   @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'ይህ ውይይቱን ከመልእክት ሳጥንህ ያስወግዳል። እንደገና መልእክት ከላከልህ አዲስ ውይይት ይጀምራል።';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'ይህ መለያ ተሰርዟል';
 
   @override
