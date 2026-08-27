@@ -315,6 +315,21 @@ class ProfileRepository implements ProfileReader {
     _vanished.addAll(await dao.getAllPubkeys());
   }
 
+  /// Live view of the durable `vanished_profiles` table.
+  ///
+  /// The same source the inbox row reads through `profileVanishedProvider`,
+  /// and deliberately not [isVanished]: that mirror is seeded by an unawaited
+  /// [loadVanishedPubkeys], so until it resolves it is a strict subset of the
+  /// table and a consumer sampling it names an account the row contradicts.
+  ///
+  /// Emits an empty set when no [VanishedProfilesDao] is wired, matching
+  /// [isVanished]'s behaviour in the same configuration.
+  Stream<Set<String>> watchVanishedPubkeys() {
+    final dao = _vanishedProfilesDao;
+    if (dao == null) return Stream.value(const <String>{});
+    return dao.watchAllPubkeys().map(Set<String>.from);
+  }
+
   /// Evicts the local profile, stats, identity-claims and Divine-identity
   /// entries for an account that requested deletion, and records the pubkey
   /// durably so the eviction survives a restart.
