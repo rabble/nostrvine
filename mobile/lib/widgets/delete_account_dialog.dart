@@ -45,12 +45,11 @@ Future<bool> showRemoveKeysWarningSheet(BuildContext context) async {
 /// DELETE).
 ///
 /// This sheet ensures they understand the dangerous/irreversible nature of
-/// account deletion. It opens immediately; [ownedUsernameFuture] is
-/// resolved in the background and the opt-in "burn my username" toggle is
-/// revealed only once it completes with a non-null handle — so a slow
-/// name-server lookup never blocks the tap or lets a second tap stack a
-/// duplicate sheet. [onConfirm] receives the handle the sheet actually
-/// displayed, so a burn only ever targets the name the user consented to.
+/// account deletion. It opens immediately; [ownedUsernameFuture] is resolved
+/// in the background — so a slow name-server lookup never blocks the tap or
+/// lets a second tap stack a duplicate sheet. When it resolves to a non-null
+/// handle, [onConfirm] receives that name and deletion releases it; there is
+/// no opt-in toggle — deleting releases the owned @divine.video name.
 ///
 /// Dismissing the sheet cancels: nothing is deleted until the token is typed
 /// and the destructive button is tapped.
@@ -182,11 +181,12 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
       widget.ownedUsernameFuture
           .then<void>((owned) {
             if (!mounted || owned == null) return;
-            setState(() => _ownedUsername = owned);
+            // Read only in confirm(), not build(), so no rebuild is needed.
+            _ownedUsername = owned;
           })
           .catchError((Object _) {
-            // Lookup failed: treat as "no handle" and leave the toggle hidden,
-            // matching getUsernameByPubkey's unknown-means-no-name contract.
+            // Lookup failed: treat as "no owned handle", matching
+            // getUsernameByPubkey's unknown-means-no-name contract.
           }),
     );
   }
@@ -643,7 +643,7 @@ Future<void> executeAccountDeletion({
 
   try {
     // Bind to the confirmed account: if the signed-in account changed since the
-    // user confirmed, abort before burning or deleting anything.
+    // user confirmed, abort before releasing the name or deleting anything.
     if (confirmedPubkey != null &&
         authService.currentPublicKeyHex != confirmedPubkey) {
       Log.warning(
@@ -742,7 +742,7 @@ Future<void> executeAccountDeletion({
     final finalReadiness = await authService.checkAccountDeletionReadiness();
     if (finalReadiness == AccountDeletionReadiness.requiresReauthentication) {
       Log.warning(
-        'Deletion blocked after username burn step: session cannot authorize '
+        'Deletion blocked after username release step: session cannot authorize '
         'server-side account deletion',
         name: screenName,
         category: LogCategory.auth,
