@@ -236,6 +236,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       _settleMessageDeletion(
         rumorId,
         status: _deletionSent,
+        // Delivered, so there is nothing left to replay. Dropping the payload
+        // also stops a retraction sitting in the clear on disk forever.
+        retainRumor: false,
         ownerPubkey: ownerPubkey,
       );
 
@@ -248,18 +251,35 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// transfer to a message, which may well have been delivered before the
   /// block took effect — calling it sent would misreport a message the peer
   /// still holds.
+  /// The rumor is **kept**. A block is the one terminal state that can be
+  /// lifted from outside the app — a moderation account un-retires, a minor's
+  /// restriction is approved, the server-side signer stops refusing — and the
+  /// stored rumor is the only payload a later replay could use. Dropping it
+  /// makes the row permanently unrepairable, including in the mixed case
+  /// where some recipients already received the retraction (#8226).
+  ///
+  /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
+  /// additionally requires `deletion_pending`, so a blocked row stays off the
+  /// worklist whether or not the rumor is present.
   Future<bool> markMessageDeletionBlocked(
     String rumorId, {
     String? ownerPubkey,
   }) => _settleMessageDeletion(
     rumorId,
     status: _deletionBlocked,
+    retainRumor: true,
     ownerPubkey: ownerPubkey,
   );
 
+  /// Move a deletion row to a terminal [status].
+  ///
+  /// [retainRumor] is required rather than defaulted: whether the payload
+  /// survives is the whole difference between the two terminal states, so a
+  /// future third caller has to decide it deliberately.
   Future<bool> _settleMessageDeletion(
     String rumorId, {
     required String status,
+    required bool retainRumor,
     String? ownerPubkey,
   }) async {
     final rows =
@@ -270,7 +290,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
             ))
             .write(
               DirectMessagesCompanion(
-                deletionRumorJson: const Value(null),
+                deletionRumorJson: retainRumor
+                    ? const Value.absent()
+                    : const Value(null),
                 deletionPublishStatus: Value(status),
               ),
             );
