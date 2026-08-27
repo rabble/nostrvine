@@ -243,6 +243,38 @@ void main() {
       await cubit.close();
     });
 
+    test('completes cleanup as delayed when enforcement throws', () async {
+      when(
+        () => deletionService.quickDelete(
+          video: video,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer(
+        (_) async => DeleteResult.createSuccess(
+          'delete-event-id',
+          acceptance: DeleteAcceptance.everyRelay,
+        ),
+      );
+      when(
+        () => enforcementRepository.enforce('delete-event-id'),
+      ).thenAnswer(
+        (_) => Future.error(StateError('unexpected enforcement failure')),
+      );
+      final cubit = buildCubit();
+
+      await cubit.deleteVideo(video);
+      final terminal = await cubit
+          .cleanupCompletionFor(video.id)!
+          .timeout(const Duration(seconds: 1));
+
+      expect(terminal.cleanupStatus, OwnerVideoCleanupStatus.delayed);
+      expect(
+        cubit.state.forVideo(video.id).cleanupStatus,
+        OwnerVideoCleanupStatus.delayed,
+      );
+      await cubit.close();
+    });
+
     test('ignores a second delete while the first is in flight', () async {
       final relayCompleter = Completer<DeleteResult>();
       when(

@@ -124,7 +124,7 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
       if (result.success) {
         videoEventService.removeVideoEventCompletely(video);
         _cleanupCompleters[video.id] = Completer<OwnerVideoOperationState>();
-        if (!emitIfOpen(
+        emitIfOpen(
           state.withVideo(
             video.id,
             OwnerVideoOperationState(
@@ -133,10 +133,7 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
               deleteResult: result,
             ),
           ),
-        )) {
-          unawaited(_confirmCleanup(video.id, result, enforcementRepository));
-          return OwnerVideoDeleteStart.started;
-        }
+        );
         unawaited(_confirmCleanup(video.id, result, enforcementRepository));
       } else {
         emitIfOpen(
@@ -177,12 +174,14 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
     DeleteResult deleteResult,
     CreatorDeleteEnforcementRepository enforcementRepository,
   ) async {
-    final result = await enforcementRepository.enforce(
-      deleteResult.deleteEventId!,
-    );
-    final terminalState = OwnerVideoOperationState(
-      deleteStatus: OwnerVideoDeleteStatus.success,
-      cleanupStatus: switch (result.status) {
+    var cleanupStatus = OwnerVideoCleanupStatus.delayed;
+    try {
+      final deleteEventId = deleteResult.deleteEventId;
+      if (deleteEventId == null) {
+        throw StateError('Successful delete result has no delete event ID');
+      }
+      final result = await enforcementRepository.enforce(deleteEventId);
+      cleanupStatus = switch (result.status) {
         CreatorDeleteEnforcementStatus.confirmed =>
           OwnerVideoCleanupStatus.confirmed,
         CreatorDeleteEnforcementStatus.delayed =>
@@ -190,7 +189,18 @@ class OwnerVideoActionsCubit extends Cubit<OwnerVideoActionsState>
         CreatorDeleteEnforcementStatus.failed => OwnerVideoCleanupStatus.failed,
         CreatorDeleteEnforcementStatus.unavailable =>
           OwnerVideoCleanupStatus.unavailable,
-      },
+      };
+    } on Object catch (error, stackTrace) {
+      Log.error(
+        'Failed to confirm creator-delete cleanup: $error',
+        name: 'OwnerVideoActionsCubit',
+        category: LogCategory.ui,
+      );
+      addError(Reportable(error, context: 'confirmCleanup'), stackTrace);
+    }
+    final terminalState = OwnerVideoOperationState(
+      deleteStatus: OwnerVideoDeleteStatus.success,
+      cleanupStatus: cleanupStatus,
       deleteResult: deleteResult,
     );
     _cleanupCompleters.remove(videoId)?.complete(terminalState);

@@ -3992,8 +3992,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'Премахване на видеото…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed =>
-      'Видеото е премахнато от Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'Видеото е изтрито.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

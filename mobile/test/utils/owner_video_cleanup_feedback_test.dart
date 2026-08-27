@@ -1,6 +1,8 @@
 // ABOUTME: Tests terminal cleanup feedback after an owner deletes a video.
 // ABOUTME: Verifies completion messages remain safe after the source UI closes.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -50,6 +52,45 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('does not show feedback after the messenger is disposed', (
+      tester,
+    ) async {
+      const videoId =
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      final completion = Completer<OwnerVideoOperationState>();
+      final cubit = _MockOwnerVideoActionsCubit();
+      when(
+        () => cubit.cleanupCompletionFor(videoId),
+      ).thenAnswer((_) => completion.future);
+      late BuildContext context;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (builderContext) {
+                context = builderContext;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+
+      showOwnerVideoCleanupCompletion(context, cubit, videoId);
+      await tester.pumpWidget(const SizedBox.shrink());
+      completion.complete(
+        const OwnerVideoOperationState(
+          deleteStatus: OwnerVideoDeleteStatus.success,
+          cleanupStatus: OwnerVideoCleanupStatus.confirmed,
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

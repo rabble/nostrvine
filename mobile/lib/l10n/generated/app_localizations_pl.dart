@@ -4050,7 +4050,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'Usuwanie filmu…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'Film usunięty z Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'Film usunięty.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

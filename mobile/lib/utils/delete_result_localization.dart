@@ -49,26 +49,17 @@ String localizedOwnerVideoDeleteSuccessMessage(
   BuildContext context,
   OwnerVideoOperationState operation,
 ) {
-  if (operation.cleanupStatus == OwnerVideoCleanupStatus.failed) {
-    return context.l10n.shareMenuDeleteCleanupFailed;
+  switch (operation.cleanupStatus) {
+    case OwnerVideoCleanupStatus.failed:
+      return context.l10n.shareMenuDeleteCleanupFailed;
+    case OwnerVideoCleanupStatus.delayed:
+      return context.l10n.shareMenuDeleteCleanupDelayed;
+    case OwnerVideoCleanupStatus.idle:
+    case OwnerVideoCleanupStatus.inProgress:
+      return context.l10n.shareMenuDeleteCleanupInProgress;
+    case OwnerVideoCleanupStatus.confirmed:
+    case OwnerVideoCleanupStatus.unavailable:
+      return localizedPartialDeleteMessage(context, operation.deleteResult) ??
+          context.l10n.shareMenuDeleteCleanupConfirmed;
   }
-  if (operation.cleanupStatus == OwnerVideoCleanupStatus.delayed) {
-    return context.l10n.shareMenuDeleteCleanupDelayed;
-  }
-  final partial = localizedPartialDeleteMessage(
-    context,
-    operation.deleteResult,
-  );
-  if (partial != null) return partial;
-  return switch (operation.cleanupStatus) {
-    OwnerVideoCleanupStatus.confirmed =>
-      context.l10n.shareMenuDeleteCleanupConfirmed,
-    OwnerVideoCleanupStatus.delayed =>
-      context.l10n.shareMenuDeleteCleanupDelayed,
-    OwnerVideoCleanupStatus.failed => context.l10n.shareMenuDeleteCleanupFailed,
-    OwnerVideoCleanupStatus.unavailable =>
-      context.l10n.shareMenuDeleteCleanupConfirmed,
-    OwnerVideoCleanupStatus.idle || OwnerVideoCleanupStatus.inProgress =>
-      context.l10n.shareMenuDeleteCleanupInProgress,
-  };
 }

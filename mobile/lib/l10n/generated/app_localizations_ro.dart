@@ -4066,8 +4066,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'Se elimină videoclipul…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed =>
-      'Videoclip eliminat de pe Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'Videoclip șters.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

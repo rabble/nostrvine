@@ -3968,7 +3968,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'Inaalis ang video…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'Inalis ang video sa Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'Na-delete ang video.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

@@ -1443,7 +1443,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Video löschen?",
     "shareMenuDeleteCleanupInProgress": "Video wird entfernt…",
-    "shareMenuDeleteCleanupConfirmed": "Video aus Divine entfernt",
+    "shareMenuDeleteCleanupConfirmed": "Video gelöscht.",
     "shareMenuDeleteCleanupDelayed": "Video gelöscht. Es kann etwas dauern, bis es überall verschwindet.",
     "shareMenuDeleteCleanupFailed": "Video gelöscht, aber wir konnten nicht jede Kopie entfernen. Kontaktiere bitte den Support.",
     "authSessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",

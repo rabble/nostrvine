@@ -1433,7 +1433,7 @@
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
     "shareMenuDeleteCleanupInProgress": "جارٍ إزالة الفيديو…",
-    "shareMenuDeleteCleanupConfirmed": "تمت إزالة الفيديو من Divine",
+    "shareMenuDeleteCleanupConfirmed": "تم حذف الفيديو.",
     "shareMenuDeleteCleanupDelayed": "تم حذف الفيديو. قد يستغرق اختفاؤه من كل مكان بعض الوقت.",
     "shareMenuDeleteCleanupFailed": "تم حذف الفيديو، لكننا لم نتمكن من إزالة كل نسخة. تواصل مع الدعم.",
     "authSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.",

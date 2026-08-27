@@ -3945,7 +3945,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'ویڈیو ہٹائی جا رہی ہے…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'ویڈیو Divine سے ہٹا دی گئی';
+  String get shareMenuDeleteCleanupConfirmed => 'ویڈیو حذف کر دی گئی۔';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

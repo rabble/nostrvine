@@ -3857,7 +3857,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'ቪዲዮው እየተወገደ ነው…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'ቪዲዮው ከDivine ተወግዷል';
+  String get shareMenuDeleteCleanupConfirmed => 'ቪዲዮው ተሰርዟል።';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

@@ -3874,7 +3874,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'Menghapus video…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'Video dihapus dari Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'Video dihapus.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

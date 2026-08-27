@@ -3910,7 +3910,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'جارٍ إزالة الفيديو…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'تمت إزالة الفيديو من Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'تم حذف الفيديو.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

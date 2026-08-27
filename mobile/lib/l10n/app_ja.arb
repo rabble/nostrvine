@@ -1433,7 +1433,7 @@
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteCleanupInProgress": "動画を削除しています…",
-    "shareMenuDeleteCleanupConfirmed": "Divineから動画を削除しました",
+    "shareMenuDeleteCleanupConfirmed": "動画を削除しました。",
     "shareMenuDeleteCleanupDelayed": "動画を削除しました。すべての場所から消えるまで少し時間がかかる場合があります。",
     "shareMenuDeleteCleanupFailed": "動画を削除しましたが、すべてのコピーを削除できませんでした。サポートにお問い合わせください。",
     "authSessionExpired": "セッションが切れちゃった。もう一回サインインしてね。",

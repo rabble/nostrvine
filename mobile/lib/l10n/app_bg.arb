@@ -1625,7 +1625,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Да изтрием видеото?",
     "shareMenuDeleteCleanupInProgress": "Премахване на видеото…",
-    "shareMenuDeleteCleanupConfirmed": "Видеото е премахнато от Divine",
+    "shareMenuDeleteCleanupConfirmed": "Видеото е изтрито.",
     "shareMenuDeleteCleanupDelayed": "Видеото е изтрито. Може да отнеме малко време, докато изчезне отвсякъде.",
     "shareMenuDeleteCleanupFailed": "Видеото е изтрито, но не успяхме да премахнем всяко копие. Свържете се с поддръжката.",
     "authSessionExpired": "Сесията ти изтече. Влез отново.",

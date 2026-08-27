@@ -3914,7 +3914,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => 'Đang xóa video…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'Đã xóa video khỏi Divine';
+  String get shareMenuDeleteCleanupConfirmed => 'Đã xóa video.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

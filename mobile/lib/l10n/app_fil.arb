@@ -998,7 +998,7 @@
     "shareMenuFailedToUpdateVideo": "Hindi na-update ang video: {error}",
     "shareMenuDeleteVideoQuestion": "Burahin ang Video?",
     "shareMenuDeleteCleanupInProgress": "Inaalis ang video…",
-    "shareMenuDeleteCleanupConfirmed": "Inalis ang video sa Divine",
+    "shareMenuDeleteCleanupConfirmed": "Na-delete ang video.",
     "shareMenuDeleteCleanupDelayed": "Na-delete ang video. Maaaring matagalan nang kaunti bago ito mawala sa lahat ng lugar.",
     "shareMenuDeleteCleanupFailed": "Na-delete ang video, pero hindi namin naalis ang lahat ng kopya. Makipag-ugnayan sa support.",
     "authSessionExpired": "Nag-expire na ang iyong session. Mag-sign in ulit.",

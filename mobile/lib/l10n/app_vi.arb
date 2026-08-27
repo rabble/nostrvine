@@ -2091,7 +2091,7 @@
   },
   "shareMenuDeleteVideoQuestion": "Xóa video?",
   "shareMenuDeleteCleanupInProgress": "Đang xóa video…",
-  "shareMenuDeleteCleanupConfirmed": "Đã xóa video khỏi Divine",
+  "shareMenuDeleteCleanupConfirmed": "Đã xóa video.",
   "shareMenuDeleteCleanupDelayed": "Đã xóa video. Có thể mất một lúc để video biến mất ở mọi nơi.",
   "shareMenuDeleteCleanupFailed": "Đã xóa video nhưng chúng tôi không thể xóa mọi bản sao. Hãy liên hệ bộ phận hỗ trợ.",
   "authSessionExpired": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",

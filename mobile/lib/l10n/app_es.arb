@@ -1447,7 +1447,7 @@
     },
     "shareMenuDeleteVideoQuestion": "¿Eliminar video?",
     "shareMenuDeleteCleanupInProgress": "Eliminando video…",
-    "shareMenuDeleteCleanupConfirmed": "Video eliminado de Divine",
+    "shareMenuDeleteCleanupConfirmed": "Video eliminado.",
     "shareMenuDeleteCleanupDelayed": "Video eliminado. Puede tardar un poco en desaparecer de todas partes.",
     "shareMenuDeleteCleanupFailed": "Video eliminado, pero no pudimos borrar todas las copias. Contacta con soporte.",
     "authSessionExpired": "Tu sesión expiró. Iniciá sesión de nuevo.",

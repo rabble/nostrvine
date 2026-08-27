@@ -1443,7 +1443,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteCleanupInProgress": "Video verwijderen…",
-    "shareMenuDeleteCleanupConfirmed": "Video verwijderd van Divine",
+    "shareMenuDeleteCleanupConfirmed": "Video verwijderd.",
     "shareMenuDeleteCleanupDelayed": "Video verwijderd. Het kan even duren voordat die overal verdwenen is.",
     "shareMenuDeleteCleanupFailed": "Video verwijderd, maar we konden niet elke kopie weghalen. Neem contact op met support.",
     "authSessionExpired": "Je sessie is verlopen. Log opnieuw in.",

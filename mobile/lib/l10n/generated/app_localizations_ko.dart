@@ -3717,7 +3717,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => '영상을 삭제하는 중…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'Divine에서 영상을 삭제했어요';
+  String get shareMenuDeleteCleanupConfirmed => '영상을 삭제했어요.';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

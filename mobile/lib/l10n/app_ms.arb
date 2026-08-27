@@ -2091,7 +2091,7 @@
   },
   "shareMenuDeleteVideoQuestion": "Padam Video?",
   "shareMenuDeleteCleanupInProgress": "Mengalih keluar video…",
-  "shareMenuDeleteCleanupConfirmed": "Video dialih keluar daripada Divine",
+  "shareMenuDeleteCleanupConfirmed": "Video dipadamkan.",
   "shareMenuDeleteCleanupDelayed": "Video dipadamkan. Ia mungkin mengambil sedikit masa untuk hilang dari semua tempat.",
   "shareMenuDeleteCleanupFailed": "Video dipadamkan, tetapi kami tidak dapat mengalih keluar setiap salinan. Hubungi sokongan.",
   "authSessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",

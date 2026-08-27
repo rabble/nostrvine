@@ -1443,7 +1443,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
     "shareMenuDeleteCleanupInProgress": "A remover vídeo…",
-    "shareMenuDeleteCleanupConfirmed": "Vídeo removido do Divine",
+    "shareMenuDeleteCleanupConfirmed": "Vídeo excluído.",
     "shareMenuDeleteCleanupDelayed": "Vídeo eliminado. Pode demorar um pouco até desaparecer de todo o lado.",
     "shareMenuDeleteCleanupFailed": "Vídeo eliminado, mas não conseguimos remover todas as cópias. Contacta o suporte.",
     "authSessionExpired": "Sua sessão expirou. Entre novamente.",

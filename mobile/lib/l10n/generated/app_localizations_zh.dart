@@ -3695,7 +3695,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => '正在移除视频…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => '视频已从 Divine 移除';
+  String get shareMenuDeleteCleanupConfirmed => '视频已删除。';
 
   @override
   String get shareMenuDeleteCleanupDelayed => '视频已删除。它可能需要一点时间才能从所有地方消失。';

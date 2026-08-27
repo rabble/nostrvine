@@ -1813,7 +1813,7 @@
     },
     "shareMenuDeleteVideoQuestion": "ቪዲዮ ይሰረዝ?",
     "shareMenuDeleteCleanupInProgress": "ቪዲዮው እየተወገደ ነው…",
-    "shareMenuDeleteCleanupConfirmed": "ቪዲዮው ከDivine ተወግዷል",
+    "shareMenuDeleteCleanupConfirmed": "ቪዲዮው ተሰርዟል።",
     "shareMenuDeleteCleanupDelayed": "ቪዲዮው ተሰርዟል። ከሁሉም ቦታ ለመጥፋት ትንሽ ጊዜ ሊወስድ ይችላል።",
     "shareMenuDeleteCleanupFailed": "ቪዲዮው ተሰርዟል፣ ግን ሁሉንም ቅጂዎች ማስወገድ አልቻልንም። ድጋፍን ያነጋግሩ።",
     "authSessionExpired": "ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።",

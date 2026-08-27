@@ -1443,7 +1443,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
     "shareMenuDeleteCleanupInProgress": "Usuwanie filmu…",
-    "shareMenuDeleteCleanupConfirmed": "Film usunięty z Divine",
+    "shareMenuDeleteCleanupConfirmed": "Film usunięty.",
     "shareMenuDeleteCleanupDelayed": "Film usunięty. Może minąć trochę czasu, zanim zniknie wszędzie.",
     "shareMenuDeleteCleanupFailed": "Film usunięty, ale nie udało nam się usunąć każdej kopii. Skontaktuj się z pomocą.",
     "authSessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",

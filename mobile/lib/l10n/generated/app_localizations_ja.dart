@@ -3701,7 +3701,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteCleanupInProgress => '動画を削除しています…';
 
   @override
-  String get shareMenuDeleteCleanupConfirmed => 'Divineから動画を削除しました';
+  String get shareMenuDeleteCleanupConfirmed => '動画を削除しました。';
 
   @override
   String get shareMenuDeleteCleanupDelayed =>

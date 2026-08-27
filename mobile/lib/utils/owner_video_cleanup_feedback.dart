@@ -25,6 +25,7 @@ void showOwnerVideoCleanupCompletion(
 
   unawaited(
     completion.then((operation) {
+      if (!messenger.mounted) return;
       final message = switch (operation.cleanupStatus) {
         OwnerVideoCleanupStatus.confirmed =>
           operation.deleteResult?.acceptance == DeleteAcceptance.someRelays
