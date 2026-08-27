@@ -1118,6 +1118,7 @@ class DmRepository {
   Future<bool> _recoverOutgoingNip04(String pubkey, int generation) async {
     try {
       var cursor = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      var sawUnansweredPage = false;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         if (_ingestSessionEnded(pubkey, generation)) return false;
         final result = await _nostrClient.queryEventsDetailed(
@@ -1135,6 +1136,7 @@ class DmRepository {
         );
         final events = result.events;
         if (_ingestSessionEnded(pubkey, generation)) return false;
+        final authoritative = !result.noRelays && !result.timedOut;
         if (events.isEmpty) {
           // An empty page is genuine exhaustion only if a relay actually
           // ANSWERED it. Nothing answering — no relay took the REQ, a relay
@@ -1142,8 +1144,9 @@ class DmRepository {
           // ordinary empty list, and concluding "nothing to recover" would let
           // the caller mark the drain complete and permanently strand the
           // user's outgoing NIP-04 (the #5202 failure mode, mirrored here).
-          return !result.noRelays && !result.timedOut;
+          return authoritative && !sawUnansweredPage;
         }
+        if (!authoritative) sawUnansweredPage = true;
         for (var i = 0; i < events.length; i++) {
           if (_ingestSessionEnded(pubkey, generation)) return false;
           await _handleIncomingEvent(events[i]);
@@ -1156,13 +1159,13 @@ class DmRepository {
             .map((event) => event.createdAt)
             .reduce((a, b) => a < b ? a : b);
         final next = minCreatedAt < cursor ? minCreatedAt : cursor - 1;
-        if (next <= 0) return true;
+        if (next <= 0) return !sawUnansweredPage;
         cursor = next;
       }
       // Page budget exhausted. NIP-04 is legacy/low-volume and the gift-wrap
       // drain already reached the end, so treat this as done rather than
       // looping a re-drain for a pathologically long kind-4 history.
-      return true;
+      return !sawUnansweredPage;
     } on Object catch (e) {
       // Relay/IO failures are expected on flaky networks. Returning false
       // defers drain completion so recovery retries on the next inbox open
@@ -1566,18 +1569,20 @@ class DmRepository {
           // Defer instead: leave historyDrainComplete unset and resume on the
           // next inbox open from the window this run pins below.
           if (!historyPage.authoritative) {
-            // Pin the resume point at this window before giving up on the
-            // run. Falling back to the seed is not safe: with no cursor
-            // persisted the next run seeds from oldestSyncedAt, which this
-            // run's own persisted messages drag downward (recordSeen), so the
-            // window would be skipped by the very events it did return.
-            await syncState.setHistoryDrainCursor(pubkey, cursor);
-            Log.warning(
-              'DM history drain saw an empty page that no relay answered for '
-              '${pubkeyForLogs(pubkey)}; holding the resume cursor at $cursor '
-              'and deferring completion to the next inbox open.',
-              category: LogCategory.system,
-            );
+            if (!sawUnansweredPage) {
+              // Pin the resume point at this window before giving up on the
+              // run. Falling back to the seed is not safe: with no cursor
+              // persisted the next run seeds from oldestSyncedAt, which this
+              // run's own persisted messages drag downward (recordSeen), so
+              // the window would be skipped by the events it did return.
+              await syncState.setHistoryDrainCursor(pubkey, cursor);
+              Log.warning(
+                'DM history drain saw an empty page that no relay answered for '
+                '${pubkeyForLogs(pubkey)}; holding the resume cursor at '
+                '$cursor and deferring completion to the next inbox open.',
+                category: LogCategory.system,
+              );
+            }
             return;
           }
           reachedEnd = true;

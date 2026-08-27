@@ -5286,6 +5286,46 @@ void main() {
       );
 
       test(
+        'an unanswered empty page after a partial page keeps the first '
+        'unsettled resume cursor (#8209)',
+        () async {
+          var giftWrapPages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return answeredPage(const <Event>[]);
+            }
+            giftWrapPages++;
+            return giftWrapPages == 1
+                ? partialPage([deletion(50)])
+                : unansweredPage(timedOut: true);
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(giftWrapPages, 2);
+          expect(syncState.persistedDrainCursors, [100]);
+          expect(syncState.drainCursorOverride, 100);
+          expect(syncState.drainCompleteOverride, isFalse);
+        },
+      );
+
+      test(
         'a later run re-requests the window a partial page left unsettled '
         '(#8209)',
         () async {
@@ -5744,6 +5784,64 @@ void main() {
           await repository.backfillHistoryIfNeeded();
 
           expect(capturedUntil, isNotEmpty);
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'defers completion after a non-empty NIP-04 page that not every relay '
+        'settled (#8209)',
+        () async {
+          final partialNip04 = Event.fromJson({
+            'id':
+                'abcdabcdabcdabcdabcdabcdabcdabcd'
+                'abcdabcdabcdabcdabcdabcdabcdabcd',
+            'pubkey': _validPubkeyA,
+            'created_at': 50,
+            'kind': EventKind.directMessage,
+            'tags': [
+              ['p', _validPubkeyB],
+            ],
+            'content': 'already-processed',
+            'sig': '',
+          });
+          var nip04Pages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+              return answeredPage(const <Event>[]);
+            }
+            final isNip04Recovery =
+                filter.authors != null && (filter.p?.isEmpty ?? true);
+            if (!isNip04Recovery) return answeredPage(const <Event>[]);
+            nip04Pages++;
+            return nip04Pages == 1
+                ? partialPage([partialNip04])
+                : answeredPage(const <Event>[]);
+          });
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(partialNip04.id),
+          ).thenAnswer((_) async => true);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(nip04Pages, 2);
           expect(syncState.drainCompleteOverride, isFalse);
           expect(syncState.markedCompletePubkeys, isEmpty);
         },
