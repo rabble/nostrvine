@@ -247,8 +247,9 @@ enum DmMessageDeletionOutcome {
   /// A relay confirmed the wrap. The row is settled; stop re-driving.
   sent,
 
-  /// Send policy refused every recipient. Terminal, but NOT delivered —
-  /// the row records `deletion_blocked` rather than claiming a delivery.
+  /// Send policy blocked every failed recipient. Terminal, but not fully
+  /// delivered — some recipients may already have received the retraction.
+  /// The row records `deletion_blocked` rather than claiming full delivery.
   blocked,
 
   /// Nothing confirmed. The row stays pending for the next sweep.
