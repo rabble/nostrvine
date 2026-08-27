@@ -9,23 +9,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
 /// Shapes a `queryEventsDetailed` answer a relay actually gave, so an empty
 /// [events] list is genuine "this account has no corrupted videos" — the only
 /// result the repair may latch on (#8213).
-({List<Event> events, bool timedOut, bool noRelays}) answeredScan(
+({List<Event> events, bool timedOut, bool noRelays}) _answeredScan(
   List<Event> events,
 ) => (events: events, timedOut: false, noRelays: false);
 
 /// Shapes a scan nothing answered: a fan-out no relay took ([noRelays]), or a
 /// relay that refused the REQ with `CLOSED` / a partial fan-out ([timedOut]).
-({List<Event> events, bool timedOut, bool noRelays}) unansweredScan({
+({List<Event> events, bool timedOut, bool noRelays}) _unansweredScan({
   bool noRelays = false,
   bool timedOut = false,
 }) => (events: const <Event>[], timedOut: timedOut, noRelays: noRelays);
-
-class _MockAuthService extends Mock implements AuthService {}
-
-class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -152,7 +152,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([corruptedEvent]));
+        ).thenAnswer((_) async => _answeredScan([corruptedEvent]));
 
         stubSignAndPublishSuccess();
 
@@ -209,7 +209,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([validEvent]));
+        ).thenAnswer((_) async => _answeredScan([validEvent]));
 
         final result = await repairService.repairIfNeeded();
 
@@ -237,7 +237,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([corruptedNoHash]));
+        ).thenAnswer((_) async => _answeredScan([corruptedNoHash]));
 
         final result = await repairService.repairIfNeeded();
 
@@ -266,7 +266,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([corruptedEvent]));
+        ).thenAnswer((_) async => _answeredScan([corruptedEvent]));
 
         stubSignAndPublishSuccess();
 
@@ -296,27 +296,24 @@ void main() {
         expect(prefs.getBool('corrupted_video_repair_v1_completed'), isNull);
       });
 
-      test(
-        'does not set completion flag when the fan-out reached no relay '
-        '(#8213)',
-        () async {
-          // A scan nobody answered is not a scan that found nothing. Latching
-          // here disables the #2144 repair on this device permanently, because
-          // the flag lives in SharedPreferences and nothing re-arms it.
-          when(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              useCache: any(named: 'useCache'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            ),
-          ).thenAnswer((_) async => unansweredScan(noRelays: true));
+      test('does not set completion flag when the fan-out reached no relay '
+          '(#8213)', () async {
+        // A scan nobody answered is not a scan that found nothing. Latching
+        // here disables the #2144 repair on this device permanently, because
+        // the flag lives in SharedPreferences and nothing re-arms it.
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((_) async => _unansweredScan(noRelays: true));
 
-          final result = await repairService.repairIfNeeded();
+        final result = await repairService.repairIfNeeded();
 
-          expect(result, equals(0));
-          expect(prefs.getBool('corrupted_video_repair_v1_completed'), isNull);
-        },
-      );
+        expect(result, equals(0));
+        expect(prefs.getBool('corrupted_video_repair_v1_completed'), isNull);
+      });
 
       test(
         'does not set completion flag when a relay refused the scan (#8213)',
@@ -330,7 +327,7 @@ void main() {
               useCache: any(named: 'useCache'),
               requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
-          ).thenAnswer((_) async => unansweredScan(timedOut: true));
+          ).thenAnswer((_) async => _unansweredScan(timedOut: true));
 
           final result = await repairService.repairIfNeeded();
 
@@ -339,79 +336,70 @@ void main() {
         },
       );
 
-      test(
-        'demands full relay settlement, so a refusal cannot arrive as an '
-        'ordinary empty scan (#8213)',
-        () async {
-          when(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              useCache: any(named: 'useCache'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+      test('demands full relay settlement, so a refusal cannot arrive as an '
+          'ordinary empty scan (#8213)', () async {
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((_) async => _answeredScan(const []));
+
+        await repairService.repairIfNeeded();
+
+        final demands = verify(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: captureAny(
+              named: 'requireAllRelaysSettled',
             ),
-          ).thenAnswer((_) async => answeredScan(const []));
+          ),
+        ).captured;
+        expect(demands, isNotEmpty);
+        expect(demands, everyElement(isTrue));
+      });
 
-          await repairService.repairIfNeeded();
-
-          final demands = verify(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              useCache: any(named: 'useCache'),
-              requireAllRelaysSettled: captureAny(
-                named: 'requireAllRelaysSettled',
-              ),
-            ),
-          ).captured;
-          expect(demands, isNotEmpty);
-          expect(demands, everyElement(isTrue));
-        },
-      );
-
-      test(
-        'an unanswered scan leaves the repair armed for the next launch '
-        '(#8213)',
-        () async {
-          final corruptedEvent = _createVideoEvent(
-            id: 'event1',
-            tags: [
-              ['d', 'video_123'],
-              [
-                'imeta',
-                'url /var/mobile/Containers/Data/Application/xxx/video.mp4',
-                'm video/mp4',
-                'x $_testSha256',
-              ],
+      test('an unanswered scan leaves the repair armed for the next launch '
+          '(#8213)', () async {
+        final corruptedEvent = _createVideoEvent(
+          id: 'event1',
+          tags: [
+            ['d', 'video_123'],
+            [
+              'imeta',
+              'url /var/mobile/Containers/Data/Application/xxx/video.mp4',
+              'm video/mp4',
+              'x $_testSha256',
             ],
-          );
-          var scans = 0;
-          when(
-            () => mockNostrClient.queryEventsDetailed(
-              any(),
-              useCache: any(named: 'useCache'),
-              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
-            ),
-          ).thenAnswer((_) async {
-            scans++;
-            // First launch: nothing answers. Second: the relay is back and
-            // serves the corrupted event the repair exists to fix.
-            return scans == 1
-                ? unansweredScan(timedOut: true)
-                : answeredScan([corruptedEvent]);
-          });
-          stubSignAndPublishSuccess();
+          ],
+        );
+        var scans = 0;
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((_) async {
+          scans++;
+          // First launch: nothing answers. Second: the relay is back and
+          // serves the corrupted event the repair exists to fix.
+          return scans == 1
+              ? _unansweredScan(timedOut: true)
+              : _answeredScan([corruptedEvent]);
+        });
+        stubSignAndPublishSuccess();
 
-          expect(await repairService.repairIfNeeded(), equals(0));
-          expect(prefs.getBool('corrupted_video_repair_v1_completed'), isNull);
+        expect(await repairService.repairIfNeeded(), equals(0));
+        expect(prefs.getBool('corrupted_video_repair_v1_completed'), isNull);
 
-          // Under the latching behavior this second run returned -1 without
-          // ever querying, and the corrupted event stayed broken forever.
-          expect(await repairService.repairIfNeeded(), equals(1));
-          expect(
-            prefs.getBool('corrupted_video_repair_v1_completed'),
-            isTrue,
-          );
-        },
-      );
+        // Under the latching behavior this second run returned -1 without
+        // ever querying, and the corrupted event stayed broken forever.
+        expect(await repairService.repairIfNeeded(), equals(1));
+        expect(prefs.getBool('corrupted_video_repair_v1_completed'), isTrue);
+      });
 
       test('skips when not authenticated', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -465,7 +453,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([corruptedEvent]));
+        ).thenAnswer((_) async => _answeredScan([corruptedEvent]));
 
         when(
           () => mockAuthService.createAndSignEvent(
@@ -503,7 +491,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([corruptedEvent]));
+        ).thenAnswer((_) async => _answeredScan([corruptedEvent]));
 
         when(
           () => mockAuthService.createAndSignEvent(
@@ -549,7 +537,7 @@ void main() {
             useCache: any(named: 'useCache'),
             requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
-        ).thenAnswer((_) async => answeredScan([mixedEvent]));
+        ).thenAnswer((_) async => _answeredScan([mixedEvent]));
 
         stubSignAndPublishSuccess();
 

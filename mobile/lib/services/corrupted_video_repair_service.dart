@@ -43,7 +43,8 @@ class CorruptedVideoRepairService {
   ///
   /// Returns the number of events repaired, `-1` if skipped (already done), or
   /// `0` without marking complete when there is no authenticated identity /
-  /// public key yet (the caller retries once the Nostr session is ready).
+  /// public key yet or the relay scan is incomplete (the caller retries once
+  /// the Nostr session is ready or on the next launch).
   ///
   /// The completion flag is only set once the scan actually ran, so calling
   /// this during the pre-restore startup window (no identity yet) cannot
@@ -75,9 +76,9 @@ class CorruptedVideoRepairService {
   /// Scans and repairs the user's corrupted video events.
   ///
   /// Returns the number repaired, or `null` when the repair could not run:
-  /// there is no authenticated identity / public key yet, or no relay answered
-  /// the scan. The caller must not treat either as a completed run — a scan
-  /// nobody answered is indistinguishable from one that found nothing, and
+  /// there is no authenticated identity / public key yet, or the relay scan is
+  /// incomplete. The caller must not treat either as a completed run — an
+  /// incomplete scan cannot prove that there is nothing to repair, and
   /// latching on it disables the migration permanently (#8213).
   Future<int?> _repairCorruptedEvents() async {
     if (!_authService.isAuthenticated) {
@@ -116,7 +117,7 @@ class CorruptedVideoRepairService {
     );
     if (result.noRelays || result.timedOut) {
       Log.warning(
-        'Skipping corrupted-video repair: no relay answered the scan '
+        'Skipping corrupted-video repair: relay scan was incomplete '
         '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut}). '
         'Retrying on the next launch.',
         name: _logName,
