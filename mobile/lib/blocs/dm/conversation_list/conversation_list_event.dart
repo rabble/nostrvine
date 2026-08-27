@@ -101,3 +101,30 @@ class _ConversationListProfileResolutionRequested
     extends ConversationListEvent {
   const _ConversationListProfileResolutionRequested();
 }
+
+/// The localized names for peers who must not be shown their own name.
+///
+/// Delivered by the inbox rather than read here, because a BLoC has no
+/// `context.l10n` — and re-delivered on a locale change, because
+/// `BlocProvider.create:` runs once while the app's language picker does not
+/// restart the app.
+class ConversationListPeerLabelsChanged extends ConversationListEvent {
+  const ConversationListPeerLabelsChanged(this.labels);
+
+  final DmPeerLabels labels;
+
+  @override
+  List<Object?> get props => [labels];
+}
+
+/// The durable vanished set changed.
+///
+/// Private: it mirrors a repository stream this bloc owns, not a user action.
+class _ConversationListVanishedPubkeysChanged extends ConversationListEvent {
+  const _ConversationListVanishedPubkeysChanged(this.pubkeys);
+
+  final Set<String> pubkeys;
+
+  @override
+  List<Object?> get props => [pubkeys];
+}

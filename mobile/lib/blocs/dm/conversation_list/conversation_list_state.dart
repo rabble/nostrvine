@@ -71,6 +71,8 @@ class ConversationListState extends Equatable {
     this.filter = InboxFilter.all,
     this.searchQuery = '',
     this.profileNames = const {},
+    this.vanishedPubkeys = const {},
+    this.peerLabels,
     this.requestConversations = const [],
     this.potentialRequests = const [],
     this.hasMore = true,
@@ -121,7 +123,25 @@ class ConversationListState extends Equatable {
 
   /// Resolved display names by counterparty pubkey, used for search
   /// matching. Grows lazily the first time a query needs a name.
+  ///
+  /// A step-4 value only — the kind-0 name, or the generated fallback when
+  /// there is none. The vanished and moderation branches that outrank it are
+  /// applied by [dmPeerName] at match time, never baked in here.
   final Map<String, String> profileNames;
+
+  /// Counterparties that published a NIP-62 request to vanish.
+  ///
+  /// A live view of the durable `vanished_profiles` table, which is the same
+  /// source `ConversationTile` renders from. Search has to read it rather than
+  /// sample `ProfileRepository.isVanished`, or the index names an account the
+  /// row on screen contradicts (#8204).
+  final Set<String> vanishedPubkeys;
+
+  /// Localized substitutes for a peer whose own name must not be shown.
+  ///
+  /// Null until the inbox delivers them, and re-delivered when the app locale
+  /// changes; matching falls back to the generated name in the meantime.
+  final DmPeerLabels? peerLabels;
 
   /// Conversations shown in the Requests tab (non-followed, never replied).
   final List<DmConversation> requestConversations;
@@ -192,6 +212,8 @@ class ConversationListState extends Equatable {
     InboxFilter? filter,
     String? searchQuery,
     Map<String, String>? profileNames,
+    Set<String>? vanishedPubkeys,
+    DmPeerLabels? peerLabels,
     List<DmConversation>? requestConversations,
     List<DmConversation>? potentialRequests,
     bool? hasMore,
@@ -211,6 +233,8 @@ class ConversationListState extends Equatable {
       filter: filter ?? this.filter,
       searchQuery: searchQuery ?? this.searchQuery,
       profileNames: profileNames ?? this.profileNames,
+      vanishedPubkeys: vanishedPubkeys ?? this.vanishedPubkeys,
+      peerLabels: peerLabels ?? this.peerLabels,
       requestConversations: requestConversations ?? this.requestConversations,
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
@@ -235,6 +259,8 @@ class ConversationListState extends Equatable {
     filter,
     searchQuery,
     profileNames,
+    vanishedPubkeys,
+    peerLabels,
     requestConversations,
     potentialRequests,
     hasMore,

@@ -14,6 +14,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
@@ -62,6 +63,9 @@ class ConversationListBloc
       transformer: droppable(),
     );
     on<ConversationListProfileRepositoryChanged>(_onProfileRepositoryChanged);
+    on<ConversationListPeerLabelsChanged>(_onPeerLabelsChanged);
+    on<_ConversationListVanishedPubkeysChanged>(_onVanishedPubkeysChanged);
+    _subscribeToVanishedPubkeys();
   }
 
   final DmRepository _dmRepository;
@@ -79,6 +83,11 @@ class ConversationListBloc
   /// setRepository` precedent. The field is only modified via
   /// [ConversationListProfileRepositoryChanged] event handlers.
   ProfileRepository? _profileRepository;
+
+  /// Live vanished-set subscription, re-pointed whenever
+  /// [_profileRepository] is. Same exception as the field above.
+  StreamSubscription<Set<String>>? _vanishedSubscription;
+
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
 
   /// Moderation pubkey the pinned support row targets, injected rather than
@@ -345,6 +354,8 @@ class ConversationListBloc
             filter: filter,
             query: state.searchQuery,
             profileNames: state.profileNames,
+            vanishedPubkeys: state.vanishedPubkeys,
+            peerLabels: state.peerLabels,
             userPubkey: userPubkey,
             limit: state.currentLimit,
           ),
@@ -384,6 +395,8 @@ class ConversationListBloc
           filter: state.filter,
           query: state.searchQuery,
           profileNames: state.profileNames,
+          vanishedPubkeys: state.vanishedPubkeys,
+          peerLabels: state.peerLabels,
           userPubkey: _dmRepository.userPubkey,
           limit: limit,
         ),
@@ -406,6 +419,8 @@ class ConversationListBloc
           filter: event.filter,
           query: state.searchQuery,
           profileNames: state.profileNames,
+          vanishedPubkeys: state.vanishedPubkeys,
+          peerLabels: state.peerLabels,
           userPubkey: _dmRepository.userPubkey,
           limit: state.currentLimit,
         ),
@@ -433,6 +448,8 @@ class ConversationListBloc
           filter: state.filter,
           query: query,
           profileNames: state.profileNames,
+          vanishedPubkeys: state.vanishedPubkeys,
+          peerLabels: state.peerLabels,
           userPubkey: userPubkey,
           limit: state.currentLimit,
         ),
@@ -514,6 +531,8 @@ class ConversationListBloc
             filter: state.filter,
             query: query,
             profileNames: profileNames,
+            vanishedPubkeys: state.vanishedPubkeys,
+            peerLabels: state.peerLabels,
             userPubkey: userPubkey,
             limit: state.currentLimit,
           ),
@@ -678,6 +697,8 @@ class ConversationListBloc
     required InboxFilter filter,
     required String query,
     required Map<String, String> profileNames,
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? peerLabels,
     required String userPubkey,
     required int limit,
   }) {
@@ -691,6 +712,8 @@ class ConversationListBloc
         unreadOnly: false,
         query: query,
         profileNames: profileNames,
+        vanishedPubkeys: vanishedPubkeys,
+        peerLabels: peerLabels,
         userPubkey: userPubkey,
       );
     }
@@ -705,6 +728,8 @@ class ConversationListBloc
       unreadOnly: unreadOnly,
       query: query,
       profileNames: profileNames,
+      vanishedPubkeys: vanishedPubkeys,
+      peerLabels: peerLabels,
       userPubkey: userPubkey,
     );
   }
@@ -714,6 +739,8 @@ class ConversationListBloc
     required bool unreadOnly,
     required String query,
     required Map<String, String> profileNames,
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? peerLabels,
     required String userPubkey,
   }) {
     var result = conversations;
@@ -722,12 +749,39 @@ class ConversationListBloc
     final normalized = query.toLowerCase();
     return result.where((c) {
       final other = _otherParticipant(c, userPubkey);
-      final name =
-          (profileNames[other] ?? UserProfile.defaultDisplayNameFor(other))
-              .toLowerCase();
+      final name = _peerName(
+        other,
+        profileNames: profileNames,
+        vanishedPubkeys: vanishedPubkeys,
+        peerLabels: peerLabels,
+      ).toLowerCase();
       final preview = c.lastMessageContent?.toLowerCase() ?? '';
       return name.contains(normalized) || preview.contains(normalized);
     }).toList();
+  }
+
+  /// The name the row for [pubkey] renders, resolved the same way
+  /// `ConversationTile` resolves it.
+  ///
+  /// Falls back to the profile-or-generated value while [peerLabels] is null,
+  /// which is the pre-delivery window only — matching the substitutes needs the
+  /// strings, and there is nothing better to match on until they arrive.
+  static String _peerName(
+    String pubkey, {
+    required Map<String, String> profileNames,
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? peerLabels,
+  }) {
+    final profileName = profileNames[pubkey];
+    if (peerLabels == null) {
+      return profileName ?? UserProfile.defaultDisplayNameFor(pubkey);
+    }
+    return dmPeerName(
+      pubkeyHex: pubkey,
+      isVanished: vanishedPubkeys.contains(pubkey),
+      labels: peerLabels,
+      profileName: profileName,
+    );
   }
 
   Future<void> _onMarkRead(
@@ -778,6 +832,7 @@ class ConversationListBloc
   ) {
     if (identical(_profileRepository, event.profileRepository)) return;
     _profileRepository = event.profileRepository;
+    _subscribeToVanishedPubkeys();
     if (state.searchQuery.isEmpty) return;
     // Any names cached while no repository was available are deterministic
     // fallbacks, not real profiles. Drop them so the active query re-resolves.
@@ -816,8 +871,70 @@ class ConversationListBloc
     add(const ConversationListStarted());
   }
 
+  /// (Re)points the vanished-set subscription at [_profileRepository].
+  ///
+  /// Called at construction and again on every repository swap: the stream
+  /// belongs to the instance, so keeping the old subscription would leave the
+  /// index reading a repository nothing else is using any more.
+  void _subscribeToVanishedPubkeys() {
+    unawaited(_vanishedSubscription?.cancel());
+    _vanishedSubscription = _profileRepository?.watchVanishedPubkeys().listen(
+      // A stream callback resumes outside the handler that started it, so the
+      // add has to be guarded — `close()` does not cancel it.
+      (pubkeys) => addIfOpen(_ConversationListVanishedPubkeysChanged(pubkeys)),
+    );
+  }
+
+  void _onVanishedPubkeysChanged(
+    _ConversationListVanishedPubkeysChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    // Exact set equality without reaching for a Flutter import: this bloc
+    // must stay free of the Flutter SDK.
+    if (event.pubkeys.length == state.vanishedPubkeys.length &&
+        event.pubkeys.containsAll(state.vanishedPubkeys)) {
+      return;
+    }
+    _emitWithVisible(emit, state.copyWith(vanishedPubkeys: event.pubkeys));
+  }
+
+  void _onPeerLabelsChanged(
+    ConversationListPeerLabelsChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    if (event.labels == state.peerLabels) return;
+    _emitWithVisible(emit, state.copyWith(peerLabels: event.labels));
+  }
+
+  /// Emits [next] with `visibleConversations` recomputed against it.
+  ///
+  /// Both naming inputs feed the search match, so changing either has to
+  /// re-filter — otherwise a vanish discovered after the query was typed, or a
+  /// language change, leaves the results reflecting the previous naming.
+  void _emitWithVisible(
+    Emitter<ConversationListState> emit,
+    ConversationListState next,
+  ) {
+    emit(
+      next.copyWith(
+        visibleConversations: _computeVisible(
+          next.conversations,
+          blockedConversations: next.blockedConversations,
+          filter: next.filter,
+          query: next.searchQuery,
+          profileNames: next.profileNames,
+          vanishedPubkeys: next.vanishedPubkeys,
+          peerLabels: next.peerLabels,
+          userPubkey: _dmRepository.userPubkey,
+          limit: next.currentLimit,
+        ),
+      ),
+    );
+  }
+
   @override
   Future<void> close() {
+    unawaited(_vanishedSubscription?.cancel());
     // The gift-wrap subscription is owned by `dmRepositoryProvider` for the
     // whole authenticated session — do NOT stop it here. See #2931.
     return super.close();

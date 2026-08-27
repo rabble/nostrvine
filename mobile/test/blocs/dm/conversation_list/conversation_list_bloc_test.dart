@@ -8,13 +8,16 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -341,6 +344,9 @@ void main() {
           when(
             () => profiles.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
           ).thenAnswer((_) async => const <String, UserProfile>{});
+          when(
+            profiles.watchVanishedPubkeys,
+          ).thenAnswer((_) => Stream.value(const <String>{}));
 
           final bloc = ConversationListBloc(
             dmRepository: mockDmRepository,
@@ -1967,6 +1973,8 @@ void main() {
         InboxFilter.all, // filter
         '', // searchQuery
         const <String, String>{}, // profileNames
+        const <String>{}, // vanishedPubkeys
+        null, // peerLabels
         const <DmConversation>[],
         const <DmConversation>[],
         true,
@@ -2319,6 +2327,316 @@ void main() {
     );
   });
 
+  group('search names a peer the way the row does (#8204)', () {
+    late _MockDmRepository mockDmRepository;
+    late _MockFollowRepository mockFollowRepository;
+    late _MockProfileRepository mockProfileRepository;
+
+    /// The two ARB values the inbox substitutes for a peer whose own name must
+    /// not be shown, resolved rather than hardcoded so a copy change moves the
+    /// test with the product.
+    late DmPeerLabels labels;
+
+    setUp(() {
+      mockDmRepository = _MockDmRepository();
+      mockFollowRepository = _MockFollowRepository();
+      mockProfileRepository = _MockProfileRepository();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      labels = DmPeerLabels(
+        deletedAccount: l10n.profileDeletedAccountName,
+        moderation: l10n.inboxSupportRowTitle,
+      );
+
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.retryPendingDecryptions(),
+      ).thenAnswer((_) async {});
+      // The batch path never yields a profile for either peer, which is the
+      // measured reality: a PENDING vanish is stripped from the funnelcake
+      // bulk response entirely, and a retired moderation key has no kind 0.
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => const {});
+    });
+
+    void stubVanished(Set<String> pubkeys) {
+      when(
+        () => mockProfileRepository.watchVanishedPubkeys(),
+      ).thenAnswer((_) => Stream.value(pubkeys));
+    }
+
+    ConversationListBloc createBloc({DmPeerLabels? withLabels}) {
+      final bloc = ConversationListBloc(
+        dmRepository: mockDmRepository,
+        followRepository: mockFollowRepository,
+        profileRepository: mockProfileRepository,
+        recomputeDebounce: Duration.zero,
+      );
+      if (withLabels != null) {
+        bloc.add(ConversationListPeerLabelsChanged(withLabels));
+      }
+      return bloc;
+    }
+
+    /// Awaits the next state matching [test], failing fast instead of hanging.
+    ///
+    /// A bare `firstWhere` on a bloc stream never completes when the behaviour
+    /// under test regresses, which turns a red test into a stuck CI job.
+    Future<ConversationListState> firstMatch(
+      ConversationListBloc bloc,
+      bool Function(ConversationListState) test,
+    ) => bloc.stream
+        .firstWhere(test)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => fail('no state matched within 5s'),
+        );
+
+    Future<ConversationListState> search(
+      ConversationListBloc bloc,
+      String query,
+    ) async {
+      bloc.add(const ConversationListStarted());
+      await bloc.stream.firstWhere(
+        (s) => s.status == ConversationListStatus.loaded,
+      );
+      bloc.add(ConversationListSearchQueryChanged(query));
+      return bloc.stream.firstWhere((s) => s.searchQuery == query);
+    }
+
+    group('a vanished counterparty', () {
+      setUp(() => stubVanished({_testPubkey2}));
+
+      test('is found by the deleted-account label the row shows', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [_createConversation(id: 'vanished')],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(bloc, labels.deletedAccount);
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['vanished']),
+        );
+      });
+
+      test('is not found by the generated handle nobody has seen', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [_createConversation(id: 'vanished')],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(
+          bloc,
+          UserProfile.defaultDisplayNameFor(_testPubkey2),
+        );
+
+        expect(state.visibleConversations, isEmpty);
+      });
+
+      test('is still found by its message preview', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'vanished',
+              lastMessageContent: 'pizza friday?',
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(bloc, 'pizza');
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['vanished']),
+        );
+      });
+    });
+
+    group('a retired Divine Moderation key', () {
+      // Rotated away from, so `_extractPinnedSupport` leaves it in the list as
+      // an ordinary searchable row — while `isModerationAccount` still answers
+      // for it, so the row renders the brand name.
+      final retired = kLegacyModerationPubkeys.first;
+
+      setUp(() => stubVanished(const {}));
+
+      test('is found by the moderation name the row shows', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'retired',
+              participantPubkeys: [_testPubkey1, retired],
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(bloc, labels.moderation);
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['retired']),
+        );
+      });
+
+      test('is not found by the generated handle', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'retired',
+              participantPubkeys: [_testPubkey1, retired],
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(
+          bloc,
+          UserProfile.defaultDisplayNameFor(retired),
+        );
+
+        expect(state.visibleConversations, isEmpty);
+      });
+    });
+
+    test('a live counterparty still matches its generated name', () async {
+      stubVanished(const {});
+      _stubStreams(
+        mockDmRepository,
+        accepted: [_createConversation(id: 'live')],
+      );
+      final bloc = createBloc(withLabels: labels);
+      addTearDown(bloc.close);
+
+      final state = await search(
+        bloc,
+        UserProfile.defaultDisplayNameFor(_testPubkey2),
+      );
+
+      expect(
+        state.visibleConversations.map((c) => c.id).toList(),
+        equals(['live']),
+        reason: 'the vanished branch must not swallow ordinary rows',
+      );
+    });
+
+    test('a vanish arriving after the query re-filters on its own', () async {
+      // The row learns of a vanish from its own singular profile fetch, which
+      // can land after the index was built. Without a live subscription the
+      // results would stay wrong until the next keystroke.
+      final vanished = StreamController<Set<String>>();
+      addTearDown(vanished.close);
+      when(
+        () => mockProfileRepository.watchVanishedPubkeys(),
+      ).thenAnswer((_) => vanished.stream);
+      _stubStreams(
+        mockDmRepository,
+        accepted: [_createConversation(id: 'vanished')],
+      );
+      final bloc = createBloc(withLabels: labels);
+      addTearDown(bloc.close);
+
+      final before = await search(bloc, labels.deletedAccount);
+      expect(before.visibleConversations, isEmpty);
+
+      vanished.add({_testPubkey2});
+
+      final after = await firstMatch(
+        bloc,
+        (s) => s.visibleConversations.isNotEmpty,
+      );
+      expect(after.visibleConversations.map((c) => c.id).toList(), [
+        'vanished',
+      ]);
+    });
+
+    test('changing the app language re-filters into the new one', () async {
+      stubVanished({_testPubkey2});
+      final german = lookupAppLocalizations(const Locale('de'));
+      _stubStreams(
+        mockDmRepository,
+        accepted: [_createConversation(id: 'vanished')],
+      );
+      final bloc = createBloc(withLabels: labels);
+      addTearDown(bloc.close);
+
+      final inGerman = await search(bloc, german.profileDeletedAccountName);
+      expect(
+        inGerman.visibleConversations,
+        isEmpty,
+        reason: 'the German label must not match while the app is in English',
+      );
+
+      bloc.add(
+        ConversationListPeerLabelsChanged(
+          DmPeerLabels(
+            deletedAccount: german.profileDeletedAccountName,
+            moderation: german.inboxSupportRowTitle,
+          ),
+        ),
+      );
+
+      final after = await firstMatch(
+        bloc,
+        (s) => s.visibleConversations.isNotEmpty,
+      );
+      expect(after.visibleConversations.map((c) => c.id).toList(), [
+        'vanished',
+      ]);
+    });
+
+    test('a repository swap re-points the vanished subscription', () async {
+      stubVanished(const {});
+      _stubStreams(
+        mockDmRepository,
+        accepted: [_createConversation(id: 'vanished')],
+      );
+      final bloc = createBloc(withLabels: labels);
+      addTearDown(bloc.close);
+      await search(bloc, labels.deletedAccount);
+
+      final swapped = _MockProfileRepository();
+      when(
+        () => swapped.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
+      ).thenAnswer((_) async => const {});
+      when(
+        swapped.watchVanishedPubkeys,
+      ).thenAnswer((_) => Stream.value({_testPubkey2}));
+
+      bloc.add(ConversationListProfileRepositoryChanged(swapped));
+
+      final after = await firstMatch(
+        bloc,
+        (s) => s.visibleConversations.isNotEmpty,
+      );
+      expect(after.visibleConversations.map((c) => c.id).toList(), [
+        'vanished',
+      ]);
+    });
+  });
+
   group('ConversationListSearchQueryChanged', () {
     late _MockDmRepository mockDmRepository;
     late _MockFollowRepository mockFollowRepository;
@@ -2344,6 +2662,9 @@ void main() {
           pubkeys: any(named: 'pubkeys'),
         ),
       ).thenAnswer((_) async => const {});
+      when(
+        () => mockProfileRepository.watchVanishedPubkeys(),
+      ).thenAnswer((_) => Stream.value(const <String>{}));
     });
 
     ConversationListBloc createBloc({bool withProfiles = true}) =>
@@ -2439,6 +2760,9 @@ void main() {
             ),
           },
         );
+        when(
+          () => mockProfileRepository.watchVanishedPubkeys(),
+        ).thenAnswer((_) => Stream.value(const <String>{}));
 
         // Cold start: the repository is not ready yet.
         final bloc = createBloc(withProfiles: false);
@@ -2518,6 +2842,9 @@ void main() {
           ),
         },
       );
+      when(
+        () => mockProfileRepository.watchVanishedPubkeys(),
+      ).thenAnswer((_) => Stream.value(const <String>{}));
       final bloc = createBloc();
       addTearDown(bloc.close);
       await load(bloc);
@@ -2685,6 +3012,9 @@ void main() {
             ),
           },
         );
+        when(
+          () => mockProfileRepository.watchVanishedPubkeys(),
+        ).thenAnswer((_) => Stream.value(const <String>{}));
 
         final bloc = createBloc()..add(const ConversationListStarted());
         addTearDown(() async {
@@ -2750,6 +3080,9 @@ void main() {
             ),
           },
         );
+        when(
+          () => mockProfileRepository.watchVanishedPubkeys(),
+        ).thenAnswer((_) => Stream.value(const <String>{}));
 
         final bloc = createBloc()..add(const ConversationListStarted());
         addTearDown(() async {
@@ -2812,6 +3145,9 @@ void main() {
             pubkeys: any(named: 'pubkeys'),
           ),
         ).thenAnswer((_) async => const <String, UserProfile>{});
+        when(
+          () => mockProfileRepository.watchVanishedPubkeys(),
+        ).thenAnswer((_) => Stream.value(const <String>{}));
 
         // Cold start: the nullable-gated provider has not handed over yet.
         final bloc = ConversationListBloc(
