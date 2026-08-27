@@ -6921,10 +6921,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
 
@@ -6945,18 +6941,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Type your username';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Failed to delete content from relays';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'We couldn\'t confirm account deletion with a relay. Check your connection and try again.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Delete All Content';
@@ -7015,6 +6999,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Account deletion isn\'t available right now. Nothing was deleted.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'We couldn\'t finish deleting your account. Try again.';
 
@@ -7055,10 +7043,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Try again in a bit.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Sign in again to finish.';
 
   @override
   String get deleteAccountSuccess =>

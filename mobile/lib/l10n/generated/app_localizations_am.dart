@@ -6663,10 +6663,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎችን ቀይረዋል፣ ስለዚህ ምንም አልተሰረዘም። ለማስወገድ ለሚፈልጉት መለያ ስረዛን እንደገና ይክፈቱ።';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'አንዳንድ የመሰረዝ ጥያቄዎች ተቀባይነት አግኝተዋል፣ ነገር ግን መለያ ስለቀየርክ ጽዳቱ ቆሟል። ለማጠናቀቅ ወደ መጀመሪያው መለያ በድጋሚ ግባ።';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'የተጠቃሚ ስምዎን ማስለቀቅ አልተቻለም። መለያዎ አልተሰረዘም። እንደገና ይሞክሩ፣ ወይም አማራጩን ያስወግዱ።';
 
@@ -6686,18 +6682,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'የተጠቃሚ ስምዎን ይተይቡ';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
@@ -6756,6 +6740,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም።';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
@@ -6795,10 +6783,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ትንሽ ቆይተው እንደገና ይሞክሩ።';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ እንደገና ይግቡ።';
 
   @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';

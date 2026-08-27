@@ -70,6 +70,7 @@ abstract final class RoutePaths {
   static const accountStatus = '/settings/account-status';
   static const accountStatusSubpath = 'account-status';
   static const supportCenter = '/support-center';
+  static const supportReportBug = '/support-center/report-bug';
   static const videoDetailBase = '/video';
   static const videoEditor = '/video-editor';
   static const videoMetadata = '/video-metadata';

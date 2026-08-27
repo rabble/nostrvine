@@ -4437,10 +4437,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.",
-  "@deleteAccountAccountChangedAfterDeletion": {
-    "description": "Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish."
-  },
   "deleteAccountBurnUsernameFailed": "Couldn't release your username. Your account was not deleted. Try again, or uncheck the option.",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -4469,15 +4465,6 @@
   "deleteAccountConfirmationHintUsername": "Type your username",
   "@deleteAccountConfirmationHintUsername": {
     "description": "Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."
-  },
-  "deleteAccountContentDeletionFailed": "Failed to delete content from relays",
-  "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
-  "deleteAccountAccountRestricted": "Your account is restricted, so deletion couldn't continue. Contact support for help deleting your account.",
-  "@deleteAccountAccountRestricted": {
-    "description": "Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned."
-  },
-  "@deleteAccountRelayConfirmationFailed": {
-    "description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."
   },
   "deleteAccountDeleteAllContentButton": "Delete All Content",
   "accountDeletionRecoveryTitle": "Finish deleting your account",
@@ -4508,6 +4495,8 @@
   "@accountDeletionTerminalFailureBody": {"description": "Fallback explanation for a terminal account-deletion failure when the server supplies no safe detail."},
   "accountDeletionSignOut": "Sign out",
   "@accountDeletionSignOut": {"description": "Secondary action that leaves an account-deletion recovery gate without deleting local credentials."},
+  "deleteAccountDeletionUnavailable": "Account deletion isn't available right now. Nothing was deleted.",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
   "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and no claim about username state is safe."},
   "deleteAccountFinalConfirmationTitle": "⚠️ Final Confirmation",
@@ -4535,10 +4524,6 @@
   "deleteAccountServerDeletionFailed": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Try again in a bit.",
   "@deleteAccountServerDeletionFailed": {
     "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion failed for a reason a fresh sign-in cannot clear (5xx, 404, or an unreachable server). Must not claim that nothing was deleted, because the vanish request has already reached relays, and must not tell the user to sign in again, which does not clear a server failure."
-  },
-  "deleteAccountServerDeletionRequiresReauth": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Sign in again to finish.",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
   },
   "deleteAccountSuccess": "Deletion requests sent. You're signed out on this device.",
   "@deleteAccountSuccess": {

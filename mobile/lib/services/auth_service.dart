@@ -22,7 +22,6 @@ import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/auth_user_profile.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:openvine/services/account_deletion_proof_signer.dart';
 import 'package:openvine/services/auth/known_accounts_registry.dart';
 import 'package:openvine/services/auth/nostr_connect_coordinator.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
@@ -33,7 +32,6 @@ import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/nip07_service.dart';
-import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
@@ -3064,117 +3062,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  /// Delete the server-side Keycast account for the signed-in user.
-  ///
-  /// `requiresReauthentication` is true when the failure can only be cleared by
-  /// a fresh sign-in — an expired or unauthorized credential — rather than by
-  /// retrying. Callers must branch on it instead of matching `error`, which
-  /// carries server prose that varies by deployment.
-  Future<({bool success, String? error, bool requiresReauthentication})>
-  deleteKeycastAccount() async {
-    Log.debug(
-      '🗑️ Attempting to delete Keycast account',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    // No OAuth client configured - using local auth only
-    if (_oauthClient == null) {
-      Log.debug(
-        'No OAuth client configured - skipping Keycast deletion',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return (success: true, error: null, requiresReauthentication: false);
-    }
-
-    try {
-      // Refreshes if the token expired during the NIP-62 deletion step that
-      // runs before this call, and refuses a session the signed-in account
-      // cannot claim — deletion is irreversible, so the account it lands on
-      // has to be the one that asked for it.
-      //
-      // Sampled before minting, not after: [activeAccountKeycastToken] reads
-      // the same getter on entry, so this names the account it validates the
-      // session against. Sampling afterwards would name the *new* account if
-      // a switch landed in between, and the pin below would then approve the
-      // very mismatch it exists to catch.
-      final tokenOwnerPubkey = currentPublicKeyHex;
-      final accessToken = await activeAccountKeycastToken();
-      if (accessToken == null) {
-        Log.warning(
-          'Cannot delete Keycast account: '
-          'no session bound to the signed-in account',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return (
-          success: false,
-          error: 'No usable session for the signed-in account',
-          requiresReauthentication: true,
-        );
-      }
-
-      // The bearer token authorizes this; the signer is only a 403 retry.
-      // Keycast's delete route parses `Bearer ` and rejects every other
-      // scheme, so leading with a NIP-98 proof gets a 401 back before the
-      // proof is read at all — after the irreversible NIP-62 vanish has
-      // already been published. keycast#331 closed keycast#323 by preserving
-      // the first-party fact across refresh rotation instead of accepting
-      // proofs here, which is what makes the refreshed bearer token usable.
-      // See #5756 / #4881 / keycast#323.
-      final result = await _oauthClient.deleteAccount(
-        accessToken,
-        nip98Signer: (url) =>
-            _deletionProof.sign(url, tokenOwnerPubkey: tokenOwnerPubkey),
-      );
-
-      if (result.success) {
-        Log.info(
-          '✅ Keycast account deleted successfully',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return (success: true, error: null, requiresReauthentication: false);
-      } else {
-        Log.warning(
-          '⚠️ Keycast account deletion failed: ${result.error}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        return (
-          success: false,
-          error: result.error,
-          requiresReauthentication: result.requiresReauthentication,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        '❌ Error deleting Keycast account: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      return (
-        success: false,
-        error: 'Failed to delete Keycast account: $e',
-        requiresReauthentication: false,
-      );
-    }
-  }
-
-  /// Signs the proof-of-key the deletion retry offers after a 403.
-  ///
-  /// Deferred rather than eager so [dispose] does not build one purely to tear
-  /// it down. Lives in its own class so deletion work stops accreting into
-  /// this already-oversized service (#4338).
-  AccountDeletionProofSigner? _deletionProofSigner;
-
-  AccountDeletionProofSigner get _deletionProof =>
-      _deletionProofSigner ??= AccountDeletionProofSigner(
-        buildNip98Auth: () => Nip98AuthService(authService: this),
-        activePubkey: () => currentPublicKeyHex,
-      );
-
   /// Sign out the current user.
   ///
   /// When [deleteKeys] is true, the current account's local login material is
@@ -4649,10 +4536,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // Close bunker signer if active
     _bunkerSigner?.close();
     _bunkerSigner = null;
-
-    // Cancels the NIP-98 token cache's periodic cleanup timer, if one was built.
-    _deletionProofSigner?.dispose();
-    _deletionProofSigner = null;
 
     // Close Amber signer if active
     _amberSigner?.close();

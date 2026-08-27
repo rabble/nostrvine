@@ -6843,10 +6843,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je bent van account gewisseld, dus er is niets verwijderd. Open de verwijdering opnieuw voor het account dat je wilt verwijderen.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Een deel van de verwijderverzoeken is geaccepteerd, maar het opruimen stopte omdat je van account wisselde. Log weer in op het oorspronkelijke account om het af te ronden.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Je gebruikersnaam kon niet worden vrijgegeven. Je account is niet verwijderd. Probeer het opnieuw of vink de optie uit.';
 
@@ -6867,18 +6863,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'Typ je gebruikersnaam';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Inhoud verwijderen van relays mislukt';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'We konden het verwijderen van het account bij geen enkele relay bevestigen. Controleer je verbinding en probeer het opnieuw.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Alle inhoud verwijderen';
@@ -6939,6 +6923,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Je account kan op dit moment niet worden verwijderd. Er is niets verwijderd.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
 
@@ -6979,10 +6967,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Probeer het straks opnieuw.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Log opnieuw in om dit af te ronden.';
 
   @override
   String get deleteAccountSuccess =>

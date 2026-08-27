@@ -6885,10 +6885,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Смени акаунта, затова нищо не беше изтрито. Отвори отново изтриването за акаунта, който искаш да премахнеш.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Част от заявките за изтриване бяха приети, но почистването спря, защото смени профила. Влез отново в първоначалния профил, за да завършиш.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Не успяхме да освободим потребителското ти име. Акаунтът ти не беше изтрит. Опитай пак или махни отметката от опцията.';
 
@@ -6910,18 +6906,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Напиши потребителското си име';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Неуспешно изтриване на съдържание от релетата';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Не успяхме да потвърдим изтриването на профила с нито едно реле. Провери връзката си и опитай пак.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Изтрий цялото съдържание';
@@ -6980,6 +6964,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Изтриването на акаунт не е достъпно в момента. Нищо не беше изтрито.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
 
@@ -7020,10 +7008,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Заявките за изтриване на публикациите ти са изпратени, но не успяхме да довършим изтриването на акаунта ти. Опитай пак след малко.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Заявките за изтриване на публикациите ти са изпратени, но не успяхме да довършим изтриването на акаунта ти. Влез отново, за да завършиш.';
 
   @override
   String get deleteAccountSuccess =>

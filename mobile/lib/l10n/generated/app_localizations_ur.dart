@@ -6814,10 +6814,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ نے اکاؤنٹ تبدیل کر لیا، اس لیے کچھ حذف نہیں ہوا۔ جس اکاؤنٹ کو ہٹانا چاہتے ہیں اس کے لیے حذف کا آپشن دوبارہ کھولیں۔';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'کچھ حذف کرنے کی درخواستیں قبول ہو گئیں، لیکن صفائی رک گئی کیونکہ آپ نے اکاؤنٹ تبدیل کر لیا۔ مکمل کرنے کے لیے اصل اکاؤنٹ میں دوبارہ سائن ان کریں۔';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'آپ کا صارف نام نہیں چھوڑا جا سکا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔ دوبارہ کوشش کریں، یا آپشن ان چیک کریں۔';
 
@@ -6838,18 +6834,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'اپنا صارف نام لکھیں';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'ریلے سے مواد حذف نہیں ہو سکا';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'ہم کسی ریلے سے اکاؤنٹ کے حذف ہونے کی تصدیق نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'تمام مواد حذف کریں';
@@ -6908,6 +6892,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'اکاؤنٹ حذف کرنے کی سہولت ابھی دستیاب نہیں ہے۔ کچھ بھی حذف نہیں ہوا۔';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
 
@@ -6948,10 +6936,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'آپ کی پوسٹس کے لیے حذف کی درخواستیں بھیج دی گئیں، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'آپ کی پوسٹس کے لیے حذف کی درخواستیں بھیج دی گئیں، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ مکمل کرنے کے لیے دوبارہ سائن ان کریں۔';
 
   @override
   String get deleteAccountSuccess =>

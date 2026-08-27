@@ -3,20 +3,51 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 
+enum AccountDeletionRecoveryStage {
+  coordinatorAttempt,
+  usernamePreparation,
+  coordinatorUsernameConfirmation,
+}
+
 class AccountDeletionRecoveryException implements Exception {
-  const AccountDeletionRecoveryException(this.message, {this.code});
+  const AccountDeletionRecoveryException(
+    this.message, {
+    this.code,
+    this.stage,
+    this.statusCode,
+    this.isTransportFailure = false,
+    this.indicatesMissingCoordinatorRoute = false,
+  });
 
   final String message;
   final String? code;
+  final AccountDeletionRecoveryStage? stage;
+  final int? statusCode;
+  final bool isTransportFailure;
+  final bool indicatesMissingCoordinatorRoute;
+
+  /// Whether only the username release is unsupported by this deployment.
+  ///
+  /// The coordinator answers `503 username_recovery_unavailable` when an
+  /// attempt carries a username and no Name Server is configured. A
+  /// username-free deletion succeeds against that same coordinator, so this
+  /// failure is user-actionable — unlike every other unavailable answer.
+  bool get indicatesUsernameRecoveryUnsupported =>
+      code == 'username_recovery_unavailable';
 
   @override
   String toString() =>
-      'AccountDeletionRecoveryException($message, code: $code)';
+      'AccountDeletionRecoveryException($message, code: $code, '
+      'stage: $stage, statusCode: $statusCode, '
+      'isTransportFailure: $isTransportFailure, '
+      'indicatesMissingCoordinatorRoute: '
+      '$indicatesMissingCoordinatorRoute)';
 }
 
 class AccountDeletionRecoveryRepository {
@@ -74,6 +105,7 @@ class AccountDeletionRecoveryRepository {
       uri: _attemptsUri,
       body: jsonEncode({'username': ?username}),
       acceptedStatusCodes: const {200, 201},
+      stage: AccountDeletionRecoveryStage.coordinatorAttempt,
     );
     if (username == null) return attempt;
     return resumePreparation(attempt);
@@ -91,6 +123,7 @@ class AccountDeletionRecoveryRepository {
     if (username == null) {
       throw const AccountDeletionRecoveryException(
         'Preparing username attempt did not include a username',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
       );
     }
     if (attempt.status == AccountDeletionAttemptStatus.recoverable) {
@@ -100,11 +133,13 @@ class AccountDeletionRecoveryRepository {
       throw const AccountDeletionRecoveryException(
         'Username preparation cannot resume during cancellation',
         code: 'illegal_transition',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
       );
     }
     if (attempt.status != AccountDeletionAttemptStatus.preparing) {
       throw AccountDeletionRecoveryException(
         'Coordinator prepare returned ${attempt.status.name}',
+        stage: AccountDeletionRecoveryStage.coordinatorAttempt,
       );
     }
 
@@ -113,6 +148,7 @@ class AccountDeletionRecoveryRepository {
       uri: _namePrepareUri,
       method: HttpMethod.post,
       payload: nameBody,
+      stage: AccountDeletionRecoveryStage.usernamePreparation,
     );
     final http.Response nameResponse;
     try {
@@ -124,12 +160,27 @@ class AccountDeletionRecoveryRepository {
     } on TimeoutException {
       throw const AccountDeletionRecoveryException(
         'Username preparation timed out',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
+        isTransportFailure: true,
+      );
+    } on http.ClientException {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation request failed',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
+        isTransportFailure: true,
+      );
+    } on IOException {
+      throw const AccountDeletionRecoveryException(
+        'Username preparation request failed',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
+        isTransportFailure: true,
       );
     }
     if (nameResponse.statusCode != 200) {
       throw _exceptionFromResponse(
         nameResponse,
         'Username preparation failed',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
       );
     }
     final Map<String, dynamic> nameJson;
@@ -138,6 +189,7 @@ class AccountDeletionRecoveryRepository {
     } on Object {
       throw const AccountDeletionRecoveryException(
         'Username preparation returned an invalid response',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
       );
     }
     final expiresAt = (nameJson['expires_at'] as num?)?.toInt();
@@ -145,6 +197,7 @@ class AccountDeletionRecoveryRepository {
     if (expiresAt == null || returnedAttemptId != attempt.id) {
       throw const AccountDeletionRecoveryException(
         'Username preparation returned an invalid response',
+        stage: AccountDeletionRecoveryStage.usernamePreparation,
       );
     }
     return _post(
@@ -155,6 +208,7 @@ class AccountDeletionRecoveryRepository {
         'expires_at': expiresAt,
       }),
       acceptedStatusCodes: const {200},
+      stage: AccountDeletionRecoveryStage.coordinatorUsernameConfirmation,
     );
   }
 
@@ -171,7 +225,20 @@ class AccountDeletionRecoveryRepository {
       }
       return _decodeAttempt(response.body);
     } on TimeoutException {
-      throw const AccountDeletionRecoveryException('Status lookup timed out');
+      throw const AccountDeletionRecoveryException(
+        'Status lookup timed out',
+        isTransportFailure: true,
+      );
+    } on http.ClientException {
+      throw const AccountDeletionRecoveryException(
+        'Status lookup request failed',
+        isTransportFailure: true,
+      );
+    } on IOException {
+      throw const AccountDeletionRecoveryException(
+        'Status lookup request failed',
+        isTransportFailure: true,
+      );
     }
   }
 
@@ -238,11 +305,13 @@ class AccountDeletionRecoveryRepository {
     required Uri uri,
     required String body,
     required Set<int> acceptedStatusCodes,
+    AccountDeletionRecoveryStage? stage,
   }) async {
     final headers = await _authHeaders(
       uri: uri,
       method: HttpMethod.post,
       payload: body,
+      stage: stage,
     );
     try {
       final response = await _sendWithRetry(
@@ -254,12 +323,27 @@ class AccountDeletionRecoveryRepository {
         throw _exceptionFromResponse(
           response,
           'Deletion attempt request failed',
+          stage: stage,
         );
       }
       return _decodeAttempt(response.body);
     } on TimeoutException {
-      throw const AccountDeletionRecoveryException(
+      throw AccountDeletionRecoveryException(
         'Deletion attempt request timed out',
+        stage: stage,
+        isTransportFailure: true,
+      );
+    } on http.ClientException {
+      throw AccountDeletionRecoveryException(
+        'Deletion attempt request failed',
+        stage: stage,
+        isTransportFailure: true,
+      );
+    } on IOException {
+      throw AccountDeletionRecoveryException(
+        'Deletion attempt request failed',
+        stage: stage,
+        isTransportFailure: true,
       );
     }
   }
@@ -282,11 +366,14 @@ class AccountDeletionRecoveryRepository {
 
   AccountDeletionRecoveryException _exceptionFromResponse(
     http.Response response,
-    String fallback,
-  ) {
+    String fallback, {
+    AccountDeletionRecoveryStage? stage,
+  }) {
     String? code;
+    var hasParseableResponseBody = false;
     try {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
+      hasParseableResponseBody = true;
       code = (json['failure_code'] ?? json['code']) as String?;
     } on Object {
       // The status code and localized client fallback remain authoritative.
@@ -294,6 +381,10 @@ class AccountDeletionRecoveryRepository {
     return AccountDeletionRecoveryException(
       '$fallback (${response.statusCode})',
       code: code,
+      stage: stage,
+      statusCode: response.statusCode,
+      indicatesMissingCoordinatorRoute:
+          response.statusCode == 404 && !hasParseableResponseBody,
     );
   }
 
@@ -301,6 +392,7 @@ class AccountDeletionRecoveryRepository {
     required Uri uri,
     required HttpMethod method,
     String? payload,
+    AccountDeletionRecoveryStage? stage,
   }) async {
     final token = await _nip98AuthService.createAuthToken(
       url: uri.toString(),
@@ -308,14 +400,16 @@ class AccountDeletionRecoveryRepository {
       payload: payload,
     );
     if (token == null) {
-      throw const AccountDeletionRecoveryException(
+      throw AccountDeletionRecoveryException(
         'Could not authorize deletion attempt request',
+        stage: stage,
       );
     }
     final currentPubkey = _currentPubkey();
     if (currentPubkey == null || token.signedEvent.pubkey != currentPubkey) {
-      throw const AccountDeletionRecoveryException(
+      throw AccountDeletionRecoveryException(
         'Deletion attempt authorization targeted the wrong account',
+        stage: stage,
       );
     }
     return {

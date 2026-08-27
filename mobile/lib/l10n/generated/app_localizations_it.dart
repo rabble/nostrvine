@@ -6885,10 +6885,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Hai cambiato account, quindi non è stato eliminato nulla. Riapri l\'eliminazione per l\'account che vuoi rimuovere.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Alcune richieste di eliminazione sono state accettate, ma la pulizia si è fermata perché hai cambiato account. Rientra nell\'account originale per completare.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Impossibile rilasciare il tuo nome utente. Il tuo account non è stato eliminato. Riprova o deseleziona l\'opzione.';
 
@@ -6910,18 +6906,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Digita il tuo nome utente';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Impossibile eliminare i contenuti dai relay';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Non siamo riusciti a confermare l\'eliminazione dell\'account con nessun relay. Controlla la connessione e riprova.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Elimina tutti i contenuti';
@@ -6981,6 +6965,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'L\'eliminazione dell\'account non è disponibile al momento. Non è stato eliminato nulla.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Non siamo riusciti a completare l\'eliminazione del tuo account. Riprova.';
 
@@ -7022,10 +7010,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Le richieste di eliminazione dei tuoi post sono state inviate, ma non siamo riusciti a completare l\'eliminazione del tuo account. Riprova tra poco.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Le richieste di eliminazione dei tuoi post sono state inviate, ma non siamo riusciti a completare l\'eliminazione del tuo account. Accedi di nuovo per completarla.';
 
   @override
   String get deleteAccountSuccess =>

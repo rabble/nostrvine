@@ -3795,7 +3795,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "部分删除请求已被接受，但因为你切换了账号，清理已停止。请重新登录原账号以完成。",
   "deleteAccountBurnUsernameFailed": "无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -3822,9 +3821,9 @@
   "@deleteAccountConfirmationHintUsername": {
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
-  "deleteAccountContentDeletionFailed": "从中继删除内容失败",
-  "deleteAccountRelayConfirmationFailed": "我们无法通过中继确认账号删除。请检查网络连接后重试。",
   "deleteAccountDeleteAllContentButton": "删除所有内容",
+  "deleteAccountDeletionUnavailable": "账号删除功能目前不可用。未删除任何内容。",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "我们没能完成账号删除，请重试。",
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
@@ -3860,10 +3859,6 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。",
-  "deleteAccountServerDeletionRequiresReauth": "你的帖子删除请求已发送，但我们没能完成账号删除。请重新登录以完成。",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
-  },
   "deleteAccountSuccess": "删除请求已发送。你已在此设备上退出登录。",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."

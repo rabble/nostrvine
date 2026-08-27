@@ -6787,10 +6787,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn đã chuyển tài khoản nên không có gì bị xóa. Hãy mở lại mục xóa cho tài khoản bạn muốn gỡ.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Một số yêu cầu xóa đã được chấp nhận, nhưng việc dọn dẹp đã dừng vì bạn đổi tài khoản. Đăng nhập lại tài khoản ban đầu để hoàn tất.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.';
 
@@ -6812,18 +6808,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Gõ tên người dùng của bạn';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Không xóa được nội dung khỏi các relay';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Chúng tôi không xác nhận được việc xóa tài khoản với relay nào. Kiểm tra kết nối và thử lại.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Xóa tất cả nội dung';
@@ -6883,6 +6867,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'Hiện chưa thể xóa tài khoản. Chưa có gì bị xóa.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
 
@@ -6923,10 +6911,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Thử lại sau một lát nhé.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Đăng nhập lại để hoàn tất.';
 
   @override
   String get deleteAccountSuccess =>
