@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart' show DmRepository;
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart' show HapticFeedback;
@@ -349,7 +350,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 // than by an idle -> blocked status transition.
                 listenWhen: (previous, current) =>
                     current.retractionStatus == RetractionStatus.blocked &&
-                    previous.awaitingRetraction != current.awaitingRetraction,
+                    !setEquals(
+                      previous.awaitingRetraction,
+                      current.awaitingRetraction,
+                    ),
                 listener: _onRetractionRefused,
               ),
             ],

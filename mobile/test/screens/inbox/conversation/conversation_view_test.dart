@@ -659,6 +659,30 @@ void main() {
 
         expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
       });
+
+      testWidgets('a send outcome does not replay a prior retraction refusal', (
+        tester,
+      ) async {
+        final previousAwaiting = Set<String>.of(const {'message'});
+        final currentAwaiting = Set<String>.of(const {'message'});
+
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: ConversationState(
+              retractionStatus: RetractionStatus.blocked,
+              awaitingRetraction: previousAwaiting,
+            ),
+            state: ConversationState(
+              sendStatus: SendStatus.blocked,
+              retractionStatus: RetractionStatus.blocked,
+              awaitingRetraction: currentAwaiting,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsNothing);
+      });
     });
 
     // #6416. Nothing has read a retired moderation key since the rotation, so
