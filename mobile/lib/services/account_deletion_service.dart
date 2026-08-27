@@ -498,10 +498,18 @@ class AccountDeletionService {
     final kind5TargetRelays = connectedRelays
         .where((relay) => Uri.tryParse(relay)?.host != _divineRelayHost)
         .toList(growable: false);
-    final excludesDivineRelay =
-        kind5TargetRelays.length < connectedRelays.length;
 
-    if (excludesDivineRelay && kind5TargetRelays.isEmpty) {
+    if (connectedRelays.isEmpty) {
+      Log.warning(
+        'Skipping NIP-09 sweep because no relay is connected',
+        name: 'AccountDeletionService',
+        category: LogCategory.system,
+      );
+      onProgress?.call(total, total);
+      return (confirmedCount: 0, incomplete: true);
+    }
+
+    if (kind5TargetRelays.isEmpty) {
       Log.info(
         'Skipping NIP-09 sweep because no connected relay requires the '
         'NIP-62 compatibility fallback',
@@ -539,24 +547,20 @@ class AccountDeletionService {
       }
 
       if (deleteEvent != null) {
-        var outcome = excludesDivineRelay
-            ? await _nostrService.publishEventAwaitOk(
-                deleteEvent,
-                targetRelays: kind5TargetRelays,
-              )
-            : await _nostrService.publishEventAwaitOk(deleteEvent);
+        var outcome = await _nostrService.publishEventAwaitOk(
+          deleteEvent,
+          targetRelays: kind5TargetRelays,
+        );
         if (isRateLimitedOutcome(outcome)) {
           await _retryDelay(_rateLimitRetryDelay);
           _assertSignerStillMatches(
             expectedPubkey,
             anyConfirmed: successCount > 0,
           );
-          outcome = excludesDivineRelay
-              ? await _nostrService.publishEventAwaitOk(
-                  deleteEvent,
-                  targetRelays: kind5TargetRelays,
-                )
-              : await _nostrService.publishEventAwaitOk(deleteEvent);
+          outcome = await _nostrService.publishEventAwaitOk(
+            deleteEvent,
+            targetRelays: kind5TargetRelays,
+          );
         }
         _assertSignerStillMatches(
           expectedPubkey,
