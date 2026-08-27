@@ -173,6 +173,13 @@ class _InMemoryProcessedGiftWrapsDao extends Mock
   Future<bool> hasGiftWrap(String giftWrapId) async =>
       recorded.contains(giftWrapId);
 
+  /// The batch fast path probes this, not [hasGiftWrap]. Without a faithful
+  /// override it fell through to the `Mock` base and answered empty, so the
+  /// ledger half of `_alreadyProcessedBatch` was unobservable (#8170).
+  @override
+  Future<Set<String>> giftWrapIdsPresent(Set<String> giftWrapIds) async =>
+      giftWrapIds.intersection(recorded);
+
   @override
   Future<void> record({
     required String giftWrapId,
@@ -6637,6 +6644,101 @@ void main() {
           ).captured;
           expect(probed, isNotEmpty);
           expect(probed.first, equals({wrap1.id, wrap2.id}));
+        },
+      );
+
+      test(
+        'a wrap already in the processed-wrap ledger is not re-decrypted, '
+        'while its page-mate still persists (#5452)',
+        () async {
+          final alreadyProcessed = await _buildGiftWrap(
+            rumor: rumorFor('ledgered', createdAt: 1700000500),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000000,
+          );
+          final fresh = await _buildGiftWrap(
+            rumor: rumorFor('fresh', createdAt: 1700000600),
+            senderPrivateKey: senderPriv,
+            recipientPubkey: recipientPub,
+            outerCreatedAt: 1700000001,
+          );
+          stubDrainPage([alreadyProcessed, fresh]);
+
+          // Only the ledger knows about the first wrap — the messages table
+          // does not. That is the split `_alreadyProcessedBatch` unions, and
+          // dropping its ledger half is invisible to every other test (#8170).
+          final ledger = _InMemoryProcessedGiftWrapsDao();
+          await ledger.record(
+            giftWrapId: alreadyProcessed.id,
+            ownerPubkey: recipientPub,
+          );
+
+          final repository = createRepository(
+            userPubkey: recipientPub,
+            signer: _IsolateLocalSigner(recipientPriv),
+            syncState: drainPending(),
+            processedGiftWrapsDao: ledger,
+          );
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The page-mate proves the drain ran and decrypted normally.
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: senderPub,
+              content: 'fresh',
+              createdAt: 1700000600,
+              giftWrapId: fresh.id,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: recipientPub,
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
+
+          // The ledgered one is skipped before any decrypt, so it never
+          // reaches an insert.
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: 'ledgered',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
         },
       );
 
