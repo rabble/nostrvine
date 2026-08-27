@@ -2912,7 +2912,7 @@
   "reportDetailsRequired": "Please describe the issue",
   "reportDetailsTextOnly": "Text only — photos and GIFs can’t be attached here.",
   "@reportDetailsTextOnly": {
-    "description": "Shown below the content report details field to warn that photos, screenshots, and GIFs cannot be attached."
+    "description": "Shown above the content report details field to warn that photos, screenshots, and GIFs cannot be attached."
   },
   "reportReasonSpam": "Spam or Unwanted Content",
   "reportReasonSpamSubtitle": "Unwanted or repetitive content",
