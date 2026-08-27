@@ -9,20 +9,24 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/player_gesture_surface.dart';
 
 import '../../helpers/accessibility_guidelines.dart';
+import '../../helpers/test_provider_overrides.dart';
 
 void main() {
   group(PlayerGestureSurface, () {
     Widget host({required bool interactiveReady, bool isOwnVideo = false}) =>
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+        testMaterialApp(
           home: Scaffold(
-            body: PlayerGestureSurface(
-              interactiveReady: interactiveReady,
-              isOwnVideo: isOwnVideo,
-              onTap: () {},
-              onDoubleTapDown: (_) {},
-              onLongPressStart: () {},
+            body: Center(
+              child: SizedBox.square(
+                dimension: 200,
+                child: PlayerGestureSurface(
+                  interactiveReady: interactiveReady,
+                  isOwnVideo: isOwnVideo,
+                  onTap: () {},
+                  onDoubleTapDown: (_) {},
+                  onLongPressStart: () {},
+                ),
+              ),
             ),
           ),
         );
