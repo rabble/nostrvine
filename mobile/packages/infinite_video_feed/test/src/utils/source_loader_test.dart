@@ -332,6 +332,31 @@ void main() {
       });
     }
 
+    test('allows non-feed callers to retain typed source fallback', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [
+          PlatformException(
+            code: 'PLAYER_ERROR',
+            details: const <String, Object?>{'errorCode': 'decoder_error'},
+          ),
+        ],
+      );
+      addTearDown(controller.dispose);
+
+      final result = await setSourceWithFallbacks(
+        index: 2,
+        controller: controller,
+        sources: ['derivedMp4', 'hlsUrl'],
+        log: logs.add,
+        stopOnTypedNonFailoverError: false,
+      );
+
+      expect(result, equals(('hlsUrl', 1)));
+      expect(clips.map((clip) => clip.uri), equals(['derivedMp4', 'hlsUrl']));
+    });
+
     test('uses source headers when retrying after HTTP 202', () async {
       final clips = <VideoClip>[];
       final controller = _RecordingControllerWithFailures(
