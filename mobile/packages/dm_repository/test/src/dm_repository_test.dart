@@ -5129,6 +5129,51 @@ void main() {
       );
 
       test(
+        'defers on a refused gift-wrap page even when NIP-04 recovery would '
+        'answer, so the gift-wrap guard is pinned on its own (#8209)',
+        () async {
+          // The refused/fan-out tests above stub ONE answer for both the
+          // gift-wrap drain and the NIP-04 recovery pass, so the NIP-04 guard
+          // masks a regressed gift-wrap guard: break the gift-wrap guard alone
+          // and they still pass because recovery defers on the same refusal.
+          // Split the two queries so this test dies to the gift-wrap guard
+          // specifically — the gift-wrap page is refused while NIP-04 recovery
+          // answers authoritatively, so only a working gift-wrap guard can keep
+          // the drain from latching (a broken one reaches the answering
+          // recovery pass and marks complete).
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            final isNip04Recovery =
+                filter.authors != null && (filter.p?.isEmpty ?? true);
+            return isNip04Recovery
+                ? answeredPage(const <Event>[])
+                : unansweredPage(timedOut: true);
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
         'demands full relay settlement on every drain page, so a refusal '
         'cannot arrive as an ordinary empty answer (#8209)',
         () async {
