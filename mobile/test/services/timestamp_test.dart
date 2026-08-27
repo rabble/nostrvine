@@ -34,6 +34,11 @@ void main() {
       expect(tolerance, equals(30)); // 30 seconds
     });
 
+    test('should not backdate Kind 62 deletion boundaries', () {
+      final tolerance = NostrTimestamp.getDriftToleranceForKind(62);
+      expect(tolerance, isZero);
+    });
+
     test('Kind 0 timestamp should be 5 minutes behind current time', () {
       final tolerance = NostrTimestamp.getDriftToleranceForKind(0);
       final timestamp = NostrTimestamp.now(driftTolerance: tolerance);
