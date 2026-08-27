@@ -4026,7 +4026,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔",
   "profileBadgeCheckmarkTitle": "پروفائل چیک مارک",
-  "profileBadgeCheckmarkBody": "Divine یہ چیک مارک ٹیم کے اکاؤنٹس اور دستی طور پر منظور شدہ چند پروفائلز کو دیتا ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔",
+  "profileBadgeCheckmarkBody": "Divine یہ چیک مارک ٹیم کے اکاؤنٹس کو دیتا ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔",
   "unfollowConfirmButton": "ان فالو کریں",
   "videoClipSaveFailed": "کلپ محفوظ نہیں ہو سکی",
   "videoClipSaveTo": "{destination} میں محفوظ کریں",

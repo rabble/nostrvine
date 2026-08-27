@@ -7272,7 +7272,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine da esta tilde a las cuentas del equipo y a un pequeño grupo de perfiles aprobados manualmente. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.';
+      'Divine da esta tilde a las cuentas del equipo. Es independiente de NIP-05, de los enlaces de cuenta verificados y del estado OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Dejar de seguir';

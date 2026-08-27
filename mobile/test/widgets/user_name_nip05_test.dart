@@ -13,6 +13,8 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_name.dart';
 
+import '../helpers/former_profile_checkmark_pubkeys.dart';
+
 Finder _specialCheckmark() => find.byWidgetPredicate(
   (w) => w is DivineIcon && w.icon == DivineIconName.check,
 );
@@ -71,15 +73,17 @@ void main() {
       expect(_specialCheckmark(), findsOneWidget);
     });
 
-    testWidgets('shows a checkmark for a grandfathered pubkey', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(pubkey: kLegacyProfileCheckmarkPubkeys.first),
-      );
-      await tester.pump();
+    for (final (index, pubkey) in formerProfileCheckmarkPubkeys.indexed) {
+      testWidgets('does not show a checkmark for former profile ${index + 1}', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(pubkey: pubkey));
+        await tester.pump();
 
-      expect(find.text('Alice'), findsOneWidget);
-      expect(_specialCheckmark(), findsOneWidget);
-    });
+        expect(find.text('Alice'), findsOneWidget);
+        expect(_specialCheckmark(), findsNothing);
+      });
+    }
 
     testWidgets('matches a Divine team pubkey case-insensitively', (
       tester,

@@ -20,6 +20,8 @@ import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/former_profile_checkmark_pubkeys.dart';
+
 void main() {
   final rosterPubkey = ogBetaTesterPubkeys.first;
   const strangerPubkey =
@@ -80,6 +82,18 @@ void main() {
       expect(data.hasAction(ui.SemanticsAction.tap), isTrue);
       handle.dispose();
     });
+
+    for (final (index, pubkey) in formerProfileCheckmarkPubkeys.indexed) {
+      testWidgets('shows OG Beta Tester for former profile ${index + 1}', (
+        tester,
+      ) async {
+        await tester.pumpWidget(await buildSubject(pubkey: pubkey));
+        await tester.pump();
+
+        expect(find.byType(SpecialProfileCheckmark), findsNothing);
+        expect(find.byType(OgBetaBadge), findsOneWidget);
+      });
+    }
 
     testWidgets('a screen reader can open the explainer, not just a finger', (
       tester,
@@ -161,12 +175,11 @@ void main() {
     testWidgets('yields to the profile checkmark so only one chit renders', (
       tester,
     ) async {
-      // 15 of the 19 checkmark-bearing pubkeys are also on the beta roster,
-      // so this overlap is the default for Divine team accounts, not an edge.
-      final overlapping = {
-        ...kDivineTeamPubkeys,
-        ...kLegacyProfileCheckmarkPubkeys,
-      }.where(isOgBetaTesterPubkey).toList();
+      // Many team accounts also appear on the beta roster, so this overlap is
+      // the default for Divine team accounts, not an edge.
+      final overlapping = kDivineTeamPubkeys
+          .where(isOgBetaTesterPubkey)
+          .toList();
       expect(
         overlapping,
         isNotEmpty,

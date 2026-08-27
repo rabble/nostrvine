@@ -7255,7 +7255,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'A Divine dá essa marca às contas da equipe e a um pequeno grupo de perfis aprovados manualmente. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.';
+      'A Divine dá essa marca às contas da equipe. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.';
 
   @override
   String get unfollowConfirmButton => 'Deixar de seguir';

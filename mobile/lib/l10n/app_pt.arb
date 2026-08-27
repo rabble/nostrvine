@@ -4475,7 +4475,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
     "profileBadgeOgVinerBody": "Essa pessoa postou um Vine original que a Divine encontrou no arquivo. Não é um selo de verificação de conta.",
     "profileBadgeCheckmarkTitle": "Marca de verificação do perfil",
-    "profileBadgeCheckmarkBody": "A Divine dá essa marca às contas da equipe e a um pequeno grupo de perfis aprovados manualmente. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.",
+    "profileBadgeCheckmarkBody": "A Divine dá essa marca às contas da equipe. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.",
     "unfollowConfirmButton": "Deixar de seguir",
     "videoClipSaveFailed": "Falha ao salvar o clipe",
     "videoClipSaveTo": "Salvar em {destination}",

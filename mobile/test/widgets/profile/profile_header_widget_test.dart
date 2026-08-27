@@ -57,6 +57,7 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../helpers/former_profile_checkmark_pubkeys.dart';
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
 import '../../helpers/test_pubkeys.dart';
@@ -650,13 +651,33 @@ void main() {
       expect(find.text(l10n.commonClose), findsOneWidget);
     });
 
+    for (final (index, pubkey) in formerProfileCheckmarkPubkeys.indexed) {
+      testWidgets('shows OG Beta Tester for former profile ${index + 1}', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: pubkey,
+            isOwnProfile: false,
+            suppliedProfile: createTestProfile(
+              displayName: 'Beta User',
+              pubkey: pubkey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SpecialProfileCheckmark), findsNothing);
+        expect(find.byType(OgBetaBadge), findsOneWidget);
+      });
+    }
+
     testWidgets('hides the OG Beta Tester chit behind the team checkmark', (
       tester,
     ) async {
-      // 15 of the 18 checkmark-bearing pubkeys are also on the beta roster,
-      // so this is the default state for Divine team accounts rather than an
-      // edge case. Without the guard the header renders two explainer
-      // buttons side by side.
+      // Many team accounts also appear on the beta roster, so this is the
+      // default state rather than an edge case. Without the guard the header
+      // renders two explainer buttons side by side.
       final dualPubkey = kDivineTeamPubkeys.firstWhere(isOgBetaTesterPubkey);
 
       await tester.pumpWidget(

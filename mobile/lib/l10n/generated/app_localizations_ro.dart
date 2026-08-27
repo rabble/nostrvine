@@ -7377,7 +7377,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine dă bifa asta conturilor echipei și unui număr mic de profiluri aprobate manual. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
+      'Divine dă bifa asta conturilor echipei. E separat de NIP-05, de linkurile de cont verificate și de statutul OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Nu mai urmări';

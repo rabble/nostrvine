@@ -94,26 +94,14 @@ void main() {
       // Lookups lowercase the profile's pubkey before testing membership, so
       // an entry pasted in mixed case matches nobody — no crash, no analyzer
       // complaint, just a team member who never gets the checkmark.
-      final checkmarkPubkeys = {
-        ...kDivineTeamPubkeys,
-        ...kLegacyProfileCheckmarkPubkeys,
-      };
-
       test('every entry is a 64-character lowercase hex pubkey', () {
-        for (final pubkey in checkmarkPubkeys) {
+        for (final pubkey in kDivineTeamPubkeys) {
           expect(
             pubkey,
             matches(RegExp(r'^[0-9a-f]{64}$')),
             reason: '$pubkey is not a lowercase hex pubkey',
           );
         }
-      });
-
-      test('the two sets do not overlap', () {
-        expect(
-          kDivineTeamPubkeys.intersection(kLegacyProfileCheckmarkPubkeys),
-          isEmpty,
-        );
       });
 
       // Sebastian and Rabble are spelled out in both this file and the

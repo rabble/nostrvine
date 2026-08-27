@@ -7299,7 +7299,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine attribue cette coche aux comptes de l\'équipe et à un petit nombre de profils approuvés manuellement. C\'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.';
+      'Divine attribue cette coche aux comptes de l\'équipe. C\'est indépendant de NIP-05, des liens de compte vérifiés et du statut OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Ne plus suivre';

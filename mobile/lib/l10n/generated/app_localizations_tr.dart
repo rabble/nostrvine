@@ -7133,7 +7133,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine bu onay işaretini ekip hesaplarına ve elle onaylanmış az sayıda profile veriyor. NIP-05\'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.';
+      'Divine bu onay işaretini ekip hesaplarına veriyor. NIP-05\'ten, doğrulanmış hesap bağlantılarından ve OG Viner durumundan ayrıdır.';
 
   @override
   String get unfollowConfirmButton => 'Takipten çık';

@@ -7277,7 +7277,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine assegna questa spunta agli account del team e a un piccolo gruppo di profili approvati manualmente. È separato da NIP-05, dai link di account verificati e dallo status OG Viner.';
+      'Divine assegna questa spunta agli account del team. È separato da NIP-05, dai link di account verificati e dallo status OG Viner.';
 
   @override
   String get unfollowConfirmButton => 'Smetti di seguire';
