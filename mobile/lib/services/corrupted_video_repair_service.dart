@@ -74,9 +74,11 @@ class CorruptedVideoRepairService {
 
   /// Scans and repairs the user's corrupted video events.
   ///
-  /// Returns the number repaired, or `null` when the repair could not run
-  /// because there is no authenticated identity / public key yet — the caller
-  /// must not treat that as a completed run.
+  /// Returns the number repaired, or `null` when the repair could not run:
+  /// there is no authenticated identity / public key yet, or no relay answered
+  /// the scan. The caller must not treat either as a completed run — a scan
+  /// nobody answered is indistinguishable from one that found nothing, and
+  /// latching on it disables the migration permanently (#8213).
   Future<int?> _repairCorruptedEvents() async {
     if (!_authService.isAuthenticated) {
       Log.debug(
@@ -100,7 +102,29 @@ class CorruptedVideoRepairService {
     // Query all of the user's own kind 34236 events from relay
     final filter = Filter(kinds: [EventKind.videoVertical], authors: [pubkey]);
 
-    final events = await _nostrClient.queryEvents([filter], useCache: false);
+    // queryEventsDetailed, not queryEvents: the latter discards `timedOut` and
+    // `noRelays`, so a scan nothing answered returns [] and reads as "no
+    // corrupted events" — the loop no-ops, 0 comes back instead of null, and
+    // the caller latches _completedKey permanently. `requireAllRelaysSettled`
+    // is what makes a relay's `CLOSED` refusal and a partial fan-out surface
+    // as `timedOut` rather than completing on whichever relays answered. With
+    // useCache: false there is no cached row to fall back on either. #8213.
+    final result = await _nostrClient.queryEventsDetailed(
+      [filter],
+      useCache: false,
+      requireAllRelaysSettled: true,
+    );
+    if (result.noRelays || result.timedOut) {
+      Log.warning(
+        'Skipping corrupted-video repair: no relay answered the scan '
+        '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut}). '
+        'Retrying on the next launch.',
+        name: _logName,
+        category: LogCategory.video,
+      );
+      return null;
+    }
+    final events = result.events;
 
     Log.info(
       'Scanning ${events.length} video events for corrupted URLs',
