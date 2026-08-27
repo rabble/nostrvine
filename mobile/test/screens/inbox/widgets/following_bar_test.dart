@@ -52,6 +52,7 @@ void main() {
       required MyFollowingState state,
       List<dynamic> additionalOverrides = const [],
       ValueChanged<String>? onUserTapped,
+      Locale? locale,
     }) {
       whenListen(
         mockFollowingBloc,
@@ -60,6 +61,7 @@ void main() {
       );
 
       return testMaterialApp(
+        locale: locale,
         additionalOverrides: additionalOverrides,
         home: BlocProvider<MyFollowingBloc>.value(
           value: mockFollowingBloc,
@@ -159,9 +161,11 @@ void main() {
       Future<void> pumpBar(
         WidgetTester tester, {
         required bool vanished,
+        Locale? locale,
       }) async {
         await tester.pumpWidget(
           buildSubject(
+            locale: locale,
             state: const MyFollowingState(
               status: MyFollowingStatus.success,
               followingPubkeys: [pubkey1],
@@ -193,10 +197,13 @@ void main() {
       });
 
       testWidgets('resolves the copy from l10n', (tester) async {
-        await pumpBar(tester, vanished: true);
+        // Pump in German and require the German string. Asserting the German
+        // copy is *absent* from an English pump passes whether or not the
+        // widget reads l10n, so it proved nothing.
+        await pumpBar(tester, vanished: true, locale: const Locale('de'));
 
         final de = lookupAppLocalizations(const Locale('de'));
-        expect(find.text(de.profileDeletedAccountName), findsNothing);
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
       });
 
       testWidgets('leaves a live account untouched', (tester) async {
