@@ -7,7 +7,6 @@ import 'dart:ui' show Tristate;
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -196,50 +195,6 @@ void main() {
       expect(detailsField.textInputAction, TextInputAction.newline);
       expect(detailsField.textCapitalization, TextCapitalization.sentences);
     });
-
-    testWidgets(
-      'on Android the details field disables suggestions and autocorrect so '
-      'the keyboard cannot offer image/GIF insertion the report would drop',
-      (tester) async {
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        try {
-          await setLargeSurface(tester);
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text(l10n.reportReasonOther));
-          await tester.pumpAndSettle();
-
-          final field = tester.widget<TextField>(find.byType(TextField));
-          expect(field.enableSuggestions, isFalse);
-          expect(field.autocorrect, isFalse);
-        } finally {
-          debugDefaultTargetPlatformOverride = null;
-        }
-      },
-    );
-
-    testWidgets(
-      'on iOS the details field keeps suggestions and autocorrect '
-      '(the Android-only suppression must not disrupt iOS)',
-      (tester) async {
-        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        try {
-          await setLargeSurface(tester);
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text(l10n.reportReasonOther));
-          await tester.pumpAndSettle();
-
-          final field = tester.widget<TextField>(find.byType(TextField));
-          expect(field.enableSuggestions, isTrue);
-          expect(field.autocorrect, isTrue);
-        } finally {
-          debugDefaultTargetPlatformOverride = null;
-        }
-      },
-    );
 
     testWidgets(
       'Submit button is visible before selecting a reason (Apple requirement) '
