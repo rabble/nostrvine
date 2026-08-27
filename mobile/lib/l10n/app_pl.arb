@@ -1676,6 +1676,7 @@
     "reportSelectReason": "Wybierz powód zgłoszenia tej treści",
     "reportOtherRequiresDetails": "Przy wyborze „Inne” opisz problem",
     "reportDetailsRequired": "Opisz problem",
+    "reportDetailsTextOnly": "Tylko tekst — nie można tu dołączać zdjęć ani plików GIF.",
     "reportReasonSpam": "Spam lub niechciana treść",
     "reportReasonHarassment": "Nagabywanie, zniesławianie lub groźby",
     "reportReasonViolence": "Treści brutalne lub ekstremistyczne",

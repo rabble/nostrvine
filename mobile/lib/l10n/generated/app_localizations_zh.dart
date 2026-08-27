@@ -4298,6 +4298,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportDetailsRequired => '请描述问题';
 
   @override
+  String get reportDetailsTextOnly => '仅限文字——无法在此附加照片或 GIF。';
+
+  @override
   String get reportReasonSpam => '垃圾或不受欢迎的内容';
 
   @override

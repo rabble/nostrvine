@@ -2432,6 +2432,7 @@
   "reportSelectReason": "براہ کرم اس مواد کی رپورٹ کرنے کی وجہ منتخب کریں",
   "reportOtherRequiresDetails": "دیگر منتخب کرنے پر براہ کرم مسئلہ بیان کریں",
   "reportDetailsRequired": "براہ کرم مسئلہ بیان کریں",
+  "reportDetailsTextOnly": "صرف متن — یہاں تصاویر یا GIF منسلک نہیں کیے جا سکتے۔",
   "reportReasonSpam": "اسپیم یا ناپسندیدہ مواد",
   "reportReasonSpamSubtitle": "ناپسندیدہ یا بار بار کا مواد",
   "reportReasonHarassment": "ہراسانی، دھتکار، یا دھمکیاں",

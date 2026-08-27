@@ -1666,6 +1666,7 @@
     "reportSelectReason": "報告する理由を選んでね",
     "reportOtherRequiresDetails": "「その他」を選んだ場合は問題の内容を記入してください",
     "reportDetailsRequired": "問題の内容を記入してください",
+    "reportDetailsTextOnly": "テキストのみです。ここには写真やGIFを添付できません。",
     "reportReasonSpam": "スパムや迷惑なコンテンツ",
     "reportReasonHarassment": "嫌がらせ、いじめ、脅迫",
     "reportReasonViolence": "暴力的・過激なコンテンツ",

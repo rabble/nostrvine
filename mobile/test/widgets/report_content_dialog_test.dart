@@ -182,11 +182,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNothing);
+      expect(find.text(l10n.reportDetailsTextOnly), findsNothing);
 
       await tester.tap(find.text(l10n.reportReasonOther));
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsOneWidget);
+      expect(find.text(l10n.reportDetailsTextOnly), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text(l10n.reportDetailsTextOnly)).dy,
+        lessThan(tester.getTopLeft(find.byType(TextField)).dy),
+        reason: 'The text-only disclosure must be read before the field',
+      );
+
+      final detailsField = tester.widget<TextField>(find.byType(TextField));
+      expect(detailsField.keyboardType, TextInputType.multiline);
+      expect(detailsField.textInputAction, TextInputAction.newline);
+      expect(detailsField.textCapitalization, TextCapitalization.sentences);
     });
 
     testWidgets(

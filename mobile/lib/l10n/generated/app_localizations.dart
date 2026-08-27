@@ -7817,6 +7817,12 @@ abstract class AppLocalizations {
   /// **'Please describe the issue'**
   String get reportDetailsRequired;
 
+  /// Shown above the content report details field to warn that photos, screenshots, and GIFs cannot be attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Text only — photos and GIFs can’t be attached here.'**
+  String get reportDetailsTextOnly;
+
   /// No description provided for @reportReasonSpam.
   ///
   /// In en, this message translates to:

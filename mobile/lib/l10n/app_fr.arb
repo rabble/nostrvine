@@ -1676,6 +1676,7 @@
     "reportSelectReason": "Sélectionne une raison pour signaler ce contenu",
     "reportOtherRequiresDetails": "Décris le problème quand tu choisis Autre",
     "reportDetailsRequired": "Décris le problème",
+    "reportDetailsTextOnly": "Texte uniquement — impossible de joindre des photos ou des GIF ici.",
     "reportReasonSpam": "Spam ou contenu indésirable",
     "reportReasonHarassment": "Harcèlement, intimidation ou menaces",
     "reportReasonViolence": "Contenu violent ou extrémiste",

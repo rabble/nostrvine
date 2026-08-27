@@ -1676,6 +1676,7 @@
     "reportSelectReason": "Bitte wähl einen Grund für die Meldung dieses Inhalts",
     "reportOtherRequiresDetails": "Bitte beschreib das Problem, wenn du „Sonstiges“ wählst",
     "reportDetailsRequired": "Bitte beschreib das Problem",
+    "reportDetailsTextOnly": "Nur Text – Fotos und GIFs können hier nicht angehängt werden.",
     "reportReasonSpam": "Spam oder unerwünschte Inhalte",
     "reportReasonHarassment": "Belästigung, Mobbing oder Drohungen",
     "reportReasonViolence": "Gewalttätige oder extremistische Inhalte",

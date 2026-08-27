@@ -4640,6 +4640,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get reportDetailsRequired => 'Décris le problème';
 
   @override
+  String get reportDetailsTextOnly =>
+      'Texte uniquement — impossible de joindre des photos ou des GIF ici.';
+
+  @override
   String get reportReasonSpam => 'Spam ou contenu indésirable';
 
   @override
