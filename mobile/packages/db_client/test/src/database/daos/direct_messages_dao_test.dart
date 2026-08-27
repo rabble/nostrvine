@@ -756,6 +756,29 @@ void main() {
           );
           expect(row!.deletionRumorJson, isNotNull);
         });
+
+        // The retraction did not happen, so continuing to hide the message
+        // repeats the #8165 lie in a new place. Un-hiding also restores the
+        // only row the user can act on to try again.
+        test('restores the message to the thread', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          await dao.markMessageDeletionBlocked(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isFalse);
+        });
       });
     });
 

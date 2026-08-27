@@ -45,7 +45,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Send policy blocked every recipient that failed. Terminal, and NOT a
   /// claim of full delivery — recipients outside the block may already have
   /// received the retraction.
-  static const String _deletionBlocked = 'deletion_blocked';
+  ///
+  /// Public because the repository reads it back to recognise a row it must
+  /// keep visible rather than treat as already retracted (#8201).
+  static const String deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
   /// **or** legacy rows with no owner (NULL).
@@ -290,6 +293,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
         status: _deletionSent,
         // Delivered, so there is nothing left to replay.
         retainRumor: false,
+        // Delivered, so the message stays retracted.
+        restoreToThread: false,
         ownerPubkey: ownerPubkey,
       );
 
@@ -323,25 +328,36 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
   /// additionally requires `deletion_pending`, so a blocked row stays off the
   /// worklist whether or not the rumor is present.
+  ///
+  /// The message is also **returned to the thread** (#8201). It was hidden
+  /// optimistically when the deletion was enqueued; leaving it hidden once the
+  /// send is refused repeats the #8165 lie in a new place — the retraction did
+  /// not happen, and the row is the only thing the user can act on to try
+  /// again. That matters beyond a policy refusal, because #7337 routes a
+  /// scope-denied signer 403 into this same branch, so a row recorded blocked
+  /// was not necessarily refused by send policy at all.
   Future<bool> markMessageDeletionBlocked(
     String rumorId, {
     String? ownerPubkey,
   }) => _settleMessageDeletion(
     rumorId,
-    status: _deletionBlocked,
+    status: deletionBlocked,
     retainRumor: true,
+    restoreToThread: true,
     ownerPubkey: ownerPubkey,
   );
 
   /// Move a deletion row to a terminal [status].
   ///
-  /// [retainRumor] is required rather than defaulted: whether the payload
-  /// survives is the whole difference between the two terminal states, so a
-  /// future third caller has to decide it deliberately.
+  /// [retainRumor] and [restoreToThread] are required rather than defaulted:
+  /// whether the payload survives, and whether the message comes back, are the
+  /// whole difference between the two terminal states, so a future third
+  /// caller has to decide both deliberately.
   Future<bool> _settleMessageDeletion(
     String rumorId, {
     required String status,
     required bool retainRumor,
+    required bool restoreToThread,
     String? ownerPubkey,
   }) async {
     final rows =
@@ -355,6 +371,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
                 deletionRumorJson: retainRumor
                     ? const Value.absent()
                     : const Value(null),
+                isDeleted: restoreToThread
+                    ? const Value(false)
+                    : const Value.absent(),
                 deletionPublishStatus: Value(status),
               ),
             );

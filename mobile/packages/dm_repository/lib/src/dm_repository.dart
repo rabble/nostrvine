@@ -8202,6 +8202,10 @@ class DmRepository {
       fileMetadata: fileMetadata,
       sharedVideoRef: DmSharedVideoCitation.parse(tags),
       sendBatchId: row.sendBatchId,
+      // Only a refused retraction can reach here: `pending` and `sent` both
+      // leave the row soft-deleted, so the stream filters them out (#8201).
+      retractionBlocked:
+          row.deletionPublishStatus == DirectMessagesDao.deletionBlocked,
     );
   }
 

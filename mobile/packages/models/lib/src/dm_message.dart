@@ -27,6 +27,7 @@ class DmMessage extends Equatable {
     this.fileMetadata,
     this.sharedVideoRef,
     this.sendBatchId,
+    this.retractionBlocked = false,
   });
 
   /// The rumor event ID (kind 14 or 15).
@@ -79,6 +80,16 @@ class DmMessage extends Equatable {
   /// bubbles and aggregate their delivery status.
   final String? sendBatchId;
 
+  /// Whether a "Delete for everyone" on this message was refused by send
+  /// policy and will not be retried (#8201).
+  ///
+  /// This is the only deletion state a thread can show. A retraction still in
+  /// flight, or one that landed, both leave the row soft-deleted and therefore
+  /// filtered out of the conversation stream — so a visible message is either
+  /// ordinary or one whose retraction was refused. The bubble is back on
+  /// screen because the message was never retracted; saying so is the point.
+  final bool retractionBlocked;
+
   /// Whether this is a file message (kind 15).
   bool get isFileMessage => messageKind == 15;
 
@@ -103,6 +114,7 @@ class DmMessage extends Equatable {
     fileMetadata,
     sharedVideoRef,
     sendBatchId,
+    retractionBlocked,
   ];
 }
 
