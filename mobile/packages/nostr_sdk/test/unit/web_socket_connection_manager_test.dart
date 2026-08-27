@@ -340,6 +340,32 @@ void main() {
 
         await slowManager.dispose();
       });
+
+      test('connection timeout is not held open by channel cleanup', () async {
+        final factory = MockWebSocketChannelFactory();
+        factory.readyGate = Completer<void>();
+        final boundedManager = WebSocketConnectionManager(
+          url: 'wss://test.relay.com',
+          channelFactory: factory,
+          logger: logMessages.add,
+          config: const WebSocketConfig(
+            connectionTimeout: Duration(milliseconds: 20),
+            closeTimeout: Duration(milliseconds: 20),
+          ),
+        );
+
+        final connecting = boundedManager.connect();
+        await Future<void>.delayed(Duration.zero);
+        factory.lastChannel!.blockClose();
+
+        expect(
+          await connecting.timeout(const Duration(milliseconds: 100)),
+          isFalse,
+        );
+        expect(boundedManager.state, ConnectionState.disconnected);
+
+        await boundedManager.dispose();
+      });
     });
 
     group('disconnection', () {
@@ -352,6 +378,29 @@ void main() {
         expect(manager.isConnected, isFalse);
         expect(mockFactory.lastChannel!.isClosed, isTrue);
       });
+
+      test(
+        'disconnect is bounded when channel close never completes',
+        () async {
+          final boundedManager = WebSocketConnectionManager(
+            url: 'wss://test.relay.com',
+            channelFactory: mockFactory,
+            logger: logMessages.add,
+            config: const WebSocketConfig(
+              closeTimeout: Duration(milliseconds: 20),
+            ),
+          );
+          await boundedManager.connect();
+          mockFactory.lastChannel!.blockClose();
+
+          await boundedManager.disconnect().timeout(
+            const Duration(milliseconds: 100),
+          );
+          expect(boundedManager.state, ConnectionState.disconnected);
+
+          await boundedManager.dispose();
+        },
+      );
 
       test('emits disconnected state', () async {
         await manager.connect();
