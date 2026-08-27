@@ -597,7 +597,6 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
           subtitle: context.l10n.videoGridEditVideoSubtitle,
           onTap: onEditVideo,
           isDisabled: isDeletePublishing,
-          closeBeforeTap: false,
         ),
         _OwnVideoActionTile(
           icon: DivineIconName.trash,
@@ -606,7 +605,6 @@ class _OwnVideoActionsSheetBody extends StatelessWidget {
           subtitle: context.l10n.videoGridDeleteVideoSubtitle,
           onTap: onDeleteVideo,
           isBusy: isDeleting,
-          closeBeforeTap: false,
         ),
         SizedBox(height: MediaQuery.viewPaddingOf(context).bottom + 16),
       ],
@@ -623,7 +621,6 @@ class _OwnVideoActionTile extends StatelessWidget {
     required this.onTap,
     this.isBusy = false,
     this.isDisabled = false,
-    this.closeBeforeTap = true,
   });
 
   final DivineIconName icon;
@@ -633,7 +630,6 @@ class _OwnVideoActionTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool isBusy;
   final bool isDisabled;
-  final bool closeBeforeTap;
 
   @override
   Widget build(BuildContext context) {
@@ -672,12 +668,7 @@ class _OwnVideoActionTile extends StatelessWidget {
             color: context.vineColors.secondaryText,
           ),
         ),
-        onTap: isBusy || isDisabled
-            ? null
-            : () {
-                if (closeBeforeTap) Navigator.of(context).pop();
-                onTap();
-              },
+        onTap: isBusy || isDisabled ? null : onTap,
       ),
     );
   }

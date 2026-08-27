@@ -444,6 +444,7 @@ void main() {
         final deletionService = _MockContentDeletionService();
         final enforcementRepository = _MockEnforcementRepository();
         final videoEventService = _MockVideoEventService();
+        final relayCompleter = Completer<DeleteResult>();
         final video = VideoEvent(
           id: 'owned-video',
           pubkey: _ownPubkey,
@@ -461,12 +462,7 @@ void main() {
             video: video,
             reason: DeleteReason.personalChoice,
           ),
-        ).thenAnswer(
-          (_) async => DeleteResult.failure(
-            'relay rejected',
-            DeleteFailureKind.relayRejected,
-          ),
-        );
+        ).thenAnswer((_) => relayCompleter.future);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -508,6 +504,26 @@ void main() {
         await tester.tap(find.text(l10n.videoGridDeleteVideo));
         await tester.pumpAndSettle();
         await tester.tap(find.text(l10n.shareMenuDelete));
+        await tester.pump();
+
+        await tester.longPress(
+          find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        final editTile = tester.widget<ListTile>(
+          find.ancestor(
+            of: find.text(l10n.videoGridEditVideo),
+            matching: find.byType(ListTile),
+          ),
+        );
+        expect(editTile.enabled, isFalse);
+
+        relayCompleter.complete(
+          DeleteResult.failure(
+            'relay rejected',
+            DeleteFailureKind.relayRejected,
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(

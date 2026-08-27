@@ -202,6 +202,8 @@ class _ActionData {
   /// Whether the action is mid-flight, so the circle shows a spinner and stops
   /// responding to taps.
   final bool isPending;
+
+  /// Whether another operation temporarily prevents this action.
   final bool isDisabled;
 }
 
@@ -218,6 +220,8 @@ class _ActionCircle extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isPending;
+
+  /// Disables the action without presenting it as the pending operation.
   final bool isDisabled;
 
   static const double _circleSize = 48;
