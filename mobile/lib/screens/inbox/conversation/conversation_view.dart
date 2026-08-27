@@ -344,8 +344,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 listener: _onSendOutcome,
               ),
               BlocListener<ConversationBloc, ConversationState>(
-                listenWhen: (previous, current) =>
-                    previous.retractionStatus != current.retractionStatus &&
+                // Do not require an idle -> blocked status transition: two
+                // different deletions can be refused on consecutive stream
+                // ticks, and each blocked tick is a distinct notification.
+                listenWhen: (_, current) =>
                     current.retractionStatus == RetractionStatus.blocked,
                 listener: _onRetractionRefused,
               ),

@@ -6217,6 +6217,7 @@ class DmRepository {
     unawaited(
       _driveMessageDeletion(
         rumorId: rumorId,
+        conversationId: row.conversationId,
         deletion: deletion,
         recipients: recipients,
       ),
@@ -6256,6 +6257,7 @@ class DmRepository {
   /// of reporting the message retracted (#8165).
   Future<DmMessageDeletionOutcome> _driveMessageDeletion({
     required String rumorId,
+    required String conversationId,
     required Event deletion,
     required List<String> recipients,
   }) async {
@@ -6281,6 +6283,22 @@ class DmRepository {
               rumorId,
               ownerPubkey: _ownerPubkey,
             );
+            // The pending write removed this message from the denormalized
+            // inbox preview. Blocking restores the row to the thread, so the
+            // preview must be rebuilt from that restored visible set too.
+            try {
+              await _refreshConversationPreview(conversationId);
+            } on Object catch (e, stackTrace) {
+              // The durable outcome is already blocked. A denormalized preview
+              // failure must not relabel it unconfirmed and invite retries.
+              Log.error(
+                'Failed to restore conversation preview after blocked '
+                'deletion of $rumorId: $e',
+                category: LogCategory.system,
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
             Log.info(
               'Deletion of $rumorId refused by send policy; not retrying',
               category: LogCategory.system,
@@ -6368,6 +6386,7 @@ class DmRepository {
 
     return _driveMessageDeletion(
       rumorId: rumorId,
+      conversationId: row.conversationId,
       deletion: deletion,
       recipients: recipients,
     );

@@ -639,6 +639,24 @@ void main() {
           ),
         );
       });
+
+      testWidgets('consecutive refusals each raise a retraction toast', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            previousState: const ConversationState(
+              retractionStatus: RetractionStatus.blocked,
+            ),
+            state: const ConversationState(
+              retractionStatus: RetractionStatus.blocked,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.dmDeleteRefusedMessage), findsOneWidget);
+      });
     });
 
     // #6416. Nothing has read a retired moderation key since the rotation, so

@@ -13536,6 +13536,58 @@ void main() {
         },
       );
 
+      test(
+        'restores the blocked message to the conversation preview',
+        () async {
+          stubDeletableMessage();
+          stubSendRumor((_, _) => const NIP17SendResult.blocked('blocked'));
+          var previewRead = 0;
+          when(
+            () => mockDirectMessagesDao.getMessagesForConversation(
+              conversationId,
+              limit: 1,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async {
+            previewRead++;
+            if (previewRead == 1) return [];
+            return [
+              DirectMessageRow(
+                id: _rumorEventId,
+                conversationId: conversationId,
+                senderPubkey: _validPubkeyA,
+                content: 'Hello',
+                createdAt: 1700000000,
+                giftWrapId: _giftWrapEventId,
+                messageKind: 14,
+                isDeleted: false,
+                deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+              ),
+            ];
+          });
+
+          final repo = createRepository();
+          await repo.deleteMessageForEveryone(_rumorEventId);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockConversationsDao.upsertConversation(
+              id: conversationId,
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: 'Hello',
+              lastMessageTimestamp: 1700000000,
+              lastMessageSenderPubkey: _validPubkeyA,
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
+            ),
+          ).called(1);
+        },
+      );
+
       test("names the deleted row's own kind in the k tag", () async {
         // NIP-09 09.md:9 — `k` is the kind of the event being deleted. The
         // previous hardcoded '14' mislabelled every kind-15 file message.
@@ -13634,6 +13686,43 @@ void main() {
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectMessagesDao.getMessagesForConversation(
+            conversationId,
+            limit: 1,
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            DirectMessageRow(
+              id: _rumorEventId,
+              conversationId: conversationId,
+              senderPubkey: _validPubkeyA,
+              content: 'Hello',
+              createdAt: 1700000000,
+              giftWrapId: _giftWrapEventId,
+              messageKind: 14,
+              isDeleted: false,
+              deletionRumorJson: rumorJson,
+              deletionPublishStatus: DirectMessagesDao.deletionBlocked,
+            ),
+          ],
+        );
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
+          ),
+        ).thenAnswer((_) async {});
       }
 
       test('replays the STORED rumor rather than minting a new one', () async {
@@ -13740,6 +13829,21 @@ void main() {
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
             ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        verify(
+          () => mockConversationsDao.upsertConversation(
+            id: conversationId,
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: 1700000000,
+            lastMessageSenderPubkey: _validPubkeyA,
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: true,
           ),
         ).called(1);
         verifyNever(
