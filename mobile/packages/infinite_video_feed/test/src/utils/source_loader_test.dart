@@ -250,16 +250,29 @@ void main() {
       expect(recordedFailures, equals(['processingUrl']));
     });
 
-    test(
-      'records typed failover-class source failure before failover',
-      () async {
+    for (final errorCode in [
+      NativePlayerErrorCode.httpClientError,
+      NativePlayerErrorCode.httpServerError,
+      NativePlayerErrorCode.ioError,
+      NativePlayerErrorCode.parseError,
+    ]) {
+      test('fails over typed ${errorCode.name} failures', () async {
+        final clips = <VideoClip>[];
         final controller = _RecordingControllerWithFailures(
-          (_) {},
+          clips.add,
           failures: [
             PlatformException(
               code: 'PLAYER_ERROR',
-              message: 'ERROR_CODE_IO_UNSPECIFIED',
-              details: const <String, Object?>{'errorCode': 'io_error'},
+              message: errorCode.name,
+              details: <String, Object?>{
+                'errorCode': switch (errorCode) {
+                  NativePlayerErrorCode.httpClientError => 'http_client_error',
+                  NativePlayerErrorCode.httpServerError => 'http_server_error',
+                  NativePlayerErrorCode.ioError => 'io_error',
+                  NativePlayerErrorCode.parseError => 'parse_error',
+                  _ => throw StateError('unsupported test case'),
+                },
+              },
             ),
           ],
         );
@@ -274,9 +287,10 @@ void main() {
           onFailoverSourceFailure: recordedFailures.add,
         );
 
+        expect(clips.map((clip) => clip.uri), equals(['derivedMp4', 'hlsUrl']));
         expect(recordedFailures, equals(['derivedMp4']));
-      },
-    );
+      });
+    }
 
     for (final errorCode in [
       NativePlayerErrorCode.networkError,
@@ -435,6 +449,42 @@ void main() {
       expect(logs.single, contains('Source failed without failover'));
       expect(logs.single, contains('code=NativePlayerErrorCode.authRequired'));
     });
+
+    test(
+      'preserves the original stack trace for non-failover errors',
+      () async {
+        final error = PlatformException(
+          code: 'PLAYER_ERROR',
+          details: const <String, Object?>{'errorCode': 'network_error'},
+        );
+        final originalStackTrace = StackTrace.current;
+        final controller = _StackTraceController(
+          error: error,
+          stackTrace: originalStackTrace,
+        );
+        addTearDown(controller.dispose);
+
+        Object? caughtError;
+        StackTrace? caughtStackTrace;
+        try {
+          await setSourceWithFallbacks(
+            index: 0,
+            controller: controller,
+            sources: ['optimizedUrl', 'hlsUrl'],
+            log: logs.add,
+          );
+        } on Object catch (error, stackTrace) {
+          caughtError = error;
+          caughtStackTrace = stackTrace;
+        }
+
+        expect(caughtError, same(error));
+        expect(
+          caughtStackTrace.toString(),
+          equals(originalStackTrace.toString()),
+        );
+      },
+    );
 
     test('uses headers returned for the successful failover source', () async {
       final clips = <VideoClip>[];
@@ -618,6 +668,18 @@ class _RecordingControllerWithFailures extends FakeController {
       throw failures[attempts++];
     }
     attempts++;
+  }
+}
+
+class _StackTraceController extends FakeController {
+  _StackTraceController({required this.error, required this.stackTrace});
+
+  final Object error;
+  final StackTrace stackTrace;
+
+  @override
+  Future<void> setSource(VideoClip clip) async {
+    Error.throwWithStackTrace(error, stackTrace);
   }
 }
 
