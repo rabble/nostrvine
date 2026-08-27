@@ -970,12 +970,12 @@ class DmRepository {
   /// Resolves and memoizes the CURRENT user's own kind-10050 DM inbox
   /// resolution for the session (#4974 RC2).
   ///
-  /// Shared by the live subscription, the history drain, and the RC3
-  /// existence check, so the relay is queried at most once per login. A
-  /// `found`/`absent` outcome is cached; a `failed` (transient) outcome is
-  /// NOT — the memo clears itself once it resolves `failed` so the next
-  /// caller re-queries instead of degrading the whole session to the default
-  /// pool. [_resetState] clears the memo on account switch.
+  /// Shared by the live subscription, history drain, and read-marker publish.
+  /// The RC3 existence check deliberately performs its own authoritative read.
+  /// A `found`/`absent` outcome is cached; a `failed` (transient) outcome is NOT
+  /// — the memo clears itself once it resolves `failed` so the next caller
+  /// re-queries instead of degrading the whole session to the default pool.
+  /// [_resetState] clears the memo on account switch.
   Future<({_OwnDmInboxState state, List<String>? relays})>
   _resolveOwnDmInbox() {
     final cached = _ownInboxFuture;
@@ -1746,9 +1746,7 @@ class DmRepository {
     });
   }
 
-  Future<void> _withGiftWrapProcessingLock(
-    Future<void> Function() body,
-  ) async {
+  Future<void> _withGiftWrapProcessingLock(Future<void> Function() body) async {
     while (_giftWrapProcessingLock != null) {
       await _giftWrapProcessingLock;
     }
@@ -1842,10 +1840,8 @@ class DmRepository {
         deleterPubkey: rumor.pubkey,
         giftWrapId: giftWrapId,
       );
-      Future<DmWrapOutcome?> asMessage() async => _applyMessageDeletion(
-        rumorId: rumorId,
-        deleterPubkey: rumor.pubkey,
-      );
+      Future<DmWrapOutcome?> asMessage() async =>
+          _applyMessageDeletion(rumorId: rumorId, deleterPubkey: rumor.pubkey);
 
       final resolved = tryReactionsFirst
           ? await asReaction() ?? await asMessage()
@@ -3199,26 +3195,34 @@ class DmRepository {
       // matching came back. A read that DID return the list stays `found` even
       // when some relay never settled: the list is in hand, and RC3's job is
       // not to publish over it. Checking the flags before `events` — as the
-      // obvious form of this fix does — would discard a real answer, because
-      // the local cache leg is merged in regardless of how the relay leg went.
+      // obvious form of this fix does — would discard a real answer from a
+      // relay that settled before another relay timed out.
       final _OwnDmInboxState absentOrFailed;
+      String? inconclusiveReason;
       if (requireAuthoritative && (result.noRelays || result.timedOut)) {
         absentOrFailed = _OwnDmInboxState.failed;
         // `noRelays` first: an offline device sets both flags, and reporting
         // that as a timeout misreads it.
-        final reason = result.noRelays
+        inconclusiveReason = result.noRelays
             ? 'no relay took the REQ'
             : 'not every relay settled';
+      } else {
+        absentOrFailed = _OwnDmInboxState.absent;
+      }
+
+      void logInconclusiveRead() {
+        final reason = inconclusiveReason;
+        if (reason == null) return;
         Log.warning(
           'Own kind-10050 lookup for ${pubkeyForLogs(pubkey)} was '
           'inconclusive ($reason) — not publishing over a list we could not '
           'read; will retry',
           category: LogCategory.system,
         );
-      } else {
-        absentOrFailed = _OwnDmInboxState.absent;
       }
+
       if (events.isEmpty) {
+        logInconclusiveRead();
         return (state: absentOrFailed, relays: null);
       }
       final matchingEvents = [
@@ -3232,6 +3236,7 @@ class DmRepository {
           '${pubkeyForLogs(pubkey)}',
           category: LogCategory.system,
         );
+        logInconclusiveRead();
         return (state: absentOrFailed, relays: null);
       }
       // Newest wins for a replaceable event served from multiple relays.
