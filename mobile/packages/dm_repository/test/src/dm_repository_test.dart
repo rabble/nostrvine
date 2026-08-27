@@ -5172,6 +5172,96 @@ void main() {
         },
       );
 
+      /// Stubs a first page that carries [events] but which not every relay
+      /// settled (`timedOut`), and an authoritative empty page for every read
+      /// below it — the shape that used to advance the durable cursor past a
+      /// window one relay never answered, then latch completion over the gap.
+      void stubPartialThenExhausted(
+        List<Event> events,
+        List<int?> capturedUntil,
+      ) {
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((inv) async {
+          final filter =
+              (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                  .single;
+          // Let the outgoing-NIP-04 recovery pass answer cleanly, so anything
+          // this test observes comes from the gift-wrap drain's own guard.
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return answeredPage(const <Event>[]);
+          }
+          final until = filter.until;
+          capturedUntil.add(until);
+          final page = events.where((e) => e.createdAt <= (until ?? 0));
+          return page.isEmpty
+              ? answeredPage(const <Event>[])
+              : partialPage(page.toList());
+        });
+      }
+
+      test(
+        'does NOT advance the resume cursor past a page carrying events that '
+        'not every relay settled (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubPartialThenExhausted([deletion(50)], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The run still pages below the partial page: the events the
+          // answering relay DID hold are worth recovering now, and the page
+          // after it is authoritative and empty.
+          expect(capturedUntil.first, 100);
+          expect(capturedUntil.last! < 50, isTrue);
+
+          // But nothing is persisted past that window, so the next run
+          // re-requests it instead of resuming below it.
+          expect(syncState.persistedDrainCursors, isEmpty);
+          expect(syncState.drainCursorOverride, isNull);
+
+          // And the authoritative empty page that followed cannot latch
+          // completion over the gap.
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'a later run re-requests the window a partial page left unsettled '
+        '(#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubPartialThenExhausted([deletion(50)], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+          capturedUntil.clear();
+          await repository.backfillHistoryIfNeeded();
+
+          // Seeded from the same boundary as the first run, not from below
+          // the partial page — that window is requested again, whole.
+          expect(capturedUntil.first, 100);
+        },
+      );
+
       test(
         'marks complete on an empty page a relay actually answered '
         '(genuine exhaustion)',

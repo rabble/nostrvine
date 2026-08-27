@@ -1526,6 +1526,11 @@ class DmRepository {
       if (_ingestSessionEnded(pubkey, gen)) return;
 
       var reachedEnd = false;
+      // Set by any page not every relay settled — empty or not. Freezes the
+      // durable cursor and blocks completion for the rest of this run, so a
+      // window one relay never answered is re-requested rather than skipped
+      // past. See the partial-page guard below. #8209.
+      var sawUnansweredPage = false;
       var pagesRun = 0;
       var totalEvents = 0;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
@@ -1558,8 +1563,8 @@ class DmRepository {
           // with `CLOSED`, or a page the settle window completed on the
           // relays that did answer. Marking the drain complete on any of those
           // permanently strands unrecovered history (#5202 root cause, #8209).
-          // Defer instead: leave historyDrainComplete unset and the cursor
-          // persisted so the next inbox open resumes where this run stopped.
+          // Defer instead: leave historyDrainComplete unset and resume on the
+          // next inbox open from the last boundary this run persisted.
           if (!historyPage.authoritative) {
             Log.warning(
               'DM history drain saw an empty page that no relay answered for '
@@ -1571,6 +1576,33 @@ class DmRepository {
           }
           reachedEnd = true;
           break;
+        }
+
+        if (!historyPage.authoritative) {
+          // A page that carried events but which not every relay settled: one
+          // relay answered while another never did, so this window can still
+          // hold events this page did not see. The events it did return are
+          // real and already persisted. What must not happen is the durable
+          // cursor moving below a window we have only partly seen — the
+          // unanswered relay's events in it would never be requested again,
+          // and a later authoritative empty page would then latch completion
+          // over the gap. That is the same permanent strand as latching on an
+          // empty page, one window wide instead of the whole tail.
+          //
+          // So: keep paging, because this run should still recover everything
+          // the relays that DID answer hold; stop persisting, so the next run
+          // resumes from the last window every relay settled and re-requests
+          // this one (dedup absorbs the overlap); and do not complete off this
+          // run. See #8209.
+          if (!sawUnansweredPage) {
+            Log.warning(
+              'DM history drain saw a page not every relay settled for '
+              '${pubkeyForLogs(pubkey)}; holding the resume cursor at '
+              '$cursor and deferring completion to the next inbox open.',
+              category: LogCategory.system,
+            );
+          }
+          sawUnansweredPage = true;
         }
 
         // Step strictly below the oldest event seen so the loop always
@@ -1587,11 +1619,14 @@ class DmRepository {
         }
         // Persist the boundary so an interrupted or page-capped run
         // resumes from here on the next inbox open rather than restarting
-        // from the top.
-        await syncState.setHistoryDrainCursor(pubkey, cursor);
+        // from the top. Frozen once a page went unanswered, so the resume
+        // point never moves below a window that page may not have seen whole.
+        if (!sawUnansweredPage) {
+          await syncState.setHistoryDrainCursor(pubkey, cursor);
+        }
       }
 
-      if (reachedEnd) {
+      if (reachedEnd && !sawUnansweredPage) {
         // Before declaring history complete, recover the user's OWN outgoing
         // NIP-04 messages. The paged drain above filters `p:[self]`, which
         // matches incoming NIP-04 and the user's NIP-17 self-wraps but never
@@ -1624,6 +1659,17 @@ class DmRepository {
             category: LogCategory.system,
           );
         }
+      } else if (reachedEnd) {
+        // Reached the end of what the answering relays hold, but an earlier
+        // page in this run was not fully settled, so the run has no standing
+        // to call history exhausted. The resume cursor is still parked above
+        // that window; the next inbox open re-requests it. #8209.
+        Log.warning(
+          'DM history drain reached the end for ${pubkeyForLogs(pubkey)} but '
+          'an earlier page was not fully settled; deferring completion to the '
+          'next inbox open.',
+          category: LogCategory.system,
+        );
       } else {
         // Page cap hit: leave historyDrainComplete unset and the cursor
         // persisted so the next inbox open resumes the remaining history
