@@ -8,6 +8,7 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/supporter_providers.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
@@ -117,6 +118,10 @@ class AppShellSideEffects extends ConsumerWidget {
 
     // Retries a dirty kind:10002 relay-list publish once the session is ready.
     ref.watch(relayListDirtyPublishBridgeProvider);
+
+    // Retries a kind 3 contact-list broadcast withheld by an unreadable
+    // relay, once the session is ready or the app returns to the foreground.
+    ref.watch(contactListDirtyBroadcastBridgeProvider);
 
     // Drains notification preferences marked dirty while offline, then
     // registers the FCM token for the ready signer.
