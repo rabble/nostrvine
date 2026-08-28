@@ -1249,6 +1249,91 @@ void main() {
           );
         },
       );
+
+      test(
+        'applies cached labels even when the relay did not answer',
+        () async {
+          final statuses =
+              StreamController<Map<String, RelayConnectionStatus>>();
+          addTearDown(statuses.close);
+          when(
+            () => mockNostrClient.relayStatusStream,
+          ).thenAnswer((_) => statuses.stream);
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+          // queryEventsDetailed merges cached rows into `events` regardless of
+          // timedOut/noRelays, so an unanswered query can still carry labels.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              events: <Event>[labelFor('cached_event')],
+              timedOut: true,
+              noRelays: false,
+            ),
+          );
+
+          await service.subscribeToLabeler(labeler);
+
+          expect(
+            service.getContentWarnings('cached_event'),
+            hasLength(1),
+            reason:
+                'a cached label must not be dropped just because the relay '
+                'never answered',
+          );
+        },
+      );
+
+      test(
+        'a retry replaces the labeler rows instead of appending them',
+        () async {
+          when(
+            () => mockNostrClient.relayStatusStream,
+          ).thenAnswer(
+            (_) => const Stream<Map<String, RelayConnectionStatus>>.empty(),
+          );
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+          // First attempt: cache rows present, relay silent.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              events: <Event>[labelFor('repeat_event')],
+              timedOut: true,
+              noRelays: false,
+            ),
+          );
+          await service.subscribeToLabeler(labeler);
+          expect(service.getContentWarnings('repeat_event'), hasLength(1));
+
+          // Retry: the relay answers with the same event.
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              events: <Event>[labelFor('repeat_event')],
+              timedOut: false,
+              noRelays: false,
+            ),
+          );
+          await service.subscribeToLabeler(labeler);
+
+          expect(
+            service.getContentWarnings('repeat_event'),
+            hasLength(1),
+            reason: 'reprocessing the same label must not accumulate rows',
+          );
+        },
+      );
     });
   });
 }

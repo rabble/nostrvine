@@ -290,10 +290,25 @@ class ModerationLabelService {
         [filter],
         requireAllRelaysSettled: true,
       );
+      final events = result.events;
+
+      // Apply whatever came back before deciding whether to latch.
+      // `queryEventsDetailed` merges cached rows into `events` regardless of
+      // `timedOut` / `noRelays`, so an unanswered query can still carry real
+      // labels — dropping them would lose warnings the previous build applied.
+      //
+      // Drop this labeler's existing rows first: an incomplete load is applied
+      // and then retried, and `_processLabelEvent` appends, so reprocessing the
+      // same events would accumulate duplicate rows for every retry. Each load
+      // replaces what that labeler previously contributed.
+      _removeLabelsForLabeler(pubkey);
+      events.forEach(_processLabelEvent);
+
       if (result.noRelays || result.timedOut) {
         Log.warning(
           'Labeler load incomplete for ${pubkeyForLogs(pubkey)} '
-          '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut}); '
+          '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut}, '
+          'applied ${events.length} cached label event(s)); '
           'leaving it unloaded so a later attempt retries',
           name: 'ModerationLabelService',
           category: LogCategory.system,
@@ -301,9 +316,6 @@ class ModerationLabelService {
         _scheduleRetryWhenRelayReady(pubkey);
         return;
       }
-      final events = result.events;
-
-      events.forEach(_processLabelEvent);
 
       _loadedLabelers.add(pubkey);
 
