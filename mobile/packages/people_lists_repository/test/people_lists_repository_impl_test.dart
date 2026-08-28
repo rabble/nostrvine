@@ -11,7 +11,33 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:test/test.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  _MockNostrClient() {
+    // Self-registered so the stub below works without each file needing its
+    // own `setUpAll`. Idempotent.
+    registerFallbackValue(Duration.zero);
+    // The reconcile that precedes a publish goes through `queryEventsDetailed`
+    // so it can tell a relay's "I hold nothing" apart from an answer nobody
+    // gave (#8273). Mirror whatever `queryEvents` is stubbed to return, as a
+    // *settled* answer — the state every existing test describes. Tests about
+    // the inconclusive read override this with `timedOut` or `noRelays`.
+    when(() => queryEvents(any())).thenAnswer((_) async => <Event>[]);
+    when(
+      () => queryEventsDetailed(
+        any(),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer((invocation) async {
+      final filters = invocation.positionalArguments[0] as List<Filter>;
+      return (
+        events: await queryEvents(filters),
+        timedOut: false,
+        noRelays: false,
+      );
+    });
+  }
+}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -385,6 +411,175 @@ void main() {
         final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
         expect(stored.single.pubkeys, equals(const [_memberB]));
       });
+    });
+
+    group('inconclusive reconcile before a replacement (#8273)', () {
+      _MockNostrClient publishingClient() {
+        final client = _MockNostrClient();
+        when(() => client.publicKey).thenReturn(_ownerPubkey);
+        when(() => client.publishEvent(any())).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments.first as Event;
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
+        });
+        return client;
+      }
+
+      void stubReconcile(
+        _MockNostrClient client, {
+        List<Event> events = const <Event>[],
+        bool timedOut = false,
+        bool noRelays = false,
+      }) {
+        when(
+          () => client.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => (events: events, timedOut: timedOut, noRelays: noRelays),
+        );
+      }
+
+      const memberAddedElsewhere =
+          '4444444444444444444444444444444444444444444444444444444444444444';
+
+      Future<String> seedList(PeopleListsRepositoryImpl repository) async {
+        await repository.createList(
+          ownerPubkey: _ownerPubkey,
+          name: 'Besties',
+          initialPubkeys: const [_memberA],
+        );
+        return (await repository.readLists(
+          ownerPubkey: _ownerPubkey,
+        )).single.id;
+      }
+
+      test('addPubkey does not publish when the reconcile timed out', () async {
+        final client = publishingClient();
+        final repository = buildRepository(nostrClient: client);
+        final listId = await seedList(repository);
+        clearInteractions(client);
+        stubReconcile(client, timedOut: true);
+
+        final result = await repository.addPubkey(
+          ownerPubkey: _ownerPubkey,
+          listId: listId,
+          pubkey: _memberB,
+        );
+
+        expect(result.status, equals(PeopleListPublishStatus.failed));
+        verifyNever(() => client.publishEvent(any()));
+      });
+
+      test('addPubkey does not publish when no relay took the query', () async {
+        final client = publishingClient();
+        final repository = buildRepository(nostrClient: client);
+        final listId = await seedList(repository);
+        clearInteractions(client);
+        stubReconcile(client, noRelays: true);
+
+        final result = await repository.addPubkey(
+          ownerPubkey: _ownerPubkey,
+          listId: listId,
+          pubkey: _memberB,
+        );
+
+        expect(result.status, equals(PeopleListPublishStatus.failed));
+        verifyNever(() => client.publishEvent(any()));
+      });
+
+      test(
+        'removePubkey does not publish when the reconcile is inconclusive',
+        () async {
+          final client = publishingClient();
+          final repository = buildRepository(nostrClient: client);
+          final listId = await seedList(repository);
+          clearInteractions(client);
+          stubReconcile(client, timedOut: true);
+
+          final result = await repository.removePubkey(
+            ownerPubkey: _ownerPubkey,
+            listId: listId,
+            pubkey: _memberA,
+          );
+
+          expect(result.status, equals(PeopleListPublishStatus.failed));
+          verifyNever(() => client.publishEvent(any()));
+        },
+      );
+
+      test('a settled empty reconcile still publishes', () async {
+        final client = publishingClient();
+        final repository = buildRepository(nostrClient: client);
+        final listId = await seedList(repository);
+        clearInteractions(client);
+        stubReconcile(client);
+
+        final result = await repository.addPubkey(
+          ownerPubkey: _ownerPubkey,
+          listId: listId,
+          pubkey: _memberB,
+        );
+
+        expect(result.status, equals(PeopleListPublishStatus.submitted));
+        verify(() => client.publishEvent(any())).called(1);
+      });
+
+      test(
+        'a concurrent member added elsewhere survives the next local edit',
+        () async {
+          final client = publishingClient();
+          final repository = buildRepository(nostrClient: client);
+          final listId = await seedList(repository);
+
+          // Another client added a member since; the reconcile must learn
+          // about it before this device rebuilds the replacement.
+          // before this device rebuilds the replacement.
+          stubReconcile(
+            client,
+            events: [
+              signedEvent(
+                kind: Nip51PeopleListCodec.kind,
+                tags: [
+                  ['d', listId],
+                  ['title', 'Besties'],
+                  ['p', _memberA],
+                  ['p', memberAddedElsewhere],
+                ],
+                createdAt:
+                    DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000 + 60,
+              ),
+            ],
+          );
+
+          final result = await repository.addPubkey(
+            ownerPubkey: _ownerPubkey,
+            listId: listId,
+            pubkey: _memberB,
+          );
+
+          expect(result.status, equals(PeopleListPublishStatus.submitted));
+          final published =
+              verify(() => client.publishEvent(captureAny())).captured.last
+                  as Event;
+          final members = published.tags
+              .where((tag) => tag.isNotEmpty && tag.first == 'p')
+              .map((tag) => tag[1])
+              .toSet();
+          expect(
+            members,
+            containsAll(<String>[_memberA, _memberB, memberAddedElsewhere]),
+          );
+        },
+      );
     });
 
     group('deleteList', () {

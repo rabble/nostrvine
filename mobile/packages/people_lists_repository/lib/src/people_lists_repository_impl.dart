@@ -57,15 +57,51 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
     return _cache.readLists(ownerPubkey: ownerPubkey);
   }
 
+  /// How long an authoritative read waits for every relay to settle.
+  ///
+  /// Deliberately shorter than the 5s default: an expiry reports `timedOut`,
+  /// which refuses the mutation, so erring short errs toward not publishing
+  /// over a list we could not read.
+  static const _reconcileTimeout = Duration(seconds: 3);
+
   @override
   Future<void> syncOwner({required String ownerPubkey}) async {
+    await _reconcileOwner(ownerPubkey);
+  }
+
+  /// Refresh the cached lists for [ownerPubkey] and report whether the answer
+  /// was conclusive.
+  ///
+  /// Returns `false` when no relay settled the query — a timeout, or a fan-out
+  /// no relay took. That is not the same as "this owner has no lists", and the
+  /// difference decides whether it is safe to publish a replacement: these are
+  /// addressable events, so a full replacement built on a stale cache drops
+  /// every member only the relay's copy holds (#8273).
+  ///
+  /// [NostrClient.queryEvents] cannot express this — it drops `timedOut` and
+  /// `noRelays` — which is why the detailed form is used, with
+  /// `requireAllRelaysSettled` so a relay abandoned by the settle window
+  /// arrives as a timeout rather than as an empty answer.
+  ///
+  /// [addPubkey] and [removePubkey] report an inconclusive answer as
+  /// [PeopleListPublishResult.failed] rather than publishing over it — the
+  /// bloc rolls its optimistic update back on that, and unlike a block or a
+  /// follow there is no local-only meaning to preserve here: the list *is*
+  /// the published artifact.
+  Future<bool> _reconcileOwner(String ownerPubkey) async {
     final filter = Filter(
       kinds: const [Nip51PeopleListCodec.kind],
       authors: [ownerPubkey],
     );
 
-    final events = await _nostrClient.queryEvents([filter]);
-    if (events.isEmpty) return;
+    final result = await _nostrClient.queryEventsDetailed(
+      [filter],
+      requireAllRelaysSettled: true,
+      timeout: _reconcileTimeout,
+    );
+    final conclusive = !result.timedOut && !result.noRelays;
+    final events = result.events;
+    if (events.isEmpty) return conclusive;
 
     // Index existing lists by id so we can skip stale relay echoes whose
     // createdAt is older than the locally-stored updatedAt. The cache alone
@@ -94,6 +130,7 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
         receivedAt: receivedAt,
       );
     }
+    return conclusive;
   }
 
   @override
@@ -123,6 +160,10 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
     required String listId,
     required String pubkey,
   }) async {
+    // A replacement built on a stale cache drops members only the relay has.
+    if (!await _reconcileOwner(ownerPubkey)) {
+      return const PeopleListPublishResult.failed();
+    }
     final existing = await _findList(ownerPubkey: ownerPubkey, listId: listId);
     if (existing == null) {
       return const PeopleListPublishResult.failed();
@@ -143,6 +184,10 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
     required String listId,
     required String pubkey,
   }) async {
+    // A replacement built on a stale cache drops members only the relay has.
+    if (!await _reconcileOwner(ownerPubkey)) {
+      return const PeopleListPublishResult.failed();
+    }
     final existing = await _findList(ownerPubkey: ownerPubkey, listId: listId);
     if (existing == null) {
       return const PeopleListPublishResult.failed();
