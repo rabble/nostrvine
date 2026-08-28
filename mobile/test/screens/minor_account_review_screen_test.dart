@@ -510,6 +510,61 @@ void main() {
       }
     });
 
+    // #8239: a decided case has no remaining user action, so Support Center
+    // used to be returned as the primary action *and* rendered unconditionally
+    // below the reconsideration card — two identical buttons straddling it.
+    // The reachable states are openReported, cleared, deniedClosed and unknown.
+    testWidgets('offers Support Center once on a decided case, below the '
+        'reconsideration card', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'case-decided',
+                  state: MinorReviewCaseState.deniedClosed,
+                  suspectedAgeBand: SuspectedAgeBand.age13To15,
+                  allowedResolution:
+                      MinorReviewResolutionType.parentVideoOrEmail,
+                  instructions: MinorReviewInstructions(
+                    title: 'Review complete',
+                    body: 'This case is closed.',
+                  ),
+                  supportEmail: 'support@divine.video',
+                ),
+              );
+            }),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(MinorAccountReviewScreen)),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text(l10n.minorAccountReviewOpenSupportCenter),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.minorAccountReviewOpenSupportCenter),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.minorAccountReviewAppealTitle), findsOneWidget);
+    });
+
     testWidgets(
       'Check Again re-reads the protected-minor flag, not just the review '
       'status, so an approved teen is gated without relaunch (#176)',

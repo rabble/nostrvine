@@ -437,11 +437,13 @@ class _LoadedView extends ConsumerWidget {
       return null;
     }
 
+    // No primary action for a case with nothing left for the user to do.
+    // Support Center is already offered unconditionally below, directly under
+    // the reconsideration card (#8239); returning it here as well rendered the
+    // same button twice — as primary above the card and again beneath it — in
+    // `openReported`, `cleared`, `deniedClosed` and `unknown`.
     if (!reviewCase.needsUserAction) {
-      return _MinorReviewPrimaryAction(
-        label: l10n.minorAccountReviewOpenSupportCenter,
-        onPressed: _openSupportCenter,
-      );
+      return null;
     }
 
     return _MinorReviewPrimaryAction(
@@ -450,10 +452,6 @@ class _LoadedView extends ConsumerWidget {
           : l10n.minorAccountReviewContinue,
       onPressed: (context) => _continueToNextStep(context, reviewCase),
     );
-  }
-
-  static void _openSupportCenter(BuildContext context) {
-    context.push(SupportCenterScreen.path);
   }
 
   void _continueToNextStep(BuildContext context, MinorReviewCase reviewCase) {
