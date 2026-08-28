@@ -14,6 +14,9 @@ const int kCacheLimitDefaultBytes = 2 * 1024 * 1024 * 1024;
 /// SharedPreferences key holding the user-chosen video-cache byte budget.
 const String kCacheLimitPrefKey = 'video_cache_max_bytes';
 
+/// Directory containing downloaded feed videos in the platform temp root.
+const String kVideoCacheDirectoryName = 'openvine_video_cache';
+
 /// Rough average size of one cached short video, used to translate a byte
 /// budget into an approximate video count in the UI.
 const int kApproxVideoBytes = 4 * 1024 * 1024;

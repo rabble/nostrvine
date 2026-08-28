@@ -41,13 +41,26 @@ Future<void> setUpTestDirectories() async {
   _testSupportDir = Directory.systemTemp.createTempSync('media_cache_support_');
 }
 
-/// Cleans up test directories.
+/// Cleans up the contents of the test directories.
+///
+/// The directories themselves stay alive deliberately: the store behind a
+/// manager built here (`JsonCacheInfoRepository`) debounces its JSON save on
+/// a 3 s timer, so a test group's last write can land *after* this teardown
+/// — under the merged VGV isolate that stray write used to throw
+/// [PathNotFoundException] into whichever unrelated test was running by
+/// then. Both roots are uniquely-named `systemTemp` children, so leaving the
+/// empty shells costs a few KB until the OS cleans them.
 Future<void> tearDownTestDirectories() async {
-  if (_testTempDir.existsSync()) {
-    _testTempDir.deleteSync(recursive: true);
-  }
-  if (_testSupportDir.existsSync()) {
-    _testSupportDir.deleteSync(recursive: true);
+  for (final dir in [_testTempDir, _testSupportDir]) {
+    if (!dir.existsSync()) continue;
+    for (final entity in dir.listSync()) {
+      try {
+        entity.deleteSync(recursive: true);
+      } on Object {
+        // Best-effort: a file held by an in-flight write is retried by the
+        // OS temp cleaner instead.
+      }
+    }
   }
 }
 

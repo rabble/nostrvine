@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/io_client.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,6 +26,18 @@ class _ThrowingCancellableDownloader implements CancellableDownloader {
 
   @override
   Future<void> close() async {}
+}
+
+class _TrackingIOClient extends IOClient {
+  _TrackingIOClient() : super(HttpClient());
+
+  int closeCount = 0;
+
+  @override
+  void close() {
+    closeCount++;
+    super.close();
+  }
 }
 
 Future<File?> _cancelAndWait(CancellableCacheOperation operation) async {
@@ -58,8 +71,12 @@ void main() {
       await tearDownTestDirectories();
     });
 
-    tearDown(() {
-      cacheManager.resetForTesting();
+    tearDown(() async {
+      final repo = cacheManager.config.repo;
+      if (repo is MockCacheInfoRepository) {
+        when(repo.close).thenAnswer((_) async => true);
+      }
+      await cacheManager.close();
     });
 
     group('cancelInFlightDownloads', () {
@@ -105,6 +122,29 @@ void main() {
 
         cacheManager.cancelInFlightDownloads();
         expect(downloader.cancelActiveCallCount, 0);
+      });
+
+      test('close() survives a store whose repository close throws', () async {
+        final downloader = FakeCancellableDownloader();
+        final repo = MockCacheInfoRepository();
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        // flutter_cache_manager's own store close null-checks state that
+        // only exists after a real open; teardown paths must survive it.
+        when(repo.close).thenThrow(StateError('never opened'));
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'close_throwing_store_$timestamp',
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+        );
+
+        await expectLater(cacheManager.close(), completes);
+        expect(downloader.closed, isTrue);
       });
 
       test(
@@ -396,6 +436,7 @@ void main() {
         final mockFileInfo = MockFileInfo();
         final repo = MockCacheInfoRepository();
         final downloadCompleter = Completer<FileInfo>();
+        final fileServiceClient = _TrackingIOClient();
 
         when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/late_video.mp4');
@@ -411,6 +452,7 @@ void main() {
             enableSyncManifest: true,
           ),
           repoOverride: repo,
+          fileServiceClientOverride: fileServiceClient,
           mockGetFileFromCache: (key) async => null,
           mockDownloadFile: (url, {key, authHeaders}) =>
               downloadCompleter.future,
@@ -422,9 +464,13 @@ void main() {
         );
         await Future<void>.delayed(const Duration(milliseconds: 1));
 
-        await cacheManager.close();
+        var closeCompleted = false;
+        final closing = cacheManager.close().then((_) => closeCompleted = true);
+        await Future<void>.delayed(Duration.zero);
 
         expect(await cacheFuture, isNull);
+        expect(closeCompleted, isFalse);
+        expect(fileServiceClient.closeCount, 1);
         expect(
           await cacheManager.cacheFile(
             'https://example.com/after-close.mp4',
@@ -434,7 +480,8 @@ void main() {
         );
 
         downloadCompleter.complete(mockFileInfo);
-        await Future<void>.delayed(const Duration(milliseconds: 1));
+        await closing;
+        expect(closeCompleted, isTrue);
       });
 
       test('passes auth headers to download', () async {
@@ -1142,6 +1189,31 @@ void main() {
       );
 
       test(
+        'initialize releases its repository lease',
+        () async {
+          final repo = MockCacheInfoRepository();
+          when(repo.open).thenAnswer((_) async => true);
+          when(repo.getAllObjects).thenAnswer((_) async => []);
+          when(repo.close).thenAnswer((_) async => true);
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey:
+                  'initialize_lease_${DateTime.now().microsecondsSinceEpoch}',
+              enableSyncManifest: true,
+            ),
+            repoOverride: repo,
+          );
+
+          await cacheManager.initialize();
+
+          // CacheStore owns the first open; initialize owns and releases the
+          // second without closing CacheStore's lifetime connection.
+          verify(repo.open).called(2);
+          verify(repo.close).called(1);
+        },
+      );
+
+      test(
         'aliasKey: alias persists across manager restart via aliases.json',
         () async {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -1187,7 +1259,7 @@ void main() {
           when(repo.open).thenAnswer((_) async => true);
           when(repo.getAllObjects).thenAnswer((_) async => [cacheObject]);
 
-          cacheManager.resetForTesting();
+          await cacheManager.close();
           cacheManager = TestableMediaCacheManager(
             config: MediaCacheConfig(
               cacheKey: cacheKey,

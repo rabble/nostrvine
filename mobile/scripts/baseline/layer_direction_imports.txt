@@ -15,5 +15,4 @@ lib/services/age_verification_service.dart # shows a dialog; belongs behind a UI
 lib/services/back_button_handler.dart # inspects the route stack; belongs in the router layer
 lib/services/email_verification_listener.dart # navigates via goRouterProvider; belongs in the router layer
 lib/services/password_reset_listener.dart # navigates via goRouterProvider; belongs in the router layer
-lib/services/seed_media_preload_service.dart # uses VineCachedImage cache manager; belongs in a media package
 lib/services/video_editor/draft_render_parameters_service.dart # reuses the sticker widget model; extract the model

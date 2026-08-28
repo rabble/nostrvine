@@ -104,6 +104,7 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/build_provenance_service.dart';
 import 'package:openvine/services/c2pa_debris_janitor.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
+import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -128,7 +129,7 @@ import 'package:openvine/services/quick_actions_coordinator.dart';
 import 'package:openvine/services/screenshot_mode_service.dart';
 import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
-import 'package:openvine/services/seed_media_preload_service.dart';
+import 'package:openvine/services/seed_media_cleanup_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -801,9 +802,9 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     );
 
     coordinator.registerService(
-      name: 'SeedMediaPreload',
+      name: 'SeedMediaMaintenance',
       phase: StartupPhase.deferred,
-      initialize: _initializeSeedMediaPreload,
+      initialize: _initializeSeedMediaMaintenance,
       optional: true,
     );
   }
@@ -1821,16 +1822,30 @@ Future<void> _initializeSeedDataPreload(ProviderContainer container) async {
   );
 }
 
-Future<void> _initializeSeedMediaPreload() async {
+Future<void> _initializeSeedMediaMaintenance() async {
   await _runTimedStartupTask(
-    phaseName: 'seed_media_preload',
-    initializationStep: 'Loading bundled seed media',
+    phaseName: 'seed_media_maintenance',
+    initializationStep: 'Cleaning up seed media',
     task: () async {
       try {
-        await SeedMediaPreloadService.loadSeedMediaIfNeeded();
+        await SeedMediaCleanupService().cleanUpStrandedSeedMediaIfNeeded();
+        await ClassicVinerSeedPreloadService().preloadAvatarImagesIfNeeded(
+          cacheWriter:
+              ({
+                required String cacheKey,
+                required Uint8List bytes,
+                required String fileExtension,
+              }) async {
+                await openVineImageCache.putFile(
+                  cacheKey,
+                  bytes,
+                  fileExtension: fileExtension,
+                );
+              },
+        );
       } catch (e, stack) {
         Log.error(
-          '[SEED] Media preload failed (non-critical): $e',
+          '[SEED] Media maintenance failed (non-critical): $e',
           name: 'Main',
           category: LogCategory.system,
         );
