@@ -480,8 +480,8 @@ void main() {
             bloc.add(OthersFollowersIncrementRequested(validPubkey('new'))),
         verify: (bloc) {
           // The target really did gain a follower, so the authoritative count
-          // moves; the viewer just cannot see that follower, so the displayed
-          // count must not.
+          // moves; the viewer cannot see that follower, so the displayed count
+          // must not.
           expect(bloc.state.authoritativeFollowerCount, equals(501));
           expect(bloc.state.followersPubkeys, [validPubkey('existing')]);
           expect(bloc.state.followerCount, equals(500));
@@ -590,9 +590,8 @@ void main() {
           authoritativeFollowerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
-        act: (bloc) => bloc.add(
-          OthersFollowersDecrementRequested(validPubkey('blocked')),
-        ),
+        act: (bloc) =>
+            bloc.add(OthersFollowersDecrementRequested(validPubkey('blocked'))),
         verify: (bloc) {
           expect(bloc.state.authoritativeFollowerCount, equals(499));
           expect(bloc.state.rawFollowersPubkeys, [validPubkey('existing')]);

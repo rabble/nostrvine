@@ -42,22 +42,20 @@ final class OthersFollowersState extends Equatable {
   /// replay the full list without waiting for a new network event.
   final List<String> rawFollowersPubkeys;
 
-  /// Follower count as reported by the repository, before any local
-  /// blocklist filtering.
+  /// Follower count as reported by the repository, before local safety filters.
   ///
-  /// Kept verbatim rather than derived from [followerCount] so optimistic
-  /// mutations stay exact: reconstructing it by inverting a previous
-  /// [followerCount] emission is only correct when that emission did not
-  /// clamp to the visible list length.
+  /// Kept separately so blocklist changes can recompute [followerCount] from
+  /// the raw list without losing the server-provided baseline.
   final int authoritativeFollowerCount;
 
-  /// Visible follower count after applying local blocklist filters.
+  /// Follower count shown in the UI after applying known local safety filters.
   ///
-  /// Downloading all kind 3 events is limited by relay result caps, so
-  /// [authoritativeFollowerCount] may exceed the number of pubkeys actually
-  /// fetched. Followers we know are hidden locally (blocked, or a
-  /// follow-severed viewer) are subtracted from it, and the result never
-  /// drops below the number of followers on screen.
+  /// Funnelcake remains the deterministic baseline (#8197), but accounts
+  /// hidden by the viewer's safety state must not still appear in the count
+  /// beside the filtered list. Only hidden rows actually observed in the
+  /// fetched list are subtracted; the result is not floored at the
+  /// relay-derived visible row count, so relay coverage cannot inflate or
+  /// destabilize the displayed number.
   int get followerCount => visibleFollowerCount(
     visiblePubkeyCount: followersPubkeys.length,
     rawPubkeyCount: rawFollowersPubkeys.length,

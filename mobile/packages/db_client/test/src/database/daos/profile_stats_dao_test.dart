@@ -145,6 +145,68 @@ void main() {
         );
       });
 
+      test(
+        'a later count write refreshes the stamp both readers rely on',
+        () async {
+          // Transition 1 (#8259 review). Retention (getStats/deleteExpired)
+          // and the relay hysteresis both read followerCountsUpdatedAt, so a
+          // write that left an older stamp in place would make a row holding
+          // *current* counts look stale to retention — evicting the very
+          // fallback baseline the 48h window exists to protect.
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            followerCount: 100,
+            followingCount: 50,
+          );
+          final first = await appDbClient.getProfileStatRow(testPubkey);
+
+          // The column stores unix seconds, so the writes need a real gap.
+          await Future<void>.delayed(const Duration(milliseconds: 1200));
+
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            followerCount: 512,
+            followingCount: 430,
+          );
+          final second = await appDbClient.getProfileStatRow(testPubkey);
+
+          expect(second!.followerCount, equals(512));
+          expect(
+            second.followerCountsUpdatedAt!.isAfter(
+              first!.followerCountsUpdatedAt!,
+            ),
+            isTrue,
+            reason:
+                'the counts are current, so the clock both readers share '
+                'must say so',
+          );
+        },
+      );
+
+      test(
+        'a REST-only row does not stay perpetually fresh for hysteresis',
+        () async {
+          // Transition 2 (#8259 review): a row that has never had a relay
+          // write. If the count stamp were left NULL, _loadPersistedStats
+          // would substitute cachedAt — refreshed by every upsert — and the
+          // relay hysteresis would never see the baseline age.
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            followerCount: 512,
+            followingCount: 430,
+          );
+
+          final row = await appDbClient.getProfileStatRow(testPubkey);
+          expect(
+            row!.followerCountsUpdatedAt,
+            isNotNull,
+            reason:
+                'a REST-only row must carry its own count stamp so the '
+                'hysteresis clock can age',
+          );
+        },
+      );
+
       test('no-ops for a pubkey that requested deletion', () async {
         // The classic-viner seed import re-runs on every manifest bump and
         // writes counters straight to this DAO.

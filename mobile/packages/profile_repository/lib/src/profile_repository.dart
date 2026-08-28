@@ -720,11 +720,14 @@ class ProfileRepository implements ProfileReader {
     });
   }
 
-  /// Caches profile stats (video stats and engagement data) from a
-  /// [UserProfileResult] into the local [ProfileStatsDao].
+  /// Caches profile stats — social counts, video stats and engagement data —
+  /// from a [UserProfileResult] into the local [ProfileStatsDao].
   ///
-  /// Follower/following counts are owned by FollowRepository because it merges
-  /// REST, relay, and persisted inputs with hysteresis stabilization.
+  /// The REST `social` counts are cached here because they are the
+  /// authoritative follower/following numbers (#8197) and the only ones
+  /// available before any relay work finishes, so the profile header can
+  /// render immediately. FollowRepository still owns the relay-fallback path
+  /// and its hysteresis stabilization for the case where REST cannot answer.
   Future<void> _cacheProfileStatsFromResult(
     String pubkey,
     UserProfileResult result,
@@ -736,8 +739,9 @@ class ProfileRepository implements ProfileReader {
     // so no switch is needed here.
     final stats = result.stats;
     final engagement = result.engagement;
+    final social = result.social;
 
-    if (stats == null && engagement == null) return;
+    if (stats == null && engagement == null && social == null) return;
 
     int? publicViewCount;
     if (engagement != null) {
@@ -746,8 +750,26 @@ class ProfileRepository implements ProfileReader {
           : engagement.totalLoops.round();
     }
 
+    // A zero field is not data. `/api/users/{pubkey}/social` answers 200 for
+    // every pubkey, and funnelcake collapses ClickHouse failures into
+    // `{0, 0}`, so "never indexed", "genuinely zero", "vanished" and "the
+    // summary table is down" are indistinguishable here. Writing it would
+    // overwrite a good baseline with zeros (#8259 review), so this writer
+    // withholds each ambiguous field independently. The two counts come from
+    // different inputs, so a positive value in one cannot legitimize a zero in
+    // the other (#8259 review).
+
     await dao.upsertStats(
       pubkey: pubkey,
+      // The REST social counts are the authoritative follower/following
+      // numbers (#8197) and the only ones available before any relay work
+      // finishes, so the profile header can render them immediately.
+      followerCount: (social?.followerCount ?? 0) > 0
+          ? social!.followerCount
+          : null,
+      followingCount: (social?.followingCount ?? 0) > 0
+          ? social!.followingCount
+          : null,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,

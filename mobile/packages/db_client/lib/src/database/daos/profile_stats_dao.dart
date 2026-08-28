@@ -11,9 +11,10 @@ const profileStatsCacheDuration = Duration(minutes: 5);
 
 /// How long follower/following counts stay useful after they were written.
 ///
-/// Follower counts live in this row but are owned by `FollowRepository`, which
-/// stabilizes them with hysteresis against the persisted value. That
-/// stabilization only works if the baseline survives a restart, so the counts
+/// Follower counts live in this row and have coordinated REST and relay
+/// writers.
+/// The relay fallback stabilizes partial observations against the persisted
+/// value, which only works if the baseline survives a restart, so the counts
 /// outlive the 5-minute stats cache.
 ///
 /// This must stay comfortably longer than `FollowRepository`'s own staleness
@@ -27,7 +28,7 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     with _$ProfileStatsDaoMixin {
   ProfileStatsDao(super.attachedDatabase);
 
-  /// Upsert profile stats (insert or update).
+  /// Upserts profile stats, creating the row when absent.
   ///
   /// Only overwrites fields that are explicitly provided (non-null).
   /// Null parameters are left unchanged in the existing row, preventing
@@ -38,6 +39,21 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// same reason as `UserProfilesDao.upsertProfile`: the writers span layers
   /// that cannot all reach `ProfileRepository` — the classic-viner seed import
   /// re-runs on every manifest bump.
+  ///
+  /// Writing either count refreshes `followerCountsUpdatedAt`, which answers
+  /// one question for two readers: *when were these counts last written from
+  /// a source we trust?*
+  ///
+  /// - [getStats] and [deleteExpired] use it as the retention clock, keeping a
+  ///   row whose counts are newer than [profileFollowerCountsCacheDuration]
+  ///   even after the rest of the row has expired.
+  /// - `FollowRepository`'s relay-fallback hysteresis uses it to decide when a
+  ///   baseline is old enough that a lower relay count should be accepted.
+  ///
+  /// Those two readers agree because every writer withholds each ambiguous
+  /// zero field rather than storing it, so a stamp always means real data
+  /// arrived for at least one count. REST-authoritative fields and relay
+  /// fallback fields are combined before the row is written.
   Future<void> upsertStats({
     required String pubkey,
     int? videoCount,
@@ -75,9 +91,9 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// Get stats for a pubkey (returns null if not found or expired).
   ///
   /// An expired row is only deleted when it carries nothing worth keeping.
-  /// Follower counts outlive this cache ([followerCountsExpiry]) and are the
-  /// baseline `FollowRepository` stabilizes against, so evicting them here
-  /// would reintroduce the loss that [deleteExpired] is careful to avoid.
+  /// Follower counts outlive this cache ([followerCountsExpiry]) and form the
+  /// shared baseline for REST/profile rendering and relay fallback, so evicting
+  /// them here would reintroduce the loss [deleteExpired] avoids.
   Future<ProfileStatRow?> getStats(
     String pubkey, {
     Duration expiry = profileStatsCacheDuration,

@@ -1,5 +1,6 @@
-// ABOUTME: Tests for FollowRepository persistent follower count cache and
-// ABOUTME: hysteresis logic that stabilizes counts across app restarts.
+// ABOUTME: Tests for FollowRepository follower-count sourcing: REST counts
+// ABOUTME: are authoritative (#8197); hysteresis applies only to relay
+// ABOUTME: fallback, stabilizing partial counts across app restarts.
 
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:flutter_test/flutter_test.dart';
@@ -16,22 +17,41 @@ class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 
-const _testPubkey = 'abc123def456';
+const _testPubkey =
+    'abc123def4560000000000000000000000000000000000000000000000000001';
 
 void _registerFallbackValues() {
   registerFallbackValue(<Filter>[]);
 }
 
+/// Builds a kind-3 contact list event for [_testPubkey] with [pTagCount]
+/// `p` tags, used to drive the relay-fallback following count.
+Event _contactListEvent(int pTagCount) {
+  return Event(
+    _testPubkey,
+    EventKind.contactList,
+    List.generate(
+      pTagCount,
+      (i) => ['p', i.toRadixString(16).padLeft(64, '0')],
+    ),
+    '',
+    createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  );
+}
+
 /// Creates a [FollowRepository] wired to mock dependencies.
 ///
-/// [restFollowers] / [restFollowing] control what the REST API returns.
-/// Pass [indexerRelayUrls] as empty to avoid real WebSocket connections.
+/// [restFollowers] / [restFollowing] control what the REST API returns when
+/// [restAvailable] is true. When [contactListEvent] is provided, the relay
+/// fallback path can resolve a following count from it.
 /// Pass [persistedRow] to seed the mock DAO with persisted stats.
 FollowRepository _createRepository({
   required _MockFunnelcakeApiClient apiClient,
   required _MockProfileStatsDao dao,
   int restFollowers = 0,
   int restFollowing = 0,
+  bool restAvailable = true,
+  Event? contactListEvent,
   ProfileStatRow? persistedRow,
 }) {
   final nostrClient = _MockNostrClient();
@@ -40,13 +60,15 @@ FollowRepository _createRepository({
   // repository-owned persistence remains part of the scenario under test.
   when(() => nostrClient.publicKey).thenReturn('current-user');
 
-  // Mock NostrClient.subscribe to return an empty stream (no WS data).
-  when(
-    () => nostrClient.subscribe(any()),
-  ).thenAnswer((_) => const Stream<Event>.empty());
+  // Relay fallback: emit the contact list event when provided.
+  when(() => nostrClient.subscribe(any())).thenAnswer(
+    (_) => contactListEvent == null
+        ? const Stream<Event>.empty()
+        : Stream.value(contactListEvent),
+  );
 
   // Mock REST API response.
-  when(() => apiClient.isAvailable).thenReturn(true);
+  when(() => apiClient.isAvailable).thenReturn(restAvailable);
   when(() => apiClient.getSocialCounts(_testPubkey)).thenAnswer(
     (_) async => SocialCounts(
       pubkey: _testPubkey,
@@ -74,6 +96,19 @@ FollowRepository _createRepository({
     funnelcakeApiClient: apiClient,
     profileStatsDao: dao,
     indexerRelayUrls: const [], // no real WebSocket connections
+    queryContactList:
+        ({
+          required eventStream,
+          required pubkey,
+          fallbackTimeoutSeconds = 10,
+        }) async {
+          await for (final event in eventStream) {
+            if (event.kind == EventKind.contactList && event.pubkey == pubkey) {
+              return event;
+            }
+          }
+          return null;
+        },
   );
 }
 
@@ -146,7 +181,7 @@ void main() {
       });
     });
 
-    group('getFollowerStats - hysteresis', () {
+    group('getFollowerStats - REST authoritative (#8197)', () {
       test('accepts higher count immediately', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
@@ -165,11 +200,13 @@ void main() {
       });
 
       test(
-        'keeps persisted count when fresh is lower but within threshold',
+        'returns lower REST counts verbatim — no hysteresis on REST',
         () async {
           final apiClient = _MockFunnelcakeApiClient();
           final dao = _MockProfileStatsDao();
-          // Persisted: 100 followers. Fresh: 85 (15% drop, within 20% threshold).
+          // Persisted: 100 followers. Fresh REST: 85 — a drop that the old
+          // hysteresis would have suppressed as "relay variance". REST is
+          // deterministic, so the drop is real and must display.
           final repository = _createRepository(
             apiClient: apiClient,
             dao: dao,
@@ -180,125 +217,30 @@ void main() {
 
           final stats = await repository.getFollowerStats(_testPubkey);
 
-          // Hysteresis keeps the persisted count.
-          expect(stats.followers, equals(100));
-          expect(stats.following, equals(20));
+          expect(stats.followers, equals(85));
+          expect(stats.following, equals(18));
         },
       );
 
-      test('accepts lower count when drop exceeds threshold', () async {
+      test('does not query relays when REST answers', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
-        // Persisted: 100 followers. Fresh: 70 (30% drop, exceeds 20% threshold).
         final repository = _createRepository(
           apiClient: apiClient,
           dao: dao,
-          restFollowers: 70,
-          restFollowing: 10,
-          persistedRow: _persistedRow(followers: 100, following: 20),
-        );
-
-        final stats = await repository.getFollowerStats(_testPubkey);
-
-        // Drop below threshold (80) → accept fresh count.
-        expect(stats.followers, equals(70));
-        expect(stats.following, equals(10));
-      });
-
-      test('accepts lower count when persisted data is stale', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        // Persisted well beyond the staleness window.
-        final staleTimestamp = DateTime.now().subtract(
-          const Duration(hours: 30),
-        );
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 85,
-          restFollowing: 18,
-          persistedRow: _persistedRow(
-            followers: 100,
-            following: 20,
-            cachedAt: staleTimestamp,
-          ),
-        );
-
-        final stats = await repository.getFollowerStats(_testPubkey);
-
-        // Stale → accept fresh count even though it's within threshold.
-        expect(stats.followers, equals(85));
-        expect(stats.following, equals(18));
-      });
-
-      test('uses follower timestamp instead of unrelated cachedAt', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        final staleCountsTimestamp = DateTime.now().subtract(
-          const Duration(hours: 30),
-        );
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 85,
-          restFollowing: 18,
-          persistedRow: _persistedRow(
-            followers: 100,
-            following: 20,
-            cachedAt: DateTime.now(),
-            followerCountsUpdatedAt: staleCountsTimestamp,
-          ),
-        );
-
-        final stats = await repository.getFollowerStats(_testPubkey);
-
-        expect(stats.followers, equals(85));
-        expect(stats.following, equals(18));
-      });
-
-      test('holds the count across an overnight gap (#6902)', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        // The reported failure: last seen at 98 the night before, relays
-        // answer 86 in the morning. A window shorter than the gap would treat
-        // the baseline as stale and accept 86 outright.
-        final lastNight = DateTime.now().subtract(const Duration(hours: 10));
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 86,
+          restFollowers: 50,
           restFollowing: 20,
-          persistedRow: _persistedRow(
-            followers: 98,
-            following: 20,
-            cachedAt: lastNight,
-            followerCountsUpdatedAt: lastNight,
-          ),
+          contactListEvent: _contactListEvent(80),
         );
 
         final stats = await repository.getFollowerStats(_testPubkey);
 
-        expect(stats.followers, equals(98));
+        // REST wins verbatim; the kind-3 event (80 p-tags) is never fetched.
+        expect(stats.followers, equals(50));
+        expect(stats.following, equals(20));
       });
 
-      test('accepts one-person drops for small accounts', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 8,
-          restFollowing: 4,
-          persistedRow: _persistedRow(followers: 9, following: 5),
-        );
-
-        final stats = await repository.getFollowerStats(_testPubkey);
-
-        expect(stats.followers, equals(8));
-        expect(stats.following, equals(4));
-      });
-
-      test('does not apply hysteresis when no persisted data exists', () async {
+      test('accepts counts when no persisted data exists', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
         final repository = _createRepository(
@@ -314,47 +256,9 @@ void main() {
         expect(stats.following, equals(10));
       });
 
-      test('boundary: fresh count exactly at threshold is kept', () async {
+      test('persists fresh REST counts that differ from baseline', () async {
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
-        // Persisted: 100. Threshold = ceil(100 * 0.8) = 80.
-        // Fresh: 80 → exactly at threshold → keep persisted.
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 80,
-          restFollowing: 20,
-          persistedRow: _persistedRow(followers: 100, following: 25),
-        );
-
-        final stats = await repository.getFollowerStats(_testPubkey);
-
-        expect(stats.followers, equals(100));
-        expect(stats.following, equals(25));
-      });
-
-      test('boundary: fresh count one below threshold is accepted', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        // Persisted: 100. Threshold = ceil(100 * 0.8) = 80.
-        // Fresh: 79 → below threshold → accept fresh.
-        final repository = _createRepository(
-          apiClient: apiClient,
-          dao: dao,
-          restFollowers: 79,
-          restFollowing: 20,
-          persistedRow: _persistedRow(followers: 100, following: 25),
-        );
-
-        final stats = await repository.getFollowerStats(_testPubkey);
-
-        expect(stats.followers, equals(79));
-      });
-
-      test('does not re-persist when hysteresis keeps old value', () async {
-        final apiClient = _MockFunnelcakeApiClient();
-        final dao = _MockProfileStatsDao();
-        // Persisted: 100 followers, recent timestamp.
         final repository = _createRepository(
           apiClient: apiClient,
           dao: dao,
@@ -365,8 +269,28 @@ void main() {
 
         await repository.getFollowerStats(_testPubkey);
 
-        // Hysteresis kept 100/20 which matches persisted.
-        // upsertStats should NOT have been called since value didn't change.
+        verify(
+          () => dao.upsertStats(
+            pubkey: _testPubkey,
+            followerCount: 90,
+            followingCount: 20,
+          ),
+        ).called(1);
+      });
+
+      test('skips persisting when REST matches the baseline', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 100,
+          restFollowing: 20,
+          persistedRow: _persistedRow(followers: 100, following: 20),
+        );
+
+        await repository.getFollowerStats(_testPubkey);
+
         verifyNever(
           () => dao.upsertStats(
             pubkey: any(named: 'pubkey'),
@@ -374,6 +298,158 @@ void main() {
             followingCount: any(named: 'followingCount'),
           ),
         );
+      });
+    });
+
+    group('getFollowerStats - REST 0/0 is not an answer', () {
+      // `/api/users/{pubkey}/social` returns 200 for every pubkey and
+      // funnelcake collapses ClickHouse failures into {0, 0}, so a zero body
+      // cannot be distinguished from "never indexed", "vanished", or "the
+      // summary table is down". It must not be displayed or persisted over a
+      // known-good baseline (#8259 review).
+      test('keeps the persisted baseline instead of showing zeros', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          // restFollowers / restFollowing default to 0 — the "funnelcake
+          // knows nothing" shape.
+          persistedRow: _persistedRow(followers: 512, following: 430),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(512));
+        expect(stats.following, equals(430));
+      });
+
+      test('does not persist zeros over a known-good baseline', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          // restFollowers / restFollowing default to 0 — the "funnelcake
+          // knows nothing" shape.
+          persistedRow: _persistedRow(followers: 512, following: 430),
+        );
+
+        await repository.getFollowerStats(_testPubkey);
+
+        verifyNever(
+          () => dao.upsertStats(
+            pubkey: any(named: 'pubkey'),
+            followerCount: 0,
+            followingCount: 0,
+          ),
+        );
+      });
+
+      test('treats authority per field when followers are zero', () async {
+        // The two fields come from independent Funnelcake inputs. A known
+        // following count cannot turn an ambiguous follower zero into data.
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowing: 42,
+          persistedRow: _persistedRow(followers: 512, following: 430),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(512));
+        expect(stats.following, equals(42));
+      });
+
+      test('treats authority per field when following is zero', () async {
+        // A known follower count likewise cannot legitimize an ambiguous
+        // following zero. The relay/persisted fallback still owns that field.
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 1976,
+          contactListEvent: _contactListEvent(41),
+          persistedRow: _persistedRow(followers: 1900, following: 43),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(1976));
+        expect(stats.following, equals(43));
+      });
+    });
+
+    group('getFollowerStats - relay-fallback hysteresis', () {
+      test(
+        'holds the following count across an overnight gap (#6902)',
+        () async {
+          final apiClient = _MockFunnelcakeApiClient();
+          final dao = _MockProfileStatsDao();
+          // REST is unavailable, so the relay fallback answers. Last seen at
+          // 98 the night before; the relay answers 86 in the morning — a
+          // partial view, within the hysteresis threshold, so the persisted
+          // baseline holds. The baseline's freshness must be judged by
+          // followerCountsUpdatedAt, not the unrelated (stale) cachedAt.
+          final lastNight = DateTime.now().subtract(const Duration(hours: 10));
+          final unrelated = DateTime.now().subtract(const Duration(hours: 30));
+          final repository = _createRepository(
+            apiClient: apiClient,
+            dao: dao,
+            restAvailable: false,
+            contactListEvent: _contactListEvent(86),
+            persistedRow: _persistedRow(
+              followers: 0,
+              following: 98,
+              cachedAt: unrelated,
+              followerCountsUpdatedAt: lastNight,
+            ),
+          );
+
+          final stats = await repository.getFollowerStats(_testPubkey);
+
+          expect(stats.following, equals(98));
+        },
+      );
+
+      test('boundary: relay count exactly at threshold is held', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        // Persisted following: 100. Threshold = ceil(100 * 0.8) = 80.
+        // Relay answers exactly 80 → still treated as relay variance.
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restAvailable: false,
+          contactListEvent: _contactListEvent(80),
+          persistedRow: _persistedRow(followers: 0, following: 100),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.following, equals(100));
+      });
+
+      test('boundary: relay count one below threshold is accepted', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        // Persisted following: 100. Threshold = ceil(100 * 0.8) = 80.
+        // Relay answers 79 → genuine drop, accept it.
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restAvailable: false,
+          contactListEvent: _contactListEvent(79),
+          persistedRow: _persistedRow(followers: 0, following: 100),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.following, equals(79));
       });
     });
 

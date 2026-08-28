@@ -423,16 +423,22 @@ class FollowRepository {
     final followers = await followersFuture;
     final countFromService = await countFuture;
 
+    // The service count is the displayed number, full stop. Substituting the
+    // relay list length when it is 0 would put a relay-derived number back on
+    // screen — the exact inflation #8197 removes — and it would swap the
+    // rendered value a second time once the list resolved (#8259 review).
+    // getFollowerCount already falls back to the persisted baseline when
+    // neither REST nor the relays can answer.
     return FollowersSnapshot(
       pubkeys: followers.pubkeys,
-      count: max(followers.pubkeys.length, countFromService),
+      count: countFromService,
       datedCount: followers.datedCount,
     );
   }
 
   /// Get an accurate follower count for the current user.
   ///
-  /// Uses multi-source fetching with hysteresis stabilization.
+  /// REST-authoritative, with relay fallback (see [getFollowerStats]).
   Future<int> getMyFollowerCount() async {
     final count = await getFollowerCount(_nostrClient.publicKey);
     _cachedMyFollowerCount = count;
@@ -474,10 +480,12 @@ class FollowRepository {
     final countFuture = getMyFollowerCount();
     final followers = await followersFuture;
     final countFromService = await countFuture;
-    final count = max(followers.pubkeys.length, countFromService);
+    // Same rule as fetchFollowersSnapshot: the service count is displayed
+    // verbatim, never substituted with the relay list length (#8259 review).
+    final count = countFromService;
 
     // The list caches are updated by _fetchMyFollowers/getMyFollowerCount;
-    // store the merged count so the next watchMyFollowers call yields it.
+    // store the selected count so the next watchMyFollowers call yields it.
     _cachedMyFollowerCount = count;
 
     return FollowersSnapshot(
@@ -802,7 +810,12 @@ class FollowRepository {
     }
   }
 
-  // === FOLLOWER STATS (count stabilization with hysteresis) ===
+  // === FOLLOWER STATS ===
+  //
+  // Positive REST counts are authoritative per field (#8197). Funnelcake's
+  // follower and following counts come from independent inputs, so a positive
+  // value in one cannot make an ambiguous zero in the other authoritative.
+  // Hysteresis applies only to fields resolved through relay fallback.
 
   /// Counts older than this are considered stale and will be replaced
   /// even if the new value is lower.
@@ -851,6 +864,12 @@ class FollowRepository {
   }
 
   /// Persist follower stats to the Drift database.
+  ///
+  /// This refreshes the row's count-freshness stamp, which is correct for both
+  /// of its readers: retention keeps the row, and the relay hysteresis treats
+  /// the baseline as recently confirmed. Each ambiguous REST zero is withheld
+  /// upstream, so a stamp means at least one count came from a trusted source
+  /// or an established fallback baseline.
   Future<void> _persistFollowerStats(String pubkey, FollowerStats stats) async {
     await _profileStatsDao?.upsertStats(
       pubkey: pubkey,
@@ -897,19 +916,25 @@ class FollowRepository {
     String pubkey,
     FollowerStats freshStats, {
     required ({int followers, int following, DateTime timestamp})? persisted,
+    required bool followersAuthoritative,
+    required bool followingAuthoritative,
   }) {
     if (persisted == null) return freshStats;
 
-    final stableFollowers = _applyHysteresis(
-      freshCount: freshStats.followers,
-      persistedCount: persisted.followers,
-      persistedTimestamp: persisted.timestamp,
-    );
-    final stableFollowing = _applyHysteresis(
-      freshCount: freshStats.following,
-      persistedCount: persisted.following,
-      persistedTimestamp: persisted.timestamp,
-    );
+    final stableFollowers = followersAuthoritative
+        ? freshStats.followers
+        : _applyHysteresis(
+            freshCount: freshStats.followers,
+            persistedCount: persisted.followers,
+            persistedTimestamp: persisted.timestamp,
+          );
+    final stableFollowing = followingAuthoritative
+        ? freshStats.following
+        : _applyHysteresis(
+            freshCount: freshStats.following,
+            persistedCount: persisted.following,
+            persistedTimestamp: persisted.timestamp,
+          );
 
     if (stableFollowers != freshStats.followers ||
         stableFollowing != freshStats.following) {
@@ -932,9 +957,9 @@ class FollowRepository {
 
   /// Get follower and following counts for a specific pubkey.
   ///
-  /// Returns in-memory cached data when available, otherwise fetches from
-  /// the network and stabilizes the result against a persistent cache using
-  /// hysteresis to avoid visible count fluctuations across app restarts.
+  /// Returns in-memory cached data when available. Otherwise each positive
+  /// REST field is authoritative (#8197), while an ambiguous zero field falls
+  /// back to relays and the persisted baseline with hysteresis.
   Future<FollowerStats> getFollowerStats(String pubkey) async {
     Log.debug(
       'Fetching follower stats for: ${pubkeyForLogs(pubkey)}',
@@ -957,12 +982,29 @@ class FollowRepository {
       _followerStatsCache.remove(pubkey);
 
       // Fetch from network
-      final freshStats = await _fetchFollowerStats(pubkey);
+      final fetch = await _fetchFollowerStats(pubkey);
+      final freshStats = fetch.stats;
 
+      if (fetch.followersAuthoritative && fetch.followingAuthoritative) {
+        // Both REST fields carry signal, so they are definitive (#8197): a
+        // drop is a real drop and no relay hysteresis applies.
+        _cacheFollowerStats(pubkey, freshStats);
+        final persisted = await _loadPersistedStats(pubkey);
+        if (persisted == null ||
+            freshStats.followers != persisted.followers ||
+            freshStats.following != persisted.following) {
+          await _persistFollowerStats(pubkey, freshStats);
+        }
+        return freshStats;
+      }
+
+      final persisted = await _loadPersistedStats(pubkey);
+
+      // Relay fallback below: counts are partial observations, so guard
+      // zeros and stabilize drops before display.
       // When all sources returned zero, treat it as a network failure
       // and fall back to persisted data rather than showing 0.
       if (freshStats.followers == 0 && freshStats.following == 0) {
-        final persisted = await _loadPersistedStats(pubkey);
         if (persisted != null &&
             (persisted.followers > 0 || persisted.following > 0)) {
           final fallback = FollowerStats(
@@ -975,10 +1017,33 @@ class FollowRepository {
         return freshStats;
       }
 
-      // Apply hysteresis against the persistent cache so counts don't
-      // visibly fluctuate across app restarts due to relay variance.
-      final persisted = await _loadPersistedStats(pubkey);
-      final stats = _stabilizeStats(pubkey, freshStats, persisted: persisted);
+      // A zero with no authoritative REST signal and no relay observation is
+      // absence, not a measured drop. Preserve that field's known baseline;
+      // otherwise the large-drop branch in hysteresis would accept it as real.
+      final fallbackStats = FollowerStats(
+        followers:
+            !fetch.followersAuthoritative &&
+                freshStats.followers == 0 &&
+                (persisted?.followers ?? 0) > 0
+            ? persisted!.followers
+            : freshStats.followers,
+        following:
+            !fetch.followingAuthoritative &&
+                freshStats.following == 0 &&
+                (persisted?.following ?? 0) > 0
+            ? persisted!.following
+            : freshStats.following,
+      );
+
+      // Apply hysteresis against the persistent cache so relay observations
+      // don't visibly fluctuate across app restarts.
+      final stats = _stabilizeStats(
+        pubkey,
+        fallbackStats,
+        persisted: persisted,
+        followersAuthoritative: fetch.followersAuthoritative,
+        followingAuthoritative: fetch.followingAuthoritative,
+      );
 
       // Cache in memory.
       _cacheFollowerStats(pubkey, stats);
@@ -986,10 +1051,9 @@ class FollowRepository {
       // Only re-persist when the value actually changed. When hysteresis
       // keeps the old persisted count, skipping the write preserves the
       // original timestamp so the stale check can eventually trigger.
-      if (pubkey != _nostrClient.publicKey &&
-          (persisted == null ||
-              stats.followers != persisted.followers ||
-              stats.following != persisted.following)) {
+      if (persisted == null ||
+          stats.followers != persisted.followers ||
+          stats.following != persisted.following) {
         await _persistFollowerStats(pubkey, stats);
       }
 
@@ -1028,26 +1092,71 @@ class FollowRepository {
 
   /// Fetch follower stats from the network.
   ///
-  /// Runs REST API and WebSocket queries in parallel, records each source's
-  /// completion state, then selects the highest observed follower count.
-  Future<FollowerStats> _fetchFollowerStats(String pubkey) async {
-    // Run REST and WebSocket queries in parallel for best coverage
-    final (restResult, wsResult) = await (
-      _fetchFollowerStatsViaRest(pubkey),
-      _fetchFollowerStatsViaWebSocket(pubkey),
-    ).wait;
-    final followerCounts = [
-      if (restResult != null)
-        (count: restResult.followers, isComplete: true, source: 'REST'),
-      ...wsResult.followerCounts,
-    ];
-    final followers = _selectFollowerCount(followerCounts);
-    final following = restResult == null
-        ? wsResult.following
-        : max(restResult.following, wsResult.following);
-    final observationSummary = followerCounts.isEmpty
+  /// The Funnelcake REST API is queried first. Each positive field is used
+  /// verbatim as authoritative (#8197); an ambiguous zero field is resolved
+  /// through relays and the persisted baseline instead. Relay observations
+  /// are partial and vary per query, so only fallback fields feed hysteresis.
+  Future<
+    ({
+      FollowerStats stats,
+      bool followersAuthoritative,
+      bool followingAuthoritative,
+    })
+  >
+  _fetchFollowerStats(
+    String pubkey,
+  ) async {
+    final restResult = await _fetchFollowerStatsViaRest(pubkey);
+    // Authority is per field. The two counts come from independent inputs, so
+    // a positive value in one is no evidence that zero in the other means
+    // "genuinely zero" rather than "not indexed" (#8259 review).
+    // `/api/users/{pubkey}/social` answers 200 for every pubkey — there is no
+    // 404 for an account funnelcake has never ingested — and `get_social_stats`
+    // collapses any ClickHouse failure into `{0, 0}` rather than an error. Four
+    // different server states therefore arrive byte-identical: never indexed,
+    // genuinely zero, vanished, and the summary table being down. Treating them
+    // as authoritative would display zeros and, worse, persist them over a good
+    // baseline; the last of those states was observed returning zeros for every
+    // pubkey in production during review of this change.
+    final followersAuthoritative = (restResult?.followers ?? 0) > 0;
+    final followingAuthoritative = (restResult?.following ?? 0) > 0;
+    if (followersAuthoritative && followingAuthoritative) {
+      final authoritativeRestResult = restResult!;
+      Log.info(
+        'Follower counts from REST (authoritative): '
+        '${authoritativeRestResult.followers} followers, '
+        '${authoritativeRestResult.following} following '
+        'for ${pubkeyForLogs(pubkey)}',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return (
+        stats: authoritativeRestResult,
+        followersAuthoritative: true,
+        followingAuthoritative: true,
+      );
+    }
+    if (restResult != null) {
+      Log.info(
+        'REST follower stats need per-field fallback for '
+        '${pubkeyForLogs(pubkey)}: '
+        '${restResult.followers} followers, ${restResult.following} following',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+
+    final wsResult = await _fetchFollowerStatsViaWebSocket(pubkey);
+    final relayFollowers = _selectFollowerCount(wsResult.followerCounts);
+    final followers = followersAuthoritative
+        ? restResult!.followers
+        : relayFollowers;
+    final following = followingAuthoritative
+        ? restResult!.following
+        : wsResult.following;
+    final observationSummary = wsResult.followerCounts.isEmpty
         ? 'none'
-        : followerCounts
+        : wsResult.followerCounts
               .map(
                 (result) =>
                     '${result.source}=${result.count}'
@@ -1056,22 +1165,26 @@ class FollowRepository {
               .join(', ');
 
     Log.info(
-      'Follower count observations: $observationSummary, '
+      'Follower count fallback observations: $observationSummary, '
       'using $followers for ${pubkeyForLogs(pubkey)}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
 
-    return FollowerStats(followers: followers, following: following);
+    return (
+      stats: FollowerStats(followers: followers, following: following),
+      followersAuthoritative: followersAuthoritative,
+      followingAuthoritative: followingAuthoritative,
+    );
   }
 
-  /// Selects the best-covered follower count across all observations.
+  /// Selects the best-covered follower count across relay observations.
   ///
-  /// Aggregate counts cannot distinguish a stale over-count from a source with
-  /// broader relay coverage. Completion only means that source finished
-  /// answering; it does not make its holdings globally authoritative. Until
-  /// reconciliation can compare event identities, a lower observation must not
-  /// discard a potentially better-covered source.
+  /// Only used on the relay-fallback path, where aggregate counts cannot
+  /// distinguish a stale over-count from a source with broader relay
+  /// coverage. Completion only means that source finished answering; it
+  /// does not make its holdings globally authoritative, so a lower
+  /// observation must not discard a potentially better-covered source.
   static int _selectFollowerCount(
     List<_FollowerCountObservation> observations,
   ) {
@@ -1125,10 +1238,7 @@ class FollowRepository {
         _fetchFollowersCountViaIndexers(pubkey),
       ).wait;
 
-      return (
-        following: following,
-        followerCounts: followerCounts,
-      );
+      return (following: following, followerCounts: followerCounts);
     } catch (e) {
       Log.error(
         'Error fetching follower stats via WebSocket: $e',
@@ -1256,11 +1366,7 @@ class FollowRepository {
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-      return (
-        count: result,
-        isComplete: isComplete,
-        source: indexerUrl,
-      );
+      return (count: result, isComplete: isComplete, source: indexerUrl);
     } catch (e) {
       Log.warning(
         'Error querying $indexerUrl for followers: $e',
