@@ -7,11 +7,13 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  for (final platform in TargetPlatform.values) {
-    test('only Android can close the app ($platform)', () {
-      debugDefaultTargetPlatformOverride = platform;
+  group('platformCanCloseApp', () {
+    for (final platform in TargetPlatform.values) {
+      test('only Android can close the app ($platform)', () {
+        debugDefaultTargetPlatformOverride = platform;
 
-      expect(platformCanCloseApp, platform == TargetPlatform.android);
-    });
-  }
+        expect(platformCanCloseApp, platform == TargetPlatform.android);
+      });
+    }
+  });
 }
