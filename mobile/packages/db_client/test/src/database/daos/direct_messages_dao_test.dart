@@ -676,6 +676,7 @@ void main() {
             ownerPubkey: 'pubkey_alice',
           );
           expect(row!.deletionPublishStatus, equals('deletion_sent'));
+          // Delivered: nothing left to replay. Unlike the blocked path (#8226).
           expect(row.deletionRumorJson, isNull);
           expect(row.isDeleted, isTrue);
         });
@@ -701,7 +702,59 @@ void main() {
             ownerPubkey: 'pubkey_alice',
           );
           expect(row!.deletionPublishStatus, equals('deletion_blocked'));
-          expect(row.deletionRumorJson, isNull);
+        });
+
+        test(
+          'retains the rumor so a lifted block can still replay it',
+          () async {
+            // #8226: a block is the one terminal state an outside change can
+            // lift, and this payload is the only thing a replay could send.
+            const rumor = '{"kind":5,"tags":[["e","msg_del"],["k","14"]]}';
+            await insertOwnMessage();
+            await dao.markMessageDeletionPending(
+              'msg_del',
+              deletionRumorJson: rumor,
+              ownerPubkey: 'pubkey_alice',
+            );
+
+            await dao.markMessageDeletionBlocked(
+              'msg_del',
+              ownerPubkey: 'pubkey_alice',
+            );
+
+            final row = await dao.getMessageById(
+              'msg_del',
+              ownerPubkey: 'pubkey_alice',
+            );
+            expect(row!.deletionRumorJson, equals(rumor));
+          },
+        );
+
+        test('the retained rumor stays off the retry worklist', () async {
+          // Retention must not resurrect the send: the sweep additionally
+          // requires deletion_pending, so a blocked row is excluded on
+          // status alone.
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.markMessageDeletionBlocked(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final pending = await dao.getRetryableOwnMessageDeletions(
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(pending, isEmpty);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.deletionRumorJson, isNotNull);
         });
       });
     });

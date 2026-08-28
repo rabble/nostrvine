@@ -39,10 +39,12 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Soft-deleted locally; the kind-5 wrap still needs a confirmed delivery.
   static const String _deletionPending = 'deletion_pending';
 
-  /// A relay confirmed the wrap. Terminal.
+  /// A relay confirmed the wrap for every recipient. Terminal.
   static const String _deletionSent = 'deletion_sent';
 
-  /// Send policy refused every recipient. Terminal, but NOT delivered.
+  /// Send policy blocked every recipient that failed. Terminal, and NOT a
+  /// claim of full delivery — recipients outside the block may already have
+  /// received the retraction.
   static const String _deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
@@ -236,30 +238,60 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       _settleMessageDeletion(
         rumorId,
         status: _deletionSent,
+        // Delivered, so there is nothing left to replay.
+        retainRumor: false,
         ownerPubkey: ownerPubkey,
       );
 
-  /// Send policy refused every recipient: stop re-driving a send that will
-  /// always be refused, but record it as `'deletion_blocked'` rather than
-  /// `'deletion_sent'`.
+  /// Send policy blocked every failed recipient: stop re-driving a send that
+  /// will always be refused, but record it as `'deletion_blocked'` rather than
+  /// `'deletion_sent'`. Other recipients may already have succeeded.
   ///
   /// The reaction path collapses these two, reasoning that a blocked peer
   /// never received the reaction either so the removal is moot. That does not
   /// transfer to a message, which may well have been delivered before the
   /// block took effect — calling it sent would misreport a message the peer
   /// still holds.
+  ///
+  /// The rumor is **kept**. A block can lift while the build is running: the
+  /// minor restriction reads live remote state, and Keycast's server-side
+  /// `verified_minor` gate — the other blocked source — clears from that same
+  /// state. (The retired-moderation-account case cannot: that list is a
+  /// compile-time `const`, so lifting it needs a new build.)
+  ///
+  /// The stored rumor is also the retraction's event identity, not merely a
+  /// payload. Replaying the stored JSON keeps every attempt one kind-5;
+  /// rebuilding would mint a fresh id per attempt and put N distinct
+  /// retractions on the wire for one user action. Nothing on the receive side
+  /// collapses them — dedup is keyed on gift-wrap id, and NIP-59 gives every
+  /// wrap a fresh ephemeral key and `created_at`, so a replay is always a new
+  /// wrap; what makes it safe is that re-applying a deletion is a no-op.
+  /// Dropping the rumor therefore leaves the row unrepairable rather than
+  /// merely un-retried — including in the mixed case where some recipients
+  /// already received the retraction (#8226).
+  ///
+  /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
+  /// additionally requires `deletion_pending`, so a blocked row stays off the
+  /// worklist whether or not the rumor is present.
   Future<bool> markMessageDeletionBlocked(
     String rumorId, {
     String? ownerPubkey,
   }) => _settleMessageDeletion(
     rumorId,
     status: _deletionBlocked,
+    retainRumor: true,
     ownerPubkey: ownerPubkey,
   );
 
+  /// Move a deletion row to a terminal [status].
+  ///
+  /// [retainRumor] is required rather than defaulted: whether the payload
+  /// survives is the whole difference between the two terminal states, so a
+  /// future third caller has to decide it deliberately.
   Future<bool> _settleMessageDeletion(
     String rumorId, {
     required String status,
+    required bool retainRumor,
     String? ownerPubkey,
   }) async {
     final rows =
@@ -270,7 +302,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
             ))
             .write(
               DirectMessagesCompanion(
-                deletionRumorJson: const Value(null),
+                deletionRumorJson: retainRumor
+                    ? const Value.absent()
+                    : const Value(null),
                 deletionPublishStatus: Value(status),
               ),
             );
