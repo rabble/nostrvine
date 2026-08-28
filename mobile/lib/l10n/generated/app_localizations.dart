@@ -16822,22 +16822,22 @@ abstract class AppLocalizations {
   /// **'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.'**
   String get minorAccountReviewContentBody;
 
-  /// Heading above the support action that introduces the restricted-minor reconsideration policy.
+  /// Heading above the support action that introduces the restricted-minor reconsideration policy. Approved wording from #8239 — do not reword without a product decision.
   ///
   /// In en, this message translates to:
-  /// **'Ask us to take another look'**
+  /// **'Think we got this wrong?'**
   String get minorAccountReviewAppealTitle;
 
-  /// Tells a restricted 13-to-15-year-old how to ask support to reconsider the decision without promising a review.
+  /// Tells a restricted 13-to-15-year-old how to ask support to reconsider the decision without promising a reversal. Approved wording from #8239, used verbatim.
   ///
   /// In en, this message translates to:
-  /// **'You can contact Divine Support and ask us to reconsider this decision. Divine may review your request, but is not obligated to.'**
+  /// **'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.'**
   String get minorAccountReviewAppealTeenBody;
 
-  /// Tells a restricted child under 13 that a parent or guardian may ask support to reconsider the decision without promising a review.
+  /// Tells a restricted child under 13 that a parent or guardian may ask support to reconsider the decision without promising a reversal. The approved #8239 wording with the actor changed to the parent or guardian; the promise language is unchanged.
   ///
   /// In en, this message translates to:
-  /// **'Your parent or guardian can contact Divine Support and ask us to reconsider this decision. Divine may review the request, but is not obligated to.'**
+  /// **'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.'**
   String get minorAccountReviewAppealUnder13Body;
 
   /// No description provided for @minorAccountReviewOpenSupportCenter.
