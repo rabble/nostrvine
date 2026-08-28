@@ -117,7 +117,7 @@ void main() {
         },
       );
 
-      test('getUsernameByPubkey requests the injected name server', () async {
+      test('lookupUsernameByPubkey hits the injected name server', () async {
         const pubkey =
             '0000000000000000000000000000000000000000000000000000000000000001';
         when(() => httpClient.get(any())).thenAnswer(
@@ -126,7 +126,7 @@ void main() {
 
         await buildRepository(
           nameServerBaseUrl: _testNameServer,
-        ).getUsernameByPubkey(pubkeyHex: pubkey);
+        ).lookupUsernameByPubkey(pubkeyHex: pubkey);
 
         verify(
           () => httpClient.get(

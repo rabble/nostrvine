@@ -1750,23 +1750,6 @@ class ProfileRepository implements ProfileReader {
     }
   }
 
-  /// Returns the active `@divine.video` name owned by [pubkeyHex] as a
-  /// `(name, canonical)` record — `name` is the display form (for UI labels),
-  /// `canonical` is the round-trip-safe key to send back to `/release` — or
-  /// `null` if the pubkey owns none or the lookup could not be determined.
-  Future<({String name, String canonical})?> getUsernameByPubkey({
-    required String pubkeyHex,
-  }) async {
-    final lookup = await lookupUsernameByPubkey(pubkeyHex: pubkeyHex);
-    return switch (lookup) {
-      DivineUsernameFound(:final name, :final canonical) => (
-        name: name,
-        canonical: canonical,
-      ),
-      DivineUsernameNotFound() || DivineUsernameUnknown() => null,
-    };
-  }
-
   /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine
   /// verdict from an undetermined one.
   ///
