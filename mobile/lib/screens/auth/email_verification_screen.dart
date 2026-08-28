@@ -560,7 +560,6 @@ class _EmailVerificationScreenState
                       child: CustomScrollView(
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
-                        physics: const AlwaysScrollableScrollPhysics(),
                         slivers: [
                           // Fills the viewport so the content's `Spacer`s can
                           // center it, and scrolls once it no longer fits.

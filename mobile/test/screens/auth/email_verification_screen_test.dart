@@ -181,10 +181,11 @@ void main() {
     String? token,
     bool restored = false,
     TargetPlatform? platform,
+    Size surfaceSize = const Size(800, 1200),
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) async {
-    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    await tester.binding.setSurfaceSize(surfaceSize);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       createTestWidget(
@@ -1804,6 +1805,7 @@ void main() {
         verifier: 'test-verifier',
         email: 'user@example.com',
         platform: TargetPlatform.iOS,
+        surfaceSize: const Size(1200, 2600),
         initialState: pollingState,
       );
       await tester.pump();
