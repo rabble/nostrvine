@@ -53,7 +53,9 @@ final class OthersFollowersState extends Equatable {
   /// Funnelcake remains the deterministic baseline (#8197), but accounts
   /// hidden by the viewer's safety state must not still appear in the count
   /// beside the filtered list. Only hidden rows actually observed in the
-  /// fetched list are subtracted; the result never falls below visible rows.
+  /// fetched list are subtracted; the result is not floored at the
+  /// relay-derived visible row count, so relay coverage cannot inflate or
+  /// destabilize the displayed number.
   int get followerCount => visibleFollowerCount(
     visiblePubkeyCount: followersPubkeys.length,
     rawPubkeyCount: rawFollowersPubkeys.length,

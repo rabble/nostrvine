@@ -63,7 +63,8 @@ final class MyFollowersState extends Equatable {
   /// Funnelcake remains the deterministic baseline (#8197), but accounts the
   /// owner has blocked or follow-severed must not still appear in their count.
   /// Only hidden rows actually observed in the fetched list are subtracted;
-  /// the result never falls below the visible rows.
+  /// the result is not floored at the relay-derived visible row count, so relay
+  /// coverage cannot inflate or destabilize the displayed number.
   int get followerCount => visibleFollowerCount(
     visiblePubkeyCount: followersPubkeys.length,
     rawPubkeyCount: rawFollowersPubkeys.length,
