@@ -158,7 +158,8 @@ void main() {
 
     test('an implementation needs no signer and no relay client', () {
       // _ExhaustiveReader satisfies the contract with neither. If this stops
-      // compiling, a signing member reached the interface.
+      // compiling, the widened interface needs an explicit signer-safety
+      // review before this test implementation is updated.
       expect(_ExhaustiveReader(), isA<ProfileReader>());
     });
   });
