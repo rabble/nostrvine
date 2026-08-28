@@ -8,6 +8,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// User-facing class of an account deletion failure.
@@ -47,15 +48,16 @@ class DeleteAccountResult {
   final int deletedEventsCount;
 
   /// True when the relay query that enumerates the user's existing content
-  /// failed, so the kind-5 sweep covered nothing.
+  /// failed or timed out, so the kind-5 sweep may have covered only cached or
+  /// partial results.
   ///
   /// The vanish request may still have been published, so the caller must tell
-  /// the user their existing content was *not* individually requested for
-  /// deletion rather than reporting an unqualified success.
+  /// the user their existing content may not all have been individually
+  /// requested for deletion rather than reporting an unqualified success.
   final bool contentQueryFailed;
 
-  /// True when at least one queried event did not get an OK-confirmed kind-5
-  /// deletion request.
+  /// True when enumeration reached its cap or at least one event that required
+  /// a kind-5 compatibility request did not get an OK confirmation.
   final bool contentDeletionIncomplete;
 
   factory DeleteAccountResult.createSuccess(
@@ -133,6 +135,8 @@ class AccountDeletionService {
   );
   static const _interBatchDelay = Duration(milliseconds: 500);
   static const _rateLimitRetryDelay = Duration(minutes: 1);
+  static const _sweepQueryLimit = 10000;
+  static const _sweepQueryTimeout = Duration(seconds: 30);
 
   /// Kinds this flow's own deletion machinery produces, excluded from the sweep.
   ///
@@ -182,6 +186,7 @@ class AccountDeletionService {
     String? expectedPubkey,
   }) async {
     var deletedCount = 0;
+    var kind5DeletionIncomplete = false;
     try {
       if (!_authService.isAuthenticated) {
         return DeleteAccountResult.failure(
@@ -218,18 +223,20 @@ class AccountDeletionService {
 
       Log.info(
         'Found ${allUserEvents.length} events to delete'
-        '${sweep.queryFailed ? ' (relay query FAILED — sweep will cover nothing)' : ''}',
+        '${sweep.queryFailed ? ' (relay query incomplete)' : ''}',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
 
       if (allUserEvents.isNotEmpty) {
-        deletedCount = await _publishDeletionEventsForAll(
+        final deletion = await _publishDeletionEventsForAll(
           allUserEvents,
           reason,
           expectedPubkey: expectedPubkey,
           onProgress: onProgress,
         );
+        deletedCount = deletion.confirmedCount;
+        kind5DeletionIncomplete = deletion.incomplete;
 
         Log.info(
           'Published $deletedCount NIP-09 deletion requests',
@@ -293,7 +300,7 @@ class AccountDeletionService {
         deletedEventsCount: deletedCount,
         contentQueryFailed: sweep.queryFailed,
         contentDeletionIncomplete:
-            allUserEvents.isNotEmpty && deletedCount < allUserEvents.length,
+            sweep.reachedLimit || kind5DeletionIncomplete,
       );
     } on AccountChangedAfterDeletion {
       Log.warning(
@@ -409,27 +416,29 @@ class AccountDeletionService {
   /// NIP-01 filters cannot express "every kind except these", so the query stays
   /// broad and [_kindsExcludedFromSweep] is applied here.
   ///
-  /// Returns `queryFailed: true` when the relay query itself failed. The caller
-  /// must not treat that as "this account has no content" — the previous
-  /// behaviour of swallowing the error into an empty list silently skipped the
-  /// entire sweep while still publishing the vanish.
-  Future<({List<Event> events, bool queryFailed})> _fetchSweepTargets(
-    String pubkey,
-  ) async {
+  /// Returns `queryFailed: true` when the relay query failed or timed out. The
+  /// caller must not treat cached or partial results as complete enumeration.
+  Future<({List<Event> events, bool queryFailed, bool reachedLimit})>
+  _fetchSweepTargets(String pubkey) async {
     if (_nostrService.isDisposed) {
       Log.error(
         'Failed to fetch user events: Nostr client is disposed',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
-      return (events: const <Event>[], queryFailed: true);
+      return (events: const <Event>[], queryFailed: true, reachedLimit: false);
     }
 
     try {
-      final filter = Filter(authors: [pubkey], limit: 10000);
-      final query = await _nostrService.queryEventsDetailed([filter]);
+      final filter = Filter(authors: [pubkey], limit: _sweepQueryLimit);
+      final query = await _nostrService.queryEventsDetailed(
+        [filter],
+        timeout: _sweepQueryTimeout,
+        requireAllRelaysSettled: true,
+      );
       final events = query.events;
       final queryFailed = query.timedOut || query.noRelays;
+      final reachedLimit = events.length >= _sweepQueryLimit;
 
       final targets = events
           .where((event) => !_kindsExcludedFromSweep.contains(event.kind))
@@ -452,19 +461,32 @@ class AccountDeletionService {
         );
       }
 
-      return (events: targets, queryFailed: queryFailed);
+      if (reachedLimit) {
+        Log.warning(
+          'Relay query reached the $_sweepQueryLimit-event account deletion '
+          'sweep limit for user ${pubkeyForLogs(pubkey)}',
+          name: 'AccountDeletionService',
+          category: LogCategory.system,
+        );
+      }
+
+      return (
+        events: targets,
+        queryFailed: queryFailed,
+        reachedLimit: reachedLimit,
+      );
     } catch (e) {
       Log.error(
         'Failed to fetch user events: $e',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
-      return (events: const <Event>[], queryFailed: true);
+      return (events: const <Event>[], queryFailed: true, reachedLimit: false);
     }
   }
 
   /// Publish NIP-09 kind 5 deletion events for all user events
-  Future<int> _publishDeletionEventsForAll(
+  Future<({int confirmedCount, bool incomplete})> _publishDeletionEventsForAll(
     List<Event> events,
     String reason, {
     String? expectedPubkey,
@@ -472,6 +494,35 @@ class AccountDeletionService {
   }) async {
     int successCount = 0;
     final total = events.length;
+    final connectedRelays = _nostrService.connectedRelays;
+    final kind5TargetRelays = connectedRelays
+        .where(
+          (relay) =>
+              !isDivineHostedRelayUrl(relay) &&
+              _nostrService.isRelayAllowed(relay),
+        )
+        .toList(growable: false);
+
+    if (connectedRelays.isEmpty) {
+      Log.warning(
+        'Skipping NIP-09 sweep because no relay is connected',
+        name: 'AccountDeletionService',
+        category: LogCategory.system,
+      );
+      onProgress?.call(total, total);
+      return (confirmedCount: 0, incomplete: true);
+    }
+
+    if (kind5TargetRelays.isEmpty) {
+      Log.info(
+        'Skipping NIP-09 sweep because no connected relay requires the '
+        'NIP-62 compatibility fallback',
+        name: 'AccountDeletionService',
+        category: LogCategory.system,
+      );
+      onProgress?.call(total, total);
+      return (confirmedCount: 0, incomplete: false);
+    }
 
     final eventsByKind = <int, List<Event>>{};
     for (final event in events) {
@@ -500,14 +551,20 @@ class AccountDeletionService {
       }
 
       if (deleteEvent != null) {
-        var outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        var outcome = await _nostrService.publishEventAwaitOk(
+          deleteEvent,
+          targetRelays: kind5TargetRelays,
+        );
         if (isRateLimitedOutcome(outcome)) {
           await _retryDelay(_rateLimitRetryDelay);
           _assertSignerStillMatches(
             expectedPubkey,
             anyConfirmed: successCount > 0,
           );
-          outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+          outcome = await _nostrService.publishEventAwaitOk(
+            deleteEvent,
+            targetRelays: kind5TargetRelays,
+          );
         }
         _assertSignerStillMatches(
           expectedPubkey,
@@ -524,7 +581,7 @@ class AccountDeletionService {
             category: LogCategory.system,
           );
           onProgress?.call(successCount, total);
-          return successCount;
+          return (confirmedCount: successCount, incomplete: true);
         }
         if (outcome.confirmed) {
           successCount += kindEvents.length;
@@ -553,7 +610,7 @@ class AccountDeletionService {
       }
     }
 
-    return successCount;
+    return (confirmedCount: successCount, incomplete: successCount < total);
   }
 
   /// Create NIP-09 kind 5 deletion event for multiple events of the same kind

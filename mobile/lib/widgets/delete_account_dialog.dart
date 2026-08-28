@@ -879,11 +879,9 @@ Future<void> executeAccountDeletion({
       // outcome is reported through the messenger captured up front — gating
       // this on `context.mounted` left a completed deletion silent (#6450).
       dismissProgressSheet();
-      // When the relay query that enumerates existing content failed, no
-      // per-item deletion request was sent for anything the user had already
-      // posted. When a kind-5 batch was not confirmed, some per-item requests
-      // also did not land. Saying "deletion requests sent" would overstate
-      // either outcome.
+      // A failed or timed-out relay query may only enumerate cached or partial
+      // content. A capped query or unconfirmed kind-5 batch is incomplete too.
+      // Saying "deletion requests sent" would overstate any of these outcomes.
       final snackbarText =
           keyDeletionWarning ??
           localDataDeletionFailure ??

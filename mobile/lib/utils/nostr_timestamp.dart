@@ -33,6 +33,8 @@ class NostrTimestamp {
       case 3: // Contact list
       case 7: // Reaction
         return defaultClockDriftTolerance;
+      case 62: // Request to vanish; its timestamp is the deletion boundary.
+        return 0;
       default:
         return defaultClockDriftTolerance;
     }
