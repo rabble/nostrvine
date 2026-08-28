@@ -750,16 +750,29 @@ class ProfileRepository implements ProfileReader {
           : engagement.totalLoops.round();
     }
 
+    // A 0/0 body is not data. `/api/users/{pubkey}/social` answers 200 for
+    // every pubkey, and funnelcake collapses ClickHouse failures into
+    // `{0, 0}`, so "never indexed", "genuinely zero", "vanished" and "the
+    // summary table is down" are indistinguishable here. Writing it would
+    // overwrite a good baseline with zeros (#8259 review), so this writer
+    // skips the counts entirely unless at least one of them carries a signal.
+    final hasSocialSignal =
+        social != null &&
+        (social.followerCount > 0 || social.followingCount > 0);
+
     await dao.upsertStats(
       pubkey: pubkey,
       // The REST social counts are the authoritative follower/following
       // numbers (#8197) and the only ones available before any relay work
       // finishes, so the profile header can render them immediately.
-      followerCount: social?.followerCount,
-      followingCount: social?.followingCount,
+      followerCount: hasSocialSignal ? social.followerCount : null,
+      followingCount: hasSocialSignal ? social.followingCount : null,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,
+      // REST is not the relay-fallback baseline, so it must not restart the
+      // hysteresis staleness clock. See ProfileStatsDao.upsertStats.
+      stampCountFreshness: false,
     );
   }
 

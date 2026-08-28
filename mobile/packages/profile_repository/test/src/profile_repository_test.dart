@@ -666,6 +666,7 @@ void main() {
               followingCount: any(named: 'followingCount'),
               totalViews: any(named: 'totalViews'),
               totalLikes: any(named: 'totalLikes'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
           repoWithFunnelcake = ProfileRepository(
@@ -973,6 +974,7 @@ void main() {
                 videoCount: any(named: 'videoCount'),
                 totalLikes: any(named: 'totalLikes'),
                 totalViews: any(named: 'totalViews'),
+                stampCountFreshness: any(named: 'stampCountFreshness'),
               ),
             );
           });
@@ -1330,6 +1332,9 @@ void main() {
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,
+              // REST is not the relay baseline, so it must not restart the
+              // hysteresis staleness clock (#8259 review).
+              stampCountFreshness: false,
             ),
           ).called(1);
         });
@@ -1362,9 +1367,49 @@ void main() {
               videoCount: any(named: 'videoCount'),
               totalLikes: any(named: 'totalLikes'),
               totalViews: 13,
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).called(1);
         });
+
+        test(
+          'does not cache an ambiguous 0/0 social response',
+          () async {
+            // `/api/users/{pubkey}/social` answers 200 for every pubkey and
+            // funnelcake turns ClickHouse failures into `{0, 0}`, so a zero
+            // body cannot be told apart from "never indexed" or "the summary
+            // table is down". Writing it would overwrite a good baseline
+            // with zeros (#8259 review).
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileNotPublished(
+                pubkey: testPubkey,
+                social: ProfileSocialData.fromJson(const {
+                  'follower_count': 0,
+                  'following_count': 0,
+                }),
+                stats: ProfileStatsData.fromJson(const {'video_count': 3}),
+              ),
+            );
+
+            await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+
+            // The other stats are still cached; the counts are withheld,
+            // i.e. passed as null (the default), so the DAO leaves whatever
+            // baseline is already on the row untouched.
+            verify(
+              () => mockProfileStatsDao.upsertStats(
+                pubkey: testPubkey,
+                videoCount: 3,
+                totalLikes: any(named: 'totalLikes'),
+                totalViews: any(named: 'totalViews'),
+                stampCountFreshness: false,
+              ),
+            ).called(1);
+          },
+        );
 
         test('skips Funnelcake when not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);

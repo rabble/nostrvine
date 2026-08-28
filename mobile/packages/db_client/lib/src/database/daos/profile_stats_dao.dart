@@ -38,6 +38,16 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// same reason as `UserProfilesDao.upsertProfile`: the writers span layers
   /// that cannot all reach `ProfileRepository` — the classic-viner seed import
   /// re-runs on every manifest bump.
+  /// Writes profile stats, creating the row when absent.
+  ///
+  /// [stampCountFreshness] controls `followerCountsUpdatedAt`, which exists
+  /// solely so FollowRepository's relay-fallback hysteresis can decide when a
+  /// baseline has gone stale. Only a write that establishes such a baseline —
+  /// the relay path — should stamp it. REST-sourced counts pass `false`: they
+  /// update the values, but must not restart the staleness clock, because the
+  /// relay path deliberately skips re-persisting an unchanged count so that
+  /// clock can eventually expire. Refreshing it on every profile view would
+  /// mean it never does (#8259 review).
   Future<void> upsertStats({
     required String pubkey,
     int? videoCount,
@@ -45,6 +55,7 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     int? followingCount,
     int? totalViews,
     int? totalLikes,
+    bool stampCountFreshness = true,
   }) async {
     final tombstone = await (select(
       vanishedProfiles,
@@ -54,7 +65,8 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     final existing = await (select(
       profileStats,
     )..where((t) => t.pubkey.equals(pubkey))).getSingleOrNull();
-    final countsUpdatedAt = followerCount != null || followingCount != null
+    final wroteCounts = followerCount != null || followingCount != null;
+    final countsUpdatedAt = wroteCounts && stampCountFreshness
         ? DateTime.now()
         : existing?.followerCountsUpdatedAt;
 

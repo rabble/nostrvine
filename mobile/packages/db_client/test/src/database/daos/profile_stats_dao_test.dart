@@ -145,6 +145,67 @@ void main() {
         );
       });
 
+      test(
+        'does not restart the staleness clock when stamping is off',
+        () async {
+          // REST-sourced counts update the values but must not restart the
+          // clock the relay-fallback hysteresis measures, or the deliberate
+          // "skip the re-write so it can expire" behaviour never expires
+          // (#8259 review).
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            followerCount: 100,
+            followingCount: 50,
+          );
+          final original = await appDbClient.getProfileStatRow(testPubkey);
+          expect(original!.followerCountsUpdatedAt, isNotNull);
+
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            followerCount: 512,
+            followingCount: 430,
+            stampCountFreshness: false,
+          );
+
+          final result = await appDbClient.getProfileStatRow(testPubkey);
+          // The values move...
+          expect(result!.followerCount, equals(512));
+          expect(result.followingCount, equals(430));
+          // ...but the clock does not.
+          expect(
+            result.followerCountsUpdatedAt,
+            equals(original.followerCountsUpdatedAt),
+          );
+        },
+      );
+
+      test('stamps the staleness clock when stamping is on', () async {
+        await dao.upsertStats(
+          pubkey: testPubkey,
+          followerCount: 100,
+          followingCount: 50,
+        );
+        final original = await appDbClient.getProfileStatRow(testPubkey);
+
+        // The column is stored as unix seconds, so the two writes have to
+        // land in different seconds for the comparison to mean anything.
+        await Future<void>.delayed(const Duration(milliseconds: 1100));
+        await dao.upsertStats(
+          pubkey: testPubkey,
+          followerCount: 101,
+          followingCount: 50,
+        );
+
+        final result = await appDbClient.getProfileStatRow(testPubkey);
+        expect(
+          result!.followerCountsUpdatedAt!.isAfter(
+            original!.followerCountsUpdatedAt!,
+          ),
+          isTrue,
+        );
+      });
+
       test('no-ops for a pubkey that requested deletion', () async {
         // The classic-viner seed import re-runs on every manifest bump and
         // writes counters straight to this DAO.

@@ -418,11 +418,15 @@ class FollowRepository {
     final followers = await followersFuture;
     final countFromService = await countFuture;
 
-    // The service count (REST-authoritative, #8197) is what we display;
-    // the relay-fed list only backstops a failed or empty count fetch.
+    // The service count is the displayed number, full stop. Substituting the
+    // relay list length when it is 0 would put a relay-derived number back on
+    // screen — the exact inflation #8197 removes — and it would swap the
+    // rendered value a second time once the list resolved (#8259 review).
+    // getFollowerCount already falls back to the persisted baseline when
+    // neither REST nor the relays can answer.
     return FollowersSnapshot(
       pubkeys: followers.pubkeys,
-      count: countFromService > 0 ? countFromService : followers.pubkeys.length,
+      count: countFromService,
       datedCount: followers.datedCount,
     );
   }
@@ -471,11 +475,9 @@ class FollowRepository {
     final countFuture = getMyFollowerCount();
     final followers = await followersFuture;
     final countFromService = await countFuture;
-    // The service count (REST-authoritative, #8197) is what we display;
-    // the relay-fed list only backstops a failed or empty count fetch.
-    final count = countFromService > 0
-        ? countFromService
-        : followers.pubkeys.length;
+    // Same rule as fetchFollowersSnapshot: the service count is displayed
+    // verbatim, never substituted with the relay list length (#8259 review).
+    final count = countFromService;
 
     // The list caches are updated by _fetchMyFollowers/getMyFollowerCount;
     // store the selected count so the next watchMyFollowers call yields it.
@@ -856,11 +858,21 @@ class FollowRepository {
   }
 
   /// Persist follower stats to the Drift database.
-  Future<void> _persistFollowerStats(String pubkey, FollowerStats stats) async {
+  ///
+  /// [isRelayBaseline] must be true only for the relay-fallback path. That is
+  /// the path whose staleness `followerCountsUpdatedAt` measures, and it
+  /// deliberately skips re-persisting an unchanged count so the clock can
+  /// expire; a REST write that restarted it would keep it from ever doing so.
+  Future<void> _persistFollowerStats(
+    String pubkey,
+    FollowerStats stats, {
+    required bool isRelayBaseline,
+  }) async {
     await _profileStatsDao?.upsertStats(
       pubkey: pubkey,
       followerCount: stats.followers,
       followingCount: stats.following,
+      stampCountFreshness: isRelayBaseline,
     );
   }
 
@@ -975,7 +987,11 @@ class FollowRepository {
             (persisted == null ||
                 freshStats.followers != persisted.followers ||
                 freshStats.following != persisted.following)) {
-          await _persistFollowerStats(pubkey, freshStats);
+          await _persistFollowerStats(
+            pubkey,
+            freshStats,
+            isRelayBaseline: false,
+          );
         }
         return freshStats;
       }
@@ -1013,7 +1029,7 @@ class FollowRepository {
           (persisted == null ||
               stats.followers != persisted.followers ||
               stats.following != persisted.following)) {
-        await _persistFollowerStats(pubkey, stats);
+        await _persistFollowerStats(pubkey, stats, isRelayBaseline: true);
       }
 
       Log.debug(

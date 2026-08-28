@@ -4784,6 +4784,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -4809,6 +4810,7 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 90,
               followingCount: 45,
+              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -5432,6 +5434,7 @@ void main() {
             pubkey: any(named: 'pubkey'),
             followerCount: any(named: 'followerCount'),
             followingCount: any(named: 'followingCount'),
+            stampCountFreshness: any(named: 'stampCountFreshness'),
           ),
         ).thenAnswer((_) async {});
         return dao;
@@ -5508,6 +5511,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           );
         },
@@ -5527,6 +5531,10 @@ void main() {
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
           expect(stats.following, equals(79));
+          // Relay fallback: this write *is* the baseline whose age the
+          // staleness clock measures, so unlike the REST path it stamps
+          // (stampCountFreshness defaults to true; the DAO's own tests pin
+          // what stamping actually does).
           verify(
             () => dao.upsertStats(
               pubkey: testTargetPubkey,
@@ -5604,6 +5612,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           );
         },
@@ -5642,6 +5651,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5666,6 +5676,7 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 200,
               followingCount: 100,
+              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -5703,6 +5714,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5724,6 +5736,7 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 90,
               followingCount: 45,
+              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -5776,6 +5789,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: 0,
               followingCount: 0,
+              stampCountFreshness: false,
             ),
           );
         },
@@ -5813,6 +5827,7 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
+              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5833,6 +5848,7 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 90,
               followingCount: 45,
+              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -6269,54 +6285,6 @@ void main() {
             // REST answered with 50, so 50 is displayed — the indexers
             // reporting 55 and 500 are never allowed to override it.
             expect(stats.followers, equals(50));
-          },
-        );
-
-        test(
-          'uses a higher REST count without consulting indexers',
-          () async {
-            final mockFunnelcakeClient = _MockFunnelcakeApiClient();
-            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-            when(
-              () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
-            ).thenAnswer(
-              (_) async => const SocialCounts(
-                pubkey: testTargetPubkey,
-                followerCount: 500,
-                followingCount: 0,
-              ),
-            );
-
-            repository = FollowRepository(
-              nostrClient: mockNostrClient,
-              isCacheInitialized: () => cacheIsInitialized,
-              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-              cacheUserEvent: cachedUserEvents.add,
-              funnelcakeApiClient: mockFunnelcakeClient,
-              indexerRelayUrls: const [
-                'wss://indexer1.test',
-                'wss://indexer2.test',
-              ],
-              relayFactory: (url, status) {
-                final count = url.contains('indexer1') ? 88 : 90;
-                return _FakeRelay(url, status)
-                  ..fakeResponses = [
-                    ...List.generate(
-                      count,
-                      (i) => <dynamic>[
-                        'EVENT',
-                        's',
-                        {'pubkey': i.toRadixString(16).padLeft(64, '0')},
-                      ],
-                    ),
-                    <dynamic>['EOSE', 's'],
-                  ];
-              },
-            );
-
-            final stats = await repository.getFollowerStats(testTargetPubkey);
-
-            expect(stats.followers, equals(500));
           },
         );
 
@@ -7106,98 +7074,6 @@ void main() {
 
           // REST said 5; the indexer's 10 is not consulted (#8197).
           expect(stats.followers, equals(5));
-        },
-      );
-
-      test(
-        'does not let one low EOSE indexer drag REST down',
-        () async {
-          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
-          ).thenAnswer(
-            (_) async => const SocialCounts(
-              pubkey: testTargetPubkey,
-              followerCount: 1000,
-              followingCount: 10,
-            ),
-          );
-
-          const indexerUrl = 'wss://idx.test';
-
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            isCacheInitialized: () => cacheIsInitialized,
-            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-            cacheUserEvent: cachedUserEvents.add,
-            funnelcakeApiClient: mockFunnelcakeClient,
-            indexerRelayUrls: const [indexerUrl],
-            relayFactory: (url, status) {
-              return _FakeRelay(url, status)
-                ..fakeResponses = [
-                  ...List.generate(
-                    10,
-                    (i) => <dynamic>[
-                      'EVENT',
-                      's',
-                      {
-                        'pubkey': i.toRadixString(16).padLeft(64, '0'),
-                      },
-                    ],
-                  ),
-                  <dynamic>['EOSE', 's'],
-                ];
-            },
-          );
-
-          final stats = await repository.getFollowerStats(testTargetPubkey);
-
-          expect(stats.followers, equals(1000));
-          // following: max(REST 10, WS 0) = 10
-          expect(stats.following, equals(10));
-        },
-      );
-
-      test(
-        'does not let one low partial indexer drag REST down',
-        () async {
-          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
-          ).thenAnswer(
-            (_) async => const SocialCounts(
-              pubkey: testTargetPubkey,
-              followerCount: 1000,
-              followingCount: 10,
-            ),
-          );
-
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            isCacheInitialized: () => cacheIsInitialized,
-            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-            cacheUserEvent: cachedUserEvents.add,
-            funnelcakeApiClient: mockFunnelcakeClient,
-            indexerQueryTimeout: Duration.zero,
-            indexerRelayUrls: const ['wss://idx.test'],
-            relayFactory: (url, status) {
-              return _FakeRelay(url, status)
-                ..fakeResponses = List.generate(
-                  3,
-                  (i) => <dynamic>[
-                    'EVENT',
-                    's',
-                    {'pubkey': i.toRadixString(16).padLeft(64, '0')},
-                  ],
-                );
-            },
-          );
-
-          final stats = await repository.getFollowerStats(testTargetPubkey);
-
-          expect(stats.followers, equals(1000));
         },
       );
     });

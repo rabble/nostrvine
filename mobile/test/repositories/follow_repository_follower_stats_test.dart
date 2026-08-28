@@ -88,6 +88,7 @@ FollowRepository _createRepository({
       pubkey: any(named: 'pubkey'),
       followerCount: any(named: 'followerCount'),
       followingCount: any(named: 'followingCount'),
+      stampCountFreshness: any(named: 'stampCountFreshness'),
     ),
   ).thenAnswer((_) async {});
 
@@ -154,6 +155,7 @@ void main() {
             pubkey: _testPubkey,
             followerCount: 50,
             followingCount: 20,
+            stampCountFreshness: false,
           ),
         ).called(1);
       });
@@ -274,6 +276,7 @@ void main() {
             pubkey: _testPubkey,
             followerCount: 90,
             followingCount: 20,
+            stampCountFreshness: false,
           ),
         ).called(1);
       });
@@ -296,6 +299,7 @@ void main() {
             pubkey: any(named: 'pubkey'),
             followerCount: any(named: 'followerCount'),
             followingCount: any(named: 'followingCount'),
+            stampCountFreshness: any(named: 'stampCountFreshness'),
           ),
         );
       });
@@ -342,6 +346,7 @@ void main() {
             pubkey: any(named: 'pubkey'),
             followerCount: 0,
             followingCount: 0,
+            stampCountFreshness: false,
           ),
         );
       });
