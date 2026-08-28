@@ -156,7 +156,7 @@ void main() {
       expect(await reader.getCachedProfiles(pubkeys: [_pubkey]), isEmpty);
     });
 
-    test('an implementation needs no signer and no relay client', () {
+    test('the interface can be implemented without signer or relay client', () {
       // _ExhaustiveReader satisfies the contract with neither. If this stops
       // compiling, the widened interface needs an explicit signer-safety
       // review before this test implementation is updated.

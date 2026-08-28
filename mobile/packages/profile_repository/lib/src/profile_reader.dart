@@ -22,8 +22,9 @@ import 'package:profile_repository/profile_repository.dart';
 /// by accident — the ungated phase carries a pubkey but no client, so signing
 /// there is unsafe while Drift reads are not.
 ///
-/// Every member below is signer-free: each either reads Drift directly or uses
-/// a public, unauthenticated network read.
+/// Every member below is signer-free: each either reads Drift directly or
+/// performs a network read without signing. Fresh profile reads may fall back
+/// to relays, but none requires relay readiness.
 ///
 /// **Do not widen this interface without re-checking that invariant.** The
 /// write-intent members (`cacheProfile`, `deleteCachedProfile`,

@@ -311,8 +311,9 @@ ProfileRepository? profileRepository(Ref ref) {
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
 /// Everything reachable through [ProfileReader] is signer-free: it either
-/// reads Drift directly or uses public, unauthenticated network reads. None of
-/// it needs the relay-ready client. Gating these reads behind `nostrReady` left
+/// reads Drift directly or performs a network read without signing. Fresh
+/// profile reads may fall back to relays, but none requires relay readiness.
+/// Gating these reads behind `nostrReady` left
 /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
 /// window at cold start (#5863), and what replaced the signed-in user's own
 /// name and avatar with a generated placeholder for that same window (#6423).
