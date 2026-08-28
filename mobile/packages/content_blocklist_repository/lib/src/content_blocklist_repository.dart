@@ -93,7 +93,10 @@ class ContentBlocklistRepository {
     _scopedBasesPresentAtConstruction = seededAccount == null
         ? const <String>{}
         : <String>{
-            for (final base in _legacySetsByBase.keys)
+            for (final base in {
+              ..._legacySetsByBase.keys,
+              _pendingUnblocksPrefsKey,
+            })
               if (_prefs?.getString('$base.$seededAccount') != null) base,
           };
     _loadBlockedUsers();
@@ -425,6 +428,8 @@ class ContentBlocklistRepository {
       _notifyChanged();
     }
 
+    final pendingUnblocksMigration = _migrateLegacyPendingUnblocks(pubkey);
+
     for (final base in staleBases) {
       try {
         await prefs.remove(base);
@@ -458,6 +463,71 @@ class ContentBlocklistRepository {
           category: LogCategory.system,
         );
       }
+    }
+
+    await pendingUnblocksMigration;
+  }
+
+  Future<void> _migrateLegacyPendingUnblocks(String pubkey) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    final legacy = prefs.getString(_pendingUnblocksPrefsKey);
+    if (legacy == null || legacy.isEmpty) return;
+
+    final scopedKey = '$_pendingUnblocksPrefsKey.$pubkey';
+    final scoped = prefs.getString(scopedKey);
+    if (scoped != null &&
+        (_scopedBasesPresentAtConstruction.contains(
+              _pendingUnblocksPrefsKey,
+            ) ||
+            _activeAccountPubkey == null)) {
+      try {
+        final decoded = jsonDecode(scoped) as Map<String, dynamic>;
+        _pendingUnblocks
+          ..clear()
+          ..addEntries(
+            decoded.entries
+                .where((entry) => entry.value is int)
+                .map((entry) => MapEntry(entry.key, entry.value as int)),
+          );
+        if (_pendingUnblocks.isNotEmpty) _muteListPublishPending = true;
+        await prefs.remove(_pendingUnblocksPrefsKey);
+        return;
+      } on Object catch (e) {
+        Log.error(
+          'Failed to adopt scoped blocklist key $scopedKey: $e',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+      }
+    }
+
+    try {
+      final decoded = jsonDecode(legacy) as Map<String, dynamic>;
+      for (final entry in decoded.entries) {
+        final unblockedAt = entry.value;
+        if (unblockedAt is! int) continue;
+        final current = _pendingUnblocks[entry.key];
+        if (current == null || unblockedAt > current) {
+          _pendingUnblocks[entry.key] = unblockedAt;
+        }
+      }
+      if (_pendingUnblocks.isNotEmpty) _muteListPublishPending = true;
+      if (_activeAccountPubkey != null && _activeAccountPubkey != pubkey) {
+        return;
+      }
+      final written = await prefs.setString(
+        scopedKey,
+        jsonEncode(_pendingUnblocks),
+      );
+      if (written) await prefs.remove(_pendingUnblocksPrefsKey);
+    } on Object catch (e) {
+      Log.error(
+        'Failed to migrate legacy blocklist key '
+        '$_pendingUnblocksPrefsKey: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
     }
   }
 
