@@ -6551,7 +6551,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionNotStarted =>
-      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最終確認';

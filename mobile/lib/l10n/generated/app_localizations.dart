@@ -11819,7 +11819,7 @@ abstract class AppLocalizations {
   /// Error shown when account deletion could not be started — an unexpected preparation error, or the account's Divine name ownership could not be confirmed. Nothing was deleted; the user can retry.
   ///
   /// In en, this message translates to:
-  /// **'We couldn\'t start deleting your account. Nothing was deleted. Please try again.'**
+  /// **'We couldn\'t start deleting your account. Nothing was deleted. Try again.'**
   String get deleteAccountDeletionNotStarted;
 
   /// No description provided for @deleteAccountFinalConfirmationTitle.
