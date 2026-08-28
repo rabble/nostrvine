@@ -3953,6 +3953,61 @@ void main() {
         expect(tags, isNot(contains(equals(['p', target]))));
       });
 
+      test(
+        'reconciles a stale unblock and a missing block with one publish',
+        () async {
+          const stillBlocked =
+              '00000000000000000000000000000000'
+              '000000000000000000000000000000ee';
+          final prefs = await prefsAfterAWithheldUnblock();
+          await prefs.setString(
+            'blocked_users_list.$ourPubkey',
+            jsonEncode([stillBlocked]),
+          );
+          await prefs.setBool(
+            'block_list_migrated_to_mute_list.$ourPubkey',
+            true,
+          );
+          await prefs.setBool('block_list_retired.$ourPubkey', true);
+          final ownList = StreamController<Event>.broadcast();
+          addTearDown(ownList.close);
+          when(
+            () => mockClient.subscribe(any()),
+          ).thenAnswer((_) => ownList.stream);
+          stubHealthy();
+          stubReadSettled();
+
+          final restarted = ContentBlocklistRepository(prefs: prefs);
+          await restarted.syncBlockListsInBackground(
+            mockClient,
+            mockSigner,
+            ourPubkey,
+          );
+          await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+          await pumpEventQueue();
+          clearInteractions(mockSigner);
+
+          ownList.add(
+            buildEvent(
+              kind: 10000,
+              tags: const [
+                ['p', target],
+              ],
+              createdAt: 1000,
+            ),
+          );
+          await pumpEventQueue();
+
+          verify(
+            () => mockSigner.createAndSignEvent(
+              kind: 10000,
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).called(1);
+        },
+      );
+
       test('blocking again retires the intent, so a later restart has no '
           'outstanding work', () async {
         final prefs = await prefsAfterAWithheldUnblock();

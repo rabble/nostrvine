@@ -1819,6 +1819,7 @@ class ContentBlocklistRepository {
         relayMuted.add(tag[1]);
       }
     }
+    var needsRepublish = false;
     // An unblock this list predates never reached the relay, so its `p` tag
     // is stale and must not be re-adopted as a mute from another client
     // (#8263). A tag on a list NEWER than the unblock is the opposite case --
@@ -1848,8 +1849,7 @@ class ContentBlocklistRepository {
           name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
-        _muteListPublishPending = true;
-        unawaited(retryPendingMuteListPublish());
+        needsRepublish = true;
       }
     }
 
@@ -1867,6 +1867,9 @@ class ContentBlocklistRepository {
         name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
+      needsRepublish = true;
+    }
+    if (needsRepublish) {
       _muteListPublishPending = true;
       unawaited(retryPendingMuteListPublish());
     }
