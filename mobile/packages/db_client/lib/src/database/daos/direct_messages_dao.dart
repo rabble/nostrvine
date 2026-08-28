@@ -323,9 +323,9 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// wrap a fresh ephemeral key and `created_at`, so a replay is always a new
   /// wrap; what makes it safe is that re-applying a deletion is a no-op.
   ///
-  /// Recoverability comes from [restoreToThread] instead. On main, dropping the
-  /// rumor left the row unrepairable, because all three repair routes were shut
-  /// (#8226). Un-hiding reopens one of them: `deleteMessageForEveryone` guards
+  /// Recoverability comes from `restoreToThread` instead. On main, dropping
+  /// the rumor left the row unrepairable, because all three repair routes were
+  /// shut (#8226). Un-hiding reopens one: `deleteMessageForEveryone` guards
   /// on `is_deleted` alone and then builds a fresh rumor without reading this
   /// one, so a restored row is repairable whether or not the payload survived.
   /// The stored rumor is therefore groundwork — nothing replays it yet, and the

@@ -775,8 +775,9 @@ void main() {
             // Settle the status without the restore, reproducing the pre-#8201
             // on-disk shape rather than what the DAO writes today.
             await database.customStatement(
-              "UPDATE direct_messages SET deletion_publish_status = "
-              "'deletion_blocked' WHERE id = 'msg_del'",
+              'UPDATE direct_messages SET deletion_publish_status = ? '
+              'WHERE id = ?',
+              [DirectMessagesDao.deletionBlocked, 'msg_del'],
             );
 
             final pending = await dao.getRetryableOwnMessageDeletions(
