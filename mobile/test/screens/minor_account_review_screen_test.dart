@@ -390,6 +390,60 @@ void main() {
       }
     });
 
+    testWidgets("explains what happens to a restricted minor's videos", (
+      tester,
+    ) async {
+      for (final ageBand in [
+        SuspectedAgeBand.under13,
+        SuspectedAgeBand.age13To15,
+      ]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-content-disclosure',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: ageBand,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: const MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
+                  ),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(MinorAccountReviewScreen)),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text(l10n.minorAccountReviewContentTitle),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.minorAccountReviewContentTitle), findsOneWidget);
+        expect(find.text(l10n.minorAccountReviewContentBody), findsOneWidget);
+      }
+    });
+
     testWidgets(
       'Check Again re-reads the protected-minor flag, not just the review '
       'status, so an approved teen is gated without relaunch (#176)',

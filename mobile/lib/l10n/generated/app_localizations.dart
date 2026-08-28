@@ -16810,6 +16810,18 @@ abstract class AppLocalizations {
   /// **'Support and your moderation message remain available'**
   String get minorAccountReviewRestrictionSupport;
 
+  /// Heading that explains how a restricted minor's existing videos are handled during and after review.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens to your videos'**
+  String get minorAccountReviewContentTitle;
+
+  /// Explains that existing videos are hidden during review, restored after clearance, and deleted if an unanswered review closes.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.'**
+  String get minorAccountReviewContentBody;
+
   /// No description provided for @minorAccountReviewOpenSupportCenter.
   ///
   /// In en, this message translates to:

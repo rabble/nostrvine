@@ -9332,6 +9332,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get minorAccountReviewRestrictionSupport => '客服和管理消息仍然可用';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => '打开帮助中心';
 
   @override
