@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -299,24 +300,25 @@ void main() {
       expect(closed, isTrue);
     });
 
-    testWidgets('instructs iOS users to close after startup failure', (
+    testWidgets('hides the close action on iOS by platform default', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        DatabaseBootstrapFailureApp(
-          error: DatabaseCipherStorageUnavailableException(
-            _lockedKeychainFailure(),
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(
+          DatabaseBootstrapFailureApp(
+            error: DatabaseCipherStorageUnavailableException(
+              _lockedKeychainFailure(),
+            ),
+            stack: StackTrace.current,
           ),
-          stack: StackTrace.current,
-          canCloseApp: false,
-        ),
-      );
+        );
 
-      expect(find.text(l10n.dbFailureCloseApp), findsNothing);
-      expect(
-        find.text(l10n.databaseCloseManual),
-        findsOneWidget,
-      );
+        expect(find.text(l10n.dbFailureCloseApp), findsNothing);
+        expect(find.text(l10n.dbFailureAdviceRestart), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     test('classifies cipher availability failures for release diagnostics', () {
@@ -556,10 +558,7 @@ void main() {
       expect(closes, isZero);
 
       expect(find.text(l10n.dbFailureCloseApp), findsNothing);
-      expect(
-        find.text(l10n.databaseCloseManual),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.dbFailureResetDoneBody), findsOneWidget);
       expect(
         closes,
         isZero,

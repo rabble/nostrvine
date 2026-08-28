@@ -4297,7 +4297,6 @@
     "databaseCorruptionTitle": "Локалните ти данни се повредиха",
     "databaseCorruptionBody": "Затвори Divine и го отвори пак — ще го поправим автоматично. Ще запазим каквото можем от черновите и клиповете ти, останалото се презарежда.",
     "databaseCorruptionCloseButton": "Затвори Divine",
-    "databaseCloseManual": "Затвори Divine от устройството си, след което го отвори отново.",
     "videoDetailContextTitle": "Споделено видео",
     "videoDetailCloseSemanticLabel": "Затворете видеоплейъра",
     "metadataHashtagChipTapHint": "#{hashtag}. Докосни, за да видиш видеа с този хаштаг.",

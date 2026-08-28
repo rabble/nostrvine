@@ -990,10 +990,6 @@
   "@databaseCorruptionCloseButton": {
     "description": "Button on the database-corruption takeover that closes the app so the user can reopen it. Flutter cannot relaunch its own process, so closing is the most we can offer."
   },
-  "databaseCloseManual": "Close Divine from your device, then open it again.",
-  "@databaseCloseManual": {
-    "description": "Instruction shown instead of a close button when the platform cannot close Divine itself. Keep this platform-neutral because the fallback also covers unverified desktop and web targets."
-  },
   "videoDetailContextTitle": "Shared Video",
   "@videoDetailContextTitle": {
     "description": "App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension."

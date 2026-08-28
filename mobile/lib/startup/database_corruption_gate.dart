@@ -48,8 +48,8 @@ class DatabaseCorruptionGate extends ConsumerWidget {
 /// Tells the user their local database is damaged and a restart repairs it.
 ///
 /// The sibling of `DatabaseBootstrapFailureApp`, for corruption that surfaces
-/// *after* startup. Android can close the app directly; other platforms explain
-/// how to close it manually because Flutter cannot relaunch its own process.
+/// *after* startup. Supported platforms can close the app directly; the body
+/// copy tells users on other platforms how to restart it themselves.
 class DatabaseCorruptionScreen extends StatelessWidget {
   /// Creates the screen. [onCloseApp] is injected for tests.
   const DatabaseCorruptionScreen({
@@ -157,20 +157,25 @@ class _CloseAppAffordanceState extends State<_CloseAppAffordance> {
         // the service has already logged it, and a user who restarts anyway is
         // better off than one held in a session that cannot recover.
         final settled = snapshot.connectionState == ConnectionState.done;
-        if (!settled || widget.canCloseApp) {
+        if (!settled) {
+          if (!widget.canCloseApp) {
+            return const SizedBox.square(
+              dimension: 24,
+              child: CircularProgressIndicator(),
+            );
+          }
           return DivineButton(
             label: context.l10n.databaseCorruptionCloseButton,
-            onPressed: settled ? widget.onCloseApp : null,
-            isLoading: !settled,
+            onPressed: null,
+            isLoading: true,
             type: DivineButtonType.secondary,
           );
         }
-        return Text(
-          context.l10n.databaseCloseManual,
-          textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(
-            color: context.vineColors.onSurfaceVariant,
-          ),
+        if (!widget.canCloseApp) return const SizedBox.shrink();
+        return DivineButton(
+          label: context.l10n.databaseCorruptionCloseButton,
+          onPressed: widget.onCloseApp,
+          type: DivineButtonType.secondary,
         );
       },
     );

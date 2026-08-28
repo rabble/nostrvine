@@ -232,8 +232,8 @@ class _FailureScreenState extends State<_FailureScreen> {
       });
       _announce(context.l10n.dbFailureResetDoneTitle);
     }
-    // Finishes the activity on Android. Unsupported platforms stay on the done
-    // step, which explains how to close Divine manually.
+    // Supported platforms close after the reset. Unsupported platforms stay
+    // on the done step, whose body already explains how to restart Divine.
     if (widget.canCloseApp) widget.onCloseApp();
   }
 
@@ -339,12 +339,6 @@ class _FailureView extends StatelessWidget {
             label: l10n.dbFailureCloseApp,
             onPressed: onCloseApp,
             type: DivineButtonType.secondary,
-          )
-        else
-          Text(
-            l10n.databaseCloseManual,
-            textAlign: TextAlign.center,
-            style: _bodyStyle,
           ),
         if (onResetRequested != null) ...[
           const SizedBox(height: 12),
@@ -427,10 +421,9 @@ class _ResetConfirmView extends StatelessWidget {
 
 /// Terminal step after a successful reset.
 ///
-/// Only ever seen where [DatabaseBootstrapFailureApp.onCloseApp] did not end
-/// the process — on iOS `SystemNavigator.pop` cannot close the app, so without
-/// this step the confirmation would sit there spinning behind two disabled
-/// buttons with nothing left to happen.
+/// Unsupported platforms stay here after reset because they cannot close the
+/// app. Supported platforms briefly build this step before closing, keeping
+/// the state transition deterministic and testable.
 class _ResetDoneView extends StatelessWidget {
   const _ResetDoneView({
     required this.canCloseApp,
@@ -469,12 +462,6 @@ class _ResetDoneView extends StatelessWidget {
             label: l10n.dbFailureCloseApp,
             onPressed: onCloseApp,
             type: DivineButtonType.secondary,
-          )
-        else
-          Text(
-            l10n.databaseCloseManual,
-            textAlign: TextAlign.center,
-            style: _bodyStyle,
           ),
       ],
     );

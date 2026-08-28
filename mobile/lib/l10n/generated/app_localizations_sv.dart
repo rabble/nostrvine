@@ -1608,10 +1608,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Stäng Divine';
 
   @override
-  String get databaseCloseManual =>
-      'Stäng Divine på din enhet och öppna det sedan igen.';
-
-  @override
   String get videoDetailContextTitle => 'Delad video';
 
   @override

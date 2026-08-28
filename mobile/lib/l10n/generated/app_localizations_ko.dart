@@ -1481,9 +1481,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Divine 닫기';
 
   @override
-  String get databaseCloseManual => '기기에서 Divine을 닫은 다음 다시 여세요.';
-
-  @override
   String get videoDetailContextTitle => '공유된 영상';
 
   @override

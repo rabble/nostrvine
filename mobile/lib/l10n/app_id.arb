@@ -4166,7 +4166,6 @@
     "databaseCorruptionTitle": "Data lokalmu rusak",
     "databaseCorruptionBody": "Tutup Divine lalu buka lagi — kami perbaiki otomatis. Kami simpan draf dan klipmu semampu kami, sisanya dimuat ulang.",
     "databaseCorruptionCloseButton": "Tutup Divine",
-    "databaseCloseManual": "Tutup Divine dari perangkatmu, lalu buka lagi.",
     "videoDetailContextTitle": "Video yang dibagikan",
     "videoDetailCloseSemanticLabel": "Tutup pemutar video",
     "metadataHashtagChipTapHint": "#{hashtag}. Ketuk untuk melihat video dengan hashtag ini.",

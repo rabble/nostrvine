@@ -1634,10 +1634,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Затвори Divine';
 
   @override
-  String get databaseCloseManual =>
-      'Затвори Divine от устройството си, след което го отвори отново.';
-
-  @override
   String get videoDetailContextTitle => 'Споделено видео';
 
   @override

@@ -4166,7 +4166,6 @@
     "databaseCorruptionTitle": "ローカルデータが壊れちゃった",
     "databaseCorruptionBody": "Divine を閉じてもう一度開いてね。自動で直すよ。下書きとクリップはできるだけ残すよ。ほかは読み込み直すよ。",
     "databaseCorruptionCloseButton": "Divine を閉じる",
-    "databaseCloseManual": "デバイスで Divine を閉じてから、もう一度開いてください。",
     "videoDetailContextTitle": "共有された動画",
     "videoDetailCloseSemanticLabel": "動画プレーヤーを閉じる",
     "metadataHashtagChipTapHint": "#{hashtag}。タップするとこのハッシュタグの動画を見れるよ。",

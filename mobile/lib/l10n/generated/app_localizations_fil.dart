@@ -1607,10 +1607,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Isara ang Divine';
 
   @override
-  String get databaseCloseManual =>
-      'Isara ang Divine sa iyong device, pagkatapos ay buksan itong muli.';
-
-  @override
   String get videoDetailContextTitle => 'Na-share na video';
 
   @override

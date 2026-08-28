@@ -1547,10 +1547,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Tutup Divine';
 
   @override
-  String get databaseCloseManual =>
-      'Tutup Divine dari perangkatmu, lalu buka lagi.';
-
-  @override
   String get videoDetailContextTitle => 'Video yang dibagikan';
 
   @override

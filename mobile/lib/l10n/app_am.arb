@@ -4291,7 +4291,6 @@
     "databaseCorruptionTitle": "የአካባቢዎ ውሂብ ተበላሽቷል",
     "databaseCorruptionBody": "Divine ን ዘግተው እንደገና ይክፈቱት — በራስ-ሰር እናስተካክለዋለን። የቻልነውን ያህል ረቂቆችዎን እና ክሊፖችዎን እናስቀራለን፣ የቀረው እንደገና ይጫናል።",
     "databaseCorruptionCloseButton": "Divine ን ዝጋ",
-    "databaseCloseManual": "Divineን ከመሣሪያዎ ይዝጉት፣ ከዚያ እንደገና ይክፈቱት።",
     "videoDetailContextTitle": "የተጋራ ቪዲዮ",
     "videoDetailCloseSemanticLabel": "የቪዲዮ ማጫወቻን ዝጋ",
     "metadataHashtagChipTapHint": "#{hashtag}። ይህን ሃሽታግ ያላቸውን ቪዲዮዎች ለማየት መታ ያድርጉ።",

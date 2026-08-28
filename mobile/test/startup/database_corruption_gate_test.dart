@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -113,17 +114,19 @@ void main() {
       expect(closed, isTrue);
     });
 
-    testWidgets('instructs iOS users to close the app themselves', (
+    testWidgets('hides the close action on iOS by platform default', (
       tester,
     ) async {
-      await tester.pumpWidget(buildScreen(() {}, canCloseApp: false));
-      await tester.pump();
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(buildScreen(() {}));
+        await tester.pump();
 
-      expect(find.byType(DivineButton), findsNothing);
-      expect(
-        find.text(l10n.databaseCloseManual),
-        findsOneWidget,
-      );
+        expect(find.byType(DivineButton), findsNothing);
+        expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     testWidgets('uses SystemNavigator.pop by default on Android', (
@@ -187,7 +190,7 @@ void main() {
       expect(closed, isTrue);
     });
 
-    testWidgets('holds the iOS instruction until recovery is durable', (
+    testWidgets('shows no dead close action while iOS recovery is persisting', (
       tester,
     ) async {
       final persisted = Completer<void>();
@@ -201,20 +204,14 @@ void main() {
       );
       await tester.pump();
 
+      expect(find.byType(DivineButton), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(
-        find.text(l10n.databaseCloseManual),
-        findsNothing,
-      );
 
       persisted.complete();
       await tester.pump();
 
+      expect(find.byType(DivineButton), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(
-        find.text(l10n.databaseCloseManual),
-        findsOneWidget,
-      );
     });
   });
 }

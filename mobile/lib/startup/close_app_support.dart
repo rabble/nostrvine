@@ -5,7 +5,13 @@ import 'package:flutter/foundation.dart';
 
 /// Whether the current platform lets Divine end its own process.
 ///
-/// Android is deliberately allowlisted. Other platforms either cannot honor
-/// `SystemNavigator.pop` from the app root or have not been verified here.
+/// Android, Linux, and macOS terminate the application. iOS cannot close the
+/// root application view, Windows and Fuchsia do not implement the method, and
+/// web only pops browser history.
 bool get platformCanCloseApp =>
-    !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    !kIsWeb &&
+    const {
+      TargetPlatform.android,
+      TargetPlatform.linux,
+      TargetPlatform.macOS,
+    }.contains(defaultTargetPlatform);

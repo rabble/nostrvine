@@ -4166,7 +4166,6 @@
     "databaseCorruptionTitle": "Tus datos locales se estropearon",
     "databaseCorruptionBody": "Cierra Divine y ábrelo de nuevo: lo arreglamos automáticamente. Guardamos los borradores y clips que podamos, lo demás se recarga.",
     "databaseCorruptionCloseButton": "Cerrar Divine",
-    "databaseCloseManual": "Cerrá Divine desde tu dispositivo y volvé a abrirlo.",
     "videoDetailContextTitle": "Video compartido",
     "videoDetailCloseSemanticLabel": "Cerrar reproductor de video",
     "metadataHashtagChipTapHint": "#{hashtag}. Tocá para ver videos con este hashtag.",

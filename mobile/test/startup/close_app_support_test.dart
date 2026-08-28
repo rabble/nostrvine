@@ -9,10 +9,17 @@ void main() {
 
   group('platformCanCloseApp', () {
     for (final platform in TargetPlatform.values) {
-      test('only Android can close the app ($platform)', () {
+      test('reports close support for $platform', () {
         debugDefaultTargetPlatformOverride = platform;
 
-        expect(platformCanCloseApp, platform == TargetPlatform.android);
+        expect(
+          platformCanCloseApp,
+          const {
+            TargetPlatform.android,
+            TargetPlatform.linux,
+            TargetPlatform.macOS,
+          }.contains(platform),
+        );
       });
     }
   });
