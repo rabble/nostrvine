@@ -1143,7 +1143,10 @@ void main() {
       );
 
       test('retries an abandoned labeler when a relay connects', () async {
-        final statuses = StreamController<Map<String, RelayConnectionStatus>>();
+        // Broadcast, like the real relayStatusStream: a single-subscription
+        // controller's close() never completes when nothing listened.
+        final statuses =
+            StreamController<Map<String, RelayConnectionStatus>>.broadcast();
         addTearDown(statuses.close);
         when(
           () => mockNostrClient.relayStatusStream,
@@ -1189,7 +1192,10 @@ void main() {
       });
 
       test('dispose cancels the pending relay-ready retry', () async {
-        final statuses = StreamController<Map<String, RelayConnectionStatus>>();
+        // Broadcast, like the real relayStatusStream: a single-subscription
+        // controller's close() never completes when nothing listened.
+        final statuses =
+            StreamController<Map<String, RelayConnectionStatus>>.broadcast();
         addTearDown(statuses.close);
         when(
           () => mockNostrClient.relayStatusStream,
@@ -1286,6 +1292,41 @@ void main() {
           );
         },
       );
+
+      test('a load completing after dispose does not re-arm a retry', () async {
+        // Broadcast, like the real relayStatusStream: a single-subscription
+        // controller's close() never completes when nothing listened.
+        final statuses =
+            StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+        addTearDown(statuses.close);
+        when(
+          () => mockNostrClient.relayStatusStream,
+        ).thenAnswer((_) => statuses.stream);
+        when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+        final inFlight =
+            Completer<({List<Event> events, bool timedOut, bool noRelays})>();
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((_) => inFlight.future);
+
+        final pending = service.subscribeToLabeler(labeler);
+        await Future<void>.delayed(Duration.zero);
+
+        service.dispose();
+
+        inFlight.complete((events: <Event>[], timedOut: true, noRelays: false));
+        await pending;
+        await pumpEventQueue();
+
+        expect(
+          statuses.hasListener,
+          isFalse,
+          reason: 'a disposed service must not subscribe to relay status',
+        );
+      });
 
       test(
         'a retry replaces the labeler rows instead of appending them',

@@ -163,6 +163,9 @@ class ModerationLabelService {
   StreamSubscription<Map<String, RelayConnectionStatus>>?
   _relayReadyRetrySubscription;
 
+  /// Set by [dispose]; stops an in-flight load from arming a new retry.
+  bool _disposed = false;
+
   /// Active subscriptions.
   final Map<String, StreamSubscription<dynamic>> _subscriptions = {};
 
@@ -348,6 +351,9 @@ class ModerationLabelService {
   /// abandon and re-drive itself in a tight loop. Waiting for the next status
   /// change cannot spin and is still strictly better than latching.
   void _scheduleRetryWhenRelayReady(String pubkey) {
+    // A load already in flight when dispose() ran still completes, and would
+    // otherwise arm a subscription nothing is left to cancel.
+    if (_disposed) return;
     _labelersAwaitingRelay.add(pubkey);
 
     if (_relayReadyRetrySubscription != null) return;
@@ -854,6 +860,7 @@ class ModerationLabelService {
 
   /// Clean up subscriptions.
   void dispose() {
+    _disposed = true;
     unawaited(_relayReadyRetrySubscription?.cancel());
     _relayReadyRetrySubscription = null;
     _labelersAwaitingRelay.clear();
