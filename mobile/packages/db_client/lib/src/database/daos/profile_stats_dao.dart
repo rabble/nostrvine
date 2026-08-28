@@ -11,9 +11,10 @@ const profileStatsCacheDuration = Duration(minutes: 5);
 
 /// How long follower/following counts stay useful after they were written.
 ///
-/// Follower counts live in this row but are owned by `FollowRepository`, which
-/// stabilizes them with hysteresis against the persisted value. That
-/// stabilization only works if the baseline survives a restart, so the counts
+/// Follower counts live in this row and have coordinated REST and relay
+/// writers.
+/// The relay fallback stabilizes partial observations against the persisted
+/// value, which only works if the baseline survives a restart, so the counts
 /// outlive the 5-minute stats cache.
 ///
 /// This must stay comfortably longer than `FollowRepository`'s own staleness
@@ -49,11 +50,10 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// - `FollowRepository`'s relay-fallback hysteresis uses it to decide when a
   ///   baseline is old enough that a lower relay count should be accepted.
   ///
-  /// Those two readers agree because every writer withholds an ambiguous
-  /// `{0, 0}` response rather than storing it, so a stamp always means real
-  /// data arrived. A REST write and the hysteresis path cannot interleave:
-  /// when REST answers with a signal `getFollowerStats` returns before
-  /// hysteresis runs, and when it does not, no counts are written at all.
+  /// Those two readers agree because every writer withholds each ambiguous
+  /// zero field rather than storing it, so a stamp always means real data
+  /// arrived for at least one count. REST-authoritative fields and relay
+  /// fallback fields are combined before the row is written.
   Future<void> upsertStats({
     required String pubkey,
     int? videoCount,
@@ -91,9 +91,9 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// Get stats for a pubkey (returns null if not found or expired).
   ///
   /// An expired row is only deleted when it carries nothing worth keeping.
-  /// Follower counts outlive this cache ([followerCountsExpiry]) and are the
-  /// baseline `FollowRepository` stabilizes against, so evicting them here
-  /// would reintroduce the loss that [deleteExpired] is careful to avoid.
+  /// Follower counts outlive this cache ([followerCountsExpiry]) and form the
+  /// shared baseline for REST/profile rendering and relay fallback, so evicting
+  /// them here would reintroduce the loss [deleteExpired] avoids.
   Future<ProfileStatRow?> getStats(
     String pubkey, {
     Duration expiry = profileStatsCacheDuration,

@@ -42,21 +42,23 @@ final class OthersFollowersState extends Equatable {
   /// replay the full list without waiting for a new network event.
   final List<String> rawFollowersPubkeys;
 
-  /// Follower count as reported by the repository.
+  /// Follower count as reported by the repository, before local safety filters.
   ///
-  /// [followerCount] returns this value unchanged; the field is kept separate
-  /// because optimistic follow/unfollow mutates it directly.
+  /// Kept separately so blocklist changes can recompute [followerCount] from
+  /// the raw list without losing the server-provided baseline.
   final int authoritativeFollowerCount;
 
-  /// Follower count shown in the UI.
+  /// Follower count shown in the UI after applying known local safety filters.
   ///
-  /// This is the Funnelcake REST count verbatim (#8197): deterministic, and
-  /// available before any relay work finishes. It is deliberately NOT
-  /// adjusted by the fetched list — neither floored to its length nor
-  /// reduced by locally hidden rows — because both made the number depend on
-  /// which relays answered, which is the instability #8197 reports. The list
-  /// may therefore show more or fewer rows than this count states.
-  int get followerCount => authoritativeFollowerCount;
+  /// Funnelcake remains the deterministic baseline (#8197), but accounts
+  /// hidden by the viewer's safety state must not still appear in the count
+  /// beside the filtered list. Only hidden rows actually observed in the
+  /// fetched list are subtracted; the result never falls below visible rows.
+  int get followerCount => visibleFollowerCount(
+    visiblePubkeyCount: followersPubkeys.length,
+    rawPubkeyCount: rawFollowersPubkeys.length,
+    authoritativeFollowerCount: authoritativeFollowerCount,
+  );
 
   /// The pubkey whose followers list is being viewed (for retry)
   final String? targetPubkey;

@@ -346,9 +346,9 @@ void main() {
         );
       });
 
-      test('a partial zero still counts as an answer', () async {
-        // 0 followers with a non-zero following is real data, not the
-        // "funnelcake knows nothing" shape.
+      test('treats authority per field when followers are zero', () async {
+        // The two fields come from independent Funnelcake inputs. A known
+        // following count cannot turn an ambiguous follower zero into data.
         final apiClient = _MockFunnelcakeApiClient();
         final dao = _MockProfileStatsDao();
         final repository = _createRepository(
@@ -360,8 +360,27 @@ void main() {
 
         final stats = await repository.getFollowerStats(_testPubkey);
 
-        expect(stats.followers, equals(0));
+        expect(stats.followers, equals(512));
         expect(stats.following, equals(42));
+      });
+
+      test('treats authority per field when following is zero', () async {
+        // A known follower count likewise cannot legitimize an ambiguous
+        // following zero. The relay/persisted fallback still owns that field.
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 1976,
+          contactListEvent: _contactListEvent(41),
+          persistedRow: _persistedRow(followers: 1900, following: 43),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(1976));
+        expect(stats.following, equals(43));
       });
     });
 

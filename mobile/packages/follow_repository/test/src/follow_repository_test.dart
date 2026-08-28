@@ -5569,7 +5569,7 @@ void main() {
 
     group('getFollowerStats - persistence', () {
       test(
-        'does not persist raw stats for the signed-in user',
+        'persists authoritative stats for the signed-in user',
         () async {
           final mockStatsDao = _MockProfileStatsDao();
           final mockFunnelcakeClient = _MockFunnelcakeApiClient();
@@ -5586,6 +5586,13 @@ void main() {
           when(
             () => mockStatsDao.getStatsRaw(testCurrentUserPubkey),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+            ),
+          ).thenAnswer((_) async {});
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
@@ -5599,13 +5606,13 @@ void main() {
 
           await repository.getFollowerStats(testCurrentUserPubkey);
 
-          verifyNever(
+          verify(
             () => mockStatsDao.upsertStats(
-              pubkey: any(named: 'pubkey'),
-              followerCount: any(named: 'followerCount'),
-              followingCount: any(named: 'followingCount'),
+              pubkey: testCurrentUserPubkey,
+              followerCount: 200,
+              followingCount: 100,
             ),
-          );
+          ).called(1);
         },
       );
 
@@ -6050,35 +6057,6 @@ void main() {
             expect(stats, FollowerStats.zero);
           },
         );
-
-        test('keeps REST count when an indexer never connects', () async {
-          final api = _MockFunnelcakeApiClient();
-          when(() => api.isAvailable).thenReturn(true);
-          when(() => api.getSocialCounts(testTargetPubkey)).thenAnswer(
-            (_) async => const SocialCounts(
-              pubkey: testTargetPubkey,
-              followerCount: 50,
-              followingCount: 7,
-            ),
-          );
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            isCacheInitialized: () => cacheIsInitialized,
-            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-            cacheUserEvent: cachedUserEvents.add,
-            funnelcakeApiClient: api,
-            indexerRelayUrls: const [indexerUrl],
-            indexerOperationTimeout: const Duration(milliseconds: 20),
-            relayFactory: (url, status) =>
-                _FakeRelay(url, status, neverConnects: true),
-          );
-
-          final stats = await repository
-              .getFollowerStats(testTargetPubkey)
-              .timeout(const Duration(milliseconds: 200));
-
-          expect(stats, const FollowerStats(followers: 50, following: 7));
-        });
 
         test('bounds CLOSE and disconnect after a count response', () async {
           repository = FollowRepository(

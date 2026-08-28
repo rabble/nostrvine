@@ -1366,43 +1366,67 @@ void main() {
           ).called(1);
         });
 
-        test(
-          'does not cache an ambiguous 0/0 social response',
-          () async {
-            // `/api/users/{pubkey}/social` answers 200 for every pubkey and
-            // funnelcake turns ClickHouse failures into `{0, 0}`, so a zero
-            // body cannot be told apart from "never indexed" or "the summary
-            // table is down". Writing it would overwrite a good baseline
-            // with zeros (#8259 review).
-            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-            when(
-              () => mockFunnelcakeClient.getUserProfile(testPubkey),
-            ).thenAnswer(
-              (_) async => UserProfileNotPublished(
-                pubkey: testPubkey,
-                social: ProfileSocialData.fromJson(const {
-                  'follower_count': 0,
-                  'following_count': 0,
-                }),
-                stats: ProfileStatsData.fromJson(const {'video_count': 3}),
-              ),
-            );
+        test('does not cache an ambiguous 0/0 social response', () async {
+          // `/api/users/{pubkey}/social` answers 200 for every pubkey and
+          // funnelcake turns ClickHouse failures into `{0, 0}`, so a zero
+          // body cannot be told apart from "never indexed" or "the summary
+          // table is down". Writing it would overwrite a good baseline
+          // with zeros (#8259 review).
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 0,
+                'following_count': 0,
+              }),
+              stats: ProfileStatsData.fromJson(const {'video_count': 3}),
+            ),
+          );
 
-            await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
 
-            // The other stats are still cached; the counts are withheld,
-            // i.e. passed as null (the default), so the DAO leaves whatever
-            // baseline is already on the row untouched.
-            verify(
-              () => mockProfileStatsDao.upsertStats(
-                pubkey: testPubkey,
-                videoCount: 3,
-                totalLikes: any(named: 'totalLikes'),
-                totalViews: any(named: 'totalViews'),
-              ),
-            ).called(1);
-          },
-        );
+          // The other stats are still cached; the counts are withheld,
+          // i.e. passed as null (the default), so the DAO leaves whatever
+          // baseline is already on the row untouched.
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              videoCount: 3,
+              totalLikes: any(named: 'totalLikes'),
+              totalViews: any(named: 'totalViews'),
+            ),
+          ).called(1);
+        });
+
+        test('caches mixed social responses per field', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 1976,
+                'following_count': 0,
+              }),
+            ),
+          );
+
+          await repoWithFunnelcake.fetchFreshProfile(pubkey: testPubkey);
+
+          verify(
+            () => mockProfileStatsDao.upsertStats(
+              pubkey: testPubkey,
+              followerCount: 1976,
+              totalLikes: any(named: 'totalLikes'),
+              totalViews: any(named: 'totalViews'),
+              videoCount: any(named: 'videoCount'),
+            ),
+          ).called(1);
+        });
 
         test('skips Funnelcake when not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
