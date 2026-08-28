@@ -154,6 +154,25 @@ class ModerationLabelService {
   /// Labelers currently being loaded from relays.
   final Map<String, Future<void>> _loadingLabelers = {};
 
+  /// Labelers whose load was abandoned because no relay answered.
+  ///
+  /// Retried when a relay reconnects; see [_scheduleRetryWhenRelayReady].
+  final Set<String> _labelersAwaitingRelay = {};
+
+  /// Live while at least one labeler is waiting for a relay to come back.
+  StreamSubscription<Map<String, RelayConnectionStatus>>?
+  _relayReadyRetrySubscription;
+
+  /// Whether a relay was connected when the latest status was observed.
+  ///
+  /// A retry is driven only by a disconnected-to-connected transition. Without
+  /// this edge detector, any unrelated status update while another relay stayed
+  /// connected could re-run every pending labeler's full-history query.
+  bool _hadConnectedRelayWhileWaiting = false;
+
+  /// Set by [dispose]; stops an in-flight load from arming a new retry.
+  bool _disposed = false;
+
   /// Active subscriptions.
   final Map<String, StreamSubscription<dynamic>> _subscriptions = {};
 
@@ -268,9 +287,53 @@ class ModerationLabelService {
         kinds: [NostrEventKinds.label], // NIP-32 label events
       );
 
-      final events = await _nostrClient.queryEvents([filter]);
+      // queryEventsDetailed, not queryEvents: the latter discards `timedOut`
+      // and `noRelays`, so a load nobody answered returns [] and is
+      // indistinguishable from "this labeler has no labels" — the forEach
+      // no-ops and the labeler is latched as loaded having contributed none.
+      // `requireAllRelaysSettled` is what makes a relay's `CLOSED` refusal and
+      // a partial fan-out surface as `timedOut` rather than completing on
+      // whichever relays answered first. Cache stays on, unlike #8213's scan:
+      // cached labels are still worth applying, and the fix is about not
+      // latching. #8214.
+      final result = await _nostrClient.queryEventsDetailed(
+        [filter],
+        requireAllRelaysSettled: true,
+      );
+      final events = result.events;
+      final isIncomplete = result.noRelays || result.timedOut;
 
-      events.forEach(_processLabelEvent);
+      // Apply whatever came back before deciding whether to latch.
+      // `queryEventsDetailed` merges cached rows into `events` regardless of
+      // `timedOut` / `noRelays`, so an unanswered query can still carry real
+      // labels — dropping them would lose warnings the previous build applied.
+      //
+      // Drop this labeler's existing rows first: an incomplete load is applied
+      // and then retried, and `_processLabelEvent` appends, so reprocessing the
+      // same events would accumulate duplicate rows for every retry. Each load
+      // replaces what that labeler previously contributed.
+      // An incomplete empty result has no evidence with which to replace known
+      // rows. This is reachable when the client is already disposed (which
+      // returns `noRelays` before consulting the cache), or after cached rows
+      // expire. Preserve existing warnings until a retry produces events or an
+      // affirmative empty answer.
+      if (events.isNotEmpty || !isIncomplete) {
+        _removeLabelsForLabeler(pubkey);
+        events.forEach(_processLabelEvent);
+      }
+
+      if (isIncomplete) {
+        Log.warning(
+          'Labeler load incomplete for ${pubkeyForLogs(pubkey)} '
+          '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut}, '
+          'applied ${events.length} cached label event(s)); '
+          'leaving it unloaded so a later attempt retries',
+          name: 'ModerationLabelService',
+          category: LogCategory.system,
+        );
+        _scheduleRetryWhenRelayReady(pubkey);
+        return;
+      }
 
       _loadedLabelers.add(pubkey);
 
@@ -286,6 +349,66 @@ class ModerationLabelService {
         name: 'ModerationLabelService',
         category: LogCategory.system,
       );
+    }
+  }
+
+  /// Retry [pubkey] the next time a relay connects.
+  ///
+  /// Deliberately event-bounded rather than attempt-bounded, mirroring
+  /// `VideoEventService`'s relay-ready retry: the pending set is bounded by the
+  /// number of subscribed labelers and every retry is driven by a relay status
+  /// update, so a hard attempt cap would risk leaving moderation labels
+  /// unloaded for the rest of the session after relay flapping.
+  ///
+  /// Note there is deliberately no "retry now if a relay is already
+  /// connected" branch. A load that timed out *with* a relay connected is the
+  /// common case — a connected-but-silent relay — and retrying it inline would
+  /// abandon and re-drive itself in a tight loop. Waiting for the next status
+  /// change cannot spin and is still strictly better than latching.
+  void _scheduleRetryWhenRelayReady(String pubkey) {
+    // A load already in flight when dispose() ran still completes, and would
+    // otherwise arm a subscription nothing is left to cancel.
+    if (_disposed) return;
+    _labelersAwaitingRelay.add(pubkey);
+
+    if (_relayReadyRetrySubscription != null) return;
+
+    _hadConnectedRelayWhileWaiting = _nostrClient.connectedRelayCount > 0;
+
+    _relayReadyRetrySubscription = _nostrClient.relayStatusStream.listen((
+      statuses,
+    ) {
+      final hasConnectedRelay = statuses.values.any(
+        (status) => status.isConnected,
+      );
+      if (hasConnectedRelay && !_hadConnectedRelayWhileWaiting) {
+        _retryLabelersAwaitingRelay();
+      } else {
+        _hadConnectedRelayWhileWaiting = hasConnectedRelay;
+      }
+    });
+  }
+
+  void _retryLabelersAwaitingRelay() {
+    final pending = Set<String>.of(_labelersAwaitingRelay);
+    _labelersAwaitingRelay.clear();
+    unawaited(_relayReadyRetrySubscription?.cancel());
+    _relayReadyRetrySubscription = null;
+    _hadConnectedRelayWhileWaiting = false;
+
+    if (pending.isEmpty) return;
+
+    Log.info(
+      'Retrying ${pending.length} labeler load(s) after a relay connected',
+      name: 'ModerationLabelService',
+      category: LogCategory.system,
+    );
+
+    for (final pubkey in pending) {
+      // Back through the public entry point so the loaded gate and the
+      // in-flight coalescer both apply, and a retry racing a normal call
+      // cannot double-query.
+      unawaited(subscribeToLabeler(pubkey));
     }
   }
 
@@ -591,8 +714,18 @@ class ModerationLabelService {
   Future<void> _unloadLabeler(String pubkey) async {
     await _subscriptions[pubkey]?.cancel();
     _subscriptions.remove(pubkey);
+    _removePendingLabelerRetry(pubkey);
     _loadedLabelers.remove(pubkey);
     _removeLabelsForLabeler(pubkey);
+  }
+
+  void _removePendingLabelerRetry(String pubkey) {
+    _labelersAwaitingRelay.remove(pubkey);
+    if (_labelersAwaitingRelay.isNotEmpty) return;
+
+    unawaited(_relayReadyRetrySubscription?.cancel());
+    _relayReadyRetrySubscription = null;
+    _hadConnectedRelayWhileWaiting = false;
   }
 
   void _removeLabelsForLabeler(String pubkey) {
@@ -746,6 +879,7 @@ class ModerationLabelService {
 
     for (final pubkey in retired) {
       // Clean up any labels fetched from the old key
+      _removePendingLabelerRetry(pubkey);
       _removeLabelsForLabeler(pubkey);
       _loadedLabelers.remove(pubkey);
     }
@@ -760,6 +894,11 @@ class ModerationLabelService {
 
   /// Clean up subscriptions.
   void dispose() {
+    _disposed = true;
+    unawaited(_relayReadyRetrySubscription?.cancel());
+    _relayReadyRetrySubscription = null;
+    _labelersAwaitingRelay.clear();
+    _hadConnectedRelayWhileWaiting = false;
     for (final sub in _subscriptions.values) {
       sub.cancel();
     }
