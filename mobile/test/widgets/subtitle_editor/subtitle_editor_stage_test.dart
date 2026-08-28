@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:openvine/blocs/subtitle_editor/subtitle_editor_cubit.dart';
@@ -326,6 +327,23 @@ void main() {
       expect(controller.lastSource?.trimToCommonTrackEnd, isFalse);
       expect(controller.lastSource?.end, isNull);
     });
+
+    test('tries another rendition after a typed decoder failure', () async {
+      final controller = _DecoderFailureController();
+      addTearDown(controller.dispose);
+
+      await loadSubtitlePreviewSources(
+        controller: controller,
+        sources: const ['https://example.com/720p.mp4', 'hlsUrl'],
+        log: (_) {},
+        isLoadCurrent: () => true,
+      );
+
+      expect(
+        controller.sources.map((source) => source.uri),
+        equals(['https://example.com/720p.mp4', 'hlsUrl']),
+      );
+    });
   });
 }
 
@@ -342,6 +360,30 @@ class _RecordingController extends DivineVideoPlayerController {
 
   @override
   Future<void> setSource(VideoClip clip) async => lastSource = clip;
+
+  @override
+  Future<void> dispose() async {}
+}
+
+class _DecoderFailureController extends DivineVideoPlayerController {
+  final List<VideoClip> sources = [];
+
+  @override
+  int get playerId => 0;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<void> setSource(VideoClip clip) async {
+    sources.add(clip);
+    if (sources.length == 1) {
+      throw PlatformException(
+        code: 'PLAYER_ERROR',
+        details: const <String, Object?>{'errorCode': 'decoder_error'},
+      );
+    }
+  }
 
   @override
   Future<void> dispose() async {}
