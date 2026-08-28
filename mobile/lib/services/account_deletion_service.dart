@@ -8,6 +8,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// User-facing class of an account deletion failure.
@@ -136,7 +137,6 @@ class AccountDeletionService {
   static const _rateLimitRetryDelay = Duration(minutes: 1);
   static const _sweepQueryLimit = 10000;
   static const _sweepQueryTimeout = Duration(seconds: 30);
-  static const _divineRelayHost = 'relay.divine.video';
 
   /// Kinds this flow's own deletion machinery produces, excluded from the sweep.
   ///
@@ -496,7 +496,7 @@ class AccountDeletionService {
     final total = events.length;
     final connectedRelays = _nostrService.connectedRelays;
     final kind5TargetRelays = connectedRelays
-        .where((relay) => Uri.tryParse(relay)?.host != _divineRelayHost)
+        .where((relay) => !isDivineHostedRelayUrl(relay))
         .toList(growable: false);
 
     if (connectedRelays.isEmpty) {

@@ -707,6 +707,60 @@ void main() {
         ).called(1);
       });
 
+      test('does not publish kind 5 to any Divine-hosted relay', () async {
+        const stagingRelay = 'wss://relay.staging.divine.video';
+        const pocRelay = 'wss://relay.poc.dvines.org';
+        const localRelay = 'ws://localhost:47777';
+        const fallbackRelay = 'wss://relay.example.com';
+        when(() => mockNostrService.connectedRelays).thenReturn([
+          stagingRelay,
+          pocRelay,
+          localRelay,
+          fallbackRelay,
+        ]);
+        final userEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [],
+          content: 'note',
+          id: 'note_for_multi_env_sweep',
+        );
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [userEvent]);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[const Symbol('kind')] as int;
+          return createTestEvent(
+            pubkey: testPublicKey,
+            kind: kind,
+            tags: const [],
+            content: 'deletion',
+          );
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => _confirmed);
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            targetRelays: [fallbackRelay],
+          ),
+        ).called(1);
+      });
+
       test(
         'targets non-Divine relays when the Divine relay is disconnected',
         () async {
