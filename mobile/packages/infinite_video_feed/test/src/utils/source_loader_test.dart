@@ -202,11 +202,18 @@ void main() {
       expect(logs.single, contains('retrySource=rawUrl'));
     });
 
-    test('advances immediately on HTTP 202 when a fallback remains', () async {
+    test('fails over typed media-processing errors immediately', () async {
       final clips = <VideoClip>[];
       final controller = _RecordingControllerWithFailures(
         clips.add,
-        failures: [Exception('CoreMediaErrorDomain error -12667 - HTTP 202')],
+        failures: [
+          PlatformException(
+            code: 'PLAYER_ERROR',
+            details: const <String, Object?>{
+              'errorCode': 'media_processing',
+            },
+          ),
+        ],
       );
       addTearDown(controller.dispose);
 
