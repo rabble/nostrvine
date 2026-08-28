@@ -6616,7 +6616,7 @@
   "dbFailureResetAction": "tetapkan semula pangkalan data setempat",
   "dbFailureConfirmTitle": "tetapkan semula pangkalan data setempat anda?",
   "dbFailureConfirmBody": "Akaun anda kekal. Draf dan klip yang disimpan pada peranti ini akan dipadamkan — mesej dan suapan kembali daripada rangkaian.",
-  "dbFailureResetConfirm": "tetapkan semula dan tutup",
+  "dbFailureResetConfirm": "tetapkan semula pangkalan data setempat sekarang",
   "dbFailureCancel": "batal",
   "dbFailureResetFailed": "Itu tidak berjaya. Tutup Divine dan cuba lagi.",
   "dbFailureResetDoneTitle": "pangkalan data setempat ditetapkan semula",

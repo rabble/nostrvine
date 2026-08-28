@@ -11891,7 +11891,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Twoje konto zostaje. Wersje robocze i klipy zapisane na tym urządzeniu zostaną usunięte — wiadomości i kanały wrócą z sieci.';
 
   @override
-  String get dbFailureResetConfirm => 'zresetuj i zamknij';
+  String get dbFailureResetConfirm => 'zresetuj teraz lokalną bazę danych';
 
   @override
   String get dbFailureCancel => 'anuluj';

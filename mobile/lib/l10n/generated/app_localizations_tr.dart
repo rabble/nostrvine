@@ -11592,7 +11592,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabınız kalır. Bu cihazda kayıtlı taslaklar ve klipler silinir — mesajlar ve akışlar ağdan geri gelir.';
 
   @override
-  String get dbFailureResetConfirm => 'sıfırla ve kapat';
+  String get dbFailureResetConfirm => 'yerel veritabanını şimdi sıfırla';
 
   @override
   String get dbFailureCancel => 'iptal';

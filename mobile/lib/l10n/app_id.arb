@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "atur ulang basis data lokal",
     "dbFailureConfirmTitle": "atur ulang basis data lokalmu?",
     "dbFailureConfirmBody": "Akunmu tetap ada. Draf dan klip yang tersimpan di perangkat ini akan dihapus — pesan dan feed kembali dari jaringan.",
-    "dbFailureResetConfirm": "atur ulang dan tutup",
+    "dbFailureResetConfirm": "atur ulang basis data lokal sekarang",
     "dbFailureCancel": "batal",
     "dbFailureResetFailed": "Itu tidak berhasil. Tutup Divine dan coba lagi.",
     "dbFailureResetDoneTitle": "basis data lokal telah diatur ulang",

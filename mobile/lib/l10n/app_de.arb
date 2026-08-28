@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "Lokale Datenbank zurücksetzen",
     "dbFailureConfirmTitle": "Lokale Datenbank zurücksetzen?",
     "dbFailureConfirmBody": "Dein Konto bleibt. Auf diesem Gerät gespeicherte Entwürfe und Clips werden gelöscht — Nachrichten und Feeds kommen aus dem Netzwerk zurück.",
-    "dbFailureResetConfirm": "Zurücksetzen und schließen",
+    "dbFailureResetConfirm": "Lokale Datenbank jetzt zurücksetzen",
     "dbFailureCancel": "Abbrechen",
     "dbFailureResetFailed": "Das hat nicht geklappt. Schließe Divine und versuche es erneut.",
     "dbFailureResetDoneTitle": "Lokale Datenbank zurückgesetzt",

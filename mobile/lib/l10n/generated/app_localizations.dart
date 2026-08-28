@@ -19672,10 +19672,10 @@ abstract class AppLocalizations {
   /// **'Your account stays. Drafts and clips saved on this device are deleted — messages and feeds come back from the network.'**
   String get dbFailureConfirmBody;
 
-  /// Button that performs the local-database reset and then closes the app.
+  /// Destructive confirmation button that performs the local-database reset. Supported platforms close afterward; unsupported platforms remain on the completion step.
   ///
   /// In en, this message translates to:
-  /// **'reset and close'**
+  /// **'reset local database now'**
   String get dbFailureResetConfirm;
 
   /// Button that returns from the reset confirmation to the failure screen.

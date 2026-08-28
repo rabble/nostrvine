@@ -11750,7 +11750,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sua conta permanece. Rascunhos e clipes salvos neste dispositivo são excluídos — mensagens e feeds voltam da rede.';
 
   @override
-  String get dbFailureResetConfirm => 'redefinir e fechar';
+  String get dbFailureResetConfirm => 'redefinir banco de dados local agora';
 
   @override
   String get dbFailureCancel => 'cancelar';

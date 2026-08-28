@@ -11575,7 +11575,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Akunmu tetap ada. Draf dan klip yang tersimpan di perangkat ini akan dihapus — pesan dan feed kembali dari jaringan.';
 
   @override
-  String get dbFailureResetConfirm => 'atur ulang dan tutup';
+  String get dbFailureResetConfirm => 'atur ulang basis data lokal sekarang';
 
   @override
   String get dbFailureCancel => 'batal';

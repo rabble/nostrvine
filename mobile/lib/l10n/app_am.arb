@@ -4948,7 +4948,7 @@
     "dbFailureResetAction": "የአካባቢ ዳታቤዝ ዳግም አስጀምር",
     "dbFailureConfirmTitle": "የአካባቢ ዳታቤዝዎን ዳግም ያስጀምሩ?",
     "dbFailureConfirmBody": "መለያዎ ይቀራል። በዚህ መሣሪያ ላይ የተቀመጡ ረቂቆች እና ክሊፖች ይሰረዛሉ — መልእክቶች እና ምግቦች ከአውታረ መረቡ ይመለሳሉ።",
-    "dbFailureResetConfirm": "ዳግም አስጀምር እና ዝጋ",
+    "dbFailureResetConfirm": "የአካባቢ ዳታቤዝ አሁን ዳግም አስጀምር",
     "dbFailureCancel": "ሰርዝ",
     "dbFailureResetFailed": "ያ አልሰራም። Divineን ዘግተው እንደገና ይሞክሩ።",
     "dbFailureResetDoneTitle": "የአካባቢ ዳታቤዝ ዳግም ተጀምሯል",

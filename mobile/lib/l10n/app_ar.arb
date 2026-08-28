@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "إعادة تعيين قاعدة البيانات المحلية",
     "dbFailureConfirmTitle": "إعادة تعيين قاعدة البيانات المحلية؟",
     "dbFailureConfirmBody": "يبقى حسابك. تُحذف المسودات والمقاطع المحفوظة على هذا الجهاز — أما الرسائل والخلاصات فتعود من الشبكة.",
-    "dbFailureResetConfirm": "إعادة التعيين والإغلاق",
+    "dbFailureResetConfirm": "إعادة تعيين قاعدة البيانات المحلية الآن",
     "dbFailureCancel": "إلغاء",
     "dbFailureResetFailed": "لم ينجح ذلك. أغلق Divine وحاول مرة أخرى.",
     "dbFailureResetDoneTitle": "تمت إعادة تعيين قاعدة البيانات المحلية",

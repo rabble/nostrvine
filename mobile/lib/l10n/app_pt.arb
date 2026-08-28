@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "redefinir banco de dados local",
     "dbFailureConfirmTitle": "redefinir seu banco de dados local?",
     "dbFailureConfirmBody": "Sua conta permanece. Rascunhos e clipes salvos neste dispositivo são excluídos — mensagens e feeds voltam da rede.",
-    "dbFailureResetConfirm": "redefinir e fechar",
+    "dbFailureResetConfirm": "redefinir banco de dados local agora",
     "dbFailureCancel": "cancelar",
     "dbFailureResetFailed": "Isso não funcionou. Feche o Divine e tente de novo.",
     "dbFailureResetDoneTitle": "banco de dados local redefinido",

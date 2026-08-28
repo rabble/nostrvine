@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "lokale database resetten",
     "dbFailureConfirmTitle": "je lokale database resetten?",
     "dbFailureConfirmBody": "Je account blijft behouden. Concepten en clips die op dit apparaat zijn opgeslagen worden verwijderd — berichten en feeds komen terug van het netwerk.",
-    "dbFailureResetConfirm": "resetten en sluiten",
+    "dbFailureResetConfirm": "lokale database nu resetten",
     "dbFailureCancel": "annuleren",
     "dbFailureResetFailed": "Dat werkte niet. Sluit Divine en probeer het opnieuw.",
     "dbFailureResetDoneTitle": "lokale database gereset",

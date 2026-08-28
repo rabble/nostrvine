@@ -11663,7 +11663,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ditt konto finns kvar. Utkast och klipp som sparats på den här enheten raderas — meddelanden och flöden hämtas tillbaka från nätverket.';
 
   @override
-  String get dbFailureResetConfirm => 'återställ och stäng';
+  String get dbFailureResetConfirm => 'återställ lokal databas nu';
 
   @override
   String get dbFailureCancel => 'avbryt';

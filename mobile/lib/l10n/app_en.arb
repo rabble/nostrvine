@@ -8101,9 +8101,9 @@
   "@dbFailureConfirmBody": {
     "description": "Body of the confirmation step explaining what a local-database reset deletes and what survives."
   },
-  "dbFailureResetConfirm": "reset and close",
+  "dbFailureResetConfirm": "reset local database now",
   "@dbFailureResetConfirm": {
-    "description": "Button that performs the local-database reset and then closes the app."
+    "description": "Destructive confirmation button that performs the local-database reset. Supported platforms close afterward; unsupported platforms remain on the completion step."
   },
   "dbFailureCancel": "cancel",
   "@dbFailureCancel": {

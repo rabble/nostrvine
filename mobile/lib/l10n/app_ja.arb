@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "ローカルデータベースをリセット",
     "dbFailureConfirmTitle": "ローカルデータベースをリセットしますか？",
     "dbFailureConfirmBody": "アカウントはそのまま残ります。この端末に保存された下書きとクリップは削除されます。メッセージとフィードはネットワークから復元されます。",
-    "dbFailureResetConfirm": "リセットして閉じる",
+    "dbFailureResetConfirm": "今すぐローカルデータベースをリセット",
     "dbFailureCancel": "キャンセル",
     "dbFailureResetFailed": "うまくいきませんでした。Divine を閉じてもう一度お試しください。",
     "dbFailureResetDoneTitle": "ローカルデータベースをリセットしました",

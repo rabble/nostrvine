@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "restablecer base de datos local",
     "dbFailureConfirmTitle": "¿restablecer tu base de datos local?",
     "dbFailureConfirmBody": "Tu cuenta se mantiene. Los borradores y clips guardados en este dispositivo se eliminan — los mensajes y feeds vuelven desde la red.",
-    "dbFailureResetConfirm": "restablecer y cerrar",
+    "dbFailureResetConfirm": "restablecer base de datos local ahora",
     "dbFailureCancel": "cancelar",
     "dbFailureResetFailed": "Eso no funcionó. Cerrá Divine y probá de nuevo.",
     "dbFailureResetDoneTitle": "base de datos local restablecida",

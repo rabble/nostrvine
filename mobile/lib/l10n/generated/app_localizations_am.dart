@@ -11356,7 +11356,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎ ይቀራል። በዚህ መሣሪያ ላይ የተቀመጡ ረቂቆች እና ክሊፖች ይሰረዛሉ — መልእክቶች እና ምግቦች ከአውታረ መረቡ ይመለሳሉ።';
 
   @override
-  String get dbFailureResetConfirm => 'ዳግም አስጀምር እና ዝጋ';
+  String get dbFailureResetConfirm => 'የአካባቢ ዳታቤዝ አሁን ዳግም አስጀምር';
 
   @override
   String get dbFailureCancel => 'ሰርዝ';

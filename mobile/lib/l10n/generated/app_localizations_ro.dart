@@ -11912,7 +11912,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Contul tău rămâne. Ciornele și clipurile salvate pe acest dispozitiv sunt șterse — mesajele și fluxurile revin din rețea.';
 
   @override
-  String get dbFailureResetConfirm => 'resetează și închide';
+  String get dbFailureResetConfirm => 'resetează acum baza de date locală';
 
   @override
   String get dbFailureCancel => 'anulează';

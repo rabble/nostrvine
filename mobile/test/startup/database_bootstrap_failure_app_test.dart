@@ -729,6 +729,13 @@ void main() {
     // back to constants cannot pass.
     final es = lookupAppLocalizations(const Locale('es'));
 
+    test('keeps the reset confirmation platform neutral', () {
+      expect(
+        l10n.dbFailureResetConfirm.toLowerCase(),
+        isNot(contains('close')),
+      );
+    });
+
     testWidgets('renders the failure step in the requested locale', (
       tester,
     ) async {
@@ -765,6 +772,7 @@ void main() {
 
       expect(find.text(es.dbFailureConfirmTitle), findsOneWidget);
       expect(find.text(es.dbFailureConfirmBody), findsOneWidget);
+      expect(find.text(es.dbFailureResetConfirm), findsOneWidget);
       expect(find.text(es.dbFailureCancel), findsOneWidget);
     });
 

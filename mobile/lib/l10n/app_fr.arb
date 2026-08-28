@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "réinitialiser la base de données locale",
     "dbFailureConfirmTitle": "réinitialiser votre base de données locale ?",
     "dbFailureConfirmBody": "Votre compte est conservé. Les brouillons et clips enregistrés sur cet appareil sont supprimés — les messages et fils reviennent du réseau.",
-    "dbFailureResetConfirm": "réinitialiser et fermer",
+    "dbFailureResetConfirm": "réinitialiser la base de données locale maintenant",
     "dbFailureCancel": "annuler",
     "dbFailureResetFailed": "Ça n'a pas fonctionné. Fermez Divine et réessayez.",
     "dbFailureResetDoneTitle": "base de données locale réinitialisée",

@@ -4284,7 +4284,7 @@
     "dbFailureResetAction": "로컬 데이터베이스 초기화",
     "dbFailureConfirmTitle": "로컬 데이터베이스를 초기화할까요?",
     "dbFailureConfirmBody": "계정은 그대로 유지됩니다. 이 기기에 저장된 초안과 클립은 삭제됩니다. 메시지와 피드는 네트워크에서 다시 불러옵니다.",
-    "dbFailureResetConfirm": "초기화하고 닫기",
+    "dbFailureResetConfirm": "지금 로컬 데이터베이스 초기화",
     "dbFailureCancel": "취소",
     "dbFailureResetFailed": "실패했습니다. Divine을 닫고 다시 시도하세요.",
     "dbFailureResetDoneTitle": "로컬 데이터베이스가 초기화되었습니다",

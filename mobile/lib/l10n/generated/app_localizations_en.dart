@@ -11764,7 +11764,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account stays. Drafts and clips saved on this device are deleted — messages and feeds come back from the network.';
 
   @override
-  String get dbFailureResetConfirm => 'reset and close';
+  String get dbFailureResetConfirm => 'reset local database now';
 
   @override
   String get dbFailureCancel => 'cancel';
