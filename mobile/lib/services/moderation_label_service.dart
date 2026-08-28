@@ -163,6 +163,13 @@ class ModerationLabelService {
   StreamSubscription<Map<String, RelayConnectionStatus>>?
   _relayReadyRetrySubscription;
 
+  /// Whether a relay was connected when the latest status was observed.
+  ///
+  /// A retry is driven only by a disconnected-to-connected transition. Without
+  /// this edge detector, any unrelated status update while another relay stayed
+  /// connected could re-run every pending labeler's full-history query.
+  bool _hadConnectedRelayWhileWaiting = false;
+
   /// Set by [dispose]; stops an in-flight load from arming a new retry.
   bool _disposed = false;
 
@@ -294,6 +301,7 @@ class ModerationLabelService {
         requireAllRelaysSettled: true,
       );
       final events = result.events;
+      final isIncomplete = result.noRelays || result.timedOut;
 
       // Apply whatever came back before deciding whether to latch.
       // `queryEventsDetailed` merges cached rows into `events` regardless of
@@ -304,10 +312,17 @@ class ModerationLabelService {
       // and then retried, and `_processLabelEvent` appends, so reprocessing the
       // same events would accumulate duplicate rows for every retry. Each load
       // replaces what that labeler previously contributed.
-      _removeLabelsForLabeler(pubkey);
-      events.forEach(_processLabelEvent);
+      // An incomplete empty result has no evidence with which to replace known
+      // rows. This is reachable when the client is already disposed (which
+      // returns `noRelays` before consulting the cache), or after cached rows
+      // expire. Preserve existing warnings until a retry produces events or an
+      // affirmative empty answer.
+      if (events.isNotEmpty || !isIncomplete) {
+        _removeLabelsForLabeler(pubkey);
+        events.forEach(_processLabelEvent);
+      }
 
-      if (result.noRelays || result.timedOut) {
+      if (isIncomplete) {
         Log.warning(
           'Labeler load incomplete for ${pubkeyForLogs(pubkey)} '
           '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut}, '
@@ -358,11 +373,18 @@ class ModerationLabelService {
 
     if (_relayReadyRetrySubscription != null) return;
 
+    _hadConnectedRelayWhileWaiting = _nostrClient.connectedRelayCount > 0;
+
     _relayReadyRetrySubscription = _nostrClient.relayStatusStream.listen((
       statuses,
     ) {
-      if (statuses.values.any((status) => status.isConnected)) {
+      final hasConnectedRelay = statuses.values.any(
+        (status) => status.isConnected,
+      );
+      if (hasConnectedRelay && !_hadConnectedRelayWhileWaiting) {
         _retryLabelersAwaitingRelay();
+      } else {
+        _hadConnectedRelayWhileWaiting = hasConnectedRelay;
       }
     });
   }
@@ -372,6 +394,7 @@ class ModerationLabelService {
     _labelersAwaitingRelay.clear();
     unawaited(_relayReadyRetrySubscription?.cancel());
     _relayReadyRetrySubscription = null;
+    _hadConnectedRelayWhileWaiting = false;
 
     if (pending.isEmpty) return;
 
@@ -691,8 +714,18 @@ class ModerationLabelService {
   Future<void> _unloadLabeler(String pubkey) async {
     await _subscriptions[pubkey]?.cancel();
     _subscriptions.remove(pubkey);
+    _removePendingLabelerRetry(pubkey);
     _loadedLabelers.remove(pubkey);
     _removeLabelsForLabeler(pubkey);
+  }
+
+  void _removePendingLabelerRetry(String pubkey) {
+    _labelersAwaitingRelay.remove(pubkey);
+    if (_labelersAwaitingRelay.isNotEmpty) return;
+
+    unawaited(_relayReadyRetrySubscription?.cancel());
+    _relayReadyRetrySubscription = null;
+    _hadConnectedRelayWhileWaiting = false;
   }
 
   void _removeLabelsForLabeler(String pubkey) {
@@ -846,6 +879,7 @@ class ModerationLabelService {
 
     for (final pubkey in retired) {
       // Clean up any labels fetched from the old key
+      _removePendingLabelerRetry(pubkey);
       _removeLabelsForLabeler(pubkey);
       _loadedLabelers.remove(pubkey);
     }
@@ -864,6 +898,7 @@ class ModerationLabelService {
     unawaited(_relayReadyRetrySubscription?.cancel());
     _relayReadyRetrySubscription = null;
     _labelersAwaitingRelay.clear();
+    _hadConnectedRelayWhileWaiting = false;
     for (final sub in _subscriptions.values) {
       sub.cancel();
     }

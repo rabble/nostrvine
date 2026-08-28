@@ -73,6 +73,12 @@ void main() {
     mockPrefs = await SharedPreferences.getInstance();
     mockNostrClient = _MockNostrClient();
     mockAuthService = _MockAuthService();
+    when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+    when(
+      () => mockNostrClient.relayStatusStream,
+    ).thenAnswer(
+      (_) => const Stream<Map<String, RelayConnectionStatus>>.empty(),
+    );
     service = ModerationLabelService(
       nostrClient: mockNostrClient,
       authService: mockAuthService,
@@ -1038,6 +1044,67 @@ void main() {
           expect(service.getContentWarnings('explicit_event'), hasLength(1));
         },
       );
+
+      test(
+        'disabling followed moderation cancels a queued labeler retry',
+        () async {
+          const followedLabeler =
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+          final statuses =
+              StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+          addTearDown(statuses.close);
+          when(
+            () => mockNostrClient.relayStatusStream,
+          ).thenAnswer((_) => statuses.stream);
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              events: <Event>[
+                _FakeLabelEvent(
+                  pubkey: followedLabeler,
+                  tags: [
+                    ['L', 'content-warning'],
+                    ['l', 'violence', 'content-warning'],
+                    ['e', 'removed_followed_event'],
+                  ],
+                ),
+              ],
+              timedOut: true,
+              noRelays: false,
+            ),
+          );
+
+          await service.setFollowingModerationEnabled(
+            true,
+            followedPubkeys: [followedLabeler],
+          );
+          expect(
+            service.getContentWarnings('removed_followed_event'),
+            hasLength(1),
+          );
+
+          await service.setFollowingModerationEnabled(false);
+          statuses.add({
+            'wss://relay.example': RelayConnectionStatus.connected(
+              'wss://relay.example',
+            ),
+          });
+          await pumpEventQueue();
+
+          expect(service.getContentWarnings('removed_followed_event'), isEmpty);
+          verify(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('incomplete labeler loads (#8214)', () {
@@ -1257,6 +1324,45 @@ void main() {
       );
 
       test(
+        'does not retry for unrelated status churn while a relay stays connected',
+        () async {
+          final statuses =
+              StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+          addTearDown(statuses.close);
+          when(
+            () => mockNostrClient.relayStatusStream,
+          ).thenAnswer((_) => statuses.stream);
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer(
+            (_) async => (events: <Event>[], timedOut: true, noRelays: false),
+          );
+
+          await service.subscribeToLabeler(labeler);
+          statuses.add({
+            'wss://stable.example': RelayConnectionStatus.connected(
+              'wss://stable.example',
+            ),
+            'wss://flapping.example': RelayConnectionStatus.connecting(
+              'wss://flapping.example',
+            ),
+          });
+          await pumpEventQueue();
+
+          verify(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'applies cached labels even when the relay did not answer',
         () async {
           final statuses =
@@ -1331,9 +1437,7 @@ void main() {
       test(
         'a retry replaces the labeler rows instead of appending them',
         () async {
-          when(
-            () => mockNostrClient.relayStatusStream,
-          ).thenAnswer(
+          when(() => mockNostrClient.relayStatusStream).thenAnswer(
             (_) => const Stream<Map<String, RelayConnectionStatus>>.empty(),
           );
           when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
@@ -1375,6 +1479,43 @@ void main() {
           );
         },
       );
+
+      test('an empty incomplete retry preserves known label rows', () async {
+        when(() => mockNostrClient.relayStatusStream).thenAnswer(
+          (_) => const Stream<Map<String, RelayConnectionStatus>>.empty(),
+        );
+        when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            events: <Event>[labelFor('preserved_event')],
+            timedOut: true,
+            noRelays: false,
+          ),
+        );
+        await service.subscribeToLabeler(labeler);
+        expect(service.getContentWarnings('preserved_event'), hasLength(1));
+
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => (events: <Event>[], timedOut: false, noRelays: true),
+        );
+        await service.subscribeToLabeler(labeler);
+
+        expect(
+          service.getContentWarnings('preserved_event'),
+          hasLength(1),
+          reason: 'an inconclusive empty read must not erase known warnings',
+        );
+      });
     });
   });
 }
