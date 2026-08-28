@@ -24,6 +24,7 @@ import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:nostr_sdk/utils/relay_url_policy.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockOutgoingDmsDao extends Mock implements OutgoingDmsDao {}
 
@@ -231,6 +232,31 @@ class _MockNostrClient extends Mock implements NostrClient {}
 /// that completed while the relay holding the list stayed silent ([timedOut]).
 /// The empty list means nothing — RC3 must NOT read it as absence (#8212).
 ({List<Event> events, bool timedOut, bool noRelays}) unansweredList({
+  bool noRelays = false,
+  bool timedOut = false,
+}) => (events: const <Event>[], timedOut: timedOut, noRelays: noRelays);
+
+/// Shapes a `queryEventsDetailed` answer a relay actually gave: [events] is
+/// the whole truth, so an empty list is genuine exhaustion. This is what the
+/// history drain requires before it may mark itself complete (#8209).
+({List<Event> events, bool timedOut, bool noRelays}) answeredPage(
+  List<Event> events,
+) => (events: events, timedOut: false, noRelays: false);
+
+/// Shapes a page that carries real [events] but which NOT every relay settled:
+/// one relay answered while another never did, so the window may still hold
+/// events this page could not see. The drain may persist these events, but must
+/// not advance its durable cursor past them or mark itself complete (#8209).
+({List<Event> events, bool timedOut, bool noRelays}) partialPage(
+  List<Event> events,
+) => (events: events, timedOut: true, noRelays: false);
+
+/// Shapes a `queryEventsDetailed` answer that nothing gave: a fan-out no relay
+/// took ([noRelays]), or a relay that refused the REQ with `CLOSED` / a page
+/// the settle window completed without every relay answering ([timedOut]).
+/// The events list is empty and means nothing — the drain must defer, not
+/// conclude exhaustion.
+({List<Event> events, bool timedOut, bool noRelays}) unansweredPage({
   bool noRelays = false,
   bool timedOut = false,
 }) => (events: const <Event>[], timedOut: timedOut, noRelays: noRelays);
@@ -565,12 +591,14 @@ void main() {
         ),
       ).thenAnswer((_) async => <Event>[]);
 
-      // Default for every kind-10050 lookup — resolveDmInboxRelays() on the
-      // send path, the memoized own-inbox resolve, and the RC3 publish check.
-      // ANSWERED and empty: the relays replied and this pubkey genuinely has
-      // no list, which is what every test that does not care about the read
-      // assumed when it went through queryEvents. An UNANSWERED empty is a
-      // different outcome and must be stubbed explicitly (#8212).
+      // Default for every queryEventsDetailed read — the kind-10050 lookups
+      // (resolveDmInboxRelays() on the send path, the memoized own-inbox
+      // resolve, the RC3 publish check) and the history drain's paged reads.
+      // ANSWERED and empty: the relays replied and there is genuinely nothing,
+      // which is what every test that cares about neither read assumed when
+      // both went through queryEvents. An UNANSWERED empty is a different
+      // outcome — absence the RC3 publisher must not act on (#8212), a page the
+      // drain must not read as exhaustion (#8209) — and is stubbed explicitly.
       when(
         () => mockNostrClient.queryEventsDetailed(
           any(),
@@ -1917,10 +1945,12 @@ void main() {
 
           var servedGiftWrapPage = false;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filters =
@@ -1928,12 +1958,12 @@ void main() {
             final filter = filters.single;
             // Outgoing-NIP-04 recovery pass (authors:[self], no p): nothing.
             if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
             // One page of wraps, then exhaustion.
-            if (servedGiftWrapPage) return const <Event>[];
+            if (servedGiftWrapPage) return answeredPage(const <Event>[]);
             servedGiftWrapPage = true;
-            return wraps;
+            return answeredPage(wraps);
           });
 
           final syncState = _FakeDmSyncState()
@@ -2035,21 +2065,23 @@ void main() {
         void serveOnePage(List<Event> wraps) {
           var served = false;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filters =
                 inv.positionalArguments.first as List<nostr_filter.Filter>;
             final filter = filters.single;
             if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
-            if (served) return const <Event>[];
+            if (served) return answeredPage(const <Event>[]);
             served = true;
-            return wraps;
+            return answeredPage(wraps);
           });
         }
 
@@ -4235,6 +4267,9 @@ void main() {
         'history drain targets the own kind-10050 inbox relays as tempRelays',
         () async {
           final capturedDrainTempRelays = <List<String>?>[];
+          // The own kind-10050 resolve (#8212) and the drain pages (#8209)
+          // both read through queryEventsDetailed, so one stub serves both and
+          // branches on the filter.
           when(
             () => mockNostrClient.queryEventsDetailed(
               any(),
@@ -4244,24 +4279,15 @@ void main() {
               requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
               timeout: any(named: 'timeout'),
             ),
-          ).thenAnswer(
-            (_) async => answeredList([
-              ownInbox(['wss://own.example']),
-            ]),
-          );
-          // The drain pages still read through queryEvents; only the own
-          // kind-10050 resolve moved to queryEventsDetailed (#8212).
-          when(
-            () => mockNostrClient.queryEvents(
-              any(),
-              subscriptionId: any(named: 'subscriptionId'),
-              useCache: any(named: 'useCache'),
-              tempRelays: any(named: 'tempRelays'),
-            ),
           ).thenAnswer((inv) async {
             final filter =
                 (inv.positionalArguments.first as List<nostr_filter.Filter>)
                     .single;
+            if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+              return answeredList([
+                ownInbox(['wss://own.example']),
+              ]);
+            }
             // Only the gift-wrap drain pages carry p:[self]; capture their
             // tempRelays (the NIP-04 recovery uses authors:[self] with no p
             // and is intentionally not 10050-targeted).
@@ -4270,7 +4296,7 @@ void main() {
                 inv.namedArguments[#tempRelays] as List<String>?,
               );
             }
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           });
 
           final syncState = _FakeDmSyncState()
@@ -5009,10 +5035,12 @@ void main() {
 
       void stubFiniteHistory(List<Event> history, List<int?> capturedUntil) {
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
         ).thenAnswer((inv) async {
           final filters =
@@ -5023,27 +5051,48 @@ void main() {
           // tag. Return empty (and don't capture its cursor) so these gift-wrap
           // pagination assertions stay focused on the drain itself.
           if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           }
           final until = filter.until;
           capturedUntil.add(until);
           // Mirror NIP-01 `until` (inclusive) semantics.
-          return history
-              .where((e) => e.createdAt <= (until ?? 1 << 31))
-              .toList();
+          return answeredPage(
+            history.where((e) => e.createdAt <= (until ?? 1 << 31)).toList(),
+          );
         });
       }
 
+      /// Stubs every drain page as one nothing answered.
+      ///
+      /// [noRelays] is a fan-out no relay took; [timedOut] is a relay that
+      /// refused the REQ with `CLOSED`, or a page the settle window completed
+      /// while the relay holding the history stayed silent.
+      void stubUnansweredHistory({
+        bool noRelays = false,
+        bool timedOut = false,
+      }) {
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => unansweredPage(noRelays: noRelays, timedOut: timedOut),
+        );
+      }
+
       test(
-        'does NOT mark complete on an empty page when no relays are '
-        'connected — defers to the next inbox open (#5202)',
+        'does NOT mark complete when a fan-out reached no relay — defers to '
+        'the next inbox open (#5202)',
         () async {
-          // queryEvents short-circuits to [] when the relay pool has not
-          // connected yet; treating that as exhaustion would permanently
-          // strand unrecovered history (the reported regression).
-          when(() => mockNostrClient.connectedRelayCount).thenReturn(0);
-          final capturedUntil = <int?>[];
-          stubFiniteHistory(const <Event>[], capturedUntil);
+          // Relays report connected, so the old `connectedRelayCount` guard
+          // would have passed here and latched. Only the fan-out's own account
+          // of who took the REQ can see this.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(noRelays: true);
 
           final syncState = _FakeDmSyncState()
             ..oldestOverride = 100
@@ -5052,16 +5101,82 @@ void main() {
 
           await repository.backfillHistoryIfNeeded();
 
-          // Queried once, got empty, but deferred instead of completing.
-          expect(capturedUntil, [100]);
           expect(syncState.drainCompleteOverride, isFalse);
           expect(syncState.markedCompletePubkeys, isEmpty);
         },
       );
 
       test(
-        'marks complete on an empty page when at least one relay is '
-        'connected (genuine exhaustion)',
+        'does NOT mark complete when a relay refused the page — defers to the '
+        'next inbox open (#8209)',
+        () async {
+          // divine-funnelcake answers a failed query with
+          // `CLOSED "error: could not complete query"`. With
+          // requireAllRelaysSettled that refusal arrives as timedOut; without
+          // it the pool reports timedOut:false and the drain latches.
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(timedOut: true);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'defers on a refused gift-wrap page even when NIP-04 recovery would '
+        'answer, so the gift-wrap guard is pinned on its own (#8209)',
+        () async {
+          // The refused/fan-out tests above stub ONE answer for both the
+          // gift-wrap drain and the NIP-04 recovery pass, so the NIP-04 guard
+          // masks a regressed gift-wrap guard: break the gift-wrap guard alone
+          // and they still pass because recovery defers on the same refusal.
+          // Split the two queries so this test dies to the gift-wrap guard
+          // specifically — the gift-wrap page is refused while NIP-04 recovery
+          // answers authoritatively, so only a working gift-wrap guard can keep
+          // the drain from latching (a broken one reaches the answering
+          // recovery pass and marks complete).
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            final isNip04Recovery =
+                filter.authors != null && (filter.p?.isEmpty ?? true);
+            return isNip04Recovery
+                ? answeredPage(const <Event>[])
+                : unansweredPage(timedOut: true);
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'demands full relay settlement on every drain page, so a refusal '
+        'cannot arrive as an ordinary empty answer (#8209)',
         () async {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
           final capturedUntil = <int?>[];
@@ -5074,7 +5189,257 @@ void main() {
 
           await repository.backfillHistoryIfNeeded();
 
+          final captured = verify(
+            () => mockNostrClient.queryEventsDetailed(
+              captureAny(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: captureAny(
+                named: 'requireAllRelaysSettled',
+              ),
+            ),
+          ).captured;
+
+          // Pair each call's filters with the flag it passed, then keep the
+          // drain's own reads. The memoized kind-10050 inbox resolve goes
+          // through this same method and deliberately does NOT demand
+          // settlement — a relay list is re-resolvable, a skipped page is not
+          // (#8212).
+          final demands = <Object?>[];
+          for (var i = 0; i + 1 < captured.length; i += 2) {
+            final filters = captured[i]! as List<nostr_filter.Filter>;
+            final kinds = filters.single.kinds ?? const <int>[];
+            if (kinds.contains(EventKind.dmRelaysList)) continue;
+            demands.add(captured[i + 1]);
+          }
+          expect(demands, isNotEmpty);
+          expect(demands, everyElement(isTrue));
+        },
+      );
+
+      /// Stubs a first page that carries [events] but which not every relay
+      /// settled (`timedOut`), and an authoritative empty page for every read
+      /// below it — the shape that used to advance the durable cursor past a
+      /// window one relay never answered, then latch completion over the gap.
+      void stubPartialThenExhausted(
+        List<Event> events,
+        List<int?> capturedUntil,
+      ) {
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer((inv) async {
+          final filter =
+              (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                  .single;
+          // Let the outgoing-NIP-04 recovery pass answer cleanly, so anything
+          // this test observes comes from the gift-wrap drain's own guard.
+          if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+            return answeredPage(const <Event>[]);
+          }
+          final until = filter.until;
+          capturedUntil.add(until);
+          final page = events.where((e) => e.createdAt <= (until ?? 0));
+          return page.isEmpty
+              ? answeredPage(const <Event>[])
+              : partialPage(page.toList());
+        });
+      }
+
+      test(
+        'does NOT advance the resume cursor past a page carrying events that '
+        'not every relay settled (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubPartialThenExhausted([deletion(50)], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // The run still pages below the partial page: the events the
+          // answering relay DID hold are worth recovering now, and the page
+          // after it is authoritative and empty.
+          expect(capturedUntil.first, 100);
+          expect(capturedUntil.last! < 50, isTrue);
+
+          // The resume point is pinned at the top of the unsettled window and
+          // never moves below it, so the next run re-requests that window
+          // whole instead of resuming underneath it.
+          expect(syncState.persistedDrainCursors, [100]);
+          expect(syncState.drainCursorOverride, 100);
+
+          // And the authoritative empty page that followed cannot latch
+          // completion over the gap.
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'an unanswered empty page after a partial page keeps the first '
+        'unsettled resume cursor (#8209)',
+        () async {
+          var giftWrapPages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
+              return answeredPage(const <Event>[]);
+            }
+            giftWrapPages++;
+            return giftWrapPages == 1
+                ? partialPage([deletion(50)])
+                : unansweredPage(timedOut: true);
+          });
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(giftWrapPages, 2);
+          expect(syncState.persistedDrainCursors, [100]);
+          expect(syncState.drainCursorOverride, 100);
+          expect(syncState.drainCompleteOverride, isFalse);
+        },
+      );
+
+      test(
+        'a later run re-requests the window a partial page left unsettled '
+        '(#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubPartialThenExhausted([deletion(50)], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Persisting the partial page's own gift wraps / NIP-04 messages
+          // drags oldestSyncedAt down to their timestamps (recordSeen, from
+          // _persistDecryptedGiftWrap and _handleNip04Event). The drain must
+          // not depend on that boundary to find its way back: it seeds from
+          // `historyDrainCursor ?? oldestSyncedAt ?? now`.
+          syncState.oldestOverride = 50;
+
+          capturedUntil.clear();
+          await repository.backfillHistoryIfNeeded();
+
+          // Seeded from the same boundary as the first run, not from below
+          // the partial page — that window is requested again, whole.
+          expect(capturedUntil.first, 100);
+        },
+      );
+
+      test(
+        'marks complete on an empty page a relay actually answered '
+        '(genuine exhaustion)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Queried once, got an authoritative empty page, completed.
+          expect(capturedUntil, [100]);
           expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        'an unanswered page leaves the drain re-runnable, so history is '
+        'recovered once the relays come back (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(timedOut: true);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+          expect(syncState.drainCompleteOverride, isFalse);
+
+          // The relays recover and serve real history. Under the latching
+          // behavior this second pass never issued a query at all.
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(
+            capturedUntil,
+            isNotEmpty,
+            reason: 'the drain must still be armed after an unanswered page',
+          );
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        'pins the resume cursor when a page goes unanswered, so a sync '
+        'boundary that moves meanwhile cannot pull the next run below the '
+        'window still owed (#8209)',
+        () async {
+          when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
+          stubUnansweredHistory(timedOut: true);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Deferring is not enough on its own: the drain seeds from
+          // `historyDrainCursor ?? oldestSyncedAt ?? now`, so a run that
+          // defers without persisting anything comes back to whatever
+          // oldestSyncedAt has become.
+          expect(syncState.drainCursorOverride, 100);
+
+          // The live subscription keeps ingesting while the drain is deferred,
+          // and recordSeen drags oldestSyncedAt below the window the drain
+          // still owes.
+          syncState.oldestOverride = 50;
+
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+          await repository.backfillHistoryIfNeeded();
+
+          expect(capturedUntil.first, 100);
         },
       );
 
@@ -5085,10 +5450,12 @@ void main() {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
           final capturedFilters = <nostr_filter.Filter>[];
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             capturedFilters.addAll(
@@ -5096,7 +5463,7 @@ void main() {
             );
             // Gift-wrap drain exhausts immediately; the NIP-04 recovery query
             // also returns empty — we only assert that it was issued.
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           });
 
           final syncState = _FakeDmSyncState()
@@ -5127,12 +5494,14 @@ void main() {
         () async {
           when(() => mockNostrClient.connectedRelayCount).thenReturn(2);
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
-          ).thenAnswer((_) async => const <Event>[]);
+          ).thenAnswer((_) async => answeredPage(const <Event>[]));
           // The drain recovered the user's own last-sent message in this convo.
           when(
             () => mockConversationsDao.lastSentTimestampsByConversation(
@@ -5247,10 +5616,12 @@ void main() {
           final authorsUntils = <int?>[];
           var nip04Pages = 0;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filter =
@@ -5260,14 +5631,14 @@ void main() {
             // kinds:[10050]) also matches authors-with-no-p; skip it so it is
             // not mistaken for a NIP-04 recovery page.
             if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
             final isNip04Recovery =
                 filter.authors != null && (filter.p?.isEmpty ?? true);
-            if (!isNip04Recovery) return const <Event>[];
+            if (!isNip04Recovery) return answeredPage(const <Event>[]);
             authorsUntils.add(filter.until);
             nip04Pages++;
-            return nip04Pages == 1 ? [outgoing] : const <Event>[];
+            return answeredPage(nip04Pages == 1 ? [outgoing] : const <Event>[]);
           });
 
           when(
@@ -5381,10 +5752,12 @@ void main() {
           // back empty with 0 connected relays. Recovery must NOT be treated
           // as "nothing to recover" and the drain must NOT be marked complete.
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filter =
@@ -5393,14 +5766,15 @@ void main() {
             final isNip04Recovery =
                 filter.authors != null && (filter.p?.isEmpty ?? true);
             if (isNip04Recovery) {
-              // Simulate a disconnect for the recovery window.
-              when(
-                () => mockNostrClient.connectedRelayCount,
-              ).thenReturn(0);
-              return const <Event>[];
+              // Nothing answers the recovery window. The relays still report
+              // connected, so only the fan-out's own account of who took the
+              // REQ distinguishes this from "the user has no outgoing NIP-04".
+              return unansweredPage(noRelays: true);
             }
             capturedUntil.add(filter.until);
-            return const <Event>[]; // gift-wrap drain reaches the end
+            return answeredPage(
+              const <Event>[],
+            ); // gift-wrap drain reaches the end
           });
 
           final syncState = _FakeDmSyncState()
@@ -5411,6 +5785,64 @@ void main() {
           await repository.backfillHistoryIfNeeded();
 
           expect(capturedUntil, isNotEmpty);
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+        },
+      );
+
+      test(
+        'defers completion after a non-empty NIP-04 page that not every relay '
+        'settled (#8209)',
+        () async {
+          final partialNip04 = Event.fromJson({
+            'id':
+                'abcdabcdabcdabcdabcdabcdabcdabcd'
+                'abcdabcdabcdabcdabcdabcdabcdabcd',
+            'pubkey': _validPubkeyA,
+            'created_at': 50,
+            'kind': EventKind.directMessage,
+            'tags': [
+              ['p', _validPubkeyB],
+            ],
+            'content': 'already-processed',
+            'sig': '',
+          });
+          var nip04Pages = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filter =
+                (inv.positionalArguments.first as List<nostr_filter.Filter>)
+                    .single;
+            if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
+              return answeredPage(const <Event>[]);
+            }
+            final isNip04Recovery =
+                filter.authors != null && (filter.p?.isEmpty ?? true);
+            if (!isNip04Recovery) return answeredPage(const <Event>[]);
+            nip04Pages++;
+            return nip04Pages == 1
+                ? partialPage([partialNip04])
+                : answeredPage(const <Event>[]);
+          });
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(partialNip04.id),
+          ).thenAnswer((_) async => true);
+
+          final syncState = _FakeDmSyncState()
+            ..oldestOverride = 100
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(nip04Pages, 2);
           expect(syncState.drainCompleteOverride, isFalse);
           expect(syncState.markedCompletePubkeys, isEmpty);
         },
@@ -5441,6 +5873,32 @@ void main() {
             syncState.drainVersionOverride,
             DmSyncState.currentDrainVersion,
           );
+        },
+      );
+
+      test(
+        're-arms an install the pre-#8209 drain latched complete while '
+        'history was still on the relay',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory(const <Event>[], capturedUntil);
+
+          // 3 is the version that shipped the `connectedRelayCount` guard: an
+          // install that latched under it has historyDrainComplete set and
+          // returns before issuing a single query, so the corrected guard
+          // never reaches it. Only a currentDrainVersion bump does — this is
+          // hardcoded rather than `currentDrainVersion - 1` precisely so it
+          // fails if #8209 ships without one.
+          final syncState = _FakeDmSyncState()
+            ..drainCompleteOverride = true
+            ..drainVersionOverride = 3;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.upgradedPubkeys, isNotEmpty);
+          expect(capturedUntil, isNotEmpty);
+          expect(syncState.drainCompleteOverride, isTrue);
         },
       );
 
@@ -5527,10 +5985,12 @@ void main() {
         await repository.backfillHistoryIfNeeded();
 
         verifyNever(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
         );
       });
@@ -5541,10 +6001,12 @@ void main() {
         await repository.backfillHistoryIfNeeded();
 
         verifyNever(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
         );
       });
@@ -5555,10 +6017,12 @@ void main() {
         () async {
           var calls = 0;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filters =
@@ -5567,12 +6031,12 @@ void main() {
             // counted as a drain page.
             if (filters.single.kinds?.contains(EventKind.dmRelaysList) ??
                 false) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
             calls++;
             final until = filters.single.until!;
             // Infinite descending supply: only the maxPages cap can stop it.
-            return [deletion(until - 1)];
+            return answeredPage([deletion(until - 1)]);
           });
 
           final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
@@ -5594,6 +6058,66 @@ void main() {
           expect(
             syncState.persistedDrainCursors,
             hasLength(DmHistoryDrainConfig.maxPages),
+          );
+        },
+      );
+
+      test(
+        "the page-cap log names the frozen resume cursor, not the loop's "
+        '(#8209)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+
+          var calls = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            if (filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                false) {
+              return answeredPage(const <Event>[]);
+            }
+            calls++;
+            final until = filters.single.until!;
+            // Every page unsettled, over an infinite descending supply: the
+            // durable cursor freezes at the seed on page 1 while the loop's
+            // own `cursor` keeps descending all the way to the cap. The log
+            // has to name the former — it is what the next run resumes from.
+            return partialPage([deletion(until - 1)]);
+          });
+
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(calls, DmHistoryDrainConfig.maxPages);
+          expect(syncState.persistedDrainCursors, [1000000]);
+
+          const loopCursor = 1000000 - DmHistoryDrainConfig.maxPages;
+          final capLogs = LogCaptureService()
+              .getRecentLogs()
+              .where(
+                (e) =>
+                    e.level == LogLevel.warning &&
+                    e.message.contains('paused at the page cap'),
+              )
+              .toList();
+          expect(capLogs, hasLength(1));
+          expect(
+            capLogs.single.message,
+            contains('will resume from the persisted cursor (1000000)'),
+          );
+          expect(
+            capLogs.single.message,
+            isNot(contains('persisted cursor ($loopCursor)')),
           );
         },
       );
@@ -5627,10 +6151,12 @@ void main() {
         () async {
           var calls = 0;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filters =
@@ -5639,12 +6165,12 @@ void main() {
             // counted as a drain page.
             if (filters.single.kinds?.contains(EventKind.dmRelaysList) ??
                 false) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
             calls++;
             final until = filters.single.until!;
             // Page 0 advances + persists the cursor; page 1 fails.
-            if (calls == 1) return [deletion(until - 1)];
+            if (calls == 1) return answeredPage([deletion(until - 1)]);
             throw Exception('relay boom');
           });
 
@@ -5678,10 +6204,12 @@ void main() {
         () async {
           final error = StateError('bad drain state');
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenThrow(error);
 
@@ -5732,10 +6260,12 @@ void main() {
           final queriedPubkeys = <String>[];
 
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filter =
@@ -5745,7 +6275,7 @@ void main() {
             // with no p tag after the gift-wrap drain completes. Return empty
             // so this test stays focused on gift-wrap drain pubkey routing.
             if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
             final pubkey = filter.p!.single;
             queriedPubkeys.add(pubkey);
@@ -5753,7 +6283,7 @@ void main() {
             if (pubkey == _validPubkeyA) {
               oldQueryStarted.complete();
               await oldQueryRelease.future;
-              return [
+              return answeredPage([
                 Event(
                   _validPubkeyA,
                   EventKind.eventDeletion,
@@ -5763,12 +6293,12 @@ void main() {
                   '',
                   createdAt: 90,
                 ),
-              ];
+              ]);
             }
 
             newQueryStarted.complete();
             await newQueryRelease.future;
-            return <Event>[];
+            return answeredPage(<Event>[]);
           });
           when(
             () => mockConversationsDao.getConversation(
@@ -5819,10 +6349,12 @@ void main() {
         final secondPageRelease = Completer<void>();
 
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
         ).thenAnswer((inv) async {
           final filter =
@@ -5832,10 +6364,10 @@ void main() {
           // outgoing-NIP-04 recovery pass (#5304) is a history page; keep
           // both out of the page counter.
           if (filter.kinds?.contains(EventKind.dmRelaysList) ?? false) {
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           }
           if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           }
           pageCalls++;
           if (pageCalls == 2) {
@@ -5844,9 +6376,9 @@ void main() {
           }
           // Three populated pages then exhaustion, so an unstopped drain runs
           // all the way through to markHistoryDrainComplete.
-          return pageCalls <= 3
-              ? [deletion(filter.until! - 1)]
-              : const <Event>[];
+          return answeredPage(
+            pageCalls <= 3 ? [deletion(filter.until! - 1)] : const <Event>[],
+          );
         });
 
         final syncState = _FakeDmSyncState()
@@ -5956,32 +6488,36 @@ void main() {
 
           var pageCalls = 0;
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filter =
                 (inv.positionalArguments.first as List<nostr_filter.Filter>)
                     .single;
             if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-              return const <Event>[];
+              return answeredPage(const <Event>[]);
             }
             pageCalls++;
-            return pageCalls == 1
-                ? [
-                    Event(
-                      _validPubkeyA,
-                      EventKind.eventDeletion,
-                      const [
-                        ['e', _rumorEventId],
-                      ],
-                      '',
-                      createdAt: 99,
-                    ),
-                  ]
-                : const <Event>[];
+            return answeredPage(
+              pageCalls == 1
+                  ? [
+                      Event(
+                        _validPubkeyA,
+                        EventKind.eventDeletion,
+                        const [
+                          ['e', _rumorEventId],
+                        ],
+                        '',
+                        createdAt: 99,
+                      ),
+                    ]
+                  : const <Event>[],
+            );
           });
 
           final repository = createRepository(syncState: syncState);
@@ -6178,20 +6714,22 @@ void main() {
       // pass (authors:[self]).
       void stubDrainPage(List<Event> page) {
         when(
-          () => mockNostrClient.queryEvents(
+          () => mockNostrClient.queryEventsDetailed(
             any(),
             subscriptionId: any(named: 'subscriptionId'),
             useCache: any(named: 'useCache'),
+            tempRelays: any(named: 'tempRelays'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
           ),
         ).thenAnswer((inv) async {
           final filters =
               inv.positionalArguments.first as List<nostr_filter.Filter>;
           final filter = filters.single;
           if (filter.authors != null && (filter.p?.isEmpty ?? true)) {
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           }
           final until = filter.until ?? (1 << 31);
-          return page.where((e) => e.createdAt <= until).toList();
+          return answeredPage(page.where((e) => e.createdAt <= until).toList());
         });
       }
 
@@ -6822,10 +7360,12 @@ void main() {
           final secondQueryStarted = Completer<void>();
           final secondQueryResult = Completer<List<Event>>();
           when(
-            () => mockNostrClient.queryEvents(
+            () => mockNostrClient.queryEventsDetailed(
               any(),
               subscriptionId: any(named: 'subscriptionId'),
               useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
             ),
           ).thenAnswer((inv) async {
             final filters =
@@ -6833,9 +7373,9 @@ void main() {
             final filter = filters.single;
             if (filter.p?.contains(senderPub) ?? false) {
               secondQueryStarted.complete();
-              return secondQueryResult.future;
+              return answeredPage(await secondQueryResult.future);
             }
-            return const <Event>[];
+            return answeredPage(const <Event>[]);
           });
 
           final repository = createRepository(

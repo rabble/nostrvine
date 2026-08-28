@@ -1023,7 +1023,12 @@ class DmRepository {
   /// the caller can advance its own pagination cursor by their outer
   /// `created_at`, or `null` if the user switched / the repository was torn
   /// down mid-fetch (so the caller stops paging for the stale user).
-  Future<List<Event>?> _fetchHistoryPage({
+  ///
+  /// `authoritative` is false when nothing answered this page — no relay took
+  /// the REQ, a relay refused it with `CLOSED`, the client was disposed, or
+  /// only some relays answered. An empty page is proof of exhaustion only when
+  /// it is authoritative; see the guard in [_runHistoryDrain]. See #8209.
+  Future<({List<Event> events, bool authoritative})?> _fetchHistoryPage({
     required int until,
     required int limit,
     required String subscriptionId,
@@ -1046,12 +1051,21 @@ class DmRepository {
     // default pool) so the #4953/#4973 history drain reads gift wraps a
     // sender delivered outside the default pool. `null` keeps the prior
     // default-pool-only behavior. See #4974.
-    final events = await _nostrClient.queryEvents(
+    //
+    // queryEventsDetailed, not queryEvents: the latter discards `timedOut` and
+    // `noRelays`, so a page nothing answered arrives as an ordinary empty one
+    // and the drain reads it as exhaustion. `requireAllRelaysSettled` is what
+    // makes a relay's `CLOSED` refusal and a partial fan-out surface as
+    // `timedOut` rather than completing on whichever relays did answer. #8209.
+    final result = await _nostrClient.queryEventsDetailed(
       [filter],
       subscriptionId: subscriptionId,
       useCache: false,
       tempRelays: tempRelays,
+      requireAllRelaysSettled: true,
     );
+    final events = result.events;
+    final authoritative = !result.noRelays && !result.timedOut;
     if (_ingestSessionEnded(pubkey, generation)) return null;
 
     // Pass 1 (off the _eventLock): batch-decrypt this page's gift wraps in one
@@ -1079,7 +1093,7 @@ class DmRepository {
       }
       await _maybeYieldDuringDrain(i);
     }
-    return events;
+    return (events: events, authoritative: authoritative);
   }
 
   /// Recovers the user's OWN outgoing NIP-04 (kind-4) messages after a wipe.
@@ -1094,19 +1108,20 @@ class DmRepository {
   /// already sets `currentUserHasSent` for self-authored messages. Bounded by
   /// [DmHistoryDrainConfig.maxPages].
   ///
-  /// Returns `true` when the pass completed against a live relay — genuine
-  /// exhaustion or the page budget — and `false` when it could not run: no
-  /// relay connected, the repository was torn down / the user switched, or a
-  /// relay error. A `false` result MUST NOT mark the drain complete, mirroring
-  /// the gift-wrap drain's `connectedRelayCount == 0` guard so a momentary
-  /// disconnect in this window doesn't silently skip recovery *and*
-  /// permanently strand the user's outgoing NIP-04 history. See #5304.
+  /// Returns `true` when the pass completed against a relay that actually
+  /// answered — genuine exhaustion or the page budget — and `false` when it
+  /// could not run: nothing answered the page, the repository was torn down /
+  /// the user switched, or a relay error. A `false` result MUST NOT mark the
+  /// drain complete, mirroring the gift-wrap drain's authoritative-page guard
+  /// so a momentary outage in this window doesn't silently skip recovery *and*
+  /// permanently strand the user's outgoing NIP-04 history. See #5304, #8209.
   Future<bool> _recoverOutgoingNip04(String pubkey, int generation) async {
     try {
       var cursor = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      var sawUnansweredPage = false;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         if (_ingestSessionEnded(pubkey, generation)) return false;
-        final events = await _nostrClient.queryEvents(
+        final result = await _nostrClient.queryEventsDetailed(
           [
             nostr_filter.Filter(
               authors: [pubkey],
@@ -1117,16 +1132,21 @@ class DmRepository {
           ],
           subscriptionId: 'dm_drain_nip04_${pubkey}_$page',
           useCache: false,
+          requireAllRelaysSettled: true,
         );
+        final events = result.events;
         if (_ingestSessionEnded(pubkey, generation)) return false;
+        final authoritative = !result.noRelays && !result.timedOut;
         if (events.isEmpty) {
-          // An empty page is genuine exhaustion only if a relay was actually
-          // connected to answer it. With 0 connected relays queryEvents
-          // short-circuits to [] — concluding "nothing to recover" and letting
-          // the caller mark the drain complete would permanently strand the
+          // An empty page is genuine exhaustion only if a relay actually
+          // ANSWERED it. Nothing answering — no relay took the REQ, a relay
+          // refused it with `CLOSED`, or only some answered — arrives as an
+          // ordinary empty list, and concluding "nothing to recover" would let
+          // the caller mark the drain complete and permanently strand the
           // user's outgoing NIP-04 (the #5202 failure mode, mirrored here).
-          return _nostrClient.connectedRelayCount > 0;
+          return authoritative && !sawUnansweredPage;
         }
+        if (!authoritative) sawUnansweredPage = true;
         for (var i = 0; i < events.length; i++) {
           if (_ingestSessionEnded(pubkey, generation)) return false;
           await _handleIncomingEvent(events[i]);
@@ -1139,13 +1159,13 @@ class DmRepository {
             .map((event) => event.createdAt)
             .reduce((a, b) => a < b ? a : b);
         final next = minCreatedAt < cursor ? minCreatedAt : cursor - 1;
-        if (next <= 0) return true;
+        if (next <= 0) return !sawUnansweredPage;
         cursor = next;
       }
       // Page budget exhausted. NIP-04 is legacy/low-volume and the gift-wrap
       // drain already reached the end, so treat this as done rather than
       // looping a re-drain for a pathologically long kind-4 history.
-      return true;
+      return !sawUnansweredPage;
     } on Object catch (e) {
       // Relay/IO failures are expected on flaky networks. Returning false
       // defers drain completion so recovery retries on the next inbox open
@@ -1509,12 +1529,17 @@ class DmRepository {
       if (_ingestSessionEnded(pubkey, gen)) return;
 
       var reachedEnd = false;
+      // Set by any page not every relay settled — empty or not. Freezes the
+      // durable cursor and blocks completion for the rest of this run, so a
+      // window one relay never answered is re-requested rather than skipped
+      // past. See the partial-page guard below. #8209.
+      var sawUnansweredPage = false;
       var pagesRun = 0;
       var totalEvents = 0;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         // Bail if the user switched or the repository was torn down.
         if (_ingestSessionEnded(pubkey, gen)) return;
-        final events = await _fetchHistoryPage(
+        final historyPage = await _fetchHistoryPage(
           until: cursor,
           limit: DmHistoryDrainConfig.pageSize,
           subscriptionId: 'dm_drain_${pubkey}_$page',
@@ -1522,7 +1547,8 @@ class DmRepository {
           generation: gen,
           tempRelays: ownInbox,
         );
-        if (events == null) return;
+        if (historyPage == null) return;
+        final events = historyPage.events;
         // _fetchHistoryPage's own guard sits at the top of its persist loop,
         // so the last event's persist and the yield after it are both
         // suspension points it cannot see past — it returns the page either
@@ -1532,24 +1558,67 @@ class DmRepository {
         pagesRun++;
         totalEvents += events.length;
         if (events.isEmpty) {
-          // An empty page is genuine history exhaustion ONLY if a relay was
-          // actually connected to answer it. With 0 connected relays the
-          // query short-circuits to [] — marking the drain complete then
-          // would permanently strand unrecovered history (the #5202 root
-          // cause). Defer instead: leave historyDrainComplete unset and the
-          // cursor persisted so the next inbox open resumes once relays
-          // are up.
-          if (_nostrClient.connectedRelayCount == 0) {
-            Log.warning(
-              'DM history drain saw an empty page with 0 connected relays '
-              'for ${pubkeyForLogs(pubkey)}; deferring completion to the next '
-              'inbox open.',
-              category: LogCategory.system,
-            );
+          // An empty page is genuine history exhaustion ONLY if a relay
+          // actually ANSWERED it. Connected is not answered: a write-only
+          // relay and one whose socket died since its last status update both
+          // still count as connected, so the old `connectedRelayCount` test
+          // could not see a fan-out nobody took, a relay that refused the REQ
+          // with `CLOSED`, or a page the settle window completed on the
+          // relays that did answer. Marking the drain complete on any of those
+          // permanently strands unrecovered history (#5202 root cause, #8209).
+          // Defer instead: leave historyDrainComplete unset and resume on the
+          // next inbox open from the window this run pins below.
+          if (!historyPage.authoritative) {
+            if (!sawUnansweredPage) {
+              // Pin the resume point at this window before giving up on the
+              // run. Falling back to the seed is not safe: with no cursor
+              // persisted the next run seeds from oldestSyncedAt, which this
+              // run's own persisted messages drag downward (recordSeen), so
+              // the window would be skipped by the events it did return.
+              await syncState.setHistoryDrainCursor(pubkey, cursor);
+              Log.warning(
+                'DM history drain saw an empty page that no relay answered for '
+                '${pubkeyForLogs(pubkey)}; holding the resume cursor at '
+                '$cursor and deferring completion to the next inbox open.',
+                category: LogCategory.system,
+              );
+            }
             return;
           }
           reachedEnd = true;
           break;
+        }
+
+        if (!historyPage.authoritative) {
+          // A page that carried events but which not every relay settled: one
+          // relay answered while another never did, so this window can still
+          // hold events this page did not see. The events it did return are
+          // real and already persisted. What must not happen is the durable
+          // cursor moving below a window we have only partly seen — the
+          // unanswered relay's events in it would never be requested again,
+          // and a later authoritative empty page would then latch completion
+          // over the gap. That is the same permanent strand as latching on an
+          // empty page, one window wide instead of the whole tail.
+          //
+          // So: keep paging, because this run should still recover everything
+          // the relays that DID answer hold; stop persisting, so the next run
+          // resumes from the last window every relay settled and re-requests
+          // this one (dedup absorbs the overlap); and do not complete off this
+          // run. See #8209.
+          if (!sawUnansweredPage) {
+            // Pin the resume point at the top of this window, for the same
+            // reason as the empty case above: an unpinned run falls back to
+            // oldestSyncedAt, which this page's own persisted messages have
+            // already dragged below the window we still need to re-read.
+            await syncState.setHistoryDrainCursor(pubkey, cursor);
+            Log.warning(
+              'DM history drain saw a page not every relay settled for '
+              '${pubkeyForLogs(pubkey)}; holding the resume cursor at '
+              '$cursor and deferring completion to the next inbox open.',
+              category: LogCategory.system,
+            );
+          }
+          sawUnansweredPage = true;
         }
 
         // Step strictly below the oldest event seen so the loop always
@@ -1566,11 +1635,14 @@ class DmRepository {
         }
         // Persist the boundary so an interrupted or page-capped run
         // resumes from here on the next inbox open rather than restarting
-        // from the top.
-        await syncState.setHistoryDrainCursor(pubkey, cursor);
+        // from the top. Frozen once a page went unanswered, so the resume
+        // point never moves below a window that page may not have seen whole.
+        if (!sawUnansweredPage) {
+          await syncState.setHistoryDrainCursor(pubkey, cursor);
+        }
       }
 
-      if (reachedEnd) {
+      if (reachedEnd && !sawUnansweredPage) {
         // Before declaring history complete, recover the user's OWN outgoing
         // NIP-04 messages. The paged drain above filters `p:[self]`, which
         // matches incoming NIP-04 and the user's NIP-17 self-wraps but never
@@ -1603,16 +1675,32 @@ class DmRepository {
             category: LogCategory.system,
           );
         }
+      } else if (reachedEnd) {
+        // Reached the end of what the answering relays hold, but an earlier
+        // page in this run was not fully settled, so the run has no standing
+        // to call history exhausted. The resume cursor is still parked above
+        // that window; the next inbox open re-requests it. #8209.
+        Log.warning(
+          'DM history drain reached the end for ${pubkeyForLogs(pubkey)} but '
+          'an earlier page was not fully settled; deferring completion to the '
+          'next inbox open.',
+          category: LogCategory.system,
+        );
       } else {
         // Page cap hit: leave historyDrainComplete unset and the cursor
         // persisted so the next inbox open resumes the remaining history
         // instead of permanently truncating it for heavy users. See #4953.
+        // Report the DURABLE cursor, not the loop's: once a page goes
+        // unsettled the persist above is frozen while `cursor` keeps
+        // descending, so the two diverge in exactly the case a reader of
+        // this line is trying to diagnose. See #8209.
         Log.warning(
           'DM history drain paused at the page cap '
           '(${DmHistoryDrainConfig.maxPages}) for ${pubkeyForLogs(pubkey)} '
           'after '
           '$totalEvents events; will resume from the persisted cursor '
-          '($cursor) on the next inbox open.',
+          '(${syncState.historyDrainCursor(pubkey) ?? cursor}) on the next '
+          'inbox open.',
           category: LogCategory.system,
         );
       }
