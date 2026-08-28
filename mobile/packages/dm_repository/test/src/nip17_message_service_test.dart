@@ -1692,6 +1692,111 @@ void main() {
       );
     });
 
+    group('buildGroupRumor (#8188)', () {
+      const peerB =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const peerC =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const peerA =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+      test('carries every recipient as a p tag', () {
+        final rumor = service.buildGroupRumor(
+          recipientPubkeys: const [peerC, peerA, peerB],
+          content: 'hi all',
+        );
+
+        expect(
+          rumor.tags.where((t) => t.first == 'p').map((t) => t[1]).toSet(),
+          {peerA, peerB, peerC},
+        );
+      });
+
+      test('orders p tags canonically, so the id ignores argument order', () {
+        // Two callers listing the same room in different orders must produce
+        // the SAME message identity — otherwise the id depends on an
+        // incidental argument order.
+        final one = service.buildGroupRumor(
+          recipientPubkeys: const [peerC, peerA, peerB],
+          content: 'hi all',
+          createdAt: 1700000000,
+        );
+        final two = service.buildGroupRumor(
+          recipientPubkeys: const [peerA, peerB, peerC],
+          content: 'hi all',
+          createdAt: 1700000000,
+        );
+
+        expect(
+          one.tags.where((t) => t.first == 'p').map((t) => t[1]).toList(),
+          [peerA, peerB, peerC],
+        );
+        expect(one.id, equals(two.id));
+      });
+
+      test(
+        'is ONE byte-identical rumor for the whole fan-out, unlike a '
+        'per-recipient buildRumor',
+        () {
+          const room = [peerA, peerB, peerC];
+
+          // What sendGroupMessage used to do: buildRumor once per recipient,
+          // which prepends the addressee and so rotates the p-tag order.
+          final perRecipient = [
+            for (final me in room)
+              service.buildRumor(
+                recipientPubkey: me,
+                content: 'hi all',
+                additionalTags: [
+                  for (final other in room)
+                    if (other != me) ['p', other],
+                ],
+                createdAt: 1700000000,
+              ),
+          ];
+          expect(
+            perRecipient.map((r) => r.id).toSet(),
+            hasLength(3),
+            reason:
+                'the old shape forked the id — this is the bug, pinned so '
+                'the contrast stays visible',
+          );
+
+          // What it does now: one rumor, wrapped N times (NIP-59 59.md:108).
+          final shared = service.buildGroupRumor(
+            recipientPubkeys: room,
+            content: 'hi all',
+            createdAt: 1700000000,
+          );
+          expect(
+            List.generate(room.length, (_) => shared.id).toSet(),
+            hasLength(1),
+          );
+        },
+      );
+
+      test('appends additionalTags after the p tags and keeps the kind', () {
+        final rumor = service.buildGroupRumor(
+          recipientPubkeys: const [peerB, peerA],
+          content: '',
+          eventKind: EventKind.fileMessage,
+          additionalTags: const [
+            ['e', 'parent'],
+            ['batch', 'token'],
+          ],
+        );
+
+        expect(rumor.kind, EventKind.fileMessage);
+        expect(rumor.tags.last, ['batch', 'token']);
+        expect(rumor.tags.map((t) => t.first).toList(), [
+          'p',
+          'p',
+          'e',
+          'batch',
+        ]);
+      });
+    });
+
     group('publishSelfWrap', () {
       // The recovery primitive: re-publish only the sender
       // self-addressed gift wrap for a rumor whose recipient publish

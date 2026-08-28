@@ -429,6 +429,7 @@ class NIP17MessageService {
   /// - [content]: Message content (text for kind 14, file URL for kind 15)
   /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
+  /// - [createdAt]: Optional canonical event timestamp
   Event buildRumor({
     required String recipientPubkey,
     required String content,
@@ -441,14 +442,54 @@ class NIP17MessageService {
       ...additionalTags,
     ];
 
-    // [createdAt] lets a group fan-out stamp every per-recipient rumor with
-    // one shared batch timestamp, so all sibling rows sort together on the
-    // sender-side timeline. (The batch identity used for dedup/grouping is a
-    // separate durable id — see `OutgoingDms.sendBatchId`.)
     return Event(
       _senderPublicKey,
       eventKind,
       rumorTags,
+      content,
+      createdAt: createdAt,
+    );
+  }
+
+  /// Build the ONE unsigned NIP-17 rumor a group send wraps for every
+  /// recipient.
+  ///
+  /// **Invariant: one byte-identical rumor per group send.** NIP-59 states it
+  /// outright — "If a `rumor` is intended for more than one party […] a single
+  /// `rumor` may be wrapped and addressed for each recipient individually"
+  /// (`59.md:108`) — and NIP-17 assumes it: "The set of `pubkey` + `p` tags
+  /// defines a chat room" (`17.md:17`), a set, unordered.
+  ///
+  /// [buildRumor] prepends `['p', recipientPubkey]`, so calling it once per
+  /// recipient produced N rumors carrying the same p-tag SET rotated into a
+  /// different ORDER. A NIP-01 id hashes the tags *array*, so the rotation
+  /// alone forked the id — and a retraction, which can name only one, then
+  /// reached only one participant (#8188).
+  ///
+  /// Recipients are sorted so the id does not depend on the caller's argument
+  /// order. The receiving recipient is included, as `17.md:118-132` shows;
+  /// the sender is not (matching Amethyst — the convention is split across
+  /// clients and both are tolerated, since every client keys a room on the
+  /// participant set).
+  ///
+  /// Callers must not vary any tag element per recipient. A per-recipient
+  /// relay hint inside a `p` tag would re-fork the id even with canonical
+  /// ordering; NIP-17 puts hints on the gift wrap's own `p` tag instead.
+  Event buildGroupRumor({
+    required List<String> recipientPubkeys,
+    required String content,
+    int eventKind = EventKind.privateDirectMessage,
+    List<List<String>> additionalTags = const [],
+    int? createdAt,
+  }) {
+    final ordered = [...recipientPubkeys]..sort();
+    return Event(
+      _senderPublicKey,
+      eventKind,
+      <List<String>>[
+        for (final pubkey in ordered) ['p', pubkey],
+        ...additionalTags,
+      ],
       content,
       createdAt: createdAt,
     );

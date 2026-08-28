@@ -248,8 +248,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // reach relays. The sender's other devices will not see this
       // message on relay-only restore. Surface as a distinct status so
       // the UI can offer a self-wrap-only retry without re-delivering
-      // to the recipient. [lastPartialSend.rumorIds] carries the
-      // per-recipient rumor ids whose self-wrap publish failed, so
+      // to the recipient. [lastPartialSend.rumorIds] carries the durable queue
+      // handles whose self-wrap publish failed, so
       // retrying republishes only those self-wraps via
       // [recoverSelfWrap].
       final partialRumorIds = <String>[];
@@ -276,7 +276,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
-          partialRumorIds.add(result.rumorEventId!);
+          partialRumorIds.add(result.queuedRumorId ?? result.rumorEventId!);
         }
       } else {
         final results = await _dmRepository.sendGroupMessage(
@@ -304,18 +304,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             results.first.error ?? 'Failed to send group message',
           );
         }
-        // For groups, "self-wrap" is per-recipient. We collect the rumor
-        // ids of the successful per-recipient sends whose self-wrap
-        // failed — only those rumors need a recovery republish.
+        // For groups, "self-wrap" is per-recipient. Recovery needs each
+        // surviving durable queue handle, not the shared wire rumor id.
         for (final result in results) {
           if (result.success && result.selfWrapPublished == false) {
-            partialRumorIds.add(result.rumorEventId!);
+            partialRumorIds.add(result.queuedRumorId ?? result.rumorEventId!);
           }
         }
       }
       if (partialRumorIds.isNotEmpty) {
         // Union with any outstanding partial: two concurrent sends that
-        // both end sentPartial must accumulate their rumor ids — the
+        // both end sentPartial must accumulate their queue handles — the
         // second overwrite silently orphaned the first send's self-wrap
         // recovery set. Stale ids (already recovered by the sweep) are
         // dropped by the recovery handler's ArgumentError-skip.

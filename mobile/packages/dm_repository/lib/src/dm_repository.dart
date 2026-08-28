@@ -484,6 +484,23 @@ class DmRepository {
 
   static final _sendBatchIdPattern = RegExp(r'^[0-9a-f]{64}$');
 
+  /// Durable queue handle for one recipient of a group send.
+  ///
+  /// A group send wraps ONE shared rumor for every recipient (#8188), so the
+  /// rumor id no longer identifies a single queue row — but `outgoing_dms`
+  /// tracks delivery PER RECIPIENT, and `enqueue` is `insertOrIgnore`, which
+  /// would silently drop the siblings rather than throw.
+  ///
+  /// This needs no migration: nothing reads the column's format. Every
+  /// consumer treats it as an opaque handle: `recoverFullSend` takes the rumor
+  /// from `row.rumorEventJson` and the recipient from `row.recipientPubkey`,
+  /// while `recoverSelfWrap` resolves the same row after partial delivery. A
+  /// 64-hex rumor id can never contain `:`, so group handles and the plain 1:1
+  /// ids (and any row written before this change) stay in disjoint keyspaces —
+  /// the same property `ConversationState._batchKeyOf` already relies on.
+  static String _groupQueueId(String rumorId, String recipientPubkey) =>
+      '$rumorId:$recipientPubkey';
+
   /// Whether [value] is a well-formed batch token — the 64-char lowercase-hex
   /// shape [_defaultSendBatchId] mints. Ingest only stamps a self-wrap's
   /// `batch` tag onto the persisted row when it matches, keeping the batch-id
@@ -2327,11 +2344,10 @@ class DmRepository {
       // Only a NIP-04 copy may suppress a peer's rumor: a row that also
       // arrived over NIP-17 is a genuine earlier message (#7324).
       //
-      // Our own self-wrap echo is the exception. A group send persists one
-      // row but publishes one rumor per recipient, so the rumor-id primary
-      // key collapses only the first sibling's echo — the rest dedup on the
-      // batch token, or the unfiltered window when the send predates it
-      // (#6046).
+      // Our own self-wrap echo is the exception. A group send persists one row
+      // but publishes one self-wrap per recipient for the shared rumor. Every
+      // echo dedups on the batch token, or the unfiltered window when the send
+      // predates it (#6046).
       final isSentByMe = rumor.pubkey == ownerPubkey;
       final isGroup = participants.length > 2;
       final bool isDuplicate;
@@ -3910,15 +3926,18 @@ class DmRepository {
   /// durable row, and the sweep then delivers one copy while the retry
   /// delivers another.
   ///
-  /// Only ever called for a row that survives the call — the soft-unconfirmed
-  /// and hard-failure arms of both [sendMessage] and [sendGroupMessage], plus
-  /// a [sendGroupMessage] sibling whose enqueue-failure unwind could not
-  /// delete it. The blocked branch deletes its row, a cancelled group sibling
-  /// never had one, an unwound sibling no longer has one, and the success
-  /// branch consumes it (except on partial delivery — see
-  /// [NIP17SendResult.queuedRumorId]).
+  /// Called only for a row that survives the call: retryable failures and
+  /// partial successes whose recipient wrap landed but self-wrap did not.
   NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
       switch (result) {
+        NIP17SendSuccess() when !result.selfWrapPublished => NIP17SendSuccess(
+          rumorEventId: result.rumorEventId,
+          messageEventId: result.messageEventId,
+          recipientPubkey: result.recipientPubkey,
+          selfWrapPublished: false,
+          queuedRumorId: rumorId,
+          timestamp: result.timestamp,
+        ),
         NIP17SendSuccess() => result,
         NIP17SendFailure() => NIP17SendFailure(
           result.error,
@@ -4828,7 +4847,7 @@ class DmRepository {
     // The durable batch id when available; null for a legacy (pre-column)
     // in-flight batch, which falls back to the `(createdAt, content)` tuple.
     final String? batchId;
-    final row = await dao.getById(rumorId);
+    var row = await dao.getById(rumorId);
     if (row != null) {
       if (row.ownerPubkey != _userPubkey) {
         throw ArgumentError.value(
@@ -4855,11 +4874,26 @@ class DmRepository {
         rumorId,
         ownerPubkey: _ownerPubkey,
       );
-      if (message == null || message.senderPubkey != _userPubkey) return 0;
-      conversationId = message.conversationId;
-      createdAt = message.createdAt;
-      content = message.content;
-      batchId = message.sendBatchId;
+      if (message != null) {
+        if (message.senderPubkey != _userPubkey) return 0;
+        conversationId = message.conversationId;
+        createdAt = message.createdAt;
+        content = message.content;
+        batchId = message.sendBatchId;
+      } else {
+        // A queue-only group bubble exposes the shared wire rumor id, while
+        // each durable row is keyed by its per-recipient queue handle. Resolve
+        // one sibling from the stored rumor before expanding the whole batch.
+        row = await dao.getByRumorId(
+          rumorId: rumorId,
+          ownerPubkey: _userPubkey,
+        );
+        if (row == null) return 0;
+        conversationId = row.conversationId;
+        createdAt = row.createdAt;
+        content = row.content;
+        batchId = row.sendBatchId;
+      }
     }
 
     final rows = await dao.getForConversation(
@@ -5101,8 +5135,8 @@ class DmRepository {
   ///
   /// When an [OutgoingDmsDao] is injected, each per-recipient send
   /// goes through the durable queue with the same atomicity contract
-  /// as [sendMessage]: enqueue a `pending`/`pending` row keyed by the
-  /// per-recipient rumor id, publish, then transition the row by wrap
+  /// as [sendMessage]: enqueue a `pending`/`pending` row keyed by a
+  /// per-recipient queue handle, publish, then transition the row by wrap
   /// outcome (full delivery → row deleted in the same transaction
   /// that inserts `direct_messages`; partial delivery → recipient
   /// `sent` + self `failed` so the recovery path can replay only the
@@ -5170,7 +5204,13 @@ class DmRepository {
         resolveDmInboxRelays(pubkey).then((r) => inboxByRecipient[pubkey] = r),
     ]);
 
-    final rumors = <Event>[];
+    // Per-recipient durable handle for the queue row. The wire rumor is shared
+    // across the batch, so the rumor id alone can no longer key a row: the
+    // queue tracks per-recipient delivery, and `enqueue` is `insertOrIgnore`,
+    // which would silently discard the siblings WITHOUT throwing. Composed
+    // rather than migrated because nothing reads this column's format — see
+    // [_groupQueueId].
+    final queueIds = <String>[];
     final results = <NIP17SendResult>[];
 
     // Durable, collision-proof identity for this whole fan-out, minted BEFORE
@@ -5179,48 +5219,56 @@ class DmRepository {
     // nonce, so two group sends of identical text in the SAME Unix second
     // would otherwise build byte-identical rumors: identical event ids ⇒
     // identical queue-row PKs (`OutgoingDm.id`, enqueued with insertOrIgnore
-    // so the second is silently dropped) ⇒ identical `full:<rumorId>` recovery
+    // so the second is silently dropped) ⇒ identical `full:<queueId>` recovery
     // locks (the second publish joins the first) ⇒ identical batch id (the
     // persist dedup drops the second local message). The user's second send
     // would vanish from the queue, local history, AND recipients. Deriving the
-    // batch id from `rumors.first.id` inherits that same-second collision.
+    // batch id from the rumor's own id would inherit that same-second
+    // collision — and since #8188 the whole batch shares ONE rumor id, so the
+    // rumor can no longer distinguish two invocations at all.
     //
     // Instead this token is independent secure random, and it is injected into
-    // every sibling rumor (a client-internal `batch` tag, below) so each
-    // invocation's wire events — and therefore their ids, queue-row PKs, and
-    // recovery locks — are unique even at same-second identical text. The same
-    // value is stamped verbatim on every sibling queue row AND the batch's one
-    // persisted local message, so persistence dedup, optimistic grouping,
+    // the batch's one rumor (a client-internal `batch` tag, below) so each
+    // invocation's wire events — and therefore their ids, queue-row handles,
+    // and recovery locks — are unique even at same-second identical text. The
+    // same value is stamped verbatim on every sibling queue row AND the batch's
+    // one persisted local message, so persistence dedup, optimistic grouping,
     // sibling lookup, and cancellation all match a batch by one exact stored
     // value. The token rides inside the encrypted gift-wrapped rumor (only the
     // recipient and the sender's own self-wrap ever decrypt it) and is random,
     // so it discloses nothing.
     final sendBatchId = _newSendBatchId();
 
-    // Build EVERY per-recipient rumor up front, stamped with one shared batch
-    // timestamp and the shared batch token, before any publish. Each recipient
-    // already gets a distinct rumor id within a batch (their p-tag set
-    // differs); the batch token additionally separates two whole invocations
-    // that would otherwise be byte-identical.
+    // ONE rumor for the whole fan-out, wrapped once per recipient (#8188).
+    // NIP-59 59.md:108 permits exactly this — "a single `rumor` may be wrapped
+    // and addressed for each recipient individually" — and it is what every
+    // shipping group-DM client does. It is also already the shape of this
+    // repository's OWN kind-5 deletions (`_fanOutDeletion`) and kind-7
+    // reactions (`DmReactionsRepository._fanOutRumor`); kind-14/15 messages
+    // were the outlier.
+    //
+    // Building one rumor per recipient forked the id: `buildRumor` prepends
+    // `['p', recipientPubkey]`, so each sibling carried the same p-tag SET in a
+    // rotated ORDER, and a NIP-01 id hashes the tags array. A retraction can
+    // name only one id, so delete-for-everyone reached exactly one participant;
+    // a reaction naming one sibling was never persisted by the others at all.
+    //
+    // The batch token still separates two whole invocations of identical text
+    // in the same second (#6046) — it is one shared tag, so it does not
+    // re-fork the id within a batch.
     final batchCreatedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    for (final pubkey in recipientPubkeys) {
-      final rumorTags = <List<String>>[
+    final groupRumor = _messageService!.buildGroupRumor(
+      recipientPubkeys: recipientPubkeys,
+      content: content,
+      additionalTags: <List<String>>[
         ...additionalTags,
-        // Include all recipients as p tags per NIP-17
-        for (final pk in recipientPubkeys)
-          if (pk != pubkey) ['p', pk],
         if (replyToId != null) ['e', replyToId],
         [_sendBatchTagKey, sendBatchId],
-      ];
-
-      rumors.add(
-        _messageService!.buildRumor(
-          recipientPubkey: pubkey,
-          content: content,
-          additionalTags: rumorTags,
-          createdAt: batchCreatedAt,
-        ),
-      );
+      ],
+      createdAt: batchCreatedAt,
+    );
+    for (final recipient in recipientPubkeys) {
+      queueIds.add(_groupQueueId(groupRumor.id, recipient));
     }
 
     // Enqueue every sibling before publish so an app crash mid-send leaves a
@@ -5238,17 +5286,17 @@ class DmRepository {
     // minting a duplicating fresh fan-out (#7316).
     if (outgoingDao != null) {
       for (var i = 0; i < recipientPubkeys.length; i++) {
-        final rumor = rumors[i];
+        final queueId = queueIds[i];
         try {
           await outgoingDao.enqueue(
             OutgoingDm(
-              id: rumor.id,
+              id: queueId,
               conversationId: conversationId,
               recipientPubkey: recipientPubkeys[i],
               content: content,
-              createdAt: rumor.createdAt,
-              rumorEventJson: jsonEncode(rumor.toJson()),
-              messageKind: rumor.kind,
+              createdAt: groupRumor.createdAt,
+              rumorEventJson: jsonEncode(groupRumor.toJson()),
+              messageKind: groupRumor.kind,
               replyToId: replyToId,
               recipientWrapStatus: OutgoingWrapStatus.pending,
               selfWrapStatus: OutgoingWrapStatus.pending,
@@ -5272,7 +5320,7 @@ class DmRepository {
             failure,
           );
           for (var j = 0; j < i; j++) {
-            final parkedRumorId = rumors[j].id;
+            final parkedRumorId = queueIds[j];
             try {
               await outgoingDao.deleteById(parkedRumorId);
             } on Object catch (deleteError, deleteStackTrace) {
@@ -5326,7 +5374,7 @@ class DmRepository {
       // kind-5 from. The currently-publishing sibling's inherent TOCTOU is
       // accepted, the same trade-off as recoverFullSend.
       if (outgoingDao != null &&
-          await outgoingDao.getById(rumors[i].id) == null) {
+          await outgoingDao.getById(queueIds[i]) == null) {
         cancelledBeforePublish.add(i);
         results.add(
           const NIP17SendResult.failure('send cancelled before publish'),
@@ -5348,9 +5396,9 @@ class DmRepository {
       NIP17SendResult result;
       try {
         result = await _joinOrStartRecovery(
-          'full:${rumors[i].id}',
+          'full:${queueIds[i]}',
           () => _sendRumorWithTimeout(
-            rumor: rumors[i],
+            rumor: groupRumor,
             recipientPubkey: pubkey,
             targetRelays: inboxByRecipient[pubkey],
             awaitRecipientOk: true,
@@ -5389,7 +5437,7 @@ class DmRepository {
         for (var i = 0; i < results.length; i++) {
           if (!results[i].success) continue;
           if (outgoingDao != null &&
-              await outgoingDao.getById(rumors[i].id) == null) {
+              await outgoingDao.getById(queueIds[i]) == null) {
             continue;
           }
           liveSuccessIndexes.add(i);
@@ -5418,8 +5466,9 @@ class DmRepository {
               ownerPubkey: _userPubkey,
             );
 
-        // Key the insert off the first LIVE success — a cancelled sibling's
-        // rumor id must not name the persisted message.
+        // Key the insert off the first LIVE success so a cancelled sibling's
+        // giftWrapId does not land in storage. If cancellation removed every
+        // success, there is no local message to persist.
         final firstLiveSuccess = results[liveSuccessIndexes.first];
         if (!alreadyPersisted) {
           await _directMessagesDao.insertMessage(
@@ -5462,9 +5511,10 @@ class DmRepository {
           for (final i in liveSuccessIndexes) {
             await _finalizeAfterRecipientSuccess(
               outgoingDao: outgoingDao,
-              rumorId: rumors[i].id,
+              rumorId: queueIds[i],
               result: results[i],
             );
+            results[i] = _stampQueuedRow(results[i], queueIds[i]);
           }
         }
       });
@@ -5484,7 +5534,7 @@ class DmRepository {
     // rumors the receiver cannot collapse (#7316). Cancelled and blocked
     // siblings are deliberately unstamped: none leaves a row behind.
     if (outgoingDao != null) {
-      for (var i = 0; i < rumors.length; i++) {
+      for (var i = 0; i < queueIds.length; i++) {
         // A sibling skipped for cancellation has no live row to transition; an
         // update-by-id would match zero rows anyway, but skipping is explicit
         // and keeps such an index from resurrecting a queue transition or a
@@ -5497,21 +5547,21 @@ class DmRepository {
         if (result.blocked) {
           await _finalizeAfterRecipientBlocked(
             outgoingDao: outgoingDao,
-            rumorId: rumors[i].id,
+            rumorId: queueIds[i],
           );
         } else if (result.retryablePending) {
           await _finalizeAfterRecipientUnconfirmed(
             outgoingDao: outgoingDao,
-            rumorId: rumors[i].id,
+            rumorId: queueIds[i],
           );
-          results[i] = _stampQueuedRow(result, rumors[i].id);
+          results[i] = _stampQueuedRow(result, queueIds[i]);
         } else {
           await _finalizeAfterRecipientFailure(
             outgoingDao: outgoingDao,
-            rumorId: rumors[i].id,
+            rumorId: queueIds[i],
             errorMessage: result.error ?? 'Unknown publish failure',
           );
-          results[i] = _stampQueuedRow(result, rumors[i].id);
+          results[i] = _stampQueuedRow(result, queueIds[i]);
         }
       }
     }
