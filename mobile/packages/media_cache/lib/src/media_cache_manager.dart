@@ -1054,11 +1054,15 @@ class MediaCacheManager extends CacheManager {
   ///    downloads, and files written within [_reclamationFreshnessWindow]
   ///    are left untouched.
   /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
-  ///    deletes the oldest managed files first, including files kept alive only
-  ///    by the sync manifest. Store touch time is preferred when available,
-  ///    with file mtime as the fallback, until the directory is back under
-  ///    budget. The sync-manifest read path does not refresh `touched`, so in
-  ///    practice this trims by download age rather than true last-access.
+  ///    totals every file in the directory (so the enforced number matches
+  ///    what callers measure on disk) and deletes the oldest deletable files
+  ///    first — tracked store rows plus files kept alive only by the sync
+  ///    manifest — until the directory is back under budget or no candidates
+  ///    remain. Undeletable bytes (the alias manifest, in-flight partials,
+  ///    unmanaged files) count towards the total but are never removed.
+  ///    Store touch time is preferred when available, with file mtime as the
+  ///    fallback. The sync-manifest read path does not refresh `touched`, so
+  ///    in practice this trims by download age rather than true last-access.
   ///
   /// Safe to call at startup and repeatedly; overlapping background calls are
   /// ignored, while an overlapping forced call queues one follow-up pass. Calls
@@ -1163,48 +1167,59 @@ class MediaCacheManager extends CacheManager {
     int budget,
     CacheInfoRepository repo,
   ) async {
+    // The budget governs the whole directory, matching what callers measure
+    // when they size the cache on disk. Undeletable bytes — the alias
+    // manifest, in-flight partial downloads, files matching neither managed
+    // pattern — count towards the total but are never eviction candidates,
+    // so the loop below simply stops once the candidates run out.
+    final sizesByName = <String, int>{};
+    final modifiedByName = <String, DateTime>{};
+    var total = 0;
+    await for (final entity in Directory(baseDir).list(followLinks: false)) {
+      if (entity is! File) continue;
+      final stat = entity.statSync();
+      if (stat.type == FileSystemEntityType.notFound) continue;
+      final name = path.basename(entity.path);
+      sizesByName[name] = stat.size;
+      modifiedByName[name] = stat.modified;
+      total += stat.size;
+    }
+    if (total <= budget) return;
+
     final entriesByName = <String, _BudgetedCacheFile>{};
     for (final object in objects) {
-      final file = File(path.join(baseDir, object.relativePath));
-      final stat = file.statSync();
-      if (stat.type == FileSystemEntityType.notFound) continue;
+      final size = sizesByName[object.relativePath];
+      if (size == null) continue;
       entriesByName[object.relativePath] = _BudgetedCacheFile(
         object: object,
-        file: file,
-        size: stat.size,
-        lastUsed: object.touched ?? stat.modified,
+        file: File(path.join(baseDir, object.relativePath)),
+        size: size,
+        lastUsed: object.touched ?? modifiedByName[object.relativePath]!,
       );
     }
 
     // The sync manifest can keep a cache file live after
     // flutter_cache_manager has demoted its row past the object-count limit.
-    // Those files must still count towards the byte budget; otherwise they are
-    // protected from orphan reclamation but invisible to byte eviction.
-    final manifestFiles = <String, File>{
-      for (final filePath in _cacheManifest.values)
-        path.basename(filePath): File(filePath),
-    };
-    for (final entry in manifestFiles.entries) {
-      final name = entry.key;
+    // Those files are protected from orphan reclamation, so they must stay
+    // eligible for byte eviction.
+    for (final filePath in _cacheManifest.values) {
+      final name = path.basename(filePath);
       if (entriesByName.containsKey(name) ||
           _inFlightRelativePaths.contains(name)) {
         continue;
       }
-      final stat = entry.value.statSync();
-      if (stat.type == FileSystemEntityType.notFound) continue;
+      final size = sizesByName[name];
+      if (size == null) continue;
       entriesByName[name] = _BudgetedCacheFile(
-        file: entry.value,
-        size: stat.size,
-        lastUsed: stat.modified,
+        file: File(path.join(baseDir, name)),
+        size: size,
+        lastUsed: modifiedByName[name]!,
       );
     }
 
-    final entries = entriesByName.values.toList();
-    var total = entries.fold<int>(0, (sum, entry) => sum + entry.size);
-    if (total <= budget) return;
-
     // Oldest first (last-touch time, else file mtime) so newer items survive.
-    entries.sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
+    final entries = entriesByName.values.toList()
+      ..sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
     final removedIds = <int>[];
     var aliasMapChanged = false;
     for (final entry in entries) {

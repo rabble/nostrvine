@@ -487,6 +487,69 @@ void main() {
       expect(newest.existsSync(), isTrue);
     });
 
+    group('directory-total byte budget', () {
+      test('counts untracked unmanaged bytes towards the budget', () async {
+        final (manager, dir) = build(maxCacheSizeBytes: 100);
+        final oldest = writeFile(dir, 'a_1_1.mp4', 60);
+        final newest = writeFile(dir, 'b_2_2.mp4', 30);
+        // Matches neither reclamation pattern, has no store row: reclamation
+        // keeps it and eviction cannot delete it — but its bytes are real, so
+        // they must count against the budget the way every on-disk measure
+        // of the directory counts them (#8242).
+        final unmanaged = writeFile(dir, 'externally-managed.bin', 30);
+
+        when(repo.getAllObjects).thenAnswer(
+          (_) async => [
+            obj('a_1_1.mp4', id: 1, touched: DateTime(2020)),
+            obj('b_2_2.mp4', id: 2, touched: DateTime(2020, 1, 2)),
+          ],
+        );
+
+        await manager.enforceCacheLimits();
+
+        // 120 bytes on disk > 100: evict the oldest tracked file (→ 60).
+        // Tracked bytes alone were 90 ≤ 100, so this eviction only happens
+        // when the unmanaged file is counted.
+        expect(oldest.existsSync(), isFalse);
+        expect(newest.existsSync(), isTrue);
+        expect(unmanaged.existsSync(), isTrue, reason: 'never a candidate');
+      });
+
+      test('stops cleanly when only undeletable bytes remain over '
+          'budget', () async {
+        final (manager, dir) = build(maxCacheSizeBytes: 10);
+        final unmanaged = writeFile(dir, 'externally-managed.bin', 50);
+
+        when(repo.getAllObjects).thenAnswer((_) async => <CacheObject>[]);
+
+        await manager.enforceCacheLimits();
+
+        expect(unmanaged.existsSync(), isTrue);
+        verifyNever(() => repo.deleteAll(any()));
+      });
+
+      test('admits an entry larger than the remaining budget, then '
+          'reconciles', () async {
+        final (manager, dir) = build(maxCacheSizeBytes: 100);
+        final oldest = writeFile(dir, 'a_1_1.mp4', 50);
+        // No admission control: a download larger than the remaining
+        // capacity lands whole and the next sweep trims oldest-first.
+        final oversized = writeFile(dir, 'b_2_2.mp4', 80);
+
+        when(repo.getAllObjects).thenAnswer(
+          (_) async => [
+            obj('a_1_1.mp4', id: 1, touched: DateTime(2020)),
+            obj('b_2_2.mp4', id: 2, touched: DateTime(2020, 1, 2)),
+          ],
+        );
+
+        await manager.enforceCacheLimits();
+
+        expect(oldest.existsSync(), isFalse);
+        expect(oversized.existsSync(), isTrue);
+      });
+    });
+
     test('runs a throttled sweep after enough downloads', () async {
       final downloader = FakeCancellableDownloader();
       final cacheKey = 'throttle_${DateTime.now().microsecondsSinceEpoch}';
