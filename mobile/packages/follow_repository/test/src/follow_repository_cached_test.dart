@@ -9,10 +9,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 import '../../../cache_sync/test/fake_cache_dao.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  _MockNostrClient() {
+    // Self-registered so the stub below works in every file that builds this
+    // mock, whether or not that file has its own `setUpAll`. Idempotent.
+    registerFallbackValue(Duration.zero);
+    // The pre-broadcast read of our own kind 3 goes through
+    // `queryEventsDetailed` so it can tell a relay's "I hold nothing" apart
+    // from an answer nobody gave (#8265). Default to a *settled* empty answer
+    // — the relay replied and holds nothing — which is the state every test
+    // here was written in, and which still broadcasts. Tests about the
+    // inconclusive read override this with `timedOut` or `noRelays`.
+    when(
+      () => queryEventsDetailed(
+        any(),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (_) async => (events: <Event>[], timedOut: false, noRelays: false),
+    );
+  }
+}
 
 class _RecordingCacheDao extends FakeCacheDao {
   Duration? lastTtl;

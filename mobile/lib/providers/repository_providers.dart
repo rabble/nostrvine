@@ -24,6 +24,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/hive_box_names.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -204,6 +205,44 @@ FollowRepository followRepository(Ref ref) {
 
   return repository;
 }
+
+/// Retries a contact-list broadcast withheld by an inconclusive read.
+///
+/// [FollowRepository] refuses to replace a kind 3 it could not read, because
+/// doing so publishes an empty `content` over the user's relay list (#8265).
+/// The follow is kept locally, so something has to flush it: the next follow
+/// or unfollow rebroadcasts the whole list anyway, and this covers the user
+/// who followed once while relays were unhealthy and has not followed since.
+///
+/// Both signals it listens to mean "we might be healthy again" — the session
+/// becoming ready, and the app returning to the foreground. Mirrors
+/// `relayListDirtyPublishBridgeProvider`, which retries the withheld
+/// kind:10002 publish the same way.
+final contactListDirtyBroadcastBridgeProvider = Provider<void>((ref) {
+  Future<void> retryIfPending() async {
+    final readiness = ref.read(nostrSessionProvider);
+    if (!readiness.isReadyForActiveClient) return;
+    final pubkey = readiness.pubkey;
+    if (pubkey == null || pubkey.isEmpty) return;
+
+    final repository = ref.read(followRepositoryProvider);
+    if (await repository.retryPendingContactListBroadcast()) {
+      Log.info(
+        'Flushed a withheld kind 3 contact-list broadcast',
+        name: 'ContactListDirtyBroadcastBridge',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  ref.listen<NostrSessionReadiness>(
+    nostrSessionProvider,
+    (_, _) => unawaited(retryIfPending()),
+  );
+  ref.listen<bool>(appForegroundProvider, (previous, next) {
+    if (next && previous != true) unawaited(retryIfPending());
+  });
+});
 
 /// Provider for [CuratedListRepository] instance.
 ///

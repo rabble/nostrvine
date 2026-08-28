@@ -17,7 +17,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../cache_sync/test/fake_cache_dao.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  _MockNostrClient() {
+    // Self-registered so the stub below works in every file that builds this
+    // mock, whether or not that file has its own `setUpAll`. Idempotent.
+    registerFallbackValue(Duration.zero);
+    // The pre-broadcast read of our own kind 3 goes through
+    // `queryEventsDetailed` so it can tell a relay's "I hold nothing" apart
+    // from an answer nobody gave (#8265). Default to a *settled* empty answer
+    // — the relay replied and holds nothing — which is the state every test
+    // here was written in, and which still broadcasts. Tests about the
+    // inconclusive read override this with `timedOut` or `noRelays`.
+    when(
+      () => queryEventsDetailed(
+        any(),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (_) async => (events: <Event>[], timedOut: false, noRelays: false),
+    );
+  }
+}
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
@@ -671,6 +692,256 @@ void main() {
         expect(repository.isFollowing(testTargetPubkey), isFalse);
         expect(repository.followingCount, 0);
       });
+    });
+
+    group('inconclusive own contact-list read (#8265)', () {
+      void stubContactListRead({
+        List<Event> events = const <Event>[],
+        bool timedOut = false,
+        bool noRelays = false,
+      }) {
+        when(
+          () => mockNostrClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            events: events,
+            timedOut: timedOut,
+            noRelays: noRelays,
+          ),
+        );
+      }
+
+      void stubBroadcastSucceeds() {
+        final mockEvent = _MockEvent();
+        when(() => mockEvent.id).thenReturn(testCurrentUserPubkey);
+        when(() => mockEvent.content).thenReturn('');
+        when(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+      }
+
+      test('following does not broadcast when the read timed out', () async {
+        stubBroadcastSucceeds();
+        stubContactListRead(timedOut: true);
+
+        await repository.initialize();
+        await repository.follow(testTargetPubkey);
+
+        verifyNever(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      });
+
+      test(
+        'following does not broadcast when no relay took the query',
+        () async {
+          stubBroadcastSucceeds();
+          stubContactListRead(noRelays: true);
+
+          await repository.initialize();
+          await repository.follow(testTargetPubkey);
+
+          verifyNever(
+            () => mockNostrClient.sendContactList(
+              any(),
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'the follow still applies locally when the broadcast is withheld',
+        () async {
+          stubBroadcastSucceeds();
+          stubContactListRead(timedOut: true);
+
+          await repository.initialize();
+          await repository.follow(testTargetPubkey);
+
+          expect(repository.isFollowing(testTargetPubkey), isTrue);
+          expect(repository.followingCount, 1);
+        },
+      );
+
+      test(
+        'unfollowing does not broadcast when the read is inconclusive',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+          });
+          stubBroadcastSucceeds();
+          stubContactListRead(timedOut: true);
+
+          await repository.initialize();
+          await repository.unfollow(testTargetPubkey);
+
+          expect(repository.isFollowing(testTargetPubkey), isFalse);
+          verifyNever(
+            () => mockNostrClient.sendContactList(
+              any(),
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+        },
+      );
+
+      test('a settled empty read still broadcasts, so a first follow reaches '
+          'the relay', () async {
+        stubBroadcastSucceeds();
+        stubContactListRead();
+
+        await repository.initialize();
+        await repository.follow(testTargetPubkey);
+
+        verify(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test('a withheld broadcast is flushed by the retry, preserving the '
+          "relay's content", () async {
+        stubBroadcastSucceeds();
+        stubContactListRead(timedOut: true);
+
+        await repository.initialize();
+        await repository.follow(testTargetPubkey);
+        expect(await repository.retryPendingContactListBroadcast(), isFalse);
+
+        final existing = _MockEvent();
+        when(() => existing.id).thenReturn('existing-contact-list');
+        when(() => existing.pubkey).thenReturn(testCurrentUserPubkey);
+        when(() => existing.kind).thenReturn(EventKind.contactList);
+        when(() => existing.createdAt).thenReturn(1000);
+        when(() => existing.content).thenReturn('{"wss://relay.example":{}}');
+        when(() => existing.tags).thenReturn(const []);
+        stubContactListRead(events: [existing]);
+
+        expect(await repository.retryPendingContactListBroadcast(), isTrue);
+
+        final content =
+            verify(
+                  () => mockNostrClient.sendContactList(
+                    any(),
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.last
+                as String;
+        expect(content, '{"wss://relay.example":{}}');
+      });
+
+      test('the retry is a no-op when nothing is pending', () async {
+        stubBroadcastSucceeds();
+        stubContactListRead();
+
+        await repository.initialize();
+        await repository.follow(testTargetPubkey);
+        clearInteractions(mockNostrClient);
+
+        expect(await repository.retryPendingContactListBroadcast(), isFalse);
+        verifyNever(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      });
+
+      test(
+        'a retry whose publish fails reports false and stays pending',
+        () async {
+          stubBroadcastSucceeds();
+          stubContactListRead(timedOut: true);
+
+          await repository.initialize();
+          await repository.follow(testTargetPubkey);
+
+          // Read now succeeds, but the publish does not: _broadcastContactList
+          // throws, and a background retry has no caller to surface that to.
+          stubContactListRead();
+          when(
+            () => mockNostrClient.sendContactList(
+              any(),
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          expect(await repository.retryPendingContactListBroadcast(), isFalse);
+
+          // Still pending, so a later signal retries rather than dropping it.
+          stubBroadcastSucceeds();
+          expect(await repository.retryPendingContactListBroadcast(), isTrue);
+        },
+      );
+
+      test(
+        'keeps the newest kind 3 when the relay serves several versions',
+        () async {
+          stubBroadcastSucceeds();
+
+          _MockEvent contactList(int createdAt, String content) {
+            final event = _MockEvent();
+            when(() => event.id).thenReturn('contact-list-$createdAt');
+            when(() => event.pubkey).thenReturn(testCurrentUserPubkey);
+            when(() => event.kind).thenReturn(EventKind.contactList);
+            when(() => event.createdAt).thenReturn(createdAt);
+            when(() => event.content).thenReturn(content);
+            when(() => event.tags).thenReturn(const []);
+            return event;
+          }
+
+          // Newest first, so the older one exercises the skip rather than the
+          // adopt. A relay that has not merged its replaceable rows yet can
+          // serve both.
+          stubContactListRead(
+            events: [contactList(2000, 'newer'), contactList(1000, 'older')],
+          );
+
+          await repository.initialize();
+          await repository.follow(testTargetPubkey);
+
+          final content =
+              verify(
+                    () => mockNostrClient.sendContactList(
+                      any(),
+                      captureAny(),
+                      tempRelays: any(named: 'tempRelays'),
+                      targetRelays: any(named: 'targetRelays'),
+                    ),
+                  ).captured.last
+                  as String;
+          expect(content, 'newer');
+        },
+      );
     });
 
     // Regression: a real user's Kind 3 event carried a `["p","nos"]` entry,

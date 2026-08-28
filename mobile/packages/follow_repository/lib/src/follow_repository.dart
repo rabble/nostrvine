@@ -229,6 +229,11 @@ class FollowRepository {
   // In-memory cache — following
   List<String> _followingPubkeys = [];
   Event? _currentUserContactListEvent;
+
+  // A contact-list broadcast withheld because the read that precedes it came
+  // back inconclusive. Flushed by [retryPendingContactListBroadcast] and by
+  // the next follow or unfollow, which rebroadcasts the whole list anyway.
+  bool _contactListBroadcastPending = false;
   bool _isInitialized = false;
   final Completer<void> _initializedCompleter = Completer<void>();
 
@@ -2641,6 +2646,79 @@ class FollowRepository {
     return publishable;
   }
 
+  /// How long the pre-broadcast read waits for every relay to settle.
+  ///
+  /// Deliberately shorter than the 5s default: an expiry reports `timedOut`,
+  /// which withholds the broadcast, so erring short errs toward not
+  /// overwriting. It also bounds what a follow tap costs.
+  static const _contactListReadTimeout = Duration(seconds: 3);
+
+  /// Re-read our own kind 3 and report whether the answer was conclusive.
+  ///
+  /// Returns `false` when no relay settled the query — a timeout, or a
+  /// fan-out no relay took. That is not the same as "this account follows
+  /// nobody", and the difference decides whether it is safe to replace the
+  /// event: kind 3 is replaceable, so a broadcast built on an unread answer
+  /// deletes whatever only the unread event held. A *settled* answer of zero
+  /// events is conclusive and returns `true`, so a first-ever follow still
+  /// publishes.
+  ///
+  /// [NostrClient.queryEvents] cannot express this — it drops `timedOut` and
+  /// `noRelays` — which is why the detailed form is used, with
+  /// `requireAllRelaysSettled` so a relay abandoned by the settle window
+  /// arrives as a timeout rather than as an empty answer.
+  Future<bool> _refreshCurrentUserContactList() async {
+    final pubkey = _nostrClient.publicKey;
+    if (pubkey.isEmpty) return false;
+
+    final result = await _nostrClient.queryEventsDetailed(
+      [
+        Filter(authors: [pubkey], kinds: const [EventKind.contactList]),
+      ],
+      requireAllRelaysSettled: true,
+      timeout: _contactListReadTimeout,
+    );
+
+    var newest = _currentUserContactListEvent;
+    for (final event in result.events) {
+      if (event.pubkey != pubkey) continue;
+      if (event.kind != EventKind.contactList) continue;
+      final current = newest;
+      if (current != null && event.createdAt <= current.createdAt) continue;
+      newest = event;
+    }
+    _currentUserContactListEvent = newest;
+
+    return !result.timedOut && !result.noRelays;
+  }
+
+  /// Rebroadcast a contact list whose publish was withheld by an inconclusive
+  /// read.
+  ///
+  /// A no-op unless something is pending, so callers can fire it on any "we
+  /// might be healthy again" signal. Follows and unfollows rebroadcast the
+  /// whole list themselves, so this only matters for a user who followed once
+  /// while relays were unhealthy and has not followed since.
+  ///
+  /// Returns whether the broadcast reached a relay. [_broadcastContactList]
+  /// throws when the publish itself fails; this is a background retry with no
+  /// caller to surface that to, so it is logged and reported as `false` rather
+  /// than propagated. The pending flag stays set, so the next signal retries.
+  Future<bool> retryPendingContactListBroadcast() async {
+    if (!_contactListBroadcastPending) return false;
+    try {
+      await _broadcastContactList();
+      return !_contactListBroadcastPending;
+    } on Object catch (e) {
+      Log.warning(
+        'Retry of a withheld contact list broadcast failed: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
   /// Broadcast updated contact list to network (Kind 3 event)
   Future<void> _broadcastContactList() async {
     // Last line of defence: [executeFollowAction] appends without validating,
@@ -2652,6 +2730,22 @@ class FollowRepository {
       source: 'in-memory following list',
     );
     _emitFollowingList();
+
+    // Establish what the relay currently holds before replacing it. Without
+    // this, a cold start publishes `content: ''` over whatever was there —
+    // `_currentUserContactListEvent` is memory-only, and NIP-02 puts the
+    // user's relay list in that field (#8265). The follow is already applied
+    // locally and persisted, so withholding costs propagation, not the follow.
+    if (!await _refreshCurrentUserContactList()) {
+      _contactListBroadcastPending = true;
+      Log.warning(
+        'Withholding contact list broadcast - could not confirm the current '
+        'kind 3. Follows stay local until a read succeeds.',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     final contactList = ContactList();
     for (final pubkey in _publishableFollows()) {
@@ -2672,6 +2766,7 @@ class FollowRepository {
     _cacheUserEvent?.call(event);
 
     _currentUserContactListEvent = event;
+    _contactListBroadcastPending = false;
 
     Log.debug(
       'Broadcasted contact list: ${event.id}',

@@ -15,6 +15,7 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/notifications_providers.dart';
 import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/supporter_providers.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
@@ -118,6 +119,7 @@ void main() {
       (ref) => onBlockedFollowReconcilerBuilt?.call(),
     ),
     relayListDirtyPublishBridgeProvider.overrideWithValue(null),
+    contactListDirtyBroadcastBridgeProvider.overrideWithValue(null),
     notificationPreferencesDirtySyncBridgeProvider.overrideWithValue((_) {}),
     pushNotificationSyncProvider.overrideWithValue(null),
     blocklistSyncBridgeProvider.overrideWithValue(null),
@@ -282,6 +284,7 @@ void main() {
       'relayStatisticsBridgeProvider',
       'relaySetChangeBridgeProvider',
       'relayListDirtyPublishBridgeProvider',
+      'contactListDirtyBroadcastBridgeProvider',
       'notificationPreferencesDirtySyncBridgeProvider',
       'pushNotificationSyncProvider',
       'blocklistSyncBridgeProvider',
