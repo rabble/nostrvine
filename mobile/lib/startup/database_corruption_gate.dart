@@ -1,6 +1,8 @@
 // ABOUTME: Replaces the app UI with a restart prompt once the local database
 // ABOUTME: reports on-disk corruption, so the next launch can salvage it.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/startup/close_app_support.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 const _recoveryPersistenceTimeout = Duration(seconds: 15);
 
@@ -140,11 +143,43 @@ class _CloseAppAffordance extends StatefulWidget {
 }
 
 class _CloseAppAffordanceState extends State<_CloseAppAffordance> {
+  Timer? _persistenceTimer;
+
   // Resolved once, not per build, so a rebuild cannot restart the wait.
-  late final Future<void> _persisted =
-      (widget.awaitRecoveryPersisted?.call() ?? Future<void>.value()).timeout(
-        _recoveryPersistenceTimeout,
+  late final Future<void> _persisted = _waitForPersistence();
+
+  Future<void> _waitForPersistence() {
+    final source =
+        widget.awaitRecoveryPersisted?.call() ?? Future<void>.value();
+    final completion = Completer<void>();
+    late final Timer timer;
+    timer = Timer(_recoveryPersistenceTimeout, () {
+      Log.warning(
+        'Timed out waiting for the database recovery flag to persist',
+        name: 'DatabaseCorruptionScreen',
+        category: LogCategory.system,
       );
+      if (!completion.isCompleted) completion.complete();
+    });
+    _persistenceTimer = timer;
+    source.then(
+      (_) {
+        timer.cancel();
+        if (!completion.isCompleted) completion.complete();
+      },
+      onError: (Object error, StackTrace stack) {
+        timer.cancel();
+        if (!completion.isCompleted) completion.completeError(error, stack);
+      },
+    );
+    return completion.future;
+  }
+
+  @override
+  void dispose() {
+    _persistenceTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

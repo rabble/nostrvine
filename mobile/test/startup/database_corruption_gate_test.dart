@@ -253,5 +253,19 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
     });
+
+    testWidgets('cancels the persistence timeout when disposed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildScreen(
+          () {},
+          awaitRecoveryPersisted: () => Completer<void>().future,
+        ),
+      );
+      await tester.pump();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }
