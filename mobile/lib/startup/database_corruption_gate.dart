@@ -9,6 +9,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/startup/close_app_support.dart';
 
+const _recoveryPersistenceTimeout = Duration(seconds: 15);
+
 /// Swaps [child] for [DatabaseCorruptionScreen] once corruption surfaces.
 ///
 /// Installed as `MaterialApp.builder`, so it covers every route with one gate
@@ -140,7 +142,9 @@ class _CloseAppAffordance extends StatefulWidget {
 class _CloseAppAffordanceState extends State<_CloseAppAffordance> {
   // Resolved once, not per build, so a rebuild cannot restart the wait.
   late final Future<void> _persisted =
-      widget.awaitRecoveryPersisted?.call() ?? Future<void>.value();
+      (widget.awaitRecoveryPersisted?.call() ?? Future<void>.value()).timeout(
+        _recoveryPersistenceTimeout,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -153,31 +157,22 @@ class _CloseAppAffordanceState extends State<_CloseAppAffordance> {
         // better off than one held in a session that cannot recover.
         final settled = snapshot.connectionState == ConnectionState.done;
         if (!settled) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 12,
-            children: [
-              CircularProgressIndicator(
-                semanticsLabel: context.l10n.commonLoading,
-              ),
-              Text(
-                context.l10n.commonLoading,
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.onSurfaceVariant,
-                ),
-              ),
-            ],
+          return CircularProgressIndicator(
+            semanticsLabel: context.l10n.commonLoading,
           );
         }
         return Column(
           mainAxisSize: MainAxisSize.min,
           spacing: 16,
           children: [
-            Text(
-              context.l10n.databaseCorruptionBody,
-              textAlign: TextAlign.center,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.onSurfaceVariant,
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                context.l10n.databaseCorruptionBody,
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
               ),
             ),
             if (widget.canCloseApp)

@@ -180,7 +180,7 @@ void main() {
       // read the flag this write is still committing.
       expect(find.byType(DivineButton), findsNothing);
       expect(find.text(l10n.databaseCorruptionBody), findsNothing);
-      expect(find.text(l10n.commonLoading), findsOneWidget);
+      expect(find.text(l10n.commonLoading), findsNothing);
       expect(closed, isFalse);
 
       persisted.complete();
@@ -208,7 +208,7 @@ void main() {
 
         expect(find.byType(DivineButton), findsNothing);
         expect(find.text(l10n.databaseCorruptionBody), findsNothing);
-        expect(find.text(l10n.commonLoading), findsOneWidget);
+        expect(find.text(l10n.commonLoading), findsNothing);
         expect(
           tester.getSemantics(find.byType(CircularProgressIndicator)),
           matchesSemantics(label: l10n.commonLoading),
@@ -221,9 +221,37 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(find.text(l10n.commonLoading), findsNothing);
         expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+        expect(
+          tester
+              .getSemantics(find.text(l10n.databaseCorruptionBody))
+              .getSemanticsData()
+              .flagsCollection
+              .isLiveRegion,
+          isTrue,
+        );
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
+    });
+
+    testWidgets('releases restart instructions when persistence hangs', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildScreen(
+          () {},
+          awaitRecoveryPersisted: () => Completer<void>().future,
+          canCloseApp: false,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.databaseCorruptionBody), findsNothing);
+
+      await tester.pump(const Duration(seconds: 16));
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
     });
   });
 }
