@@ -153,6 +153,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   late final SubtitleVisibilityOverrideNotifier _subtitleVisibilityOverrides;
   late final ConsumptionAnalyticsTracker _consumptionAnalytics;
   final Set<String> _seenVideoIds = {};
+  int? _programmaticActivationIndex;
 
   void _resetSeenVideos() {
     _seenVideoIds.clear();
@@ -264,8 +265,20 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   ///
   /// Used by parent screens that hold a [GlobalKey<FeedVideosState>] to
   /// programmatically skip to a specific video (e.g. after a 404 removal).
-  Future<void> animateToPage(int index) =>
-      _feedKey.currentState?.animateToPage(index) ?? Future.value();
+  Future<void> animateToPage(int index) => _animateToPage(index);
+
+  Future<void> _animateToPage(int index) async {
+    final feedState = _feedKey.currentState;
+    if (feedState == null) return;
+    _programmaticActivationIndex = index;
+    try {
+      await feedState.animateToPage(index);
+    } finally {
+      if (_programmaticActivationIndex == index) {
+        _programmaticActivationIndex = null;
+      }
+    }
+  }
 
   Future<PooledRetryOutcome> _retryPooledVideoAt(
     int index,
@@ -273,7 +286,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   ) => _retryFeedItem(_feedKey.currentState, index, httpHeaders);
 
   void _skipPooledVideoAt(int index) {
-    unawaited(_feedKey.currentState?.animateToPage(index + 1));
+    unawaited(_animateToPage(index + 1));
   }
 
   @override
@@ -312,8 +325,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           hasMore: widget.hasMore,
           isLoadingMore: widget.isLoadingMore,
         ),
-        animateToPage: (index) =>
-            unawaited(_feedKey.currentState?.animateToPage(index)),
+        animateToPage: (index) => unawaited(_animateToPage(index)),
       );
     }
   }
@@ -359,8 +371,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         hasMore: widget.hasMore,
         isLoadingMore: widget.isLoadingMore,
       ),
-      animateToPage: (index) =>
-          unawaited(_feedKey.currentState?.animateToPage(index)),
+      animateToPage: (index) => unawaited(_animateToPage(index)),
       requestLoadMore: widget.onNearEnd,
     );
   }
@@ -436,7 +447,12 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         onActiveVideoChanged: (video, index) {
           _syncScopedSubtitleVisibility(video.id);
           _resumeAutoAdvanceAfterSwipe();
-          final isProgrammaticActivation = index == widget.currentIndex;
+          final isProgrammaticActivation =
+              index == widget.currentIndex ||
+              index == _programmaticActivationIndex;
+          if (index == _programmaticActivationIndex) {
+            _programmaticActivationIndex = null;
+          }
           if (!isProgrammaticActivation && _seenVideoIds.add(video.id)) {
             unawaited(
               _consumptionAnalytics.feedScrolled(
@@ -514,6 +530,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             feedMode: widget.contextTitle,
             isSquare: isSquare,
             shouldPortraitExpand: widget.shouldPortraitExpand,
+            onSkip: () => _skipPooledVideoAt(index),
           );
         },
         errorBuilder: (context, index, onRetry, errorType) {
@@ -590,6 +607,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               ),
               onContentWarningRevealed: () => _revealContentWarning(video.id),
               onSuppressAutoAdvance: _suppressAutoAdvance,
+              onSkipToNextVideo: () => _skipPooledVideoAt(index),
             ),
           );
         },
@@ -608,6 +626,7 @@ class _Overlay extends ConsumerStatefulWidget {
     required this.isFeedActive,
     required this.contentWarningRevealed,
     required this.onContentWarningRevealed,
+    required this.onSkipToNextVideo,
     this.onSuppressAutoAdvance,
   });
 
@@ -631,6 +650,8 @@ class _Overlay extends ConsumerStatefulWidget {
 
   /// Called when the user taps "View Anyway" on the content warning.
   final VoidCallback onContentWarningRevealed;
+
+  final VoidCallback onSkipToNextVideo;
 
   final VoidCallback? onSuppressAutoAdvance;
 
@@ -853,13 +874,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
   /// Advances the feed to the next page via the cached
   /// [InfiniteVideoFeedState] reference.
   void _skipToNextVideo() {
-    final feedState = _feedState;
-    assert(
-      feedState != null,
-      'ModeratedContentOverlay must be mounted inside InfiniteVideoFeed',
-    );
-    if (feedState == null) return;
-    unawaited(feedState.animateToPage(widget.index + 1));
+    widget.onSkipToNextVideo();
   }
 
   /// Triggers age verification and retries playback with viewer auth.
@@ -1357,6 +1372,7 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
     required this.feedMode,
     required this.isSquare,
     required this.shouldPortraitExpand,
+    required this.onSkip,
   });
 
   final VideoEvent video;
@@ -1364,6 +1380,7 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
   final String? feedMode;
   final bool isSquare;
   final bool shouldPortraitExpand;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1386,6 +1403,7 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
         feedMode: feedMode,
         isSquare: isSquare,
         shouldPortraitExpand: shouldPortraitExpand,
+        onSkip: onSkip,
       ),
     );
   }
@@ -1398,6 +1416,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
     required this.feedMode,
     required this.isSquare,
     required this.shouldPortraitExpand,
+    required this.onSkip,
   });
 
   final VideoEvent video;
@@ -1405,6 +1424,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
   final String? feedMode;
   final bool isSquare;
   final bool shouldPortraitExpand;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1437,13 +1457,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                   resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden for moderation-restricted content.
                   onRetry: () {},
-                  onSkip: () {
-                    unawaited(
-                      context
-                          .findAncestorStateOfType<InfiniteVideoFeedState>()
-                          ?.animateToPage(index + 1),
-                    );
-                  },
+                  onSkip: onSkip,
                   retryPlayback: (httpHeaders) => _retryFeedItem(
                     context.findAncestorStateOfType<InfiniteVideoFeedState>(),
                     index,
@@ -1462,13 +1476,7 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                   resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden while age-gated playback uses Verify age.
                   onRetry: () {},
-                  onSkip: () {
-                    unawaited(
-                      context
-                          .findAncestorStateOfType<InfiniteVideoFeedState>()
-                          ?.animateToPage(index + 1),
-                    );
-                  },
+                  onSkip: onSkip,
                   retryPlayback: (httpHeaders) => _retryFeedItem(
                     context.findAncestorStateOfType<InfiniteVideoFeedState>(),
                     index,
