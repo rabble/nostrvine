@@ -29,7 +29,6 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authServiceProvider.overrideWithValue(auth),
-          profileRepositoryProvider.overrideWithValue(repo),
           profileReadRepositoryProvider.overrideWithValue(repo),
         ],
       );
@@ -87,7 +86,7 @@ void main() {
       when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
       when(
         () => repository.lookupUsernameByPubkey(pubkeyHex: pubkey),
-      ).thenThrow(Exception('lookup failed'));
+      ).thenAnswer((_) async => throw Exception('lookup failed'));
 
       final result = await containerWith(
         repo: repository,

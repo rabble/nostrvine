@@ -1723,6 +1723,7 @@ class ProfileRepository implements ProfileReader {
   /// valid 200 response with `found:false`. Network, timeout, non-200, and
   /// wrong-shaped responses return [DivineUsernameUnknown] so callers do not
   /// confuse "could not check" with "no name exists."
+  @override
   Future<DivineUsernameLookup> lookupUsernameByPubkey({
     required String pubkeyHex,
   }) async {

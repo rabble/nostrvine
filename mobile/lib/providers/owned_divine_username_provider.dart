@@ -21,7 +21,7 @@ final FutureProvider<DivineUsernameLookup> ownedDivineUsernameProvider =
       if (pubkey == null || pubkey.isEmpty) {
         return const DivineUsernameUnknown();
       }
-      final repository = ref.watch(profileRepositoryProvider);
+      final repository = ref.watch(profileReadRepositoryProvider);
       if (repository == null) return const DivineUsernameUnknown();
       try {
         return await repository.lookupUsernameByPubkey(pubkeyHex: pubkey);

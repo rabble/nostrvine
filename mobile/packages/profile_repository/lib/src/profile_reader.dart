@@ -22,9 +22,8 @@ import 'package:profile_repository/profile_repository.dart';
 /// by accident — the ungated phase carries a pubkey but no client, so signing
 /// there is unsafe while Drift reads are not.
 ///
-/// Every member below is signer-free and relay-optional: each either reads
-/// Drift directly or falls back to a public, unauthenticated funnelcake REST
-/// call.
+/// Every member below is signer-free: each either reads Drift directly or uses
+/// a public, unauthenticated network read.
 ///
 /// **Do not widen this interface without re-checking that invariant.** The
 /// write-intent members (`cacheProfile`, `deleteCachedProfile`,
@@ -75,6 +74,14 @@ abstract interface class ProfileReader {
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
     bool ignoreBlockFilter,
+  });
+
+  /// Looks up the active Divine username owned by [pubkeyHex].
+  ///
+  /// This is a public, unauthenticated name-server read. It returns unknown
+  /// rather than throwing when ownership cannot be determined.
+  Future<DivineUsernameLookup> lookupUsernameByPubkey({
+    required String pubkeyHex,
   });
 
   /// Returns the cached NIP-39 `i` tag list for [pubkey] from local storage.

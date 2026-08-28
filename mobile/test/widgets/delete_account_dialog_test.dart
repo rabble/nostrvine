@@ -989,6 +989,11 @@ void main() {
       );
       await tester.pump();
 
+      expect(
+        find.text(_englishL10n().deleteAccountPreparingDeletion),
+        findsOneWidget,
+      );
+
       verifyNever(
         () => recoveryRepository.prepare(username: any(named: 'username')),
       );

@@ -59,6 +59,13 @@ class _ExhaustiveReader implements ProfileReader {
     bool ignoreBlockFilter = false,
   }) async => {};
 
+  // Widened consciously: this is a public unauthenticated HTTP read, so it
+  // needs neither the active signer nor a relay-ready client.
+  @override
+  Future<DivineUsernameLookup> lookupUsernameByPubkey({
+    required String pubkeyHex,
+  }) async => const DivineUsernameUnknown();
+
   @override
   Future<List<List<String>>?> cachedIdentityTags(String pubkey) async => null;
 

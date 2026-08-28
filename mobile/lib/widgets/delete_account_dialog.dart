@@ -363,9 +363,10 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 
 /// Execute the full account deletion flow:
 /// 1. Show loading indicator with progress
-/// 2. When [ownedUsername] is set, prepare a recoverable @divine.video release
-///    (needs a working signer); on failure, abort with nothing deleted
-///    (hard-block). Release is mandatory whenever the user owns a name.
+/// 2. Resolve [ownedUsernameLookup]. When it finds a name, prepare a
+///    recoverable @divine.video release (needs a working signer); on failure,
+///    abort with nothing deleted (hard-block). Release is mandatory whenever
+///    the user owns a name.
 /// 3. Send NIP-62 deletion request (requires working signer)
 /// 4. Submit the deletion to the coordinator, which finalizes the username and
 ///    Keycast account; without a username, delete Keycast directly
@@ -381,8 +382,8 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 /// [context] - BuildContext for showing sheets
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
-/// [ownedUsername] - The active handle (display name + canonical) to release,
-///   or null when the user owns no @divine.video name
+/// [ownedUsernameLookup] - The eventual found / confirmed-not-found / unknown
+///   ownership result. Unknown and lookup failures abort before deletion.
 /// [confirmedPubkey] - When set, aborts before any step if the signed-in
 ///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
