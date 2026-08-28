@@ -11105,7 +11105,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '계정은 그대로 유지됩니다. 이 기기에 저장된 초안과 클립은 삭제됩니다. 메시지와 피드는 네트워크에서 다시 불러옵니다.';
 
   @override
-  String get dbFailureResetConfirm => '초기화하고 닫기';
+  String get dbFailureResetConfirm => '지금 로컬 데이터베이스 초기화';
 
   @override
   String get dbFailureCancel => '취소';

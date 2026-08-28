@@ -11849,7 +11849,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Votre compte est conservé. Les brouillons et clips enregistrés sur cet appareil sont supprimés — les messages et fils reviennent du réseau.';
 
   @override
-  String get dbFailureResetConfirm => 'réinitialiser et fermer';
+  String get dbFailureResetConfirm =>
+      'réinitialiser la base de données locale maintenant';
 
   @override
   String get dbFailureCancel => 'annuler';

@@ -11660,7 +11660,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کا اکاؤنٹ برقرار رہتا ہے۔ اس ڈیوائس پر محفوظ ڈرافٹس اور کلپس حذف ہو جائیں گے — پیغامات اور فیڈز نیٹ ورک سے واپس آ جاتے ہیں۔';
 
   @override
-  String get dbFailureResetConfirm => 'ری سیٹ کریں اور بند کریں';
+  String get dbFailureResetConfirm => 'مقامی ڈیٹابیس ابھی ری سیٹ کریں';
 
   @override
   String get dbFailureCancel => 'منسوخ کریں';

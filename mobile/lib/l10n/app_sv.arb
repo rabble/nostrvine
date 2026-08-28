@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "återställ lokal databas",
     "dbFailureConfirmTitle": "återställa din lokala databas?",
     "dbFailureConfirmBody": "Ditt konto finns kvar. Utkast och klipp som sparats på den här enheten raderas — meddelanden och flöden hämtas tillbaka från nätverket.",
-    "dbFailureResetConfirm": "återställ och stäng",
+    "dbFailureResetConfirm": "återställ lokal databas nu",
     "dbFailureCancel": "avbryt",
     "dbFailureResetFailed": "Det fungerade inte. Stäng Divine och försök igen.",
     "dbFailureResetDoneTitle": "lokal databas återställd",

@@ -10972,7 +10972,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '你的账号会保留。保存在此设备上的草稿和片段将被删除 — 消息和信息流会从网络重新获取。';
 
   @override
-  String get dbFailureResetConfirm => '重置并关闭';
+  String get dbFailureResetConfirm => '立即重置本地数据库';
 
   @override
   String get dbFailureCancel => '取消';

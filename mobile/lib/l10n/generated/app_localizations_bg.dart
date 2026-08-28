@@ -11791,7 +11791,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Акаунтът ти остава. Черновите и клиповете, запазени на това устройство, се изтриват — съобщенията и емисиите се връщат от мрежата.';
 
   @override
-  String get dbFailureResetConfirm => 'нулирай и затвори';
+  String get dbFailureResetConfirm => 'нулирай локалната база данни сега';
 
   @override
   String get dbFailureCancel => 'отказ';

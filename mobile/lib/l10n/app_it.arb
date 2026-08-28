@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "reimposta database locale",
     "dbFailureConfirmTitle": "reimpostare il database locale?",
     "dbFailureConfirmBody": "Il tuo account resta. Le bozze e le clip salvate su questo dispositivo vengono eliminate — messaggi e feed tornano dalla rete.",
-    "dbFailureResetConfirm": "reimposta e chiudi",
+    "dbFailureResetConfirm": "reimposta ora il database locale",
     "dbFailureCancel": "annulla",
     "dbFailureResetFailed": "Non ha funzionato. Chiudi Divine e riprova.",
     "dbFailureResetDoneTitle": "database locale reimpostato",

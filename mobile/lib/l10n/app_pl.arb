@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "zresetuj lokalną bazę danych",
     "dbFailureConfirmTitle": "zresetować lokalną bazę danych?",
     "dbFailureConfirmBody": "Twoje konto zostaje. Wersje robocze i klipy zapisane na tym urządzeniu zostaną usunięte — wiadomości i kanały wrócą z sieci.",
-    "dbFailureResetConfirm": "zresetuj i zamknij",
+    "dbFailureResetConfirm": "zresetuj teraz lokalną bazę danych",
     "dbFailureCancel": "anuluj",
     "dbFailureResetFailed": "To nie zadziałało. Zamknij Divine i spróbuj ponownie.",
     "dbFailureResetDoneTitle": "lokalna baza danych zresetowana",

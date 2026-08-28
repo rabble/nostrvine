@@ -11623,7 +11623,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tài khoản của bạn vẫn còn. Bản nháp và clip đã lưu trên thiết bị này sẽ bị xóa — tin nhắn và bảng tin sẽ được tải lại từ mạng.';
 
   @override
-  String get dbFailureResetConfirm => 'đặt lại và đóng';
+  String get dbFailureResetConfirm => 'đặt lại cơ sở dữ liệu cục bộ ngay';
 
   @override
   String get dbFailureCancel => 'hủy';

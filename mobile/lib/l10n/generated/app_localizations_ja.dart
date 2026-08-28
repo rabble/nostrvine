@@ -11092,7 +11092,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'アカウントはそのまま残ります。この端末に保存された下書きとクリップは削除されます。メッセージとフィードはネットワークから復元されます。';
 
   @override
-  String get dbFailureResetConfirm => 'リセットして閉じる';
+  String get dbFailureResetConfirm => '今すぐローカルデータベースをリセット';
 
   @override
   String get dbFailureCancel => 'キャンセル';

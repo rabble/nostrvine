@@ -4823,7 +4823,7 @@
     "dbFailureResetAction": "yerel veritabanını sıfırla",
     "dbFailureConfirmTitle": "yerel veritabanınız sıfırlansın mı?",
     "dbFailureConfirmBody": "Hesabınız kalır. Bu cihazda kayıtlı taslaklar ve klipler silinir — mesajlar ve akışlar ağdan geri gelir.",
-    "dbFailureResetConfirm": "sıfırla ve kapat",
+    "dbFailureResetConfirm": "yerel veritabanını şimdi sıfırla",
     "dbFailureCancel": "iptal",
     "dbFailureResetFailed": "Bu işe yaramadı. Divine’ı kapatıp tekrar deneyin.",
     "dbFailureResetDoneTitle": "yerel veritabanı sıfırlandı",

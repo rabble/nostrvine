@@ -4954,7 +4954,7 @@
     "dbFailureResetAction": "нулирай локалната база данни",
     "dbFailureConfirmTitle": "да нулираме ли локалната база данни?",
     "dbFailureConfirmBody": "Акаунтът ти остава. Черновите и клиповете, запазени на това устройство, се изтриват — съобщенията и емисиите се връщат от мрежата.",
-    "dbFailureResetConfirm": "нулирай и затвори",
+    "dbFailureResetConfirm": "нулирай локалната база данни сега",
     "dbFailureCancel": "отказ",
     "dbFailureResetFailed": "Това не сработи. Затвори Divine и опитай отново.",
     "dbFailureResetDoneTitle": "локалната база данни е нулирана",

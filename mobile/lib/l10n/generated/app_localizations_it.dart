@@ -11812,7 +11812,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il tuo account resta. Le bozze e le clip salvate su questo dispositivo vengono eliminate — messaggi e feed tornano dalla rete.';
 
   @override
-  String get dbFailureResetConfirm => 'reimposta e chiudi';
+  String get dbFailureResetConfirm => 'reimposta ora il database locale';
 
   @override
   String get dbFailureCancel => 'annulla';

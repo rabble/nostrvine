@@ -11799,7 +11799,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu cuenta se mantiene. Los borradores y clips guardados en este dispositivo se eliminan — los mensajes y feeds vuelven desde la red.';
 
   @override
-  String get dbFailureResetConfirm => 'restablecer y cerrar';
+  String get dbFailureResetConfirm => 'restablecer base de datos local ahora';
 
   @override
   String get dbFailureCancel => 'cancelar';

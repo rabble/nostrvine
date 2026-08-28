@@ -11679,7 +11679,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Akaun anda kekal. Draf dan klip yang disimpan pada peranti ini akan dipadamkan — mesej dan suapan kembali daripada rangkaian.';
 
   @override
-  String get dbFailureResetConfirm => 'tetapkan semula dan tutup';
+  String get dbFailureResetConfirm =>
+      'tetapkan semula pangkalan data setempat sekarang';
 
   @override
   String get dbFailureCancel => 'batal';

@@ -6616,7 +6616,7 @@
   "dbFailureResetAction": "مقامی ڈیٹابیس ری سیٹ کریں",
   "dbFailureConfirmTitle": "اپنا مقامی ڈیٹابیس ری سیٹ کریں؟",
   "dbFailureConfirmBody": "آپ کا اکاؤنٹ برقرار رہتا ہے۔ اس ڈیوائس پر محفوظ ڈرافٹس اور کلپس حذف ہو جائیں گے — پیغامات اور فیڈز نیٹ ورک سے واپس آ جاتے ہیں۔",
-  "dbFailureResetConfirm": "ری سیٹ کریں اور بند کریں",
+  "dbFailureResetConfirm": "مقامی ڈیٹابیس ابھی ری سیٹ کریں",
   "dbFailureCancel": "منسوخ کریں",
   "dbFailureResetFailed": "یہ کام نہیں کیا۔ Divine بند کریں اور دوبارہ کوشش کریں۔",
   "dbFailureResetDoneTitle": "مقامی ڈیٹابیس ری سیٹ ہو گیا",

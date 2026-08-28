@@ -11817,7 +11817,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dein Konto bleibt. Auf diesem Gerät gespeicherte Entwürfe und Clips werden gelöscht — Nachrichten und Feeds kommen aus dem Netzwerk zurück.';
 
   @override
-  String get dbFailureResetConfirm => 'Zurücksetzen und schließen';
+  String get dbFailureResetConfirm => 'Lokale Datenbank jetzt zurücksetzen';
 
   @override
   String get dbFailureCancel => 'Abbrechen';

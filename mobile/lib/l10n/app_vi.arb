@@ -6616,7 +6616,7 @@
   "dbFailureResetAction": "đặt lại cơ sở dữ liệu cục bộ",
   "dbFailureConfirmTitle": "đặt lại cơ sở dữ liệu cục bộ của bạn?",
   "dbFailureConfirmBody": "Tài khoản của bạn vẫn còn. Bản nháp và clip đã lưu trên thiết bị này sẽ bị xóa — tin nhắn và bảng tin sẽ được tải lại từ mạng.",
-  "dbFailureResetConfirm": "đặt lại và đóng",
+  "dbFailureResetConfirm": "đặt lại cơ sở dữ liệu cục bộ ngay",
   "dbFailureCancel": "hủy",
   "dbFailureResetFailed": "Không thành công. Hãy đóng Divine và thử lại.",
   "dbFailureResetDoneTitle": "đã đặt lại cơ sở dữ liệu cục bộ",

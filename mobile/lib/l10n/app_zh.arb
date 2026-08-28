@@ -6616,7 +6616,7 @@
   "dbFailureResetAction": "重置本地数据库",
   "dbFailureConfirmTitle": "重置你的本地数据库？",
   "dbFailureConfirmBody": "你的账号会保留。保存在此设备上的草稿和片段将被删除 — 消息和信息流会从网络重新获取。",
-  "dbFailureResetConfirm": "重置并关闭",
+  "dbFailureResetConfirm": "立即重置本地数据库",
   "dbFailureCancel": "取消",
   "dbFailureResetFailed": "没有成功。请关闭 Divine 后重试。",
   "dbFailureResetDoneTitle": "本地数据库已重置",

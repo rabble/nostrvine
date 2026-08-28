@@ -11784,7 +11784,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mananatili ang iyong account. Buburahin ang mga draft at clip na naka-save sa device na ito — babalik ang mga mensahe at feed mula sa network.';
 
   @override
-  String get dbFailureResetConfirm => 'i-reset at isara';
+  String get dbFailureResetConfirm => 'i-reset na ang lokal na database';
 
   @override
   String get dbFailureCancel => 'kanselahin';

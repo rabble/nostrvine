@@ -3619,7 +3619,7 @@
     "dbFailureResetAction": "i-reset ang lokal na database",
     "dbFailureConfirmTitle": "i-reset ang iyong lokal na database?",
     "dbFailureConfirmBody": "Mananatili ang iyong account. Buburahin ang mga draft at clip na naka-save sa device na ito — babalik ang mga mensahe at feed mula sa network.",
-    "dbFailureResetConfirm": "i-reset at isara",
+    "dbFailureResetConfirm": "i-reset na ang lokal na database",
     "dbFailureCancel": "kanselahin",
     "dbFailureResetFailed": "Hindi ito gumana. Isara ang Divine at subukan ulit.",
     "dbFailureResetDoneTitle": "na-reset ang lokal na database",

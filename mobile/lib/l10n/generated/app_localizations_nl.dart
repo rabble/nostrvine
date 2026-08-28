@@ -11735,7 +11735,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je account blijft behouden. Concepten en clips die op dit apparaat zijn opgeslagen worden verwijderd — berichten en feeds komen terug van het netwerk.';
 
   @override
-  String get dbFailureResetConfirm => 'resetten en sluiten';
+  String get dbFailureResetConfirm => 'lokale database nu resetten';
 
   @override
   String get dbFailureCancel => 'annuleren';

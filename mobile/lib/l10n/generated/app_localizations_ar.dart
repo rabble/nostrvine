@@ -11586,7 +11586,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'يبقى حسابك. تُحذف المسودات والمقاطع المحفوظة على هذا الجهاز — أما الرسائل والخلاصات فتعود من الشبكة.';
 
   @override
-  String get dbFailureResetConfirm => 'إعادة التعيين والإغلاق';
+  String get dbFailureResetConfirm => 'إعادة تعيين قاعدة البيانات المحلية الآن';
 
   @override
   String get dbFailureCancel => 'إلغاء';
