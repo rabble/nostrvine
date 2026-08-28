@@ -24,6 +24,7 @@ import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:nostr_sdk/utils/relay_url_policy.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockOutgoingDmsDao extends Mock implements OutgoingDmsDao {}
 
@@ -6057,6 +6058,66 @@ void main() {
           expect(
             syncState.persistedDrainCursors,
             hasLength(DmHistoryDrainConfig.maxPages),
+          );
+        },
+      );
+
+      test(
+        "the page-cap log names the frozen resume cursor, not the loop's "
+        '(#8209)',
+        () async {
+          await LogCaptureService().clearAllLogs();
+
+          var calls = 0;
+          when(
+            () => mockNostrClient.queryEventsDetailed(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+              tempRelays: any(named: 'tempRelays'),
+              requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            ),
+          ).thenAnswer((inv) async {
+            final filters =
+                inv.positionalArguments.first as List<nostr_filter.Filter>;
+            if (filters.single.kinds?.contains(EventKind.dmRelaysList) ??
+                false) {
+              return answeredPage(const <Event>[]);
+            }
+            calls++;
+            final until = filters.single.until!;
+            // Every page unsettled, over an infinite descending supply: the
+            // durable cursor freezes at the seed on page 1 while the loop's
+            // own `cursor` keeps descending all the way to the cap. The log
+            // has to name the former — it is what the next run resumes from.
+            return partialPage([deletion(until - 1)]);
+          });
+
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(calls, DmHistoryDrainConfig.maxPages);
+          expect(syncState.persistedDrainCursors, [1000000]);
+
+          const loopCursor = 1000000 - DmHistoryDrainConfig.maxPages;
+          final capLogs = LogCaptureService()
+              .getRecentLogs()
+              .where(
+                (e) =>
+                    e.level == LogLevel.warning &&
+                    e.message.contains('paused at the page cap'),
+              )
+              .toList();
+          expect(capLogs, hasLength(1));
+          expect(
+            capLogs.single.message,
+            contains('will resume from the persisted cursor (1000000)'),
+          );
+          expect(
+            capLogs.single.message,
+            isNot(contains('persisted cursor ($loopCursor)')),
           );
         },
       );

@@ -1690,12 +1690,17 @@ class DmRepository {
         // Page cap hit: leave historyDrainComplete unset and the cursor
         // persisted so the next inbox open resumes the remaining history
         // instead of permanently truncating it for heavy users. See #4953.
+        // Report the DURABLE cursor, not the loop's: once a page goes
+        // unsettled the persist above is frozen while `cursor` keeps
+        // descending, so the two diverge in exactly the case a reader of
+        // this line is trying to diagnose. See #8209.
         Log.warning(
           'DM history drain paused at the page cap '
           '(${DmHistoryDrainConfig.maxPages}) for ${pubkeyForLogs(pubkey)} '
           'after '
           '$totalEvents events; will resume from the persisted cursor '
-          '($cursor) on the next inbox open.',
+          '(${syncState.historyDrainCursor(pubkey) ?? cursor}) on the next '
+          'inbox open.',
           category: LogCategory.system,
         );
       }
