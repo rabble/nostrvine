@@ -11,7 +11,28 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  _MockNostrClient() {
+    // The own-mute-list read goes through `queryEventsDetailed` so it can tell
+    // a relay's "I hold nothing" apart from an answer nobody gave (#6750).
+    // Every test that stubs `queryEvents` is describing the former, so mirror
+    // it here as a settled answer. Tests about the inconclusive read override
+    // this stub with `timedOut` or `noRelays`.
+    when(
+      () => queryEventsDetailed(
+        any(),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+      ),
+    ).thenAnswer((invocation) async {
+      final filters = invocation.positionalArguments[0] as List<Filter>;
+      return (
+        events: await queryEvents(filters),
+        timedOut: false,
+        noRelays: false,
+      );
+    });
+  }
+}
 
 class _MockBlockListSigner extends Mock implements BlockListSigner {}
 
@@ -2944,6 +2965,237 @@ void main() {
 
       expect(service.isBlocked('pubkey1'), isTrue);
     });
+
+    group('inconclusive own-mute-list read (#6750)', () {
+      const blockedPubkey =
+          '00000000000000000000000000000000000000000000000000000000000000dd';
+
+      void stubMuteRead({
+        List<Event> events = const <Event>[],
+        bool timedOut = false,
+        bool noRelays = false,
+      }) {
+        when(
+          () => mockClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            events: events,
+            timedOut: timedOut,
+            noRelays: noRelays,
+          ),
+        );
+      }
+
+      void stubSigningAndPublishing() {
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (invocation) async => signedEventFromInvocation(invocation),
+        );
+        when(() => mockClient.publishEvent(any())).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
+      }
+
+      Future<ContentBlocklistRepository> startedService([
+        SharedPreferences? prefs,
+      ]) async {
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        return service;
+      }
+
+      test('blocking does not publish when the read timed out', () async {
+        stubSigningAndPublishing();
+        stubMuteRead(timedOut: true);
+
+        final service = await startedService();
+        await service.blockUser(blockedPubkey);
+
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      });
+
+      test(
+        'blocking does not publish when no relay took the query',
+        () async {
+          stubSigningAndPublishing();
+          stubMuteRead(noRelays: true);
+
+          final service = await startedService();
+          await service.blockUser(blockedPubkey);
+
+          verifyNever(
+            () => mockSigner.createAndSignEvent(
+              kind: 10000,
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test('the block still applies and persists when the publish is '
+          'withheld', () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        stubSigningAndPublishing();
+        stubMuteRead(timedOut: true);
+
+        final service = await startedService(prefs);
+        await service.blockUser(blockedPubkey);
+
+        expect(service.isBlocked(blockedPubkey), isTrue);
+        // Survives a restart: the local block is the part that must not be
+        // gated on relay health.
+        expect(
+          ContentBlocklistRepository(prefs: prefs).isBlocked(blockedPubkey),
+          isTrue,
+        );
+      });
+
+      test(
+        'unblocking does not publish when the read is inconclusive',
+        () async {
+          stubSigningAndPublishing();
+          stubMuteRead();
+
+          final service = await startedService();
+          await service.blockUser(blockedPubkey);
+          clearInteractions(mockSigner);
+
+          stubMuteRead(timedOut: true);
+          await service.unblockUser(blockedPubkey);
+
+          expect(service.isBlocked(blockedPubkey), isFalse);
+          verifyNever(
+            () => mockSigner.createAndSignEvent(
+              kind: 10000,
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test('a settled empty read still publishes, so a first block reaches '
+          'the relay', () async {
+        stubSigningAndPublishing();
+        stubMuteRead();
+
+        final service = await startedService();
+        await service.blockUser(blockedPubkey);
+
+        final tags =
+            verify(
+                  () => mockSigner.createAndSignEvent(
+                    kind: 10000,
+                    content: any(named: 'content'),
+                    tags: captureAny(named: 'tags'),
+                  ),
+                ).captured.last
+                as List<List<String>>;
+        expect(tags, contains(equals(['p', blockedPubkey])));
+      });
+
+      test('a withheld publish leaves the source event untouched, so the '
+          'retry preserves it', () async {
+        const existingMute =
+            '00000000000000000000000000000000000000000000000000000000000000cc';
+        final existingEvent = buildEvent(
+          kind: 10000,
+          content: 'encrypted-private-tags',
+          tags: const [
+            ['p', existingMute],
+            ['t', 'spoilers'],
+            ['word', 'spoiler'],
+          ],
+          createdAt: 1000,
+        );
+        stubSigningAndPublishing();
+        stubMuteRead(timedOut: true);
+
+        final service = await startedService();
+        await service.blockUser(blockedPubkey);
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+
+        stubMuteRead(events: [existingEvent]);
+        expect(await service.retryPendingMuteListPublish(), isTrue);
+
+        final captured = verify(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        expect(captured[0] as String, 'encrypted-private-tags');
+        final tags = captured[1] as List<List<String>>;
+        expect(tags, contains(equals(['t', 'spoilers'])));
+        expect(tags, contains(equals(['word', 'spoiler'])));
+        expect(tags, contains(equals(['p', existingMute])));
+        expect(tags, contains(equals(['p', blockedPubkey])));
+      });
+
+      test(
+        'retryPendingMuteListPublish is a no-op when nothing is pending',
+        () async {
+          stubSigningAndPublishing();
+          stubMuteRead();
+
+          final service = await startedService();
+          await service.blockUser(blockedPubkey);
+          clearInteractions(mockSigner);
+
+          expect(await service.retryPendingMuteListPublish(), isFalse);
+          verifyNever(
+            () => mockSigner.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test('a retry that is still inconclusive stays pending', () async {
+        stubSigningAndPublishing();
+        stubMuteRead(timedOut: true);
+
+        final service = await startedService();
+        await service.blockUser(blockedPubkey);
+
+        expect(await service.retryPendingMuteListPublish(), isFalse);
+
+        stubMuteRead();
+        expect(await service.retryPendingMuteListPublish(), isTrue);
+      });
+    });
   });
 
   group('ContentBlocklistRepository - legacy block list migration', () {
@@ -3486,6 +3738,51 @@ void main() {
       // applied locally.
       expect(prefs.getBool(flagKey), isNull);
       expect(service.isBlocked(blockA), isTrue);
+
+      service.dispose();
+    });
+
+    test('defers the migration when the mute-list read is inconclusive '
+        '(#6750)', () async {
+      when(() => mockClient.queryEvents(any())).thenAnswer((invocation) async {
+        final filters = invocation.positionalArguments[0] as List<Filter>;
+        final kinds = filters.first.kinds ?? const <int>[];
+        if (kinds.contains(30000)) {
+          return [
+            ownBlockEvent([blockA]),
+          ];
+        }
+        return <Event>[];
+      });
+      // The legacy kind-30000 read succeeds; only the kind-10000 read is
+      // unanswered. Merging into a mute list we could not see would republish
+      // over it.
+      when(
+        () => mockClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).thenAnswer(
+        (_) async => (events: <Event>[], timedOut: true, noRelays: false),
+      );
+
+      final service = ContentBlocklistRepository(prefs: prefs);
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verifyNever(
+        () => mockSigner.createAndSignEvent(
+          kind: 10000,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+      // Unset, so the next launch retries.
+      expect(prefs.getBool(flagKey), isNull);
 
       service.dispose();
     });

@@ -123,6 +123,11 @@ class ContentBlocklistRepository {
   // preserves other clients' public t/word/e mutes and encrypted content.
   Event? _latestOwnMuteListEvent;
 
+  // A mute-list publish that was withheld because the read that precedes it
+  // came back inconclusive. Flushed by [retryPendingMuteListPublish] and by
+  // the next block or unblock, which republishes the whole list anyway.
+  bool _muteListPublishPending = false;
+
   // Latest replaceable kind-10000 mute-list event timestamp per author.
   // Prevent stale relay delivery order from resurrecting old mute state.
   final Map<String, int> _latestMuteListEventCreatedAtByAuthor =
@@ -283,6 +288,7 @@ class ContentBlocklistRepository {
       _mutualMuteBlocklist.clear();
       _blockedByOthers.clear();
       _latestOwnMuteListEvent = null;
+      _muteListPublishPending = false;
       _latestMuteListEventCreatedAtByAuthor.clear();
       _latestBlockListEventCreatedAtByAuthor.clear();
       _severedFollowers.clear();
@@ -628,7 +634,21 @@ class ContentBlocklistRepository {
     }
 
     try {
-      await _refreshLatestOwnMuteList(nostrClient);
+      if (!await _refreshLatestOwnMuteList(nostrClient)) {
+        // Kind 10000 is replaceable: publishing now would replace a list we
+        // could not read. Everything only the unread event holds would go
+        // with it -- the encrypted private section, every t/word/e mute, and
+        // any p mute authored on another client (#6750). The block is already
+        // persisted locally, so withholding costs propagation, not safety.
+        _muteListPublishPending = true;
+        Log.warning(
+          'Withholding mute list publish - could not confirm the current '
+          'kind 10000. Blocks stay local until a read succeeds.',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return false;
+      }
       final publishShape = _buildMuteListPublishShape();
 
       final event = await signer.createAndSignEvent(
@@ -646,6 +666,7 @@ class ContentBlocklistRepository {
         // echo of an older own mute list cannot race back and drop the
         // mutes we just merged in.
         _applyOwnMuteListEvent(sentEvent.event);
+        _muteListPublishPending = false;
         Log.info(
           'Published mute list to Nostr with '
           '${_runtimeBlocklist.length + _mutedPubkeys.length} pubkey entries',
@@ -671,16 +692,33 @@ class ContentBlocklistRepository {
     }
   }
 
-  Future<void> _refreshLatestOwnMuteList(NostrClient nostrClient) async {
+  /// Re-read our own latest kind 10000, and report whether the answer was
+  /// conclusive.
+  ///
+  /// Returns `false` when no relay settled the query -- a timeout, or a
+  /// fan-out no relay took. That is not the same as "this account has no mute
+  /// list", and the difference is load-bearing: kind 10000 is replaceable, so
+  /// a caller that publishes on an unread answer deletes whatever only the
+  /// unread event held. A *settled* answer of zero events is conclusive and
+  /// returns `true`, so a first-ever block still publishes.
+  ///
+  /// [NostrClient.queryEvents] cannot express this -- it drops `timedOut` and
+  /// `noRelays` -- which is why the detailed form is used here, with
+  /// `requireAllRelaysSettled` so a relay abandoned by the settle window
+  /// arrives as a timeout rather than as an empty answer.
+  Future<bool> _refreshLatestOwnMuteList(NostrClient nostrClient) async {
     final ourPubkey = _ourPubkey;
-    if (ourPubkey == null) return;
+    if (ourPubkey == null) return false;
 
-    final muteEvents = await nostrClient.queryEvents([
-      Filter(authors: [ourPubkey], kinds: const [10000]),
-    ]);
+    final result = await nostrClient.queryEventsDetailed(
+      [
+        Filter(authors: [ourPubkey], kinds: const [10000]),
+      ],
+      requireAllRelaysSettled: true,
+    );
 
     var newest = _latestOwnMuteListEvent;
-    for (final event in muteEvents) {
+    for (final event in result.events) {
       if (event.pubkey != ourPubkey) continue;
       if (newest == null || event.createdAt > newest.createdAt) {
         newest = event;
@@ -690,6 +728,20 @@ class ContentBlocklistRepository {
     if (newest != null && newest != _latestOwnMuteListEvent) {
       _applyOwnMuteListEvent(newest);
     }
+
+    return !result.timedOut && !result.noRelays;
+  }
+
+  /// Republish a mute list whose publish was withheld by an inconclusive read.
+  ///
+  /// A no-op unless something is pending, so callers can fire it on any
+  /// "we might be healthy again" signal. Returns whether a publish reached a
+  /// relay. Blocks and unblocks republish the whole list themselves, so this
+  /// only matters for a user who blocked once while relays were unhealthy and
+  /// has not blocked since.
+  Future<bool> retryPendingMuteListPublish() async {
+    if (!_muteListPublishPending) return false;
+    return _publishMuteListToNostr();
   }
 
   _MuteListPublishShape _buildMuteListPublishShape() {
@@ -1399,12 +1451,28 @@ class ContentBlocklistRepository {
       if (!_isStillActiveAccount(ourPubkey)) return;
 
       // 2. Read the existing kind 10000 mute list (newest replaceable wins)
-      //    so the merge never drops mutes authored on other clients.
-      final muteEvents = await nostrClient.queryEvents([
-        Filter(authors: [ourPubkey], kinds: const [10000]),
-      ]);
+      //    so the merge never drops mutes authored on other clients. An
+      //    inconclusive read aborts the migration rather than merging into a
+      //    list we could not see -- step 4 republishes the whole event, and
+      //    the completion flag below stays unset so the next launch retries
+      //    (#6750).
+      final muteRead = await nostrClient.queryEventsDetailed(
+        [
+          Filter(authors: [ourPubkey], kinds: const [10000]),
+        ],
+        requireAllRelaysSettled: true,
+      );
+      if (muteRead.timedOut || muteRead.noRelays) {
+        Log.warning(
+          'Deferring legacy block-list migration - could not confirm the '
+          'current kind 10000 mute list; retrying next launch',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return;
+      }
       Event? newestMuteList;
-      for (final event in muteEvents) {
+      for (final event in muteRead.events) {
         if (event.pubkey != ourPubkey) continue;
         if (newestMuteList == null ||
             event.createdAt > newestMuteList.createdAt) {

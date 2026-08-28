@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
@@ -286,6 +287,14 @@ class BlocklistVersion extends _$BlocklistVersion {
 ///
 /// Both sync methods have internal guards (`_mutualMuteSyncStarted`,
 /// `_blockListSyncStarted`) so duplicate calls are no-ops.
+///
+/// It also flushes a mute-list publish that was withheld because the read
+/// preceding it was inconclusive (#6750). A block is kept local rather than
+/// published over a list we could not read, so something has to retry it: a
+/// later block republishes the whole list anyway, and this covers the user who
+/// blocked once while relays were unhealthy and has not blocked since. Both
+/// signals it listens to are "we might be healthy again" — a session becoming
+/// ready, and the app returning to the foreground.
 @Riverpod(keepAlive: true)
 void blocklistSyncBridge(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -329,6 +338,12 @@ void blocklistSyncBridge(Ref ref) {
 
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
     unawaited(startSync(next));
+  });
+
+  ref.listen<bool>(appForegroundProvider, (previous, next) {
+    if (next && previous != true) {
+      unawaited(blocklistRepository.retryPendingMuteListPublish());
+    }
   });
 }
 
