@@ -4840,6 +4840,13 @@ void main() {
               cachedAt: DateTime.now(),
             ),
           );
+          when(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+            ),
+          ).thenAnswer((_) async {});
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
@@ -4892,6 +4899,13 @@ void main() {
               cachedAt: DateTime.now(),
             ),
           );
+          when(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+            ),
+          ).thenAnswer((_) async {});
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
@@ -5785,6 +5799,104 @@ void main() {
               followingCount: 0,
             ),
           );
+        },
+      );
+
+      test(
+        'uses authoritative followers with following fallback',
+        () async {
+          final mockStatsDao = _MockProfileStatsDao();
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+          ).thenAnswer(
+            (_) async => const SocialCounts(
+              pubkey: testTargetPubkey,
+              followerCount: 1976,
+              followingCount: 0,
+            ),
+          );
+          when(() => mockStatsDao.getStatsRaw(testTargetPubkey)).thenAnswer(
+            (_) async => ProfileStatRow(
+              pubkey: testTargetPubkey,
+              followerCount: 1900,
+              followingCount: 43,
+              cachedAt: DateTime.now(),
+            ),
+          );
+          when(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+            ),
+          ).thenAnswer((_) async {});
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockStatsDao,
+            indexerRelayUrls: const [],
+          );
+
+          final stats = await repository.getFollowerStats(testTargetPubkey);
+
+          expect(stats.followers, equals(1976));
+          expect(stats.following, equals(43));
+        },
+      );
+
+      test(
+        'uses authoritative following with follower fallback',
+        () async {
+          final mockStatsDao = _MockProfileStatsDao();
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+          ).thenAnswer(
+            (_) async => const SocialCounts(
+              pubkey: testTargetPubkey,
+              followerCount: 0,
+              followingCount: 42,
+            ),
+          );
+          when(() => mockStatsDao.getStatsRaw(testTargetPubkey)).thenAnswer(
+            (_) async => ProfileStatRow(
+              pubkey: testTargetPubkey,
+              followerCount: 512,
+              followingCount: 430,
+              cachedAt: DateTime.now(),
+            ),
+          );
+          when(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: any(named: 'followerCount'),
+              followingCount: any(named: 'followingCount'),
+            ),
+          ).thenAnswer((_) async {});
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockStatsDao,
+            indexerRelayUrls: const [],
+          );
+
+          final stats = await repository.getFollowerStats(testTargetPubkey);
+
+          expect(stats.followers, equals(512));
+          expect(stats.following, equals(42));
         },
       );
 
