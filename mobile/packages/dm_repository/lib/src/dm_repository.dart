@@ -2345,11 +2345,10 @@ class DmRepository {
       // Only a NIP-04 copy may suppress a peer's rumor: a row that also
       // arrived over NIP-17 is a genuine earlier message (#7324).
       //
-      // Our own self-wrap echo is the exception. A group send persists one
-      // row but publishes one rumor per recipient, so the rumor-id primary
-      // key collapses only the first sibling's echo — the rest dedup on the
-      // batch token, or the unfiltered window when the send predates it
-      // (#6046).
+      // Our own self-wrap echo is the exception. A group send persists one row
+      // but publishes one self-wrap per recipient for the shared rumor. Every
+      // echo dedups on the batch token, or the unfiltered window when the send
+      // predates it (#6046).
       final isSentByMe = rumor.pubkey == ownerPubkey;
       final isGroup = participants.length > 2;
       final bool isDuplicate;
@@ -5234,8 +5233,7 @@ class DmRepository {
     // invocation's wire events — and therefore their ids, queue-row handles,
     // and recovery locks — are unique even at same-second identical text. The
     // same value is stamped verbatim on every sibling queue row AND the batch's
-    // one
-    // persisted local message, so persistence dedup, optimistic grouping,
+    // one persisted local message, so persistence dedup, optimistic grouping,
     // sibling lookup, and cancellation all match a batch by one exact stored
     // value. The token rides inside the encrypted gift-wrapped rumor (only the
     // recipient and the sender's own self-wrap ever decrypt it) and is random,

@@ -429,6 +429,7 @@ class NIP17MessageService {
   /// - [content]: Message content (text for kind 14, file URL for kind 15)
   /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
+  /// - [createdAt]: Optional canonical event timestamp
   Event buildRumor({
     required String recipientPubkey,
     required String content,
@@ -441,10 +442,6 @@ class NIP17MessageService {
       ...additionalTags,
     ];
 
-    // [createdAt] lets a group fan-out stamp every per-recipient rumor with
-    // one shared batch timestamp, so all sibling rows sort together on the
-    // sender-side timeline. (The batch identity used for dedup/grouping is a
-    // separate durable id — see `OutgoingDms.sendBatchId`.)
     return Event(
       _senderPublicKey,
       eventKind,
