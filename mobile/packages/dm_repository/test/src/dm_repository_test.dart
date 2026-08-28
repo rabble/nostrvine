@@ -750,6 +750,41 @@ void main() {
         );
       });
 
+      // Faithful mirror of Nip17MessageService.buildGroupRumor: ONE rumor for
+      // the whole fan-out, recipients sorted so the id does not depend on
+      // caller argument order (#8188).
+      when(
+        () => mockMessageService.buildGroupRumor(
+          recipientPubkeys: any(named: 'recipientPubkeys'),
+          content: any(named: 'content'),
+          eventKind: any(named: 'eventKind'),
+          additionalTags: any(named: 'additionalTags'),
+          createdAt: any(named: 'createdAt'),
+        ),
+      ).thenAnswer((inv) {
+        final recipients =
+            (inv.namedArguments[#recipientPubkeys] as List<String>).toList()
+              ..sort();
+        final content = inv.namedArguments[#content] as String;
+        final eventKind =
+            (inv.namedArguments[#eventKind] as int?) ??
+            EventKind.privateDirectMessage;
+        final additionalTags =
+            (inv.namedArguments[#additionalTags] as List<List<String>>?) ??
+            const <List<String>>[];
+        final createdAt = inv.namedArguments[#createdAt] as int?;
+        return Event(
+          _validPubkeyA,
+          eventKind,
+          [
+            for (final pubkey in recipients) ['p', pubkey],
+            ...additionalTags,
+          ],
+          content,
+          createdAt: createdAt,
+        );
+      });
+
       // Default: the send policy permits everyone (behavior preserved). The
       // protected-minor gate tests override this per-recipient. (#176)
       when(
@@ -18786,7 +18821,9 @@ void main() {
       test(
         'enqueues a row per recipient and deletes them all on full delivery',
         () async {
-          // Per-recipient rumor.id differs because additionalTags differ.
+          // The rumor is now SHARED across recipients (#8188); what differs
+          // per sibling is the durable QUEUE HANDLE. Pin success on both so
+          // both queue rows take the full-delivery path.
           // Pin success on both recipients so both queued rumor ids
           // take the full-delivery path.
           stubSendRumor((_, recipient) async {
@@ -18826,8 +18863,10 @@ void main() {
             enqueuedB.id,
             isNot(equals(enqueuedC.id)),
             reason:
-                'each recipient gets its own rumor id; group queue rows '
-                'must not collide',
+                'the rumor id is shared across the batch (#8188), so each '
+                'recipient needs its own queue handle — enqueue is '
+                'insertOrIgnore and would silently discard a colliding '
+                'sibling rather than throw',
           );
           // The linchpin of the durable batch identity: every sibling row is
           // stamped with the SAME non-null sendBatchId — an independent
@@ -18861,6 +18900,152 @@ void main() {
               lastError: any(named: 'lastError'),
             ),
           );
+        },
+      );
+
+      test(
+        'fans out ONE shared rumor id to every recipient (#8188)',
+        () async {
+          // The bug: a per-recipient rumor forks the id, so the single `e`
+          // tag a delete-for-everyone carries names an id only one recipient
+          // holds. NIP-59 59.md:108 permits — and every shipping group-DM
+          // client uses — a single rumor wrapped for each recipient. Kind-5
+          // deletions and kind-7 reactions in this very repository already
+          // fan out one shared rumor; kind-14/15 messages are the outlier.
+          final rumorIdsSeen = <String>[];
+          stubSendRumor((rumor, recipient) async {
+            rumorIdsSeen.add(rumor.id);
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group hello',
+          );
+
+          expect(rumorIdsSeen, hasLength(2));
+          expect(
+            rumorIdsSeen.toSet(),
+            hasLength(1),
+            reason:
+                'every participant must store the message under the SAME '
+                'rumor id, or a retraction naming one id no-ops for the rest',
+          );
+        },
+      );
+
+      test(
+        'keeps one queue row per recipient even though the rumor id is '
+        'shared (#8188)',
+        () async {
+          // The shared rumor id must not collapse the durable queue:
+          // `enqueue` is insertOrIgnore and does NOT throw, so colliding PKs
+          // would silently discard siblings with no trace for the sweep.
+          stubSendRumor((rumor, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final _ = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group hello',
+          );
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured.cast<OutgoingDm>();
+
+          expect(captured, hasLength(2));
+          expect(
+            captured.map((r) => r.id).toSet(),
+            hasLength(2),
+            reason: 'each recipient needs its own durable queue row',
+          );
+          expect(
+            captured.map((r) => r.recipientPubkey).toSet(),
+            {_validPubkeyB, _validPubkeyC},
+          );
+          // Both rows replay the SAME rumor, so a retry re-publishes the
+          // shared id rather than minting a fresh one.
+          expect(
+            captured
+                .map(
+                  (r) =>
+                      (jsonDecode(r.rumorEventJson)
+                          as Map<String, dynamic>)['id'],
+                )
+                .toSet(),
+            hasLength(1),
+          );
+        },
+      );
+
+      test(
+        'persists the local message under the shared rumor id, which is what '
+        'delete-for-everyone will name (#8188)',
+        () async {
+          stubSendRumor((rumor, recipient) async {
+            return NIP17SendResult.success(
+              rumorEventId: rumor.id,
+              messageEventId: 'wrap-$recipient',
+              recipientPubkey: recipient,
+            );
+          });
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final results = await repository.sendGroupMessage(
+            recipientPubkeys: [_validPubkeyB, _validPubkeyC],
+            content: 'group hello',
+          );
+
+          final sharedRumorId = results.first.rumorEventId;
+          expect(sharedRumorId, isNotNull);
+          final id = sharedRumorId!;
+
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: id,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).called(1);
         },
       );
 
