@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/moderation_providers.dart';
@@ -88,7 +89,12 @@ void main() {
       container.read(moderationLabelServiceProvider);
       await Future<void>.delayed(Duration.zero);
 
-      verifyNever(() => nostrClient.queryEvents(any()));
+      verifyNever(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      );
     });
 
     test('subscribes labelers once active Nostr client is ready', () async {
@@ -99,7 +105,14 @@ void main() {
 
       when(() => nostrClient.hasKeys).thenReturn(true);
       when(() => nostrClient.publicKey).thenReturn(testPubkey);
-      when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).thenAnswer(
+        (_) async => (events: <Event>[], timedOut: false, noRelays: false),
+      );
       when(() => followRepository.followingPubkeys).thenReturn(const []);
       when(
         () => followRepository.followingStream,
@@ -118,7 +131,12 @@ void main() {
       container.read(moderationLabelServiceProvider);
       await Future<void>.delayed(Duration.zero);
 
-      verify(() => nostrClient.queryEvents(any())).called(1);
+      verify(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        ),
+      ).called(1);
     });
 
     test(
@@ -142,8 +160,18 @@ void main() {
         container.read(moderationLabelServiceProvider);
         await Future<void>.delayed(Duration.zero);
 
-        verifyNever(() => activeClient.queryEvents(any()));
-        verifyNever(() => staleReadyClient.queryEvents(any()));
+        verifyNever(
+          () => activeClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        );
+        verifyNever(
+          () => staleReadyClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        );
       },
     );
   });

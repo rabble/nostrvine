@@ -65,13 +65,22 @@ void main() {
   late AgeVerificationService ageVerificationService;
 
   Future<void> seedModerationLabels(List<List<String>> tags) async {
-    when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-      (_) async => [
-        _FakeLabelEvent(
-          pubkey: moderationLabelService.divineModerationPubkeyHex,
-          tags: tags,
-        ),
-      ],
+    when(
+      () => mockNostrClient.queryEventsDetailed(
+        any(),
+        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+      ),
+    ).thenAnswer(
+      (_) async => (
+        events: <Event>[
+          _FakeLabelEvent(
+            pubkey: moderationLabelService.divineModerationPubkeyHex,
+            tags: tags,
+          ),
+        ],
+        timedOut: false,
+        noRelays: false,
+      ),
     );
 
     await moderationLabelService.subscribeToLabeler(
