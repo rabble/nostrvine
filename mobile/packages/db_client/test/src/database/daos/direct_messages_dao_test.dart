@@ -757,6 +757,42 @@ void main() {
           expect(row!.deletionRumorJson, isNotNull);
         });
 
+        // The test above can no longer fail on the status predicate alone:
+        // #8201 restores a blocked row to `is_deleted = false`, so the sweep
+        // excludes it twice over and dropping either predicate leaves the
+        // suite green. Rows blocked before #8201 shipped are still on disk in
+        // the old shape — hidden, with a rumor — and for those the status is
+        // the only thing keeping them off the worklist.
+        test(
+          'a row blocked before the restore stays off the worklist',
+          () async {
+            await insertOwnMessage();
+            await dao.markMessageDeletionPending(
+              'msg_del',
+              deletionRumorJson: '{"kind":5}',
+              ownerPubkey: 'pubkey_alice',
+            );
+            // Settle the status without the restore, reproducing the pre-#8201
+            // on-disk shape rather than what the DAO writes today.
+            await database.customStatement(
+              "UPDATE direct_messages SET deletion_publish_status = "
+              "'deletion_blocked' WHERE id = 'msg_del'",
+            );
+
+            final pending = await dao.getRetryableOwnMessageDeletions(
+              ownerPubkey: 'pubkey_alice',
+            );
+
+            expect(pending, isEmpty);
+            final row = await dao.getMessageById(
+              'msg_del',
+              ownerPubkey: 'pubkey_alice',
+            );
+            expect(row!.isDeleted, isTrue);
+            expect(row.deletionRumorJson, isNotNull);
+          },
+        );
+
         // The retraction did not happen, so continuing to hide the message
         // repeats the #8165 lie in a new place. Un-hiding also restores the
         // only row the user can act on to try again.
