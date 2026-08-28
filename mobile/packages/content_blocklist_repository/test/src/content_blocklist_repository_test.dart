@@ -3176,6 +3176,16 @@ void main() {
                 ).captured.last
                 as List<List<String>>;
         expect(tags, contains(equals(['p', blockedPubkey])));
+
+        // The read that precedes a replace must demand every relay settle;
+        // without it a partial answer reads as empty and clobbers the list
+        // (#6750). Pin the argument so flipping it back to false fails here.
+        verify(
+          () => mockClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: true,
+          ),
+        ).called(greaterThanOrEqualTo(1));
       });
 
       test('a withheld publish leaves the source event untouched, so the '
@@ -3844,6 +3854,15 @@ void main() {
       );
       // Unset, so the next launch retries.
       expect(prefs.getBool(flagKey), isNull);
+
+      // The migration's kind 10000 read must also demand all relays settle,
+      // for the same reason the publish path does (#6750).
+      verify(
+        () => mockClient.queryEventsDetailed(
+          any(),
+          requireAllRelaysSettled: true,
+        ),
+      ).called(greaterThanOrEqualTo(1));
 
       service.dispose();
     });
