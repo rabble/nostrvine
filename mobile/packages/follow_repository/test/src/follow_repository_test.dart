@@ -4784,7 +4784,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -4810,7 +4809,6 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 90,
               followingCount: 45,
-              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -5434,7 +5432,6 @@ void main() {
             pubkey: any(named: 'pubkey'),
             followerCount: any(named: 'followerCount'),
             followingCount: any(named: 'followingCount'),
-            stampCountFreshness: any(named: 'stampCountFreshness'),
           ),
         ).thenAnswer((_) async {});
         return dao;
@@ -5511,7 +5508,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           );
         },
@@ -5531,10 +5527,6 @@ void main() {
           final stats = await repository.getFollowerStats(testTargetPubkey);
 
           expect(stats.following, equals(79));
-          // Relay fallback: this write *is* the baseline whose age the
-          // staleness clock measures, so unlike the REST path it stamps
-          // (stampCountFreshness defaults to true; the DAO's own tests pin
-          // what stamping actually does).
           verify(
             () => dao.upsertStats(
               pubkey: testTargetPubkey,
@@ -5612,7 +5604,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           );
         },
@@ -5651,7 +5642,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5676,7 +5666,6 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 200,
               followingCount: 100,
-              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -5714,7 +5703,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5736,7 +5724,6 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 90,
               followingCount: 45,
-              stampCountFreshness: false,
             ),
           ).called(1);
         },
@@ -5789,7 +5776,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: 0,
               followingCount: 0,
-              stampCountFreshness: false,
             ),
           );
         },
@@ -5827,7 +5813,6 @@ void main() {
               pubkey: any(named: 'pubkey'),
               followerCount: any(named: 'followerCount'),
               followingCount: any(named: 'followingCount'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5848,7 +5833,6 @@ void main() {
               pubkey: testTargetPubkey,
               followerCount: 90,
               followingCount: 45,
-              stampCountFreshness: false,
             ),
           ).called(1);
         },

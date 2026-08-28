@@ -27,7 +27,7 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     with _$ProfileStatsDaoMixin {
   ProfileStatsDao(super.attachedDatabase);
 
-  /// Upsert profile stats (insert or update).
+  /// Upserts profile stats, creating the row when absent.
   ///
   /// Only overwrites fields that are explicitly provided (non-null).
   /// Null parameters are left unchanged in the existing row, preventing
@@ -38,16 +38,22 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// same reason as `UserProfilesDao.upsertProfile`: the writers span layers
   /// that cannot all reach `ProfileRepository` — the classic-viner seed import
   /// re-runs on every manifest bump.
-  /// Writes profile stats, creating the row when absent.
   ///
-  /// [stampCountFreshness] controls `followerCountsUpdatedAt`, which exists
-  /// solely so FollowRepository's relay-fallback hysteresis can decide when a
-  /// baseline has gone stale. Only a write that establishes such a baseline —
-  /// the relay path — should stamp it. REST-sourced counts pass `false`: they
-  /// update the values, but must not restart the staleness clock, because the
-  /// relay path deliberately skips re-persisting an unchanged count so that
-  /// clock can eventually expire. Refreshing it on every profile view would
-  /// mean it never does (#8259 review).
+  /// Writing either count refreshes `followerCountsUpdatedAt`, which answers
+  /// one question for two readers: *when were these counts last written from
+  /// a source we trust?*
+  ///
+  /// - [getStats] and [deleteExpired] use it as the retention clock, keeping a
+  ///   row whose counts are newer than [profileFollowerCountsCacheDuration]
+  ///   even after the rest of the row has expired.
+  /// - `FollowRepository`'s relay-fallback hysteresis uses it to decide when a
+  ///   baseline is old enough that a lower relay count should be accepted.
+  ///
+  /// Those two readers agree because every writer withholds an ambiguous
+  /// `{0, 0}` response rather than storing it, so a stamp always means real
+  /// data arrived. A REST write and the hysteresis path cannot interleave:
+  /// when REST answers with a signal `getFollowerStats` returns before
+  /// hysteresis runs, and when it does not, no counts are written at all.
   Future<void> upsertStats({
     required String pubkey,
     int? videoCount,
@@ -55,7 +61,6 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     int? followingCount,
     int? totalViews,
     int? totalLikes,
-    bool stampCountFreshness = true,
   }) async {
     final tombstone = await (select(
       vanishedProfiles,
@@ -65,8 +70,7 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     final existing = await (select(
       profileStats,
     )..where((t) => t.pubkey.equals(pubkey))).getSingleOrNull();
-    final wroteCounts = followerCount != null || followingCount != null;
-    final countsUpdatedAt = wroteCounts && stampCountFreshness
+    final countsUpdatedAt = followerCount != null || followingCount != null
         ? DateTime.now()
         : existing?.followerCountsUpdatedAt;
 

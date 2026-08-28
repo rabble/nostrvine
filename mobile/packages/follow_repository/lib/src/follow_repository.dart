@@ -859,20 +859,16 @@ class FollowRepository {
 
   /// Persist follower stats to the Drift database.
   ///
-  /// [isRelayBaseline] must be true only for the relay-fallback path. That is
-  /// the path whose staleness `followerCountsUpdatedAt` measures, and it
-  /// deliberately skips re-persisting an unchanged count so the clock can
-  /// expire; a REST write that restarted it would keep it from ever doing so.
-  Future<void> _persistFollowerStats(
-    String pubkey,
-    FollowerStats stats, {
-    required bool isRelayBaseline,
-  }) async {
+  /// This refreshes the row's count-freshness stamp, which is correct for both
+  /// of its readers: retention keeps the row, and the relay hysteresis treats
+  /// the baseline as recently confirmed. Ambiguous `{0, 0}` responses never
+  /// reach here — they are withheld upstream — so a stamp always means real
+  /// data arrived.
+  Future<void> _persistFollowerStats(String pubkey, FollowerStats stats) async {
     await _profileStatsDao?.upsertStats(
       pubkey: pubkey,
       followerCount: stats.followers,
       followingCount: stats.following,
-      stampCountFreshness: isRelayBaseline,
     );
   }
 
@@ -987,11 +983,7 @@ class FollowRepository {
             (persisted == null ||
                 freshStats.followers != persisted.followers ||
                 freshStats.following != persisted.following)) {
-          await _persistFollowerStats(
-            pubkey,
-            freshStats,
-            isRelayBaseline: false,
-          );
+          await _persistFollowerStats(pubkey, freshStats);
         }
         return freshStats;
       }
@@ -1029,7 +1021,7 @@ class FollowRepository {
           (persisted == null ||
               stats.followers != persisted.followers ||
               stats.following != persisted.following)) {
-        await _persistFollowerStats(pubkey, stats, isRelayBaseline: true);
+        await _persistFollowerStats(pubkey, stats);
       }
 
       Log.debug(

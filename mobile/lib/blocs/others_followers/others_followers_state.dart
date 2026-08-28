@@ -42,13 +42,10 @@ final class OthersFollowersState extends Equatable {
   /// replay the full list without waiting for a new network event.
   final List<String> rawFollowersPubkeys;
 
-  /// Follower count as reported by the repository, before any local
-  /// blocklist filtering.
+  /// Follower count as reported by the repository.
   ///
-  /// Kept verbatim rather than derived from [followerCount] so optimistic
-  /// mutations stay exact: reconstructing it by inverting a previous
-  /// [followerCount] emission is only correct when that emission did not
-  /// clamp to the visible list length.
+  /// [followerCount] returns this value unchanged; the field is kept separate
+  /// because optimistic follow/unfollow mutates it directly.
   final int authoritativeFollowerCount;
 
   /// Follower count shown in the UI.

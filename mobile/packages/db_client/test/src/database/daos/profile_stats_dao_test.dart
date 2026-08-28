@@ -146,65 +146,66 @@ void main() {
       });
 
       test(
-        'does not restart the staleness clock when stamping is off',
+        'a later count write refreshes the stamp both readers rely on',
         () async {
-          // REST-sourced counts update the values but must not restart the
-          // clock the relay-fallback hysteresis measures, or the deliberate
-          // "skip the re-write so it can expire" behaviour never expires
-          // (#8259 review).
+          // Transition 1 (#8259 review). Retention (getStats/deleteExpired)
+          // and the relay hysteresis both read followerCountsUpdatedAt, so a
+          // write that left an older stamp in place would make a row holding
+          // *current* counts look stale to retention — evicting the very
+          // fallback baseline the 48h window exists to protect.
           await dao.upsertStats(
             pubkey: testPubkey,
             followerCount: 100,
             followingCount: 50,
           );
-          final original = await appDbClient.getProfileStatRow(testPubkey);
-          expect(original!.followerCountsUpdatedAt, isNotNull);
+          final first = await appDbClient.getProfileStatRow(testPubkey);
 
-          await Future<void>.delayed(const Duration(milliseconds: 5));
+          // The column stores unix seconds, so the writes need a real gap.
+          await Future<void>.delayed(const Duration(milliseconds: 1200));
+
           await dao.upsertStats(
             pubkey: testPubkey,
             followerCount: 512,
             followingCount: 430,
-            stampCountFreshness: false,
           );
+          final second = await appDbClient.getProfileStatRow(testPubkey);
 
-          final result = await appDbClient.getProfileStatRow(testPubkey);
-          // The values move...
-          expect(result!.followerCount, equals(512));
-          expect(result.followingCount, equals(430));
-          // ...but the clock does not.
+          expect(second!.followerCount, equals(512));
           expect(
-            result.followerCountsUpdatedAt,
-            equals(original.followerCountsUpdatedAt),
+            second.followerCountsUpdatedAt!.isAfter(
+              first!.followerCountsUpdatedAt!,
+            ),
+            isTrue,
+            reason:
+                'the counts are current, so the clock both readers share '
+                'must say so',
           );
         },
       );
 
-      test('stamps the staleness clock when stamping is on', () async {
-        await dao.upsertStats(
-          pubkey: testPubkey,
-          followerCount: 100,
-          followingCount: 50,
-        );
-        final original = await appDbClient.getProfileStatRow(testPubkey);
+      test(
+        'a REST-only row does not stay perpetually fresh for hysteresis',
+        () async {
+          // Transition 2 (#8259 review): a row that has never had a relay
+          // write. If the count stamp were left NULL, _loadPersistedStats
+          // would substitute cachedAt — refreshed by every upsert — and the
+          // relay hysteresis would never see the baseline age.
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            followerCount: 512,
+            followingCount: 430,
+          );
 
-        // The column is stored as unix seconds, so the two writes have to
-        // land in different seconds for the comparison to mean anything.
-        await Future<void>.delayed(const Duration(milliseconds: 1100));
-        await dao.upsertStats(
-          pubkey: testPubkey,
-          followerCount: 101,
-          followingCount: 50,
-        );
-
-        final result = await appDbClient.getProfileStatRow(testPubkey);
-        expect(
-          result!.followerCountsUpdatedAt!.isAfter(
-            original!.followerCountsUpdatedAt!,
-          ),
-          isTrue,
-        );
-      });
+          final row = await appDbClient.getProfileStatRow(testPubkey);
+          expect(
+            row!.followerCountsUpdatedAt,
+            isNotNull,
+            reason:
+                'a REST-only row must carry its own count stamp so the '
+                'hysteresis clock can age',
+          );
+        },
+      );
 
       test('no-ops for a pubkey that requested deletion', () async {
         // The classic-viner seed import re-runs on every manifest bump and

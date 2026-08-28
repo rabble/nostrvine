@@ -770,9 +770,6 @@ class ProfileRepository implements ProfileReader {
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
       totalViews: publicViewCount,
-      // REST is not the relay-fallback baseline, so it must not restart the
-      // hysteresis staleness clock. See ProfileStatsDao.upsertStats.
-      stampCountFreshness: false,
     );
   }
 

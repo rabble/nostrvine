@@ -52,13 +52,10 @@ final class MyFollowersState extends Equatable {
   /// The order [followersPubkeys] is presented in.
   final FollowSortOrder sortOrder;
 
-  /// Follower count as reported by the repository, before any local
-  /// blocklist filtering.
+  /// Follower count as reported by the repository.
   ///
-  /// Kept verbatim rather than derived from [followerCount] so re-filtering
-  /// stays exact: reconstructing it by inverting a previous [followerCount]
-  /// emission is only correct when that emission did not clamp to the visible
-  /// list length.
+  /// [followerCount] returns this value unchanged; the field is kept separate
+  /// because optimistic follow/unfollow mutates it directly.
   final int authoritativeFollowerCount;
 
   /// Follower count shown in the UI.

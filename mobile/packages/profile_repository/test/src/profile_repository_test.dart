@@ -666,7 +666,6 @@ void main() {
               followingCount: any(named: 'followingCount'),
               totalViews: any(named: 'totalViews'),
               totalLikes: any(named: 'totalLikes'),
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).thenAnswer((_) async {});
           repoWithFunnelcake = ProfileRepository(
@@ -974,7 +973,6 @@ void main() {
                 videoCount: any(named: 'videoCount'),
                 totalLikes: any(named: 'totalLikes'),
                 totalViews: any(named: 'totalViews'),
-                stampCountFreshness: any(named: 'stampCountFreshness'),
               ),
             );
           });
@@ -1332,9 +1330,6 @@ void main() {
               videoCount: 3,
               totalLikes: 42,
               totalViews: 99,
-              // REST is not the relay baseline, so it must not restart the
-              // hysteresis staleness clock (#8259 review).
-              stampCountFreshness: false,
             ),
           ).called(1);
         });
@@ -1367,7 +1362,6 @@ void main() {
               videoCount: any(named: 'videoCount'),
               totalLikes: any(named: 'totalLikes'),
               totalViews: 13,
-              stampCountFreshness: any(named: 'stampCountFreshness'),
             ),
           ).called(1);
         });
@@ -1405,7 +1399,6 @@ void main() {
                 videoCount: 3,
                 totalLikes: any(named: 'totalLikes'),
                 totalViews: any(named: 'totalViews'),
-                stampCountFreshness: false,
               ),
             ).called(1);
           },
