@@ -463,6 +463,12 @@ const _knownUntranslatedDebt = <String>{
   // so non-English locales fall back to English until speaker review.
   'minorAccountReviewContentTitle',
   'minorAccountReviewContentBody',
+  // Restricted-minor appeal policy (#8239). This is load-bearing age and
+  // moderation copy, so non-English locales fall back to English until
+  // speaker review.
+  'minorAccountReviewAppealTitle',
+  'minorAccountReviewAppealTeenBody',
+  'minorAccountReviewAppealUnder13Body',
   // Inbox Badges tab and its All-tab banner. Translation deferred to the next
   // l10n pass.
   'notificationsTabBadges',

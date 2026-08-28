@@ -16822,6 +16822,24 @@ abstract class AppLocalizations {
   /// **'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.'**
   String get minorAccountReviewContentBody;
 
+  /// Heading above the support action that introduces the restricted-minor reconsideration policy.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask us to take another look'**
+  String get minorAccountReviewAppealTitle;
+
+  /// Tells a restricted 13-to-15-year-old how to ask support to reconsider the decision without promising a review.
+  ///
+  /// In en, this message translates to:
+  /// **'You can contact Divine Support and ask us to reconsider this decision. Divine may review your request, but is not obligated to.'**
+  String get minorAccountReviewAppealTeenBody;
+
+  /// Tells a restricted child under 13 that a parent or guardian may ask support to reconsider the decision without promising a review.
+  ///
+  /// In en, this message translates to:
+  /// **'Your parent or guardian can contact Divine Support and ask us to reconsider this decision. Divine may review the request, but is not obligated to.'**
+  String get minorAccountReviewAppealUnder13Body;
+
   /// No description provided for @minorAccountReviewOpenSupportCenter.
   ///
   /// In en, this message translates to:

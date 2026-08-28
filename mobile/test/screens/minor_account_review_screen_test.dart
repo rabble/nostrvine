@@ -444,6 +444,72 @@ void main() {
       }
     });
 
+    testWidgets('explains reconsideration through support for both age bands', (
+      tester,
+    ) async {
+      for (final ageBand in [
+        SuspectedAgeBand.under13,
+        SuspectedAgeBand.age13To15,
+      ]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            key: ValueKey(ageBand),
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-appeal-copy',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: ageBand,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: const MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
+                  ),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(MinorAccountReviewScreen)),
+        );
+        final expectedBody = ageBand == SuspectedAgeBand.under13
+            ? l10n.minorAccountReviewAppealUnder13Body
+            : l10n.minorAccountReviewAppealTeenBody;
+        final otherBody = ageBand == SuspectedAgeBand.under13
+            ? l10n.minorAccountReviewAppealTeenBody
+            : l10n.minorAccountReviewAppealUnder13Body;
+
+        await tester.scrollUntilVisible(
+          find.text(l10n.minorAccountReviewAppealTitle),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.minorAccountReviewAppealTitle), findsOneWidget);
+        expect(find.text(expectedBody), findsOneWidget);
+        expect(find.text(otherBody), findsNothing);
+        expect(
+          find.text(l10n.minorAccountReviewOpenSupportCenter),
+          findsOneWidget,
+        );
+      }
+    });
+
     testWidgets(
       'Check Again re-reads the protected-minor flag, not just the review '
       'status, so an approved teen is gated without relaunch (#176)',

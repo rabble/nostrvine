@@ -9439,6 +9439,17 @@ class AppLocalizationsKo extends AppLocalizations {
       'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
 
   @override
+  String get minorAccountReviewAppealTitle => 'Ask us to take another look';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'You can contact Divine Support and ask us to reconsider this decision. Divine may review your request, but is not obligated to.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Divine Support and ask us to reconsider this decision. Divine may review the request, but is not obligated to.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => '지원 센터 열기';
 
   @override

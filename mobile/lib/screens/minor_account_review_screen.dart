@@ -331,6 +331,13 @@ class _LoadedView extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
+        _InfoCard(
+          title: l10n.minorAccountReviewAppealTitle,
+          body: reviewCase?.isUnder13Path == true
+              ? l10n.minorAccountReviewAppealUnder13Body
+              : l10n.minorAccountReviewAppealTeenBody,
+        ),
+        const SizedBox(height: 12),
         DivineButton(
           label: l10n.minorAccountReviewOpenSupportCenter,
           leadingIcon: DivineIconName.headphones,
