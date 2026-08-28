@@ -5635,10 +5635,14 @@ class DmRepository {
 
   /// Re-drive a delete-for-everyone that no relay confirmed.
   ///
-  /// Replays the **stored** rumor rather than rebuilding one, so every
-  /// attempt carries a byte-identical rumor id and a recipient that already
-  /// received an earlier attempt dedups it. Rebuilding would mint a fresh id
-  /// on each pass and deliver the same retraction over and over.
+  /// Replays the **stored** rumor rather than rebuilding one, so every attempt
+  /// carries a byte-identical rumor id and the retraction stays a single
+  /// kind-5 no matter how many attempts it takes. Rebuilding would mint a
+  /// fresh id per pass, putting N distinct retractions on the wire for one
+  /// user action. No receive-side dedup collapses them either way — that is
+  /// keyed on gift-wrap id, and NIP-59 gives every wrap a fresh ephemeral key
+  /// and `created_at` — so what makes a replay safe is that re-applying a
+  /// deletion is a no-op.
   Future<DmMessageDeletionOutcome> retryMessageDeletion({
     required String rumorId,
   }) async {

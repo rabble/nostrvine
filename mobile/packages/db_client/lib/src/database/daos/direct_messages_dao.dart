@@ -251,18 +251,22 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// block took effect — calling it sent would misreport a message the peer
   /// still holds.
   ///
-  /// The rumor is **kept**. A block is the one terminal state that can lift
-  /// while the build is running — the minor restriction reads live remote
-  /// state, and a server-side signer refusal clears on re-authorization. (The
-  /// retired-moderation-account case cannot: that list is a compile-time
-  /// `const`, so lifting it needs a new build.)
+  /// The rumor is **kept**. A block can lift while the build is running: the
+  /// minor restriction reads live remote state, and Keycast's server-side
+  /// `verified_minor` gate — the other blocked source — clears from that same
+  /// state. (The retired-moderation-account case cannot: that list is a
+  /// compile-time `const`, so lifting it needs a new build.)
   ///
-  /// The stored rumor is also the idempotency token, not merely a payload. A
-  /// replay of the stored JSON carries a byte-identical rumor id that the
-  /// recipient dedups; a rebuilt one carries a fresh id, and so lands as a
-  /// second, distinct retraction. Dropping it therefore leaves the row
-  /// unrepairable rather than merely un-retried — including in the mixed case
-  /// where some recipients already received the retraction (#8226).
+  /// The stored rumor is also the retraction's event identity, not merely a
+  /// payload. Replaying the stored JSON keeps every attempt one kind-5;
+  /// rebuilding would mint a fresh id per attempt and put N distinct
+  /// retractions on the wire for one user action. Nothing on the receive side
+  /// collapses them — dedup is keyed on gift-wrap id, and NIP-59 gives every
+  /// wrap a fresh ephemeral key and `created_at`, so a replay is always a new
+  /// wrap; what makes it safe is that re-applying a deletion is a no-op.
+  /// Dropping the rumor therefore leaves the row unrepairable rather than
+  /// merely un-retried — including in the mixed case where some recipients
+  /// already received the retraction (#8226).
   ///
   /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
   /// additionally requires `deletion_pending`, so a blocked row stays off the

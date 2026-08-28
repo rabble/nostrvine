@@ -827,8 +827,11 @@ class DirectMessages extends Table {
   /// Serialized kind-5 rumor for an own delete-for-everyone that is awaiting
   /// confirmed delivery or was blocked. Null for every other row.
   ///
-  /// Stored rather than rebuilt so each retry replays a byte-identical rumor
-  /// id and the recipient's dedup treats repeats as idempotent. Mirrors
+  /// Stored rather than rebuilt so every retry replays a byte-identical rumor
+  /// id, keeping one retraction one kind-5 however many attempts it takes.
+  /// Receive-side dedup does not collapse the repeats — it is keyed on
+  /// gift-wrap id and NIP-59 gives every wrap a fresh ephemeral key — so what
+  /// makes them harmless is that re-applying a deletion is a no-op. Mirrors
   /// `DmReactions.rumorEventJson`, which serves the same purpose for a
   /// reaction removal.
   TextColumn get deletionRumorJson =>
