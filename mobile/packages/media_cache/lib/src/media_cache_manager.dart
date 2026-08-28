@@ -292,6 +292,7 @@ class MediaCacheManager extends CacheManager {
     @visibleForTesting CacheInfoRepository? repoOverride,
     @visibleForTesting CancellableDownloader? downloaderOverride,
     @visibleForTesting IOClient? fileServiceClientOverride,
+    @visibleForTesting Duration? sweepThrottleOverride,
   }) : this._(
          config: config,
          tempDirectoryProvider: tempDirectoryProvider ?? getTemporaryDirectory,
@@ -303,6 +304,7 @@ class MediaCacheManager extends CacheManager {
          fileServiceClient: kIsWeb
              ? null
              : (fileServiceClientOverride ?? _buildFileServiceClient(config)),
+         sweepThrottle: sweepThrottleOverride ?? _minSweepInterval,
        );
 
   MediaCacheManager._({
@@ -311,11 +313,13 @@ class MediaCacheManager extends CacheManager {
     required CacheInfoRepository? repoOverride,
     required CancellableDownloader downloader,
     required IOClient? fileServiceClient,
+    required Duration sweepThrottle,
   }) : _config = config,
        _tempDirectoryProvider = tempDirectoryProvider,
        _repoOverride = repoOverride,
        _downloader = downloader,
        _fileServiceClient = fileServiceClient,
+       _sweepThrottle = sweepThrottle,
        super(
          kIsWeb
              // coverage:ignore-start
@@ -398,6 +402,22 @@ class MediaCacheManager extends CacheManager {
   /// throttle so back-to-back sweeps cannot pile up during heavy scrolling.
   /// Seeded to the epoch so the first pass is never throttled.
   DateTime _lastSweepAt = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Minimum gap between sweeps — [_minSweepInterval] in production,
+  /// shortenable in tests so trailing-sweep timing stays fast to exercise.
+  final Duration _sweepThrottle;
+
+  /// Running estimate of the cache directory's on-disk bytes. Incremented as
+  /// downloads settle and re-synced to the walked total on every
+  /// byte-eviction pass (which is also when deletions happen) — so drift
+  /// only ever costs one extra window-gated sweep, never a missed budget.
+  int _knownCacheBytes = 0;
+
+  /// One-shot sweep armed when a download crosses the byte budget inside the
+  /// throttle window, so the directory converges back under budget even if
+  /// no further download ever lands (#8242). Cancelled by [close] and
+  /// whenever a byte-eviction pass re-syncs the total.
+  Timer? _pendingByteSweepTimer;
 
   /// Runtime override for [MediaCacheConfig.maxCacheSizeBytes], set from a
   /// user preference. `null` falls back to the config default.
@@ -709,7 +729,7 @@ class MediaCacheManager extends CacheManager {
           _cacheManifest[key] = fileInfo.file.path;
         }
 
-        _recordSuccessfulDownload();
+        _recordSuccessfulDownload(fileInfo.file);
 
         if (!completer.isCompleted) {
           completer.complete(
@@ -850,7 +870,7 @@ class MediaCacheManager extends CacheManager {
     CancellableDownload? activeDownload;
     StreamSubscription<int>? progressSubscription;
     var cancelledBeforeStart = false;
-    var completedDownload = false;
+    File? completedFile;
 
     Future<void> startDownload() async {
       try {
@@ -898,7 +918,7 @@ class MediaCacheManager extends CacheManager {
               }
             }
           }
-          completedDownload = true;
+          completedFile = file;
         }
         if (!completer.isCompleted) completer.complete(downloadResult);
       } on Object catch (error) {
@@ -915,7 +935,8 @@ class MediaCacheManager extends CacheManager {
         await pendingOperation.closeProgress();
         _pendingCacheOperations.remove(key);
         _inFlightRelativePaths.remove(relativePath);
-        if (completedDownload) _recordSuccessfulDownload();
+        final settledFile = completedFile;
+        if (settledFile != null) _recordSuccessfulDownload(settledFile);
       }
     }
 
@@ -1017,23 +1038,68 @@ class MediaCacheManager extends CacheManager {
   }
 
   /// Runs a throttled [enforceCacheLimits] pass once enough downloads have
-  /// accumulated since the last run, keeping the directory bounded during a
-  /// long session without sweeping after every single download.
+  /// accumulated since the last run — or as soon as the running byte total
+  /// crosses the budget — keeping the directory bounded during a long
+  /// session without sweeping after every single download.
   void _maybeEnforceCacheLimits() {
-    if (_downloadsSinceSweep < _downloadsPerSweep) return;
+    final budget = maxCacheSizeBytes;
+    final overBudget = budget != null && _knownCacheBytes > budget;
+    if (_downloadsSinceSweep < _downloadsPerSweep && !overBudget) return;
     // Keep the counter while a sweep would be skipped anyway (one is already
     // running, or the throttle window is still open) so these downloads count
     // toward the next eligible pass instead of being consumed silently.
     if (_sweepInProgress ||
-        clock.now().difference(_lastSweepAt) < _minSweepInterval) {
+        clock.now().difference(_lastSweepAt) < _sweepThrottle) {
+      // A budget crossing must not wait for a future download that may never
+      // land: arm a one-shot pass at window expiry (#8242). A sweep already
+      // in progress re-syncs the total itself, so it needs no timer.
+      if (overBudget && !_sweepInProgress) _armTrailingSweep();
       return;
     }
-    _downloadsSinceSweep = 0;
+    if (_downloadsSinceSweep >= _downloadsPerSweep) _downloadsSinceSweep = 0;
     unawaited(enforceCacheLimits());
   }
 
-  void _recordSuccessfulDownload() {
+  /// Schedules the over-budget follow-up sweep for when the throttle window
+  /// reopens. On firing it re-checks every gate: the manager may have closed,
+  /// a sweep may have run (re-syncing the total), or a forced sweep may have
+  /// restarted the window — in which case it re-arms rather than running
+  /// inside the window.
+  void _armTrailingSweep() {
+    if (_pendingByteSweepTimer != null || _isClosed) return;
+    final remaining = _sweepThrottle - clock.now().difference(_lastSweepAt);
+    final delay = remaining.isNegative
+        ? Duration.zero
+        : remaining + const Duration(milliseconds: 100);
+    _pendingByteSweepTimer = Timer(delay, () {
+      _pendingByteSweepTimer = null;
+      if (_isClosed || _sweepInProgress) return;
+      final budget = maxCacheSizeBytes;
+      if (budget == null || _knownCacheBytes <= budget) return;
+      if (clock.now().difference(_lastSweepAt) < _sweepThrottle) {
+        _armTrailingSweep();
+        return;
+      }
+      unawaited(enforceCacheLimits());
+    });
+  }
+
+  void _cancelTrailingSweep() {
+    _pendingByteSweepTimer?.cancel();
+    _pendingByteSweepTimer = null;
+  }
+
+  void _recordSuccessfulDownload(File file) {
     _downloadsSinceSweep++;
+    try {
+      // statSync reports a vanished file as notFound with size -1 rather
+      // than throwing; either way the estimate runs low until the next
+      // sweep re-syncs it. The catch covers platforms without dart:io.
+      final size = file.statSync().size;
+      if (size > 0) _knownCacheBytes += size;
+    } on Object {
+      // See above: the next sweep re-syncs the estimate.
+    }
     _maybeEnforceCacheLimits();
   }
 
@@ -1065,8 +1131,9 @@ class MediaCacheManager extends CacheManager {
   ///    in practice this trims by download age rather than true last-access.
   ///
   /// Safe to call at startup and repeatedly; overlapping background calls are
-  /// ignored, while an overlapping forced call queues one follow-up pass. Calls
-  /// within [_minSweepInterval] of the previous pass are skipped.
+  /// ignored, while an overlapping forced call queues one follow-up pass.
+  /// Unforced calls within the sweep throttle ([_minSweepInterval] in
+  /// production) of the previous pass are skipped.
   ///
   /// I/O is intentionally asynchronous: the directory is walked with a
   /// `Directory.list()` stream and files are removed with `File.delete()` so
@@ -1081,11 +1148,12 @@ class MediaCacheManager extends CacheManager {
       final queued = _queuedForceSweep ??= Completer<void>();
       return queued.future;
     }
-    if (!force && clock.now().difference(_lastSweepAt) < _minSweepInterval) {
+    if (!force && clock.now().difference(_lastSweepAt) < _sweepThrottle) {
       return;
     }
     _sweepInProgress = true;
     var repoOpened = false;
+    final started = clock.now();
     try {
       final repo = _repoOverride ?? config.repo;
       if (!await repo.open()) return;
@@ -1094,12 +1162,33 @@ class MediaCacheManager extends CacheManager {
       final baseDir = await _resolveBaseCacheDir();
 
       final trackedNames = {for (final object in objects) object.relativePath};
-      await _reclaimOrphanedFiles(baseDir, trackedNames);
+      final reclaimed = await _reclaimOrphanedFiles(baseDir, trackedNames);
 
       final budget = maxCacheSizeBytes;
+      var evictedCount = 0;
+      var evictedBytes = 0;
+      int? directoryBytes;
       if (budget != null) {
-        await _evictToByteBudget(baseDir, objects, budget, repo);
+        final evicted = await _evictToByteBudget(
+          baseDir,
+          objects,
+          budget,
+          repo,
+        );
+        evictedCount = evicted.deletedCount;
+        evictedBytes = evicted.deletedBytes;
+        directoryBytes = evicted.directoryBytes;
       }
+      final elapsed = clock.now().difference(started);
+      Log.info(
+        'MediaCacheManager(${_config.cacheKey}): sweep reclaimed $reclaimed '
+        'orphans, evicted $evictedCount files ($evictedBytes bytes)'
+        '${directoryBytes == null ? '' : '; directory $directoryBytes bytes '
+                  'of $budget budget'}'
+        '; took ${elapsed.inMilliseconds}ms',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
     } on Object catch (error) {
       Log.warning(
         'MediaCacheManager: enforceCacheLimits failed: $error',
@@ -1123,12 +1212,13 @@ class MediaCacheManager extends CacheManager {
     }
   }
 
-  Future<void> _reclaimOrphanedFiles(
+  /// Returns the number of orphaned files it deleted.
+  Future<int> _reclaimOrphanedFiles(
     String baseDir,
     Set<String> trackedNames,
   ) async {
     final dir = Directory(baseDir);
-    if (!dir.existsSync()) return;
+    if (!dir.existsSync()) return 0;
     // Files the sync manifest still points at are live cache entries — even
     // when flutter_cache_manager has dropped their row from its capped store
     // (its object cap is far smaller than the manifest can grow). Treating
@@ -1140,6 +1230,7 @@ class MediaCacheManager extends CacheManager {
       for (final filePath in _cacheManifest.values) path.basename(filePath),
     };
     final freshnessCutoff = clock.now().subtract(_reclamationFreshnessWindow);
+    var reclaimed = 0;
     // `Directory.list()` yields between entries, so a large reclamation pass
     // does not block the isolate the way a `listSync()` loop would.
     await for (final entity in dir.list(followLinks: false)) {
@@ -1157,11 +1248,17 @@ class MediaCacheManager extends CacheManager {
       // fully live, and WebHelper's in-flight writes have no shield entry.
       // Both carry a fresh mtime, so recently-written files stay untouched.
       if (entity.statSync().modified.isAfter(freshnessCutoff)) continue;
-      await _deleteFile(entity);
+      if (await _deleteFile(entity)) reclaimed++;
     }
+    return reclaimed;
   }
 
-  Future<void> _evictToByteBudget(
+  /// Returns what it deleted plus the directory's post-eviction byte total,
+  /// which also re-syncs [_knownCacheBytes] and disarms any pending trailing
+  /// sweep — after this pass, only a fresh download can arm one again, so an
+  /// over-budget residue of undeletable bytes cannot spin sweeps in a loop.
+  Future<({int deletedCount, int deletedBytes, int directoryBytes})>
+  _evictToByteBudget(
     String baseDir,
     List<CacheObject> objects,
     int budget,
@@ -1184,7 +1281,11 @@ class MediaCacheManager extends CacheManager {
       modifiedByName[name] = stat.modified;
       total += stat.size;
     }
-    if (total <= budget) return;
+    if (total <= budget) {
+      _knownCacheBytes = total;
+      _cancelTrailingSweep();
+      return (deletedCount: 0, deletedBytes: 0, directoryBytes: total);
+    }
 
     final entriesByName = <String, _BudgetedCacheFile>{};
     for (final object in objects) {
@@ -1222,10 +1323,14 @@ class MediaCacheManager extends CacheManager {
       ..sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
     final removedIds = <int>[];
     var aliasMapChanged = false;
+    var deletedCount = 0;
+    var deletedBytes = 0;
     for (final entry in entries) {
       if (total <= budget) break;
       if (!await _deleteFile(entry.file)) continue;
       total -= entry.size;
+      deletedCount++;
+      deletedBytes += entry.size;
       final object = entry.object;
       final id = object?.id;
       if (id != null) removedIds.add(id);
@@ -1255,6 +1360,13 @@ class MediaCacheManager extends CacheManager {
       await repo.deleteAll(removedIds);
     }
     if (aliasMapChanged) await _persistAliasMap();
+    _knownCacheBytes = total;
+    _cancelTrailingSweep();
+    return (
+      deletedCount: deletedCount,
+      deletedBytes: deletedBytes,
+      directoryBytes: total,
+    );
   }
 
   /// Deletes [file] asynchronously and reports whether it was removed. The
@@ -1387,6 +1499,8 @@ class MediaCacheManager extends CacheManager {
       await _persistAliasMap();
     }
     _pendingCacheOperations.clear();
+    _knownCacheBytes = 0;
+    _cancelTrailingSweep();
   }
 
   /// Returns basic cache statistics including hit/miss metrics.
@@ -1470,6 +1584,7 @@ class MediaCacheManager extends CacheManager {
   Future<void> close() async {
     if (_isClosed) return;
     _isClosed = true;
+    _cancelTrailingSweep();
 
     final activeOps = _activeCancellableOperations.toList(growable: false);
     for (final operation in activeOps) {

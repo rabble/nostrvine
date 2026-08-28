@@ -6,6 +6,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
@@ -547,6 +548,206 @@ void main() {
 
         expect(oldest.existsSync(), isFalse);
         expect(oversized.existsSync(), isTrue);
+      });
+
+      test('evicting an aliased file prunes and persists its '
+          'aliases', () async {
+        final downloader = FakeCancellableDownloader();
+        final cacheKey = 'alias_${DateTime.now().microsecondsSinceEpoch}';
+        Directory('$testTempPath/$cacheKey').createSync(recursive: true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        when(() => repo.updateOrInsert(any())).thenAnswer((_) async => 0);
+
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+            maxCacheSizeBytes: 2,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+        );
+
+        final op = manager.cacheFileCancellable(
+          'https://example.com/v.mp4',
+          key: 'k__fb1',
+          aliasKey: 'k',
+        );
+        for (var i = 0; i < 400 && downloader.downloads.isEmpty; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+        final target = downloader.downloads.single.targetFile
+          ..writeAsBytesSync(const [1, 2, 3]);
+        downloader.downloads.single.completeWith(target);
+        await op.file;
+        expect(manager.getCachedFileSync('k')?.path, target.path);
+
+        await manager.enforceCacheLimits(force: true);
+        await manager.waitForPendingAliasWrites();
+
+        expect(target.existsSync(), isFalse);
+        expect(
+          manager.getCachedFileSync('k'),
+          isNull,
+          reason: 'the alias must not survive its target',
+        );
+        final aliasFile = File('$testTempPath/$cacheKey/aliases.json');
+        expect(
+          aliasFile.existsSync() && aliasFile.readAsStringSync().contains('k'),
+          isFalse,
+          reason: 'the persisted alias map must drop the evicted entry',
+        );
+      });
+    });
+
+    group('byte-armed and trailing sweeps', () {
+      (MediaCacheManager, Directory, FakeCancellableDownloader) buildWithBudget(
+        String prefix, {
+        required int maxCacheSizeBytes,
+        required Duration sweepThrottle,
+      }) {
+        final downloader = FakeCancellableDownloader();
+        final cacheKey = '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
+        final dir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        when(() => repo.updateOrInsert(any())).thenAnswer((_) async => 0);
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+            maxCacheSizeBytes: maxCacheSizeBytes,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+          sweepThrottleOverride: sweepThrottle,
+        );
+        return (manager, dir, downloader);
+      }
+
+      Future<File> completeDownload(
+        MediaCacheManager manager,
+        FakeCancellableDownloader downloader, {
+        required int bytes,
+      }) async {
+        final op = manager.cacheFileCancellable(
+          'https://example.com/v.mp4',
+          key: 'k',
+        );
+        for (var i = 0; i < 400 && downloader.downloads.isEmpty; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+        final target = downloader.downloads.single.targetFile
+          ..writeAsBytesSync(List<int>.filled(bytes, 0));
+        downloader.downloads.single.completeWith(target);
+        await op.file;
+        return target;
+      }
+
+      test('sweeps immediately when a download crosses the byte '
+          'budget, before the 25-download counter', () async {
+        final (manager, _, downloader) = buildWithBudget(
+          'bytearm',
+          maxCacheSizeBytes: 4,
+          sweepThrottle: const Duration(milliseconds: 50),
+        );
+
+        final target = await completeDownload(manager, downloader, bytes: 10);
+
+        // One 10-byte download over a 4-byte budget: the crossing sweeps
+        // without waiting for 24 more downloads.
+        for (var i = 0; i < 400 && target.existsSync(); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(target.existsSync(), isFalse);
+        final sweepLogs = LogCaptureService().getRecentLogs().where(
+          (entry) => entry.message.contains('sweep reclaimed'),
+        );
+        expect(sweepLogs, isNotEmpty, reason: 'sweeps must be visible in logs');
+      });
+
+      test('arms a trailing sweep inside the throttle window and fires '
+          'it with no further downloads', () async {
+        final (manager, _, downloader) = buildWithBudget(
+          'trailing',
+          maxCacheSizeBytes: 4,
+          sweepThrottle: const Duration(seconds: 1),
+        );
+        // Stamp the throttle window so the crossing lands inside it.
+        await manager.enforceCacheLimits(force: true);
+
+        final target = await completeDownload(manager, downloader, bytes: 10);
+
+        expect(
+          target.existsSync(),
+          isTrue,
+          reason: 'crossing inside the window must not sweep immediately',
+        );
+
+        // No further download lands; only the armed timer can converge this.
+        for (var i = 0; i < 800 && target.existsSync(); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(target.existsSync(), isFalse);
+      });
+
+      test('does not spin sweeps while undeletable bytes hold the '
+          'directory over budget', () async {
+        var reads = 0;
+        when(repo.getAllObjects).thenAnswer((_) async {
+          reads++;
+          return <CacheObject>[];
+        });
+        final downloader = FakeCancellableDownloader();
+        final cacheKey = 'nospin_${DateTime.now().microsecondsSinceEpoch}';
+        final dir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
+        writeFile(dir, 'externally-managed.bin', 50);
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+            maxCacheSizeBytes: 4,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+          sweepThrottleOverride: const Duration(milliseconds: 50),
+        );
+
+        await manager.enforceCacheLimits(force: true);
+        expect(reads, 1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        expect(
+          reads,
+          1,
+          reason: 'a sweep that ends over budget must not reschedule itself',
+        );
+      });
+
+      test('a trailing sweep armed before close() never runs after '
+          'it', () async {
+        var reads = 0;
+        when(repo.getAllObjects).thenAnswer((_) async {
+          reads++;
+          return <CacheObject>[];
+        });
+        final (manager, _, downloader) = buildWithBudget(
+          'closed',
+          maxCacheSizeBytes: 4,
+          sweepThrottle: const Duration(milliseconds: 300),
+        );
+        await manager.enforceCacheLimits(force: true);
+        final readsAfterForcedSweep = reads;
+
+        final target = await completeDownload(manager, downloader, bytes: 10);
+        expect(target.existsSync(), isTrue, reason: 'inside the window');
+
+        await manager.close();
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+
+        expect(target.existsSync(), isTrue);
+        expect(reads, readsAfterForcedSweep);
       });
     });
 
