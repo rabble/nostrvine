@@ -1605,7 +1605,19 @@ class MediaCacheManager extends CacheManager {
 
     await _downloader.close();
     _fileServiceClient?.close();
-    await super.dispose();
+    try {
+      await super.dispose();
+    } on Object catch (error) {
+      // flutter_cache_manager's store close null-checks state that only
+      // exists once the repository has been opened, so disposing a manager
+      // that never touched its store throws. close() must stay safe to call
+      // from teardown paths regardless.
+      Log.warning(
+        'MediaCacheManager: store dispose failed: $error',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
+    }
   }
 }
 

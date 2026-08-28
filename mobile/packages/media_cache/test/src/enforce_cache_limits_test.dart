@@ -567,6 +567,7 @@ void main() {
           repoOverride: repo,
           downloaderOverride: downloader,
         );
+        addTearDown(manager.close);
 
         final op = manager.cacheFileCancellable(
           'https://example.com/v.mp4',
@@ -622,6 +623,7 @@ void main() {
           downloaderOverride: downloader,
           sweepThrottleOverride: sweepThrottle,
         );
+        addTearDown(manager.close);
         return (manager, dir, downloader);
       }
 
@@ -713,6 +715,7 @@ void main() {
           downloaderOverride: downloader,
           sweepThrottleOverride: const Duration(milliseconds: 50),
         );
+        addTearDown(manager.close);
 
         await manager.enforceCacheLimits(force: true);
         expect(reads, 1);

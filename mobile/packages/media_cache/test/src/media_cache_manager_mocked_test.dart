@@ -107,6 +107,29 @@ void main() {
         expect(downloader.cancelActiveCallCount, 0);
       });
 
+      test('close() survives a store whose repository close throws', () async {
+        final downloader = FakeCancellableDownloader();
+        final repo = MockCacheInfoRepository();
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        // flutter_cache_manager's own store close null-checks state that
+        // only exists after a real open; teardown paths must survive it.
+        when(repo.close).thenThrow(StateError('never opened'));
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'close_throwing_store_$timestamp',
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+        );
+
+        await expectLater(cacheManager.close(), completes);
+        expect(downloader.closed, isTrue);
+      });
+
       test(
         'cancels a deferred op before it issues a download',
         () async {
