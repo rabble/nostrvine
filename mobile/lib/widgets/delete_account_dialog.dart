@@ -723,15 +723,26 @@ Future<void> executeAccountDeletion({
         // deletion closed (nothing deleted). The unavailable 503 and the
         // missing-coordinator route both mean deletion is unavailable right now
         // — not something a retry fixes — so both take the unavailable copy and
-        // offer the bug-report action; other preparation failures surface as
-        // incomplete. One bool drives copy and action so they cannot drift.
+        // offer the bug-report action. Once the Name Server request starts, its
+        // outcome can be ambiguous and the durable attempt may need recovery,
+        // so those stages must keep neutral guidance rather than claiming that
+        // nothing happened. The remaining pre-name-server failures can say the
+        // deletion did not start.
         final isUnavailable =
             error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
             (error.indicatesUsernameRecoveryUnsupported ||
                 error.indicatesMissingCoordinatorRoute);
+        final needsNeutralRecoveryGuidance =
+            error.stage == AccountDeletionRecoveryStage.usernamePreparation ||
+            error.stage ==
+                AccountDeletionRecoveryStage.coordinatorUsernameConfirmation;
         abortPreparation(
           error,
-          isUnavailable ? deletionUnavailableText : deletionNotStartedText,
+          isUnavailable
+              ? deletionUnavailableText
+              : needsNeutralRecoveryGuidance
+              ? deletionIncompleteText
+              : deletionNotStartedText,
           offerSupport: isUnavailable,
         );
         return;

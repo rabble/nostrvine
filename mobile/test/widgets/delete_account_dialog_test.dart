@@ -403,10 +403,7 @@ void main() {
       tester,
     ) async {
       var confirmCalls = 0;
-      await _showSheet(
-        tester,
-        onConfirm: () => confirmCalls++,
-      );
+      await _showSheet(tester, onConfirm: () => confirmCalls++);
 
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
@@ -426,10 +423,7 @@ void main() {
       tester,
     ) async {
       var confirmCalls = 0;
-      await _showSheet(
-        tester,
-        onConfirm: () => confirmCalls++,
-      );
+      await _showSheet(tester, onConfirm: () => confirmCalls++);
 
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
@@ -511,10 +505,7 @@ void main() {
 
     testWidgets('tapping enabled button calls onConfirm', (tester) async {
       var called = false;
-      await _showSheet(
-        tester,
-        onConfirm: () => called = true,
-      );
+      await _showSheet(tester, onConfirm: () => called = true);
 
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
@@ -714,10 +705,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(_welcomeMarker), findsOneWidget);
-        expect(
-          find.text(_englishL10n().deleteAccountSuccess),
-          findsOneWidget,
-        );
+        expect(find.text(_englishL10n().deleteAccountSuccess), findsOneWidget);
       },
     );
 
@@ -950,10 +938,7 @@ void main() {
           ),
         );
         final l10n = _englishL10n();
-        expect(
-          find.text(l10n.deleteAccountDeletionNotStarted),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.deleteAccountDeletionNotStarted), findsOneWidget);
       },
     );
 
@@ -1120,62 +1105,60 @@ void main() {
       ).called(1);
     });
 
-    testWidgets(
-      'discloses the release when content deletion fails',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        // The pre-flight gate runs on every path; default it to ready so
-        // these tests exercise the behaviour under test, not the gate.
-        when(
-          authService.checkAccountDeletionReadiness,
-        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
-        final recoveryRepository = _MockAccountDeletionRecoveryRepository();
-        when(
-          () => recoveryRepository.prepare(username: any(named: 'username')),
-        ).thenAnswer((_) async => _recoverableAttempt);
-        when(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer(
-          (_) async => DeleteAccountResult.failure(
-            DeleteAccountFailureReason.vanishNotConfirmed,
-            diagnosticError: 'relay down',
-          ),
-        );
+    testWidgets('discloses the release when content deletion fails', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      when(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      ).thenAnswer((_) async => _recoverableAttempt);
+      when(
+        () =>
+            deletionService.deleteAccount(onProgress: any(named: 'onProgress')),
+      ).thenAnswer(
+        (_) async => DeleteAccountResult.failure(
+          DeleteAccountFailureReason.vanishNotConfirmed,
+          diagnosticError: 'relay down',
+        ),
+      );
 
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
           ),
-        );
+        ),
+      );
 
-        await runDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          deletionRecoveryRepository: recoveryRepository,
-          lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
-        );
-        await tester.pumpAndSettle();
+      await runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookup: const DivineUsernameFound(name: 'alice', canonical: 'alice'),
+      );
+      await tester.pumpAndSettle();
 
-        expect(
-          find.text(
-            lookupAppLocalizations(
-              const Locale('en'),
-            ).accountDeletionRecoveryBody,
-          ),
-          findsOneWidget,
-        );
-      },
-    );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).accountDeletionRecoveryBody,
+        ),
+        findsOneWidget,
+      );
+    });
 
     testWidgets(
       'keeps recovery available while the coordinator is processing',
@@ -1251,7 +1234,7 @@ void main() {
       },
     );
 
-    testWidgets('username preparation failure says nothing was deleted', (
+    testWidgets('username preparation failure keeps neutral guidance', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
@@ -1303,7 +1286,7 @@ void main() {
         find.text(
           lookupAppLocalizations(
             const Locale('en'),
-          ).deleteAccountDeletionNotStarted,
+          ).deleteAccountDeletionIncomplete,
         ),
         findsOneWidget,
       );
@@ -1561,7 +1544,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = _englishL10n();
-      expect(find.text(l10n.deleteAccountDeletionNotStarted), findsOneWidget);
+      expect(find.text(l10n.deleteAccountDeletionIncomplete), findsOneWidget);
       expect(find.text(l10n.deleteAccountDeletionUnavailable), findsNothing);
       verifyNever(
         () => deletionService.deleteAccount(
