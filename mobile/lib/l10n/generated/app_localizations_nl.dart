@@ -1620,6 +1620,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Divine sluiten';
 
   @override
+  String get databaseCloseManual =>
+      'Sluit Divine op je apparaat en open het daarna opnieuw.';
+
+  @override
   String get videoDetailContextTitle => 'Gedeelde video';
 
   @override

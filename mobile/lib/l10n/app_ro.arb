@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "Datele tale locale s-au deteriorat",
     "databaseCorruptionBody": "Închide Divine și deschide-l din nou — reparăm automat. Salvăm ce putem din ciornele și clipurile tale, restul se reîncarcă.",
     "databaseCorruptionCloseButton": "Închide Divine",
+    "databaseCloseManual": "Închide Divine de pe dispozitiv, apoi deschide-l din nou.",
     "videoDetailContextTitle": "Videoclip partajat",
     "videoDetailCloseSemanticLabel": "Închide playerul video",
     "metadataHashtagChipTapHint": "#{hashtag}. Atinge ca să vezi videoclipuri cu acest hashtag.",

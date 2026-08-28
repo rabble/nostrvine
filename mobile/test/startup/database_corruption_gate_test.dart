@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -83,11 +84,13 @@ void main() {
     Widget buildScreen(
       VoidCallback onCloseApp, {
       Future<void> Function()? awaitRecoveryPersisted,
+      bool? canCloseApp,
     }) => MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: DatabaseCorruptionScreen(
         awaitRecoveryPersisted: awaitRecoveryPersisted,
+        canCloseApp: canCloseApp,
         onCloseApp: onCloseApp,
       ),
     );
@@ -108,6 +111,51 @@ void main() {
       await tester.pump();
 
       expect(closed, isTrue);
+    });
+
+    testWidgets('instructs iOS users to close the app themselves', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildScreen(() {}, canCloseApp: false));
+      await tester.pump();
+
+      expect(find.byType(DivineButton), findsNothing);
+      expect(
+        find.text(l10n.databaseCloseManual),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('uses SystemNavigator.pop by default on Android', (
+      tester,
+    ) async {
+      final methodCalls = <MethodCall>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        methodCalls.add(call);
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: DatabaseCorruptionScreen(),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(l10n.databaseCorruptionCloseButton));
+      await tester.pump();
+
+      expect(
+        methodCalls.where((call) => call.method == 'SystemNavigator.pop'),
+        hasLength(1),
+      );
     });
 
     testWidgets('will not close until the recovery flag is durable', (
@@ -137,6 +185,36 @@ void main() {
       await tester.pump();
 
       expect(closed, isTrue);
+    });
+
+    testWidgets('holds the iOS instruction until recovery is durable', (
+      tester,
+    ) async {
+      final persisted = Completer<void>();
+
+      await tester.pumpWidget(
+        buildScreen(
+          () {},
+          awaitRecoveryPersisted: () => persisted.future,
+          canCloseApp: false,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(
+        find.text(l10n.databaseCloseManual),
+        findsNothing,
+      );
+
+      persisted.complete();
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(
+        find.text(l10n.databaseCloseManual),
+        findsOneWidget,
+      );
     });
   });
 }

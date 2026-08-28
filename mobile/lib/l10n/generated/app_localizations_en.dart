@@ -1620,6 +1620,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Close Divine';
 
   @override
+  String get databaseCloseManual =>
+      'Close Divine from your device, then open it again.';
+
+  @override
   String get videoDetailContextTitle => 'Shared Video';
 
   @override

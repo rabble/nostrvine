@@ -299,6 +299,26 @@ void main() {
       expect(closed, isTrue);
     });
 
+    testWidgets('instructs iOS users to close after startup failure', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
+          stack: StackTrace.current,
+          canCloseApp: false,
+        ),
+      );
+
+      expect(find.text(l10n.dbFailureCloseApp), findsNothing);
+      expect(
+        find.text(l10n.databaseCloseManual),
+        findsOneWidget,
+      );
+    });
+
     test('classifies cipher availability failures for release diagnostics', () {
       expect(
         databaseBootstrapDiagnosticCode(
@@ -520,6 +540,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
+          canCloseApp: false,
           onCloseApp: () => closes++,
           onResetLocalDatabase: (_) async {},
         ),
@@ -532,14 +553,43 @@ void main() {
 
       expect(find.text(l10n.dbFailureResetDoneTitle), findsOneWidget);
       expect(find.text(l10n.dbFailureResetConfirm), findsNothing);
-      expect(closes, equals(1));
+      expect(closes, isZero);
 
-      await tester.tap(find.text(l10n.dbFailureCloseApp));
+      expect(find.text(l10n.dbFailureCloseApp), findsNothing);
+      expect(
+        find.text(l10n.databaseCloseManual),
+        findsOneWidget,
+      );
       expect(
         closes,
-        equals(2),
-        reason: 'the terminal step still needs a live way out',
+        isZero,
+        reason: 'the terminal step must not offer another dead close action',
       );
+    });
+
+    testWidgets('keeps the terminal close action on Android', (tester) async {
+      var closes = 0;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          canCloseApp: true,
+          onCloseApp: () => closes++,
+          onResetLocalDatabase: (_) async {},
+        ),
+      );
+
+      await tester.tap(find.text(l10n.dbFailureResetAction));
+      await tester.pump();
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
+      await tester.pump();
+
+      expect(closes, equals(1));
+      expect(find.text(l10n.dbFailureCloseApp), findsOneWidget);
+
+      await tester.tap(find.text(l10n.dbFailureCloseApp));
+      expect(closes, equals(2));
     });
 
     testWidgets('reports a reset that hangs instead of spinning forever', (

@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "Dina lokala data har skadats",
     "databaseCorruptionBody": "Stäng Divine och öppna appen igen – vi fixar det automatiskt. Vi räddar så mycket vi kan av dina utkast och klipp, resten laddas om.",
     "databaseCorruptionCloseButton": "Stäng Divine",
+    "databaseCloseManual": "Stäng Divine på din enhet och öppna det sedan igen.",
     "videoDetailContextTitle": "Delad video",
     "videoDetailCloseSemanticLabel": "Stäng videospelaren",
     "metadataHashtagChipTapHint": "#{hashtag}. Tryck för att se videor med den här hashtaggen.",

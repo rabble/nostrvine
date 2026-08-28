@@ -734,6 +734,7 @@
     "description": "Body of the database-corruption takeover, explaining that a restart triggers the repair. The hedge on drafts and clips is deliberate and must be preserved when translating: the next launch salvages on a best-effort basis and can drop rows sitting on damaged pages, so promising they all survive would be a lie."
   },
   "databaseCorruptionCloseButton": "Tutup Divine",
+  "databaseCloseManual": "Tutup Divine pada peranti anda, kemudian buka semula.",
   "@databaseCorruptionCloseButton": {
     "description": "Button on the database-corruption takeover that closes the app so the user can reopen it. Flutter cannot relaunch its own process, so closing is the most we can offer."
   },

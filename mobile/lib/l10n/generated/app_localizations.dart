@@ -2790,6 +2790,12 @@ abstract class AppLocalizations {
   /// **'Close Divine'**
   String get databaseCorruptionCloseButton;
 
+  /// Instruction shown instead of a close button when the platform cannot close Divine itself. Keep this platform-neutral because the fallback also covers unverified desktop and web targets.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Divine from your device, then open it again.'**
+  String get databaseCloseManual;
+
   /// App bar title over the fullscreen player when a video is opened from a share/deep link; also forwarded verbatim as the feedMode analytics dimension.
   ///
   /// In en, this message translates to:

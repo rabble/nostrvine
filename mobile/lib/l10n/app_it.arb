@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "I tuoi dati locali si sono rovinati",
     "databaseCorruptionBody": "Chiudi Divine e riaprila: sistemiamo tutto in automatico. Salviamo quello che possiamo delle tue bozze e clip, il resto si ricarica.",
     "databaseCorruptionCloseButton": "Chiudi Divine",
+    "databaseCloseManual": "Chiudi Divine dal tuo dispositivo, poi riaprilo.",
     "videoDetailContextTitle": "Video condiviso",
     "videoDetailCloseSemanticLabel": "Chiudi lettore video",
     "metadataHashtagChipTapHint": "#{hashtag}. Tocca per vedere i video con questo hashtag.",

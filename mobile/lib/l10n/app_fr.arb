@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "Tes données locales sont abîmées",
     "databaseCorruptionBody": "Ferme Divine et rouvre-la : on répare ça automatiquement. On sauve ce qu'on peut de tes brouillons et clips, le reste se recharge.",
     "databaseCorruptionCloseButton": "Fermer Divine",
+    "databaseCloseManual": "Fermez Divine depuis votre appareil, puis rouvrez-le.",
     "videoDetailContextTitle": "Vidéo partagée",
     "videoDetailCloseSemanticLabel": "Fermer le lecteur vidéo",
     "metadataHashtagChipTapHint": "#{hashtag}. Touche pour voir les vidéos avec ce hashtag.",

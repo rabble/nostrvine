@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/database_corruption_provider.dart';
+import 'package:openvine/startup/close_app_support.dart';
 
 /// Swaps [child] for [DatabaseCorruptionScreen] once corruption surfaces.
 ///
@@ -47,13 +48,13 @@ class DatabaseCorruptionGate extends ConsumerWidget {
 /// Tells the user their local database is damaged and a restart repairs it.
 ///
 /// The sibling of `DatabaseBootstrapFailureApp`, for corruption that surfaces
-/// *after* startup. It closes the app rather than restarting it because Flutter
-/// cannot relaunch its own process; `SystemNavigator.pop` is the same affordance
-/// the startup failure screen offers.
+/// *after* startup. Android can close the app directly; other platforms explain
+/// how to close it manually because Flutter cannot relaunch its own process.
 class DatabaseCorruptionScreen extends StatelessWidget {
   /// Creates the screen. [onCloseApp] is injected for tests.
   const DatabaseCorruptionScreen({
     this.awaitRecoveryPersisted,
+    this.canCloseApp,
     this.onCloseApp = SystemNavigator.pop,
     super.key,
   });
@@ -63,6 +64,9 @@ class DatabaseCorruptionScreen extends StatelessWidget {
   /// `null` leaves the button enabled immediately, for callers with no flag to
   /// wait on (tests covering the layout).
   final Future<void> Function()? awaitRecoveryPersisted;
+
+  /// Overrides platform close support in tests.
+  final bool? canCloseApp;
 
   /// Invoked by the close button.
   final VoidCallback onCloseApp;
@@ -103,8 +107,9 @@ class DatabaseCorruptionScreen extends StatelessWidget {
                       color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
-                  _CloseAppButton(
+                  _CloseAppAffordance(
                     awaitRecoveryPersisted: awaitRecoveryPersisted,
+                    canCloseApp: canCloseApp ?? platformCanCloseApp,
                     onCloseApp: onCloseApp,
                   ),
                 ],
@@ -123,20 +128,22 @@ class DatabaseCorruptionScreen extends StatelessWidget {
 /// database: the restart only repairs anything if the next launch can read the
 /// flag. The wait is invisible in practice — the write settles long before
 /// anyone finishes reading the screen.
-class _CloseAppButton extends StatefulWidget {
-  const _CloseAppButton({
+class _CloseAppAffordance extends StatefulWidget {
+  const _CloseAppAffordance({
     required this.awaitRecoveryPersisted,
+    required this.canCloseApp,
     required this.onCloseApp,
   });
 
   final Future<void> Function()? awaitRecoveryPersisted;
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
 
   @override
-  State<_CloseAppButton> createState() => _CloseAppButtonState();
+  State<_CloseAppAffordance> createState() => _CloseAppAffordanceState();
 }
 
-class _CloseAppButtonState extends State<_CloseAppButton> {
+class _CloseAppAffordanceState extends State<_CloseAppAffordance> {
   // Resolved once, not per build, so a rebuild cannot restart the wait.
   late final Future<void> _persisted =
       widget.awaitRecoveryPersisted?.call() ?? Future<void>.value();
@@ -150,11 +157,20 @@ class _CloseAppButtonState extends State<_CloseAppButton> {
         // the service has already logged it, and a user who restarts anyway is
         // better off than one held in a session that cannot recover.
         final settled = snapshot.connectionState == ConnectionState.done;
-        return DivineButton(
-          label: context.l10n.databaseCorruptionCloseButton,
-          onPressed: settled ? widget.onCloseApp : null,
-          isLoading: !settled,
-          type: DivineButtonType.secondary,
+        if (!settled || widget.canCloseApp) {
+          return DivineButton(
+            label: context.l10n.databaseCorruptionCloseButton,
+            onPressed: settled ? widget.onCloseApp : null,
+            isLoading: !settled,
+            type: DivineButtonType.secondary,
+          );
+        }
+        return Text(
+          context.l10n.databaseCloseManual,
+          textAlign: TextAlign.center,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         );
       },
     );

@@ -1592,6 +1592,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Tutup Divine';
 
   @override
+  String get databaseCloseManual =>
+      'Tutup Divine pada peranti anda, kemudian buka semula.';
+
+  @override
   String get videoDetailContextTitle => 'Video Dikongsi';
 
   @override

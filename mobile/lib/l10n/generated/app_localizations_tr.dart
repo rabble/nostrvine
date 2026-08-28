@@ -1549,6 +1549,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Divine\'ı kapat';
 
   @override
+  String get databaseCloseManual =>
+      'Divine’ı cihazınızdan kapatın, ardından yeniden açın.';
+
+  @override
   String get videoDetailContextTitle => 'Paylaşılan video';
 
   @override

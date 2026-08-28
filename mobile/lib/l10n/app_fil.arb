@@ -2962,6 +2962,7 @@
     "databaseCorruptionTitle": "Nasira ang local data mo",
     "databaseCorruptionBody": "Isara ang Divine at buksan ulit — awtomatiko naming aayusin. Ise-save namin ang makakaya sa mga draft at clip mo, mag-reload na lang ang iba.",
     "databaseCorruptionCloseButton": "Isara ang Divine",
+    "databaseCloseManual": "Isara ang Divine sa iyong device, pagkatapos ay buksan itong muli.",
     "videoDetailContextTitle": "Na-share na video",
     "videoDetailCloseSemanticLabel": "Isara ang video player",
     "metadataHashtagChipTapHint": "#{hashtag}. I-tap para makita ang mga video na may ganitong hashtag.",

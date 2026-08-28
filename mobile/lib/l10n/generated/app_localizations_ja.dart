@@ -1471,6 +1471,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Divine を閉じる';
 
   @override
+  String get databaseCloseManual => 'デバイスで Divine を閉じてから、もう一度開いてください。';
+
+  @override
   String get videoDetailContextTitle => '共有された動画';
 
   @override

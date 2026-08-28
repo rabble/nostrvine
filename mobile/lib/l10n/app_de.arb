@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "Deine lokalen Daten sind beschädigt",
     "databaseCorruptionBody": "Schließ Divine und öffne es neu — wir reparieren das automatisch. Wir retten so viel wie möglich von deinen Entwürfen und Clips, alles andere lädt neu.",
     "databaseCorruptionCloseButton": "Divine schließen",
+    "databaseCloseManual": "Schließe Divine auf deinem Gerät und öffne es dann erneut.",
     "videoDetailContextTitle": "Geteiltes Video",
     "videoDetailCloseSemanticLabel": "Videoplayer schließen",
     "metadataHashtagChipTapHint": "#{hashtag}. Tippen, um Videos mit diesem Hashtag anzusehen.",

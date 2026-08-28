@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "Twoje lokalne dane się uszkodziły",
     "databaseCorruptionBody": "Zamknij Divine i otwórz ponownie — naprawimy to automatycznie. Zachowamy tyle Twoich szkiców i klipów, ile się da, reszta wczyta się na nowo.",
     "databaseCorruptionCloseButton": "Zamknij Divine",
+    "databaseCloseManual": "Zamknij Divine na urządzeniu, a następnie otwórz go ponownie.",
     "videoDetailContextTitle": "Udostępniony film",
     "videoDetailCloseSemanticLabel": "Zamknij odtwarzacz wideo",
     "metadataHashtagChipTapHint": "#{hashtag}. Dotknij, aby zobaczyć filmy z tym hashtagiem.",

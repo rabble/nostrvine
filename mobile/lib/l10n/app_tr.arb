@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "Yerel verilerin bozuldu",
     "databaseCorruptionBody": "Divine'ı kapatıp yeniden aç — bunu otomatik olarak onarıyoruz. Taslaklarından ve kliplerinden kurtarabildiğimizi saklıyoruz, gerisi yeniden yükleniyor.",
     "databaseCorruptionCloseButton": "Divine'ı kapat",
+    "databaseCloseManual": "Divine’ı cihazınızdan kapatın, ardından yeniden açın.",
     "videoDetailContextTitle": "Paylaşılan video",
     "videoDetailCloseSemanticLabel": "Video oynatıcıyı kapat",
     "metadataHashtagChipTapHint": "#{hashtag}. Bu hashtag'e sahip videoları görmek için dokun.",

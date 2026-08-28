@@ -1574,6 +1574,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Divine ን ዝጋ';
 
   @override
+  String get databaseCloseManual => 'Divineን ከመሣሪያዎ ይዝጉት፣ ከዚያ እንደገና ይክፈቱት።';
+
+  @override
   String get videoDetailContextTitle => 'የተጋራ ቪዲዮ';
 
   @override

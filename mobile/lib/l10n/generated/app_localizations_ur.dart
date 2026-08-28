@@ -1612,6 +1612,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Divine بند کریں';
 
   @override
+  String get databaseCloseManual =>
+      'اپنے آلے پر Divine بند کریں، پھر اسے دوبارہ کھولیں۔';
+
+  @override
   String get videoDetailContextTitle => 'شیئر شدہ ویڈیو';
 
   @override

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
+import 'package:openvine/startup/close_app_support.dart';
 
 /// Result of resolving the DB cipher key during app startup.
 class DatabaseBootstrapStartupResult {
@@ -103,6 +104,7 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
     required this.error,
     required this.stack,
     this.locale,
+    this.canCloseApp,
     this.onCloseApp = SystemNavigator.pop,
     this.onResetLocalDatabase,
     super.key,
@@ -118,6 +120,9 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   /// this screen keeps no dependency on SharedPreferences — it has to render
   /// even when startup did not get far enough to have one.
   final Locale? locale;
+
+  /// Overrides platform close support in tests.
+  final bool? canCloseApp;
 
   final VoidCallback onCloseApp;
 
@@ -149,6 +154,7 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
       home: _FailureScreen(
         error: error,
         stack: stack,
+        canCloseApp: canCloseApp ?? platformCanCloseApp,
         onCloseApp: onCloseApp,
         onResetLocalDatabase: onResetLocalDatabase,
       ),
@@ -160,12 +166,14 @@ class _FailureScreen extends StatefulWidget {
   const _FailureScreen({
     required this.error,
     required this.stack,
+    required this.canCloseApp,
     required this.onCloseApp,
     required this.onResetLocalDatabase,
   });
 
   final Object error;
   final StackTrace stack;
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
   final Future<void> Function(DatabaseBootstrapDiagnosis diagnosis)?
   onResetLocalDatabase;
@@ -224,9 +232,9 @@ class _FailureScreenState extends State<_FailureScreen> {
       });
       _announce(context.l10n.dbFailureResetDoneTitle);
     }
-    // Finishes the activity on Android. On iOS the process stays alive, which
-    // is what the done step renders for.
-    widget.onCloseApp();
+    // Finishes the activity on Android. Unsupported platforms stay on the done
+    // step, which explains how to close Divine manually.
+    if (widget.canCloseApp) widget.onCloseApp();
   }
 
   void _announce(String message) => SemanticsService.sendAnnouncement(
@@ -249,6 +257,7 @@ class _FailureScreenState extends State<_FailureScreen> {
                 _Step.failure => _FailureView(
                   error: widget.error,
                   stack: widget.stack,
+                  canCloseApp: widget.canCloseApp,
                   onCloseApp: widget.onCloseApp,
                   onResetRequested: _canReset
                       ? () => _goTo(
@@ -264,7 +273,10 @@ class _FailureScreenState extends State<_FailureScreen> {
                   onCancel: () =>
                       _goTo(_Step.failure, context.l10n.dbFailureTitle),
                 ),
-                _Step.done => _ResetDoneView(onCloseApp: widget.onCloseApp),
+                _Step.done => _ResetDoneView(
+                  canCloseApp: widget.canCloseApp,
+                  onCloseApp: widget.onCloseApp,
+                ),
               },
             ),
           ),
@@ -278,12 +290,14 @@ class _FailureView extends StatelessWidget {
   const _FailureView({
     required this.error,
     required this.stack,
+    required this.canCloseApp,
     required this.onCloseApp,
     required this.onResetRequested,
   });
 
   final Object error;
   final StackTrace stack;
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
   final VoidCallback? onResetRequested;
 
@@ -320,11 +334,18 @@ class _FailureView extends StatelessWidget {
           style: _diagnosticStyle,
         ),
         const SizedBox(height: 24),
-        DivineButton(
-          label: l10n.dbFailureCloseApp,
-          onPressed: onCloseApp,
-          type: DivineButtonType.secondary,
-        ),
+        if (canCloseApp)
+          DivineButton(
+            label: l10n.dbFailureCloseApp,
+            onPressed: onCloseApp,
+            type: DivineButtonType.secondary,
+          )
+        else
+          Text(
+            l10n.databaseCloseManual,
+            textAlign: TextAlign.center,
+            style: _bodyStyle,
+          ),
         if (onResetRequested != null) ...[
           const SizedBox(height: 12),
           DivineButton(
@@ -411,8 +432,12 @@ class _ResetConfirmView extends StatelessWidget {
 /// this step the confirmation would sit there spinning behind two disabled
 /// buttons with nothing left to happen.
 class _ResetDoneView extends StatelessWidget {
-  const _ResetDoneView({required this.onCloseApp});
+  const _ResetDoneView({
+    required this.canCloseApp,
+    required this.onCloseApp,
+  });
 
+  final bool canCloseApp;
   final VoidCallback onCloseApp;
 
   @override
@@ -439,11 +464,18 @@ class _ResetDoneView extends StatelessWidget {
           style: _bodyStyle,
         ),
         const SizedBox(height: 24),
-        DivineButton(
-          label: l10n.dbFailureCloseApp,
-          onPressed: onCloseApp,
-          type: DivineButtonType.secondary,
-        ),
+        if (canCloseApp)
+          DivineButton(
+            label: l10n.dbFailureCloseApp,
+            onPressed: onCloseApp,
+            type: DivineButtonType.secondary,
+          )
+        else
+          Text(
+            l10n.databaseCloseManual,
+            textAlign: TextAlign.center,
+            style: _bodyStyle,
+          ),
       ],
     );
   }

@@ -1583,6 +1583,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Đóng Divine';
 
   @override
+  String get databaseCloseManual => 'Đóng Divine trên thiết bị, rồi mở lại.';
+
+  @override
   String get videoDetailContextTitle => 'Video được chia sẻ';
 
   @override

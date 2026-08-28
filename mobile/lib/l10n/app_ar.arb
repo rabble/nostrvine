@@ -4166,6 +4166,7 @@
     "databaseCorruptionTitle": "بياناتك المحلية تعرضت للتلف",
     "databaseCorruptionBody": "أغلق Divine وافتحه من جديد — سنصلح ذلك تلقائيًا. سنحفظ ما نستطيع من مسوداتك ومقاطعك، وسيُعاد تحميل الباقي.",
     "databaseCorruptionCloseButton": "إغلاق Divine",
+    "databaseCloseManual": "أغلق Divine من جهازك، ثم افتحه مجددًا.",
     "videoDetailContextTitle": "فيديو تمت مشاركته",
     "videoDetailCloseSemanticLabel": "إغلاق مشغل الفيديو",
     "metadataHashtagChipTapHint": "#{hashtag}. اضغط لعرض الفيديوهات بهذا الوسم.",

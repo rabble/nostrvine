@@ -1657,6 +1657,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Închide Divine';
 
   @override
+  String get databaseCloseManual =>
+      'Închide Divine de pe dispozitiv, apoi deschide-l din nou.';
+
+  @override
   String get videoDetailContextTitle => 'Videoclip partajat';
 
   @override

@@ -3627,6 +3627,7 @@
     "databaseCorruptionTitle": "로컬 데이터가 손상됐어요",
     "databaseCorruptionBody": "Divine을 껐다가 다시 열어주세요. 자동으로 고쳐드릴게요. 초안과 클립은 최대한 살려볼게요. 나머지는 다시 불러와요.",
     "databaseCorruptionCloseButton": "Divine 닫기",
+    "databaseCloseManual": "기기에서 Divine을 닫은 다음 다시 여세요.",
     "videoDetailContextTitle": "공유된 영상",
     "videoDetailCloseSemanticLabel": "동영상 플레이어 닫기",
     "metadataHashtagChipTapHint": "#{hashtag}. 탭하면 이 해시태그가 달린 영상을 볼 수 있어요.",

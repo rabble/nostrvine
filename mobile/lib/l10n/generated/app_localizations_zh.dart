@@ -1487,6 +1487,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get databaseCorruptionCloseButton => '关闭 Divine';
 
   @override
+  String get databaseCloseManual => '在设备上关闭 Divine，然后重新打开。';
+
+  @override
   String get videoDetailContextTitle => '分享的视频';
 
   @override

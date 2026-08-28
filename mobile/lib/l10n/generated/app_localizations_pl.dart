@@ -1646,6 +1646,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get databaseCorruptionCloseButton => 'Zamknij Divine';
 
   @override
+  String get databaseCloseManual =>
+      'Zamknij Divine na urządzeniu, a następnie otwórz go ponownie.';
+
+  @override
   String get videoDetailContextTitle => 'Udostępniony film';
 
   @override
