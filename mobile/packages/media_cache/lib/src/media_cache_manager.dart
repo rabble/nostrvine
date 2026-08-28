@@ -416,10 +416,6 @@ class MediaCacheManager extends CacheManager {
   /// only ever costs one extra window-gated sweep, never a missed budget.
   int _knownCacheBytes = 0;
 
-  /// Increments when a download settles, allowing a directory walk to detect
-  /// that its byte snapshot raced a completed download.
-  int _successfulDownloadRevision = 0;
-
   /// One-shot sweep armed when a download crosses the byte budget inside the
   /// throttle window, so the directory converges back under budget even if
   /// no further download ever lands (#8242). Cancelled by [close] and
@@ -1120,7 +1116,6 @@ class MediaCacheManager extends CacheManager {
 
   void _recordSuccessfulDownload(File file) {
     _downloadsSinceSweep++;
-    _successfulDownloadRevision++;
     try {
       // statSync reports a vanished file as notFound with size -1 rather
       // than throwing; either way the estimate runs low until the next
@@ -1142,17 +1137,17 @@ class MediaCacheManager extends CacheManager {
   ///
   /// Two passes, both safe to run at any time and never throwing:
   ///
-  /// 1. **Reclamation** — deletes files in the cache directory that neither the
-  ///    cache store nor the sync manifest still tracks and that match
+  /// 1. **Reclamation** — deletes top-level files in the cache directory that
+  ///    neither the cache store nor the sync manifest still tracks and match
   ///    [_managedCacheFilePattern] or [_webHelperCacheFilePattern].
   ///    `flutter_cache_manager` drops database rows on eviction without
   ///    reliably deleting the underlying file for this on-disk layout, so
   ///    evicted and superseded downloads pile up as untracked orphans; this
   ///    pass removes them. Files still referenced by the manifest (live
   ///    entries the store's object cap has demoted), files that match neither
-  ///    pattern (the alias manifest and caller-owned sidecars), in-flight
-  ///    downloads, and files written within [_reclamationFreshnessWindow]
-  ///    are left untouched.
+  ///    pattern (the alias manifest and caller-owned sidecars), caller-owned
+  ///    subdirectories, in-flight downloads, and files written within
+  ///    [_reclamationFreshnessWindow] are left untouched.
   /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
   ///    totals every file in the directory (so the enforced number matches
   ///    what callers measure on disk) and deletes the oldest deletable files
@@ -1217,14 +1212,6 @@ class MediaCacheManager extends CacheManager {
         evictedCount = evicted.deletedCount;
         evictedBytes = evicted.deletedBytes;
         directoryBytes = evicted.directoryBytes;
-        if (_successfulDownloadRevision !=
-            evicted.successfulDownloadRevisionAtScanStart) {
-          // The walked total may have missed or only partially counted a file
-          // that settled during the pass. Force a trailing reconciliation so
-          // the stale snapshot cannot suppress the final budget crossing.
-          _knownCacheBytes = budget + 1;
-          _armTrailingSweep();
-        }
       }
       final elapsed = clock.now().difference(started);
       Log.info(
@@ -1293,33 +1280,24 @@ class MediaCacheManager extends CacheManager {
     };
     final freshnessCutoff = clock.now().subtract(_reclamationFreshnessWindow);
     var reclaimed = 0;
-    final pendingDirectories = <Directory>[dir];
-    while (pendingDirectories.isNotEmpty) {
-      final directory = pendingDirectories.removeLast();
-      // `Directory.list()` yields between entries, so a large reclamation pass
-      // does not block the isolate the way a `listSync()` loop would.
-      await for (final entity in directory.list(followLinks: false)) {
-        if (entity is Directory) {
-          pendingDirectories.add(entity);
-          continue;
-        }
-        if (entity is! File) continue;
-        final name = path.basename(entity.path);
-        final relativePath = path.relative(entity.path, from: baseDir);
-        if (trackedNames.contains(relativePath)) continue;
-        if (manifestNames.contains(name)) continue;
-        if (_inFlightRelativePaths.contains(relativePath)) continue;
-        if (!_managedCacheFilePattern.hasMatch(name) &&
-            !_webHelperCacheFilePattern.hasMatch(name)) {
-          continue;
-        }
-        // Freshness guard (see [_reclamationFreshnessWindow]): a download that
-        // settled after the snapshots above were taken is untracked here yet
-        // fully live, and WebHelper's in-flight writes have no shield entry.
-        // Both carry a fresh mtime, so recently-written files stay untouched.
-        if (entity.statSync().modified.isAfter(freshnessCutoff)) continue;
-        if (await _deleteFile(entity)) reclaimed++;
+    // `Directory.list()` yields between entries, so a large reclamation pass
+    // does not block the isolate the way a `listSync()` loop would.
+    await for (final entity in dir.list(followLinks: false)) {
+      if (entity is! File) continue;
+      final name = path.basename(entity.path);
+      if (trackedNames.contains(name)) continue;
+      if (manifestNames.contains(name)) continue;
+      if (_inFlightRelativePaths.contains(name)) continue;
+      if (!_managedCacheFilePattern.hasMatch(name) &&
+          !_webHelperCacheFilePattern.hasMatch(name)) {
+        continue;
       }
+      // Freshness guard (see [_reclamationFreshnessWindow]): a download that
+      // settled after the snapshots above were taken is untracked here yet
+      // fully live, and WebHelper's in-flight writes have no shield entry.
+      // Both carry a fresh mtime, so recently-written files stay untouched.
+      if (entity.statSync().modified.isAfter(freshnessCutoff)) continue;
+      if (await _deleteFile(entity)) reclaimed++;
     }
     return reclaimed;
   }
@@ -1328,14 +1306,7 @@ class MediaCacheManager extends CacheManager {
   /// which also re-syncs [_knownCacheBytes] and disarms any pending trailing
   /// sweep — after this pass, only a fresh download can arm one again, so an
   /// over-budget residue of undeletable bytes cannot spin sweeps in a loop.
-  Future<
-    ({
-      int deletedCount,
-      int deletedBytes,
-      int directoryBytes,
-      int successfulDownloadRevisionAtScanStart,
-    })
-  >
+  Future<({int deletedCount, int deletedBytes, int directoryBytes})>
   _evictToByteBudget(
     String baseDir,
     List<CacheObject> objects,
@@ -1347,25 +1318,34 @@ class MediaCacheManager extends CacheManager {
     // manifest, in-flight partial downloads, files matching neither managed
     // pattern — count towards the total but are never eviction candidates,
     // so the loop below simply stops once the candidates run out.
-    final successfulDownloadRevisionAtScanStart = _successfulDownloadRevision;
     final sizesByRelativePath = <String, int>{};
     final modifiedByRelativePath = <String, DateTime>{};
     var total = 0;
     final pendingDirectories = <Directory>[Directory(baseDir)];
     while (pendingDirectories.isNotEmpty) {
       final directory = pendingDirectories.removeLast();
-      await for (final entity in directory.list(followLinks: false)) {
-        if (entity is Directory) {
-          pendingDirectories.add(entity);
-          continue;
+      try {
+        await for (final entity in directory.list(followLinks: false)) {
+          if (entity is Directory) {
+            pendingDirectories.add(entity);
+            continue;
+          }
+          if (entity is! File) continue;
+          final stat = entity.statSync();
+          if (stat.type == FileSystemEntityType.notFound) continue;
+          final relativePath = path.relative(entity.path, from: baseDir);
+          sizesByRelativePath[relativePath] = stat.size;
+          modifiedByRelativePath[relativePath] = stat.modified;
+          total += stat.size;
         }
-        if (entity is! File) continue;
-        final stat = entity.statSync();
-        if (stat.type == FileSystemEntityType.notFound) continue;
-        final relativePath = path.relative(entity.path, from: baseDir);
-        sizesByRelativePath[relativePath] = stat.size;
-        modifiedByRelativePath[relativePath] = stat.modified;
-        total += stat.size;
+      } on Object catch (error) {
+        // Match StorageManagementService's measurement: one unreadable
+        // subtree must not discard bytes already counted from its siblings.
+        Log.warning(
+          'MediaCacheManager: sizing ${directory.path} failed: $error',
+          name: 'MediaCache',
+          category: LogCategory.video,
+        );
       }
     }
     if (total <= budget) {
@@ -1375,8 +1355,6 @@ class MediaCacheManager extends CacheManager {
         deletedCount: 0,
         deletedBytes: 0,
         directoryBytes: total,
-        successfulDownloadRevisionAtScanStart:
-            successfulDownloadRevisionAtScanStart,
       );
     }
 
@@ -1460,8 +1438,6 @@ class MediaCacheManager extends CacheManager {
       deletedCount: deletedCount,
       deletedBytes: deletedBytes,
       directoryBytes: total,
-      successfulDownloadRevisionAtScanStart:
-          successfulDownloadRevisionAtScanStart,
     );
   }
 
