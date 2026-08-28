@@ -2800,6 +2800,67 @@ void main() {
       expect(tags, contains(equals(['e', 'event-thread-id'])));
     });
 
+    test(
+      'blocking someone already muted elsewhere keeps their relay hint',
+      () async {
+        // `_applyOwnMuteListEvent` keeps our own blocks out of `_mutedPubkeys`,
+        // so the source-preservation loop skips this pubkey and the re-emit
+        // path is what decides whether the hint survives.
+        const alreadyMuted =
+            '00000000000000000000000000000000000000000000000000000000000000ee';
+        final existingEvent = buildEvent(
+          kind: 10000,
+          content: 'encrypted-private-tags',
+          tags: const [
+            ['p', alreadyMuted, 'wss://relay.example'],
+          ],
+          createdAt: 1000,
+        );
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockClient.queryEvents(any()),
+        ).thenAnswer((_) async => [existingEvent]);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (invocation) async => signedEventFromInvocation(invocation),
+        );
+        when(() => mockClient.publishEvent(any())).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
+
+        final service = ContentBlocklistRepository();
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+
+        await service.blockUser(alreadyMuted);
+
+        final tags =
+            verify(
+                  () => mockSigner.createAndSignEvent(
+                    kind: 10000,
+                    content: any(named: 'content'),
+                    tags: captureAny(named: 'tags'),
+                  ),
+                ).captured.last
+                as List<List<String>>;
+        expect(
+          tags,
+          contains(equals(['p', alreadyMuted, 'wss://relay.example'])),
+        );
+        expect(tags, isNot(contains(equals(['p', alreadyMuted]))));
+      },
+    );
+
     test('blocking appends hydrated external p mutes before the latest source '
         'event is available', () async {
       const existingMute =

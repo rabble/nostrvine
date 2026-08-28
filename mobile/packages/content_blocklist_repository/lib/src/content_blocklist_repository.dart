@@ -748,6 +748,14 @@ class ContentBlocklistRepository {
     final source = _latestOwnMuteListEvent;
     final tags = <List<String>>[];
     final includedPubkeys = <String>{};
+    // A NIP-51 `p` tag can carry a third element -- a relay hint -- that is
+    // ours to preserve, not to invent. Keyed by pubkey so an entry we re-emit
+    // below keeps whatever the source published. Without this, a pubkey that
+    // is both muted on the relay and blocked in-app loses its hint on every
+    // republish: `_applyOwnMuteListEvent` keeps our own blocks out of
+    // `_mutedPubkeys`, so the preservation loop skips it and the
+    // `_runtimeBlocklist` loop rewrites it as a bare ['p', pubkey].
+    final sourcePubkeyTags = <String, List<String>>{};
 
     if (source != null) {
       for (final tag in source.tags) {
@@ -758,23 +766,21 @@ class ContentBlocklistRepository {
 
         if (tag.length < 2) continue;
         final pubkey = tag[1];
+        sourcePubkeyTags.putIfAbsent(pubkey, () => List<String>.of(tag));
         if (_mutedPubkeys.contains(pubkey) && includedPubkeys.add(pubkey)) {
           tags.add(List<String>.of(tag));
         }
       }
     }
 
-    for (final pubkey in _mutedPubkeys) {
-      if (includedPubkeys.add(pubkey)) {
-        tags.add(['p', pubkey]);
-      }
+    void addPubkey(String pubkey) {
+      if (!includedPubkeys.add(pubkey)) return;
+      final sourceTag = sourcePubkeyTags[pubkey];
+      tags.add(sourceTag == null ? ['p', pubkey] : List<String>.of(sourceTag));
     }
 
-    for (final pubkey in _runtimeBlocklist) {
-      if (includedPubkeys.add(pubkey)) {
-        tags.add(['p', pubkey]);
-      }
-    }
+    _mutedPubkeys.forEach(addPubkey);
+    _runtimeBlocklist.forEach(addPubkey);
 
     return _MuteListPublishShape(tags: tags, content: source?.content ?? '');
   }
