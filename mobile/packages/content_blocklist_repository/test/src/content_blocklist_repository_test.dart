@@ -1160,6 +1160,42 @@ void main() {
       service.dispose();
     });
 
+    test('survives corrupt pending-unblock storage', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('pending_unblocks'),
+      ).thenReturn('{not json');
+
+      // Construction hydrates; a corrupt blob must not take the repository
+      // down with it.
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      expect(service.totalBlockedCount, equals(0));
+
+      service.dispose();
+    });
+
+    test('continues when persisting a pending unblock throws', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.getString('blocked_users_list'),
+      ).thenReturn(jsonEncode([blockerX]));
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenThrow(Exception('disk full'));
+
+      final service = ContentBlocklistRepository(prefs: mockPrefs);
+      expect(service.isBlocked(blockerX), isTrue);
+
+      // The unblock records an intent, whose persist fails. The in-memory
+      // unblock must still take effect.
+      await service.unblockUser(blockerX);
+      expect(service.isBlocked(blockerX), isFalse);
+
+      service.dispose();
+    });
+
     test('keeps the legacy key when the scoped copy reports failure', () async {
       final mockPrefs = _MockSharedPreferences();
       when(() => mockPrefs.getString(any())).thenReturn(null);
@@ -3363,6 +3399,269 @@ void main() {
           );
         },
       );
+    });
+
+    group('an unblock whose publish never landed (#8263)', () {
+      const target =
+          '00000000000000000000000000000000000000000000000000000000000000dd';
+
+      void stubHealthy() {
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (invocation) async => signedEventFromInvocation(invocation),
+        );
+        when(() => mockClient.publishEvent(any())).thenAnswer(
+          (invocation) async => PublishSuccess(
+            event: invocation.positionalArguments.first as Event,
+          ),
+        );
+      }
+
+      void stubReadSettled() {
+        when(
+          () => mockClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            events: <Event>[],
+            timedOut: false,
+            noRelays: false,
+          ),
+        );
+      }
+
+      void stubReadInconclusive() {
+        when(
+          () => mockClient.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenAnswer(
+          (_) async => (events: <Event>[], timedOut: true, noRelays: false),
+        );
+      }
+
+      /// Blocks [target], then unblocks it with the read inconclusive, so the
+      /// unblock is recorded but never published. Returns fresh prefs holding
+      /// that state, as a relaunch would find them.
+      Future<SharedPreferences> prefsAfterAWithheldUnblock() async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        stubHealthy();
+        final before = ContentBlocklistRepository(prefs: prefs);
+        await before.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await before.blockUser(target);
+        stubReadInconclusive();
+        await before.unblockUser(target);
+        before.dispose();
+        return prefs;
+      }
+
+      test(
+        'is not re-adopted as a mute from a list that predates it',
+        () async {
+          final prefs = await prefsAfterAWithheldUnblock();
+          final ownList = StreamController<Event>.broadcast();
+          addTearDown(ownList.close);
+          when(
+            () => mockClient.subscribe(any()),
+          ).thenAnswer((_) => ownList.stream);
+
+          final restarted = ContentBlocklistRepository(prefs: prefs);
+          await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+          ownList.add(
+            buildEvent(
+              kind: 10000,
+              tags: const [
+                ['p', target],
+              ],
+              createdAt: 1000,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(restarted.isMutedByUs(target), isFalse);
+          expect(restarted.shouldFilterFromFeeds(target), isFalse);
+        },
+      );
+
+      test('IS honoured when the list is newer than the unblock, because that '
+          'is another client muting them again', () async {
+        final prefs = await prefsAfterAWithheldUnblock();
+        final ownList = StreamController<Event>.broadcast();
+        addTearDown(ownList.close);
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => ownList.stream);
+
+        final restarted = ContentBlocklistRepository(prefs: prefs);
+        await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+        ownList.add(
+          buildEvent(
+            kind: 10000,
+            tags: const [
+              ['p', target],
+            ],
+            // Comfortably after the unblock we just recorded.
+            createdAt: 99999999999,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(restarted.isMutedByUs(target), isTrue);
+      });
+
+      test('republishes so the relay drops the stale tag', () async {
+        final prefs = await prefsAfterAWithheldUnblock();
+        final ownList = StreamController<Event>.broadcast();
+        addTearDown(ownList.close);
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => ownList.stream);
+        stubHealthy();
+        stubReadSettled();
+
+        final restarted = ContentBlocklistRepository(prefs: prefs);
+        await restarted.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+        clearInteractions(mockSigner);
+        ownList.add(
+          buildEvent(
+            kind: 10000,
+            tags: const [
+              ['p', target],
+            ],
+            createdAt: 1000,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final tags =
+            verify(
+                  () => mockSigner.createAndSignEvent(
+                    kind: 10000,
+                    content: any(named: 'content'),
+                    tags: captureAny(named: 'tags'),
+                  ),
+                ).captured.last
+                as List<List<String>>;
+        expect(tags, isNot(contains(equals(['p', target]))));
+      });
+
+      test('blocking again retires the intent, so a later restart has no '
+          'outstanding work', () async {
+        final prefs = await prefsAfterAWithheldUnblock();
+        stubHealthy();
+        stubReadSettled();
+
+        // Re-block and publish: our own event carries the tag and postdates
+        // the unblock, which is what retires the intent.
+        final second = ContentBlocklistRepository(prefs: prefs);
+        await second.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await second.blockUser(target);
+        // The retire persists fire-and-forget, matching `_saveMutedUsers` in
+        // the same method, so let it land before the restart reads prefs.
+        await Future<void>.delayed(Duration.zero);
+        second.dispose();
+
+        // Restart, so nothing is carried in memory.
+        final ownList = StreamController<Event>.broadcast();
+        addTearDown(ownList.close);
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => ownList.stream);
+        final restarted = ContentBlocklistRepository(prefs: prefs);
+        await restarted.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+        // The startup legacy migration publishes on its own; let it finish so
+        // it is not mistaken for the reconcile republish below.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        clearInteractions(mockSigner);
+
+        ownList.add(
+          buildEvent(
+            kind: 10000,
+            tags: const [
+              ['p', target],
+            ],
+            createdAt: 1000,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(restarted.isBlocked(target), isTrue);
+        // Nothing outstanding: the block is already on the relay's list.
+        verifyNever(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      });
+
+      test('a successful unblock publish leaves nothing pending', () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        stubHealthy();
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await service.blockUser(target);
+        await service.unblockUser(target);
+        service.dispose();
+
+        // A later list that still carries the tag is now an ordinary foreign
+        // mute, because our unblock was confirmed.
+        final ownList = StreamController<Event>.broadcast();
+        addTearDown(ownList.close);
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => ownList.stream);
+        final restarted = ContentBlocklistRepository(prefs: prefs);
+        await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+        ownList.add(
+          buildEvent(
+            kind: 10000,
+            tags: const [
+              ['p', target],
+            ],
+            createdAt: 1000,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(restarted.isMutedByUs(target), isTrue);
+      });
     });
   });
 

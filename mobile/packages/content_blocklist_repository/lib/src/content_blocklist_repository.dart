@@ -24,6 +24,17 @@ const _mutedUsersPrefsKey = 'muted_users_list';
 /// SharedPreferences key for severed followers (follow broken by block)
 const _severedFollowersPrefsKey = 'severed_followers_list';
 
+/// SharedPreferences key for unblocks whose kind 10000 publish has not been
+/// confirmed, as `pubkey -> unblocked-at` in Unix seconds.
+///
+/// A block that never reached the relay is derivable after a restart -- it is
+/// in `_blockedUsersPrefsKey` and absent from the list the relay serves back.
+/// An unblock is not: once the pubkey leaves the block set, "the user
+/// unblocked them" and "another client muted them" are the same state. The
+/// timestamp is what separates the two, against the list's `created_at`
+/// (#8263).
+const _pendingUnblocksPrefsKey = 'pending_unblocks';
+
 /// SharedPreferences key recording which account's per-account state the
 /// persisted sets belong to. Written on identity adoption so the next
 /// construction hydrates the right account before auth resolves.
@@ -88,6 +99,7 @@ class ContentBlocklistRepository {
     _loadBlockedUsers();
     _loadMutedUsers();
     _loadSeveredFollowers();
+    _loadPendingUnblocks();
     Log.info(
       'ContentBlocklistRepository initialized with '
       '$totalBlockedCount blocked accounts',
@@ -127,6 +139,12 @@ class ContentBlocklistRepository {
   // came back inconclusive. Flushed by [retryPendingMuteListPublish] and by
   // the next block or unblock, which republishes the whole list anyway.
   bool _muteListPublishPending = false;
+
+  // Unblocks whose removal from the published kind 10000 is not yet
+  // confirmed, as pubkey -> unblocked-at in Unix seconds. Persisted, because
+  // the whole point is to survive the restart that loses
+  // [_muteListPublishPending].
+  final Map<String, int> _pendingUnblocks = <String, int>{};
 
   // Latest replaceable kind-10000 mute-list event timestamp per author.
   // Prevent stale relay delivery order from resurrecting old mute state.
@@ -289,6 +307,7 @@ class ContentBlocklistRepository {
       _blockedByOthers.clear();
       _latestOwnMuteListEvent = null;
       _muteListPublishPending = false;
+      _pendingUnblocks.clear();
       _latestMuteListEventCreatedAtByAuthor.clear();
       _latestBlockListEventCreatedAtByAuthor.clear();
       _severedFollowers.clear();
@@ -489,6 +508,45 @@ class ContentBlocklistRepository {
   ///
   /// This is the hydration cache that covers the window between app start
   /// and relay delivery of our own kind 10000 event.
+  void _loadPendingUnblocks() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    final stored = prefs.getString(_scopedKey(_pendingUnblocksPrefsKey));
+    if (stored == null || stored.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(stored) as Map<String, dynamic>;
+      decoded.forEach((pubkey, unblockedAt) {
+        if (unblockedAt is int) _pendingUnblocks[pubkey] = unblockedAt;
+      });
+    } on Object catch (e) {
+      Log.error(
+        'Failed to load pending unblocks: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  Future<void> _savePendingUnblocks() async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    try {
+      await prefs.setString(
+        _scopedKey(_pendingUnblocksPrefsKey),
+        jsonEncode(_pendingUnblocks),
+      );
+    } on Object catch (e) {
+      Log.error(
+        'Failed to persist pending unblocks: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   void _loadMutedUsers() {
     final prefs = _prefs;
     if (prefs == null) return;
@@ -1126,8 +1184,15 @@ class ContentBlocklistRepository {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
       await _saveBlockedUsers();
+      // Recorded BEFORE the publish, so a withheld or failed publish still
+      // leaves the intent behind for the next launch to act on (#8263).
+      _pendingUnblocks[pubkey] = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await _savePendingUnblocks();
       _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.unblocked));
       _notifyChanged();
+      // Retirement is not repeated here: a successful publish routes its own
+      // event through [_applyOwnMuteListEvent], which drops the intent
+      // because the list it just wrote no longer carries the tag.
       await _publishMuteListToNostr();
 
       Log.info(
@@ -1673,6 +1738,40 @@ class ContentBlocklistRepository {
         relayMuted.add(tag[1]);
       }
     }
+    // An unblock this list predates never reached the relay, so its `p` tag
+    // is stale and must not be re-adopted as a mute from another client
+    // (#8263). A tag on a list NEWER than the unblock is the opposite case --
+    // someone muted them again after we unblocked -- so it is honoured and
+    // the intent retired. `created_at` is what separates the two; without it
+    // a legitimate later re-mute would be suppressed forever.
+    if (_pendingUnblocks.isNotEmpty) {
+      final retired = <String>[];
+      for (final entry in _pendingUnblocks.entries) {
+        if (!relayMuted.contains(entry.key) || entry.value <= createdAt) {
+          // Either the tag is gone, so the unblock landed, or this list is
+          // newer than the unblock and the tag is a fresh mute from another
+          // client. Both retire the intent; the second also lets the mute
+          // through, which is the point of comparing against `created_at`.
+          retired.add(entry.key);
+        } else {
+          relayMuted.remove(entry.key);
+        }
+      }
+      if (retired.isNotEmpty) {
+        retired.forEach(_pendingUnblocks.remove);
+        if (persist) unawaited(_savePendingUnblocks());
+      }
+      if (reconcile && _pendingUnblocks.isNotEmpty) {
+        Log.info(
+          'Own mute list still carries an account we unblocked; republishing',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        _muteListPublishPending = true;
+        unawaited(retryPendingMuteListPublish());
+      }
+    }
+
     // The relay's newest list is authoritative for what it holds, so blocks
     // we still hold locally that are absent from it are a publish that never
     // landed -- withheld by an inconclusive read (#6750), or lost with
