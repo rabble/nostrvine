@@ -525,10 +525,10 @@ void main() {
       expect(called, isTrue);
     });
 
-    testWidgets('shows no burn toggle when no username is owned', (
+    testWidgets('never renders a burn toggle, even when a username is owned', (
       tester,
     ) async {
-      await _showSheet(tester);
+      await _showSheet(tester, confirmation: _divineUsername());
       expect(find.byType(DivineRowCheckbox), findsNothing);
     });
 

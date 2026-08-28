@@ -56,7 +56,7 @@ Future<bool> showRemoveKeysWarningSheet(BuildContext context) async {
 Future<void> showDeleteAllContentWarningSheet({
   required BuildContext context,
   required DeleteAccountConfirmation confirmation,
-  required void Function() onConfirm,
+  required VoidCallback onConfirm,
 }) async {
   // The form and the pinned footer are sibling slots of the sheet rather than
   // one subtree, so the footer learns about the typed token through this
