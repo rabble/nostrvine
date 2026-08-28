@@ -608,7 +608,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       state.source,
       emit,
       skipCache: true,
-      startsNewFeedSession: true,
     );
   }
 
