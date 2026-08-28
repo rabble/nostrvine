@@ -155,6 +155,7 @@ void main() {
       when(
         () => mockNostrService.defaultRelayUrl,
       ).thenReturn('wss://relay.example.com');
+      when(() => mockNostrService.isRelayAllowed(any())).thenReturn(true);
       when(
         () => mockNostrService.publishEventAwaitOk(any()),
       ).thenAnswer((_) async => _confirmed);
@@ -712,12 +713,9 @@ void main() {
         const pocRelay = 'wss://relay.poc.dvines.org';
         const localRelay = 'ws://localhost:47777';
         const fallbackRelay = 'wss://relay.example.com';
-        when(() => mockNostrService.connectedRelays).thenReturn([
-          stagingRelay,
-          pocRelay,
-          localRelay,
-          fallbackRelay,
-        ]);
+        when(
+          () => mockNostrService.connectedRelays,
+        ).thenReturn([stagingRelay, pocRelay, localRelay, fallbackRelay]);
         final userEvent = createTestEvent(
           pubkey: testPublicKey,
           kind: 1,
@@ -760,6 +758,61 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'does not publish kind 5 when environment lock rejects every target',
+        () async {
+          const stagingRelay = 'wss://relay.staging.divine.video';
+          const externalRelay = 'wss://relay.example.com';
+          when(
+            () => mockNostrService.connectedRelays,
+          ).thenReturn([stagingRelay, externalRelay]);
+          when(
+            () => mockNostrService.isRelayAllowed(stagingRelay),
+          ).thenReturn(true);
+          when(
+            () => mockNostrService.isRelayAllowed(externalRelay),
+          ).thenReturn(false);
+          when(() => mockNostrService.queryEvents(any())).thenAnswer(
+            (_) async => [
+              createTestEvent(
+                pubkey: testPublicKey,
+                kind: 1,
+                tags: const [],
+                content: 'note',
+              ),
+            ],
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 62,
+              tags: const [
+                ['relay', 'ALL_RELAYS'],
+              ],
+              content: 'deletion',
+            ),
+          );
+
+          final result = await service.deleteAccount();
+
+          expect(result.success, isTrue);
+          expect(result.deletedEventsCount, isZero);
+          expect(result.contentDeletionIncomplete, isFalse);
+          verifyNever(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
+        },
+      );
 
       test(
         'targets non-Divine relays when the Divine relay is disconnected',

@@ -496,7 +496,11 @@ class AccountDeletionService {
     final total = events.length;
     final connectedRelays = _nostrService.connectedRelays;
     final kind5TargetRelays = connectedRelays
-        .where((relay) => !isDivineHostedRelayUrl(relay))
+        .where(
+          (relay) =>
+              !isDivineHostedRelayUrl(relay) &&
+              _nostrService.isRelayAllowed(relay),
+        )
         .toList(growable: false);
 
     if (connectedRelays.isEmpty) {
