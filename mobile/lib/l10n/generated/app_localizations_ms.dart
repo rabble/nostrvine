@@ -6907,6 +6907,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Pengesahan Akhir';
 
   @override

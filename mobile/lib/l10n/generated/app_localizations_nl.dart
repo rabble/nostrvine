@@ -6925,6 +6925,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Laatste bevestiging';
 
   @override

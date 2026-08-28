@@ -6945,6 +6945,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi namin natapos ang pag-delete ng account mo. Subukan ulit.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle =>
       '⚠️ Panghuling Kumpirmasyon';
 

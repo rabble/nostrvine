@@ -6568,6 +6568,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 최종 확인';
 
   @override

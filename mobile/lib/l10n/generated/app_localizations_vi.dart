@@ -6869,6 +6869,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Xác nhận lần cuối';
 
   @override

@@ -6550,6 +6550,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deleteAccountDeletionIncomplete => 'アカウントの削除を完了できなかったよ。もう一回試してね。';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最終確認';
 
   @override

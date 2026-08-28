@@ -6510,6 +6510,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最终确认';
 
   @override

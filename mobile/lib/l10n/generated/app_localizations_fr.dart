@@ -6988,6 +6988,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'On n\'a pas pu terminer la suppression de ton compte. Réessaie.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmation finale';
 
   @override

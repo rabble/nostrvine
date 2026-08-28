@@ -6945,6 +6945,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não conseguimos concluir a exclusão da sua conta. Tente novamente.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmação final';
 
   @override

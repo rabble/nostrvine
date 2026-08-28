@@ -1,4 +1,4 @@
-// ABOUTME: Tests for ownedDivineUsernameProvider (gates the burn toggle).
+// ABOUTME: Tests for ownedDivineUsernameProvider (deletion name-ownership lookup).
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,51 +25,82 @@ void main() {
       repository = _MockProfileRepository();
     });
 
-    test('resolves the owned name + canonical from the repository', () async {
+    ProviderContainer containerWith({required ProfileRepository? repo}) {
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(auth),
+          profileRepositoryProvider.overrideWithValue(repo),
+          profileReadRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('passes a found name through from the repository', () async {
       when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
       when(
-        () => repository.getUsernameByPubkey(pubkeyHex: pubkey),
-      ).thenAnswer((_) async => (name: 'Alice', canonical: 'alice'));
-      final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(auth),
-          profileRepositoryProvider.overrideWithValue(repository),
-          profileReadRepositoryProvider.overrideWithValue(repository),
-        ],
+        () => repository.lookupUsernameByPubkey(pubkeyHex: pubkey),
+      ).thenAnswer(
+        (_) async =>
+            const DivineUsernameFound(name: 'Alice', canonical: 'alice'),
       );
-      addTearDown(container.dispose);
 
-      final result = await container.read(ownedDivineUsernameProvider.future);
-      expect(result?.name, equals('Alice'));
-      expect(result?.canonical, equals('alice'));
+      final result = await containerWith(
+        repo: repository,
+      ).read(ownedDivineUsernameProvider.future);
+
+      expect(result, isA<DivineUsernameFound>());
+      expect((result as DivineUsernameFound).canonical, equals('alice'));
     });
 
-    test('returns null when there is no signed-in pubkey', () async {
-      when(() => auth.currentPublicKeyHex).thenReturn(null);
-      final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(auth),
-          profileRepositoryProvider.overrideWithValue(repository),
-          profileReadRepositoryProvider.overrideWithValue(repository),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      expect(await container.read(ownedDivineUsernameProvider.future), isNull);
-    });
-
-    test('returns null when the profile repository is not ready', () async {
+    test('passes a confirmed not-found through from the repository', () async {
       when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
-      final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(auth),
-          profileRepositoryProvider.overrideWithValue(null),
-          profileReadRepositoryProvider.overrideWithValue(null),
-        ],
-      );
-      addTearDown(container.dispose);
+      when(
+        () => repository.lookupUsernameByPubkey(pubkeyHex: pubkey),
+      ).thenAnswer((_) async => const DivineUsernameNotFound());
 
-      expect(await container.read(ownedDivineUsernameProvider.future), isNull);
+      final result = await containerWith(
+        repo: repository,
+      ).read(ownedDivineUsernameProvider.future);
+
+      expect(result, isA<DivineUsernameNotFound>());
+    });
+
+    test(
+      'passes unknown through, never collapsing it to a false absence',
+      () async {
+        when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
+        when(
+          () => repository.lookupUsernameByPubkey(pubkeyHex: pubkey),
+        ).thenAnswer((_) async => const DivineUsernameUnknown());
+
+        final result = await containerWith(
+          repo: repository,
+        ).read(ownedDivineUsernameProvider.future);
+
+        expect(result, isA<DivineUsernameUnknown>());
+      },
+    );
+
+    test('is unknown when there is no signed-in pubkey', () async {
+      when(() => auth.currentPublicKeyHex).thenReturn(null);
+
+      final result = await containerWith(
+        repo: repository,
+      ).read(ownedDivineUsernameProvider.future);
+
+      expect(result, isA<DivineUsernameUnknown>());
+    });
+
+    test('is unknown when the profile repository is not ready', () async {
+      when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
+
+      final result = await containerWith(
+        repo: null,
+      ).read(ownedDivineUsernameProvider.future);
+
+      expect(result, isA<DivineUsernameUnknown>());
     });
   });
 }

@@ -6742,6 +6742,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ የመጨረሻ ማረጋገጫ';
 
   @override

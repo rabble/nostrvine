@@ -6890,6 +6890,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vi kunde inte slutföra raderingen av ditt konto. Försök igen.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Slutgiltig bekräftelse';
 
   @override

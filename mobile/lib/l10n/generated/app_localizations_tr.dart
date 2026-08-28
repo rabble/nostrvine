@@ -6824,6 +6824,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';
 
   @override

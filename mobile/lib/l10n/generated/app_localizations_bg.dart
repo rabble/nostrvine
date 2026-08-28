@@ -6966,6 +6966,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Последно потвърждение';
 
   @override

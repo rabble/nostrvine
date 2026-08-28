@@ -7068,6 +7068,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmare finală';
 
   @override

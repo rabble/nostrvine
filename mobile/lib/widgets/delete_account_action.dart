@@ -38,10 +38,11 @@ Future<void> startAccountDeletionFlow({
   final pubkey = authService.currentPublicKeyHex;
   if (pubkey == null || pubkey.isEmpty) return;
 
-  // Kick off the owned-handle lookup but do not await it: the dialog opens
-  // immediately and, once this resolves, deletion releases the handle it names
-  // — a slow name-server call never blocks the tap.
-  final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
+  // Kick off the owned-name lookup but do not await it here: the dialog opens
+  // immediately and the future is resolved at the deletion boundary, where an
+  // undetermined result fails the deletion closed. A slow name-server call
+  // never blocks the tap.
+  final ownedUsernameLookup = ref.read(ownedDivineUsernameProvider.future);
 
   final overlay = ModalProgressOverlay.show(context);
   UserProfile? profile;
@@ -72,14 +73,13 @@ Future<void> startAccountDeletionFlow({
   await showDeleteAllContentWarningSheet(
     context: context,
     confirmation: confirmation,
-    ownedUsernameFuture: ownedUsernameFuture,
-    onConfirm: ({({String name, String canonical})? ownedUsername}) async {
+    onConfirm: () async {
       await executeAccountDeletion(
         context: context,
         deletionService: deletionService,
         authService: authService,
         deletionRecoveryRepository: deletionRecoveryRepository,
-        ownedUsername: ownedUsername,
+        ownedUsernameLookup: ownedUsernameLookup,
         confirmedPubkey: pubkey,
         screenName: screenName,
       );

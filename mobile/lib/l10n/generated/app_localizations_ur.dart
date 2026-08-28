@@ -6894,6 +6894,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
 
   @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Please try again.';
+
+  @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ آخری تصدیق';
 
   @override

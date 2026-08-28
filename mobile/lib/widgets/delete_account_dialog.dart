@@ -20,6 +20,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Ask whether to remove this account's keys from the device only.
@@ -45,20 +46,17 @@ Future<bool> showRemoveKeysWarningSheet(BuildContext context) async {
 /// DELETE).
 ///
 /// This sheet ensures they understand the dangerous/irreversible nature of
-/// account deletion. It opens immediately; [ownedUsernameFuture] is resolved
-/// in the background — so a slow name-server lookup never blocks the tap or
-/// lets a second tap stack a duplicate sheet. When it resolves to a non-null
-/// handle, [onConfirm] receives that name and deletion releases it; there is
-/// no opt-in toggle — deleting releases the owned @divine.video name.
+/// account deletion. It opens immediately and never blocks on a name-server
+/// lookup: name ownership is resolved at the deletion boundary (in
+/// [executeAccountDeletion]) once [onConfirm] runs, so a slow or failed lookup
+/// fails the deletion closed rather than silently skipping the release.
 ///
 /// Dismissing the sheet cancels: nothing is deleted until the token is typed
 /// and the destructive button is tapped.
 Future<void> showDeleteAllContentWarningSheet({
   required BuildContext context,
   required DeleteAccountConfirmation confirmation,
-  required void Function({({String name, String canonical})? ownedUsername})
-  onConfirm,
-  required Future<({String name, String canonical})?> ownedUsernameFuture,
+  required void Function() onConfirm,
 }) async {
   // The form and the pinned footer are sibling slots of the sheet rather than
   // one subtree, so the footer learns about the typed token through this
@@ -91,7 +89,6 @@ Future<void> showDeleteAllContentWarningSheet({
     buildScrollBody: (scrollController) => _DeleteAllContentForm(
       key: formKey,
       confirmation: confirmation,
-      ownedUsernameFuture: ownedUsernameFuture,
       onConfirm: onConfirm,
       canConfirm: canConfirm,
       scrollController: scrollController,
@@ -150,7 +147,6 @@ class _DeleteAllContentActions extends StatelessWidget {
 class _DeleteAllContentForm extends StatefulWidget {
   const _DeleteAllContentForm({
     required this.confirmation,
-    required this.ownedUsernameFuture,
     required this.onConfirm,
     required this.canConfirm,
     required this.scrollController,
@@ -158,9 +154,7 @@ class _DeleteAllContentForm extends StatefulWidget {
   });
 
   final DeleteAccountConfirmation confirmation;
-  final Future<({String name, String canonical})?> ownedUsernameFuture;
-  final void Function({({String name, String canonical})? ownedUsername})
-  onConfirm;
+  final void Function() onConfirm;
 
   /// Mirrors "the typed token matches" out to the pinned footer.
   final ValueNotifier<bool> canConfirm;
@@ -172,24 +166,6 @@ class _DeleteAllContentForm extends StatefulWidget {
 
 class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
   final _confirmationController = TextEditingController();
-  ({String name, String canonical})? _ownedUsername;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(
-      widget.ownedUsernameFuture
-          .then<void>((owned) {
-            if (!mounted || owned == null) return;
-            // Read only in confirm(), not build(), so no rebuild is needed.
-            _ownedUsername = owned;
-          })
-          .catchError((Object _) {
-            // Lookup failed: treat as "no owned handle", matching
-            // getUsernameByPubkey's unknown-means-no-name contract.
-          }),
-    );
-  }
 
   @override
   void dispose() {
@@ -197,7 +173,8 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
     super.dispose();
   }
 
-  /// Closes the sheet and hands the consented values to the caller.
+  /// Closes the sheet and runs the deletion; name ownership is resolved at the
+  /// deletion boundary, not here.
   ///
   /// Called by the footer through the form's key, since the two are sibling
   /// slots of the sheet.
@@ -206,7 +183,7 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
     // notifier, which only gates the button's enabled state.
     if (!widget.confirmation.matches(_confirmationController.text)) return;
     context.pop();
-    widget.onConfirm(ownedUsername: _ownedUsername);
+    widget.onConfirm();
   }
 
   @override
@@ -414,7 +391,7 @@ Future<void> executeAccountDeletion({
   required AccountDeletionService deletionService,
   required AuthService authService,
   required AccountDeletionRecoveryRepository deletionRecoveryRepository,
-  ({String name, String canonical})? ownedUsername,
+  required Future<DivineUsernameLookup> ownedUsernameLookup,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) async {
@@ -513,9 +490,9 @@ Future<void> executeAccountDeletion({
   final deletionUnavailableText = context.l10n.deleteAccountDeletionUnavailable;
   final reportBugText = context.l10n.supportReportBug;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
-  final handleLabel = ownedUsername != null
-      ? '@${ownedUsername.name}.divine.video'
-      : null;
+  final deletionNotStartedText = context.l10n.deleteAccountDeletionNotStarted;
+  // Assigned at the deletion boundary once name ownership is resolved.
+  String? handleLabel;
   final recoveryBodyText = context.l10n.accountDeletionRecoveryBody;
   final cancelAttemptBodyText = context.l10n.accountDeletionCancelAttemptBody;
   final restoreUsernameText = context.l10n.accountDeletionRestoreUsername;
@@ -690,6 +667,27 @@ Future<void> executeAccountDeletion({
     }
     if (!context.mounted) return;
 
+    // Resolve name ownership at the deletion boundary, under the progress sheet
+    // and before any destructive step. Release is mandatory, so an undetermined
+    // lookup fails closed: deleting without releasing a name the user may own is
+    // not acceptable. A confirmed absence proceeds with no release.
+    final lookup = await ownedUsernameLookup;
+    if (!context.mounted) return;
+    final String? releaseCanonical;
+    switch (lookup) {
+      case DivineUsernameFound(:final name, :final canonical):
+        releaseCanonical = canonical;
+        handleLabel = '@$name.divine.video';
+      case DivineUsernameNotFound():
+        releaseCanonical = null;
+      case DivineUsernameUnknown():
+        abortPreparation(
+          StateError('Divine username ownership could not be determined'),
+          deletionNotStartedText,
+        );
+        return;
+    }
+
     // Create the durable coordinator attempt for every deletion. Whenever the
     // user owns a @divine.video name the repository also performs the owner-auth
     // Name Server prepare and the coordinator's verified handshake — release is
@@ -697,7 +695,7 @@ Future<void> executeAccountDeletion({
     {
       try {
         final prepared = await deletionRecoveryRepository.prepare(
-          username: ownedUsername?.canonical,
+          username: releaseCanonical,
         );
         if (prepared.status != AccountDeletionAttemptStatus.recoverable) {
           throw AccountDeletionRecoveryException(
@@ -725,12 +723,12 @@ Future<void> executeAccountDeletion({
                 error.indicatesMissingCoordinatorRoute);
         abortPreparation(
           error,
-          isUnavailable ? deletionUnavailableText : deletionIncompleteText,
+          isUnavailable ? deletionUnavailableText : deletionNotStartedText,
           offerSupport: isUnavailable,
         );
         return;
       } on Object catch (error) {
-        abortPreparation(error, deletionIncompleteText);
+        abortPreparation(error, deletionNotStartedText);
         return;
       }
     }
