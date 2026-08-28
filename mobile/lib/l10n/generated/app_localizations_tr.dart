@@ -3883,7 +3883,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Video Silinsin mi?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video silindi';
+  String get shareMenuDeleteCleanupInProgress => 'Video kaldırılıyor…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Video silindi.';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Video silindi. Her yerden kaybolması biraz zaman alabilir.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Video silindi ancak her kopyayı kaldıramadık. Lütfen destek ekibiyle iletişime geç.';
 
   @override
   String get authSessionExpired =>

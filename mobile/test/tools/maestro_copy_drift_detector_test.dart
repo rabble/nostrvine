@@ -80,7 +80,11 @@ void main() {
     });
 
     tearDown(() {
-      if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+      try {
+        tmp.deleteSync(recursive: true);
+      } on PathNotFoundException {
+        // Another cleanup may remove the temp tree between exists and delete.
+      }
     });
 
     test('passes and reports the binding denominator for a clean manifest', () {

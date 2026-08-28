@@ -4050,7 +4050,18 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Usunąć film?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Film usunięty';
+  String get shareMenuDeleteCleanupInProgress => 'Usuwanie filmu…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Film usunięty.';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Film usunięty. Może minąć trochę czasu, zanim zniknie wszędzie.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Film usunięty, ale nie udało nam się usunąć każdej kopii. Skontaktuj się z pomocą.';
 
   @override
   String get authSessionExpired => 'Twoja sesja wygasła. Zaloguj się ponownie.';

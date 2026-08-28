@@ -6737,11 +6737,29 @@ abstract class AppLocalizations {
   /// **'Delete Video?'**
   String get shareMenuDeleteVideoQuestion;
 
-  /// No description provided for @shareMenuVideoDeletionRequested.
+  /// No description provided for @shareMenuDeleteCleanupInProgress.
   ///
   /// In en, this message translates to:
-  /// **'Video deleted'**
-  String get shareMenuVideoDeletionRequested;
+  /// **'Removing video…'**
+  String get shareMenuDeleteCleanupInProgress;
+
+  /// No description provided for @shareMenuDeleteCleanupConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted.'**
+  String get shareMenuDeleteCleanupConfirmed;
+
+  /// No description provided for @shareMenuDeleteCleanupDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted. It may take a little while to disappear everywhere.'**
+  String get shareMenuDeleteCleanupDelayed;
+
+  /// No description provided for @shareMenuDeleteCleanupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted, but we couldn\'t remove every copy. Please contact support.'**
+  String get shareMenuDeleteCleanupFailed;
 
   /// No description provided for @authSessionExpired.
   ///

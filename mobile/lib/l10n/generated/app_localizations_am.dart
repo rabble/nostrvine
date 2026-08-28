@@ -3857,7 +3857,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'ቪዲዮ ይሰረዝ?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'ቪዲዮ ተሰርዟል።';
+  String get shareMenuDeleteCleanupInProgress => 'ቪዲዮው እየተወገደ ነው…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'ቪዲዮው ተሰርዟል።';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'ቪዲዮው ተሰርዟል። ከሁሉም ቦታ ለመጥፋት ትንሽ ጊዜ ሊወስድ ይችላል።';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'ቪዲዮው ተሰርዟል፣ ግን ሁሉንም ቅጂዎች ማስወገድ አልቻልንም። ድጋፍን ያነጋግሩ።';
 
   @override
   String get authSessionExpired => 'ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።';

@@ -1446,7 +1446,10 @@
         }
     },
     "shareMenuDeleteVideoQuestion": "¿Eliminar video?",
-    "shareMenuVideoDeletionRequested": "Video eliminado",
+    "shareMenuDeleteCleanupInProgress": "Eliminando video…",
+    "shareMenuDeleteCleanupConfirmed": "Video eliminado.",
+    "shareMenuDeleteCleanupDelayed": "Video eliminado. Puede tardar un poco en desaparecer de todas partes.",
+    "shareMenuDeleteCleanupFailed": "Video eliminado, pero no pudimos borrar todas las copias. Contactá a soporte.",
     "authSessionExpired": "Tu sesión expiró. Iniciá sesión de nuevo.",
     "authSignInFailed": "No se pudo iniciar sesión. Probá de nuevo.",
     "webAuthNotSupportedSecureMode": "La autenticación web no está soportada en modo seguro. Usá la app móvil para gestionar claves de forma segura.",

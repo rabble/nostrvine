@@ -3992,7 +3992,18 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Да изтрием видеото?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Видеото е изтрито';
+  String get shareMenuDeleteCleanupInProgress => 'Премахване на видеото…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Видеото е изтрито.';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Видеото е изтрито. Може да отнеме малко време, докато изчезне отвсякъде.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Видеото е изтрито, но не успяхме да премахнем всяко копие. Свържи се с поддръжката.';
 
   @override
   String get authSessionExpired => 'Сесията ти изтече. Влез отново.';

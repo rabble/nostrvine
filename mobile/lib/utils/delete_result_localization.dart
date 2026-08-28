@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 
@@ -43,3 +44,22 @@ String? localizedPartialDeleteMessage(
 ) => result != null && result.acceptance == DeleteAcceptance.someRelays
     ? context.l10n.shareMenuDeletePartiallyConfirmed
     : null;
+
+String localizedOwnerVideoDeleteSuccessMessage(
+  BuildContext context,
+  OwnerVideoOperationState operation,
+) {
+  switch (operation.cleanupStatus) {
+    case OwnerVideoCleanupStatus.failed:
+      return context.l10n.shareMenuDeleteCleanupFailed;
+    case OwnerVideoCleanupStatus.delayed:
+      return context.l10n.shareMenuDeleteCleanupDelayed;
+    case OwnerVideoCleanupStatus.idle:
+    case OwnerVideoCleanupStatus.inProgress:
+      return context.l10n.shareMenuDeleteCleanupInProgress;
+    case OwnerVideoCleanupStatus.confirmed:
+    case OwnerVideoCleanupStatus.unavailable:
+      return localizedPartialDeleteMessage(context, operation.deleteResult) ??
+          context.l10n.shareMenuDeleteCleanupConfirmed;
+  }
+}

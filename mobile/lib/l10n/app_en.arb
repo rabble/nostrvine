@@ -2472,7 +2472,10 @@
     "description": "Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely."
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
-  "shareMenuVideoDeletionRequested": "Video deleted",
+  "shareMenuDeleteCleanupInProgress": "Removing video…",
+  "shareMenuDeleteCleanupConfirmed": "Video deleted.",
+  "shareMenuDeleteCleanupDelayed": "Video deleted. It may take a little while to disappear everywhere.",
+  "shareMenuDeleteCleanupFailed": "Video deleted, but we couldn't remove every copy. Please contact support.",
   "authSessionExpired": "Your session has expired. Please sign in again.",
   "authAccountRestoreFailed": "We couldn't unlock that account on this device. Sign in again.",
   "@authAccountRestoreFailed": {

@@ -3914,7 +3914,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Xóa video?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Đã xóa video';
+  String get shareMenuDeleteCleanupInProgress => 'Đang xóa video…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Đã xóa video.';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Đã xóa video. Có thể mất một lúc để video biến mất ở mọi nơi.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Đã xóa video nhưng chúng tôi không thể xóa mọi bản sao. Hãy liên hệ bộ phận hỗ trợ.';
 
   @override
   String get authSessionExpired =>
