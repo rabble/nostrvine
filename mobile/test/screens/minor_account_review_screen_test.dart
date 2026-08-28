@@ -444,6 +444,127 @@ void main() {
       }
     });
 
+    testWidgets('explains reconsideration through support for both age bands', (
+      tester,
+    ) async {
+      for (final ageBand in [
+        SuspectedAgeBand.under13,
+        SuspectedAgeBand.age13To15,
+      ]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            key: ValueKey(ageBand),
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-appeal-copy',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: ageBand,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: const MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
+                  ),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(MinorAccountReviewScreen)),
+        );
+        final expectedBody = ageBand == SuspectedAgeBand.under13
+            ? l10n.minorAccountReviewAppealUnder13Body
+            : l10n.minorAccountReviewAppealTeenBody;
+        final otherBody = ageBand == SuspectedAgeBand.under13
+            ? l10n.minorAccountReviewAppealTeenBody
+            : l10n.minorAccountReviewAppealUnder13Body;
+
+        await tester.scrollUntilVisible(
+          find.text(l10n.minorAccountReviewAppealTitle),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.minorAccountReviewAppealTitle), findsOneWidget);
+        expect(find.text(expectedBody), findsOneWidget);
+        expect(find.text(otherBody), findsNothing);
+        expect(
+          find.text(l10n.minorAccountReviewOpenSupportCenter),
+          findsOneWidget,
+        );
+      }
+    });
+
+    // #8239: a decided case has no remaining user action, so Support Center
+    // used to be returned as the primary action *and* rendered unconditionally
+    // below the reconsideration card — two identical buttons straddling it.
+    // The reachable states are openReported, cleared, deniedClosed and unknown.
+    testWidgets('offers Support Center once on a decided case, below the '
+        'reconsideration card', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'case-decided',
+                  state: MinorReviewCaseState.deniedClosed,
+                  suspectedAgeBand: SuspectedAgeBand.age13To15,
+                  allowedResolution:
+                      MinorReviewResolutionType.parentVideoOrEmail,
+                  instructions: MinorReviewInstructions(
+                    title: 'Review complete',
+                    body: 'This case is closed.',
+                  ),
+                  supportEmail: 'support@divine.video',
+                ),
+              );
+            }),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(MinorAccountReviewScreen)),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text(l10n.minorAccountReviewOpenSupportCenter),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(l10n.minorAccountReviewOpenSupportCenter),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.minorAccountReviewAppealTitle), findsOneWidget);
+    });
+
     testWidgets(
       'Check Again re-reads the protected-minor flag, not just the review '
       'status, so an approved teen is gated without relaunch (#176)',
