@@ -513,9 +513,6 @@ class ContentBlocklistRepository {
         }
       }
       if (_pendingUnblocks.isNotEmpty) _muteListPublishPending = true;
-      if (_activeAccountPubkey != null && _activeAccountPubkey != pubkey) {
-        return;
-      }
       final written = await prefs.setString(
         scopedKey,
         jsonEncode(_pendingUnblocks),
