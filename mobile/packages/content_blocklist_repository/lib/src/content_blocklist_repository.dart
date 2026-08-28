@@ -504,10 +504,11 @@ class ContentBlocklistRepository {
     }
   }
 
-  /// Load persisted muted authors from SharedPreferences.
+  /// Load unblocks whose kind 10000 publish was never confirmed.
   ///
-  /// This is the hydration cache that covers the window between app start
-  /// and relay delivery of our own kind 10000 event.
+  /// The counterpart to [_loadBlockedUsers]: a block that did not reach the
+  /// relay is derivable from the two sets, an unblock is not, so the intent
+  /// has to survive the restart on its own (#8263).
   void _loadPendingUnblocks() {
     final prefs = _prefs;
     if (prefs == null) return;
@@ -517,9 +518,10 @@ class ContentBlocklistRepository {
 
     try {
       final decoded = jsonDecode(stored) as Map<String, dynamic>;
-      decoded.forEach((pubkey, unblockedAt) {
-        if (unblockedAt is int) _pendingUnblocks[pubkey] = unblockedAt;
-      });
+      for (final entry in decoded.entries) {
+        final unblockedAt = entry.value;
+        if (unblockedAt is int) _pendingUnblocks[entry.key] = unblockedAt;
+      }
     } on Object catch (e) {
       Log.error(
         'Failed to load pending unblocks: $e',
@@ -547,6 +549,10 @@ class ContentBlocklistRepository {
     }
   }
 
+  /// Load persisted muted authors from SharedPreferences.
+  ///
+  /// This is the hydration cache that covers the window between app start
+  /// and relay delivery of our own kind 10000 event.
   void _loadMutedUsers() {
     final prefs = _prefs;
     if (prefs == null) return;
