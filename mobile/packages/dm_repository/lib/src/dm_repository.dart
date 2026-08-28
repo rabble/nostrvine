@@ -2340,16 +2340,26 @@ class DmRepository {
           batchId: sendBatchId,
           ownerPubkey: ownerPubkey,
         );
-      } else {
+      } else if (isSentByMe && isGroup) {
         isDuplicate = await _directMessagesDao.hasMatchingMessage(
           conversationId: conversationId,
           senderPubkey: rumor.pubkey,
           content: rumor.content,
           createdAt: persistedCreatedAt,
           ownerPubkey: ownerPubkey,
-          counterpart: isSentByMe && isGroup
-              ? DmDedupCounterpart.unconstrained
-              : DmDedupCounterpart.nip04Copy,
+          counterpart: DmDedupCounterpart.unconstrained,
+        );
+      } else {
+        // A peer's rumor may only be collapsed onto the ONE NIP-04 twin of
+        // this same message, which the claim consumes so a second same-text
+        // rumor in the window cannot be collapsed onto it too (#8211).
+        isDuplicate = await _directMessagesDao.claimCrossProtocolTwin(
+          conversationId: conversationId,
+          senderPubkey: rumor.pubkey,
+          content: rumor.content,
+          createdAt: persistedCreatedAt,
+          ownerPubkey: ownerPubkey,
+          counterpart: DmDedupCounterpart.nip04Copy,
         );
       }
       if (isDuplicate) {
@@ -2994,9 +3004,10 @@ class DmRepository {
       // dual-send fires both NIP-17 and NIP-04 copies. The receiver (also
       // Divine) will process the NIP-17 first, then see the NIP-04 copy.
       // Since the two events have different IDs, hasGiftWrap won't catch it.
-      // Match on sender+content within hasMatchingMessage's narrow createdAt
-      // window because the NIP-17 rumor and NIP-04 event may have slightly
-      // different timestamps.
+      // Match on sender+content within a narrow createdAt window because the
+      // NIP-17 rumor and NIP-04 event may have slightly different timestamps.
+      // The peer branch CLAIMS that twin, so one stored rumor can absorb only
+      // the one kind-4 it was dual-sent with (#8211).
       //
       // Only the NIP-17 copy may suppress a PEER's event. Another NIP-04 row
       // with the same text is a genuine earlier message — the mirror of #7324
@@ -3009,16 +3020,23 @@ class DmRepository {
       // columns, so a row from that window reads as NIP-04 and would be
       // missed by nip17Copy — inserting a second bubble for a message the
       // user already sent (#8211).
-      final isDuplicate = await _directMessagesDao.hasMatchingMessage(
-        conversationId: conversationId,
-        senderPubkey: senderPubkey,
-        content: plaintext,
-        createdAt: persistedCreatedAt,
-        ownerPubkey: _userPubkey,
-        counterpart: isSentByMe
-            ? DmDedupCounterpart.unconstrained
-            : DmDedupCounterpart.nip17Copy,
-      );
+      final isDuplicate = isSentByMe
+          ? await _directMessagesDao.hasMatchingMessage(
+              conversationId: conversationId,
+              senderPubkey: senderPubkey,
+              content: plaintext,
+              createdAt: persistedCreatedAt,
+              ownerPubkey: _userPubkey,
+              counterpart: DmDedupCounterpart.unconstrained,
+            )
+          : await _directMessagesDao.claimCrossProtocolTwin(
+              conversationId: conversationId,
+              senderPubkey: senderPubkey,
+              content: plaintext,
+              createdAt: persistedCreatedAt,
+              ownerPubkey: _userPubkey,
+              counterpart: DmDedupCounterpart.nip17Copy,
+            );
       if (isDuplicate) {
         Log.debug(
           'Skipping NIP-04 duplicate (NIP-17 copy already stored) '

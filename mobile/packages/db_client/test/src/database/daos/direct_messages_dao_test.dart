@@ -1055,6 +1055,146 @@ void main() {
       });
     });
 
+    group('claimCrossProtocolTwin', () {
+      Future<void> insertNip04(String id, {int at = 1700000000}) =>
+          dao.insertMessage(
+            id: id,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: at,
+            giftWrapId: id,
+            ownerPubkey: 'pubkey_owner',
+          );
+
+      Future<bool> claimNip04Twin({int at = 1700000000}) =>
+          dao.claimCrossProtocolTwin(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: at,
+            counterpart: DmDedupCounterpart.nip04Copy,
+            ownerPubkey: 'pubkey_owner',
+          );
+
+      test('claims a stored NIP-04 twin exactly once', () async {
+        // The dual-send twin is 1:1, so the second same-text rumor inside the
+        // window is a genuine repeat and must survive. Before #8211 both were
+        // suppressed and three sent messages showed as one bubble.
+        await insertNip04('ev_nip04');
+
+        expect(await claimNip04Twin(at: 1700000001), isTrue);
+        expect(await claimNip04Twin(at: 1700000003), isFalse);
+      });
+
+      test('marks the claimed row so it is spent', () async {
+        await insertNip04('ev_nip04');
+        await claimNip04Twin();
+
+        final row = await dao.getMessageById('ev_nip04');
+        expect(row!.twinCollapsed, isTrue);
+      });
+
+      test('leaves an unclaimed sibling available', () async {
+        // Two dual-sends of the same text mean two twins, so two rumors may
+        // be collapsed — and only two.
+        await insertNip04('ev_nip04_a');
+        await insertNip04('ev_nip04_b', at: 1700000002);
+
+        expect(await claimNip04Twin(at: 1700000001), isTrue);
+        expect(await claimNip04Twin(at: 1700000002), isTrue);
+        expect(await claimNip04Twin(at: 1700000003), isFalse);
+      });
+
+      test('ignores a row that arrived over the same protocol', () async {
+        // A NIP-17 row (distinct id/gift_wrap_id) is a genuine earlier
+        // message to another NIP-17 rumor, never its twin (#7324).
+        await dao.insertMessage(
+          id: 'rumor_1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_1',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        expect(await claimNip04Twin(at: 1700000001), isFalse);
+      });
+
+      test('claims a NIP-17 twin from the NIP-04 side', () async {
+        await dao.insertMessage(
+          id: 'rumor_1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_1',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        Future<bool> claimNip17Twin() => dao.claimCrossProtocolTwin(
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000001,
+          counterpart: DmDedupCounterpart.nip17Copy,
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        expect(await claimNip17Twin(), isTrue);
+        expect(await claimNip17Twin(), isFalse);
+      });
+
+      test('does not claim outside the window', () async {
+        await insertNip04('ev_nip04');
+
+        expect(await claimNip04Twin(at: 1700000006), isFalse);
+      });
+
+      test("does not claim another account's row", () async {
+        await insertNip04('ev_nip04');
+
+        final claimed = await dao.claimCrossProtocolTwin(
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000001,
+          counterpart: DmDedupCounterpart.nip04Copy,
+          ownerPubkey: 'pubkey_other_owner',
+        );
+
+        expect(claimed, isFalse);
+      });
+
+      test('still claims a soft-deleted twin', () async {
+        // Deliberate: the deleted row is the twin, and letting its kind-4
+        // counterpart insert would resurrect a message the user deleted as a
+        // fresh, permanently undeletable bubble — a kind 5 names the rumor id,
+        // never the twin's (#8211).
+        await insertNip04('ev_nip04');
+        await dao.markMessageDeleted('ev_nip04', ownerPubkey: 'pubkey_owner');
+
+        expect(await claimNip04Twin(at: 1700000001), isTrue);
+      });
+
+      test('rejects unconstrained, which cannot identify a twin', () async {
+        await insertNip04('ev_nip04');
+
+        expect(
+          () => dao.claimCrossProtocolTwin(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: 1700000001,
+            counterpart: DmDedupCounterpart.unconstrained,
+            ownerPubkey: 'pubkey_owner',
+          ),
+          throwsArgumentError,
+        );
+      });
+    });
+
     group('hasMessageWithSendBatchId', () {
       const owner = 'pubkey_owner_a';
 

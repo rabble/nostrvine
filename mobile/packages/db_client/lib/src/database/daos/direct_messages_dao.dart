@@ -397,27 +397,23 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// [conversationId] within ±[windowSeconds] **and** arrived over the
   /// protocol named by [counterpart].
   ///
-  /// This is cross-protocol dedup. A dual-send puts one message on the wire
-  /// twice — a NIP-17 rumor and a NIP-04 event with unrelated ids — so
-  /// [hasGiftWrap] cannot collapse them and only `(sender, content, ~time)`
-  /// can.
+  /// This answers the SELF-AUTHORED question — "have I already persisted this
+  /// send?" — with existence semantics, which is what those callers need: a
+  /// group send's siblings all match the one local row the fan-out wrote, and
+  /// every one of them must be suppressed. Prefer [hasMessageWithSendBatchId]
+  /// when the batch token is available, since it matches exactly instead of
+  /// heuristically. Self-authored callers pass
+  /// [DmDedupCounterpart.unconstrained], because the row may carry either
+  /// arrival shape: every NIP-17 send path before #2654 wrote the gift-wrap id
+  /// into both columns, so a row from that window reads as NIP-04 (#8211).
   ///
-  /// [counterpart] is what stops that heuristic eating real messages. A
-  /// NIP-17 rumor is a duplicate only of a stored NIP-04 copy, and a NIP-04
-  /// event only of a stored NIP-17 copy; a genuine second send of the same
-  /// text seconds later is same-protocol, so it no longer matches and is kept
-  /// (#7324). Same-protocol replays need no help here — the primary key on
-  /// `id` and the UNIQUE index on `gift_wrap_id` already make [insertMessage]
-  /// a no-op for them.
-  ///
-  /// Two self-authored cases need [DmDedupCounterpart.unconstrained], because
-  /// both match the user's OWN persisted send rather than a cross-protocol
-  /// twin. A group send's siblings carry distinct rumor ids, so the primary
-  /// key does not collapse their self-wrap echoes — prefer
-  /// [hasMessageWithSendBatchId] there when the batch token is available,
-  /// since it matches exactly instead of heuristically. And the user's own
-  /// replayed NIP-04 fallback may match a send written before #2654, which
-  /// stored the gift-wrap id in both columns and so reads as NIP-04 (#8211).
+  /// For the CROSS-PROTOCOL twin — a dual-send that put one message on the
+  /// wire twice, as a NIP-17 rumor and a NIP-04 event with unrelated ids —
+  /// use [claimCrossProtocolTwin] instead. Existence is the wrong question
+  /// there: a twin is 1:1, and asking existence let one stored copy swallow
+  /// every same-text arrival in the window (#8211). Same-protocol replays need
+  /// no help from either method — the primary key on `id` and the UNIQUE index
+  /// on `gift_wrap_id` already make [insertMessage] a no-op for them.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
@@ -429,22 +425,109 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }) async {
     final query = selectOnly(directMessages)
       ..where(
-        directMessages.conversationId.equals(conversationId) &
-            directMessages.senderPubkey.equals(senderPubkey) &
-            directMessages.content.equals(content) &
-            directMessages.createdAt.isBiggerOrEqualValue(
-              createdAt - windowSeconds,
-            ) &
-            directMessages.createdAt.isSmallerOrEqualValue(
-              createdAt + windowSeconds,
-            ) &
-            _arrivedOverCounterpart(counterpart) &
-            _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
+        _dedupWindow(
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: content,
+          createdAt: createdAt,
+          counterpart: counterpart,
+          windowSeconds: windowSeconds,
+          ownerPubkey: ownerPubkey,
+        ),
       )
       ..addColumns([directMessages.id])
       ..limit(1);
     final result = await query.getSingleOrNull();
     return result != null;
+  }
+
+  /// The `(sender, content, ~time)` dedup window, shared by
+  /// [hasMatchingMessage] and [claimCrossProtocolTwin] so the arrival-shape
+  /// rule has exactly one definition.
+  Expression<bool> _dedupWindow({
+    required String conversationId,
+    required String senderPubkey,
+    required String content,
+    required int createdAt,
+    required DmDedupCounterpart counterpart,
+    required int windowSeconds,
+    required String? ownerPubkey,
+  }) {
+    return directMessages.conversationId.equals(conversationId) &
+        directMessages.senderPubkey.equals(senderPubkey) &
+        directMessages.content.equals(content) &
+        directMessages.createdAt.isBiggerOrEqualValue(
+          createdAt - windowSeconds,
+        ) &
+        directMessages.createdAt.isSmallerOrEqualValue(
+          createdAt + windowSeconds,
+        ) &
+        _arrivedOverCounterpart(counterpart) &
+        _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey);
+  }
+
+  /// Claims the cross-protocol twin of an arriving message, marking it so no
+  /// later arrival can claim it again. Returns true when one was claimed,
+  /// meaning the caller must drop the arriving event as a duplicate.
+  ///
+  /// This is the dual-send question, and it is deliberately NOT
+  /// [hasMatchingMessage]. That method asks whether a matching row *exists* —
+  /// correct for a self-authored send, which any number of echoes may
+  /// legitimately match. A twin is 1:1: one message put on the wire twice
+  /// yields exactly one counterpart, so a stored copy may absorb exactly one.
+  /// Asking existence let a single stored NIP-04 row swallow every same-text
+  /// NIP-17 arrival inside the window — #7324's own symptom, surviving in the
+  /// NIP-04-first ordering (#8211). Measured on device before this fix: three
+  /// messages sent, one bubble shown.
+  ///
+  /// The claim is ONE statement on purpose — an `UPDATE ... WHERE id IN
+  /// (SELECT ... LIMIT 1)`. A drift transaction does not serialize the
+  /// statements issued inside it, so a select-then-update pair can interleave
+  /// with a concurrent claim and hand the same row to both arrivals. Here the
+  /// affected row count comes back from the same write, with no await point in
+  /// between.
+  ///
+  /// [counterpart] names the protocol the twin must have arrived over.
+  /// [DmDedupCounterpart.unconstrained] cannot identify a twin and is a caller
+  /// error.
+  Future<bool> claimCrossProtocolTwin({
+    required String conversationId,
+    required String senderPubkey,
+    required String content,
+    required int createdAt,
+    required DmDedupCounterpart counterpart,
+    int windowSeconds = 5,
+    String? ownerPubkey,
+  }) async {
+    if (counterpart == DmDedupCounterpart.unconstrained) {
+      throw ArgumentError.value(
+        counterpart,
+        'counterpart',
+        'A twin must name the protocol it arrived over',
+      );
+    }
+
+    final unclaimed = selectOnly(directMessages)
+      ..addColumns([directMessages.id])
+      ..where(
+        _dedupWindow(
+              conversationId: conversationId,
+              senderPubkey: senderPubkey,
+              content: content,
+              createdAt: createdAt,
+              counterpart: counterpart,
+              windowSeconds: windowSeconds,
+              ownerPubkey: ownerPubkey,
+            ) &
+            directMessages.twinCollapsed.equals(false),
+      )
+      ..orderBy([OrderingTerm(expression: directMessages.createdAt)])
+      ..limit(1);
+
+    final claimed =
+        await (update(directMessages)..where((t) => t.id.isInQuery(unclaimed)))
+            .write(const DirectMessagesCompanion(twinCollapsed: Value(true)));
+    return claimed > 0;
   }
 
   /// Whether a message tagged with group-send [batchId] is already persisted

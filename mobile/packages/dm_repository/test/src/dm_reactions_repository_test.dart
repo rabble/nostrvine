@@ -1780,6 +1780,7 @@ void main() {
               giftWrapId: _giftWrapId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
               ownerPubkey: _ownerPubkey,
             ),
           );
