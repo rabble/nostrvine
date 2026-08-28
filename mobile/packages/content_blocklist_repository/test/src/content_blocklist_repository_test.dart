@@ -3609,6 +3609,30 @@ void main() {
         expect(await service.retryPendingMuteListPublish(), isFalse);
       });
 
+      test(
+        'a restart makes a persisted unblock immediately retryable',
+        () async {
+          final prefs = await prefsAfterAWithheldUnblock();
+          await prefs.setBool(
+            'block_list_migrated_to_mute_list.$ourPubkey',
+            true,
+          );
+          await prefs.setBool('block_list_retired.$ourPubkey', true);
+          stubHealthy();
+          stubReadSettled();
+
+          final restarted = ContentBlocklistRepository(prefs: prefs);
+          await restarted.syncBlockListsInBackground(
+            mockClient,
+            mockSigner,
+            ourPubkey,
+          );
+
+          expect(await restarted.retryPendingMuteListPublish(), isTrue);
+          expect(await restarted.retryPendingMuteListPublish(), isFalse);
+        },
+      );
+
       test('republishes so the relay drops the stale tag', () async {
         final prefs = await prefsAfterAWithheldUnblock();
         final ownList = StreamController<Event>.broadcast();
@@ -3654,11 +3678,31 @@ void main() {
       test('blocking again retires the intent, so a later restart has no '
           'outstanding work', () async {
         final prefs = await prefsAfterAWithheldUnblock();
+        final pending =
+            jsonDecode(
+                  prefs.getString('pending_unblocks.$ourPubkey')!,
+                )
+                as Map<String, dynamic>;
+        final unblockedAt = pending[target]! as int;
         stubHealthy();
         stubReadSettled();
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (invocation) async => buildEvent(
+            kind: invocation.namedArguments[#kind] as int,
+            content: invocation.namedArguments[#content] as String,
+            tags: invocation.namedArguments[#tags] as List<List<String>>,
+            createdAt: unblockedAt,
+          ),
+        );
 
-        // Re-block and publish: our own event carries the tag and postdates
-        // the unblock, which is what retires the intent.
+        // Re-block and publish in the same second as the unblock. The explicit
+        // re-block must retire the intent because the timestamp cannot.
         final second = ContentBlocklistRepository(prefs: prefs);
         await second.syncBlockListsInBackground(
           mockClient,
@@ -4108,6 +4152,53 @@ void main() {
         );
         expect(prefs.getBool(flagKey), isNull);
         expect(prefs.getBool(retiredKey), isNull);
+
+        service.dispose();
+      },
+    );
+
+    test(
+      'persists pending-unblock retirement during an in-memory merge',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'blocklist_active_pubkey': ourPubkey,
+          'blocked_users_list.$ourPubkey': jsonEncode([blockB]),
+          'pending_unblocks.$ourPubkey': jsonEncode({blockA: 1500}),
+        });
+        prefs = await SharedPreferences.getInstance();
+        when(() => mockClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final kinds = filters.first.kinds ?? const <int>[];
+          if (kinds.contains(30000)) {
+            return [
+              ownBlockEvent([blockB]),
+            ];
+          }
+          if (kinds.contains(10000)) {
+            return [ownMuteEvent(const [])];
+          }
+          return <Event>[];
+        });
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        final pending =
+            jsonDecode(
+                  prefs.getString('pending_unblocks.$ourPubkey')!,
+                )
+                as Map<String, dynamic>;
+        expect(pending, isNot(contains(blockA)));
 
         service.dispose();
       },

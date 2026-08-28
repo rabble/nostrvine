@@ -1773,7 +1773,7 @@ class ContentBlocklistRepository {
       }
       if (retired.isNotEmpty) {
         retired.forEach(_pendingUnblocks.remove);
-        if (persist) unawaited(_savePendingUnblocks());
+        unawaited(_savePendingUnblocks());
       }
       if (reconcile && _pendingUnblocks.isNotEmpty) {
         Log.info(
