@@ -180,6 +180,7 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
+    TargetPlatform? platform,
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) async {
@@ -192,6 +193,7 @@ void main() {
         email: email,
         token: token,
         restored: restored,
+        platform: platform,
         initialState: initialState,
         stateStream: stateStream,
       ),
@@ -1796,14 +1798,13 @@ void main() {
     testWidgets('unfocuses the PIN field when dragging the screen', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          deviceCode: 'test-device-code',
-          verifier: 'test-verifier',
-          email: 'user@example.com',
-          platform: TargetPlatform.iOS,
-          initialState: pollingState,
-        ),
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'test-device-code',
+        verifier: 'test-verifier',
+        email: 'user@example.com',
+        platform: TargetPlatform.iOS,
+        initialState: pollingState,
       );
       await tester.pump();
 
