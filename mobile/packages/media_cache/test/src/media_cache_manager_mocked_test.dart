@@ -449,9 +449,12 @@ void main() {
         );
         await Future<void>.delayed(const Duration(milliseconds: 1));
 
-        await cacheManager.close();
+        var closeCompleted = false;
+        final closing = cacheManager.close().then((_) => closeCompleted = true);
+        await Future<void>.delayed(Duration.zero);
 
         expect(await cacheFuture, isNull);
+        expect(closeCompleted, isFalse);
         expect(
           await cacheManager.cacheFile(
             'https://example.com/after-close.mp4',
@@ -461,7 +464,8 @@ void main() {
         );
 
         downloadCompleter.complete(mockFileInfo);
-        await Future<void>.delayed(const Duration(milliseconds: 1));
+        await closing;
+        expect(closeCompleted, isTrue);
       });
 
       test('passes auth headers to download', () async {
@@ -1165,6 +1169,31 @@ void main() {
           expect(downloader.downloads, hasLength(1));
 
           if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
+
+      test(
+        'initialize releases its repository lease',
+        () async {
+          final repo = MockCacheInfoRepository();
+          when(repo.open).thenAnswer((_) async => true);
+          when(repo.getAllObjects).thenAnswer((_) async => []);
+          when(repo.close).thenAnswer((_) async => true);
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey:
+                  'initialize_lease_${DateTime.now().microsecondsSinceEpoch}',
+              enableSyncManifest: true,
+            ),
+            repoOverride: repo,
+          );
+
+          await cacheManager.initialize();
+
+          // CacheStore owns the first open; initialize owns and releases the
+          // second without closing CacheStore's lifetime connection.
+          verify(repo.open).called(2);
+          verify(repo.close).called(1);
         },
       );
 

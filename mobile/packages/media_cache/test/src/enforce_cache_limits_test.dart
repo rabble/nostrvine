@@ -100,6 +100,18 @@ void main() {
       expect(nested.existsSync(), isTrue, reason: 'subdirectory kept');
     });
 
+    test('releases the repository lease after each sweep', () async {
+      when(repo.getAllObjects).thenAnswer((_) async => []);
+      final (manager, _) = build();
+
+      await manager.enforceCacheLimits(force: true);
+
+      // CacheStore owns the first open for the manager lifetime; the sweep's
+      // second open is the lease that must be released here.
+      verify(repo.open).called(2);
+      verify(repo.close).called(1);
+    });
+
     test('reclaims aged uuid-named orphans from the inherited '
         'downloadFile path', () async {
       final (manager, dir) = build();
@@ -530,7 +542,6 @@ void main() {
         expect(tracked.existsSync(), isFalse);
         expect(nestedFile.existsSync(), isTrue, reason: 'never a candidate');
       });
-
       test('stops cleanly when only undeletable bytes remain over '
           'budget', () async {
         final (manager, dir) = build(maxCacheSizeBytes: 10);
@@ -859,6 +870,32 @@ void main() {
 
         expect(target.existsSync(), isTrue);
         expect(reads, readsAfterForcedSweep);
+      });
+
+      test('close waits for an in-flight sweep to settle', () async {
+        final deleteStarted = Completer<void>();
+        final deleteGate = Completer<void>();
+        when(repo.getAllObjects).thenAnswer(
+          (_) async => [obj('old_1_1.mp4', id: 1, touched: DateTime(2020))],
+        );
+        when(() => repo.deleteAll(any())).thenAnswer((_) async {
+          deleteStarted.complete();
+          await deleteGate.future;
+          return 1;
+        });
+        final (manager, dir) = build(maxCacheSizeBytes: 50);
+        writeFile(dir, 'old_1_1.mp4', 100);
+
+        final sweep = manager.enforceCacheLimits(force: true);
+        await deleteStarted.future;
+        var closeCompleted = false;
+        final closing = manager.close().then((_) => closeCompleted = true);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(closeCompleted, isFalse);
+        deleteGate.complete();
+        await Future.wait([sweep, closing]);
+        expect(closeCompleted, isTrue);
       });
 
       test('reconciles a download that settles during byte eviction', () async {

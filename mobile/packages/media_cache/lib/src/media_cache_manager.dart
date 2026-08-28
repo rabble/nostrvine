@@ -391,6 +391,9 @@ class MediaCacheManager extends CacheManager {
   /// Guards against overlapping [enforceCacheLimits] runs.
   bool _sweepInProgress = false;
 
+  /// Completes after the active sweep and any queued forced follow-up settle.
+  Completer<void>? _activeSweepCompletion;
+
   /// A forced sweep requested while another pass is running.
   ///
   /// Ordinary background sweeps may still be coalesced, but callers that lower
@@ -526,16 +529,18 @@ class MediaCacheManager extends CacheManager {
       return;
     }
 
+    final repo = _repoOverride ?? config.repo;
+    var repoOpened = false;
     try {
       // Read cache metadata via the Config's CacheInfoRepository
       // (JsonCacheInfoRepository wrapped by SafeCacheInfoRepository).
       // In tests a repo override may be injected to pre-populate the manifest
       // without needing a real JSON file on disk.
-      final repo = _repoOverride ?? config.repo;
       if (!await repo.open()) {
         _manifestInitialized = true;
         return;
       }
+      repoOpened = true;
 
       final objects = await repo.getAllObjects();
       final tempDir = await _tempDirectoryProvider();
@@ -587,6 +592,14 @@ class MediaCacheManager extends CacheManager {
     } on Exception catch (_) {
       // Don't throw - degraded functionality is better than crash
       _manifestInitialized = true;
+    } finally {
+      if (repoOpened) {
+        try {
+          await repo.close();
+        } on Object {
+          // Best-effort lease release; initialization already completed.
+        }
+      }
     }
   }
 
@@ -709,7 +722,7 @@ class MediaCacheManager extends CacheManager {
     final completer = pendingOperation.completer;
     _pendingCacheOperations[key] = pendingOperation;
 
-    unawaited(() async {
+    final settlement = () async {
       try {
         final fileInfo = await downloadFile(
           url,
@@ -752,7 +765,9 @@ class MediaCacheManager extends CacheManager {
       } finally {
         _pendingCacheOperations.remove(key);
       }
-    }());
+    }();
+    pendingOperation.settlement = settlement;
+    unawaited(settlement);
 
     return completer.future.then((result) => result.file);
   }
@@ -1174,10 +1189,12 @@ class MediaCacheManager extends CacheManager {
     // A download settling after this point sets the flag again. Clearing it
     // synchronously here makes this pass the owner of the next clean snapshot.
     _directoryTotalNeedsResync = false;
+    final sweepCompletion = Completer<void>();
+    _activeSweepCompletion = sweepCompletion;
     var repoOpened = false;
     final started = clock.now();
+    final repo = _repoOverride ?? config.repo;
     try {
-      final repo = _repoOverride ?? config.repo;
       if (!await repo.open()) return;
       repoOpened = true;
       final objects = await repo.getAllObjects();
@@ -1226,6 +1243,13 @@ class MediaCacheManager extends CacheManager {
         category: LogCategory.video,
       );
     } finally {
+      if (repoOpened) {
+        try {
+          await repo.close();
+        } on Object {
+          // The sweep is best-effort; a later pass can retry persistence.
+        }
+      }
       _sweepInProgress = false;
       // Measure the throttle window from completion, not start, so a slow
       // sweep can't immediately re-trigger back-to-back and monopolise I/O.
@@ -1233,11 +1257,18 @@ class MediaCacheManager extends CacheManager {
       // open (e.g. cold start) must not throttle out the retry.
       if (repoOpened) _lastSweepAt = clock.now();
 
-      final queued = _queuedForceSweep;
-      _queuedForceSweep = null;
-      if (queued != null) {
-        await enforceCacheLimits(force: true);
-        if (!queued.isCompleted) queued.complete();
+      try {
+        final queued = _queuedForceSweep;
+        _queuedForceSweep = null;
+        if (queued != null) {
+          await enforceCacheLimits(force: true);
+          if (!queued.isCompleted) queued.complete();
+        }
+      } finally {
+        if (!sweepCompletion.isCompleted) sweepCompletion.complete();
+        if (identical(_activeSweepCompletion, sweepCompletion)) {
+          _activeSweepCompletion = null;
+        }
       }
       if (_directoryTotalNeedsResync) _armTrailingSweep();
     }
@@ -1308,8 +1339,8 @@ class MediaCacheManager extends CacheManager {
     // pattern — count towards the total but are never eviction candidates,
     // so the loop below simply stops once the candidates run out.
     final successfulDownloadRevisionAtScanStart = _successfulDownloadRevision;
-    final sizesByName = <String, int>{};
-    final modifiedByName = <String, DateTime>{};
+    final sizesByRelativePath = <String, int>{};
+    final modifiedByRelativePath = <String, DateTime>{};
     var total = 0;
     final pendingDirectories = <Directory>[Directory(baseDir)];
     while (pendingDirectories.isNotEmpty) {
@@ -1323,23 +1354,13 @@ class MediaCacheManager extends CacheManager {
           if (entity is! File) continue;
           final stat = entity.statSync();
           if (stat.type == FileSystemEntityType.notFound) continue;
-          total += stat.size;
           final relativePath = path.relative(entity.path, from: baseDir);
-          // Managed entries are flat. Nested caller-owned files count toward
-          // the budget but are not candidates, and must not collide by name.
-          if (path.dirname(relativePath) == '.') {
-            sizesByName[relativePath] = stat.size;
-            modifiedByName[relativePath] = stat.modified;
-          }
+          sizesByRelativePath[relativePath] = stat.size;
+          modifiedByRelativePath[relativePath] = stat.modified;
+          total += stat.size;
         }
-      } on Object catch (error) {
-        // Match StorageManagementService's measurement: one unreadable
-        // subtree must not discard bytes already counted from its siblings.
-        Log.warning(
-          'MediaCacheManager: sizing ${directory.path} failed: $error',
-          name: 'MediaCache',
-          category: LogCategory.video,
-        );
+      } on Object {
+        // An unreadable subtree must not discard bytes already measured.
       }
     }
     if (total <= budget) {
@@ -1354,15 +1375,16 @@ class MediaCacheManager extends CacheManager {
       );
     }
 
-    final entriesByName = <String, _BudgetedCacheFile>{};
+    final entriesByRelativePath = <String, _BudgetedCacheFile>{};
     for (final object in objects) {
-      final size = sizesByName[object.relativePath];
+      final size = sizesByRelativePath[object.relativePath];
       if (size == null) continue;
-      entriesByName[object.relativePath] = _BudgetedCacheFile(
+      entriesByRelativePath[object.relativePath] = _BudgetedCacheFile(
         object: object,
         file: File(path.join(baseDir, object.relativePath)),
         size: size,
-        lastUsed: object.touched ?? modifiedByName[object.relativePath]!,
+        lastUsed:
+            object.touched ?? modifiedByRelativePath[object.relativePath]!,
       );
     }
 
@@ -1371,22 +1393,22 @@ class MediaCacheManager extends CacheManager {
     // Those files are protected from orphan reclamation, so they must stay
     // eligible for byte eviction.
     for (final filePath in _cacheManifest.values) {
-      final name = path.basename(filePath);
-      if (entriesByName.containsKey(name) ||
-          _inFlightRelativePaths.contains(name)) {
+      final relativePath = path.relative(filePath, from: baseDir);
+      if (entriesByRelativePath.containsKey(relativePath) ||
+          _inFlightRelativePaths.contains(relativePath)) {
         continue;
       }
-      final size = sizesByName[name];
+      final size = sizesByRelativePath[relativePath];
       if (size == null) continue;
-      entriesByName[name] = _BudgetedCacheFile(
-        file: File(path.join(baseDir, name)),
+      entriesByRelativePath[relativePath] = _BudgetedCacheFile(
+        file: File(path.join(baseDir, relativePath)),
         size: size,
-        lastUsed: modifiedByName[name]!,
+        lastUsed: modifiedByRelativePath[relativePath]!,
       );
     }
 
     // Oldest first (last-touch time, else file mtime) so newer items survive.
-    final entries = entriesByName.values.toList()
+    final entries = entriesByRelativePath.values.toList()
       ..sort((a, b) => a.lastUsed.compareTo(b.lastUsed));
     final removedIds = <int>[];
     var aliasMapChanged = false;
@@ -1657,6 +1679,7 @@ class MediaCacheManager extends CacheManager {
     if (_isClosed) return;
     _isClosed = true;
     _cancelTrailingSweep();
+    final activeSweep = _activeSweepCompletion?.future;
 
     // CacheStore opens its JSON repository without exposing that Future.
     // Hold a second connection so disposal cannot race the initial open, then
@@ -1688,17 +1711,24 @@ class MediaCacheManager extends CacheManager {
     }
     _pendingCacheOperations.clear();
 
-    await _downloader.close();
-    await Future.wait([
-      for (final operation in pending)
-        if (operation.settlement != null) operation.settlement!,
-    ]);
-    await _aliasWriteQueue;
-    _fileServiceClient?.close();
     try {
-      await super.dispose();
+      await _downloader.close();
+      await Future.wait([
+        for (final operation in pending)
+          if (operation.settlement != null) operation.settlement!,
+      ]);
     } finally {
-      if (synchronizeRepoClose) await repo.close();
+      try {
+        if (activeSweep != null) await activeSweep;
+        await _aliasWriteQueue;
+      } finally {
+        _fileServiceClient?.close();
+        try {
+          await super.dispose();
+        } finally {
+          if (synchronizeRepoClose) await repo.close();
+        }
+      }
     }
   }
 }
