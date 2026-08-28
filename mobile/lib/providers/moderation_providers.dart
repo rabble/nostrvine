@@ -292,9 +292,10 @@ class BlocklistVersion extends _$BlocklistVersion {
 /// preceding it was inconclusive (#6750). A block is kept local rather than
 /// published over a list we could not read, so something has to retry it: a
 /// later block republishes the whole list anyway, and this covers the user who
-/// blocked once while relays were unhealthy and has not blocked since. Both
-/// signals it listens to are "we might be healthy again" — a session becoming
-/// ready, and the app returning to the foreground.
+/// blocked once while relays were unhealthy and has not blocked since. The
+/// signal is the app returning to the foreground — "we might be healthy
+/// again". A restart is covered inside the repository instead, which
+/// reconciles its persisted blocks against the list the relay serves back.
 @Riverpod(keepAlive: true)
 void blocklistSyncBridge(Ref ref) {
   final authService = ref.watch(authServiceProvider);

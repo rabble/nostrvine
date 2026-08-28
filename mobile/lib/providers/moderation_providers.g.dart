@@ -569,9 +569,10 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
 /// preceding it was inconclusive (#6750). A block is kept local rather than
 /// published over a list we could not read, so something has to retry it: a
 /// later block republishes the whole list anyway, and this covers the user who
-/// blocked once while relays were unhealthy and has not blocked since. Both
-/// signals it listens to are "we might be healthy again" — a session becoming
-/// ready, and the app returning to the foreground.
+/// blocked once while relays were unhealthy and has not blocked since. The
+/// signal is the app returning to the foreground — "we might be healthy
+/// again". A restart is covered inside the repository instead, which
+/// reconciles its persisted blocks against the list the relay serves back.
 
 @ProviderFor(blocklistSyncBridge)
 final blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
@@ -591,9 +592,10 @@ final blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 /// preceding it was inconclusive (#6750). A block is kept local rather than
 /// published over a list we could not read, so something has to retry it: a
 /// later block republishes the whole list anyway, and this covers the user who
-/// blocked once while relays were unhealthy and has not blocked since. Both
-/// signals it listens to are "we might be healthy again" — a session becoming
-/// ready, and the app returning to the foreground.
+/// blocked once while relays were unhealthy and has not blocked since. The
+/// signal is the app returning to the foreground — "we might be healthy
+/// again". A restart is covered inside the repository instead, which
+/// reconciles its persisted blocks against the list the relay serves back.
 
 final class BlocklistSyncBridgeProvider
     extends $FunctionalProvider<void, void, void>
@@ -613,9 +615,10 @@ final class BlocklistSyncBridgeProvider
   /// preceding it was inconclusive (#6750). A block is kept local rather than
   /// published over a list we could not read, so something has to retry it: a
   /// later block republishes the whole list anyway, and this covers the user who
-  /// blocked once while relays were unhealthy and has not blocked since. Both
-  /// signals it listens to are "we might be healthy again" — a session becoming
-  /// ready, and the app returning to the foreground.
+  /// blocked once while relays were unhealthy and has not blocked since. The
+  /// signal is the app returning to the foreground — "we might be healthy
+  /// again". A restart is covered inside the repository instead, which
+  /// reconciles its persisted blocks against the list the relay serves back.
   BlocklistSyncBridgeProvider._()
     : super(
         from: null,

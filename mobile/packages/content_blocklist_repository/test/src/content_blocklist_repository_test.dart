@@ -3266,6 +3266,103 @@ void main() {
         stubMuteRead();
         expect(await service.retryPendingMuteListPublish(), isTrue);
       });
+
+      test('a restart republishes a block the relay never received', () async {
+        // The app-kill case: the block survived in SharedPreferences, the
+        // pending flag did not, and the relay's list predates it.
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          'blocked_users_list': jsonEncode([blockedPubkey]),
+        });
+        final prefs = await SharedPreferences.getInstance();
+        stubSigningAndPublishing();
+        stubMuteRead();
+        final ownList = StreamController<Event>();
+        addTearDown(ownList.close);
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => ownList.stream);
+
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncMuteListsInBackground(mockClient, ourPubkey);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        clearInteractions(mockSigner);
+
+        // The relay serves a list that predates the block.
+        ownList.add(
+          buildEvent(
+            kind: 10000,
+            content: 'encrypted-private-tags',
+            tags: const [
+              ['t', 'spoilers'],
+            ],
+            createdAt: 5000,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final captured = verify(
+          () => mockSigner.createAndSignEvent(
+            kind: 10000,
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        expect(captured[0] as String, 'encrypted-private-tags');
+        final tags = captured[1] as List<List<String>>;
+        expect(tags, contains(equals(['p', blockedPubkey])));
+        expect(tags, contains(equals(['t', 'spoilers'])));
+      });
+
+      test(
+        'a list that already carries our blocks republishes nothing',
+        () async {
+          SharedPreferences.setMockInitialValues(<String, Object>{
+            'blocked_users_list': jsonEncode([blockedPubkey]),
+          });
+          final prefs = await SharedPreferences.getInstance();
+          stubSigningAndPublishing();
+          stubMuteRead();
+          final ownList = StreamController<Event>();
+          addTearDown(ownList.close);
+          when(
+            () => mockClient.subscribe(any()),
+          ).thenAnswer((_) => ownList.stream);
+
+          final service = ContentBlocklistRepository(prefs: prefs);
+          await service.syncMuteListsInBackground(mockClient, ourPubkey);
+          await service.syncBlockListsInBackground(
+            mockClient,
+            mockSigner,
+            ourPubkey,
+          );
+          clearInteractions(mockSigner);
+
+          ownList.add(
+            buildEvent(
+              kind: 10000,
+              tags: const [
+                ['p', blockedPubkey],
+              ],
+              createdAt: 5000,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          verifyNever(
+            () => mockSigner.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
     });
   });
 

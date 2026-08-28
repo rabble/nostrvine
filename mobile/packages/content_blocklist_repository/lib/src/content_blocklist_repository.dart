@@ -1638,13 +1638,14 @@ class ContentBlocklistRepository {
   /// Our own pubkey is excluded so a malformed self-referential mute list
   /// can never filter the user's own content (#2192).
   void _handleOwnMuteListEvent(Event event) {
-    _applyOwnMuteListEvent(event);
+    _applyOwnMuteListEvent(event, reconcile: true);
   }
 
   void _applyOwnMuteListEvent(
     Event event, {
     bool notify = true,
     bool persist = true,
+    bool reconcile = false,
   }) {
     final ourPubkey = event.pubkey;
     final createdAt = event.createdAt;
@@ -1672,6 +1673,24 @@ class ContentBlocklistRepository {
         relayMuted.add(tag[1]);
       }
     }
+    // The relay's newest list is authoritative for what it holds, so blocks
+    // we still hold locally that are absent from it are a publish that never
+    // landed -- withheld by an inconclusive read (#6750), or lost with
+    // `_muteListPublishPending` when the app was killed. Derive that from the
+    // two sets that DO survive a restart rather than persisting a flag; it is
+    // a no-op in steady state, because our own publishes put every block on
+    // the list we read back. Only the subscription reconciles: a read taken
+    // inside `_publishMuteListToNostr` is about to republish anyway.
+    if (reconcile && _runtimeBlocklist.difference(relayMuted).isNotEmpty) {
+      Log.info(
+        'Own mute list is missing blocks we hold locally; republishing',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      _muteListPublishPending = true;
+      unawaited(retryPendingMuteListPublish());
+    }
+
     // Entries we blocked in-app are republished onto this same list; keep
     // them out of the mute set so they stay tracked as blocks only.
     relayMuted.removeAll(_runtimeBlocklist);
