@@ -516,6 +516,21 @@ void main() {
         expect(unmanaged.existsSync(), isTrue, reason: 'never a candidate');
       });
 
+      test('counts files in nested directories towards the budget', () async {
+        final (manager, dir) = build(maxCacheSizeBytes: 100);
+        final tracked = writeFile(dir, 'a_1_1.mp4', 60);
+        final nested = Directory('${dir.path}/caller-owned')..createSync();
+        final nestedFile = writeFile(nested, 'sidecar.bin', 60);
+        when(repo.getAllObjects).thenAnswer(
+          (_) async => [obj('a_1_1.mp4', id: 1, touched: DateTime(2020))],
+        );
+
+        await manager.enforceCacheLimits();
+
+        expect(tracked.existsSync(), isFalse);
+        expect(nestedFile.existsSync(), isTrue, reason: 'never a candidate');
+      });
+
       test('stops cleanly when only undeletable bytes remain over '
           'budget', () async {
         final (manager, dir) = build(maxCacheSizeBytes: 10);
@@ -692,6 +707,99 @@ void main() {
         }
         expect(target.existsSync(), isFalse);
       });
+
+      test('resyncs after a download settles during a sweep', () async {
+        final deleteStarted = Completer<void>();
+        final allowDeleteToFinish = Completer<void>();
+        when(() => repo.deleteAll(any())).thenAnswer((_) async {
+          deleteStarted.complete();
+          await allowDeleteToFinish.future;
+          return 1;
+        });
+        final (manager, dir, downloader) = buildWithBudget(
+          'mid_sweep_download',
+          maxCacheSizeBytes: 4,
+          sweepThrottle: const Duration(milliseconds: 100),
+        );
+        final oldFile = writeFile(dir, 'old_1_1.mp4', 10);
+        when(repo.getAllObjects).thenAnswer(
+          (_) async => [obj('old_1_1.mp4', id: 1, touched: DateTime(2020))],
+        );
+
+        final sweep = manager.enforceCacheLimits(force: true);
+        await deleteStarted.future;
+        expect(oldFile.existsSync(), isFalse);
+
+        final downloaded = await completeDownload(
+          manager,
+          downloader,
+          bytes: 10,
+        );
+        allowDeleteToFinish.complete();
+        await sweep;
+
+        for (var i = 0; i < 100 && downloaded.existsSync(); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(
+          downloaded.existsSync(),
+          isFalse,
+          reason: 'the mid-sweep download must trigger a resyncing pass',
+        );
+      });
+
+      test('resetForTesting cancels a pending trailing sweep', () async {
+        var reads = 0;
+        final (manager, _, downloader) = buildWithBudget(
+          'reset_pending_sweep',
+          maxCacheSizeBytes: 4,
+          sweepThrottle: const Duration(milliseconds: 300),
+        );
+        when(repo.getAllObjects).thenAnswer((_) async {
+          reads++;
+          return <CacheObject>[];
+        });
+        await manager.enforceCacheLimits(force: true);
+        final readsAfterForcedSweep = reads;
+        final target = await completeDownload(manager, downloader, bytes: 10);
+        expect(target.existsSync(), isTrue, reason: 'inside the window');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        manager.resetForTesting();
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+
+        expect(target.existsSync(), isTrue);
+        expect(reads, readsAfterForcedSweep);
+      });
+
+      test(
+        're-arms when a forced sweep restarts the throttle window',
+        () async {
+          var reads = 0;
+          final (manager, _, downloader) = buildWithBudget(
+            'rearm_pending_sweep',
+            maxCacheSizeBytes: 4,
+            sweepThrottle: const Duration(milliseconds: 300),
+          );
+          when(repo.getAllObjects).thenAnswer((_) async {
+            reads++;
+            if (reads == 2) throw StateError('forced diagnostic failure');
+            return <CacheObject>[];
+          });
+          await manager.enforceCacheLimits(force: true);
+          final target = await completeDownload(manager, downloader, bytes: 10);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+          await manager.enforceCacheLimits(force: true);
+
+          for (var i = 0; i < 200 && target.existsSync(); i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+          }
+          expect(target.existsSync(), isFalse);
+          expect(reads, 3, reason: 'the pending timer must re-arm once');
+        },
+      );
 
       test('does not spin sweeps while undeletable bytes hold the '
           'directory over budget', () async {

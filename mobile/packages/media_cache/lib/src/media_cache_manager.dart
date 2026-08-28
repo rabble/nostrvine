@@ -19,8 +19,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// `_<microseconds>_<seq><ext>` (see `_relativePathFor`). Reclamation only
 /// deletes *untracked* files matching this shape or
 /// [_webHelperCacheFilePattern], so externally-managed files that share the
-/// cache directory — e.g. bundled seed media keyed by raw event id, or the
-/// alias manifest — are never removed.
+/// cache directory — e.g. the alias manifest or caller-owned sidecar files —
+/// are never removed.
 final RegExp _managedCacheFilePattern = RegExp(r'_\d+_\d+\.[A-Za-z0-9]+$');
 
 /// Filenames written by `flutter_cache_manager`'s WebHelper — the path behind
@@ -418,6 +418,11 @@ class MediaCacheManager extends CacheManager {
   /// no further download ever lands (#8242). Cancelled by [close] and
   /// whenever a byte-eviction pass re-syncs the total.
   Timer? _pendingByteSweepTimer;
+
+  /// Whether a download settled after the current sweep began. Its file may
+  /// have missed the sweep's directory snapshot, so the total needs one
+  /// follow-up resync after the throttle window.
+  bool _directoryTotalNeedsResync = false;
 
   /// Runtime override for [MediaCacheConfig.maxCacheSizeBytes], set from a
   /// user preference. `null` falls back to the config default.
@@ -1051,8 +1056,8 @@ class MediaCacheManager extends CacheManager {
     if (_sweepInProgress ||
         clock.now().difference(_lastSweepAt) < _sweepThrottle) {
       // A budget crossing must not wait for a future download that may never
-      // land: arm a one-shot pass at window expiry (#8242). A sweep already
-      // in progress re-syncs the total itself, so it needs no timer.
+      // land: arm a one-shot pass at window expiry (#8242). A download that
+      // settles during the active sweep is handled by its completion path.
       if (overBudget && !_sweepInProgress) _armTrailingSweep();
       return;
     }
@@ -1075,7 +1080,10 @@ class MediaCacheManager extends CacheManager {
       _pendingByteSweepTimer = null;
       if (_isClosed || _sweepInProgress) return;
       final budget = maxCacheSizeBytes;
-      if (budget == null || _knownCacheBytes <= budget) return;
+      if (budget == null ||
+          (_knownCacheBytes <= budget && !_directoryTotalNeedsResync)) {
+        return;
+      }
       if (clock.now().difference(_lastSweepAt) < _sweepThrottle) {
         _armTrailingSweep();
         return;
@@ -1100,6 +1108,10 @@ class MediaCacheManager extends CacheManager {
     } on Object {
       // See above: the next sweep re-syncs the estimate.
     }
+    if (_sweepInProgress) {
+      _directoryTotalNeedsResync = true;
+      return;
+    }
     _maybeEnforceCacheLimits();
   }
 
@@ -1116,7 +1128,7 @@ class MediaCacheManager extends CacheManager {
   ///    evicted and superseded downloads pile up as untracked orphans; this
   ///    pass removes them. Files still referenced by the manifest (live
   ///    entries the store's object cap has demoted), files that match neither
-  ///    pattern (bundled seed media, the alias manifest), in-flight
+  ///    pattern (the alias manifest and caller-owned sidecars), in-flight
   ///    downloads, and files written within [_reclamationFreshnessWindow]
   ///    are left untouched.
   /// 2. **Byte eviction** — when [MediaCacheConfig.maxCacheSizeBytes] is set,
@@ -1152,6 +1164,9 @@ class MediaCacheManager extends CacheManager {
       return;
     }
     _sweepInProgress = true;
+    // A download settling after this point sets the flag again. Clearing it
+    // synchronously here makes this pass the owner of the next clean snapshot.
+    _directoryTotalNeedsResync = false;
     var repoOpened = false;
     final started = clock.now();
     try {
@@ -1209,6 +1224,7 @@ class MediaCacheManager extends CacheManager {
         await enforceCacheLimits(force: true);
         if (!queued.isCompleted) queued.complete();
       }
+      if (_directoryTotalNeedsResync) _armTrailingSweep();
     }
   }
 
@@ -1272,14 +1288,36 @@ class MediaCacheManager extends CacheManager {
     final sizesByName = <String, int>{};
     final modifiedByName = <String, DateTime>{};
     var total = 0;
-    await for (final entity in Directory(baseDir).list(followLinks: false)) {
-      if (entity is! File) continue;
-      final stat = entity.statSync();
-      if (stat.type == FileSystemEntityType.notFound) continue;
-      final name = path.basename(entity.path);
-      sizesByName[name] = stat.size;
-      modifiedByName[name] = stat.modified;
-      total += stat.size;
+    final pendingDirectories = <Directory>[Directory(baseDir)];
+    while (pendingDirectories.isNotEmpty) {
+      final directory = pendingDirectories.removeLast();
+      try {
+        await for (final entity in directory.list(followLinks: false)) {
+          if (entity is Directory) {
+            pendingDirectories.add(entity);
+            continue;
+          }
+          if (entity is! File) continue;
+          final stat = entity.statSync();
+          if (stat.type == FileSystemEntityType.notFound) continue;
+          total += stat.size;
+          final relativePath = path.relative(entity.path, from: baseDir);
+          // Managed entries are flat. Nested caller-owned files count toward
+          // the budget but are not candidates, and must not collide by name.
+          if (path.dirname(relativePath) == '.') {
+            sizesByName[relativePath] = stat.size;
+            modifiedByName[relativePath] = stat.modified;
+          }
+        }
+      } on Object catch (error) {
+        // Match StorageManagementService's measurement: one unreadable
+        // subtree must not discard bytes already counted from its siblings.
+        Log.warning(
+          'MediaCacheManager: sizing ${directory.path} failed: $error',
+          name: 'MediaCache',
+          category: LogCategory.video,
+        );
+      }
     }
     if (total <= budget) {
       _knownCacheBytes = total;
@@ -1520,6 +1558,9 @@ class MediaCacheManager extends CacheManager {
   /// Resets internal state for testing purposes.
   @visibleForTesting
   void resetForTesting() {
+    _cancelTrailingSweep();
+    _knownCacheBytes = 0;
+    _directoryTotalNeedsResync = false;
     _manifestInitialized = false;
     _cacheManifest.clear();
     _activeCancellableOperations.clear();

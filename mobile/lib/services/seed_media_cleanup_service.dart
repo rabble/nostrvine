@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -32,10 +33,6 @@ class SeedMediaCleanupService {
 
   final Future<Directory> Function() _tempDirectoryProvider;
 
-  /// Matches the video cache directory name used by the app's
-  /// `MediaCacheConfig.video` instance (see `openvine_media_cache.dart`).
-  static const String _videoCacheDir = 'openvine_video_cache';
-
   static const String _markerName = '.seed_media_loaded';
 
   /// Event ids are lowercase hex; the preloader used them verbatim as
@@ -52,7 +49,9 @@ class SeedMediaCleanupService {
   Future<void> cleanUpStrandedSeedMediaIfNeeded() async {
     try {
       final tempDir = await _tempDirectoryProvider();
-      final cacheDir = Directory(path.join(tempDir.path, _videoCacheDir));
+      final cacheDir = Directory(
+        path.join(tempDir.path, kVideoCacheDirectoryName),
+      );
       final marker = File(path.join(cacheDir.path, _markerName));
       if (!marker.existsSync()) return;
 
