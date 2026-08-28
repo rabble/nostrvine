@@ -11,6 +11,7 @@ import 'package:openvine/providers/database_corruption_provider.dart';
 import 'package:openvine/services/database_corruption_service.dart';
 import 'package:openvine/startup/database_corruption_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   late AppLocalizations l10n;
@@ -237,6 +238,7 @@ void main() {
     testWidgets('releases restart instructions when persistence hangs', (
       tester,
     ) async {
+      await LogCaptureService().clearAllLogs();
       await tester.pumpWidget(
         buildScreen(
           () {},
@@ -252,6 +254,52 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+      expect(
+        LogCaptureService().getRecentLogs().map((entry) => entry.message),
+        contains(
+          contains(
+            'Timed out waiting for the database recovery flag to persist',
+          ),
+        ),
+      );
+    });
+
+    testWidgets('absorbs persistence completion after the timeout', (
+      tester,
+    ) async {
+      final persisted = Completer<void>();
+      await tester.pumpWidget(
+        buildScreen(
+          () {},
+          awaitRecoveryPersisted: () => persisted.future,
+          canCloseApp: false,
+        ),
+      );
+      await tester.pump(const Duration(seconds: 16));
+
+      persisted.complete();
+      await tester.pump();
+
+      expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('absorbs persistence error after the timeout', (tester) async {
+      final persisted = Completer<void>();
+      await tester.pumpWidget(
+        buildScreen(
+          () {},
+          awaitRecoveryPersisted: () => persisted.future,
+          canCloseApp: false,
+        ),
+      );
+      await tester.pump(const Duration(seconds: 16));
+
+      persisted.completeError(StateError('late persistence failure'));
+      await tester.pump();
+
+      expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('cancels the persistence timeout when disposed', (
