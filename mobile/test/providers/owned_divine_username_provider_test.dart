@@ -83,6 +83,19 @@ void main() {
       },
     );
 
+    test('is unknown when the repository lookup fails', () async {
+      when(() => auth.currentPublicKeyHex).thenReturn(pubkey);
+      when(
+        () => repository.lookupUsernameByPubkey(pubkeyHex: pubkey),
+      ).thenThrow(Exception('lookup failed'));
+
+      final result = await containerWith(
+        repo: repository,
+      ).read(ownedDivineUsernameProvider.future);
+
+      expect(result, isA<DivineUsernameUnknown>());
+    });
+
     test('is unknown when there is no signed-in pubkey', () async {
       when(() => auth.currentPublicKeyHex).thenReturn(null);
 

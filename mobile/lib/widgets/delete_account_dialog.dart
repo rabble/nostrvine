@@ -671,7 +671,14 @@ Future<void> executeAccountDeletion({
     // and before any destructive step. Release is mandatory, so an undetermined
     // lookup fails closed: deleting without releasing a name the user may own is
     // not acceptable. A confirmed absence proceeds with no release.
-    final lookup = await ownedUsernameLookup;
+    final DivineUsernameLookup lookup;
+    try {
+      lookup = await ownedUsernameLookup;
+    } on Object catch (error) {
+      if (!context.mounted) return;
+      abortPreparation(error, deletionNotStartedText);
+      return;
+    }
     if (!context.mounted) return;
     final String? releaseCanonical;
     switch (lookup) {

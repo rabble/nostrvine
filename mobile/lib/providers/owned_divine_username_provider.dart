@@ -23,5 +23,9 @@ final FutureProvider<DivineUsernameLookup> ownedDivineUsernameProvider =
       }
       final repository = ref.watch(profileRepositoryProvider);
       if (repository == null) return const DivineUsernameUnknown();
-      return repository.lookupUsernameByPubkey(pubkeyHex: pubkey);
+      try {
+        return await repository.lookupUsernameByPubkey(pubkeyHex: pubkey);
+      } on Object {
+        return const DivineUsernameUnknown();
+      }
     });

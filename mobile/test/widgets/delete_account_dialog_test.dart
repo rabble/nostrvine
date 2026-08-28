@@ -77,6 +77,7 @@ Future<void> runDeletion({
   required AuthService authService,
   required AccountDeletionRecoveryRepository deletionRecoveryRepository,
   DivineUsernameLookup lookup = const DivineUsernameNotFound(),
+  Future<DivineUsernameLookup>? lookupFuture,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) => dialog_api.executeAccountDeletion(
@@ -84,7 +85,7 @@ Future<void> runDeletion({
   deletionService: deletionService,
   authService: authService,
   deletionRecoveryRepository: deletionRecoveryRepository,
-  ownedUsernameLookup: Future.value(lookup),
+  ownedUsernameLookup: lookupFuture ?? Future.value(lookup),
   confirmedPubkey: confirmedPubkey,
   screenName: screenName,
 );
@@ -955,6 +956,104 @@ void main() {
         );
       },
     );
+
+    testWidgets('does not delete while the name lookup is pending', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      final lookup = Completer<DivineUsernameLookup>();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      final deletion = runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookupFuture: lookup.future,
+      );
+      await tester.pump();
+
+      verifyNever(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      );
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+
+      lookup.complete(const DivineUsernameUnknown());
+      await deletion;
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('reports a failed name lookup without deleting', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      final recoveryRepository = _MockAccountDeletionRecoveryRepository();
+      final lookup = Completer<DivineUsernameLookup>();
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ),
+      );
+
+      final deletion = runDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: recoveryRepository,
+        lookupFuture: lookup.future,
+      );
+      await tester.pump();
+      lookup.completeError(Exception('lookup failed'));
+      await deletion;
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => recoveryRepository.prepare(username: any(named: 'username')),
+      );
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+      expect(
+        find.text(_englishL10n().deleteAccountDeletionNotStarted),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('does not release the username when the user owns no name', (
       tester,
