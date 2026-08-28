@@ -428,9 +428,10 @@ void main() {
 // Keys intentionally allowed to fall back to English until a translation pass.
 // Keep this list small and reviewable so new translation gaps stay visible.
 const _knownUntranslatedDebt = <String>{
-  // Deletion prep-failure copy (#6126). Left in English until a human
-  // translation pass rather than machine-translating a safety-critical
-  // "nothing was deleted" message.
+  // Deletion prep-failure copy (feature #6126). Deferred to the l10n
+  // translation-debt pass (#7632) rather than machine-translating a
+  // safety-critical "nothing was deleted" message. Mirror the translated
+  // sibling deleteAccountDeletionIncomplete per locale when the pass runs.
   'deleteAccountDeletionNotStarted',
   // Log-export copy (#8112 / #8113 / #8114). Left in English until a human
   // translation pass; machine-translating a diagnostic instruction the user
