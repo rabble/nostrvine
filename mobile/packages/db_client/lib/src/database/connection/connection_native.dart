@@ -499,6 +499,36 @@ enum CipherMigrationOutcome {
   unreadable,
 }
 
+/// The keyless classifier operation that could not determine the database
+/// format.
+enum DatabaseClassificationStage {
+  openDatabase,
+  readSchema,
+}
+
+/// A transient SQLite failure left the existing database format unknown.
+///
+/// Callers must fail closed: the file may be plaintext or encrypted, so
+/// opening it with either assumption can corrupt data or strand the session.
+/// The diagnostic fields intentionally omit the database path and SQL text.
+class DatabaseClassificationException implements Exception {
+  const DatabaseClassificationException({
+    required this.stage,
+    required this.resultCode,
+    required this.extendedResultCode,
+  });
+
+  final DatabaseClassificationStage stage;
+  final int resultCode;
+  final int extendedResultCode;
+
+  @override
+  String toString() =>
+      'DatabaseClassificationException: stage=${stage.name}, '
+      'resultCode=$resultCode, extendedResultCode=$extendedResultCode; '
+      'refusing to open an unclassified database.';
+}
+
 /// One-time in-place rekey of the existing **plaintext** `divine_db.db` into a
 /// SQLite3MultipleCiphers-encrypted database.
 ///
@@ -517,8 +547,10 @@ enum CipherMigrationOutcome {
 /// while copying the rest of it — which no retry can fix, so the caller must
 /// fail closed rather than open it unkeyed.
 ///
-/// Requires SQLite3MultipleCiphers; returns [CipherMigrationOutcome.failed]
-/// when it is not linked, leaving the source intact.
+/// Throws [DatabaseClassificationException] when a transient SQLite failure
+/// leaves the existing file format unknown. Requires SQLite3MultipleCiphers;
+/// returns [CipherMigrationOutcome.failed] when it is not linked, leaving the
+/// proven-readable plaintext source intact.
 Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   required String rawKeyHex,
   String? databasePath,
@@ -558,12 +590,6 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
       return CipherMigrationOutcome.alreadyEncrypted;
     case _DbClassification.corrupt:
       return CipherMigrationOutcome.unreadable;
-    case _DbClassification.indeterminate:
-      // A transient error (busy, locked, I/O) — do NOT assume "encrypted",
-      // which would trigger the key-loss recovery path on a readable plaintext
-      // DB. Leave everything intact and retry next launch, when the contention
-      // or the I/O fault is likely gone.
-      return CipherMigrationOutcome.failed;
     case _DbClassification.emptyPlaintext:
       deleteDatabaseAndSidecars(dbPath);
       return CipherMigrationOutcome.removedEmptyPlaintext;
@@ -618,9 +644,6 @@ enum _DbClassification {
   /// not `SQLite format 3`, so it always reports `SQLITE_NOTADB` — which makes
   /// this a plaintext-shaped file that no key can rescue.
   corrupt,
-
-  /// Something transient stopped the classification (busy, locked, I/O).
-  indeterminate,
 }
 
 /// Classifies [dbPath] by opening it **without** a key. A plaintext database
@@ -637,7 +660,10 @@ _DbClassification _classifyDatabase(String dbPath) {
   try {
     db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
   } on SqliteException catch (e) {
-    return _classifyKeylessFailure(e);
+    return _classifyKeylessFailure(
+      e,
+      stage: DatabaseClassificationStage.openDatabase,
+    );
   }
 
   try {
@@ -650,18 +676,27 @@ _DbClassification _classifyDatabase(String dbPath) {
         ? _DbClassification.emptyPlaintext
         : _DbClassification.populatedPlaintext;
   } on SqliteException catch (e) {
-    return _classifyKeylessFailure(e);
+    return _classifyKeylessFailure(
+      e,
+      stage: DatabaseClassificationStage.readSchema,
+    );
   } finally {
     db.close();
   }
 }
 
-_DbClassification _classifyKeylessFailure(SqliteException e) =>
-    switch (e.resultCode) {
-      _sqliteNotADb => _DbClassification.encrypted,
-      _sqliteCorrupt => _DbClassification.corrupt,
-      _ => _DbClassification.indeterminate,
-    };
+_DbClassification _classifyKeylessFailure(
+  SqliteException error, {
+  required DatabaseClassificationStage stage,
+}) => switch (error.resultCode) {
+  _sqliteNotADb => _DbClassification.encrypted,
+  _sqliteCorrupt => _DbClassification.corrupt,
+  _ => throw DatabaseClassificationException(
+    stage: stage,
+    resultCode: error.resultCode,
+    extendedResultCode: error.extendedResultCode,
+  ),
+};
 
 /// Maps a rekey failure to an outcome, on the same result-code split
 /// [_classifyKeylessFailure] applies one step earlier.

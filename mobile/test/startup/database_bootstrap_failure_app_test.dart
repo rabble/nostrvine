@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -333,6 +334,20 @@ void main() {
         databaseBootstrapDiagnosticCode(const DatabaseUnreadableError()),
         equals('db-unreadable'),
       );
+    });
+
+    test('classifies an indeterminate database without offering reset', () {
+      const error = DatabaseClassificationException(
+        stage: DatabaseClassificationStage.readSchema,
+        resultCode: 5,
+        extendedResultCode: 5,
+      );
+
+      expect(
+        databaseBootstrapDiagnosticCode(error),
+        equals('db-classification-unavailable'),
+      );
+      expect(databaseBootstrapDiagnosis(error).allowsLocalDatabaseReset, false);
     });
 
     test('falls back to the catch-all for unrecognized failures', () {
