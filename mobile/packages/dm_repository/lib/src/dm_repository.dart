@@ -5188,7 +5188,6 @@ class DmRepository {
         resolveDmInboxRelays(pubkey).then((r) => inboxByRecipient[pubkey] = r),
     ]);
 
-    final rumors = <Event>[];
     // Per-recipient durable handle for the queue row. The wire rumor is shared
     // across the batch, so the rumor id alone can no longer key a row: the
     // queue tracks per-recipient delivery, and `enqueue` is `insertOrIgnore`,
@@ -5204,17 +5203,20 @@ class DmRepository {
     // nonce, so two group sends of identical text in the SAME Unix second
     // would otherwise build byte-identical rumors: identical event ids ⇒
     // identical queue-row PKs (`OutgoingDm.id`, enqueued with insertOrIgnore
-    // so the second is silently dropped) ⇒ identical `full:<rumorId>` recovery
+    // so the second is silently dropped) ⇒ identical `full:<queueId>` recovery
     // locks (the second publish joins the first) ⇒ identical batch id (the
     // persist dedup drops the second local message). The user's second send
     // would vanish from the queue, local history, AND recipients. Deriving the
-    // batch id from `rumors.first.id` inherits that same-second collision.
+    // batch id from the rumor's own id would inherit that same-second
+    // collision — and since #8188 the whole batch shares ONE rumor id, so the
+    // rumor can no longer distinguish two invocations at all.
     //
     // Instead this token is independent secure random, and it is injected into
-    // every sibling rumor (a client-internal `batch` tag, below) so each
-    // invocation's wire events — and therefore their ids, queue-row PKs, and
-    // recovery locks — are unique even at same-second identical text. The same
-    // value is stamped verbatim on every sibling queue row AND the batch's one
+    // the batch's one rumor (a client-internal `batch` tag, below) so each
+    // invocation's wire events — and therefore their ids, queue-row handles,
+    // and recovery locks — are unique even at same-second identical text. The
+    // same value is stamped verbatim on every sibling queue row AND the batch's
+    // one
     // persisted local message, so persistence dedup, optimistic grouping,
     // sibling lookup, and cancellation all match a batch by one exact stored
     // value. The token rides inside the encrypted gift-wrapped rumor (only the
@@ -5250,9 +5252,8 @@ class DmRepository {
       ],
       createdAt: batchCreatedAt,
     );
-    for (var i = 0; i < recipientPubkeys.length; i++) {
-      rumors.add(groupRumor);
-      queueIds.add(_groupQueueId(groupRumor.id, recipientPubkeys[i]));
+    for (final recipient in recipientPubkeys) {
+      queueIds.add(_groupQueueId(groupRumor.id, recipient));
     }
 
     // Enqueue every sibling before publish so an app crash mid-send leaves a
@@ -5270,7 +5271,6 @@ class DmRepository {
     // minting a duplicating fresh fan-out (#7316).
     if (outgoingDao != null) {
       for (var i = 0; i < recipientPubkeys.length; i++) {
-        final rumor = rumors[i];
         final queueId = queueIds[i];
         try {
           await outgoingDao.enqueue(
@@ -5279,9 +5279,9 @@ class DmRepository {
               conversationId: conversationId,
               recipientPubkey: recipientPubkeys[i],
               content: content,
-              createdAt: rumor.createdAt,
-              rumorEventJson: jsonEncode(rumor.toJson()),
-              messageKind: rumor.kind,
+              createdAt: groupRumor.createdAt,
+              rumorEventJson: jsonEncode(groupRumor.toJson()),
+              messageKind: groupRumor.kind,
               replyToId: replyToId,
               recipientWrapStatus: OutgoingWrapStatus.pending,
               selfWrapStatus: OutgoingWrapStatus.pending,
@@ -5383,7 +5383,7 @@ class DmRepository {
         result = await _joinOrStartRecovery(
           'full:${queueIds[i]}',
           () => _sendRumorWithTimeout(
-            rumor: rumors[i],
+            rumor: groupRumor,
             recipientPubkey: pubkey,
             targetRelays: inboxByRecipient[pubkey],
             awaitRecipientOk: true,
@@ -5517,7 +5517,7 @@ class DmRepository {
     // rumors the receiver cannot collapse (#7316). Cancelled and blocked
     // siblings are deliberately unstamped: none leaves a row behind.
     if (outgoingDao != null) {
-      for (var i = 0; i < rumors.length; i++) {
+      for (var i = 0; i < queueIds.length; i++) {
         // A sibling skipped for cancellation has no live row to transition; an
         // update-by-id would match zero rows anyway, but skipping is explicit
         // and keeps such an index from resurrecting a queue transition or a
