@@ -212,6 +212,17 @@ Testing:
 - [ ] New public method on a strict-coverage package (currently
   `mobile/packages/divine_ui`) has a matching test **in the same PR**.
   See [`testing.md`](testing.md#strict-coverage-packages).
+- [ ] Every test you add can FAIL. No `expect(true, isTrue)`, no test body
+  that asserts nothing it controls. Frozen at zero by
+  `check_placeholder_tests.sh` (#3340) — a construction smoke test asserts
+  `expect(() => Foo(), returnsNormally)`, a lifecycle pump asserts
+  `expect(tester.takeException(), isNull)`. See
+  [`testing.md`](testing.md#a-test-must-be-able-to-fail).
+- [ ] No new `skip:` / `@Skip`. A failing test on your branch is caused by
+  your branch — fix it, delete it, or quarantine it behind a tag, never
+  silence it. Frozen per file by `check_skip_ceiling.sh`; a baselined file
+  may only shrink. See
+  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault).
 
 ---
 

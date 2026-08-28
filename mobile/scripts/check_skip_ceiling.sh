@@ -1,60 +1,108 @@
 #!/usr/bin/env bash
-# Skip-ceiling ratchet (epic #4337, WS-1): the set of test files carrying an
-# UNCONDITIONAL test-level skip (`skip: true` / `skip: '<reason>'`) is frozen in
-# scripts/baseline/skip_tests.txt and may only ever SHRINK. See lib/list_ratchet.sh
-# for the NEW/STALE/GROWTH semantics.
+# Skip-ceiling ratchet (#3340, epic #4337 WS-1 → #4836): every test file under
+# mobile/test, mobile/integration_test and mobile/packages/*/test that disables
+# a test with an unconditional `skip:` — or the whole file with `@Skip(...)` —
+# is frozen at its current count in scripts/baseline/skip_test_ceilings.txt, a
+# CEILING that may only ever DECREASE.
 #
-# The detector matches  [(, ]skip: (true|'|")  under mobile/test/**/*_test.dart.
-# It deliberately EXCLUDES:
-#   • platform-conditional skips (`skip: !kIsWeb`, `skip: !Platform.isX`) —
-#     intentional gates, not debt (the value is not true/quote, so it won't match).
-#   • argument-noise (`skipOffstage:`, `skipCache:`, …) — the literal token is
-#     `skipOffstage:` etc., which does not contain `skip: ` (skip-colon-space).
-#   • main_video_cache_startup_test.dart — its `skip: true` is an argument to the
-#     function under test, not a test skip; those tests run and assert.
+# Why: a skipped test is a test that no longer defends anything, while still
+# counting as a file somebody wrote and CI still reports green. The 65 files
+# here hold 119 disabled tests across routing, feeds, uploads, settings and the
+# video editor.
 #
-# Regenerate after FIXING/DELETING a skip (never to add one — that fails GROWTH):
+# The fix is the decision tree in #4836, one outcome per test:
+#   delete     — dead or low-value; the feature or route is gone
+#   recover    — fix it and drop the skip
+#   quarantine — genuinely environment-dependent; move it behind a tag or the
+#                integration lane, not an unconditional skip
+#   rewrite    — brittle setup; assert the behaviour the product still needs
+# Each baseline entry carries a trailing `# <outcome>: <why> (#4836)` recording
+# which one it needs. Those reasons survive regeneration (lib/numeric_ratchet.sh
+# carries them forward by key), so they are a worklist rather than decoration.
+#
+# Never add `skip: true` to silence a failing test — .claude/rules/agent_workflow.md
+# rule #5. If it is not worth fixing, delete it.
+#
+# Detector: scripts/lib/skipped_test_detector.dart (a real Dart AST). It replaces
+# a regex that was wrong in both directions: it missed a `skip:` whose reason
+# `dart format` wrapped onto the next line (2 live sites), could not see an
+# `@Skip` annotation at all, matched `skip:` inside comments and strings, and
+# needed main_video_cache_startup_test.dart excluded BY FILENAME because that
+# file passes `skip:` to the function under test. The parser attributes that
+# argument to its own callee, so the exclusion is gone. bloc_test's `skip: N`
+# — an assertion offset, not a disabled test — is excluded by callee name.
+# Pinned by test/tools/skipped_test_detector_test.dart.
+#
+# Per-key NUMERIC ceiling: a file may drop skips freely while above zero without
+# churning the baseline; only growth / a new file / a raised ceiling /
+# drop-to-zero (STALE) fails.
+#
+# Regenerate after FIXING or DELETING a skip (never to add one — that fails):
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_skip_ceiling.sh
-# Usage (from the repo root or mobile/): bash mobile/scripts/check_skip_ceiling.sh
+# Run (from repo root or mobile/): bash mobile/scripts/check_skip_ceiling.sh
+# List a file's individual skips:
+#   dart run scripts/lib/skipped_test_detector.dart test integration_test packages --path-prefix . --detail
 
 set -euo pipefail
+export LC_ALL=C
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+TAB="$(printf '\t')"
 
 RATCHET_LABEL="skip_ceiling"
-BASELINE_FILE="$SCRIPT_DIR/baseline/skip_tests.txt"
-BASELINE_REPO_PATH="mobile/scripts/baseline/skip_tests.txt"
+BASELINE_FILE="${SKIP_CEILING_BASELINE_FILE:-$SCRIPT_DIR/baseline/skip_test_ceilings.txt}"
+BASELINE_REPO_PATH="${SKIP_CEILING_BASELINE_REPO_PATH:-mobile/scripts/baseline/skip_test_ceilings.txt}"
 BASE_REF="${SKIP_BASELINE_BASE_REF:-origin/main}"
 ALLOW_NO_BASE="${SKIP_CEILING_ALLOW_NO_BASE:-0}"
 ALLOW_NO_BASE_VAR="SKIP_CEILING_ALLOW_NO_BASE"
-NEW_HINT="Don't add 'skip: true' to silence a failing test — fix or delete it (epic #4337: delete dead/low-value tests, never re-skip)."
-STALE_HINT="A skip was removed (fixed/deleted)."
-FOOTER="Skipped tests are frozen and may only decrease. Fix, delete, or properly
-quarantine (tag) the test — do not add 'skip: true' + a generic TODO.
-See tasks/plan_4337.md (WS-1) and .claude/rules/agent_workflow.md (rule #5)."
+DART_BIN="${SKIP_CEILING_DART:-dart}"
 
-SKIP_RE="[(, ]skip: (true|'|\")"
+# Scan roots, relative to MOBILE_DIR. `packages` is scanned whole and filtered
+# to test/ and integration_test/ segments by the detector, so a package's own
+# nested test dirs are covered without listing each package here.
+SCAN_DIRS="${SKIP_CEILING_SCAN_DIRS:-test integration_test packages}"
 
+NEW_HINT="Don't add 'skip: true' to silence a failing test — fix it, delete it, or quarantine it behind a tag (#4836: delete dead/low-value tests, never re-skip). A platform gate (skip: !kIsWeb, skip: !Platform.isX) is not counted; a named constant that is always true is."
+STALE_HINT="A file dropped every skip it had."
+FOOTER="Skipped tests are frozen per file and may only decrease.
+See .claude/rules/agent_workflow.md (rule #5) and #4836. Inspect a file's
+skips with:
+  dart run scripts/lib/skipped_test_detector.dart test integration_test packages --path-prefix . --detail"
+
+# Print "relpath<TAB>count" for every test file with at least one disabled test.
+# Runs from MOBILE_DIR so the detector resolves package:analyzer from the app's
+# package config.
 emit_current() {
-  find "$MOBILE_DIR/test" \
-    -not -path "*/.dart_tool/*" -not -path "*/build/*" \
-    -name "*_test.dart" \
-    -not -name "main_video_cache_startup_test.dart" \
-    -print0 2>/dev/null \
-    | xargs -0 grep -lE "$SKIP_RE" 2>/dev/null \
-    | sed "s#^$MOBILE_DIR/##" | LC_ALL=C sort -u || true
+  (
+    cd "$MOBILE_DIR"
+    # shellcheck disable=SC2086
+    "$DART_BIN" run scripts/lib/skipped_test_detector.dart \
+      $SCAN_DIRS --path-prefix "$MOBILE_DIR"
+  ) | LC_ALL=C sort -t "$TAB" -k1,1
 }
 
 print_baseline_header() {
-  cat <<'EOF'
-# Frozen baseline: test files under mobile/test/**/*_test.dart that carry a
-# test-level skip (`skip: true` / `skip: '<reason>'`). Generated by
-# scripts/check_skip_ceiling.sh. The baseline may only SHRINK (growth fails CI
-# vs origin/main). A trailing '# reason' marks intent. Skip-debt epic: #4337.
+  cat <<EOF
+# Frozen baseline: test files under mobile/test, mobile/integration_test and
+# mobile/packages/*/test that disable a test with an unconditional \`skip:\` or a
+# file-level \`@Skip(...)\`, each with its current count as a CEILING
+# (format: relpath<TAB>count). Generated by scripts/check_skip_ceiling.sh from
+# scripts/lib/skipped_test_detector.dart. A ceiling may only SHRINK; more skips,
+# a new file, or a raised ceiling fails CI vs ${BASE_REF}.
+#
+# The trailing '# <outcome>: <why> (#4836)' on each entry is a WORKLIST, not an
+# exemption. Outcomes come from #4836's decision tree: delete / recover /
+# quarantine / rewrite. Reasons are carried forward across regeneration.
+#
+# Platform gates (skip: !kIsWeb, skip: !Platform.isX) are NOT counted — they
+# restrict a test to where it can run. bloc_test's \`skip: N\` is an assertion
+# offset, not a disabled test, and is not counted either.
+#
+# Fix a skip rather than regenerating this file. Skip-debt epic: #4337 (WS-1).
 EOF
 }
 
-# shellcheck source=lib/list_ratchet.sh
-source "$SCRIPT_DIR/lib/list_ratchet.sh"
-run_list_ratchet
+# shellcheck source=lib/numeric_ratchet.sh
+source "$SCRIPT_DIR/lib/numeric_ratchet.sh"
+run_numeric_ratchet

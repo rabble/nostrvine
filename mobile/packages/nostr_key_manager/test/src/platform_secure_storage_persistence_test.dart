@@ -174,66 +174,6 @@ void main() {
       await newStorageService.deleteKeys();
       newStorageService.dispose();
     });
-
-    test('should handle keychain accessibility documentation', () {
-      // This test serves as documentation for the keychain persistence fix
-      //
-      // PROBLEM: Users lose nsec when deleting and reinstalling the app
-      //
-      // ROOT CAUSE: PlatformSecureStorage was using
-      // KeychainAccessibility.first_unlock_this_device which is deleted
-      // when the app is uninstalled.
-      //
-      // SOLUTION: Changed to KeychainAccessibility.first_unlock which
-      // persists across app uninstall and optionally syncs via iCloud Keychain.
-      //
-      // TESTING: This behavior can only be fully tested on a physical device
-      // by:
-      // 1. Installing app and generating/importing nsec
-      // 2. Deleting app completely
-      // 3. Reinstalling app from scratch
-      // 4. Verifying nsec is still accessible
-      //
-      // Security implications:
-      // ✅ Still requires device unlock (first_unlock)
-      // ✅ Still hardware-encrypted by iOS Secure Enclave
-      // ✅ May sync via iCloud Keychain (user benefit for multi-device)
-      // ✅ Persists across app deletion (intended behavior for identity keys)
-
-      expect(
-        true,
-        isTrue,
-        reason: 'This test documents the keychain persistence requirements',
-      );
-    });
-  });
-
-  group('Platform Secure Storage Configuration', () {
-    test('should document iOS keychain accessibility requirements', () {
-      // Documentation test: Required keychain behavior
-      //
-      // For Nostr identity keys to persist across app reinstall:
-      //
-      // iOS (mobile/lib/services/platform_secure_storage.dart):
-      // iOptions: IOSOptions(
-      //   accessibility: KeychainAccessibility.first_unlock,  // ← Must NOT have _this_device suffix
-      // )
-      //
-      // macOS (same file):
-      // mOptions: MacOsOptions(
-      //   accessibility: KeychainAccessibility.first_unlock,  // ← Must NOT have _this_device suffix
-      // )
-      //
-      // Why this matters:
-      // - Without _this_device: Data persists in iCloud, survives deletion ✅
-      // - With _this_device: Data is device-only, deleted on uninstall ❌
-
-      expect(
-        true,
-        isTrue,
-        reason: 'Keychain accessibility must be first_unlock',
-      );
-    });
   });
 
   group('Keychain Migration Tests', () {

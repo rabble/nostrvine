@@ -185,8 +185,22 @@ jobs:
           # locations come from the RoutePaths leaf instead. #7383 (wave #4506).
           bash scripts/check_layer_direction.sh
       - name: 🧪 Verify skipped-test count does not increase (skip-ceiling ratchet)
-        # Skip-debt epic: #4337 (WS-1). Guard fails closed if the baseline can't load.
-        run: bash scripts/check_skip_ceiling.sh
+        run: |
+          # Per-file CEILING over mobile/test, mobile/integration_test and
+          # mobile/packages/*/test, from a Dart AST rather than a regex: the
+          # regex missed a skip: whose reason dart format wrapped onto the next
+          # line, could not see @Skip, and needed one file excluded by name.
+          # Skip-debt epic: #4337 (WS-1) -> #4836. Fails closed if the baseline
+          # can't load.
+          bash scripts/check_skip_ceiling.sh
+      - name: 🧪 Verify no test can pass unconditionally (placeholder ratchet)
+        run: |
+          # Frozen at ZERO: a test whose every assertion is trivially satisfied
+          # (expect(true, isTrue)), or a *_test.dart declaring no test at all.
+          # #3340 removed all 93 sites, so any hit is a regression. A test with
+          # no assertion is deliberately not counted -- imported helpers and
+          # third-party verifiers assert in ways one file cannot see. #3340.
+          bash scripts/check_placeholder_tests.sh
       - name: ⏳ Verify Future.delayed-in-tests count does not increase (ratchet)
         run: bash scripts/check_future_delayed_ceiling.sh
       - name: ⏳ Verify Future.delayed-in-production count does not increase (ratchet)

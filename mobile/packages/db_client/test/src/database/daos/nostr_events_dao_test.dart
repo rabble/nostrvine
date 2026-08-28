@@ -229,11 +229,8 @@ void main() {
         }
       });
 
-      test('handles empty list gracefully', () async {
-        await dao.upsertEventsBatch([]);
-
-        // Should not throw, just return
-        expect(true, isTrue);
+      test('handles an empty batch without error', () async {
+        await expectLater(dao.upsertEventsBatch([]), completes);
       });
 
       test('also upserts video metrics for video events in batch', () async {

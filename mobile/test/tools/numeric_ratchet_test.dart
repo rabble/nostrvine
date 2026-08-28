@@ -117,5 +117,91 @@ run_numeric_ratchet
       expect(res.exitCode, 0, reason: res.stdout.toString());
       expect(res.stdout, contains('OK [probe]'));
     });
+
+    group('trailing "# reason" comments', () {
+      test('survive UPDATE_BASELINE, matched by key not by count', () {
+        writeCurrent('a\t5\nb\t3\n');
+        run(update: true);
+        baseline.writeAsStringSync(
+          '# probe baseline\na\t5 # rewrite: shell setup is stale (#4836)\nb\t3\n',
+        );
+
+        // `a` drops to 4: the count moves, the explanation must not.
+        writeCurrent('a\t4\nb\t3\n');
+        final res = run(update: true);
+
+        expect(res.exitCode, 0, reason: res.stderr.toString());
+        final lines = baseline
+            .readAsLinesSync()
+            .where((line) => !line.startsWith('#'))
+            .toList();
+        expect(lines, [
+          'a\t4 # rewrite: shell setup is stale (#4836)',
+          'b\t3',
+        ]);
+      });
+
+      test('are ignored by every comparison', () {
+        writeCurrent('a\t5\n');
+        run(update: true);
+        baseline.writeAsStringSync('# probe baseline\na\t5 # some reason\n');
+
+        final res = run();
+
+        expect(res.exitCode, 0, reason: res.stdout.toString());
+        expect(res.stdout, contains('OK [probe]'));
+      });
+
+      test('are dropped for a key that stops being emitted', () {
+        writeCurrent('a\t5\nb\t3\n');
+        run(update: true);
+        baseline.writeAsStringSync(
+          '# probe baseline\na\t5 # keep me\nb\t3 # drop me\n',
+        );
+
+        writeCurrent('a\t5\n');
+        final res = run(update: true);
+
+        expect(res.exitCode, 0, reason: res.stderr.toString());
+        final lines = baseline
+            .readAsLinesSync()
+            .where((line) => !line.startsWith('#'))
+            .toList();
+        expect(lines, ['a\t5 # keep me']);
+      });
+
+      test(
+        'an EMPTY offender set writes a zero-entry baseline, not an error',
+        () {
+          // A frozen-at-zero guard regenerates from nothing as its NORMAL state.
+          // `grep -v` matches no lines and exits 1, so under `set -o pipefail`
+          // plus `set -e` the write aborts unless it is guarded. Losing that
+          // guard made every check_*_ceiling.sh exit 1 on a clean fixture.
+          writeCurrent('');
+
+          final res = run(update: true);
+
+          expect(res.exitCode, 0, reason: res.stderr.toString());
+          expect(res.stdout, contains('wrote 0 baseline entries'));
+          expect(
+            baseline.readAsLinesSync().where(
+              (line) => line.isNotEmpty && !line.startsWith('#'),
+            ),
+            isEmpty,
+          );
+        },
+      );
+
+      test('a reason-free baseline regenerates byte-identically', () {
+        writeCurrent('a\t5\nb\t3\n');
+        run(update: true);
+        final before = baseline.readAsStringSync();
+
+        final res = run(update: true);
+
+        expect(res.exitCode, 0, reason: res.stderr.toString());
+        expect(baseline.readAsStringSync(), before);
+      });
+    });
   });
 }
