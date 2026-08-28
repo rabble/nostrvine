@@ -249,5 +249,36 @@ void main() {
 
       expect(await storedCount(), 1);
     });
+
+    test('records a suppressed kind-4 in the processed ledger', () async {
+      // The NIP-17 side burns a suppressed wrap in the ledger; the NIP-04
+      // side did not, so the live subscription's two-day `since` overlap
+      // re-delivered the same kind-4 on every launch and paid a full
+      // remote-signer decrypt each time to reach the same answer (#8211).
+      await seedConversation();
+      await messagesDao.insertMessage(
+        id: 'a' * 64,
+        conversationId: conversationId,
+        senderPubkey: _peer,
+        content: 'ok',
+        createdAt: _baseCreatedAt,
+        giftWrapId: 'f' * 64,
+        ownerPubkey: _owner,
+      );
+
+      final suppressed = 'b' * 64;
+      await deliverNip04(
+        id: suppressed,
+        content: 'ok',
+        createdAt: _baseCreatedAt + 1,
+      );
+
+      expect(await storedCount(), 1, reason: 'the kind-4 is the twin');
+      expect(
+        await processedDao.hasGiftWrap(suppressed),
+        isTrue,
+        reason: 'the suppression must be remembered across replays (#8211)',
+      );
+    });
   });
 }

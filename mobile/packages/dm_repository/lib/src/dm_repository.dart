@@ -3038,6 +3038,12 @@ class DmRepository {
               counterpart: DmDedupCounterpart.nip17Copy,
             );
       if (isDuplicate) {
+        // Burn the suppressed event in the ledger, exactly as the NIP-17 side
+        // does. Without it this decision is never remembered: the live
+        // subscription's two-day `since` overlap re-delivers the same kind-4
+        // on every launch, and each replay pays a full remote-signer
+        // `nip04_decrypt` round trip to reach the same answer (#8211).
+        await _recordProcessedWrap(nip04Event.id, ownerPubkey: _userPubkey);
         Log.debug(
           'Skipping NIP-04 duplicate (NIP-17 copy already stored) '
           '${nip04Event.id}',
