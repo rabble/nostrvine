@@ -22,6 +22,45 @@ Before keeping a test, it must satisfy all of these:
 
 > **LLM-generated tests skew hard toward coverage theatre** — asserting constructor parameters, mock-then-verify-the-mock, one trivial test per line. Reject these on the "can it fail?" bar even when the coverage number looks fine.
 
+### The two most literal shapes are frozen at zero
+
+Judgement is needed for most of the bar above, but two shapes need none, so
+they are enforced: `check_placeholder_tests.sh` (#3340) freezes at **zero**
+
+1. a test whose every assertion is trivially satisfied —
+   `expect(true, isTrue)`, `expect(1, 1)`, `expect(x, equals(x))` for a
+   literal `x`; and
+2. a `*_test.dart` that declares no `test` / `testWidgets` / `blocTest` /
+   `patrolTest` / `group` at all.
+
+#3340 removed all 93 sites — 38 of them one 602-line accessibility suite in
+which every single test was `expect(true, isTrue)`, and 24 in seven ProofMode
+suites waiting on services deliberately deleted a year earlier. So any hit is a
+regression: fix the test, do not regenerate the baseline.
+
+Assert the behaviour instead. A construction smoke test has
+`expect(() => Foo(), returnsNormally)` or `expect(foo, isNotNull)`; a widget
+lifecycle pump has `expect(tester.takeException(), isNull)` — which is a real
+assertion, since a provider mutated during `initState`/`dispose` surfaces as a
+framework exception. There is deliberately no inline ignore: a genuine
+exception earns a reviewed baseline entry.
+
+Two boundaries worth knowing, because they are the reason the guard is
+trustworthy:
+
+- **A tautology beside a real assertion is not flagged.** The test as a whole
+  can still fail, so it is noise rather than a placeholder.
+- **A test with NO assertion is not flagged at all.** Assertions arrive through
+  routes one file cannot see: drift's `verifier.migrateAndValidate` throws on
+  mismatch and *is* the assertion, and `expectMeetsAccessibilityGuidelines` is
+  an imported helper. 91 such tests exist; most are good. That population needs
+  helper-aware triage, not a gate, so the bar above still applies to it by
+  judgement.
+
+```bash
+cd mobile && dart run scripts/lib/placeholder_test_detector.dart test integration_test packages --path-prefix . --detail
+```
+
 ---
 
 ## New and Extracted Packages Must Ship with Tests
@@ -477,6 +516,46 @@ UPDATE_BASELINE=1 bash mobile/scripts/check_ungrouped_tests.sh
 ```
 
 Runs in CI only, in the `generated-files` job; the pre-push hook does not
+cover it.
+
+### Skip ceiling
+
+A test disabled with an unconditional `skip:`, or a whole file disabled with
+`@Skip(...)`, is frozen per file in `mobile/scripts/baseline/skip_test_ceilings.txt`
+(`check_skip_ceiling.sh`, #3340, epic #4337 WS-1 → #4836) — a per-file ceiling
+that may only ever **decrease**, across `mobile/test`, `mobile/integration_test`
+and `mobile/packages/*/test`.
+
+**Never add `skip: true` to silence a failing test.** A failing test on your
+branch is caused by your branch (`agent_workflow.md` rule #5). If it is not
+worth fixing, delete it.
+
+Every baseline entry carries a trailing `# <outcome>: <why> (#4836)` naming one
+of #4836's four outcomes, so the file reads as a worklist rather than a set of
+exemptions:
+
+| Outcome | When |
+|---|---|
+| `delete` | dead or low-value — the route, screen, or symbol is gone |
+| `recover` | the test is fine; the skip is stale |
+| `quarantine` | genuinely needs hardware, a device, or a network — move it behind a tag or the integration lane, not an unconditional skip |
+| `rewrite` | the behaviour is still wanted, the setup is not |
+
+Reasons survive regeneration: `lib/numeric_ratchet.sh` carries them forward by
+key, so a count that moves keeps its explanation.
+
+Not counted: a platform gate (`skip: !kIsWeb`, `skip: !Platform.isX`), which
+restricts a test to where it can run; and `bloc_test`'s `skip: N`, which is the
+number of leading states to ignore before matching `expect` — excluded by
+callee, so a named int constant stays safe. A bare identifier **is** counted:
+`const _blockedOnCi = true` is an unconditional skip with a nicer name.
+
+```bash
+cd mobile && dart run scripts/lib/skipped_test_detector.dart test integration_test packages --path-prefix . --detail
+UPDATE_BASELINE=1 bash mobile/scripts/check_skip_ceiling.sh
+```
+
+Runs in CI only, in the `Generated Files` job; the pre-push hook does not
 cover it.
 
 ---

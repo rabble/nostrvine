@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/notifications_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/router/app_router.dart';
@@ -33,6 +35,8 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockPushNotificationSessionCoordinator extends Mock
     implements PushNotificationSessionCoordinator {}
+
+class _MockDmRepository extends Mock implements DmRepository {}
 
 bool _isDisposed(ProviderContainer c) {
   try {
@@ -702,6 +706,81 @@ void main() {
     expect(currentAuthService.calls, equals(['archive', 'signIn']));
   });
 
+  group('DM lifecycle', () {
+    testWidgets('quiesces outgoing DM persistence before target sign-in', (
+      tester,
+    ) async {
+      final dmRepository = _MockDmRepository();
+      final events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop outgoing DMs');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {});
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      initial.read(dmRepositoryProvider);
+
+      await swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => events.add('sign in target'),
+      );
+      await tester.pump();
+
+      expect(events, ['stop outgoing DMs', 'sign in target']);
+      verify(dmRepository.stopListening).called(1);
+      verifyNever(dmRepository.startListening);
+    });
+
+    testWidgets('resumes outgoing DMs when target sign-in fails', (
+      tester,
+    ) async {
+      final dmRepository = _MockDmRepository();
+      final events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop outgoing DMs');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {
+        events.add('resume outgoing DMs');
+      });
+      final initial = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      initial.read(dmRepositoryProvider);
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async {
+            events.add('sign in target');
+            throw Exception('signer unavailable');
+          },
+        ),
+        throwsException,
+      );
+      await tester.pump();
+
+      expect(events, [
+        'stop outgoing DMs',
+        'sign in target',
+        'resume outgoing DMs',
+      ]);
+      expect(_isDisposed(initial), isFalse);
+    });
+  });
+
   testWidgets('aborts before building anything when the archive fails', (
     tester,
   ) async {
@@ -756,6 +835,114 @@ void main() {
     // The signer restore is ordered ahead of the throwing primary restore, so
     // it still ran.
     expect(currentAuthService.calls, equals(['archive', 'restore']));
+  });
+
+  // The leaving account's DM repository keeps draining relay history into the
+  // DeviceScope-shared database, and the identity-change cleanup that wipes
+  // that database runs from the INCOMING container — where
+  // dmListeningStopProvider finds no repository and returns early. No writer
+  // for an account may be live while that account's data is wiped, so the swap
+  // has to quiesce the leaving container before signing the target in.
+  // dm_repository's own suite covers what stopListening then stops. See #7318.
+  group('outgoing DM ingest (#7318)', () {
+    late _MockDmRepository dmRepository;
+    late List<String> events;
+
+    setUp(() {
+      dmRepository = _MockDmRepository();
+      events = <String>[];
+      when(dmRepository.stopListening).thenAnswer((_) async {
+        events.add('stop dm ingest');
+      });
+      when(dmRepository.startListening).thenAnswer((_) async {
+        events.add('resume dm ingest');
+      });
+    });
+
+    Future<ProviderContainer> pumpLeavingHost(WidgetTester tester) async {
+      final leaving = await pumpHost(
+        tester,
+        accountOverrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepository),
+        ],
+      );
+      // dmListeningStopProvider gates on ref.exists, so the repository has to
+      // have been built in this container — as it is in production, where the
+      // inbox mounts it.
+      leaving.read(dmRepositoryProvider);
+      return leaving;
+    }
+
+    testWidgets(
+      'stops the leaving account ingest before signing the target in',
+      (
+        tester,
+      ) async {
+        await pumpLeavingHost(tester);
+
+        await swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          // Stands in for AuthService._setupUserSession, whose
+          // clearUserSpecificData wipes the shared DM tables.
+          signIn: (_, _) async => events.add('sign in target'),
+        );
+        await tester.pump();
+
+        expect(events, equals(['stop dm ingest', 'sign in target']));
+      },
+    );
+
+    testWidgets('gives the ingest back when the target sign-in fails', (
+      tester,
+    ) async {
+      await pumpLeavingHost(tester);
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async => throw _FakeSignInException(),
+        ),
+        throwsA(isA<_FakeSignInException>()),
+      );
+      await tester.pump();
+
+      // The leaving container stays live on a rollback, so stopping its ingest
+      // must not cost the still-signed-in user their DMs.
+      expect(events, equals(['stop dm ingest', 'resume dm ingest']));
+    });
+
+    testWidgets('gives the ingest back even when the key restore throws', (
+      tester,
+    ) async {
+      await pumpLeavingHost(tester);
+      keyStorage.primary = _FakeSecureKeyContainer(
+        npub: 'npub_previous',
+        publicKeyHex: leavingHex,
+      );
+      keyStorage.restoreError = Exception('primary restore failed');
+
+      await expectLater(
+        swapAccount(
+          deviceScope: deviceScope,
+          controller: controller,
+          currentAuthService: currentAuthService,
+          account: account,
+          signIn: (_, _) async => throw _FakeSignInException(),
+        ),
+        throwsA(isA<_FakeSignInException>()),
+      );
+      await tester.pump();
+
+      // A rollback that cannot restore the keys still owes the user the DMs it
+      // took away, so the resume cannot sit behind a restore that throws.
+      expect(events, equals(['stop dm ingest', 'resume dm ingest']));
+    });
   });
 }
 

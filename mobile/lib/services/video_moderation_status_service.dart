@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/utils/blossom_blob_hash.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -155,8 +156,8 @@ class VideoModerationStatusService {
   }) : _httpClient = httpClient ?? http.Client(),
        _endpointBases =
            endpointBases ??
-           const [
-             'https://moderation-api.divine.video',
+           [
+             EnvironmentConfig.production.moderationApiBaseUrl,
            ].map(Uri.parse).toList(),
        _cacheTtl = cacheTtl ?? const Duration(minutes: 10),
        _requestTimeout = requestTimeout ?? _defaultRequestTimeout;

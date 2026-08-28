@@ -79,9 +79,7 @@ class MinorAccountReviewScreen extends ConsumerWidget {
                   name: 'MinorAccountReviewScreen',
                   category: LogCategory.ui,
                 );
-                return _ErrorView(
-                  onRetry: () => refreshMinorAccountState(ref),
-                );
+                return _ErrorView(onRetry: () => refreshMinorAccountState(ref));
               },
             ),
           ),
@@ -302,6 +300,11 @@ class _LoadedView extends ConsumerWidget {
           l10n.minorAccountReviewRestrictionSupport,
         ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
+        _InfoCard(
+          title: l10n.minorAccountReviewContentTitle,
+          body: l10n.minorAccountReviewContentBody,
+        ),
+        const SizedBox(height: 24),
         _InfoCard(title: infoCard.title, body: infoCard.body),
         const SizedBox(height: 24),
         _InfoCard(
@@ -328,6 +331,13 @@ class _LoadedView extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
+        _InfoCard(
+          title: l10n.minorAccountReviewAppealTitle,
+          body: reviewCase?.isUnder13Path == true
+              ? l10n.minorAccountReviewAppealUnder13Body
+              : l10n.minorAccountReviewAppealTeenBody,
+        ),
+        const SizedBox(height: 12),
         DivineButton(
           label: l10n.minorAccountReviewOpenSupportCenter,
           leadingIcon: DivineIconName.headphones,
@@ -350,22 +360,6 @@ class _LoadedView extends ConsumerWidget {
           type: DivineButtonType.ghost,
           expanded: true,
           onPressed: () => refreshMinorAccountState(ref),
-        ),
-        const SizedBox(height: 24),
-        _InfoCard(
-          title: l10n.minorAccountReviewMoveAccountTitle,
-          body: l10n.minorAccountReviewMoveAccountBody,
-        ),
-        const SizedBox(height: 12),
-        DivineButton(
-          label: l10n.minorAccountReviewMoveAccountCta,
-          type: DivineButtonType.secondary,
-          expanded: true,
-          onPressed: () => _openExternalPage(
-            context,
-            AppConstants.accountPortabilityUrl,
-            'divine.video/exit',
-          ),
         ),
         const SizedBox(height: 24),
         TextButton(
@@ -443,11 +437,13 @@ class _LoadedView extends ConsumerWidget {
       return null;
     }
 
+    // No primary action for a case with nothing left for the user to do.
+    // Support Center is already offered unconditionally below, directly under
+    // the reconsideration card (#8239); returning it here as well rendered the
+    // same button twice — as primary above the card and again beneath it — in
+    // `openReported`, `cleared`, `deniedClosed` and `unknown`.
     if (!reviewCase.needsUserAction) {
-      return _MinorReviewPrimaryAction(
-        label: l10n.minorAccountReviewOpenSupportCenter,
-        onPressed: _openSupportCenter,
-      );
+      return null;
     }
 
     return _MinorReviewPrimaryAction(
@@ -456,10 +452,6 @@ class _LoadedView extends ConsumerWidget {
           : l10n.minorAccountReviewContinue,
       onPressed: (context) => _continueToNextStep(context, reviewCase),
     );
-  }
-
-  static void _openSupportCenter(BuildContext context) {
-    context.push(SupportCenterScreen.path);
   }
 
   void _continueToNextStep(BuildContext context, MinorReviewCase reviewCase) {

@@ -811,19 +811,63 @@ class DirectMessages extends Table {
   BoolColumn get isDeleted =>
       boolean().withDefault(const Constant(false)).named('is_deleted')();
 
+  /// Whether this row has already absorbed its cross-protocol twin.
+  ///
+  /// A dual-send puts one message on the wire twice — a NIP-17 rumor and a
+  /// NIP-04 event with unrelated ids — so nothing but the
+  /// `(sender, content, ~time)` window can collapse them. That window matched
+  /// on *existence*, so one stored copy absorbed every later same-text arrival
+  /// inside it, and a peer's genuine repeat was lost in the NIP-04-first
+  /// ordering — the very symptom #7324 was filed for, surviving in the other
+  /// direction (#8211).
+  ///
+  /// A twin is 1:1: one message on the wire twice yields exactly one
+  /// counterpart, so a row may absorb exactly one. This marks the row that
+  /// already did. Self-send matching does not use it — any number of echoes
+  /// may legitimately match the user's own persisted send.
+  BoolColumn get twinCollapsed =>
+      boolean().withDefault(const Constant(false)).named('twin_collapsed')();
+
   /// Hex public key of the account that received/sent this message.
   /// NULL for legacy messages created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
-  /// Durable, collision-proof identity of the group-send fan-out this message
-  /// belongs to (the first sibling rumor's event id). Set ONLY when persisting
-  /// a group send's single local message; NULL for 1:1 sends and every received
-  /// message. Lets the send / recovery dedup and the UI's optimistic grouping
-  /// match a batch by an exact stored value instead of the collision-prone
-  /// `(sender, content, created_at ±5s)` heuristic that `hasMatchingMessage`
-  /// uses — two distinct group sends of identical text seconds apart no longer
-  /// collapse into one.
+  /// Durable, collision-proof identity of one send invocation. Set on the
+  /// sender's local message for 1:1 sends and shared by the single local
+  /// message representing a group fan-out. A self-wrap received on another
+  /// device preserves it; peer-authored and legacy messages leave it NULL. It
+  /// gives same-second 1:1 sends distinct rumor ids and lets group recovery and
+  /// optimistic UI grouping match a fan-out by an exact value instead of the
+  /// collision-prone `(sender, content, created_at ±5s)` tuple.
   TextColumn get sendBatchId => text().nullable().named('send_batch_id')();
+
+  /// Serialized kind-5 rumor for an own delete-for-everyone that is awaiting
+  /// confirmed delivery or was blocked. Null for every other row.
+  ///
+  /// Stored rather than rebuilt so every retry replays a byte-identical rumor
+  /// id, keeping one retraction one kind-5 however many attempts it takes.
+  /// Receive-side dedup does not collapse the repeats — it is keyed on
+  /// gift-wrap id and NIP-59 gives every wrap a fresh ephemeral key — so what
+  /// makes them harmless is that re-applying a deletion is a no-op. Mirrors
+  /// `DmReactions.rumorEventJson`, which serves the same purpose for a
+  /// reaction removal.
+  TextColumn get deletionRumorJson =>
+      text().nullable().named('deletion_rumor_json')();
+
+  /// Delivery state of the kind-5 in [deletionRumorJson]; null when the row
+  /// carries no own deletion. Values: `deletion_pending` (soft-deleted
+  /// locally, wrap awaiting a confirmed relay `OK`), `deletion_sent`
+  /// (confirmed, terminal), `deletion_blocked` (send policy blocked every
+  /// failed recipient, terminal; other recipients may have succeeded).
+  ///
+  /// `deletion_blocked` is deliberately distinct from `deletion_sent`, unlike
+  /// the reaction path which collapses the two. A blocked *reaction* removal
+  /// is moot because the reaction never arrived either; a *message* may well
+  /// have been delivered before the block took effect, so claiming the
+  /// deletion was sent would be a lie. The distinct value stops the sweep
+  /// without asserting delivery.
+  TextColumn get deletionPublishStatus =>
+      text().nullable().named('deletion_publish_status')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -1228,12 +1272,12 @@ class OutgoingDms extends Table {
   /// `direct_messages.owner_pubkey` for multi-account isolation.
   TextColumn get ownerPubkey => text().named('owner_pubkey')();
 
-  /// Durable, collision-proof identity of the group-send fan-out this row
-  /// belongs to (the first sibling rumor's event id, stamped identically on
-  /// every per-recipient sibling by `sendGroupMessage`). NULL for 1:1 sends,
-  /// which have no siblings. Persistence dedup, optimistic grouping, sibling
-  /// lookup, and cancellation all key off this instead of the collision-prone
-  /// `(content, created_at)` tuple. See `DirectMessages.sendBatchId`.
+  /// Durable, collision-proof identity of one send invocation. A 1:1 send has
+  /// one unique value; `sendGroupMessage` stamps one shared value on every
+  /// per-recipient sibling. It separates same-second identical sends and lets
+  /// group persistence dedup, optimistic grouping, sibling lookup, and
+  /// cancellation use an exact value. NULL only for legacy rows. See
+  /// `DirectMessages.sendBatchId`.
   TextColumn get sendBatchId => text().nullable().named('send_batch_id')();
 
   @override
@@ -1529,9 +1573,9 @@ class ProcessedGiftWraps extends Table {
   /// available for any future time-based retention.
   IntColumn get processedAt => integer().named('processed_at')();
 
-  /// Recipient pubkey this wrap was processed for. Informational only — NOT
-  /// part of the dedup key, and not used to scope deletes: account cleanup
-  /// wipes the whole table via `clearAll()`. Retained for diagnostics.
+  /// Recipient pubkey this wrap was processed for. Not part of the global
+  /// gift-wrap dedup key, but used to scope account cleanup without deleting
+  /// another saved account's ledger entries.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
   @override

@@ -736,6 +736,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileDeletedAccountName => '삭제된 계정';
 
   @override
+  String get inboxVanishedAccountReference => '이 계정';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => '이 계정은 삭제되었습니다';
 
   @override
@@ -3714,7 +3717,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '영상을 삭제할까요?';
 
   @override
-  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
+  String get shareMenuDeleteCleanupInProgress => '영상을 삭제하는 중…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => '영상을 삭제했어요.';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      '영상을 삭제했어요. 모든 곳에서 사라질 때까지 시간이 조금 걸릴 수 있어요.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      '영상은 삭제했지만 모든 사본을 지우지는 못했어요. 지원팀에 문의해 주세요.';
 
   @override
   String get authSessionExpired => '세션이 만료됐어요. 다시 로그인해주세요.';
@@ -4266,6 +4280,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportExportLogsFailed => '로그 내보내기에 실패했어요';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return '$path에 로그 저장됨';
   }
@@ -4313,6 +4335,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => '문제를 설명해 주세요';
+
+  @override
+  String get reportDetailsTextOnly =>
+      '텍스트만 입력할 수 있습니다. 여기에는 사진이나 GIF를 첨부할 수 없습니다.';
 
   @override
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
@@ -6483,10 +6509,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '계정이 전환돼서 아무것도 삭제되지 않았어요. 삭제할 계정에서 삭제 화면을 다시 열어주세요.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      '일부 삭제 요청은 처리되었지만 계정을 전환해서 정리가 중단됐어요. 마무리하려면 원래 계정으로 다시 로그인하세요.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       '사용자명을 해제하지 못했어요. 계정은 삭제되지 않았어요. 다시 시도하거나 옵션 선택을 해제해주세요.';
 
@@ -6506,17 +6528,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => '사용자명 입력';
-
-  @override
-  String get deleteAccountContentDeletionFailed => '릴레이에서 콘텐츠를 삭제하지 못했어요';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      '어떤 릴레이에서도 계정 삭제를 확인하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
@@ -6574,6 +6585,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      '지금은 계정을 삭제할 수 없어요. 삭제된 항목은 없어요.';
+
+  @override
   String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
 
   @override
@@ -6612,10 +6627,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       '게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 잠시 후 다시 시도해주세요.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      '게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 다시 로그인해서 마무리해주세요.';
 
   @override
   String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';
@@ -6745,6 +6756,13 @@ class AppLocalizationsKo extends AppLocalizations {
       '영상은 업로드됐지만 게시물을 올리지 못했어요. 릴레이 설정을 확인하고 다시 시도해주세요.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       '영상은 업로드됐지만 이 사운드는 재사용이 허용되지 않았어요. 다른 사운드를 골라서 올려주세요.';
 
@@ -6857,7 +6875,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine는 이 체크마크를 팀 계정과 직접 승인한 소수의 프로필에 부여해요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
+      'Divine는 이 체크마크를 팀 계정에 부여해요. NIP-05, 인증된 계정 링크, OG Viner 상태와는 별개예요.';
 
   @override
   String get unfollowConfirmButton => '언팔로우';
@@ -9425,6 +9443,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get minorAccountReviewRestrictionSupport => '지원과 검수 메시지는 계속 이용 가능';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => '지원 센터 열기';
 
   @override
@@ -9432,16 +9468,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => '검토 페이지 열기';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle => '계정을 가지고 갈 수 있어요';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      '다른 인프라에서도 Divine 아이디를 계속 사용할 수 있어요. 계정을 옮기거나 아카이브를 다운로드하세요.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => '계정 옮기기';
 
   @override
   String get minorAccountReviewCheckAgain => '다시 확인';
@@ -11079,7 +11105,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '계정은 그대로 유지됩니다. 이 기기에 저장된 초안과 클립은 삭제됩니다. 메시지와 피드는 네트워크에서 다시 불러옵니다.';
 
   @override
-  String get dbFailureResetConfirm => '초기화하고 닫기';
+  String get dbFailureResetConfirm => '지금 로컬 데이터베이스 초기화';
 
   @override
   String get dbFailureCancel => '취소';
@@ -11159,4 +11185,82 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get safetySettingsShowVerifiedOnlySubtitle =>
       'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

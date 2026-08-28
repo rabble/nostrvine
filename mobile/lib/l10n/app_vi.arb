@@ -413,6 +413,7 @@
   "profileMyLibraryLabel": "Thư viện của tôi",
   "profileMessageLabel": "Tin nhắn",
   "profileDeletedAccountName": "Tài khoản đã xóa",
+  "inboxVanishedAccountReference": "tài khoản này",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
@@ -2090,7 +2091,10 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "Xóa video?",
-  "shareMenuVideoDeletionRequested": "Đã xóa video",
+  "shareMenuDeleteCleanupInProgress": "Đang xóa video…",
+  "shareMenuDeleteCleanupConfirmed": "Đã xóa video.",
+  "shareMenuDeleteCleanupDelayed": "Đã xóa video. Có thể mất một lúc để video biến mất ở mọi nơi.",
+  "shareMenuDeleteCleanupFailed": "Đã xóa video nhưng chúng tôi không thể xóa mọi bản sao. Hãy liên hệ bộ phận hỗ trợ.",
   "authSessionExpired": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
   "authSignInFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
   "webAuthNotSupportedSecureMode": "Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.",
@@ -2431,6 +2435,7 @@
   "reportSelectReason": "Vui lòng chọn lý do báo cáo nội dung này",
   "reportOtherRequiresDetails": "Vui lòng mô tả vấn đề khi chọn Khác",
   "reportDetailsRequired": "Vui lòng mô tả vấn đề",
+  "reportDetailsTextOnly": "Chỉ văn bản — không thể đính kèm ảnh hoặc GIF ở đây.",
   "reportReasonSpam": "Spam hoặc nội dung không mong muốn",
   "reportReasonSpamSubtitle": "Nội dung không mong muốn hoặc lặp lại",
   "reportReasonHarassment": "Quấy rối, bắt nạt hoặc đe dọa",
@@ -3795,7 +3800,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "Một số yêu cầu xóa đã được chấp nhận, nhưng việc dọn dẹp đã dừng vì bạn đổi tài khoản. Đăng nhập lại tài khoản ban đầu để hoàn tất.",
   "deleteAccountBurnUsernameFailed": "Không nhả được tên người dùng của bạn. Tài khoản của bạn chưa bị xóa. Thử lại, hoặc bỏ chọn tùy chọn đó.",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -3822,9 +3826,9 @@
   "@deleteAccountConfirmationHintUsername": {
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
-  "deleteAccountContentDeletionFailed": "Không xóa được nội dung khỏi các relay",
-  "deleteAccountRelayConfirmationFailed": "Chúng tôi không xác nhận được việc xóa tài khoản với relay nào. Kiểm tra kết nối và thử lại.",
   "deleteAccountDeleteAllContentButton": "Xóa tất cả nội dung",
+  "deleteAccountDeletionUnavailable": "Hiện chưa thể xóa tài khoản. Chưa có gì bị xóa.",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "Bọn mình chưa xóa xong tài khoản của bạn. Thử lại nhé.",
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
@@ -3860,10 +3864,6 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Thử lại sau một lát nhé.",
-  "deleteAccountServerDeletionRequiresReauth": "Đã gửi yêu cầu xóa cho các bài đăng của bạn, nhưng bọn mình chưa xóa xong tài khoản của bạn. Đăng nhập lại để hoàn tất.",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
-  },
   "deleteAccountSuccess": "Đã gửi yêu cầu xóa. Bạn đã đăng xuất trên thiết bị này.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
@@ -4029,7 +4029,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "Người này đã đăng một Vine gốc mà Divine tìm thấy trong kho lưu trữ. Đây không phải huy hiệu xác minh tài khoản.",
   "profileBadgeCheckmarkTitle": "Dấu tích hồ sơ",
-  "profileBadgeCheckmarkBody": "Divine trao dấu tích này cho các tài khoản của đội ngũ và một số ít hồ sơ được duyệt thủ công. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.",
+  "profileBadgeCheckmarkBody": "Divine trao dấu tích này cho các tài khoản của đội ngũ. Nó tách biệt với NIP-05, liên kết tài khoản đã xác minh và trạng thái OG Viner.",
   "unfollowConfirmButton": "Bỏ theo dõi",
   "videoClipSaveFailed": "Không lưu được clip",
   "videoClipSaveTo": "Lưu vào {destination}",
@@ -5657,9 +5657,6 @@
   "minorAccountReviewOpenSupportCenter": "Mở Trung tâm hỗ trợ",
   "minorAccountReviewOpenModerationMessage": "Mở tin nhắn kiểm duyệt",
   "minorAccountReviewOpenReviewPage": "Mở trang xem xét",
-  "minorAccountReviewMoveAccountTitle": "Bạn có thể mang tài khoản của mình theo",
-  "minorAccountReviewMoveAccountBody": "Bạn vẫn có thể dùng danh tính Divine của mình trên hạ tầng khác. Di chuyển tài khoản hoặc tải xuống kho lưu trữ của bạn.",
-  "minorAccountReviewMoveAccountCta": "Di chuyển tài khoản của bạn",
   "minorAccountReviewCheckAgain": "Kiểm tra lại",
   "minorAccountReviewLogOut": "Đăng xuất",
   "minorAccountReviewNextStepTitle": "Bước tiếp theo",
@@ -6619,7 +6616,7 @@
   "dbFailureResetAction": "đặt lại cơ sở dữ liệu cục bộ",
   "dbFailureConfirmTitle": "đặt lại cơ sở dữ liệu cục bộ của bạn?",
   "dbFailureConfirmBody": "Tài khoản của bạn vẫn còn. Bản nháp và clip đã lưu trên thiết bị này sẽ bị xóa — tin nhắn và bảng tin sẽ được tải lại từ mạng.",
-  "dbFailureResetConfirm": "đặt lại và đóng",
+  "dbFailureResetConfirm": "đặt lại cơ sở dữ liệu cục bộ ngay",
   "dbFailureCancel": "hủy",
   "dbFailureResetFailed": "Không thành công. Hãy đóng Divine và thử lại.",
   "dbFailureResetDoneTitle": "đã đặt lại cơ sở dữ liệu cục bộ",

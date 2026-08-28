@@ -757,6 +757,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileDeletedAccountName => '已注销账号';
 
   @override
+  String get inboxVanishedAccountReference => '此账号';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => '该账号已注销';
 
   @override
@@ -3692,7 +3695,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => '删除视频？';
 
   @override
-  String get shareMenuVideoDeletionRequested => '视频已删除';
+  String get shareMenuDeleteCleanupInProgress => '正在移除视频…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => '视频已删除。';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed => '视频已删除。它可能需要一点时间才能从所有地方消失。';
+
+  @override
+  String get shareMenuDeleteCleanupFailed => '视频已删除，但我们无法移除每个副本。请联系支持团队。';
 
   @override
   String get authSessionExpired => '你的登录已过期，请重新登录。';
@@ -4238,6 +4250,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get supportExportLogsFailed => '日志导出失败';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return '日志已保存到 $path';
   }
@@ -4285,6 +4305,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => '请描述问题';
+
+  @override
+  String get reportDetailsTextOnly => '仅限文字——无法在此附加照片或 GIF。';
 
   @override
   String get reportReasonSpam => '垃圾或不受欢迎的内容';
@@ -6431,10 +6454,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '你切换了账号，因此没有删除任何内容。请为要删除的账号重新打开删除流程。';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      '部分删除请求已被接受，但因为你切换了账号，清理已停止。请重新登录原账号以完成。';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       '无法释放你的用户名。你的账号未被删除。请重试，或取消勾选该选项。';
 
@@ -6454,17 +6473,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => '输入你的用户名';
-
-  @override
-  String get deleteAccountContentDeletionFailed => '从中继删除内容失败';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      '我们无法通过中继确认账号删除。请检查网络连接后重试。';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => '删除所有内容';
@@ -6517,6 +6525,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable => '账号删除功能目前不可用。未删除任何内容。';
+
+  @override
   String get deleteAccountDeletionIncomplete => '我们没能完成账号删除，请重试。';
 
   @override
@@ -6554,10 +6565,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       '你的帖子删除请求已发送，但我们没能完成账号删除。请稍后再试。';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      '你的帖子删除请求已发送，但我们没能完成账号删除。请重新登录以完成。';
 
   @override
   String get deleteAccountSuccess => '删除请求已发送。你已在此设备上退出登录。';
@@ -6678,6 +6685,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get publishErrorNostrPublishFailed => '视频已上传，但帖子没能发布。请检查你的中继设置后重试。';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       '视频已上传，但这段音频未开放二次使用。换一段音频再发布吧。';
 
@@ -6788,7 +6802,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine 把这个对勾给团队账号，以及少数经过人工审核的个人资料。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
+      'Divine 把这个对勾给团队账号。它与 NIP-05、已验证的账号链接和 OG Viner 状态无关。';
 
   @override
   String get unfollowConfirmButton => '取消关注';
@@ -9327,6 +9341,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get minorAccountReviewRestrictionSupport => '客服和管理消息仍然可用';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => '打开帮助中心';
 
   @override
@@ -9334,16 +9366,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => '打开审核页面';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle => '你可以带走你的账号';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      '你仍然可以在其他基础设施上使用你的 Divine 身份。迁移你的账号或下载你的归档。';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => '迁移你的账号';
 
   @override
   String get minorAccountReviewCheckAgain => '再查一次';
@@ -10950,7 +10972,7 @@ class AppLocalizationsZh extends AppLocalizations {
       '你的账号会保留。保存在此设备上的草稿和片段将被删除 — 消息和信息流会从网络重新获取。';
 
   @override
-  String get dbFailureResetConfirm => '重置并关闭';
+  String get dbFailureResetConfirm => '立即重置本地数据库';
 
   @override
   String get dbFailureCancel => '取消';
@@ -11029,4 +11051,82 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get safetySettingsShowVerifiedOnlySubtitle =>
       'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

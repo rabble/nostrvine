@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -108,6 +109,160 @@ void main() {
       expect(result, isNull);
     });
 
+    test('route-absent 404 preserves status, stage, and availability', () {
+      expect(
+        () => repository(
+          MockClient((_) async => http.Response('', 404)),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isTrue,
+              )
+              .having(
+                (error) => error.indicatesUsernameRecoveryUnsupported,
+                'indicatesUsernameRecoveryUnsupported',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
+    test('structured coordinator 404 is not classified as route absent', () {
+      expect(
+        () => repository(
+          MockClient(
+            (_) async => http.Response(
+              jsonEncode({'failure_code': 'attempt_not_found'}),
+              404,
+            ),
+          ),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 404)
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
+    test('a coordinator with no Name Server stays user-actionable', () {
+      expect(
+        () => repository(
+          MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'failure_code': 'username_recovery_unavailable',
+                'failure_message':
+                    'Username recovery is unavailable in this environment',
+              }),
+              503,
+            ),
+          ),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesUsernameRecoveryUnsupported,
+                'indicatesUsernameRecoveryUnsupported',
+                isTrue,
+              ),
+        ),
+      );
+    });
+
+    test('a structured coordinator outage remains neutral', () {
+      expect(
+        () => repository(
+          MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'failure_code': 'coordinator_unavailable',
+                'failure_message':
+                    'Deletion service is temporarily unavailable',
+              }),
+              503,
+            ),
+          ),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having(
+                (error) => error.indicatesUsernameRecoveryUnsupported,
+                'indicatesUsernameRecoveryUnsupported',
+                isFalse,
+              )
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
+    test('coordinator transport failure remains transient', () {
+      expect(
+        () => repository(
+          MockClient((_) async => throw http.ClientException('offline')),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
+    test('coordinator TLS failure remains transient', () {
+      expect(
+        () => repository(
+          MockClient((_) async => throw const HandshakeException('bad TLS')),
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorAttempt,
+              )
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
+              ),
+        ),
+      );
+    });
+
     test(
       'preparing username completes owner prepare and verified handshake',
       () async {
@@ -158,6 +313,62 @@ void main() {
         ]);
       },
     );
+
+    test('Name Server failure is tagged as username preparation', () {
+      expect(
+        () => repository(
+          MockClient((request) async {
+            if (request.url.host == 'names.divine.video') {
+              return http.Response('{}', 503);
+            }
+            return coordinatorPreparing(request);
+          }),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.usernamePreparation,
+              ),
+        ),
+      );
+    });
+
+    test('coordinator confirmation failure has its own stage', () {
+      expect(
+        () => repository(
+          MockClient((request) async {
+            if (request.url.path == '/api/account-deletion/attempts') {
+              return coordinatorPreparing(request);
+            }
+            if (request.url.host == 'names.divine.video') {
+              return http.Response(
+                jsonEncode({
+                  'attempt_id': 'attempt-1',
+                  'state': 'pending',
+                  'expires_at': 1787450400,
+                }),
+                200,
+              );
+            }
+            return http.Response('{}', 503);
+          }),
+          delay: (_) async {},
+        ).prepare(username: 'alice'),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 503)
+              .having(
+                (error) => error.stage,
+                'stage',
+                AccountDeletionRecoveryStage.coordinatorUsernameConfirmation,
+              ),
+        ),
+      );
+    });
 
     test(
       'resume preparation preserves the existing coordinator attempt id',
@@ -446,6 +657,24 @@ void main() {
         Duration(milliseconds: 10),
         Duration(milliseconds: 20),
       ]);
+    });
+
+    test('exhausted 429 is not classified as a missing route', () {
+      expect(
+        () => repository(
+          MockClient((_) async => http.Response('{}', 429)),
+          delay: (_) async {},
+        ).prepare(),
+        throwsA(
+          isA<AccountDeletionRecoveryException>()
+              .having((error) => error.statusCode, 'statusCode', 429)
+              .having(
+                (error) => error.indicatesMissingCoordinatorRoute,
+                'indicatesMissingCoordinatorRoute',
+                isFalse,
+              ),
+        ),
+      );
     });
 
     test('a stalled Name Server keeps the repository failure type', () async {

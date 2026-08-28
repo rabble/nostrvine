@@ -413,6 +413,7 @@
   "profileMyLibraryLabel": "میری لائبریری",
   "profileMessageLabel": "پیغام",
   "profileDeletedAccountName": "حذف شدہ اکاؤنٹ",
+  "inboxVanishedAccountReference": "یہ اکاؤنٹ",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
@@ -2090,7 +2091,10 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "ویڈیو حذف کریں؟",
-  "shareMenuVideoDeletionRequested": "ویڈیو حذف ہو گئی",
+  "shareMenuDeleteCleanupInProgress": "ویڈیو ہٹائی جا رہی ہے…",
+  "shareMenuDeleteCleanupConfirmed": "ویڈیو حذف کر دی گئی۔",
+  "shareMenuDeleteCleanupDelayed": "ویڈیو حذف کر دی گئی۔ اسے ہر جگہ سے غائب ہونے میں کچھ وقت لگ سکتا ہے۔",
+  "shareMenuDeleteCleanupFailed": "ویڈیو حذف کر دی گئی، لیکن ہم ہر نقل کو نہیں ہٹا سکے۔ سپورٹ سے رابطہ کریں۔",
   "authSessionExpired": "آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔",
   "authSignInFailed": "سائن ان نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "webAuthNotSupportedSecureMode": "محفوظ موڈ میں ویب تصدیق تعاون یافتہ نہیں ہے۔ محفوظ کلید مینجمنٹ کے لیے براہ کرم موبائل ایپ استعمال کریں۔",
@@ -2431,6 +2435,7 @@
   "reportSelectReason": "براہ کرم اس مواد کی رپورٹ کرنے کی وجہ منتخب کریں",
   "reportOtherRequiresDetails": "دیگر منتخب کرنے پر براہ کرم مسئلہ بیان کریں",
   "reportDetailsRequired": "براہ کرم مسئلہ بیان کریں",
+  "reportDetailsTextOnly": "صرف متن — یہاں تصاویر یا GIF منسلک نہیں کیے جا سکتے۔",
   "reportReasonSpam": "اسپیم یا ناپسندیدہ مواد",
   "reportReasonSpamSubtitle": "ناپسندیدہ یا بار بار کا مواد",
   "reportReasonHarassment": "ہراسانی، دھتکار، یا دھمکیاں",
@@ -3795,7 +3800,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "کچھ حذف کرنے کی درخواستیں قبول ہو گئیں، لیکن صفائی رک گئی کیونکہ آپ نے اکاؤنٹ تبدیل کر لیا۔ مکمل کرنے کے لیے اصل اکاؤنٹ میں دوبارہ سائن ان کریں۔",
   "deleteAccountBurnUsernameFailed": "آپ کا صارف نام نہیں چھوڑا جا سکا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔ دوبارہ کوشش کریں، یا آپشن ان چیک کریں۔",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -3822,9 +3826,9 @@
   "@deleteAccountConfirmationHintUsername": {
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
-  "deleteAccountContentDeletionFailed": "ریلے سے مواد حذف نہیں ہو سکا",
-  "deleteAccountRelayConfirmationFailed": "ہم کسی ریلے سے اکاؤنٹ کے حذف ہونے کی تصدیق نہیں کر سکے۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
   "deleteAccountDeleteAllContentButton": "تمام مواد حذف کریں",
+  "deleteAccountDeletionUnavailable": "اکاؤنٹ حذف کرنے کی سہولت ابھی دستیاب نہیں ہے۔ کچھ بھی حذف نہیں ہوا۔",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔",
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
@@ -3860,10 +3864,6 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "آپ کی پوسٹس کے لیے حذف کی درخواستیں بھیج دی گئیں، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
-  "deleteAccountServerDeletionRequiresReauth": "آپ کی پوسٹس کے لیے حذف کی درخواستیں بھیج دی گئیں، لیکن ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ مکمل کرنے کے لیے دوبارہ سائن ان کریں۔",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
-  },
   "deleteAccountSuccess": "حذف کی درخواستیں بھیج دی گئیں۔ آپ اس ڈیوائس پر سائن آؤٹ ہو گئے۔",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
@@ -4029,7 +4029,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "اس شخص نے ایک اصل Vine پوسٹ کیا تھا جو Divine کو آرکائیو میں ملا۔ یہ اکاؤنٹ کی تصدیق کا بیج نہیں ہے۔",
   "profileBadgeCheckmarkTitle": "پروفائل چیک مارک",
-  "profileBadgeCheckmarkBody": "Divine یہ چیک مارک ٹیم کے اکاؤنٹس اور دستی طور پر منظور شدہ چند پروفائلز کو دیتا ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔",
+  "profileBadgeCheckmarkBody": "Divine یہ چیک مارک ٹیم کے اکاؤنٹس کو دیتا ہے۔ یہ NIP-05، تصدیق شدہ اکاؤنٹ لنکس اور OG Viner اسٹیٹس سے الگ ہے۔",
   "unfollowConfirmButton": "ان فالو کریں",
   "videoClipSaveFailed": "کلپ محفوظ نہیں ہو سکی",
   "videoClipSaveTo": "{destination} میں محفوظ کریں",
@@ -5657,9 +5657,6 @@
   "minorAccountReviewOpenSupportCenter": "مدد کا مرکز کھولیں",
   "minorAccountReviewOpenModerationMessage": "موڈریشن پیغام کھولیں",
   "minorAccountReviewOpenReviewPage": "جائزہ صفحہ کھولیں",
-  "minorAccountReviewMoveAccountTitle": "آپ اپنا اکاؤنٹ ساتھ لے جا سکتے ہیں",
-  "minorAccountReviewMoveAccountBody": "آپ اپنی Divine شناخت دوسرے انفراسٹرکچر پر بھی استعمال کر سکتے ہیں۔ اپنا اکاؤنٹ منتقل کریں یا اپنا آرکائیو ڈاؤن لوڈ کریں۔",
-  "minorAccountReviewMoveAccountCta": "اپنا اکاؤنٹ منتقل کریں",
   "minorAccountReviewCheckAgain": "دوبارہ چیک کریں",
   "minorAccountReviewLogOut": "لاگ آؤٹ",
   "minorAccountReviewNextStepTitle": "اگلا قدم",
@@ -6619,7 +6616,7 @@
   "dbFailureResetAction": "مقامی ڈیٹابیس ری سیٹ کریں",
   "dbFailureConfirmTitle": "اپنا مقامی ڈیٹابیس ری سیٹ کریں؟",
   "dbFailureConfirmBody": "آپ کا اکاؤنٹ برقرار رہتا ہے۔ اس ڈیوائس پر محفوظ ڈرافٹس اور کلپس حذف ہو جائیں گے — پیغامات اور فیڈز نیٹ ورک سے واپس آ جاتے ہیں۔",
-  "dbFailureResetConfirm": "ری سیٹ کریں اور بند کریں",
+  "dbFailureResetConfirm": "مقامی ڈیٹابیس ابھی ری سیٹ کریں",
   "dbFailureCancel": "منسوخ کریں",
   "dbFailureResetFailed": "یہ کام نہیں کیا۔ Divine بند کریں اور دوبارہ کوشش کریں۔",
   "dbFailureResetDoneTitle": "مقامی ڈیٹابیس ری سیٹ ہو گیا",

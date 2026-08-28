@@ -181,7 +181,7 @@ void main() {
   const pushServicePubkey =
       '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
   const pushEnvironment = _ConfiguredEnvironmentConfig(
-    environment: AppEnvironment.test,
+    environment: AppEnvironment.staging,
     configuredPushServicePubkey: pushServicePubkey,
   );
   const stagingEnvironment = _ConfiguredEnvironmentConfig(
@@ -227,7 +227,7 @@ void main() {
 
     when(
       () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => PushRegistrationResult.published);
     when(
       () => pushService.deregister(any(), isCurrent: any(named: 'isCurrent')),
     ).thenAnswer((_) async {});
@@ -314,10 +314,7 @@ void main() {
     return container;
   }
 
-  Future<void> emitReady(
-    _TestNostrSession nostrSession,
-    String pubkey,
-  ) async {
+  Future<void> emitReady(_TestNostrSession nostrSession, String pubkey) async {
     when(() => authService.currentIdentity).thenReturn(_identity(pubkey));
     when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
     when(() => nostrClient.publicKey).thenReturn(pubkey);
@@ -413,7 +410,8 @@ void main() {
               _MockNotificationService(),
             ),
             currentEnvironmentProvider.overrideWith(
-              (_) => const EnvironmentConfig(environment: AppEnvironment.test),
+              (_) =>
+                  const EnvironmentConfig(environment: AppEnvironment.staging),
             ),
             nostrSessionProvider.overrideWith(() => nostrSession),
           ],
@@ -468,11 +466,320 @@ void main() {
       await emitReady(nostrSession, pubkeyA);
 
       verify(
-        () => pushService.register(
-          pubkeyA,
-          isCurrent: any(named: 'isCurrent'),
-        ),
+        () => pushService.register(pubkeyA, isCurrent: any(named: 'isCurrent')),
       ).called(1);
+    });
+
+    test('retries a retryable registration failure', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer(
+          (_) async => ++registerCalls > 1
+              ? PushRegistrationResult.published
+              : PushRegistrationResult.retryableFailure,
+        );
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        // Repeated readiness must not create a concurrent or immediate drain.
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        expect(registerCalls, 1);
+
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        expect(registerCalls, 2);
+        container.dispose();
+      });
+    });
+
+    test('does not retry a terminal registration failure', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return PushRegistrationResult.terminalFailure;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        container.dispose();
+      });
+    });
+
+    test('does not retry an unexpected registration exception', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          throw StateError('unexpected registration failure');
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        container.dispose();
+      });
+    });
+
+    test('retries an uncertain publish once, then stops', () {
+      fakeAsync((async) {
+        var registerCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) async {
+          registerCalls += 1;
+          return PushRegistrationResult.uncertainFailure;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(registerCalls, 1);
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+        expect(registerCalls, 2);
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+        expect(registerCalls, 2);
+        container.dispose();
+      });
+    });
+
+    test(
+      'invalidation wakes a parked retry so teardown deregisters without '
+      'waiting out the registration timeout',
+      () {
+        fakeAsync((async) {
+          when(
+            () => messaging.getNotificationSettings(),
+          ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+          // Registration never succeeds, so the drain parks on the backoff
+          // timer with no publish in flight.
+          when(
+            () =>
+                pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+          ).thenAnswer((_) async => PushRegistrationResult.retryableFailure);
+
+          final nostrSession = _TestNostrSession(
+            const NostrSessionReadiness.signedOut(),
+          );
+          final container = buildContainer(nostrSession: nostrSession);
+          container.read(pushNotificationSyncProvider);
+          when(
+            () => authService.currentIdentity,
+          ).thenReturn(_identity(pubkeyA));
+          when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+          nostrSession.setReadiness(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkeyA,
+              client: nostrClient,
+            ),
+          );
+          async.flushMicrotasks();
+
+          verify(
+            () => pushService.register(
+              pubkeyA,
+              isCurrent: any(named: 'isCurrent'),
+            ),
+          ).called(1);
+
+          unawaited(beforeSessionTeardownCallback!());
+          async.flushMicrotasks();
+
+          // Invalidation wakes the parked retry, so the registration future
+          // completes now and cleanup publishes without elapsing the 4s
+          // _pushRegistrationCleanupWaitTimeout. Without the wake this
+          // deregistration only happens via the timeout fallback.
+          verify(defaultCleanupClient.initialize).called(1);
+
+          container.dispose();
+        });
+      },
+    );
+
+    test('publishes a refreshed token received during registration', () {
+      fakeAsync((async) {
+        final firstPublish = Completer<PushRegistrationResult>();
+        var registerCalls = 0;
+        var refreshedTokenCalls = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((_) {
+          registerCalls += 1;
+          return firstPublish.future;
+        });
+        when(
+          () => pushService.registerToken(
+            any(),
+            any(),
+            isCurrent: any(named: 'isCurrent'),
+          ),
+        ).thenAnswer((_) async {
+          refreshedTokenCalls += 1;
+          return PushRegistrationResult.published;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        expect(registerCalls, 1);
+
+        defaultTokenRefreshController.add('refreshed-token');
+        async.flushMicrotasks();
+        firstPublish.complete(PushRegistrationResult.published);
+        async.flushMicrotasks();
+
+        expect(refreshedTokenCalls, 1);
+        container.dispose();
+      });
+    });
+
+    test('account change cancels the old registration retry drain', () {
+      fakeAsync((async) {
+        final registeredPubkeys = <String>[];
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((invocation) async {
+          final pubkey = invocation.positionalArguments.single as String;
+          registeredPubkeys.add(pubkey);
+          return pubkey == pubkeyB
+              ? PushRegistrationResult.published
+              : PushRegistrationResult.retryableFailure;
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(nostrSession: nostrSession);
+        container.read(pushNotificationSyncProvider);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyB));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyB);
+        when(() => nostrClient.publicKey).thenReturn(pubkeyB);
+        authStateController.add(AuthState.authenticated);
+        async.flushMicrotasks();
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyB,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 2));
+        async.flushMicrotasks();
+
+        expect(registeredPubkeys, [pubkeyA, pubkeyB]);
+        container.dispose();
+      });
     });
 
     test('ignores stale readiness for an old account', () async {
@@ -501,10 +808,7 @@ void main() {
       await emitReady(nostrSession, pubkeyB);
 
       verify(
-        () => pushService.register(
-          pubkeyB,
-          isCurrent: any(named: 'isCurrent'),
-        ),
+        () => pushService.register(pubkeyB, isCurrent: any(named: 'isCurrent')),
       ).called(1);
     });
 
@@ -523,10 +827,8 @@ void main() {
 
         await emitReady(nostrSession, pubkeyA);
         verify(
-          () => pushService.register(
-            pubkeyA,
-            isCurrent: any(named: 'isCurrent'),
-          ),
+          () =>
+              pushService.register(pubkeyA, isCurrent: any(named: 'isCurrent')),
         ).called(1);
         clearInteractions(pushService);
 
@@ -596,6 +898,7 @@ void main() {
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
 
@@ -649,6 +952,7 @@ void main() {
           if (await isCurrent()) {
             await publishCompleter.future;
           }
+          return PushRegistrationResult.published;
         });
         when(
           () => pushService.updatePreferences(prefs),
@@ -689,9 +993,10 @@ void main() {
         ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
         when(
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((invocation) {
+        ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
-          return registerCompleter.future;
+          await registerCompleter.future;
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
 
@@ -717,111 +1022,106 @@ void main() {
       },
     );
 
-    test(
-      'signs deferred cleanup before teardown returns',
-      () {
-        fakeAsync((async) {
-          final registerCompleter = Completer<void>();
-          final cleanupClient = _MockNostrClient();
-          final events = <String>[];
-          final pubkeysByEvent = <Event, String>{};
-          when(
-            () => messaging.getNotificationSettings(),
-          ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-          when(
-            () =>
-                pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-          ).thenAnswer((invocation) {
-            events.add('register ${invocation.positionalArguments.single}');
-            return registerCompleter.future;
-          });
-          when(
-            () => pushService.createSignedDeregistrationEvent(
-              any(),
-              signingIdentity: any(named: 'signingIdentity'),
-            ),
-          ).thenAnswer((invocation) async {
-            final event = _MockEvent();
-            final pubkey = invocation.positionalArguments.single as String;
-            pubkeysByEvent[event] = pubkey;
-            events.add('sign $pubkey');
-            return event;
-          });
-          when(
-            () => pushService.publishDeregistrationEvent(
-              any(),
-              publishClient: any(named: 'publishClient'),
-            ),
-          ).thenAnswer((invocation) async {
-            final event = invocation.positionalArguments.single as Event;
-            final publishClient =
-                invocation.namedArguments[#publishClient] as NostrClient?;
-            events.add(
-              'publish ${pubkeysByEvent[event]} cleanup ${identical(publishClient, cleanupClient)}',
-            );
-          });
-          // ignore: unnecessary_lambdas
-          when(() => cleanupClient.initialize()).thenAnswer((_) async {});
-          // ignore: unnecessary_lambdas
-          when(() => cleanupClient.dispose()).thenAnswer((_) async {});
-
-          final nostrSession = _TestNostrSession(
-            const NostrSessionReadiness.signedOut(),
-          );
-          final container = buildContainer(
-            nostrSession: nostrSession,
-            extraOverrides: [
-              nostrClientFactoryProvider.overrideWithValue(
-                ({dbClient, environmentConfig, signer, statisticsService}) =>
-                    cleanupClient,
-              ),
-            ],
-          );
-          container.read(pushNotificationSyncProvider);
-
-          when(() => authService.currentIdentity).thenReturn(
-            _identity(pubkeyA),
-          );
-          when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-          when(() => nostrClient.publicKey).thenReturn(pubkeyA);
-          nostrSession.setReadiness(
-            NostrSessionReadiness.nostrReady(
-              pubkey: pubkeyA,
-              client: nostrClient,
-            ),
-          );
-          async.flushMicrotasks();
-
-          var teardownCompleted = false;
-          unawaited(
-            beforeSessionTeardownCallback!().then((_) {
-              teardownCompleted = true;
-            }),
-          );
-          async.flushMicrotasks();
-
-          expect(teardownCompleted, isFalse);
-          expect(events, ['register $pubkeyA', 'sign $pubkeyA']);
-
-          async.elapse(const Duration(seconds: 5));
-          async.flushMicrotasks();
-
-          expect(teardownCompleted, isTrue);
-          expect(events, ['register $pubkeyA', 'sign $pubkeyA']);
-
-          when(() => authService.currentIdentity).thenReturn(null);
-          when(() => authService.currentPublicKeyHex).thenReturn(null);
-          registerCompleter.complete();
-          async.flushMicrotasks();
-
-          expect(events, [
-            'register $pubkeyA',
-            'sign $pubkeyA',
-            'publish $pubkeyA cleanup true',
-          ]);
+    test('signs deferred cleanup before teardown returns', () {
+      fakeAsync((async) {
+        final registerCompleter = Completer<void>();
+        final cleanupClient = _MockNostrClient();
+        final events = <String>[];
+        final pubkeysByEvent = <Event, String>{};
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((invocation) async {
+          events.add('register ${invocation.positionalArguments.single}');
+          await registerCompleter.future;
+          return PushRegistrationResult.published;
         });
-      },
-    );
+        when(
+          () => pushService.createSignedDeregistrationEvent(
+            any(),
+            signingIdentity: any(named: 'signingIdentity'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = _MockEvent();
+          final pubkey = invocation.positionalArguments.single as String;
+          pubkeysByEvent[event] = pubkey;
+          events.add('sign $pubkey');
+          return event;
+        });
+        when(
+          () => pushService.publishDeregistrationEvent(
+            any(),
+            publishClient: any(named: 'publishClient'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments.single as Event;
+          final publishClient =
+              invocation.namedArguments[#publishClient] as NostrClient?;
+          events.add(
+            'publish ${pubkeysByEvent[event]} cleanup ${identical(publishClient, cleanupClient)}',
+          );
+        });
+        // ignore: unnecessary_lambdas
+        when(() => cleanupClient.initialize()).thenAnswer((_) async {});
+        // ignore: unnecessary_lambdas
+        when(() => cleanupClient.dispose()).thenAnswer((_) async {});
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(
+          nostrSession: nostrSession,
+          extraOverrides: [
+            nostrClientFactoryProvider.overrideWithValue(
+              ({dbClient, environmentConfig, signer, statisticsService}) =>
+                  cleanupClient,
+            ),
+          ],
+        );
+        container.read(pushNotificationSyncProvider);
+
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(() => nostrClient.publicKey).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        var teardownCompleted = false;
+        unawaited(
+          beforeSessionTeardownCallback!().then((_) {
+            teardownCompleted = true;
+          }),
+        );
+        async.flushMicrotasks();
+
+        expect(teardownCompleted, isFalse);
+        expect(events, ['register $pubkeyA', 'sign $pubkeyA']);
+
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        expect(teardownCompleted, isTrue);
+        expect(events, ['register $pubkeyA', 'sign $pubkeyA']);
+
+        when(() => authService.currentIdentity).thenReturn(null);
+        when(() => authService.currentPublicKeyHex).thenReturn(null);
+        registerCompleter.complete();
+        async.flushMicrotasks();
+
+        expect(events, [
+          'register $pubkeyA',
+          'sign $pubkeyA',
+          'publish $pubkeyA cleanup true',
+        ]);
+      });
+    });
 
     test(
       'retains deregistration cleanup when reached registration outlives teardown wait',
@@ -836,9 +1136,10 @@ void main() {
           when(
             () =>
                 pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-          ).thenAnswer((invocation) {
+          ).thenAnswer((invocation) async {
             events.add('register ${invocation.positionalArguments.single}');
-            return registerCompleter.future;
+            await registerCompleter.future;
+            return PushRegistrationResult.published;
           });
           recordMockDeregistration(events);
           // ignore: unnecessary_lambdas
@@ -860,9 +1161,9 @@ void main() {
           );
           container.read(pushNotificationSyncProvider);
 
-          when(() => authService.currentIdentity).thenReturn(
-            _identity(pubkeyA),
-          );
+          when(
+            () => authService.currentIdentity,
+          ).thenReturn(_identity(pubkeyA));
           when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
           when(() => nostrClient.publicKey).thenReturn(pubkeyA);
           nostrSession.setReadiness(
@@ -896,78 +1197,73 @@ void main() {
       },
     );
 
-    test(
-      'deferred cleanup can deregister after auth has been cleared',
-      () {
-        fakeAsync((async) {
-          final registerCompleter = Completer<void>();
-          final cleanupClient = _MockNostrClient();
-          final events = <String>[];
-          when(
-            () => messaging.getNotificationSettings(),
-          ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-          when(
-            () =>
-                pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-          ).thenAnswer((invocation) {
-            events.add('register ${invocation.positionalArguments.single}');
-            return registerCompleter.future;
-          });
-          recordMockDeregistration(events);
-          // ignore: unnecessary_lambdas
-          when(() => cleanupClient.initialize()).thenAnswer((_) async {});
-          // ignore: unnecessary_lambdas
-          when(() => cleanupClient.dispose()).thenAnswer((_) async {});
-
-          final nostrSession = _TestNostrSession(
-            const NostrSessionReadiness.signedOut(),
-          );
-          final container = buildContainer(
-            nostrSession: nostrSession,
-            extraOverrides: [
-              nostrClientFactoryProvider.overrideWithValue(
-                ({dbClient, environmentConfig, signer, statisticsService}) =>
-                    cleanupClient,
-              ),
-            ],
-          );
-          container.read(pushNotificationSyncProvider);
-
-          when(() => authService.currentIdentity).thenReturn(
-            _identity(pubkeyA),
-          );
-          when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-          when(() => nostrClient.publicKey).thenReturn(pubkeyA);
-          nostrSession.setReadiness(
-            NostrSessionReadiness.nostrReady(
-              pubkey: pubkeyA,
-              client: nostrClient,
-            ),
-          );
-          async.flushMicrotasks();
-
-          expect(events, ['register $pubkeyA']);
-
-          var teardownCompleted = false;
-          unawaited(
-            beforeSessionTeardownCallback!().then((_) {
-              teardownCompleted = true;
-            }),
-          );
-          async.flushMicrotasks();
-          async.elapse(const Duration(seconds: 5));
-          async.flushMicrotasks();
-          expect(teardownCompleted, isTrue);
-
-          when(() => authService.currentIdentity).thenReturn(null);
-          when(() => authService.currentPublicKeyHex).thenReturn(null);
-          registerCompleter.complete();
-          async.flushMicrotasks();
-
-          expect(events, ['register $pubkeyA', 'deregister $pubkeyA']);
+    test('deferred cleanup can deregister after auth has been cleared', () {
+      fakeAsync((async) {
+        final registerCompleter = Completer<void>();
+        final cleanupClient = _MockNostrClient();
+        final events = <String>[];
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((invocation) async {
+          events.add('register ${invocation.positionalArguments.single}');
+          await registerCompleter.future;
+          return PushRegistrationResult.published;
         });
-      },
-    );
+        recordMockDeregistration(events);
+        // ignore: unnecessary_lambdas
+        when(() => cleanupClient.initialize()).thenAnswer((_) async {});
+        // ignore: unnecessary_lambdas
+        when(() => cleanupClient.dispose()).thenAnswer((_) async {});
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = buildContainer(
+          nostrSession: nostrSession,
+          extraOverrides: [
+            nostrClientFactoryProvider.overrideWithValue(
+              ({dbClient, environmentConfig, signer, statisticsService}) =>
+                  cleanupClient,
+            ),
+          ],
+        );
+        container.read(pushNotificationSyncProvider);
+
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(() => nostrClient.publicKey).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(events, ['register $pubkeyA']);
+
+        var teardownCompleted = false;
+        unawaited(
+          beforeSessionTeardownCallback!().then((_) {
+            teardownCompleted = true;
+          }),
+        );
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+        expect(teardownCompleted, isTrue);
+
+        when(() => authService.currentIdentity).thenReturn(null);
+        when(() => authService.currentPublicKeyHex).thenReturn(null);
+        registerCompleter.complete();
+        async.flushMicrotasks();
+
+        expect(events, ['register $pubkeyA', 'deregister $pubkeyA']);
+      });
+    });
 
     test('deferred cleanup uses a retained publish client', () {
       fakeAsync((async) {
@@ -979,9 +1275,10 @@ void main() {
         ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
         when(
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
-        ).thenAnswer((invocation) {
+        ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
-          return registerCompleter.future;
+          await registerCompleter.future;
+          return PushRegistrationResult.published;
         });
         // ignore: unnecessary_lambdas
         when(() => cleanupClient.initialize()).thenAnswer((_) async {});
@@ -1069,10 +1366,7 @@ void main() {
         ),
       );
       verify(
-        () => pushService.register(
-          pubkeyA,
-          isCurrent: any(named: 'isCurrent'),
-        ),
+        () => pushService.register(pubkeyA, isCurrent: any(named: 'isCurrent')),
       ).called(1);
     });
 
@@ -1117,10 +1411,7 @@ void main() {
         ),
       ).called(1);
       verify(
-        () => pushService.register(
-          pubkeyA,
-          isCurrent: any(named: 'isCurrent'),
-        ),
+        () => pushService.register(pubkeyA, isCurrent: any(named: 'isCurrent')),
       ).called(1);
     });
 
@@ -1308,10 +1599,7 @@ void main() {
           container.read(nostrSessionProvider.notifier) as _TestNostrSession;
       await emitReady(nostrSession, pubkeyA);
       verify(
-        () => pushService.register(
-          pubkeyA,
-          isCurrent: any(named: 'isCurrent'),
-        ),
+        () => pushService.register(pubkeyA, isCurrent: any(named: 'isCurrent')),
       ).called(1);
       clearInteractions(pushService);
 
@@ -1588,9 +1876,9 @@ void main() {
           (_) async => _acceptedOutcome(event, stagingEnvironment.relayUrl),
         );
         final initializeCompleter = Completer<void>();
-        when(cleanupClient.initialize).thenAnswer(
-          (_) => initializeCompleter.future,
-        );
+        when(
+          cleanupClient.initialize,
+        ).thenAnswer((_) => initializeCompleter.future);
         // ignore: unnecessary_lambdas
         when(() => cleanupClient.dispose()).thenAnswer((_) async {});
 
@@ -1823,9 +2111,7 @@ void main() {
         // refresh); once the refresh arrives the device has a token, so
         // deregistration can encrypt it for the push service.
         String? sessionToken;
-        when(
-          () => messaging.getToken(),
-        ).thenAnswer((_) async => sessionToken);
+        when(() => messaging.getToken()).thenAnswer((_) async => sessionToken);
         when(
           () => messaging.onTokenRefresh,
         ).thenAnswer((_) => tokenRefreshController.stream);
@@ -1953,6 +2239,7 @@ void main() {
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
+          return PushRegistrationResult.published;
         });
         recordMockDeregistration(events);
 
@@ -1997,7 +2284,7 @@ void main() {
               _MockNotificationService(),
             ),
             currentEnvironmentProvider.overrideWithValue(
-              const EnvironmentConfig(environment: AppEnvironment.test),
+              const EnvironmentConfig(environment: AppEnvironment.staging),
             ),
             nostrSessionProvider.overrideWith(
               () => _TestNostrSession(const NostrSessionReadiness.signedOut()),
@@ -2039,7 +2326,7 @@ void main() {
               _MockNotificationService(),
             ),
             currentEnvironmentProvider.overrideWithValue(
-              const EnvironmentConfig(environment: AppEnvironment.test),
+              const EnvironmentConfig(environment: AppEnvironment.staging),
             ),
             nostrSessionProvider.overrideWith(
               () => _TestNostrSession(
@@ -2062,9 +2349,9 @@ void main() {
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         final published = Completer<NotificationPreferences>();
-        when(
-          () => pushService.updatePreferences(any()),
-        ).thenAnswer((invocation) async {
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
           final preferences =
               invocation.positionalArguments.single as NotificationPreferences;
           if (!published.isCompleted) published.complete(preferences);
@@ -2126,9 +2413,9 @@ void main() {
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         final published = Completer<NotificationPreferences>();
-        when(
-          () => pushService.updatePreferences(any()),
-        ).thenAnswer((invocation) async {
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
           final preferences =
               invocation.positionalArguments.single as NotificationPreferences;
           if (!published.isCompleted) published.complete(preferences);
@@ -2178,9 +2465,9 @@ void main() {
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         final published = Completer<NotificationPreferences>();
-        when(
-          () => pushService.updatePreferences(any()),
-        ).thenAnswer((invocation) async {
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
           final preferences =
               invocation.positionalArguments.single as NotificationPreferences;
           if (!published.isCompleted) published.complete(preferences);
@@ -2238,9 +2525,9 @@ void main() {
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         final published = Completer<NotificationPreferences>();
-        when(
-          () => pushService.updatePreferences(any()),
-        ).thenAnswer((invocation) async {
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
           final preferences =
               invocation.positionalArguments.single as NotificationPreferences;
           if (!published.isCompleted) published.complete(preferences);
@@ -2295,9 +2582,9 @@ void main() {
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         final published = Completer<NotificationPreferences>();
-        when(
-          () => pushService.updatePreferences(any()),
-        ).thenAnswer((invocation) async {
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
           final preferences =
               invocation.positionalArguments.single as NotificationPreferences;
           if (!published.isCompleted) published.complete(preferences);
@@ -2358,9 +2645,9 @@ void main() {
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         final published = Completer<NotificationPreferences>();
-        when(
-          () => pushService.updatePreferences(any()),
-        ).thenAnswer((invocation) async {
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
           final preferences =
               invocation.positionalArguments.single as NotificationPreferences;
           if (!published.isCompleted) published.complete(preferences);
@@ -2548,47 +2835,44 @@ void main() {
       },
     );
 
-    test(
-      'retries dirty preferences after direct publish failure',
-      () async {
-        const prefs = NotificationPreferences(commentsEnabled: false);
-        var attempts = 0;
-        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
-        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-        when(
-          () => messaging.getNotificationSettings(),
-        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
-        when(() => pushService.updatePreferences(prefs)).thenAnswer((_) async {
-          attempts += 1;
-          if (attempts == 1) {
-            throw StateError('relay unreachable');
-          }
-          return true;
-        });
+    test('retries dirty preferences after direct publish failure', () async {
+      const prefs = NotificationPreferences(commentsEnabled: false);
+      var attempts = 0;
+      when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+      when(
+        () => messaging.getNotificationSettings(),
+      ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+      when(() => pushService.updatePreferences(prefs)).thenAnswer((_) async {
+        attempts += 1;
+        if (attempts == 1) {
+          throw StateError('relay unreachable');
+        }
+        return true;
+      });
 
-        final container = buildContainer(
-          nostrSession: _TestNostrSession(
-            NostrSessionReadiness.nostrReady(
-              pubkey: pubkeyA,
-              client: nostrClient,
-            ),
+      final container = buildContainer(
+        nostrSession: _TestNostrSession(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
           ),
-        );
+        ),
+      );
 
-        await container
-            .read(notificationPreferencesServiceProvider)
-            .updatePreferences(prefs);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+      await container
+          .read(notificationPreferencesServiceProvider)
+          .updatePreferences(prefs);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(attempts, equals(2));
-        expect(
-          preferenceStore.dirtyPreferencesByPubkey,
-          isNot(contains(pubkeyA)),
-        );
-      },
-    );
+      expect(attempts, equals(2));
+      expect(
+        preferenceStore.dirtyPreferencesByPubkey,
+        isNot(contains(pubkeyA)),
+      );
+    });
 
     test(
       'retries dirty preferences after same-session publish returns false',
@@ -2739,6 +3023,7 @@ void main() {
           () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
         ).thenAnswer((invocation) async {
           events.add('register ${invocation.positionalArguments.single}');
+          return PushRegistrationResult.published;
         });
 
         final container = buildContainer();

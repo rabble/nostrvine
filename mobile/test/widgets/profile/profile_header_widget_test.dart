@@ -30,8 +30,10 @@ import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -39,6 +41,7 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/secure_account_prompt_dismissal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/og_beta_badge.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
@@ -334,6 +337,8 @@ void main() {
       ProfileStats? profileStats,
       bool profileIsLoading = false,
       bool isAnonymous = false,
+      bool isAccountEnforced = false,
+      VoidCallback? onEnforcementRead,
       bool hasExpiredSession = false,
       bool isRpcUpgradeInProgress = false,
       bool tryRefreshResult = false,
@@ -464,6 +469,10 @@ void main() {
                 : const Stream<ProfileStats?>.empty(),
           ),
           authServiceProvider.overrideWithValue(effectiveAuthService),
+          isAccountEnforcedProvider.overrideWith((ref) {
+            onEnforcementRead?.call();
+            return isAccountEnforced;
+          }),
           badgeRepositoryProvider.overrideWithValue(badgeRepository),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -641,13 +650,34 @@ void main() {
       expect(find.text(l10n.commonClose), findsOneWidget);
     });
 
+    testWidgets('shows OG Beta Tester for a non-team roster member', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
+      );
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: pubkey,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(
+            displayName: 'Beta User',
+            pubkey: pubkey,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SpecialProfileCheckmark), findsNothing);
+      expect(find.byType(OgBetaBadge), findsOneWidget);
+    });
+
     testWidgets('hides the OG Beta Tester chit behind the team checkmark', (
       tester,
     ) async {
-      // 15 of the 18 checkmark-bearing pubkeys are also on the beta roster,
-      // so this is the default state for Divine team accounts rather than an
-      // edge case. Without the guard the header renders two explainer
-      // buttons side by side.
+      // Many team accounts also appear on the beta roster, so this is the
+      // default state rather than an edge case. Without the guard the header
+      // renders two explainer buttons side by side.
       final dualPubkey = kDivineTeamPubkeys.firstWhere(isOgBetaTesterPubkey);
 
       await tester.pumpWidget(
@@ -2236,6 +2266,93 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(enL10n.profileSecureYourAccount), findsNothing);
+      });
+
+      testWidgets('shows a persistent restriction before setup actions', (
+        tester,
+      ) async {
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+            isAnonymous: true,
+            isAccountEnforced: true,
+            goRouter: mockGoRouter,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsOneWidget);
+        expect(find.text('2'), findsNothing);
+        expect(find.text('3'), findsOneWidget);
+
+        await tester.tap(find.text(enL10n.profileAccountRestricted));
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.push(RoutePaths.accountStatus)).called(1);
+        expect(find.byType(ProfileActionsSheetContent), findsNothing);
+      });
+
+      testWidgets('healthy own profile has no restriction action', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsNothing);
+      });
+
+      testWidgets('secure-account dismissal does not hide a restriction', (
+        tester,
+      ) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(
+          SecureAccountPromptDismissalStore.keyFor(testUserHex),
+          true,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(),
+            isAnonymous: true,
+            isAccountEnforced: true,
+            sharedPreferences: prefs,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsOneWidget);
+      });
+
+      testWidgets('never shows the restriction action on another profile', (
+        tester,
+      ) async {
+        var enforcementReads = 0;
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            profile: createTestProfile(displayName: 'Test User'),
+            isAccountEnforced: true,
+            onEnforcementRead: () => enforcementReads++,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(enL10n.profileAccountRestricted), findsNothing);
+        expect(enforcementReads, 0);
       });
 
       testWidgets('tapping label opens actions bottom sheet', (tester) async {

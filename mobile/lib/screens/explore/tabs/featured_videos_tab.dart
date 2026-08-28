@@ -94,13 +94,22 @@ class _FeaturedVideosView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sponsorName = featuredTabSponsorName(
+      config,
+      context.l10n.localeName,
+    );
     // The disclosure is pinned rather than scrolled into the grid, and sits
     // outside the videos state so it survives an empty or failed page: it
     // describes the tab's commercial arrangement, not its contents.
     return Column(
       children: [
-        _FeaturedPartnershipLine(config: config),
-        Expanded(child: _FeaturedVideosContent(config: config)),
+        _FeaturedPartnershipLine(sponsorName: sponsorName),
+        Expanded(
+          child: _FeaturedVideosContent(
+            config: config,
+            sponsorName: sponsorName,
+          ),
+        ),
       ],
     );
   }
@@ -110,15 +119,15 @@ class _FeaturedVideosView extends StatelessWidget {
 ///
 /// Renders nothing when the collection has no sponsor.
 class _FeaturedPartnershipLine extends StatelessWidget {
-  const _FeaturedPartnershipLine({required this.config});
+  const _FeaturedPartnershipLine({required this.sponsorName});
 
-  final FeaturedTabConfig config;
+  final String? sponsorName;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final sponsor = featuredTabSponsorName(config, l10n.localeName);
+    final sponsor = sponsorName;
     if (sponsor == null) return const SizedBox.shrink();
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -138,9 +147,13 @@ class _FeaturedPartnershipLine extends StatelessWidget {
 }
 
 class _FeaturedVideosContent extends StatelessWidget {
-  const _FeaturedVideosContent({required this.config});
+  const _FeaturedVideosContent({
+    required this.config,
+    required this.sponsorName,
+  });
 
   final FeaturedTabConfig config;
+  final String? sponsorName;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +172,11 @@ class _FeaturedVideosContent extends StatelessWidget {
       },
       builder: (context, state) {
         if (state.videos.isNotEmpty) {
-          return _FeaturedGrid(config: config, state: state);
+          return _FeaturedGrid(
+            config: config,
+            state: state,
+            sponsorName: sponsorName,
+          );
         }
 
         return switch (state.status) {
@@ -169,6 +186,7 @@ class _FeaturedVideosContent extends StatelessWidget {
           FeaturedTabVideosStatus.ready => _FeaturedGrid(
             config: config,
             state: state,
+            sponsorName: sponsorName,
           ),
         };
       },
@@ -177,10 +195,15 @@ class _FeaturedVideosContent extends StatelessWidget {
 }
 
 class _FeaturedGrid extends ConsumerWidget {
-  const _FeaturedGrid({required this.config, required this.state});
+  const _FeaturedGrid({
+    required this.config,
+    required this.state,
+    required this.sponsorName,
+  });
 
   final FeaturedTabConfig config;
   final FeaturedTabVideosState state;
+  final String? sponsorName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -199,6 +222,7 @@ class _FeaturedGrid extends ConsumerWidget {
           feedRepository: ref.read(feedRepositoryProvider),
           initialIndex: index,
           initialVideoId: videos[index].id,
+          sponsorName: sponsorName,
           trafficSource: ViewTrafficSource.discoveryFeatured,
           sourceDetail: config.id,
         ),

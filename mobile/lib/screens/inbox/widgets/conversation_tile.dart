@@ -10,6 +10,7 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -74,16 +75,13 @@ class ConversationTile extends ConsumerWidget {
         .watch(profileVanishedProvider(otherPubkey))
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
 
-    final displayName = isDeleted
-        ? context.l10n.profileDeletedAccountName
-        : displayNameOverride ??
-              moderationDisplayName(context, otherPubkey) ??
-              profileAsync.maybeWhen<String>(
-                data: (profile) =>
-                    profile?.bestDisplayName ??
-                    UserProfile.defaultDisplayNameFor(otherPubkey),
-                orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
-              );
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      displayNameOverride: displayNameOverride,
+      profile: profileAsync.asData?.value,
+    );
 
     final imageUrl = isDeleted
         ? null

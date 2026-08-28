@@ -23,10 +23,11 @@ void main() {
   final now = DateTime.now();
   final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
 
-  UserProfile createTestProfile({String? displayName}) {
+  UserProfile createTestProfile({String? displayName, String? picture}) {
     return UserProfile(
       pubkey: otherPubkey,
       displayName: displayName,
+      picture: picture,
       rawData: const {},
       createdAt: now,
       eventId:
@@ -199,10 +200,7 @@ void main() {
     group('moderation identity', () {
       final l10n = lookupAppLocalizations(const Locale('en'));
 
-      Future<void> pumpTileFor(
-        WidgetTester tester,
-        String counterparty,
-      ) async {
+      Future<void> pumpTileFor(WidgetTester tester, String counterparty) async {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
@@ -268,6 +266,78 @@ void main() {
           findsOneWidget,
         );
         expect(wordmarkFinder(), findsNothing);
+      });
+    });
+
+    group('deleted accounts', () {
+      Future<void> pumpTile(
+        WidgetTester tester, {
+        required bool vanished,
+        String? picture,
+        Locale? locale,
+      }) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            locale: locale,
+            additionalOverrides: [
+              userProfileReactiveProvider(otherPubkey).overrideWith(
+                (ref) => Stream.value(
+                  createTestProfile(displayName: 'Alice', picture: picture),
+                ),
+              ),
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(vanished)),
+            ],
+            home: Scaffold(
+              body: RequestTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('names a vanished requester for the state, not a handle', (
+        tester,
+      ) async {
+        await pumpTile(
+          tester,
+          vanished: true,
+          picture: 'https://example.com/alice.jpg',
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        // The vanish evicts the cached profile, so without the check this row
+        // renders a generated "Adjective Animal N" the viewer has never seen.
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+        expect(find.text('Alice'), findsNothing);
+        expect(
+          tester.widget<UserAvatar>(find.byType(UserAvatar)).imageUrl,
+          isNull,
+        );
+      });
+
+      testWidgets('reads the deleted-account copy from l10n', (tester) async {
+        await pumpTile(tester, vanished: true, locale: const Locale('de'));
+
+        final de = lookupAppLocalizations(const Locale('de'));
+        expect(find.text(de.profileDeletedAccountName), findsOneWidget);
+      });
+
+      testWidgets('leaves a live requester untouched', (tester) async {
+        await pumpTile(tester, vanished: false);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text('Alice'), findsOneWidget);
+        expect(find.text(l10n.profileDeletedAccountName), findsNothing);
       });
     });
   });

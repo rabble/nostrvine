@@ -1013,6 +1013,9 @@ class VideoPublishService {
   /// `serverNotFound` even names the Blossom host in the copy.
   @visibleForTesting
   static PublishErrorKind? classifyPublishErrorObject(Object? e) {
+    if (e is AccountRestrictedPublishException) {
+      return PublishErrorKind.accountRestricted;
+    }
     if (e is AudioReuseNotPermittedException) {
       return PublishErrorKind.audioReuseNotPermitted;
     }

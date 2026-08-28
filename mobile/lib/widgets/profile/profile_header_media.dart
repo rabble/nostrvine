@@ -557,6 +557,10 @@ class _ProfileActionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, label) = switch (action) {
+      ProfileActionType.accountRestricted => (
+        DivineIconName.warning,
+        context.l10n.profileAccountRestricted,
+      ),
       ProfileActionType.secureAccount => (
         DivineIconName.lockSimple,
         context.l10n.profileSecureYourAccount,
@@ -567,7 +571,9 @@ class _ProfileActionLabel extends StatelessWidget {
       ),
     };
 
-    final chip = context.vineColors.accentChipYellow;
+    final chip = action == ProfileActionType.accountRestricted
+        ? context.vineColors.accentChipOrange
+        : context.vineColors.accentChipYellow;
     final maxWidth = MediaQuery.sizeOf(context).width - 32;
 
     return Stack(

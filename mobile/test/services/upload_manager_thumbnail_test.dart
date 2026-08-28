@@ -238,19 +238,6 @@ void main() {
     });
   });
 
-  group('UploadManager - Thumbnail Integration', () {
-    test('VideoThumbnailService is available', () {
-      // This verifies the import exists
-      expect(true, isTrue); // Compilation itself verifies the import
-    });
-
-    test('thumbnail generation is non-blocking', () {
-      // If thumbnail generation fails, video upload should still succeed
-      // This is verified by the try-catch in the implementation
-      expect(true, isTrue);
-    });
-  });
-
   group('UploadManager.createSuccessfulUpload thumbnail precedence', () {
     // The server derives a poster at {videoHash}.jpg and returns it as the
     // video upload's thumbnailUrl. When the user picked a cover, we extract

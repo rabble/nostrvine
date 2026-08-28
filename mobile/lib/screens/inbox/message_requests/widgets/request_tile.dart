@@ -9,6 +9,7 @@ import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/moderation_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -38,19 +39,26 @@ class RequestTile extends ConsumerWidget {
 
     final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
 
-    final displayName =
-        moderationDisplayName(context, otherPubkey) ??
-        profileAsync.maybeWhen<String>(
-          data: (profile) =>
-              profile?.bestDisplayName ??
-              UserProfile.defaultDisplayNameFor(otherPubkey),
-          orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
-        );
+    // Same treatment as [ConversationTile]: a request from an account that
+    // later vanished is named for the state, not for the generated handle the
+    // eviction leaves behind (#8185).
+    final isDeleted = ref
+        .watch(profileVanishedProvider(otherPubkey))
+        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
 
-    final imageUrl = profileAsync.maybeWhen(
-      data: (profile) => profile?.picture,
-      orElse: () => null,
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isDeleted,
+      profile: profileAsync.asData?.value,
     );
+
+    final imageUrl = isDeleted
+        ? null
+        : profileAsync.maybeWhen(
+            data: (profile) => profile?.picture,
+            orElse: () => null,
+          );
 
     final relativeTime = conversation.lastMessageTimestamp != null
         ? LocalizedTimeFormatter.formatConversationTimestamp(

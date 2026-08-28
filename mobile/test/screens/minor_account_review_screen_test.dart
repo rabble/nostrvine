@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/models/protected_minor_status.dart';
@@ -18,9 +17,7 @@ import '../helpers/url_launcher_test_double.dart';
 
 void main() {
   group('MinorAccountReviewScreen', () {
-    testWidgets('shows the welcome-entry family guidance copy', (
-      tester,
-    ) async {
+    testWidgets('shows the welcome-entry family guidance copy', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -124,10 +121,7 @@ void main() {
         find.text(l10n.minorAccountReviewUnder13PublicTitle),
         findsOneWidget,
       );
-      expect(
-        find.text(l10n.minorAccountReviewUnder13WhyTitle),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.minorAccountReviewUnder13WhyTitle), findsOneWidget);
       expect(
         find.text(l10n.minorAccountReviewUnder13PublicBody),
         findsOneWidget,
@@ -328,9 +322,9 @@ void main() {
       },
     );
 
-    // #7488: a restricted account still owns its identity, so the hard-gate
-    // screen has to offer the same portability flow the settings row does.
-    testWidgets('offers the account portability flow to a restricted account', (
+    // #8157: restricted minors must not be offered account portability from
+    // the hard-gate screen, regardless of their suspected age band.
+    testWidgets('does not offer account portability to a restricted minor', (
       tester,
     ) async {
       final originalPlatform = UrlLauncherPlatform.instance;
@@ -338,6 +332,190 @@ void main() {
       UrlLauncherPlatform.instance = launcher;
       addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
 
+      for (final ageBand in [
+        SuspectedAgeBand.under13,
+        SuspectedAgeBand.age13To15,
+      ]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-reviewing',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: ageBand,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: const MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
+                  ),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(MinorAccountReviewScreen)),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text(l10n.minorAccountReviewLogOut),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('You can take your account with you', skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.text('Move your account', skipOffstage: false),
+          findsNothing,
+        );
+        expect(launcher.launched, isEmpty);
+      }
+    });
+
+    testWidgets("explains what happens to a restricted minor's videos", (
+      tester,
+    ) async {
+      for (final ageBand in [
+        SuspectedAgeBand.under13,
+        SuspectedAgeBand.age13To15,
+      ]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-content-disclosure',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: ageBand,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: const MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
+                  ),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(MinorAccountReviewScreen)),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text(l10n.minorAccountReviewContentTitle),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.minorAccountReviewContentTitle), findsOneWidget);
+        expect(find.text(l10n.minorAccountReviewContentBody), findsOneWidget);
+      }
+    });
+
+    testWidgets('explains reconsideration through support for both age bands', (
+      tester,
+    ) async {
+      for (final ageBand in [
+        SuspectedAgeBand.under13,
+        SuspectedAgeBand.age13To15,
+      ]) {
+        await tester.pumpWidget(
+          ProviderScope(
+            key: ValueKey(ageBand),
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-appeal-copy',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: ageBand,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: const MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
+                  ),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(MinorAccountReviewScreen)),
+        );
+        final expectedBody = ageBand == SuspectedAgeBand.under13
+            ? l10n.minorAccountReviewAppealUnder13Body
+            : l10n.minorAccountReviewAppealTeenBody;
+        final otherBody = ageBand == SuspectedAgeBand.under13
+            ? l10n.minorAccountReviewAppealTeenBody
+            : l10n.minorAccountReviewAppealUnder13Body;
+
+        await tester.scrollUntilVisible(
+          find.text(l10n.minorAccountReviewAppealTitle),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.minorAccountReviewAppealTitle), findsOneWidget);
+        expect(find.text(expectedBody), findsOneWidget);
+        expect(find.text(otherBody), findsNothing);
+        expect(
+          find.text(l10n.minorAccountReviewOpenSupportCenter),
+          findsOneWidget,
+        );
+      }
+    });
+
+    // #8239: a decided case has no remaining user action, so Support Center
+    // used to be returned as the primary action *and* rendered unconditionally
+    // below the reconsideration card — two identical buttons straddling it.
+    // The reachable states are openReported, cleared, deniedClosed and unknown.
+    testWidgets('offers Support Center once on a decided case, below the '
+        'reconsideration card', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -346,14 +524,14 @@ void main() {
                 restrictionStatus:
                     AccountRestrictionStatus.restrictedMinorReview,
                 currentCase: MinorReviewCase(
-                  id: 'case-reviewing',
-                  state: MinorReviewCaseState.submittedForReview,
+                  id: 'case-decided',
+                  state: MinorReviewCaseState.deniedClosed,
                   suspectedAgeBand: SuspectedAgeBand.age13To15,
                   allowedResolution:
                       MinorReviewResolutionType.parentVideoOrEmail,
                   instructions: MinorReviewInstructions(
-                    title: 'Submission received',
-                    body: 'We are reviewing this case.',
+                    title: 'Review complete',
+                    body: 'This case is closed.',
                   ),
                   supportEmail: 'support@divine.video',
                 ),
@@ -373,23 +551,18 @@ void main() {
         tester.element(find.byType(MinorAccountReviewScreen)),
       );
 
-      await scrollUntilTappable(
-        tester,
-        find.text(l10n.minorAccountReviewMoveAccountCta),
+      await tester.scrollUntilVisible(
+        find.text(l10n.minorAccountReviewOpenSupportCenter),
         200,
         scrollable: find.byType(Scrollable),
       );
+      await tester.pumpAndSettle();
+
       expect(
-        find.text(l10n.minorAccountReviewMoveAccountTitle),
+        find.text(l10n.minorAccountReviewOpenSupportCenter),
         findsOneWidget,
       );
-      expect(find.text(l10n.minorAccountReviewMoveAccountBody), findsOneWidget);
-
-      await tester.tap(find.text(l10n.minorAccountReviewMoveAccountCta));
-      await tester.pump();
-
-      expect(launcher.launched.single.url, AppConstants.accountPortabilityUrl);
-      expect(launcher.launched.single.useExternalApplication, isTrue);
+      expect(find.text(l10n.minorAccountReviewAppealTitle), findsOneWidget);
     });
 
     testWidgets(

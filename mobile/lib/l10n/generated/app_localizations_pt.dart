@@ -840,6 +840,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileDeletedAccountName => 'Conta excluída';
 
   @override
+  String get inboxVanishedAccountReference => 'esta conta';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle =>
       'Esta conta foi excluída';
 
@@ -3967,7 +3970,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'Excluir vídeo?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Vídeo excluído';
+  String get shareMenuDeleteCleanupInProgress => 'Removendo vídeo…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'Vídeo excluído.';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'Vídeo excluído. Pode demorar um pouco até desaparecer de todos os lugares.';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'Vídeo excluído, mas não conseguimos remover todas as cópias. Entre em contato com o suporte.';
 
   @override
   String get authSessionExpired => 'Sua sessão expirou. Entre novamente.';
@@ -4539,6 +4553,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get supportExportLogsFailed => 'Falha ao exportar logs';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'Logs salvos em $path';
   }
@@ -4590,6 +4612,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => 'Descreva o problema';
+
+  @override
+  String get reportDetailsTextOnly =>
+      'Apenas texto — não é possível anexar fotos ou GIFs aqui.';
 
   @override
   String get reportReasonSpam => 'Spam ou conteúdo indesejado';
@@ -6856,10 +6882,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você trocou de conta, então nada foi excluído. Abra a exclusão de novo para a conta que você quer remover.';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'Alguns pedidos de exclusão foram aceitos, mas a limpeza parou porque você trocou de conta. Entre de novo na conta original para concluir.';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'Não foi possível liberar seu nome de usuário. Sua conta não foi excluída. Tente novamente ou desmarque a opção.';
 
@@ -6881,18 +6903,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get deleteAccountConfirmationHintUsername =>
       'Digite seu nome de usuário';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'Falha ao excluir o conteúdo dos relays';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'Não conseguimos confirmar a exclusão da conta com nenhum relay. Verifique sua conexão e tente de novo.';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'Excluir todo o conteúdo';
@@ -6951,6 +6961,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'A exclusão de conta não está disponível no momento. Nada foi excluído.';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'Não conseguimos concluir a exclusão da sua conta. Tente novamente.';
 
@@ -6991,10 +7005,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Tente de novo daqui a pouco.';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Entre novamente para concluir.';
 
   @override
   String get deleteAccountSuccess =>
@@ -7131,6 +7141,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'O vídeo foi enviado, mas não foi possível publicar o post. Verifique suas configurações de relay e tente novamente.';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'O vídeo foi enviado, mas o áudio dele não está liberado para reutilização. Escolha outro áudio para publicar.';
 
@@ -7249,7 +7266,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'A Divine dá essa marca às contas da equipe e a um pequeno grupo de perfis aprovados manualmente. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.';
+      'A Divine dá essa marca às contas da equipe. É separado do NIP-05, dos links de conta verificados e do status de Viner OG.';
 
   @override
   String get unfollowConfirmButton => 'Deixar de seguir';
@@ -9958,6 +9975,24 @@ class AppLocalizationsPt extends AppLocalizations {
       'O suporte e sua mensagem da moderação continuam disponíveis';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter =>
       'Abrir a central de suporte';
 
@@ -9967,17 +10002,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'Abrir a página de análise';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle =>
-      'Você pode levar sua conta com você';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'Você ainda pode usar sua identidade Divine em outra infraestrutura. Mova sua conta ou baixe seu arquivo.';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'Mover sua conta';
 
   @override
   String get minorAccountReviewCheckAgain => 'Verificar de novo';
@@ -11737,7 +11761,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sua conta permanece. Rascunhos e clipes salvos neste dispositivo são excluídos — mensagens e feeds voltam da rede.';
 
   @override
-  String get dbFailureResetConfirm => 'redefinir e fechar';
+  String get dbFailureResetConfirm => 'redefinir banco de dados local agora';
 
   @override
   String get dbFailureCancel => 'cancelar';
@@ -11818,4 +11842,82 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get safetySettingsShowVerifiedOnlySubtitle =>
       'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

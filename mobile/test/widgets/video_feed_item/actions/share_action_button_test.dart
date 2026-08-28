@@ -218,6 +218,43 @@ void main() {
         expect(find.text('More actions'), findsOneWidget);
       });
 
+      testWidgets(
+        'keeps owner actions aligned with provider scope when auth changes',
+        (tester) async {
+          final mockAuth = createMockAuthService();
+          late StateSetter rebuildHost;
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: StatefulBuilder(
+                builder: (context, setState) {
+                  rebuildHost = setState;
+                  return Scaffold(
+                    body: ShareActionButton(video: testVideo),
+                  );
+                },
+              ),
+              additionalOverrides: [
+                videoSharingServiceProvider.overrideWith(
+                  (ref) => mockVideoSharingService,
+                ),
+              ],
+              mockAuthService: mockAuth,
+              mockProfileRepository: mockProfileRepository,
+            ),
+          );
+          await tester.tap(find.byType(GestureDetector));
+          await tester.pumpAndSettle();
+          expect(find.text('Delete video'), findsNothing);
+
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(ownPubkey);
+          rebuildHost(() {});
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Delete video'), findsNothing);
+        },
+      );
+
       testWidgets('shows standard action items', (tester) async {
         final mockAuth = createMockAuthService();
 

@@ -60,6 +60,7 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -103,6 +104,7 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/build_provenance_service.dart';
 import 'package:openvine/services/c2pa_debris_janitor.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
+import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -127,9 +129,10 @@ import 'package:openvine/services/quick_actions_coordinator.dart';
 import 'package:openvine/services/screenshot_mode_service.dart';
 import 'package:openvine/services/secure_storage_options.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
-import 'package:openvine/services/seed_media_preload_service.dart';
+import 'package:openvine/services/seed_media_cleanup_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -799,9 +802,9 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     );
 
     coordinator.registerService(
-      name: 'SeedMediaPreload',
+      name: 'SeedMediaMaintenance',
       phase: StartupPhase.deferred,
-      initialize: _initializeSeedMediaPreload,
+      initialize: _initializeSeedMediaMaintenance,
       optional: true,
     );
   }
@@ -1819,16 +1822,30 @@ Future<void> _initializeSeedDataPreload(ProviderContainer container) async {
   );
 }
 
-Future<void> _initializeSeedMediaPreload() async {
+Future<void> _initializeSeedMediaMaintenance() async {
   await _runTimedStartupTask(
-    phaseName: 'seed_media_preload',
-    initializationStep: 'Loading bundled seed media',
+    phaseName: 'seed_media_maintenance',
+    initializationStep: 'Cleaning up seed media',
     task: () async {
       try {
-        await SeedMediaPreloadService.loadSeedMediaIfNeeded();
+        await SeedMediaCleanupService().cleanUpStrandedSeedMediaIfNeeded();
+        await ClassicVinerSeedPreloadService().preloadAvatarImagesIfNeeded(
+          cacheWriter:
+              ({
+                required String cacheKey,
+                required Uint8List bytes,
+                required String fileExtension,
+              }) async {
+                await openVineImageCache.putFile(
+                  cacheKey,
+                  bytes,
+                  fileExtension: fileExtension,
+                );
+              },
+        );
       } catch (e, stack) {
         Log.error(
-          '[SEED] Media preload failed (non-critical): $e',
+          '[SEED] Media maintenance failed (non-critical): $e',
           name: 'Main',
           category: LogCategory.system,
         );
@@ -3296,7 +3313,7 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
             .where((u) => newFailedIds.contains(u.draft.id))
             .toList();
 
-        _showFailureSheetsSequentially(navContext, newFailures);
+        _showFailureSheetsSequentially(container, navContext, newFailures);
       },
       child: widget.child,
     );
@@ -3419,11 +3436,17 @@ void _onConfirmationShare(
 
 /// Shows failure bottom sheets one after another for each failed upload.
 Future<void> _showFailureSheetsSequentially(
+  ProviderContainer container,
   BuildContext context,
   List<BackgroundUpload> failedUploads,
 ) async {
   for (final upload in failedUploads) {
     if (!context.mounted) return;
+    if (upload.result case PublishError(
+      kind: PublishErrorKind.accountRestricted,
+    )) {
+      refreshAccountEnforcementAfterRestriction(container);
+    }
     await showUploadFailureSheet(context, upload);
   }
 }

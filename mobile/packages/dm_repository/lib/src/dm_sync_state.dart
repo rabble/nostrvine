@@ -43,7 +43,17 @@ class DmSyncState {
   /// unsticks installs whose earlier drain completed before the user's own
   /// historical messages were recovered — which had stranded established chats
   /// under "Message requests".
-  static const int currentDrainVersion = 3;
+  ///
+  /// Bumped to 4 for #8209: the drain read an empty page as exhaustion
+  /// whenever a relay was merely *connected*, so a fan-out nobody took, a
+  /// `CLOSED` refusal, or a page only some relays answered latched completion
+  /// with history still on the relay. Fixing the guard alone helps nobody who
+  /// already latched — those installs return before issuing a query, and there
+  /// is no user-facing re-sync. The forced pass costs every install one extra
+  /// drain; the gift wraps are still there to recover (funnelcake retains kind
+  /// 1059 indefinitely), and the drain is unawaited background work that
+  /// resumes from its persisted cursor, so the cost is bounded and one-time.
+  static const int currentDrainVersion = 4;
 
   /// Maximum clock skew, in seconds, tolerated on a self-asserted DM
   /// `created_at` before callers should stop treating it as an honest send
@@ -249,8 +259,8 @@ class DmSyncState {
 
   /// Removes all DM sync state entries for every pubkey.
   ///
-  /// Called during database cleanup to ensure the next login triggers a
-  /// full re-sync from relays instead of using stale `since:` cursors.
+  /// Called only after the entire database is recreated, when every account's
+  /// local rows and therefore every persisted sync boundary are stale.
   Future<void> clearAll() async {
     final keysToRemove = _prefs
         .getKeys()

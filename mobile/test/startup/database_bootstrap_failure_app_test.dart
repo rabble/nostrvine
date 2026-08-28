@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -298,6 +300,27 @@ void main() {
       expect(closed, isTrue);
     });
 
+    testWidgets('hides the close action on iOS by platform default', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(
+          DatabaseBootstrapFailureApp(
+            error: DatabaseCipherStorageUnavailableException(
+              _lockedKeychainFailure(),
+            ),
+            stack: StackTrace.current,
+          ),
+        );
+
+        expect(find.text(l10n.dbFailureCloseApp), findsNothing);
+        expect(find.text(l10n.dbFailureAdviceRestart), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     test('classifies cipher availability failures for release diagnostics', () {
       expect(
         databaseBootstrapDiagnosticCode(
@@ -333,6 +356,20 @@ void main() {
         databaseBootstrapDiagnosticCode(const DatabaseUnreadableError()),
         equals('db-unreadable'),
       );
+    });
+
+    test('classifies an indeterminate database without offering reset', () {
+      const error = DatabaseClassificationException(
+        stage: DatabaseClassificationStage.readSchema,
+        resultCode: 5,
+        extendedResultCode: 5,
+      );
+
+      expect(
+        databaseBootstrapDiagnosticCode(error),
+        equals('db-classification-unavailable'),
+      );
+      expect(databaseBootstrapDiagnosis(error).allowsLocalDatabaseReset, false);
     });
 
     test('falls back to the catch-all for unrecognized failures', () {
@@ -505,6 +542,7 @@ void main() {
         DatabaseBootstrapFailureApp(
           error: StateError('something else entirely'),
           stack: StackTrace.current,
+          canCloseApp: false,
           onCloseApp: () => closes++,
           onResetLocalDatabase: (_) async {},
         ),
@@ -517,14 +555,40 @@ void main() {
 
       expect(find.text(l10n.dbFailureResetDoneTitle), findsOneWidget);
       expect(find.text(l10n.dbFailureResetConfirm), findsNothing);
-      expect(closes, equals(1));
+      expect(closes, isZero);
 
-      await tester.tap(find.text(l10n.dbFailureCloseApp));
+      expect(find.text(l10n.dbFailureCloseApp), findsNothing);
+      expect(find.text(l10n.dbFailureResetDoneBody), findsOneWidget);
       expect(
         closes,
-        equals(2),
-        reason: 'the terminal step still needs a live way out',
+        isZero,
+        reason: 'the terminal step must not offer another dead close action',
       );
+    });
+
+    testWidgets('keeps the terminal close action on Android', (tester) async {
+      var closes = 0;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          canCloseApp: true,
+          onCloseApp: () => closes++,
+          onResetLocalDatabase: (_) async {},
+        ),
+      );
+
+      await tester.tap(find.text(l10n.dbFailureResetAction));
+      await tester.pump();
+      await tester.tap(find.text(l10n.dbFailureResetConfirm));
+      await tester.pump();
+
+      expect(closes, equals(1));
+      expect(find.text(l10n.dbFailureCloseApp), findsOneWidget);
+
+      await tester.tap(find.text(l10n.dbFailureCloseApp));
+      expect(closes, equals(2));
     });
 
     testWidgets('reports a reset that hangs instead of spinning forever', (
@@ -665,6 +729,13 @@ void main() {
     // back to constants cannot pass.
     final es = lookupAppLocalizations(const Locale('es'));
 
+    test('keeps the reset confirmation platform neutral', () {
+      expect(
+        l10n.dbFailureResetConfirm.toLowerCase(),
+        isNot(contains('close')),
+      );
+    });
+
     testWidgets('renders the failure step in the requested locale', (
       tester,
     ) async {
@@ -701,6 +772,7 @@ void main() {
 
       expect(find.text(es.dbFailureConfirmTitle), findsOneWidget);
       expect(find.text(es.dbFailureConfirmBody), findsOneWidget);
+      expect(find.text(es.dbFailureResetConfirm), findsOneWidget);
       expect(find.text(es.dbFailureCancel), findsOneWidget);
     });
 

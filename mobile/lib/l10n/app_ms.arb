@@ -413,6 +413,7 @@
   "profileMyLibraryLabel": "Pustaka Saya",
   "profileMessageLabel": "Mesej",
   "profileDeletedAccountName": "Akaun dipadam",
+  "inboxVanishedAccountReference": "akaun ini",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
@@ -2090,7 +2091,10 @@
     }
   },
   "shareMenuDeleteVideoQuestion": "Padam Video?",
-  "shareMenuVideoDeletionRequested": "Video dipadam",
+  "shareMenuDeleteCleanupInProgress": "Mengalih keluar video…",
+  "shareMenuDeleteCleanupConfirmed": "Video dipadamkan.",
+  "shareMenuDeleteCleanupDelayed": "Video dipadamkan. Ia mungkin mengambil sedikit masa untuk hilang dari semua tempat.",
+  "shareMenuDeleteCleanupFailed": "Video dipadamkan, tetapi kami tidak dapat mengalih keluar setiap salinan. Hubungi sokongan.",
   "authSessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",
   "authSignInFailed": "Gagal log masuk. Sila cuba lagi.",
   "webAuthNotSupportedSecureMode": "Pengesahan web tidak disokong dalam mod selamat. Sila guna apl mudah alih untuk pengurusan kunci selamat.",
@@ -2431,6 +2435,7 @@
   "reportSelectReason": "Sila pilih sebab untuk melaporkan kandungan ini",
   "reportOtherRequiresDetails": "Sila terangkan isu itu apabila memilih Lain-lain",
   "reportDetailsRequired": "Sila terangkan isu itu",
+  "reportDetailsTextOnly": "Teks sahaja — foto dan GIF tidak boleh dilampirkan di sini.",
   "reportReasonSpam": "Spam atau Kandungan Tidak Diingini",
   "reportReasonSpamSubtitle": "Kandungan tidak diingini atau berulang",
   "reportReasonHarassment": "Gangguan, Buli atau Ancaman",
@@ -3795,7 +3800,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "Sebahagian permintaan pemadaman diterima, tetapi pembersihan terhenti kerana anda menukar akaun. Log masuk semula ke akaun asal untuk menyelesaikannya.",
   "deleteAccountBurnUsernameFailed": "Tidak dapat melepaskan nama pengguna anda. Akaun anda tidak dipadam. Cuba lagi, atau nyah tanda pilihan itu.",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -3822,9 +3826,9 @@
   "@deleteAccountConfirmationHintUsername": {
     "description": "Hint text in the delete-confirmation field when the user must type their username."
   },
-  "deleteAccountContentDeletionFailed": "Gagal memadam kandungan daripada relay",
-  "deleteAccountRelayConfirmationFailed": "Kami tidak dapat mengesahkan pemadaman akaun dengan mana-mana relay. Semak sambungan anda dan cuba lagi.",
   "deleteAccountDeleteAllContentButton": "Padam Semua Kandungan",
+  "deleteAccountDeletionUnavailable": "Pemadaman akaun tidak tersedia buat masa ini. Tiada apa-apa yang dipadamkan.",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "Kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi.",
   "@deleteAccountDeletionIncomplete": {
     "description": "Neutral error when account deletion could not complete and the username-burn state is uncertain (an unresolved network timeout). Makes no claim about the username; retrying resolves it."
@@ -3860,10 +3864,6 @@
     "description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."
   },
   "deleteAccountServerDeletionFailed": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Cuba lagi sebentar lagi.",
-  "deleteAccountServerDeletionRequiresReauth": "Permintaan pemadaman dihantar untuk siaran anda, tetapi kami tidak dapat melengkapkan pemadaman akaun anda. Log masuk semula untuk melengkapkannya.",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
-  },
   "deleteAccountSuccess": "Permintaan pemadaman dihantar. Anda telah dilog keluar pada peranti ini.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."
@@ -4029,7 +4029,7 @@
     "ogBetaTesterBadgeLabel": "OG Beta Tester",
   "profileBadgeOgVinerBody": "Orang ini pernah menyiarkan Vine asli yang ditemui Divine dalam arkib. Ini bukan lencana pengesahan akaun.",
   "profileBadgeCheckmarkTitle": "Tanda semak profil",
-  "profileBadgeCheckmarkBody": "Divine memberikan tanda semak ini kepada akaun pasukan dan sebilangan kecil profil yang diluluskan secara manual. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",
+  "profileBadgeCheckmarkBody": "Divine memberikan tanda semak ini kepada akaun pasukan. Ia berasingan daripada NIP-05, pautan akaun disahkan dan status OG Viner.",
   "unfollowConfirmButton": "Nyahikut",
   "videoClipSaveFailed": "Gagal menyimpan klip",
   "videoClipSaveTo": "Simpan ke {destination}",
@@ -5657,9 +5657,6 @@
   "minorAccountReviewOpenSupportCenter": "Buka Pusat Sokongan",
   "minorAccountReviewOpenModerationMessage": "Buka Mesej Kesederhanaan",
   "minorAccountReviewOpenReviewPage": "Buka halaman semakan",
-  "minorAccountReviewMoveAccountTitle": "Anda boleh bawa akaun anda bersama",
-  "minorAccountReviewMoveAccountBody": "Anda masih boleh guna identiti Divine anda pada infrastruktur lain. Alihkan akaun anda atau muat turun arkib anda.",
-  "minorAccountReviewMoveAccountCta": "Alihkan akaun anda",
   "minorAccountReviewCheckAgain": "Semak Semula",
   "minorAccountReviewLogOut": "Log keluar",
   "minorAccountReviewNextStepTitle": "Langkah seterusnya",
@@ -6619,7 +6616,7 @@
   "dbFailureResetAction": "tetapkan semula pangkalan data setempat",
   "dbFailureConfirmTitle": "tetapkan semula pangkalan data setempat anda?",
   "dbFailureConfirmBody": "Akaun anda kekal. Draf dan klip yang disimpan pada peranti ini akan dipadamkan — mesej dan suapan kembali daripada rangkaian.",
-  "dbFailureResetConfirm": "tetapkan semula dan tutup",
+  "dbFailureResetConfirm": "tetapkan semula pangkalan data setempat sekarang",
   "dbFailureCancel": "batal",
   "dbFailureResetFailed": "Itu tidak berjaya. Tutup Divine dan cuba lagi.",
   "dbFailureResetDoneTitle": "pangkalan data setempat ditetapkan semula",

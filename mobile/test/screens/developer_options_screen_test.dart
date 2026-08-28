@@ -96,9 +96,7 @@ void main() {
   group('renders', () {
     testWidgets(
       'renders the available Shorebird section through screen wiring',
-      (
-        tester,
-      ) async {
+      (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         var factoryCalls = 0;
         final updater = _AvailableShorebirdUpdater();

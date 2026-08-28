@@ -24,6 +24,9 @@ class WebSocketConfig {
   /// Timeout for initial connection attempt
   final Duration connectionTimeout;
 
+  /// Maximum time to wait for a WebSocket close handshake.
+  final Duration closeTimeout;
+
   /// Interval for heartbeat checks (0 to disable)
   ///
   /// When enabled, the connection manager periodically checks if the
@@ -44,6 +47,7 @@ class WebSocketConfig {
     this.baseReconnectDelay = const Duration(seconds: 2),
     this.maxReconnectDelay = const Duration(minutes: 5),
     this.connectionTimeout = const Duration(seconds: 10),
+    this.closeTimeout = const Duration(seconds: 2),
     this.heartbeatInterval = const Duration(seconds: 30),
     this.idleTimeout = const Duration(seconds: 90),
   });
@@ -279,11 +283,7 @@ class WebSocketConnectionManager {
   /// Closes a socket that no longer has an owner.
   Future<void> _closeOrphanedChannel(WebSocketChannel? channel) async {
     if (channel == null) return;
-    try {
-      await channel.sink.close();
-    } catch (e) {
-      log('Error closing orphaned channel: $e');
-    }
+    await _closeSink(channel, description: 'orphaned channel');
   }
 
   /// Publishes to [errorStream] unless teardown already closed it.
@@ -349,10 +349,19 @@ class WebSocketConnectionManager {
     _channel = null;
     if (channel == null) return;
 
+    await _closeSink(channel, description: 'channel');
+  }
+
+  Future<void> _closeSink(
+    WebSocketChannel channel, {
+    required String description,
+  }) async {
     try {
-      await channel.sink.close();
+      await channel.sink.close().timeout(config.closeTimeout);
+    } on TimeoutException {
+      log('Timed out closing $description after ${config.closeTimeout}');
     } catch (e) {
-      log('Error closing channel: $e');
+      log('Error closing $description: $e');
     }
   }
 

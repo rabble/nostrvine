@@ -30,6 +30,7 @@ import 'package:openvine/screens/inbox/message_requests/widgets/message_requests
 import 'package:openvine/screens/inbox/new_message_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
@@ -322,6 +323,44 @@ void _pushConversation(
   );
 }
 
+/// Hands `ConversationListBloc` the localized names it substitutes for peers
+/// whose own name must not be shown, so inbox search matches the string the
+/// row actually renders (#8204).
+///
+/// A widget of its own, mounted inside the Messages subtree, for two reasons.
+/// The bloc has no `context.l10n`, so the strings have to come from the UI —
+/// and `BlocProvider` is lazy, so reading the bloc anywhere higher would drag
+/// its creation earlier than the Messages tab being opened. Everything below
+/// the enclosing `BlocListener` is already a consumer, so nothing here changes
+/// when the bloc starts.
+///
+/// `didChangeDependencies` rather than `initState`: reading l10n registers a
+/// dependency on `Localizations`, so this fires again when the language
+/// changes. It can, without an app restart, via Settings -> General — and
+/// `BlocProvider.create:` runs once, so labels injected only at construction
+/// would leave search matching the previous language.
+class _PeerLabelSync extends StatefulWidget {
+  const _PeerLabelSync({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PeerLabelSync> createState() => _PeerLabelSyncState();
+}
+
+class _PeerLabelSyncState extends State<_PeerLabelSync> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<ConversationListBloc>().add(
+      ConversationListPeerLabelsChanged(dmPeerLabels(context)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// Content for the Messages tab: following bar + conversation list or
 /// empty state, with a FAB for composing new messages.
 class _MessagesContent extends ConsumerWidget {
@@ -359,7 +398,9 @@ class _MessagesContent extends ConsumerWidget {
       },
       child: Stack(
         children: [
-          _MessagesScrollView(currentUserPubkey: currentPubkey),
+          _PeerLabelSync(
+            child: _MessagesScrollView(currentUserPubkey: currentPubkey),
+          ),
           // FAB positioned bottom-right
           PositionedDirectional(
             end: _kFabInset,
@@ -965,18 +1006,57 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       orElse: () => conversation.participantPubkeys.first,
     );
 
-    // A known identity skips the lookup entirely: kind-0 for the moderation
-    // account resolves late, and the sheet would open labelled with the
-    // generated fallback name the row's own override exists to avoid.
-    String displayName;
-    if (displayNameOverride != null) {
-      displayName = displayNameOverride;
+    // Match [ConversationTile]'s identity chain, so the row and the sheet it
+    // opens cannot name two different accounts (#7380, #8185). A known
+    // identity skips the lookup entirely: applying a vanish evicts the cached
+    // profile, moderation's kind-0 resolves late, and a retired moderation key
+    // has none at all — so the sheet would otherwise open labelled with the
+    // generated fallback the row's own name exists to avoid.
+    //
+    // The reactive provider intentionally renders false while its shared
+    // Drift stream is loading. An imperative read cannot use that placeholder:
+    // the sheet needs the durable answer before choosing a name.
+    bool isVanished;
+    try {
+      isVanished = await ref.read(
+        profileVanishedSnapshotProvider(otherPubkey).future,
+      );
+    } catch (error, stackTrace) {
+      // The sheet contains safety actions. A transient local-database failure
+      // must not make Report and Block disappear with the whole gesture.
+      Log.warning(
+        'Could not read durable vanish state; opening conversation actions '
+        'with the live-account identity fallback',
+        name: 'InboxView',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      isVanished = false;
+    }
+    if (!context.mounted) return;
+
+    final String displayName;
+    final knownName = dmPeerNameWithoutProfile(
+      context,
+      pubkeyHex: otherPubkey,
+      isVanished: isVanished,
+      displayNameOverride: displayNameOverride,
+    );
+    if (knownName != null) {
+      displayName = knownName;
     } else {
       final profile = await ref.read(
         fetchUserProfileProvider(otherPubkey).future,
       );
       if (!context.mounted) return;
-      displayName = profile?.bestDisplayName ?? 'user';
+      displayName = dmPeerDisplayName(
+        context,
+        pubkeyHex: otherPubkey,
+        isVanished: isVanished,
+        displayNameOverride: displayNameOverride,
+        profile: profile,
+      );
     }
 
     if (!context.mounted) return;
@@ -986,12 +1066,16 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
+    final actionDisplayName = isVanished
+        ? context.l10n.inboxVanishedAccountReference
+        : displayName;
 
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
         context,
         displayName: displayName,
+        isVanished: isVanished,
         isMuted: isMuted,
         isBlocked: isBlocked,
       );
@@ -1024,7 +1108,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   reported
-                      ? context.l10n.inboxReportedUser(displayName)
+                      ? context.l10n.inboxReportedUser(actionDisplayName)
                       : context.l10n.reportNotSent,
                 ),
               ),
@@ -1042,8 +1126,8 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   isBlocked
-                      ? context.l10n.inboxUnblockedUser(displayName)
-                      : context.l10n.inboxBlockedUser(displayName),
+                      ? context.l10n.inboxUnblockedUser(actionDisplayName)
+                      : context.l10n.inboxBlockedUser(actionDisplayName),
                 ),
               ),
             );

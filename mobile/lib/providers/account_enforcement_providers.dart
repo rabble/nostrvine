@@ -1,0 +1,98 @@
+// ABOUTME: Riverpod infrastructure exposing Funnelcake enforcement status for the active account.
+// ABOUTME: Retains only confirmed restrictions so unavailable refreshes cannot erase warnings.
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/models/account_enforcement_status.dart';
+import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/service_providers.dart';
+import 'package:openvine/repositories/account_enforcement_repository.dart';
+import 'package:openvine/services/account_status_api_client.dart';
+import 'package:openvine/services/auth_service.dart';
+
+final accountStatusApiClientProvider = Provider<AccountStatusApiClient>((ref) {
+  final nip98 = ref.watch(nip98AuthServiceProvider);
+  final client = AccountStatusApiClient(
+    baseUri: Uri.parse(ref.watch(currentEnvironmentProvider).apiBaseUrl),
+    httpClient: ref.watch(instrumentedHttpClientFactoryProvider)(),
+    authHeaderProvider: ({required url, required method}) async {
+      final token = await nip98.createAuthToken(url: url, method: method);
+      return token?.authorizationHeader;
+    },
+  );
+  ref.onDispose(client.dispose);
+  return client;
+});
+
+final accountEnforcementRepositoryProvider =
+    Provider<AccountEnforcementRepository>((ref) {
+      return AccountEnforcementRepository(
+        apiClient: ref.watch(accountStatusApiClientProvider),
+      );
+    });
+
+final accountRestrictionMemoryProvider = Provider<AccountRestrictionMemory>(
+  (_) => AccountRestrictionMemory(),
+);
+
+class AccountRestrictionMemory {
+  final Map<String, AccountEnforcementStatus> _byPubkey = {};
+
+  AccountEnforcementStatus? read(String pubkey) => _byPubkey[pubkey];
+
+  void record(String pubkey, AccountEnforcementStatus status) {
+    if (status.isEnforced) {
+      _byPubkey[pubkey] = status;
+    } else {
+      _byPubkey.remove(pubkey);
+    }
+  }
+}
+
+final activeEnforcementPubkeyProvider = Provider<String?>((ref) {
+  final authState = ref.watch(currentAuthStateProvider);
+  if (authState != AuthState.authenticated) return null;
+  return ref.watch(authServiceProvider).currentPublicKeyHex;
+});
+
+final FutureProvider<AccountEnforcementStatus>
+accountEnforcementStatusProvider =
+    FutureProvider.autoDispose<AccountEnforcementStatus>((ref) async {
+      final authState = ref.watch(currentAuthStateProvider);
+      final pubkey = ref.watch(activeEnforcementPubkeyProvider);
+      if (authState != AuthState.authenticated) {
+        return const AccountEnforcementStatus(
+          kind: AccountEnforcementKind.signedOut,
+        );
+      }
+      if (pubkey == null) throw const AccountStatusUnavailable();
+
+      final authService = ref.watch(authServiceProvider);
+      ref.watch(currentAuthRpcCapabilityProvider);
+      if (!authService.canPublishNostrWritesNow) {
+        throw const AccountStatusUnavailable();
+      }
+
+      final repository = ref.watch(accountEnforcementRepositoryProvider);
+      final memory = ref.read(accountRestrictionMemoryProvider);
+      final status = await repository.fetchCurrentStatus(pubkey: pubkey);
+      if (!ref.mounted) return status;
+      memory.record(pubkey, status);
+      return status;
+    }, retry: (_, _) => null);
+
+final Provider<bool> isAccountEnforcedProvider = Provider.autoDispose<bool>((
+  ref,
+) {
+  final pubkey = ref.watch(activeEnforcementPubkeyProvider);
+  if (pubkey == null) return false;
+  final asyncStatus = ref.watch(accountEnforcementStatusProvider);
+  final current = asyncStatus.hasValue ? asyncStatus.value : null;
+  return current?.isEnforced ??
+      ref.read(accountRestrictionMemoryProvider).read(pubkey)?.isEnforced ??
+      false;
+});
+
+void refreshAccountEnforcementAfterRestriction(ProviderContainer container) {
+  container.invalidate(accountEnforcementStatusProvider);
+}

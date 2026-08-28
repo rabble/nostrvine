@@ -27,6 +27,12 @@ const _privateKey =
 const _year2100 = 4102444800;
 
 void main() {
+  setUpAll(() {
+    // queryEventsDetailed takes a `Duration timeout`, so a stub matching on
+    // it needs a fallback (#8212).
+    registerFallbackValue(Duration.zero);
+  });
+
   group('a future-dated NIP-04 DM cannot freeze the unread badge', () {
     late AppDatabase db;
     late ConversationsDao conversationsDao;
@@ -51,6 +57,25 @@ void main() {
           useCache: any(named: 'useCache'),
         ),
       ).thenAnswer((_) async => const <Event>[]);
+      // The own kind-10050 resolve reads through queryEventsDetailed (#8212).
+      // Answered and empty: the relays replied and there is no list, so the
+      // live subscription falls back to the default pool as before.
+      when(
+        () => nostrClient.queryEventsDetailed(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+          tempRelays: any(named: 'tempRelays'),
+          requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          events: const <Event>[],
+          timedOut: false,
+          noRelays: false,
+        ),
+      );
       when(() => nostrClient.unsubscribe(any())).thenAnswer((_) async {});
       when(
         () => nostrClient.subscribe(

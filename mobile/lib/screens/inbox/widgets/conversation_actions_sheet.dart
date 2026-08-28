@@ -28,9 +28,17 @@ class ConversationActionsSheet {
   static Future<ConversationAction?> show(
     BuildContext context, {
     required String displayName,
+    required bool isVanished,
     required bool isMuted,
     required bool isBlocked,
   }) {
+    // A vanished peer can publish again under the same key, and their DMs
+    // remain in the recipient's history. Keep Report and Block available for
+    // safety, but do not turn the deleted-state label into an identity.
+    final actionDisplayName = isVanished
+        ? context.l10n.inboxVanishedAccountReference
+        : displayName;
+
     return VineBottomSheet.show<ConversationAction>(
       context: context,
       scrollable: false,
@@ -47,14 +55,14 @@ class ConversationActionsSheet {
             _MuteActionTile(isMuted: isMuted),
             _ActionTile(
               icon: DivineIconName.flag,
-              label: context.l10n.inboxActionReport(displayName),
+              label: context.l10n.inboxActionReport(actionDisplayName),
               result: ConversationAction.report,
             ),
             _ActionTile(
               icon: DivineIconName.eyeSlash,
               label: isBlocked
-                  ? context.l10n.inboxActionUnblock(displayName)
-                  : context.l10n.inboxActionBlock(displayName),
+                  ? context.l10n.inboxActionUnblock(actionDisplayName)
+                  : context.l10n.inboxActionBlock(actionDisplayName),
               isDestructive: !isBlocked,
               result: ConversationAction.block,
             ),

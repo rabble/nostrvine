@@ -487,6 +487,278 @@ void main() {
       });
     });
 
+    group('message-deletion durability', () {
+      Future<void> insertOwnMessage() => dao.insertMessage(
+        id: 'msg_del',
+        conversationId: conversationId1,
+        senderPubkey: 'pubkey_alice',
+        content: 'Regrettable',
+        createdAt: 1700000000,
+        giftWrapId: 'gw_del',
+        ownerPubkey: 'pubkey_alice',
+      );
+
+      group('markMessageDeletionPending', () {
+        test('hides the row and stores the rumor in one write', () async {
+          await insertOwnMessage();
+
+          final updated = await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(updated, isTrue);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isTrue);
+          expect(row.deletionRumorJson, equals('{"kind":5}'));
+          expect(row.deletionPublishStatus, equals('deletion_pending'));
+        });
+
+        test('drops the bubble from the live conversation', () async {
+          await insertOwnMessage();
+
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final live = await dao.getMessagesForConversation(conversationId1);
+          expect(live, isEmpty);
+        });
+
+        test('reports false for an unknown rumor id', () async {
+          final updated = await dao.markMessageDeletionPending(
+            'msg_missing',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(updated, isFalse);
+        });
+
+        test("leaves another account's message untouched", () async {
+          await insertOwnMessage();
+
+          final updated = await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_bob',
+          );
+
+          expect(updated, isFalse);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isFalse);
+          expect(row.deletionRumorJson, isNull);
+        });
+      });
+
+      group('getRetryableOwnMessageDeletions', () {
+        test('lists pending own deletions oldest first', () async {
+          await dao.insertMessage(
+            id: 'msg_new',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Newer',
+            createdAt: 1700000200,
+            giftWrapId: 'gw_new',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.insertMessage(
+            id: 'msg_old',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_alice',
+            content: 'Older',
+            createdAt: 1700000100,
+            giftWrapId: 'gw_old',
+            ownerPubkey: 'pubkey_alice',
+          );
+          for (final id in ['msg_new', 'msg_old']) {
+            await dao.markMessageDeletionPending(
+              id,
+              deletionRumorJson: '{"id":"$id"}',
+              ownerPubkey: 'pubkey_alice',
+            );
+          }
+
+          final pending = await dao.getRetryableOwnMessageDeletions(
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(
+            pending.map((r) => r.id),
+            orderedEquals(['msg_old', 'msg_new']),
+          );
+        });
+
+        test('excludes settled deletions', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.markMessageDeletionSent(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final pending = await dao.getRetryableOwnMessageDeletions(
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(pending, isEmpty);
+        });
+
+        test('excludes a blocked deletion', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.markMessageDeletionBlocked(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final pending = await dao.getRetryableOwnMessageDeletions(
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(pending, isEmpty);
+        });
+
+        test("never re-publishes a peer's deletion applied locally", () async {
+          await dao.insertMessage(
+            id: 'msg_peer',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_bob',
+            content: 'From Bob',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_peer',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.markMessageDeleted('msg_peer', ownerPubkey: 'pubkey_alice');
+
+          final pending = await dao.getRetryableOwnMessageDeletions(
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(pending, isEmpty);
+        });
+      });
+
+      group('markMessageDeletionSent', () {
+        test('clears the stored rumor once a relay confirms', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final settled = await dao.markMessageDeletionSent(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(settled, isTrue);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.deletionPublishStatus, equals('deletion_sent'));
+          // Delivered: nothing left to replay. Unlike the blocked path (#8226).
+          expect(row.deletionRumorJson, isNull);
+          expect(row.isDeleted, isTrue);
+        });
+      });
+
+      group('markMessageDeletionBlocked', () {
+        test('settles as blocked rather than as sent', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final settled = await dao.markMessageDeletionBlocked(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(settled, isTrue);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.deletionPublishStatus, equals('deletion_blocked'));
+        });
+
+        test(
+          'retains the rumor so a lifted block can still replay it',
+          () async {
+            // #8226: a block is the one terminal state an outside change can
+            // lift, and this payload is the only thing a replay could send.
+            const rumor = '{"kind":5,"tags":[["e","msg_del"],["k","14"]]}';
+            await insertOwnMessage();
+            await dao.markMessageDeletionPending(
+              'msg_del',
+              deletionRumorJson: rumor,
+              ownerPubkey: 'pubkey_alice',
+            );
+
+            await dao.markMessageDeletionBlocked(
+              'msg_del',
+              ownerPubkey: 'pubkey_alice',
+            );
+
+            final row = await dao.getMessageById(
+              'msg_del',
+              ownerPubkey: 'pubkey_alice',
+            );
+            expect(row!.deletionRumorJson, equals(rumor));
+          },
+        );
+
+        test('the retained rumor stays off the retry worklist', () async {
+          // Retention must not resurrect the send: the sweep additionally
+          // requires deletion_pending, so a blocked row is excluded on
+          // status alone.
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.markMessageDeletionBlocked(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final pending = await dao.getRetryableOwnMessageDeletions(
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          expect(pending, isEmpty);
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.deletionRumorJson, isNotNull);
+        });
+      });
+    });
+
     group('hasGiftWrap', () {
       test('returns true when gift wrap ID exists', () async {
         await dao.insertMessage(
@@ -549,13 +821,16 @@ void main() {
       test(
         'matches cross-protocol duplicates within the default 5s window',
         () async {
+          // A NIP-04 arrival: the receive path writes the wire event id into
+          // BOTH columns, which is what marks the row as the twin a NIP-17
+          // rumor may collapse onto.
           await dao.insertMessage(
-            id: 'msg_original',
+            id: 'ev_nip04_original',
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'Retryable message',
             createdAt: 1700000000,
-            giftWrapId: 'gw_original',
+            giftWrapId: 'ev_nip04_original',
             ownerPubkey: 'pubkey_owner',
           );
 
@@ -565,6 +840,7 @@ void main() {
             content: 'Retryable message',
             createdAt: 1700000004,
             ownerPubkey: 'pubkey_owner',
+            counterpart: DmDedupCounterpart.nip04Copy,
           );
 
           expect(duplicate, isTrue);
@@ -584,12 +860,15 @@ void main() {
             ownerPubkey: 'pubkey_owner',
           );
 
+          // Counterpart matches the stored row's shape, so the window is the
+          // only thing that can reject it — keeping this a window test.
           final duplicate = await dao.hasMatchingMessage(
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'ok',
             createdAt: 1700000030,
             ownerPubkey: 'pubkey_owner',
+            counterpart: DmDedupCounterpart.nip17Copy,
           );
 
           expect(duplicate, isFalse);
@@ -657,6 +936,7 @@ void main() {
             content: text,
             createdAt: retryCreatedAt,
             ownerPubkey: recipientPubkey,
+            counterpart: DmDedupCounterpart.nip17Copy,
           ),
           isFalse,
           reason: '13s apart is outside the ±5s window',
@@ -668,9 +948,26 @@ void main() {
             content: text,
             createdAt: firstCreatedAt + 4,
             ownerPubkey: recipientPubkey,
+            counterpart: DmDedupCounterpart.nip17Copy,
           ),
           isTrue,
-          reason: 'positive control: the ±5s window still fires inside 5s',
+          reason:
+              'positive control: an arriving NIP-04 copy still collapses onto '
+              'its stored NIP-17 twin inside 5s',
+        );
+        expect(
+          await dao.hasMatchingMessage(
+            conversationId: conversationId,
+            senderPubkey: senderPubkey,
+            content: text,
+            createdAt: firstCreatedAt + 4,
+            ownerPubkey: recipientPubkey,
+            counterpart: DmDedupCounterpart.nip04Copy,
+          ),
+          isFalse,
+          reason:
+              '#7324: an arriving NIP-17 rumor must NOT collapse onto a row '
+              'that also arrived over NIP-17 — that is a genuine repeat',
         );
 
         // The bug: a fresh retry mints a second rumor id. Nothing collapses it.
@@ -690,6 +987,211 @@ void main() {
           reason: 'two rumor ids for one message render as two bubbles',
         );
         expect(rendered.map((m) => m.content).toSet(), {text});
+      });
+
+      test(
+        'a NIP-04 event does not collapse onto another NIP-04 row (#7324, '
+        'mirrored onto the legacy protocol)',
+        () async {
+          await dao.insertMessage(
+            id: 'ev_nip04_first',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'ok',
+            createdAt: 1700000000,
+            giftWrapId: 'ev_nip04_first',
+            ownerPubkey: 'pubkey_owner',
+          );
+
+          expect(
+            await dao.hasMatchingMessage(
+              conversationId: conversationId1,
+              senderPubkey: 'pubkey_peer',
+              content: 'ok',
+              createdAt: 1700000002,
+              ownerPubkey: 'pubkey_owner',
+              counterpart: DmDedupCounterpart.nip17Copy,
+            ),
+            isFalse,
+            reason: 'a second kind-4 two seconds later is a genuine repeat',
+          );
+        },
+      );
+
+      test('unconstrained matches either arrival shape', () async {
+        await dao.insertMessage(
+          id: 'rumor_nip17',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_owner',
+          content: 'ok',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_nip17',
+          ownerPubkey: 'pubkey_owner',
+        );
+        await dao.insertMessage(
+          id: 'ev_nip04',
+          conversationId: conversationId2,
+          senderPubkey: 'pubkey_owner',
+          content: 'ok',
+          createdAt: 1700000000,
+          giftWrapId: 'ev_nip04',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        for (final conversationId in [conversationId1, conversationId2]) {
+          expect(
+            await dao.hasMatchingMessage(
+              conversationId: conversationId,
+              senderPubkey: 'pubkey_owner',
+              content: 'ok',
+              createdAt: 1700000002,
+              ownerPubkey: 'pubkey_owner',
+              counterpart: DmDedupCounterpart.unconstrained,
+            ),
+            isTrue,
+            reason: 'the self-send paths opt out of the arrival filter',
+          );
+        }
+      });
+    });
+
+    group('claimCrossProtocolTwin', () {
+      Future<void> insertNip04(String id, {int at = 1700000000}) =>
+          dao.insertMessage(
+            id: id,
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: at,
+            giftWrapId: id,
+            ownerPubkey: 'pubkey_owner',
+          );
+
+      Future<bool> claimNip04Twin({int at = 1700000000}) =>
+          dao.claimCrossProtocolTwin(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: at,
+            counterpart: DmDedupCounterpart.nip04Copy,
+            ownerPubkey: 'pubkey_owner',
+          );
+
+      test('claims a stored NIP-04 twin exactly once', () async {
+        // The dual-send twin is 1:1, so the second same-text rumor inside the
+        // window is a genuine repeat and must survive. Before #8211 both were
+        // suppressed and three sent messages showed as one bubble.
+        await insertNip04('ev_nip04');
+
+        expect(await claimNip04Twin(at: 1700000001), isTrue);
+        expect(await claimNip04Twin(at: 1700000003), isFalse);
+      });
+
+      test('marks the claimed row so it is spent', () async {
+        await insertNip04('ev_nip04');
+        await claimNip04Twin();
+
+        final row = await dao.getMessageById('ev_nip04');
+        expect(row!.twinCollapsed, isTrue);
+      });
+
+      test('leaves an unclaimed sibling available', () async {
+        // Two dual-sends of the same text mean two twins, so two rumors may
+        // be collapsed — and only two.
+        await insertNip04('ev_nip04_a');
+        await insertNip04('ev_nip04_b', at: 1700000002);
+
+        expect(await claimNip04Twin(at: 1700000001), isTrue);
+        expect(await claimNip04Twin(at: 1700000002), isTrue);
+        expect(await claimNip04Twin(at: 1700000003), isFalse);
+      });
+
+      test('ignores a row that arrived over the same protocol', () async {
+        // A NIP-17 row (distinct id/gift_wrap_id) is a genuine earlier
+        // message to another NIP-17 rumor, never its twin (#7324).
+        await dao.insertMessage(
+          id: 'rumor_1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_1',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        expect(await claimNip04Twin(at: 1700000001), isFalse);
+      });
+
+      test('claims a NIP-17 twin from the NIP-04 side', () async {
+        await dao.insertMessage(
+          id: 'rumor_1',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000000,
+          giftWrapId: 'wrap_1',
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        Future<bool> claimNip17Twin() => dao.claimCrossProtocolTwin(
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000001,
+          counterpart: DmDedupCounterpart.nip17Copy,
+          ownerPubkey: 'pubkey_owner',
+        );
+
+        expect(await claimNip17Twin(), isTrue);
+        expect(await claimNip17Twin(), isFalse);
+      });
+
+      test('does not claim outside the window', () async {
+        await insertNip04('ev_nip04');
+
+        expect(await claimNip04Twin(at: 1700000006), isFalse);
+      });
+
+      test("does not claim another account's row", () async {
+        await insertNip04('ev_nip04');
+
+        final claimed = await dao.claimCrossProtocolTwin(
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_peer',
+          content: 'same text',
+          createdAt: 1700000001,
+          counterpart: DmDedupCounterpart.nip04Copy,
+          ownerPubkey: 'pubkey_other_owner',
+        );
+
+        expect(claimed, isFalse);
+      });
+
+      test('still claims a soft-deleted twin', () async {
+        // Deliberate: the deleted row is the twin, and letting its kind-4
+        // counterpart insert would resurrect a message the user deleted as a
+        // fresh, permanently undeletable bubble — a kind 5 names the rumor id,
+        // never the twin's (#8211).
+        await insertNip04('ev_nip04');
+        await dao.markMessageDeleted('ev_nip04', ownerPubkey: 'pubkey_owner');
+
+        expect(await claimNip04Twin(at: 1700000001), isTrue);
+      });
+
+      test('rejects unconstrained, which cannot identify a twin', () async {
+        await insertNip04('ev_nip04');
+
+        expect(
+          () => dao.claimCrossProtocolTwin(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'same text',
+            createdAt: 1700000001,
+            counterpart: DmDedupCounterpart.unconstrained,
+            ownerPubkey: 'pubkey_owner',
+          ),
+          throwsArgumentError,
+        );
       });
     });
 
@@ -892,37 +1394,44 @@ void main() {
       });
     });
 
-    group('clearAll', () {
-      test('deletes all direct messages', () async {
-        await dao.insertMessage(
-          id: 'msg_1',
+    group('account-switch cleanup', () {
+      const userA = 'pubkey_cleanup_a';
+      const userB = 'pubkey_cleanup_b';
+
+      Future<void> insert(String id, String? ownerPubkey) {
+        return dao.insertMessage(
+          id: id,
           conversationId: conversationId1,
           senderPubkey: 'pubkey_alice',
-          content: 'Msg 1',
-          createdAt: 1700000000,
-          giftWrapId: 'gw_1',
+          content: id,
+          createdAt: 1700000001,
+          giftWrapId: 'gw_$id',
+          ownerPubkey: ownerPubkey,
         );
-        await dao.insertMessage(
-          id: 'msg_2',
-          conversationId: conversationId2,
-          senderPubkey: 'pubkey_bob',
-          content: 'Msg 2',
-          createdAt: 1700000100,
-          giftWrapId: 'gw_2',
+      }
+
+      test('deletes the leaving account and ambiguous owners', () async {
+        await insert('msg_a', userA);
+        await insert('msg_b', userB);
+        await insert('msg_null', null);
+        await insert('msg_empty', '');
+
+        expect(await dao.clearForAccountSwitch(userA), equals(3));
+        expect(await dao.countMessages(conversationId1), equals(1));
+        expect(
+          await dao.countMessages(conversationId1, ownerPubkey: userB),
+          equals(1),
         );
-
-        final deleted = await dao.clearAll();
-
-        expect(deleted, equals(2));
-        final conv1 = await dao.getMessagesForConversation(conversationId1);
-        final conv2 = await dao.getMessagesForConversation(conversationId2);
-        expect(conv1, isEmpty);
-        expect(conv2, isEmpty);
       });
 
-      test('returns 0 when table is empty', () async {
-        final deleted = await dao.clearAll();
-        expect(deleted, equals(0));
+      test('unknown owner cleanup deletes only ambiguous rows', () async {
+        await insert('msg_a', userA);
+        await insert('msg_b', userB);
+        await insert('msg_null', null);
+        await insert('msg_empty', '');
+
+        expect(await dao.clearUnowned(), equals(2));
+        expect(await dao.countMessages(conversationId1), equals(2));
       });
     });
 
@@ -998,7 +1507,7 @@ void main() {
         },
       );
 
-      test('clearAllForUser only deletes that user messages', () async {
+      test('account-switch cleanup preserves another user messages', () async {
         await dao.insertMessage(
           id: 'msg_a1',
           conversationId: conversationId1,
@@ -1018,7 +1527,7 @@ void main() {
           ownerPubkey: userB,
         );
 
-        final deleted = await dao.clearAllForUser(userA);
+        final deleted = await dao.clearForAccountSwitch(userA);
 
         expect(deleted, equals(1));
         final remaining = await dao.getMessagesForConversation(

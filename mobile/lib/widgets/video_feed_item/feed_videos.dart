@@ -20,7 +20,6 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/consumption_analytics/consumption_analytics_tracker.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/view_traffic_source.dart'
     show ViewTrafficSource;
 import 'package:openvine/providers/analytics_providers.dart';
@@ -47,11 +46,13 @@ import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_immersive_chrome.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/player_gesture_surface.dart';
 import 'package:openvine/widgets/video_feed_item/player_tap_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/verifying_aware_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
+import 'package:openvine/widgets/video_feed_item/video_interactions_restriction_listener.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 
 class FeedVideos extends ConsumerStatefulWidget {
@@ -1050,12 +1051,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   )
                   ..add(const VideoInteractionsSubscriptionRequested())
                   ..add(const VideoInteractionsFetchRequested()),
-            child: Builder(
-              builder: (context) {
-                return Semantics(
-                  button: true,
-                  label: context.l10n.videoPlayerPlayVideo,
-                  hint: isOwnVideo ? null : context.l10n.videoPlayerTapHint,
+            child: VideoInteractionsRestrictionListener(
+              child: Builder(
+                builder: (context) {
                   // The chrome layers are SIBLINGS above the gesture surface,
                   // never descendants of it. As descendants, any press held
                   // past `kLongPressTimeout` anywhere on the action rail was
@@ -1065,7 +1063,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
                   // out under the viewer's finger. Keeping them siblings lets
                   // an opaque button win the hit test outright, so the peek
                   // never sees that pointer.
-                  child: Stack(
+                  //
+                  // The player's label and hint live on the gesture surface
+                  // below, not on a wrapper here: a node with no tap action
+                  // cannot name the one a screen reader activates.
+                  return Stack(
                     children: [
                       // The raw [Listener] owns immersive mode's release: it
                       // counts the pointers over the item and exits once the
@@ -1098,39 +1100,16 @@ class __OverlayState extends ConsumerState<_Overlay> {
                               _handleImmersivePointerEnd(event.pointer),
                           onPointerCancel: (event) =>
                               _handleImmersivePointerEnd(event.pointer),
-                          child: GestureDetector(
-                            behavior: .translucent,
-                            onTap: interactiveReady ? _handlePlayerTap : null,
-                            onDoubleTapDown: interactiveReady
-                                ? (details) => _handleDoubleTapLike(
-                                    context,
-                                    details,
-                                    isOwnVideo: isOwnVideo,
-                                  )
-                                : null,
-                            child: GestureDetector(
-                              behavior: .translucent,
-                              // Press and hold to peek at the unobstructed
-                              // frame. Deliberately not gated on
-                              // [interactiveReady] the way tap and double-tap
-                              // are: those mutate the player or publish a
-                              // like, while this only hides chrome, which is
-                              // just as valid over a still-loading frame.
-                              //
-                              // Excluded from semantics, and kept on its own
-                              // detector so the tap action above still is
-                              // published. A `GestureDetector` publishes
-                              // `SemanticsAction.longPress` for ANY long-press
-                              // callback, `onLongPressStart` included — and
-                              // firing that action delivers no pointer events,
-                              // so the release path below would never run and
-                              // a screen-reader user would be left with every
-                              // control hidden and pointer-blocked until the
-                              // item was disposed.
-                              excludeFromSemantics: true,
-                              onLongPressStart: (_) => _enterImmersive(),
-                              child: const SizedBox.expand(),
+                          child: PlayerGestureSurface(
+                            interactiveReady: interactiveReady,
+                            isOwnVideo: isOwnVideo,
+                            onTap: _handlePlayerTap,
+                            onDoubleTapDown: (details) => _handleDoubleTapLike(
+                              context,
+                              details,
+                              isOwnVideo: isOwnVideo,
                             ),
+                            onLongPressStart: _enterImmersive,
                           ),
                         ),
                       ),
@@ -1178,9 +1157,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         child: DoubleTapHeartOverlay(trigger: _heartTrigger),
                       ),
                     ],
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         );

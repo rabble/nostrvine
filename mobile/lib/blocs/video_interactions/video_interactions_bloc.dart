@@ -81,6 +81,7 @@ class VideoInteractionsBloc
   }
 
   final String _eventId;
+  int _likeToggleRevision = 0;
   final String _authorPubkey;
   final LikesRepository _likesRepository;
   final CommentsRepository _commentsRepository;
@@ -296,6 +297,7 @@ class VideoInteractionsBloc
     VideoInteractionsLikeToggled event,
     Emitter<VideoInteractionsState> emit,
   ) async {
+    final revision = ++_likeToggleRevision;
     final wasLiked = state.isLiked;
     final wasCount = state.likeCount;
     final optimisticLiked = !wasLiked;
@@ -314,6 +316,7 @@ class VideoInteractionsBloc
         optimisticLiked: optimisticLiked,
         wasLiked: wasLiked,
         wasCount: wasCount,
+        revision: revision,
       ),
     );
   }
@@ -322,6 +325,7 @@ class VideoInteractionsBloc
     required bool optimisticLiked,
     required bool wasLiked,
     required int? wasCount,
+    required int revision,
   }) async {
     _LikeSettleOutcome outcome;
     try {
@@ -341,6 +345,8 @@ class VideoInteractionsBloc
       outcome = const _LikeSettleAlready();
     } on NotLikedException {
       outcome = const _LikeSettleNotLiked();
+    } on LikeAccountRestrictedException {
+      outcome = _LikeSettleRestricted(wasLiked: wasLiked);
     } catch (e, stackTrace) {
       Log.error(
         'VideoInteractionsBloc: Like toggle failed for $_eventId - $e',
@@ -360,13 +366,20 @@ class VideoInteractionsBloc
     }
 
     if (isClosed) return;
-    add(_VideoInteractionsLikeSettled(outcome: outcome, wasCount: wasCount));
+    add(
+      _VideoInteractionsLikeSettled(
+        outcome: outcome,
+        wasCount: wasCount,
+        revision: revision,
+      ),
+    );
   }
 
   void _onLikeSettled(
     _VideoInteractionsLikeSettled event,
     Emitter<VideoInteractionsState> emit,
   ) {
+    if (event.revision != _likeToggleRevision) return;
     switch (event.outcome) {
       case _LikeSettleConfirmed(:final isLiked):
         if (isLiked) {
@@ -394,6 +407,14 @@ class VideoInteractionsBloc
         emit(state.copyWith(isLiked: false, likeCount: event.wasCount));
       case _LikeSettleFailed(:final wasLiked):
         emit(state.copyWith(isLiked: wasLiked, likeCount: event.wasCount));
+      case _LikeSettleRestricted(:final wasLiked):
+        emit(
+          state.copyWith(
+            isLiked: wasLiked,
+            likeCount: event.wasCount,
+            accountRestrictionRevision: state.accountRestrictionRevision + 1,
+          ),
+        );
     }
   }
 

@@ -16,10 +16,14 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
+import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -31,6 +35,14 @@ class _MockBookmarkService extends Mock implements BookmarkService {}
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
+
+class _MockContentDeletionService extends Mock
+    implements ContentDeletionService {}
+
+class _MockEnforcementRepository extends Mock
+    implements CreatorDeleteEnforcementRepository {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -146,6 +158,9 @@ void main() {
       bool debugToolsEnabled = true,
       VideoEvent? video,
       MockAuthService? mockAuthService,
+      ContentDeletionService? contentDeletionService,
+      CreatorDeleteEnforcementRepository? enforcementRepository,
+      VideoEventService? videoEventService,
     }) => testProviderScope(
       mockAuthService: mockAuthService,
       additionalOverrides: [
@@ -155,6 +170,16 @@ void main() {
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
         ),
+        if (contentDeletionService != null)
+          contentDeletionServiceProvider.overrideWith(
+            (ref) async => contentDeletionService,
+          ),
+        if (enforcementRepository != null)
+          creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+            enforcementRepository,
+          ),
+        if (videoEventService != null)
+          videoEventServiceProvider.overrideWithValue(videoEventService),
         videoClipImportServiceProvider.overrideWithValue(
           mockVideoClipImportService,
         ),
@@ -368,6 +393,54 @@ void main() {
 
       expect(find.text('Edit Video'), findsOneWidget);
       expect(find.text('Delete Video'), findsOneWidget);
+    });
+
+    testWidgets('More actions row disables Edit during relay deletion', (
+      tester,
+    ) async {
+      final authService = createMockAuthService();
+      final deletionService = _MockContentDeletionService();
+      final enforcementRepository = _MockEnforcementRepository();
+      final videoEventService = _MockVideoEventService();
+      final relayCompleter = Completer<DeleteResult>();
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(testVideo.pubkey);
+      when(
+        () => deletionService.quickDelete(
+          video: testVideo,
+          reason: DeleteReason.personalChoice,
+        ),
+      ).thenAnswer((_) => relayCompleter.future);
+
+      await tester.pumpWidget(
+        buildSubject(
+          mockAuthService: authService,
+          contentDeletionService: deletionService,
+          enforcementRepository: enforcementRepository,
+          videoEventService: videoEventService,
+        ),
+      );
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.shareMenuDeleteVideo));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.shareMenuDelete));
+      await tester.pump();
+
+      final editGesture = find.ancestor(
+        of: find.text(l10n.shareMenuEditVideo),
+        matching: find.byType(GestureDetector),
+      );
+      expect(tester.widget<GestureDetector>(editGesture).onTap, isNull);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      relayCompleter.complete(
+        DeleteResult.failure('rejected', DeleteFailureKind.relayRejected),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<GestureDetector>(editGesture).onTap, isNotNull);
     });
 
     testWidgets('More actions row hides owner actions for non-owned videos', (

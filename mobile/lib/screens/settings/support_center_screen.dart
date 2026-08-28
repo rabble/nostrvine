@@ -3,14 +3,18 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/export_logs/export_logs_cubit.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/support_email_composer.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
@@ -22,7 +26,14 @@ class SupportCenterScreen extends ConsumerWidget {
   static const routeName = 'support-center';
   static const String path = RoutePaths.supportCenter;
 
-  const SupportCenterScreen({super.key});
+  const SupportCenterScreen({
+    this.composeEmail,
+    this.openZendeskSupport,
+    super.key,
+  });
+
+  final SupportEmailCompose? composeEmail;
+  final Future<bool> Function()? openZendeskSupport;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,14 +41,13 @@ class SupportCenterScreen extends ConsumerWidget {
     final userPubkey = authService.currentPublicKeyHex;
     final isAuthenticated =
         ref.watch(currentAuthStateProvider) == AuthState.authenticated;
-    final bugReportService = ref.read(bugReportServiceProvider);
 
     final l10n = context.l10n;
     return Scaffold(
       appBar: DiVineAppBar(
         title: l10n.supportTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () => context.safePop(fallback: WelcomeScreen.path),
       ),
       backgroundColor: context.vineColors.background,
       body: Align(
@@ -46,32 +56,27 @@ class SupportCenterScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              if (ZendeskSupportService.isAvailable)
+              _SupportTile(
+                icon: DivineIconName.chat,
+                title: l10n.supportContactSupport,
+                subtitle: l10n.supportContactSupportSubtitle,
+                onTap: () => _contactSupport(context),
+              ),
+              if (isAuthenticated)
                 _SupportTile(
-                  icon: DivineIconName.chat,
-                  title: l10n.supportContactSupport,
-                  subtitle: l10n.supportContactSupportSubtitle,
-                  onTap: () => _viewSupportMessages(context),
+                  icon: DivineIconName.warningCircle,
+                  title: l10n.supportReportBug,
+                  subtitle: l10n.supportReportBugSubtitle,
+                  onTap: () => _showBugReport(context, userPubkey),
                 ),
-              _SupportTile(
-                icon: DivineIconName.warningCircle,
-                title: l10n.supportReportBug,
-                subtitle: l10n.supportReportBugSubtitle,
-                onTap: () =>
-                    _showBugReport(context, bugReportService, userPubkey),
-              ),
-              _SupportTile(
-                icon: DivineIconName.sparkle,
-                title: l10n.supportRequestFeature,
-                subtitle: l10n.supportRequestFeatureSubtitle,
-                onTap: () => _showFeatureRequest(context),
-              ),
-              _SupportTile(
-                icon: DivineIconName.save,
-                title: l10n.supportSaveLogs,
-                subtitle: l10n.supportSaveLogsSubtitle,
-                onTap: () => _exportLogs(context, bugReportService, userPubkey),
-              ),
+              if (isAuthenticated)
+                _SupportTile(
+                  icon: DivineIconName.sparkle,
+                  title: l10n.supportRequestFeature,
+                  subtitle: l10n.supportRequestFeatureSubtitle,
+                  onTap: () => _showFeatureRequest(context),
+                ),
+              const _ExportLogsTile(),
               // #6335 was filed from here by someone who could not find
               // deletion, so it has to be reachable from here too. It sits
               // above the outbound links rather than last so it stays on
@@ -137,11 +142,7 @@ class SupportCenterScreen extends ConsumerWidget {
     );
   }
 
-  void _showBugReport(
-    BuildContext context,
-    BugReportService bugReportService,
-    String? userPubkey,
-  ) {
+  void _showBugReport(BuildContext context, String? userPubkey) {
     if (userPubkey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
@@ -159,80 +160,38 @@ class SupportCenterScreen extends ConsumerWidget {
     context.push(FeatureRequestScreen.path);
   }
 
-  Future<void> _exportLogs(
-    BuildContext context,
-    BugReportService bugReportService,
-    String? userPubkey,
-  ) async {
-    // Resolve the popover anchor before any await — iPad idiom (including
-    // iOS builds on Apple Silicon Macs) rejects the share sheet without it.
-    final sharePositionOrigin = shareAnchorForContext(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(
-        context.l10n.supportExportingLogs,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    final result = await bugReportService.exportLogsToFile(
-      currentScreen: 'SupportCenterScreen',
-      userPubkey: userPubkey,
-      sharePositionOrigin: sharePositionOrigin,
-    );
-    if (!context.mounted) return;
-
-    if (result.cancelled) {
-      // User dismissed the Save As dialog; nothing to report.
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      return;
-    }
-
-    if (!result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportExportLogsFailed,
-          error: true,
-        ),
-      );
-      return;
-    }
-
-    final filePath = result.filePath;
-    if (filePath != null) {
-      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-      messenger.showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportLogsSavedTo(filePath),
-          duration: const Duration(seconds: 8),
-          actionLabel: context.l10n.supportRevealLogsAction,
-          onActionPressed: () {
-            // DivineSnackbarContainer's action is a plain button, so unlike
-            // SnackBarAction it does not dismiss the banner for us.
-            messenger.hideCurrentSnackBar();
-            bugReportService.revealExportedFile(filePath);
-          },
-        ),
-      );
-    }
+  Future<bool> _viewSupportMessages() async {
+    // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
+    return ZendeskSupportService.showTicketListScreen();
   }
 
-  Future<void> _viewSupportMessages(BuildContext context) async {
-    if (!ZendeskSupportService.isAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.supportChatNotAvailable,
-          error: true,
-        ),
-      );
-      return;
+  Future<void> _contactSupport(BuildContext context) async {
+    final l10n = context.l10n;
+    var emailBody = l10n.supportContactSupportSubtitle;
+    final openZendesk =
+        openZendeskSupport ??
+        (ZendeskSupportService.isAvailable ? _viewSupportMessages : null);
+    if (openZendesk != null) {
+      if (await openZendesk()) return;
+      emailBody = '${l10n.supportCouldNotOpenMessages}\n\n$emailBody';
+    } else {
+      emailBody = '${l10n.supportChatNotAvailable}\n\n$emailBody';
     }
+    if (!context.mounted) return;
 
-    // JWT refresh is handled internally by showTicketListScreen via _ensureFreshJwt
-    final shown = await ZendeskSupportService.showTicketListScreen();
-    if (!shown && context.mounted) {
+    final sharePositionOrigin = shareAnchorForContext(context);
+    try {
+      await (composeEmail ?? SupportEmailComposer().compose)(
+        toEmail: AppConstants.supportEmail,
+        subject: l10n.supportContactSupport,
+        body: emailBody,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          context.l10n.supportCouldNotOpenMessages,
+          l10n.authCouldNotOpenEmail(AppConstants.supportEmail),
           error: true,
         ),
       );
@@ -314,6 +273,124 @@ class _SupportTile extends StatelessWidget {
         color: trailingColor ?? context.vineColors.mutedText,
       ),
       onTap: onTap,
+    );
+  }
+}
+
+/// Hands the captured log file to the system share sheet.
+///
+/// Goes through [ExportLogsCubit] rather than calling `BugReportService`
+/// from here, so the widget layer never sees the service type.
+class _ExportLogsTile extends ConsumerWidget {
+  const _ExportLogsTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bugReportService = ref.watch(bugReportServiceProvider);
+    final authService = ref.watch(authServiceProvider);
+    final authState = ref.watch(currentAuthStateProvider);
+    return BlocProvider<ExportLogsCubit>(
+      key: ValueKey((bugReportService, authService, authState)),
+      create: (_) => ExportLogsCubit(
+        bugReportService: bugReportService,
+        currentScreen: 'SupportCenterScreen',
+        userPubkey: authService.currentPublicKeyHex,
+      ),
+      child: const _ExportLogsTileView(),
+    );
+  }
+}
+
+class _ExportLogsTileView extends StatelessWidget {
+  const _ExportLogsTileView();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return BlocListener<ExportLogsCubit, ExportLogsState>(
+      listenWhen: (previous, current) => previous.status != current.status,
+      listener: _showOutcome,
+      child: _SupportTile(
+        icon: DivineIconName.save,
+        title: l10n.supportSaveLogs,
+        subtitle: l10n.supportSaveLogsSubtitle,
+        // Resolve the popover anchor before the cubit's first await — the
+        // iPad idiom (including iOS builds on Apple Silicon Macs) rejects the
+        // share sheet without it.
+        onTap: () => context.read<ExportLogsCubit>().export(
+          sharePositionOrigin: shareAnchorForContext(context),
+        ),
+      ),
+    );
+  }
+
+  static void _showOutcome(BuildContext context, ExportLogsState state) {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (state.status == ExportLogsStatus.exporting) {
+      messenger.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          l10n.supportExportingLogs,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    messenger.hideCurrentSnackBar();
+
+    switch (state.status) {
+      case ExportLogsStatus.idle:
+      case ExportLogsStatus.exporting:
+      case ExportLogsStatus.cancelled:
+        // Cancelled means the user backed out — they know what they did.
+        return;
+      case ExportLogsStatus.noLogs:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            l10n.supportNoLogsToExport,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+        return;
+      case ExportLogsStatus.unconfirmed:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            l10n.supportExportLogsUnconfirmed,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        return;
+      case ExportLogsStatus.failed:
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            l10n.supportExportLogsFailed,
+            error: true,
+          ),
+        );
+        return;
+      case ExportLogsStatus.shared:
+      case ExportLogsStatus.saved:
+        break;
+    }
+
+    final filePath = state.filePath;
+    if (filePath == null) return;
+
+    final cubit = context.read<ExportLogsCubit>();
+    messenger.showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        l10n.supportLogsSavedTo(filePath),
+        duration: const Duration(seconds: 8),
+        actionLabel: l10n.supportRevealLogsAction,
+        onActionPressed: () {
+          // DivineSnackbarContainer's action is a plain button, so unlike
+          // SnackBarAction it does not dismiss the banner for us.
+          messenger.hideCurrentSnackBar();
+          cubit.revealFile(filePath);
+        },
+      ),
     );
   }
 }

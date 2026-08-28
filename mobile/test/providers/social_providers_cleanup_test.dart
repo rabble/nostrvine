@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -497,6 +499,189 @@ void main() {
         ),
         1700000000,
       );
+    });
+
+    group('#7325 owner-scoped DM cleanup', () {
+      Future<void> seedDm({
+        required String messageId,
+        required String conversationId,
+        String? ownerPubkey,
+      }) async {
+        await db.conversationsDao.upsertConversation(
+          id: conversationId,
+          participantPubkeys: _pubkeyA,
+          isGroup: false,
+          createdAt: 1700000000,
+          ownerPubkey: ownerPubkey,
+        );
+        await db.directMessagesDao.insertMessage(
+          id: messageId,
+          conversationId: conversationId,
+          senderPubkey: _pubkeyA,
+          content: 'hello',
+          createdAt: 1700000000,
+          giftWrapId: 'gw-$messageId',
+          ownerPubkey: ownerPubkey,
+        );
+      }
+
+      Future<int> dmCountFor(String? owner) async {
+        final row = await db
+            .customSelect(
+              owner == null
+                  ? 'SELECT COUNT(*) c FROM direct_messages '
+                        'WHERE owner_pubkey IS NULL'
+                  : 'SELECT COUNT(*) c FROM direct_messages '
+                        'WHERE owner_pubkey = ?',
+              variables: owner == null ? const [] : [Variable<String>(owner)],
+            )
+            .getSingle();
+        return row.data['c']! as int;
+      }
+
+      Future<int> conversationCountFor(String? owner) async {
+        final row = await db
+            .customSelect(
+              owner == null
+                  ? 'SELECT COUNT(*) c FROM conversations '
+                        'WHERE owner_pubkey IS NULL'
+                  : 'SELECT COUNT(*) c FROM conversations '
+                        'WHERE owner_pubkey = ?',
+              variables: owner == null ? const [] : [Variable<String>(owner)],
+            )
+            .getSingle();
+        return row.data['c']! as int;
+      }
+
+      UserDataCleanupService readService() {
+        final subscription = container.listen(
+          userDataCleanupServiceProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        return subscription.read();
+      }
+
+      test("a plain switch keeps the other account's DM history", () async {
+        await seedDm(
+          messageId: _dmTargetMessageId,
+          conversationId: _dmConversationId,
+          ownerPubkey: _pubkeyA,
+        );
+        await seedDm(
+          messageId: _dmSecondTargetMessageId,
+          conversationId: _reactionIdB,
+          ownerPubkey: _pubkeyB,
+        );
+
+        // The two gift-wrap tables ride the same cleanup path. Their
+        // ownerPubkey is non-nullable (pending) / claimed (processed), so a
+        // scoped delete must be exhaustive for A and inert for B.
+        await db.pendingGiftWrapsDao.recordFailedDecrypt(
+          giftWrapId: 'gw-a',
+          ownerPubkey: _pubkeyA,
+          rawJson: '{}',
+          createdAt: 1700000000,
+        );
+        await db.pendingGiftWrapsDao.recordFailedDecrypt(
+          giftWrapId: 'gw-b',
+          ownerPubkey: _pubkeyB,
+          rawJson: '{}',
+          createdAt: 1700000000,
+        );
+        await db.processedGiftWrapsDao.record(
+          giftWrapId: 'pw-a',
+          ownerPubkey: _pubkeyA,
+        );
+        await db.processedGiftWrapsDao.record(
+          giftWrapId: 'pw-b',
+          ownerPubkey: _pubkeyB,
+        );
+
+        await readService().onDatabaseCleanup!(userPubkey: _pubkeyA);
+
+        expect(await dmCountFor(_pubkeyA), 0);
+        expect(await conversationCountFor(_pubkeyA), 0);
+        expect(await dmCountFor(_pubkeyB), 1);
+        expect(await conversationCountFor(_pubkeyB), 1);
+        expect(await db.pendingGiftWrapsDao.countForOwner(_pubkeyA), 0);
+        expect(await db.pendingGiftWrapsDao.countForOwner(_pubkeyB), 1);
+        expect(
+          await db.processedGiftWrapsDao.count(),
+          1,
+          reason: "only B's processed-wrap row should survive",
+        );
+      });
+
+      test(
+        'a known-owner switch deletes NULL and empty-owner DM rows',
+        () async {
+          await seedDm(
+            messageId: _dmTargetMessageId,
+            conversationId: _dmConversationId,
+          );
+          await seedDm(
+            messageId: _dmSecondTargetMessageId,
+            conversationId: _reactionIdB,
+            ownerPubkey: '',
+          );
+
+          await readService().onDatabaseCleanup!(userPubkey: _pubkeyA);
+          expect(await dmCountFor(null), 0);
+          expect(await dmCountFor(''), 0);
+          expect(await conversationCountFor(null), 0);
+          expect(await conversationCountFor(''), 0);
+        },
+      );
+
+      test('an unknown leaving user deletes only ambiguous DM rows', () async {
+        await seedDm(
+          messageId: _dmTargetMessageId,
+          conversationId: _dmConversationId,
+          ownerPubkey: _pubkeyA,
+        );
+        await seedDm(
+          messageId: _dmSecondTargetMessageId,
+          conversationId: _reactionIdB,
+        );
+        await seedDm(
+          messageId: _pendingDeletionId,
+          conversationId: _reactionIdA,
+          ownerPubkey: '',
+        );
+
+        await readService().onDatabaseCleanup!();
+
+        expect(await dmCountFor(_pubkeyA), 1);
+        expect(await conversationCountFor(_pubkeyA), 1);
+        expect(await dmCountFor(null), 0);
+        expect(await dmCountFor(''), 0);
+        expect(await conversationCountFor(null), 0);
+        expect(await conversationCountFor(''), 0);
+      });
+
+      test("only the leaving account's DM sync cursors are cleared", () async {
+        final syncState = DmSyncState(prefs);
+        await syncState.recordSeen(_pubkeyA, createdAt: 1700000000);
+        await syncState.recordSeen(_pubkeyB, createdAt: 1700000000);
+        await syncState.markHistoryDrainComplete(_pubkeyA);
+        await syncState.markHistoryDrainComplete(_pubkeyB);
+
+        await readService().clearUserSpecificData(
+          reason: 'test_identity_change',
+          isIdentityChange: true,
+          userPubkey: _pubkeyA,
+        );
+
+        expect(syncState.newestSyncedAt(_pubkeyA), isNull);
+        expect(syncState.historyDrainComplete(_pubkeyA), isFalse);
+        expect(
+          syncState.newestSyncedAt(_pubkeyB),
+          isNotNull,
+          reason: 'the other account must keep its cursor',
+        );
+        expect(syncState.historyDrainComplete(_pubkeyB), isTrue);
+      });
     });
   });
 }

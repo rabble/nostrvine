@@ -17,7 +17,7 @@
 #   - ZENDESK_CLIENT_ID
 #   - ZENDESK_URL
 # 6 - DEFAULT_ENV is configured via build inputs (dropdown) when starting a build
-#   - Options: PRODUCTION, STAGING, TEST, POC
+#   - Options: PRODUCTION, STAGING, POC
 #   - Defaults to PRODUCTION for automatic builds
 # 7 - Create environment variable group "proofmode_credentials" with:
 #   - PROOFMODE_SIGNING_SERVER_ENDPOINT
@@ -78,6 +78,12 @@ definitions:
         # an unset variable ships an empty --dart-define that overrides the
         # in-app default and breaks signing on every capture. Require it here.
         REQUIRE_SIGNING_ENDPOINT=1 ./scripts/check_signing_endpoint.sh
+    - &check_coordinator_route
+      name: Check account-deletion coordinator route
+      script: |
+        flutter pub get
+        DEFAULT_ENV="${{ inputs.DEFAULT_ENV }}" \
+          ./scripts/check_coordinator_route_serving.sh
     - &clean_ios_workspace_state
       name: Clean stale Xcode/SPM workspace state
       script: |
@@ -917,7 +923,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Upload IPA to GitHub Release (for direct distribution)
@@ -958,6 +963,7 @@ workflows:
     scripts:
       - *verify_shorebird_release_source
       - *shorebird_install
+      - *check_coordinator_route
       - *check_signing_endpoint
       - *check_supporters_config
       - *check_ios_extension_signing_contract
@@ -998,7 +1004,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1040,7 +1045,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Create a GitHub Release with APK artifacts (for Zapstore)
@@ -1074,6 +1078,7 @@ workflows:
     scripts:
       - *verify_shorebird_release_source
       - *shorebird_install
+      - *check_coordinator_route
       - *check_signing_endpoint
       - *check_supporters_config
       - *enable_spm
@@ -1156,7 +1161,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1248,7 +1252,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
     environment:
       flutter: 3.44.9
@@ -1300,7 +1303,6 @@ workflows:
         options:
           - PRODUCTION
           - STAGING
-          - TEST
           - POC
       PUBLISH_TO_GITHUB:
         description: Upload DMG to GitHub Release (for direct distribution)

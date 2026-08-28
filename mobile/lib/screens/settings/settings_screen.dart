@@ -22,6 +22,7 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/features/monetization/monetization_storefront_policy.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/account_enforcement_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
@@ -38,6 +39,7 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/account_status_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
@@ -327,6 +329,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
+    final accountEnforced = ref.watch(isAccountEnforcedProvider);
     final authState = ref.watch(currentAuthStateProvider);
     final isAuthenticated = authState == AuthState.authenticated;
     final accountSwitchingEnabled = ref.watch(
@@ -377,6 +380,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       subtitle: context.l10n.settingsSessionExpiredSubtitle,
                       onTap: _handleSessionExpired,
                       iconColor: VineTheme.accentOrange,
+                    ),
+                  if (accountEnforced)
+                    DivineListTile(
+                      icon: DivineIconName.userFocus,
+                      title: context.l10n.accountStatusTitle,
+                      subtitle:
+                          context.l10n.accountStatusTileSubtitleRestricted,
+                      iconColor: VineTheme.accentOrange,
+                      onTap: () => context.push(AccountStatusScreen.path),
                     ),
                 ],
 

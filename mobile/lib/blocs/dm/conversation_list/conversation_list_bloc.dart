@@ -14,12 +14,17 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
+
+typedef DmPeerAccountPredicate = bool Function(String pubkeyHex);
+
+bool _neverDmPeerAccount(String _) => false;
 
 class ConversationListBloc
     extends Bloc<ConversationListEvent, ConversationListState> {
@@ -31,6 +36,8 @@ class ConversationListBloc
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
     String? supportRowPubkey,
+    DmPeerAccountPredicate moderationAccount = _neverDmPeerAccount,
+    DmPeerAccountPredicate retiredModerationAccount = _neverDmPeerAccount,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
@@ -38,6 +45,8 @@ class ConversationListBloc
        _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
        _supportRowPubkey = supportRowPubkey,
+       _moderationAccount = moderationAccount,
+       _retiredModerationAccount = retiredModerationAccount,
        super(const ConversationListState()) {
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
@@ -62,6 +71,9 @@ class ConversationListBloc
       transformer: droppable(),
     );
     on<ConversationListProfileRepositoryChanged>(_onProfileRepositoryChanged);
+    on<ConversationListPeerLabelsChanged>(_onPeerLabelsChanged);
+    on<_ConversationListVanishedPubkeysChanged>(_onVanishedPubkeysChanged);
+    _subscribeToVanishedPubkeys();
   }
 
   final DmRepository _dmRepository;
@@ -79,11 +91,21 @@ class ConversationListBloc
   /// setRepository` precedent. The field is only modified via
   /// [ConversationListProfileRepositoryChanged] event handlers.
   ProfileRepository? _profileRepository;
+
+  /// Live vanished-set subscription, re-pointed whenever
+  /// [_profileRepository] is. Same exception as the field above.
+  StreamSubscription<Set<String>>? _vanishedSubscription;
+
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
 
   /// Moderation pubkey the pinned support row targets, injected rather than
   /// imported so this bloc stays free of app-layer config (#6283).
   final String? _supportRowPubkey;
+
+  /// App-configured identity predicates, injected so this bloc does not import
+  /// release-pinned account configuration directly (#6283).
+  final DmPeerAccountPredicate _moderationAccount;
+  final DmPeerAccountPredicate _retiredModerationAccount;
 
   /// Window over which bursty conversation writes are coalesced before the
   /// list is re-composed. The combined stream re-runs `classifyPotentialRequests`
@@ -226,11 +248,11 @@ class ConversationListBloc
         // re-exposing yourself.
         //
         // This recovers the viewer's OWN blocks only, not everything the
-        // filter above removed: `shouldFilterFromFeeds` unions five buckets,
-        // and the other four (`_mutedPubkeys`, `_mutualMuteBlocklist`,
-        // `_blockedByOthers`, `_internalBlocklist`) stay hidden. A thread
-        // hidden because the counterparty blocked or muted *us* is still
-        // unreachable — deliberately out of scope, see #7025.
+        // filter above removed: `shouldFilterFromDms` unions three buckets,
+        // and the other two (`_mutedPubkeys`, `_internalBlocklist`) stay
+        // hidden. A thread hidden because the counterparty blocked or muted
+        // *us* no longer reaches this filter at all — that union is feeds-only
+        // now, see #7345.
         final blockedConversations = _computeBlockedConversations(
           userPubkey: userPubkey,
           candidates: [...inboxConversations, ...split.requests],
@@ -345,6 +367,8 @@ class ConversationListBloc
             filter: filter,
             query: state.searchQuery,
             profileNames: state.profileNames,
+            vanishedPubkeys: state.vanishedPubkeys,
+            peerLabels: state.peerLabels,
             userPubkey: userPubkey,
             limit: state.currentLimit,
           ),
@@ -384,6 +408,8 @@ class ConversationListBloc
           filter: state.filter,
           query: state.searchQuery,
           profileNames: state.profileNames,
+          vanishedPubkeys: state.vanishedPubkeys,
+          peerLabels: state.peerLabels,
           userPubkey: _dmRepository.userPubkey,
           limit: limit,
         ),
@@ -406,6 +432,8 @@ class ConversationListBloc
           filter: event.filter,
           query: state.searchQuery,
           profileNames: state.profileNames,
+          vanishedPubkeys: state.vanishedPubkeys,
+          peerLabels: state.peerLabels,
           userPubkey: _dmRepository.userPubkey,
           limit: state.currentLimit,
         ),
@@ -433,6 +461,8 @@ class ConversationListBloc
           filter: state.filter,
           query: query,
           profileNames: state.profileNames,
+          vanishedPubkeys: state.vanishedPubkeys,
+          peerLabels: state.peerLabels,
           userPubkey: userPubkey,
           limit: state.currentLimit,
         ),
@@ -514,6 +544,8 @@ class ConversationListBloc
             filter: state.filter,
             query: query,
             profileNames: profileNames,
+            vanishedPubkeys: state.vanishedPubkeys,
+            peerLabels: state.peerLabels,
             userPubkey: userPubkey,
             limit: state.currentLimit,
           ),
@@ -672,12 +704,14 @@ class ConversationListBloc
   /// [conversations] is the COMPLETE accepted-union-followed set, so a filter
   /// result is always complete — "You're all caught up" and "No matches" can no
   /// longer be statements about just the loaded page.
-  static List<DmConversation> _computeVisible(
+  List<DmConversation> _computeVisible(
     List<DmConversation> conversations, {
     required List<DmConversation> blockedConversations,
     required InboxFilter filter,
     required String query,
     required Map<String, String> profileNames,
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? peerLabels,
     required String userPubkey,
     required int limit,
   }) {
@@ -691,6 +725,8 @@ class ConversationListBloc
         unreadOnly: false,
         query: query,
         profileNames: profileNames,
+        vanishedPubkeys: vanishedPubkeys,
+        peerLabels: peerLabels,
         userPubkey: userPubkey,
       );
     }
@@ -705,15 +741,19 @@ class ConversationListBloc
       unreadOnly: unreadOnly,
       query: query,
       profileNames: profileNames,
+      vanishedPubkeys: vanishedPubkeys,
+      peerLabels: peerLabels,
       userPubkey: userPubkey,
     );
   }
 
-  static List<DmConversation> _applyFilters(
+  List<DmConversation> _applyFilters(
     List<DmConversation> conversations, {
     required bool unreadOnly,
     required String query,
     required Map<String, String> profileNames,
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? peerLabels,
     required String userPubkey,
   }) {
     var result = conversations;
@@ -722,12 +762,42 @@ class ConversationListBloc
     final normalized = query.toLowerCase();
     return result.where((c) {
       final other = _otherParticipant(c, userPubkey);
-      final name =
-          (profileNames[other] ?? UserProfile.defaultDisplayNameFor(other))
-              .toLowerCase();
-      final preview = c.lastMessageContent?.toLowerCase() ?? '';
+      final name = _peerName(
+        other,
+        profileNames: profileNames,
+        vanishedPubkeys: vanishedPubkeys,
+        peerLabels: peerLabels,
+      ).toLowerCase();
+      final preview = peerLabels != null && _retiredModerationAccount(other)
+          ? peerLabels.retiredConversationClosed.toLowerCase()
+          : c.lastMessageContent?.toLowerCase() ?? '';
       return name.contains(normalized) || preview.contains(normalized);
     }).toList();
+  }
+
+  /// The name the row for [pubkey] renders, resolved the same way
+  /// `ConversationTile` resolves it.
+  ///
+  /// Falls back to the profile-or-generated value while [peerLabels] is null,
+  /// which is the pre-delivery window only — matching the substitutes needs the
+  /// strings, and there is nothing better to match on until they arrive.
+  String _peerName(
+    String pubkey, {
+    required Map<String, String> profileNames,
+    required Set<String> vanishedPubkeys,
+    required DmPeerLabels? peerLabels,
+  }) {
+    final profileName = profileNames[pubkey];
+    if (peerLabels == null) {
+      return profileName ?? UserProfile.defaultDisplayNameFor(pubkey);
+    }
+    return dmPeerName(
+      pubkeyHex: pubkey,
+      isVanished: vanishedPubkeys.contains(pubkey),
+      isModeration: _moderationAccount(pubkey),
+      labels: peerLabels,
+      profileName: profileName,
+    );
   }
 
   Future<void> _onMarkRead(
@@ -778,6 +848,7 @@ class ConversationListBloc
   ) {
     if (identical(_profileRepository, event.profileRepository)) return;
     _profileRepository = event.profileRepository;
+    _subscribeToVanishedPubkeys();
     if (state.searchQuery.isEmpty) return;
     // Any names cached while no repository was available are deterministic
     // fallbacks, not real profiles. Drop them so the active query re-resolves.
@@ -816,8 +887,73 @@ class ConversationListBloc
     add(const ConversationListStarted());
   }
 
+  /// (Re)points the vanished-set subscription at [_profileRepository].
+  ///
+  /// Called at construction and again on every repository swap: the stream
+  /// belongs to the instance, so keeping the old subscription would leave the
+  /// index reading a repository nothing else is using any more.
+  void _subscribeToVanishedPubkeys() {
+    unawaited(_vanishedSubscription?.cancel());
+    _vanishedSubscription = _profileRepository?.watchVanishedPubkeys().listen(
+      // A stream callback resumes outside the handler that started it, so the
+      // add has to be guarded — `close()` does not cancel it.
+      (pubkeys) => addIfOpen(_ConversationListVanishedPubkeysChanged(pubkeys)),
+      onError: (Object error, StackTrace stackTrace) {
+        // Drift / IO failures are expected and are not Reportable.
+        addError(error, stackTrace);
+      },
+    );
+  }
+
+  void _onVanishedPubkeysChanged(
+    _ConversationListVanishedPubkeysChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    // Exact set equality without adding another dependency to this BLoC.
+    if (event.pubkeys.length == state.vanishedPubkeys.length &&
+        event.pubkeys.containsAll(state.vanishedPubkeys)) {
+      return;
+    }
+    _emitWithVisible(emit, state.copyWith(vanishedPubkeys: event.pubkeys));
+  }
+
+  void _onPeerLabelsChanged(
+    ConversationListPeerLabelsChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    if (event.labels == state.peerLabels) return;
+    _emitWithVisible(emit, state.copyWith(peerLabels: event.labels));
+  }
+
+  /// Emits [next] with `visibleConversations` recomputed against it.
+  ///
+  /// Both naming inputs feed the search match, so changing either has to
+  /// re-filter — otherwise a vanish discovered after the query was typed, or a
+  /// language change, leaves the results reflecting the previous naming.
+  void _emitWithVisible(
+    Emitter<ConversationListState> emit,
+    ConversationListState next,
+  ) {
+    emit(
+      next.copyWith(
+        visibleConversations: _computeVisible(
+          next.conversations,
+          blockedConversations: next.blockedConversations,
+          filter: next.filter,
+          query: next.searchQuery,
+          profileNames: next.profileNames,
+          vanishedPubkeys: next.vanishedPubkeys,
+          peerLabels: next.peerLabels,
+          userPubkey: _dmRepository.userPubkey,
+          limit: next.currentLimit,
+        ),
+      ),
+    );
+  }
+
   @override
   Future<void> close() {
+    unawaited(_vanishedSubscription?.cancel());
     // The gift-wrap subscription is owned by `dmRepositoryProvider` for the
     // whole authenticated session — do NOT stop it here. See #2931.
     return super.close();

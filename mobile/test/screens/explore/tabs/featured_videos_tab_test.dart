@@ -100,9 +100,8 @@ void main() {
           cursor: any(named: 'cursor'),
         ),
       ).thenAnswer(
-        (_) async => FeaturedTabVideosPage(
-          videos: [_video('first'), _video('second')],
-        ),
+        (_) async =>
+            FeaturedTabVideosPage(videos: [_video('first'), _video('second')]),
       );
       when(
         () => router.push<Object?>(any(), extra: any(named: 'extra')),
@@ -136,22 +135,62 @@ void main() {
       await tester.pump();
 
       final captured = verify(
-        () => router.push<Object?>(
-          any(),
-          extra: captureAny(named: 'extra'),
-        ),
+        () => router.push<Object?>(any(), extra: captureAny(named: 'extra')),
       ).captured.single;
       final args = captured as PooledFullscreenVideoFeedArgs;
 
       expect(args.source, isA<VideoListViewSource>());
       expect(args.initialIndex, 0);
       expect(args.initialVideoId, 'first');
+      expect(args.sponsorName, isNull);
       expect(args.trafficSource, ViewTrafficSource.discoveryFeatured);
       expect(args.sourceDetail, 'ft_a1b2c3d4');
       expect(args.feedRepository, same(feedRepository));
 
       final source = args.source as VideoListViewSource;
       expect(source.videos.map((video) => video.id), ['first', 'second']);
+    });
+
+    testWidgets('carries the resolved sponsor into the fullscreen feed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(config: _sponsoredConfig()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(VideoThumbnailWidget).first);
+      await tester.pump();
+
+      final captured = verify(
+        () => router.push<Object?>(any(), extra: captureAny(named: 'extra')),
+      ).captured.single;
+      final args = captured as PooledFullscreenVideoFeedArgs;
+
+      expect(args.sponsorName, 'Acme Bikes');
+    });
+
+    testWidgets('carries the sanitized sponsor into the fullscreen feed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          config: _config(
+            disclosureLabel: const {
+              'default': '\u0000Acme Bikes and Accessories Beyond Limit',
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(VideoThumbnailWidget).first);
+      await tester.pump();
+
+      final captured = verify(
+        () => router.push<Object?>(any(), extra: captureAny(named: 'extra')),
+      ).captured.single;
+      final args = captured as PooledFullscreenVideoFeedArgs;
+
+      expect(args.sponsorName, 'Acme Bikes and Accessor…');
     });
 
     testWidgets('refetches an empty page when a config poll lands', (
@@ -194,9 +233,7 @@ void main() {
       await featuredTabsCubit.refresh();
       await tester.pumpAndSettle();
 
-      verifyNever(
-        () => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'),
-      );
+      verifyNever(() => featuredRepository.loadVideos(tabId: 'ft_a1b2c3d4'));
     });
 
     testWidgets('reloads when the configuration is retargeted in place', (
@@ -260,9 +297,7 @@ void main() {
         // appear as a line naming somebody else's locale either.
         await tester.pumpWidget(
           buildSubject(
-            config: _config(
-              disclosureLabel: const {'pt': 'Acme Bicicletas'},
-            ),
+            config: _config(disclosureLabel: const {'pt': 'Acme Bicicletas'}),
           ),
         );
         await tester.pumpAndSettle();

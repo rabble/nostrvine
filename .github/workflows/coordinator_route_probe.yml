@@ -1,0 +1,118 @@
+name: Coordinator Route Probe
+
+on:
+  schedule:
+    - cron: "17 */4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: coordinator-route-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.ref_name == github.event.repository.default_branch
+    name: Probe configured environments
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.9"
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Probe account-deletion coordinator routes
+        id: coordinator_probe
+        run: |
+          set -o pipefail
+          ./scripts/check_coordinator_route_serving.sh 2>&1 \
+            | tee "$RUNNER_TEMP/coordinator-route-probe.txt"
+      - name: Open or update the coordinator-route incident
+        if: ${{ failure() && steps.coordinator_probe.outcome == 'failure' }}
+        uses: actions/github-script@v9
+        env:
+          PROBE_OUTPUT: ${{ runner.temp }}/coordinator-route-probe.txt
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- coordinator-route-probe-incident -->';
+            const title = 'ci(account): coordinator route probe is failing';
+            const output = fs.readFileSync(process.env.PROBE_OUTPUT, 'utf8').trim();
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              'The automated account-deletion coordinator probe is failing.',
+              '',
+              `Latest failed run: ${runUrl}`,
+              '',
+              '```text',
+              output.slice(-6000),
+              '```',
+              '',
+              'This issue is updated on repeated failures and closes automatically after every configured environment passes.',
+            ].join('\n');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100,
+            });
+            const existing = issues.find(issue =>
+              !issue.pull_request && issue.body && issue.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+                state: 'open',
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['bug'],
+              });
+            }
+      - name: Close the resolved coordinator-route incident
+        if: ${{ success() }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = '<!-- coordinator-route-probe-incident -->';
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find(issue =>
+              !issue.pull_request && issue.body && issue.body.includes(marker)
+            );
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }

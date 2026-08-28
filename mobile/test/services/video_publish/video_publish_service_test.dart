@@ -403,6 +403,36 @@ void main() {
         );
       });
 
+      test(
+        'reports an account restriction as terminal publish failure',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          _stubPublishVideoEventThrows(
+            mockVideoEventPublisher,
+            const AccountRestrictedPublishException(
+              reason: 'blocked: pubkey is suspended',
+              source: AccountRestrictionSource.rest,
+            ),
+          );
+
+          final result = await service.publishVideo(draft: _createTestDraft());
+
+          expect(
+            result,
+            isA<PublishError>().having(
+              (error) => error.kind,
+              'kind',
+              PublishErrorKind.accountRestricted,
+            ),
+          );
+        },
+      );
+
       group('caption publishing', () {
         const overlayTrack = CaptionTrack(
           presetId: 'classic',

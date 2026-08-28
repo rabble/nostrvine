@@ -6,10 +6,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Horizontal scrollable bar showing following users.
@@ -69,14 +68,12 @@ class _FollowingUserButton extends ConsumerWidget {
         .watch(profileVanishedProvider(pubkey))
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
 
-    final displayName = isDeleted
-        ? context.l10n.profileDeletedAccountName
-        : profileAsync.maybeWhen(
-            data: (profile) =>
-                profile?.bestDisplayName ??
-                UserProfile.defaultDisplayNameFor(pubkey),
-            orElse: () => UserProfile.defaultDisplayNameFor(pubkey),
-          );
+    final displayName = dmPeerDisplayName(
+      context,
+      pubkeyHex: pubkey,
+      isVanished: isDeleted,
+      profile: profileAsync.asData?.value,
+    );
 
     final imageUrl = isDeleted
         ? null

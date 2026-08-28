@@ -74,9 +74,7 @@ class UserDataCleanupService {
 
   /// Legacy owner-scoped preference keys that contain user data but may still
   /// need to survive a same-user non-destructive logout.
-  static const List<String> ownerScopedLegacyKeys = [
-    'vine_drafts',
-  ];
+  static const List<String> ownerScopedLegacyKeys = ['vine_drafts'];
 
   static const String legacyDraftOwnerKey = 'vine_drafts_owner_pubkey_hex';
 
@@ -87,8 +85,6 @@ class UserDataCleanupService {
   static const List<String> identityChangePrefixes = [
     'following_list_', // follow cache per pubkey
     'relay_discovery_', // relay discovery cache per npub
-    'dm.newestSyncedAt.', // DM sync cursor per pubkey
-    'dm.oldestSyncedAt.', // DM sync cursor per pubkey
   ];
 
   /// Checks if user-specific data should be cleared for the given pubkey.
@@ -254,7 +250,11 @@ class UserDataCleanupService {
           name: 'UserDataCleanupService',
           category: LogCategory.auth,
         );
-        if (deleteUserData) {
+        // An account switch must fail closed: proceeding after its shared
+        // database cleanup fails can expose the departing account's local DM
+        // state to the incoming session. Ordinary same-account logout remains
+        // best-effort unless it is explicitly destructive.
+        if (deleteUserData || isIdentityChange) {
           rethrow;
         }
       }

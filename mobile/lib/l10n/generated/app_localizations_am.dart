@@ -814,6 +814,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileDeletedAccountName => 'የተሰረዘ መለያ';
 
   @override
+  String get inboxVanishedAccountReference => 'ይህን መለያ';
+
+  @override
   String get inboxConversationDeletedAccountSubtitle => 'ይህ መለያ ተሰርዟል';
 
   @override
@@ -3854,7 +3857,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuDeleteVideoQuestion => 'ቪዲዮ ይሰረዝ?';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'ቪዲዮ ተሰርዟል።';
+  String get shareMenuDeleteCleanupInProgress => 'ቪዲዮው እየተወገደ ነው…';
+
+  @override
+  String get shareMenuDeleteCleanupConfirmed => 'ቪዲዮው ተሰርዟል።';
+
+  @override
+  String get shareMenuDeleteCleanupDelayed =>
+      'ቪዲዮው ተሰርዟል። ከሁሉም ቦታ ለመጥፋት ትንሽ ጊዜ ሊወስድ ይችላል።';
+
+  @override
+  String get shareMenuDeleteCleanupFailed =>
+      'ቪዲዮው ተሰርዟል፣ ግን ሁሉንም ቅጂዎች ማስወገድ አልቻልንም። ድጋፍን ያነጋግሩ።';
 
   @override
   String get authSessionExpired => 'ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።';
@@ -4413,6 +4427,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportExportLogsFailed => 'ምዝግብ ማስታወሻዎችን ወደ ውጭ መላክ አልተሳካም።';
 
   @override
+  String get supportNoLogsToExport =>
+      'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.';
+
+  @override
+  String get supportExportLogsUnconfirmed =>
+      'Logs handed off. Check the app you shared to.';
+
+  @override
   String supportLogsSavedTo(String path) {
     return 'ምዝግቦች ተቀምጠዋል በ $path';
   }
@@ -4460,6 +4482,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get reportDetailsRequired => 'እባክህ ችግሩን ግለጽ';
+
+  @override
+  String get reportDetailsTextOnly =>
+      'ጽሑፍ ብቻ — ፎቶዎችን እና GIF-ዎችን እዚህ ማያያዝ አይቻልም።';
 
   @override
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
@@ -6655,10 +6681,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎችን ቀይረዋል፣ ስለዚህ ምንም አልተሰረዘም። ለማስወገድ ለሚፈልጉት መለያ ስረዛን እንደገና ይክፈቱ።';
 
   @override
-  String get deleteAccountAccountChangedAfterDeletion =>
-      'አንዳንድ የመሰረዝ ጥያቄዎች ተቀባይነት አግኝተዋል፣ ነገር ግን መለያ ስለቀየርክ ጽዳቱ ቆሟል። ለማጠናቀቅ ወደ መጀመሪያው መለያ በድጋሚ ግባ።';
-
-  @override
   String get deleteAccountBurnUsernameFailed =>
       'የተጠቃሚ ስምዎን ማስለቀቅ አልተቻለም። መለያዎ አልተሰረዘም። እንደገና ይሞክሩ፣ ወይም አማራጩን ያስወግዱ።';
 
@@ -6678,18 +6700,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountConfirmationHintUsername => 'የተጠቃሚ ስምዎን ይተይቡ';
-
-  @override
-  String get deleteAccountContentDeletionFailed =>
-      'ይዘትን ከማስተላለፊያዎች መሰረዝ አልተሳካም';
-
-  @override
-  String get deleteAccountRelayConfirmationFailed =>
-      'የመለያ መሰረዝን ከየትኛውም ሪሌ ጋር ማረጋገጥ አልቻልንም። ግንኙነትህን አረጋግጥና እንደገና ሞክር።';
-
-  @override
-  String get deleteAccountAccountRestricted =>
-      'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.';
 
   @override
   String get deleteAccountDeleteAllContentButton => 'ሁሉንም ይዘት ሰርዝ';
@@ -6748,6 +6758,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get accountDeletionSignOut => 'Sign out';
 
   @override
+  String get deleteAccountDeletionUnavailable =>
+      'የመለያ ስረዛ አሁን አይገኝም። ምንም አልተሰረዘም።';
+
+  @override
   String get deleteAccountDeletionIncomplete =>
       'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
@@ -6787,10 +6801,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get deleteAccountServerDeletionFailed =>
       'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ትንሽ ቆይተው እንደገና ይሞክሩ።';
-
-  @override
-  String get deleteAccountServerDeletionRequiresReauth =>
-      'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ እንደገና ይግቡ።';
 
   @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
@@ -6924,6 +6934,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get publishErrorAccountRestricted =>
+      'Your account is restricted, so this post couldn’t be published.';
+
+  @override
+  String get uploadFailureSheetAccountStatusButton => 'View Account Status';
+
+  @override
   String get publishErrorAudioReuseNotPermitted =>
       'ቪዲዮው ተሰቅሏል፣ ነገር ግን ድምፁ ለዳግም ጥቅም አልተፈቀደም። ለመለጠፍ ሌላ ድምፅ ይምረጡ።';
 
@@ -7039,7 +7056,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileBadgeCheckmarkBody =>
-      'Divine ይህን ምልክት ለቡድን መለያዎች እና በእጅ ለጸደቁ ጥቂት መገለጫዎች ይሰጣል። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
+      'Divine ይህን ምልክት ለቡድን መለያዎች ይሰጣል። ከNIP-05፣ ከተረጋገጡ የመለያ አገናኞች እና ከOG Viner ሁኔታ የተለየ ነው።';
 
   @override
   String get unfollowConfirmButton => 'አትከተል';
@@ -9647,6 +9664,24 @@ class AppLocalizationsAm extends AppLocalizations {
       'ድጋፍና የቁጥጥር መልእክትህ አሁንም ይገኛሉ';
 
   @override
+  String get minorAccountReviewContentTitle => 'What happens to your videos';
+
+  @override
+  String get minorAccountReviewContentBody =>
+      'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.';
+
+  @override
+  String get minorAccountReviewAppealTitle => 'Think we got this wrong?';
+
+  @override
+  String get minorAccountReviewAppealTeenBody =>
+      'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
+  String get minorAccountReviewAppealUnder13Body =>
+      'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.';
+
+  @override
   String get minorAccountReviewOpenSupportCenter => 'የድጋፍ ማዕከልን ክፈት';
 
   @override
@@ -9654,16 +9689,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewOpenReviewPage => 'የግምገማ ገጹን ክፈት';
-
-  @override
-  String get minorAccountReviewMoveAccountTitle => 'መለያዎን ይዘው መሄድ ይችላሉ';
-
-  @override
-  String get minorAccountReviewMoveAccountBody =>
-      'የDivine ማንነትዎን በሌላ መሠረተ ልማት ላይ መጠቀም ይችላሉ። መለያዎን ያንቀሳቅሱ ወይም ማህደርዎን ያውርዱ።';
-
-  @override
-  String get minorAccountReviewMoveAccountCta => 'መለያዎን ያንቀሳቅሱ';
 
   @override
   String get minorAccountReviewCheckAgain => 'እንደገና ፈትሽ';
@@ -11342,7 +11367,7 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎ ይቀራል። በዚህ መሣሪያ ላይ የተቀመጡ ረቂቆች እና ክሊፖች ይሰረዛሉ — መልእክቶች እና ምግቦች ከአውታረ መረቡ ይመለሳሉ።';
 
   @override
-  String get dbFailureResetConfirm => 'ዳግም አስጀምር እና ዝጋ';
+  String get dbFailureResetConfirm => 'የአካባቢ ዳታቤዝ አሁን ዳግም አስጀምር';
 
   @override
   String get dbFailureCancel => 'ሰርዝ';
@@ -11422,4 +11447,82 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get safetySettingsShowVerifiedOnlySubtitle =>
       'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.';
+
+  @override
+  String get accountStatusTitle => 'Account status';
+
+  @override
+  String get accountStatusTileSubtitleRestricted =>
+      'Your account is restricted';
+
+  @override
+  String get accountStatusAllClearHeading => 'Everything looks good!';
+
+  @override
+  String get profileAccountRestricted => 'Account restricted';
+
+  @override
+  String get accountStatusSuspendedHeading => 'Your account is suspended';
+
+  @override
+  String get accountStatusSuspendedBody =>
+      'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.';
+
+  @override
+  String get accountStatusBannedHeading => 'Your account is banned';
+
+  @override
+  String get accountStatusBannedBody =>
+      'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.';
+
+  @override
+  String get accountStatusRestrictedHeading => 'Your account is restricted';
+
+  @override
+  String get accountStatusRestrictedBody =>
+      'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.';
+
+  @override
+  String get accountStatusLastKnownBody =>
+      'We couldn\'t refresh your status. This is the last status we received.';
+
+  @override
+  String get accountStatusUnavailableHeading =>
+      'We couldn\'t check your status';
+
+  @override
+  String get accountStatusUnavailableBody =>
+      'Check your connection and try again.';
+
+  @override
+  String get accountStatusSignedOutHeading =>
+      'Sign in to check your account status';
+
+  @override
+  String get accountStatusSignedOutBody =>
+      'There isn\'t a signed-in account to check right now.';
+
+  @override
+  String get accountStatusKeysUnaffectedHeading =>
+      'Your account still belongs to you';
+
+  @override
+  String get accountStatusKeysUnaffectedBody =>
+      'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.';
+
+  @override
+  String get accountStatusAppealHeading => 'If you think this is wrong';
+
+  @override
+  String get accountStatusAppealBody =>
+      'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.';
+
+  @override
+  String get accountStatusContactSupport => 'Contact support';
+
+  @override
+  String get accountStatusMoveAccount => 'Move your account';
+
+  @override
+  String get accountStatusRetry => 'Try again';
 }

@@ -123,6 +123,11 @@ class ContentBlocklistRepository {
   // preserves other clients' public t/word/e mutes and encrypted content.
   Event? _latestOwnMuteListEvent;
 
+  // A mute-list publish that was withheld because the read that precedes it
+  // came back inconclusive. Flushed by [retryPendingMuteListPublish] and by
+  // the next block or unblock, which republishes the whole list anyway.
+  bool _muteListPublishPending = false;
+
   // Latest replaceable kind-10000 mute-list event timestamp per author.
   // Prevent stale relay delivery order from resurrecting old mute state.
   final Map<String, int> _latestMuteListEventCreatedAtByAuthor =
@@ -283,6 +288,7 @@ class ContentBlocklistRepository {
       _mutualMuteBlocklist.clear();
       _blockedByOthers.clear();
       _latestOwnMuteListEvent = null;
+      _muteListPublishPending = false;
       _latestMuteListEventCreatedAtByAuthor.clear();
       _latestBlockListEventCreatedAtByAuthor.clear();
       _severedFollowers.clear();
@@ -628,7 +634,21 @@ class ContentBlocklistRepository {
     }
 
     try {
-      await _refreshLatestOwnMuteList(nostrClient);
+      if (!await _refreshLatestOwnMuteList(nostrClient)) {
+        // Kind 10000 is replaceable: publishing now would replace a list we
+        // could not read. Everything only the unread event holds would go
+        // with it -- the encrypted private section, every t/word/e mute, and
+        // any p mute authored on another client (#6750). The block is already
+        // persisted locally, so withholding costs propagation, not safety.
+        _muteListPublishPending = true;
+        Log.warning(
+          'Withholding mute list publish - could not confirm the current '
+          'kind 10000. Blocks stay local until a read succeeds.',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return false;
+      }
       final publishShape = _buildMuteListPublishShape();
 
       final event = await signer.createAndSignEvent(
@@ -646,6 +666,7 @@ class ContentBlocklistRepository {
         // echo of an older own mute list cannot race back and drop the
         // mutes we just merged in.
         _applyOwnMuteListEvent(sentEvent.event);
+        _muteListPublishPending = false;
         Log.info(
           'Published mute list to Nostr with '
           '${_runtimeBlocklist.length + _mutedPubkeys.length} pubkey entries',
@@ -671,16 +692,33 @@ class ContentBlocklistRepository {
     }
   }
 
-  Future<void> _refreshLatestOwnMuteList(NostrClient nostrClient) async {
+  /// Re-read our own latest kind 10000, and report whether the answer was
+  /// conclusive.
+  ///
+  /// Returns `false` when no relay settled the query -- a timeout, or a
+  /// fan-out no relay took. That is not the same as "this account has no mute
+  /// list", and the difference is load-bearing: kind 10000 is replaceable, so
+  /// a caller that publishes on an unread answer deletes whatever only the
+  /// unread event held. A *settled* answer of zero events is conclusive and
+  /// returns `true`, so a first-ever block still publishes.
+  ///
+  /// [NostrClient.queryEvents] cannot express this -- it drops `timedOut` and
+  /// `noRelays` -- which is why the detailed form is used here, with
+  /// `requireAllRelaysSettled` so a relay abandoned by the settle window
+  /// arrives as a timeout rather than as an empty answer.
+  Future<bool> _refreshLatestOwnMuteList(NostrClient nostrClient) async {
     final ourPubkey = _ourPubkey;
-    if (ourPubkey == null) return;
+    if (ourPubkey == null) return false;
 
-    final muteEvents = await nostrClient.queryEvents([
-      Filter(authors: [ourPubkey], kinds: const [10000]),
-    ]);
+    final result = await nostrClient.queryEventsDetailed(
+      [
+        Filter(authors: [ourPubkey], kinds: const [10000]),
+      ],
+      requireAllRelaysSettled: true,
+    );
 
     var newest = _latestOwnMuteListEvent;
-    for (final event in muteEvents) {
+    for (final event in result.events) {
       if (event.pubkey != ourPubkey) continue;
       if (newest == null || event.createdAt > newest.createdAt) {
         newest = event;
@@ -690,12 +728,34 @@ class ContentBlocklistRepository {
     if (newest != null && newest != _latestOwnMuteListEvent) {
       _applyOwnMuteListEvent(newest);
     }
+
+    return !result.timedOut && !result.noRelays;
+  }
+
+  /// Republish a mute list whose publish was withheld by an inconclusive read.
+  ///
+  /// A no-op unless something is pending, so callers can fire it on any
+  /// "we might be healthy again" signal. Returns whether a publish reached a
+  /// relay. Blocks and unblocks republish the whole list themselves, so this
+  /// only matters for a user who blocked once while relays were unhealthy and
+  /// has not blocked since.
+  Future<bool> retryPendingMuteListPublish() async {
+    if (!_muteListPublishPending) return false;
+    return _publishMuteListToNostr();
   }
 
   _MuteListPublishShape _buildMuteListPublishShape() {
     final source = _latestOwnMuteListEvent;
     final tags = <List<String>>[];
     final includedPubkeys = <String>{};
+    // A NIP-51 `p` tag can carry a third element -- a relay hint -- that is
+    // ours to preserve, not to invent. Keyed by pubkey so an entry we re-emit
+    // below keeps whatever the source published. Without this, a pubkey that
+    // is both muted on the relay and blocked in-app loses its hint on every
+    // republish: `_applyOwnMuteListEvent` keeps our own blocks out of
+    // `_mutedPubkeys`, so the preservation loop skips it and the
+    // `_runtimeBlocklist` loop rewrites it as a bare ['p', pubkey].
+    final sourcePubkeyTags = <String, List<String>>{};
 
     if (source != null) {
       for (final tag in source.tags) {
@@ -706,23 +766,21 @@ class ContentBlocklistRepository {
 
         if (tag.length < 2) continue;
         final pubkey = tag[1];
+        sourcePubkeyTags.putIfAbsent(pubkey, () => List<String>.of(tag));
         if (_mutedPubkeys.contains(pubkey) && includedPubkeys.add(pubkey)) {
           tags.add(List<String>.of(tag));
         }
       }
     }
 
-    for (final pubkey in _mutedPubkeys) {
-      if (includedPubkeys.add(pubkey)) {
-        tags.add(['p', pubkey]);
-      }
+    void addPubkey(String pubkey) {
+      if (!includedPubkeys.add(pubkey)) return;
+      final sourceTag = sourcePubkeyTags[pubkey];
+      tags.add(sourceTag == null ? ['p', pubkey] : List<String>.of(sourceTag));
     }
 
-    for (final pubkey in _runtimeBlocklist) {
-      if (includedPubkeys.add(pubkey)) {
-        tags.add(['p', pubkey]);
-      }
-    }
+    _mutedPubkeys.forEach(addPubkey);
+    _runtimeBlocklist.forEach(addPubkey);
 
     return _MuteListPublishShape(tags: tags, content: source?.content ?? '');
   }
@@ -883,16 +941,32 @@ class ContentBlocklistRepository {
         _runtimeBlocklist.contains(pubkey);
   }
 
+  /// The buckets recording a hide **this account chose**: the operator list,
+  /// our own blocks, and the mutes we authored on our own kind 10000 list
+  /// (possibly from another client).
+  ///
+  /// DM surfaces filter on these alone. A direct message already received is
+  /// the viewer's own copy, and a third party must not be able to remove it
+  /// by publishing a list — see [_hideBuckets] and #7345.
+  late final List<Set<String>> _viewerHideBuckets = [
+    _internalBlocklist,
+    _runtimeBlocklist,
+    _mutedPubkeys,
+  ];
+
   /// The buckets whose union is hidden from feeds, held as live references
   /// to the underlying sets. Every instance is stable for the repository's
   /// lifetime — the `const` internal list plus four `final` sets that are
   /// only ever mutated in place — so both [feedHiddenPubkeys] and
-  /// [shouldFilterFromFeeds] derive from this one list and cannot drift. A
-  /// new hide-bucket is added here exactly once.
+  /// [shouldFilterFromFeeds] derive from this one list and cannot drift.
+  ///
+  /// This is a strict superset of [_viewerHideBuckets]: it adds the two
+  /// buckets fed by *other people's* lists, which suppress our content in
+  /// feeds but must never reach a DM surface. A new bucket is added in
+  /// exactly one place — [_viewerHideBuckets] when the viewer chose the hide
+  /// and it should apply everywhere, here when it is feeds-only.
   late final List<Set<String>> _hideBuckets = [
-    _internalBlocklist,
-    _runtimeBlocklist,
-    _mutedPubkeys,
+    ..._viewerHideBuckets,
     _mutualMuteBlocklist,
     _blockedByOthers,
   ];
@@ -904,10 +978,10 @@ class ContentBlocklistRepository {
   /// - Users who blocked us (kind 30000, d=block) — hides our content
   ///   from their feeds and their content from ours
   ///
-  /// This is the canonical feed-hide set. UI surfaces that need the
-  /// materialized set — e.g. DM reaction filtering in `conversation_view`
-  /// — read this rather than re-deriving the union by hand, so they stay
-  /// in lockstep with [shouldFilterFromFeeds].
+  /// This is the canonical feed-hide set. Feed surfaces that need the
+  /// materialized set read this rather than re-deriving the union by hand,
+  /// so they stay in lockstep with [shouldFilterFromFeeds]. DM surfaces read
+  /// [dmHiddenPubkeys] instead.
   Set<String> get feedHiddenPubkeys => {
     for (final bucket in _hideBuckets) ...bucket,
   };
@@ -922,6 +996,34 @@ class ContentBlocklistRepository {
   bool shouldFilterFromFeeds(String pubkey) {
     for (var i = 0; i < _hideBuckets.length; i++) {
       if (_hideBuckets[i].contains(pubkey)) return true;
+    }
+    return false;
+  }
+
+  /// The union of every pubkey hidden from **DM surfaces**:
+  /// - Users we blocked (internal + runtime blocklist)
+  /// - Users we muted on our own kind 10000 mute list
+  ///
+  /// Deliberately excludes the two buckets fed by other people's lists
+  /// (`_mutualMuteBlocklist`, `_blockedByOthers`). Publishing a kind 10000
+  /// mute or a kind 30000 `d=block` naming the viewer used to remove the
+  /// viewer's own copy of a thread from every DM surface at once, including
+  /// messages already received and stored on the device (#7345).
+  ///
+  /// Counterpart to [feedHiddenPubkeys]; both derive from [_hideBuckets] /
+  /// [_viewerHideBuckets] so the DM set stays a strict subset of the feed set.
+  Set<String> get dmHiddenPubkeys => {
+    for (final bucket in _viewerHideBuckets) ...bucket,
+  };
+
+  /// Whether [pubkey] is in [dmHiddenPubkeys] and so should be filtered from
+  /// DM surfaces.
+  ///
+  /// Same short-circuiting scan as [shouldFilterFromFeeds], over the narrower
+  /// bucket list.
+  bool shouldFilterFromDms(String pubkey) {
+    for (var i = 0; i < _viewerHideBuckets.length; i++) {
+      if (_viewerHideBuckets[i].contains(pubkey)) return true;
     }
     return false;
   }
@@ -1083,6 +1185,10 @@ class ContentBlocklistRepository {
   ///
   /// [userPubkey] is the current user's pubkey, used to identify which
   /// participant is "the other one" in each conversation.
+  ///
+  /// Filters on [shouldFilterFromDms], not [shouldFilterFromFeeds]: a thread
+  /// the viewer already received stays reachable even when the counterparty
+  /// mutes or blocks them (#7345).
   List<DmConversation> filterBlockedConversations(
     List<DmConversation> conversations, {
     required String userPubkey,
@@ -1094,7 +1200,7 @@ class ContentBlocklistRepository {
       );
       // Exclude self-conversations (no "other" participant found).
       if (otherPubkey.isEmpty) return false;
-      return !shouldFilterFromFeeds(otherPubkey);
+      return !shouldFilterFromDms(otherPubkey);
     }).toList();
   }
 
@@ -1351,12 +1457,28 @@ class ContentBlocklistRepository {
       if (!_isStillActiveAccount(ourPubkey)) return;
 
       // 2. Read the existing kind 10000 mute list (newest replaceable wins)
-      //    so the merge never drops mutes authored on other clients.
-      final muteEvents = await nostrClient.queryEvents([
-        Filter(authors: [ourPubkey], kinds: const [10000]),
-      ]);
+      //    so the merge never drops mutes authored on other clients. An
+      //    inconclusive read aborts the migration rather than merging into a
+      //    list we could not see -- step 4 republishes the whole event, and
+      //    the completion flag below stays unset so the next launch retries
+      //    (#6750).
+      final muteRead = await nostrClient.queryEventsDetailed(
+        [
+          Filter(authors: [ourPubkey], kinds: const [10000]),
+        ],
+        requireAllRelaysSettled: true,
+      );
+      if (muteRead.timedOut || muteRead.noRelays) {
+        Log.warning(
+          'Deferring legacy block-list migration - could not confirm the '
+          'current kind 10000 mute list; retrying next launch',
+          name: 'ContentBlocklistRepository',
+          category: LogCategory.system,
+        );
+        return;
+      }
       Event? newestMuteList;
-      for (final event in muteEvents) {
+      for (final event in muteRead.events) {
         if (event.pubkey != ourPubkey) continue;
         if (newestMuteList == null ||
             event.createdAt > newestMuteList.createdAt) {
@@ -1516,13 +1638,14 @@ class ContentBlocklistRepository {
   /// Our own pubkey is excluded so a malformed self-referential mute list
   /// can never filter the user's own content (#2192).
   void _handleOwnMuteListEvent(Event event) {
-    _applyOwnMuteListEvent(event);
+    _applyOwnMuteListEvent(event, reconcile: true);
   }
 
   void _applyOwnMuteListEvent(
     Event event, {
     bool notify = true,
     bool persist = true,
+    bool reconcile = false,
   }) {
     final ourPubkey = event.pubkey;
     final createdAt = event.createdAt;
@@ -1550,6 +1673,24 @@ class ContentBlocklistRepository {
         relayMuted.add(tag[1]);
       }
     }
+    // The relay's newest list is authoritative for what it holds, so blocks
+    // we still hold locally that are absent from it are a publish that never
+    // landed -- withheld by an inconclusive read (#6750), or lost with
+    // `_muteListPublishPending` when the app was killed. Derive that from the
+    // two sets that DO survive a restart rather than persisting a flag; it is
+    // a no-op in steady state, because our own publishes put every block on
+    // the list we read back. Only the subscription reconciles: a read taken
+    // inside `_publishMuteListToNostr` is about to republish anyway.
+    if (reconcile && _runtimeBlocklist.difference(relayMuted).isNotEmpty) {
+      Log.info(
+        'Own mute list is missing blocks we hold locally; republishing',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      _muteListPublishPending = true;
+      unawaited(retryPendingMuteListPublish());
+    }
+
     // Entries we blocked in-app are republished onto this same list; keep
     // them out of the mute set so they stay tracked as blocks only.
     relayMuted.removeAll(_runtimeBlocklist);

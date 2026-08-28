@@ -1200,8 +1200,8 @@ void main() {
         giftWrapId: _giftWrapId,
       );
 
-      expect(emptyContentOutcome, DmReactionWrapOutcome.processed);
-      expect(missingTagOutcome, DmReactionWrapOutcome.processed);
+      expect(emptyContentOutcome, DmWrapOutcome.processed);
+      expect(missingTagOutcome, DmWrapOutcome.processed);
 
       verifyNever(
         () => mockDao.upsertIncoming(
@@ -1239,7 +1239,7 @@ void main() {
         giftWrapId: _giftWrapId,
       );
 
-      expect(outcome, DmReactionWrapOutcome.processed);
+      expect(outcome, DmWrapOutcome.processed);
       verify(
         () => mockDao.upsertIncoming(
           id: _reactionRumorId,
@@ -1278,7 +1278,7 @@ void main() {
 
       // A transient DAO failure must NOT cement a skip — leave it deferred so
       // the wrap retries on a later launch. #5452.
-      expect(outcome, DmReactionWrapOutcome.deferred);
+      expect(outcome, DmWrapOutcome.deferred);
       expect(
         reporterSites,
         contains(
@@ -1309,7 +1309,7 @@ void main() {
           giftWrapId: _giftWrapId,
         );
 
-        expect(outcome, DmReactionWrapOutcome.deferred);
+        expect(outcome, DmWrapOutcome.deferred);
         verifyNever(
           () => mockDao.upsertIncoming(
             id: any(named: 'id'),
@@ -1327,7 +1327,7 @@ void main() {
     );
 
     test(
-      'handleIncomingDeletion soft-deletes matching reaction rows',
+      'applyDeletion soft-deletes the matching reaction row',
       () async {
         when(
           () =>
@@ -1341,21 +1341,15 @@ void main() {
         ).thenAnswer((_) async => 1);
 
         final repository = createRepository();
-        final outcome = await repository.handleIncomingDeletion(
-          rumorEvent: reactionRumor(
-            kind: EventKind.eventDeletion,
-            content: '',
-            tags: [
-              ['e', _reactionRumorId],
-              ['k', EventKind.reaction.toString()],
-            ],
-          ),
+        final outcome = await repository.applyDeletion(
+          rumorId: _reactionRumorId,
+          deleterPubkey: _ownerPubkey,
           giftWrapId: _giftWrapId,
         );
 
         // Terminal: the deletion wrap is recorded so it is not re-decrypted on
         // every launch. #5452.
-        expect(outcome, DmReactionWrapOutcome.processed);
+        expect(outcome, DmWrapOutcome.processed);
         verify(
           () => mockDao.softDelete(
             id: _reactionRumorId,
@@ -1365,27 +1359,21 @@ void main() {
       },
     );
 
-    test('handleIncomingDeletion ignores author mismatches', () async {
+    test('applyDeletion ignores author mismatches', () async {
       when(
         () => mockDao.getById(id: _reactionRumorId, ownerPubkey: _ownerPubkey),
       ).thenAnswer((_) async => makeRow(reactorPubkey: _otherPubkey));
 
       final repository = createRepository();
-      final outcome = await repository.handleIncomingDeletion(
-        rumorEvent: reactionRumor(
-          kind: EventKind.eventDeletion,
-          content: '',
-          tags: [
-            ['e', _reactionRumorId],
-            ['k', EventKind.reaction.toString()],
-          ],
-        ),
+      final outcome = await repository.applyDeletion(
+        rumorId: _reactionRumorId,
+        deleterPubkey: _ownerPubkey,
         giftWrapId: _giftWrapId,
       );
 
       // An invalid deletion (author mismatch) will never apply — it is
       // terminal, so the wrap is recorded and not re-decrypted. #5452.
-      expect(outcome, DmReactionWrapOutcome.processed);
+      expect(outcome, DmWrapOutcome.processed);
       verifyNever(
         () => mockDao.softDelete(
           id: any(named: 'id'),
@@ -1395,32 +1383,28 @@ void main() {
     });
 
     test(
-      'handleIncomingDeletion defers when the target reaction has not synced',
+      'applyDeletion returns null when the target reaction has not synced',
       () async {
-        // NIP-59 randomizes gift-wrap created_at, so a deletion can drain
-        // before the reaction it removes. With the target row absent, recording
-        // the deletion as terminal would let the reaction insert live later and
-        // never be soft-deleted. Defer instead so the wrap re-decrypts and
-        // applies once the reaction lands. #5452.
+        // `null` means "no reaction with that id here", which lets
+        // DmRepository's classifier try the message store before giving up.
+        // Only when neither store holds the target does the wrap defer — and
+        // it must, because NIP-59 randomizes gift-wrap created_at, so a
+        // deletion can drain before the reaction it removes. Recording it as
+        // terminal would let the reaction insert live later and never be
+        // soft-deleted. #5452, #7809.
         when(
           () =>
               mockDao.getById(id: _reactionRumorId, ownerPubkey: _ownerPubkey),
         ).thenAnswer((_) async => null);
 
         final repository = createRepository();
-        final outcome = await repository.handleIncomingDeletion(
-          rumorEvent: reactionRumor(
-            kind: EventKind.eventDeletion,
-            content: '',
-            tags: [
-              ['e', _reactionRumorId],
-              ['k', EventKind.reaction.toString()],
-            ],
-          ),
+        final outcome = await repository.applyDeletion(
+          rumorId: _reactionRumorId,
+          deleterPubkey: _ownerPubkey,
           giftWrapId: _giftWrapId,
         );
 
-        expect(outcome, DmReactionWrapOutcome.deferred);
+        expect(outcome, isNull);
         verifyNever(
           () => mockDao.softDelete(
             id: any(named: 'id'),
@@ -1431,7 +1415,7 @@ void main() {
     );
 
     test(
-      'handleIncomingDeletion defers and reports on a soft-delete failure',
+      'applyDeletion defers and reports on a soft-delete failure',
       () async {
         when(
           () =>
@@ -1445,21 +1429,15 @@ void main() {
         ).thenThrow(StateError('boom'));
 
         final repository = createRepository();
-        final outcome = await repository.handleIncomingDeletion(
-          rumorEvent: reactionRumor(
-            kind: EventKind.eventDeletion,
-            content: '',
-            tags: [
-              ['e', _reactionRumorId],
-              ['k', EventKind.reaction.toString()],
-            ],
-          ),
+        final outcome = await repository.applyDeletion(
+          rumorId: _reactionRumorId,
+          deleterPubkey: _ownerPubkey,
           giftWrapId: _giftWrapId,
         );
 
         // A transient DAO failure must NOT cement a skip — leave it deferred so
         // the wrap retries on a later launch. #5452.
-        expect(outcome, DmReactionWrapOutcome.deferred);
+        expect(outcome, DmWrapOutcome.deferred);
         expect(
           reporterSites,
           contains(
@@ -1802,6 +1780,7 @@ void main() {
               giftWrapId: _giftWrapId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
               ownerPubkey: _ownerPubkey,
             ),
           );

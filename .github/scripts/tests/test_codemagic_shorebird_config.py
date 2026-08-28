@@ -11,6 +11,7 @@ MOBILE_CI_PATH = (
     Path(__file__).resolve().parents[3] / ".github" / "workflows" / "mobile_ci.yaml"
 )
 WORKFLOWS_PATH = Path(__file__).resolve().parents[2] / "workflows"
+COORDINATOR_PROBE_WORKFLOW_PATH = WORKFLOWS_PATH / "coordinator_route_probe.yml"
 SHOREBIRD_DOC_PATH = (
     Path(__file__).resolve().parents[3] / "mobile" / "docs" / "SHOREBIRD_CODE_PUSH.md"
 )
@@ -43,6 +44,9 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
     def setUp(self) -> None:
         self.contents = CODEMAGIC_PATH.read_text()
         self.mobile_ci_contents = MOBILE_CI_PATH.read_text()
+        self.coordinator_probe_workflow_contents = (
+            COORDINATOR_PROBE_WORKFLOW_PATH.read_text()
+        )
         self.mise_contents = MISE_PATH.read_text()
         self.shorebird_doc_contents = SHOREBIRD_DOC_PATH.read_text()
         self.shorebird_config_contents = SHOREBIRD_CONFIG_PATH.read_text()
@@ -91,6 +95,33 @@ class CodemagicShorebirdConfigTest(unittest.TestCase):
         self.assertIn("SUPPORTERS_API_BASE_URL", self.contents)
         self.assertIn("FF_DIVINE_SUPPORTERS", self.contents)
         self.assertIn("defines[name] = ENV.fetch(name, '')", self.contents)
+
+    def test_store_gate_probes_only_the_selected_environment(self) -> None:
+        self.assertRegex(
+            self.contents,
+            r'(?s)&check_coordinator_route.*?DEFAULT_ENV="\$\{\{ inputs\.DEFAULT_ENV \}\}"'
+            r"\s+\\\n\s+\./scripts/check_coordinator_route_serving\.sh",
+        )
+        for workflow in ("ios-build", "android-build"):
+            self.assertIn(
+                "- *check_coordinator_route",
+                self._workflow_block(workflow),
+            )
+
+    def test_scheduled_probe_maintains_one_incident_issue(self) -> None:
+        workflow = self.coordinator_probe_workflow_contents
+        self.assertIn("issues: write", workflow)
+        self.assertIn("group: coordinator-route-probe", workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn(
+            "github.ref_name == github.event.repository.default_branch",
+            workflow,
+        )
+        self.assertIn("coordinator-route-probe-incident", workflow)
+        self.assertIn("state: 'all'", workflow)
+        self.assertIn("state: 'open'", workflow)
+        self.assertIn("state: 'closed'", workflow)
+        self.assertEqual(1, workflow.count("github.rest.issues.create({"))
 
     def test_runtime_track_selection_disables_native_auto_update(self) -> None:
         self.assertRegex(

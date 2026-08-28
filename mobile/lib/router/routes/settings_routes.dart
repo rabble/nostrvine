@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/go_router_page_name.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
+import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/badges/badge_award_screen.dart';
 import 'package:openvine/screens/badges/badge_detail_screen.dart';
 import 'package:openvine/screens/badges/badge_editor_screen.dart';
@@ -28,6 +29,7 @@ import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/account/change_email_screen.dart';
 import 'package:openvine/screens/settings/account/change_password_screen.dart';
+import 'package:openvine/screens/settings/account_status_screen.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
@@ -103,6 +105,13 @@ List<RouteBase> settingsRoutes(Ref ref) {
         state,
       ),
       builder: (_, _) => const InvitesScreen(),
+    ),
+    GoRoute(
+      path: AccountStatusScreen.path,
+      name: AccountStatusScreen.routeName,
+      builder: (_, state) => AccountStatusScreen(
+        publishRestrictionConfirmed: extraAs<bool>(state.extra) == true,
+      ),
     ),
     GoRoute(
       path: SupportCenterScreen.path,

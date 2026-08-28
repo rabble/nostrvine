@@ -129,7 +129,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -196,6 +196,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 9) {
         await m.createTable(removedConversations);
       }
+      if (from < 10) {
+        await _repairSchemaV10();
+      }
+      if (from < 11) {
+        await _repairSchemaV11();
+      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -209,12 +215,46 @@ class AppDatabase extends _$AppDatabase {
         await _repairSchemaV6();
         await _createConsolidatedIndexes();
         await _repairSchemaV8();
+        await _repairSchemaV10();
+        await _repairSchemaV11();
       }
 
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
   );
+
+  /// Adds the durable delete-for-everyone columns to `direct_messages`.
+  ///
+  /// A soft-deleted own message now carries the kind-5 rumor it must still
+  /// deliver, so an unconfirmed retraction survives a restart and is re-driven
+  /// by the retry sweep instead of being dropped (#8165).
+  Future<void> _repairSchemaV10() async {
+    await _addColumnIfMissing(
+      'direct_messages',
+      'deletion_rumor_json',
+      'TEXT NULL',
+    );
+    await _addColumnIfMissing(
+      'direct_messages',
+      'deletion_publish_status',
+      'TEXT NULL',
+    );
+  }
+
+  /// Adds the cross-protocol twin marker to stored DMs (#8211).
+  ///
+  /// Existing rows default to "no twin absorbed yet". That is the safe
+  /// direction: at worst one already-collapsed row absorbs a second twin that
+  /// will never arrive, whereas defaulting to collapsed would let a genuine
+  /// duplicate through on every historical row.
+  Future<void> _repairSchemaV11() async {
+    await _addColumnIfMissing(
+      'direct_messages',
+      'twin_collapsed',
+      'INTEGER NOT NULL DEFAULT 0 CHECK ("twin_collapsed" IN (0, 1))',
+    );
+  }
 
   /// Adds the two-phase reporting column to the queued view-event outbox.
   Future<void> _repairSchemaV8() async {

@@ -544,6 +544,10 @@
   "profileMyLibraryLabel": "My Library",
   "profileMessageLabel": "Message",
   "profileDeletedAccountName": "Deleted account",
+  "inboxVanishedAccountReference": "this account",
+  "@inboxVanishedAccountReference": {
+    "description": "Identity-neutral account reference inserted into Report, Block, Unblock, and confirmation copy when a DM peer has vanished. Safety actions remain available even though the peer's name is no longer shown."
+  },
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
@@ -749,7 +753,7 @@
   "exploreTabIntegratedApps": "Integrated Apps",
   "exploreFeaturedSponsoredBy": "Sponsored by {sponsor}",
   "@exploreFeaturedSponsoredBy": {
-    "description": "Commercial disclosure pinned above a sponsored featured collection's grid. This is a disclosure, not marketing copy: translate it so it clearly communicates commercial sponsorship rather than an editorial credit. Many languages may render this more naturally as a noun label than a prepositional phrase, or may need the brand name to lead. {sponsor} is a brand name supplied by the server and must not be translated.",
+    "description": "Commercial disclosure shown with a sponsored featured collection in grid and fullscreen views. This is a disclosure, not marketing copy: translate it so it clearly communicates commercial sponsorship rather than an editorial credit. Many languages may render this more naturally as a noun label than a prepositional phrase, or may need the brand name to lead. {sponsor} is a brand name supplied by the server and must not be translated.",
     "placeholders": {
       "sponsor": {
         "type": "String",
@@ -2468,7 +2472,10 @@
     "description": "Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely."
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
-  "shareMenuVideoDeletionRequested": "Video deleted",
+  "shareMenuDeleteCleanupInProgress": "Removing video…",
+  "shareMenuDeleteCleanupConfirmed": "Video deleted.",
+  "shareMenuDeleteCleanupDelayed": "Video deleted. It may take a little while to disappear everywhere.",
+  "shareMenuDeleteCleanupFailed": "Video deleted, but we couldn't remove every copy. Please contact support.",
   "authSessionExpired": "Your session has expired. Please sign in again.",
   "authAccountRestoreFailed": "We couldn't unlock that account on this device. Sign in again.",
   "@authAccountRestoreFailed": {
@@ -2856,6 +2863,14 @@
   "supportLoginRequired": "Log in to contact support",
   "supportExportingLogs": "Exporting logs...",
   "supportExportLogsFailed": "Failed to export logs",
+  "supportNoLogsToExport": "No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.",
+  "@supportNoLogsToExport": {
+    "description": "Shown when the user exports or copies logs but the in-memory capture buffer is empty, which is what happens after a crash or force-quit. Tells them the logs do not survive a restart so they know to reproduce first."
+  },
+  "supportExportLogsUnconfirmed": "Logs handed off. Check the app you shared to.",
+  "@supportExportLogsUnconfirmed": {
+    "description": "Shown on Android when the share sheet was presented but the platform reported no outcome, so the share may well have succeeded. Deliberately not phrased as an error."
+  },
   "supportLogsSavedTo": "Logs saved to {path}",
   "@supportLogsSavedTo": {
     "description": "Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.",
@@ -2898,6 +2913,10 @@
   "reportSelectReason": "Please select a reason for reporting this content",
   "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
   "reportDetailsRequired": "Please describe the issue",
+  "reportDetailsTextOnly": "Text only — photos and GIFs can’t be attached here.",
+  "@reportDetailsTextOnly": {
+    "description": "Shown above the content report details field to warn that photos, screenshots, and GIFs cannot be attached."
+  },
   "reportReasonSpam": "Spam or Unwanted Content",
   "reportReasonSpamSubtitle": "Unwanted or repetitive content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",
@@ -4429,10 +4448,6 @@
   "@deleteAccountAccountChanged": {
     "description": "Error shown when the signed-in account changed between confirming a deletion and executing it; nothing was deleted."
   },
-  "deleteAccountAccountChangedAfterDeletion": "Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.",
-  "@deleteAccountAccountChangedAfterDeletion": {
-    "description": "Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish."
-  },
   "deleteAccountBurnUsernameFailed": "Couldn't release your username. Your account was not deleted. Try again, or uncheck the option.",
   "@deleteAccountBurnUsernameFailed": {
     "description": "Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted."
@@ -4461,15 +4476,6 @@
   "deleteAccountConfirmationHintUsername": "Type your username",
   "@deleteAccountConfirmationHintUsername": {
     "description": "Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."
-  },
-  "deleteAccountContentDeletionFailed": "Failed to delete content from relays",
-  "deleteAccountRelayConfirmationFailed": "We couldn't confirm account deletion with a relay. Check your connection and try again.",
-  "deleteAccountAccountRestricted": "Your account is restricted, so deletion couldn't continue. Contact support for help deleting your account.",
-  "@deleteAccountAccountRestricted": {
-    "description": "Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned."
-  },
-  "@deleteAccountRelayConfirmationFailed": {
-    "description": "Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out."
   },
   "deleteAccountDeleteAllContentButton": "Delete All Content",
   "accountDeletionRecoveryTitle": "Finish deleting your account",
@@ -4500,6 +4506,8 @@
   "@accountDeletionTerminalFailureBody": {"description": "Fallback explanation for a terminal account-deletion failure when the server supplies no safe detail."},
   "accountDeletionSignOut": "Sign out",
   "@accountDeletionSignOut": {"description": "Secondary action that leaves an account-deletion recovery gate without deleting local credentials."},
+  "deleteAccountDeletionUnavailable": "Account deletion isn't available right now. Nothing was deleted.",
+  "@deleteAccountDeletionUnavailable": {"description": "Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred."},
   "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
   "@deleteAccountDeletionIncomplete": {"description": "Neutral error when account deletion could not complete and no claim about username state is safe."},
   "deleteAccountFinalConfirmationTitle": "⚠️ Final Confirmation",
@@ -4527,10 +4535,6 @@
   "deleteAccountServerDeletionFailed": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Try again in a bit.",
   "@deleteAccountServerDeletionFailed": {
     "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion failed for a reason a fresh sign-in cannot clear (5xx, 404, or an unreachable server). Must not claim that nothing was deleted, because the vanish request has already reached relays, and must not tell the user to sign in again, which does not clear a server failure."
-  },
-  "deleteAccountServerDeletionRequiresReauth": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Sign in again to finish.",
-  "@deleteAccountServerDeletionRequiresReauth": {
-    "description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."
   },
   "deleteAccountSuccess": "Deletion requests sent. You're signed out on this device.",
   "@deleteAccountSuccess": {
@@ -4602,6 +4606,10 @@
   "publishErrorLowStorage": "Not enough storage on your device. Free up some space and try again.",
   "publishErrorThumbnailFailed": "The video uploaded, but the thumbnail could not be prepared. Please try again.",
   "publishErrorNostrPublishFailed": "The video uploaded but the post could not be published. Check your relay settings and try again.",
+  "publishErrorAccountRestricted": "Your account is restricted, so this post couldn’t be published.",
+  "@publishErrorAccountRestricted": {"description": "Terminal publish error shown when the authoritative Divine relay rejects the signed-in account."},
+  "uploadFailureSheetAccountStatusButton": "View Account Status",
+  "@uploadFailureSheetAccountStatusButton": {"description": "Button on a restricted-account publish failure that opens Account status instead of retrying."},
   "publishErrorAudioReuseNotPermitted": "The video uploaded, but its sound isn't cleared for reuse. Pick a different sound to post it.",
   "publishErrorInterrupted": "This upload was interrupted. Would you like to try again?",
   "publishErrorAccountChanged": "This video belongs to a different account. Switch back to that account to post it.",
@@ -4710,9 +4718,9 @@
   "@profileBadgeCheckmarkTitle": {
     "description": "Title for the dialog explaining the special profile checkmark badge."
   },
-  "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.",
+  "profileBadgeCheckmarkBody": "Divine gives this checkmark to team accounts. It is separate from NIP-05, verified account links, and OG Viner status.",
   "@profileBadgeCheckmarkBody": {
-    "description": "Body copy explaining that the special profile checkmark marks Divine team accounts and manually approved profiles, not NIP-05, verified-account links, or OG Viner status."
+    "description": "Body copy explaining that the special profile checkmark marks Divine team accounts, not NIP-05, verified-account links, or OG Viner status."
   },
   "unfollowConfirmButton": "Unfollow",
   "videoClipSaveFailed": "Failed to save clip",
@@ -6516,15 +6524,19 @@
   "minorAccountReviewRestrictionEngagement": "Comments, likes, reposts, and follows are paused",
   "minorAccountReviewRestrictionMessaging": "Starting or replying to regular messages is paused",
   "minorAccountReviewRestrictionSupport": "Support and your moderation message remain available",
+  "minorAccountReviewContentTitle": "What happens to your videos",
+  "@minorAccountReviewContentTitle": {"description": "Heading that explains how a restricted minor's existing videos are handled during and after review."},
+  "minorAccountReviewContentBody": "Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.",
+  "@minorAccountReviewContentBody": {"description": "Explains that existing videos are hidden during review, restored after clearance, and deleted if an unanswered review closes."},
+  "minorAccountReviewAppealTitle": "Think we got this wrong?",
+  "@minorAccountReviewAppealTitle": {"description": "Heading above the support action that introduces the restricted-minor reconsideration policy. Approved wording from #8239 — do not reword without a product decision."},
+  "minorAccountReviewAppealTeenBody": "Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.",
+  "@minorAccountReviewAppealTeenBody": {"description": "Tells a restricted 13-to-15-year-old how to ask support to reconsider the decision without promising a reversal. Approved wording from #8239, used verbatim."},
+  "minorAccountReviewAppealUnder13Body": "Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.",
+  "@minorAccountReviewAppealUnder13Body": {"description": "Tells a restricted child under 13 that a parent or guardian may ask support to reconsider the decision without promising a reversal. The approved #8239 wording with the actor changed to the parent or guardian; the promise language is unchanged."},
   "minorAccountReviewOpenSupportCenter": "Open Support Center",
   "minorAccountReviewOpenModerationMessage": "Open Moderation Message",
   "minorAccountReviewOpenReviewPage": "Open review page",
-  "minorAccountReviewMoveAccountTitle": "You can take your account with you",
-  "@minorAccountReviewMoveAccountTitle": {
-    "description": "Card title on the restricted-account review screen introducing the account portability flow. Moving is not deletion and is available regardless of review state."
-  },
-  "minorAccountReviewMoveAccountBody": "You can still use your Divine identity on other infrastructure. Move your account or download your archive.",
-  "minorAccountReviewMoveAccountCta": "Move your account",
   "minorAccountReviewCheckAgain": "Check Again",
   "minorAccountReviewLogOut": "Log out",
   "minorAccountReviewNextStepTitle": "Next step",
@@ -8095,9 +8107,9 @@
   "@dbFailureConfirmBody": {
     "description": "Body of the confirmation step explaining what a local-database reset deletes and what survives."
   },
-  "dbFailureResetConfirm": "reset and close",
+  "dbFailureResetConfirm": "reset local database now",
   "@dbFailureResetConfirm": {
-    "description": "Button that performs the local-database reset and then closes the app."
+    "description": "Destructive confirmation button that performs the local-database reset. Supported platforms close afterward; unsupported platforms remain on the completion step."
   },
   "dbFailureCancel": "cancel",
   "@dbFailureCancel": {
@@ -8188,5 +8200,49 @@
   "videoDetailHiddenShowAnyway": "Show it anyway",
   "videoDetailHiddenOpenSettings": "Change setting",
   "safetySettingsShowVerifiedOnly": "Only show camera-verified videos",
-  "safetySettingsShowVerifiedOnlySubtitle": "Hide videos without a capture chain back to a camera. Vine archive videos are always shown."
+  "safetySettingsShowVerifiedOnlySubtitle": "Hide videos without a capture chain back to a camera. Vine archive videos are always shown.",
+  "accountStatusTitle": "Account status",
+  "@accountStatusTitle": {"description": "Title of the account status screen, and of the settings row that opens it."},
+  "accountStatusTileSubtitleRestricted": "Your account is restricted",
+  "@accountStatusTileSubtitleRestricted": {"description": "Settings row subtitle shown when the signed-in account is under enforcement."},
+  "accountStatusAllClearHeading": "Everything looks good!",
+  "@accountStatusAllClearHeading": {"description": "Sole line on the account status screen when Funnelcake confirms there is no restriction. Deliberately has no body copy."},
+  "profileAccountRestricted": "Account restricted",
+  "@profileAccountRestricted": {"description": "Persistent profile-avatar badge label shown when Divine has confirmed an account restriction."},
+  "accountStatusSuspendedHeading": "Your account is suspended",
+  "@accountStatusSuspendedHeading": {"description": "Heading shown when the account is suspended."},
+  "accountStatusSuspendedBody": "You can't post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.",
+  "@accountStatusSuspendedBody": {"description": "Explains what a suspension restricts and that content is hidden rather than deleted."},
+  "accountStatusBannedHeading": "Your account is banned",
+  "@accountStatusBannedHeading": {"description": "Heading shown when the account is banned."},
+  "accountStatusBannedBody": "You can't post, comment, or send messages on Divine, and your videos have been taken down from Divine.",
+  "@accountStatusBannedBody": {"description": "Explains that a ban takes content down from Divine without claiming physical deletion."},
+  "accountStatusRestrictedHeading": "Your account is restricted",
+  "@accountStatusRestrictedHeading": {"description": "Heading shown when a publish rejection confirms a restriction this app version does not recognize."},
+  "accountStatusRestrictedBody": "Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.",
+  "@accountStatusRestrictedBody": {"description": "Body shown when a publish rejection confirms a restriction this app version does not recognize."},
+  "accountStatusLastKnownBody": "We couldn't refresh your status. This is the last status we received.",
+  "@accountStatusLastKnownBody": {"description": "Shown with a retained confirmed restriction after its refresh fails."},
+  "accountStatusUnavailableHeading": "We couldn't check your status",
+  "@accountStatusUnavailableHeading": {"description": "Heading shown when account enforcement status could not be checked and no confirmed restriction is retained."},
+  "accountStatusUnavailableBody": "Check your connection and try again.",
+  "@accountStatusUnavailableBody": {"description": "Body shown when account enforcement status could not be checked and no confirmed restriction is retained."},
+  "accountStatusSignedOutHeading": "Sign in to check your account status",
+  "@accountStatusSignedOutHeading": {"description": "Heading shown when the account-status route is opened without a signed-in account."},
+  "accountStatusSignedOutBody": "There isn't a signed-in account to check right now.",
+  "@accountStatusSignedOutBody": {"description": "Body shown when the account-status route is opened without a signed-in account."},
+  "accountStatusKeysUnaffectedHeading": "Your account still belongs to you",
+  "@accountStatusKeysUnaffectedHeading": {"description": "Heading for the section explaining that Divine's enforcement does not affect the user's Nostr identity."},
+  "accountStatusKeysUnaffectedBody": "This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn't run.",
+  "@accountStatusKeysUnaffectedBody": {"description": "Explains that the restriction is limited to Divine-operated surfaces and the user's Nostr identity is untouched."},
+  "accountStatusAppealHeading": "If you think this is wrong",
+  "@accountStatusAppealHeading": {"description": "Heading for the appeal section."},
+  "accountStatusAppealBody": "Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.",
+  "@accountStatusAppealBody": {"description": "States the appeals policy plainly and points to support as the channel, without promising a formal appeals process."},
+  "accountStatusContactSupport": "Contact support",
+  "@accountStatusContactSupport": {"description": "Button opening the in-app support center."},
+  "accountStatusMoveAccount": "Move your account",
+  "@accountStatusMoveAccount": {"description": "Button opening the account portability page."},
+  "accountStatusRetry": "Try again",
+  "@accountStatusRetry": {"description": "Button that refetches the account status."}
 }

@@ -19,6 +19,21 @@ import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Describes whether a push-token registration should be retried.
+enum PushRegistrationResult {
+  /// The relay confirmed that it stored the registration event.
+  published,
+
+  /// No relay received the event, so retrying cannot create a duplicate.
+  retryableFailure,
+
+  /// A relay may have stored the event but did not confirm it.
+  uncertainFailure,
+
+  /// A prerequisite failed or the relay rejected the event; do not retry.
+  terminalFailure,
+}
+
 /// Manages FCM push notification registration and lifecycle via Nostr events.
 ///
 /// Token registration and deregistration are sent as NIP-44 encrypted Nostr
@@ -84,51 +99,66 @@ class PushNotificationService {
   /// [pushRegistrationKind] Nostr event to the push service pubkey.
   ///
   /// Does nothing on web ([kIsWeb] is true).
-  Future<void> register(
+  Future<PushRegistrationResult> register(
     String userPubkey, {
     FutureOr<bool> Function()? isCurrent,
   }) async {
-    if (kIsWeb) return;
+    if (kIsWeb) return PushRegistrationResult.terminalFailure;
 
     final pushServicePubkey = _configuredPushServicePubkey();
-    if (pushServicePubkey == null) return;
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (pushServicePubkey == null) {
+      return PushRegistrationResult.terminalFailure;
+    }
+    if (!await _isPublishCurrent(isCurrent)) {
+      return PushRegistrationResult.terminalFailure;
+    }
 
-    final token = await _getToken();
-    if (!await _isPublishCurrent(isCurrent)) return;
+    String? token;
+    try {
+      token = await _getToken();
+    } on Object catch (error) {
+      Log.warning(
+        'FCM token is unavailable - skipping push notification registration: '
+        '$error',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+      return PushRegistrationResult.terminalFailure;
+    }
+    if (!await _isPublishCurrent(isCurrent)) {
+      return PushRegistrationResult.terminalFailure;
+    }
     if (token == null) {
       Log.warning(
         'FCM token is null — skipping push notification registration',
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return;
+      return PushRegistrationResult.terminalFailure;
     }
 
-    await _publishRegistration(
-      token,
-      pushServicePubkey,
-      isCurrent: isCurrent,
-    );
+    return _publishRegistration(token, pushServicePubkey, isCurrent: isCurrent);
   }
 
-  Future<void> registerToken(
+  Future<PushRegistrationResult> registerToken(
     String userPubkey,
     String token, {
     FutureOr<bool> Function()? isCurrent,
   }) async {
-    if (kIsWeb) return;
-    if (userPubkey != _authService.currentIdentity?.pubkey) return;
+    if (kIsWeb) return PushRegistrationResult.terminalFailure;
+    if (userPubkey != _authService.currentIdentity?.pubkey) {
+      return PushRegistrationResult.terminalFailure;
+    }
 
     final pushServicePubkey = _configuredPushServicePubkey();
-    if (pushServicePubkey == null) return;
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (pushServicePubkey == null) {
+      return PushRegistrationResult.terminalFailure;
+    }
+    if (!await _isPublishCurrent(isCurrent)) {
+      return PushRegistrationResult.terminalFailure;
+    }
 
-    await _publishRegistration(
-      token,
-      pushServicePubkey,
-      isCurrent: isCurrent,
-    );
+    return _publishRegistration(token, pushServicePubkey, isCurrent: isCurrent);
   }
 
   /// Deregisters this device from the divine push service.
@@ -289,7 +319,7 @@ class PushNotificationService {
     }
     if (!await _isPublishCurrent(null)) return false;
 
-    return _publishPushControlEvent(event, 'preferences');
+    return (await _publishPushControlEvent(event, 'preferences')).confirmed;
   }
 
   /// Handles a foreground FCM message by displaying a local notification.
@@ -327,12 +357,14 @@ class PushNotificationService {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  Future<void> _publishRegistration(
+  Future<PushRegistrationResult> _publishRegistration(
     String token,
     String pushServicePubkey, {
     FutureOr<bool> Function()? isCurrent,
   }) async {
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) {
+      return PushRegistrationResult.terminalFailure;
+    }
 
     final plaintext = jsonEncode({'token': token});
 
@@ -340,7 +372,9 @@ class PushNotificationService {
       pushServicePubkey,
       plaintext,
     );
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) {
+      return PushRegistrationResult.terminalFailure;
+    }
 
     if (encrypted == null) {
       Log.error(
@@ -348,7 +382,7 @@ class PushNotificationService {
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return;
+      return PushRegistrationResult.terminalFailure;
     }
 
     final expirationTimestamp =
@@ -366,7 +400,9 @@ class PushNotificationService {
         ['expiration', expirationTimestamp.toString()],
       ],
     );
-    if (!await _isPublishCurrent(isCurrent)) return;
+    if (!await _isPublishCurrent(isCurrent)) {
+      return PushRegistrationResult.terminalFailure;
+    }
 
     if (event == null) {
       Log.error(
@@ -374,14 +410,26 @@ class PushNotificationService {
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
-      return;
+      return PushRegistrationResult.terminalFailure;
     }
-    if (!await _isPublishCurrent(isCurrent)) return;
 
-    await _publishPushControlEvent(event, 'registration');
+    final outcome = await _publishPushControlEvent(event, 'registration');
+    if (outcome.confirmed) return PushRegistrationResult.published;
+    if (outcome.rejectedBy.isNotEmpty) {
+      return PushRegistrationResult.terminalFailure;
+    }
+    // No-response is ambiguous: the relay may have stored the event, but it can
+    // also mean the pool repaired a half-open socket for the next attempt.
+    if (outcome.noResponseFrom.isNotEmpty) {
+      return PushRegistrationResult.uncertainFailure;
+    }
+    // Nothing accepted, rejected or stayed silent: the event was never written
+    // to a relay. The named relay lands in unreachableTargets, so the outcome
+    // is not literally empty.
+    return PushRegistrationResult.retryableFailure;
   }
 
-  Future<bool> _publishPushControlEvent(
+  Future<PublishOutcome> _publishPushControlEvent(
     Event event,
     String action, {
     NostrClient? publishClient,
@@ -395,7 +443,9 @@ class PushNotificationService {
 
     final outcomeDetails =
         'eventId=${event.id}, relay=$relayUrl, acceptedBy=${outcome.acceptedBy}, '
-        'rejectedBy=${outcome.rejectedBy}, noResponseFrom=${outcome.noResponseFrom}';
+        'rejectedBy=${outcome.rejectedBy}, '
+        'noResponseFrom=${outcome.noResponseFrom}, '
+        'unreachableTargets=${outcome.unreachableTargets}';
 
     if (outcome.confirmed) {
       Log.info(
@@ -410,7 +460,7 @@ class PushNotificationService {
         category: LogCategory.system,
       );
     }
-    return outcome.confirmed;
+    return outcome;
   }
 
   /// Builds the live-session deregistration event: NIP-44 encrypts the current

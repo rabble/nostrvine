@@ -401,10 +401,7 @@ END
       'COALESCE(last_read_timestamp, 0), '
       'COALESCE(last_message_timestamp, 0)) '
       'WHERE id IN ($placeholders)${_ownerSqlClause(ownerPubkey)}',
-      variables: [
-        ...ids.map(Variable.new),
-        ..._ownerSqlVariables(ownerPubkey),
-      ],
+      variables: [...ids.map(Variable.new), ..._ownerSqlVariables(ownerPubkey)],
       updates: {attachedDatabase.conversations},
       updateKind: UpdateKind.update,
     );
@@ -432,16 +429,24 @@ END
     return attachedDatabase.transaction(action);
   }
 
-  /// Delete all conversations for a specific user.
-  Future<int> clearAllForUser(String ownerPubkey) {
-    return (delete(
-      conversations,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  /// Deletes conversations for the departing account plus unattributed legacy
+  /// rows, while preserving every other known account's conversations.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(conversations)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) |
+              t.ownerPubkey.isNull() |
+              t.ownerPubkey.equals(''),
+        ))
+        .go();
   }
 
-  /// Delete all conversations.
-  Future<int> clearAll() {
-    return delete(conversations).go();
+  /// Deletes only unattributed legacy rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
+    return (delete(
+      conversations,
+    )..where((t) => t.ownerPubkey.isNull() | t.ownerPubkey.equals(''))).go();
   }
 
   /// Backfill `current_user_has_sent` for conversations where the user

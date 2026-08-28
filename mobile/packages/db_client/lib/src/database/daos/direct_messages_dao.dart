@@ -8,10 +8,44 @@ import 'package:drift/drift.dart';
 
 part 'direct_messages_dao.g.dart';
 
+/// Which arrival protocol a stored `direct_messages` row must have for
+/// [DirectMessagesDao.hasMatchingMessage] to treat it as a duplicate.
+///
+/// This is not `Conversations.dmProtocol`, which classifies a whole
+/// *conversation* for send routing. This names one stored *row*, and it is
+/// derived rather than stored: the NIP-04 receive path writes the wire event
+/// id into both `id` and `gift_wrap_id`, while every NIP-17 path writes a
+/// rumor id distinct from its gift-wrap id.
+enum DmDedupCounterpart {
+  /// Only a row that arrived over NIP-04 counts. Asked by the NIP-17 receive
+  /// path: a near-identical row from its *own* protocol is a genuine earlier
+  /// message, not this one.
+  nip04Copy,
+
+  /// Only a row that arrived over NIP-17 counts. Mirror of [nip04Copy], asked
+  /// by the NIP-04 receive path.
+  nip17Copy,
+
+  /// No arrival constraint. For the self-send paths that match the user's own
+  /// persisted message rather than a cross-protocol twin.
+  unconstrained,
+}
+
 @DriftAccessor(tables: [DirectMessages])
 class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     with _$DirectMessagesDaoMixin {
   DirectMessagesDao(super.attachedDatabase);
+
+  /// Soft-deleted locally; the kind-5 wrap still needs a confirmed delivery.
+  static const String _deletionPending = 'deletion_pending';
+
+  /// A relay confirmed the wrap for every recipient. Terminal.
+  static const String _deletionSent = 'deletion_sent';
+
+  /// Send policy blocked every recipient that failed. Terminal, and NOT a
+  /// claim of full delivery — recipients outside the block may already have
+  /// received the retraction.
+  static const String _deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
   /// **or** legacy rows with no owner (NULL).
@@ -165,6 +199,139 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return rows > 0;
   }
 
+  /// Soft-delete [rumorId] and durably record the kind-5 rumor that still
+  /// has to reach the recipient.
+  ///
+  /// One write, so a crash between hiding the bubble and storing the rumor
+  /// cannot lose the retraction. The row leaves the live set immediately
+  /// (`watchMessagesForConversation` excludes `is_deleted`), while
+  /// `deletion_publish_status = 'deletion_pending'` keeps it visible to the
+  /// retry sweep until a relay confirms the wrap. Mirrors
+  /// `DmReactionsDao.markOwnDeletionPending`.
+  ///
+  /// Returns `true` if the row was updated, `false` if [rumorId] was not
+  /// found.
+  Future<bool> markMessageDeletionPending(
+    String rumorId, {
+    required String deletionRumorJson,
+    String? ownerPubkey,
+  }) async {
+    final rows =
+        await (update(directMessages)..where(
+              (t) =>
+                  t.id.equals(rumorId) &
+                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            ))
+            .write(
+              DirectMessagesCompanion(
+                isDeleted: const Value(true),
+                deletionRumorJson: Value(deletionRumorJson),
+                deletionPublishStatus: const Value(_deletionPending),
+              ),
+            );
+    return rows > 0;
+  }
+
+  /// A relay confirmed the deletion wrap: drop the stored rumor and move the
+  /// row to the terminal `'deletion_sent'` status so the sweep stops.
+  Future<bool> markMessageDeletionSent(String rumorId, {String? ownerPubkey}) =>
+      _settleMessageDeletion(
+        rumorId,
+        status: _deletionSent,
+        // Delivered, so there is nothing left to replay.
+        retainRumor: false,
+        ownerPubkey: ownerPubkey,
+      );
+
+  /// Send policy blocked every failed recipient: stop re-driving a send that
+  /// will always be refused, but record it as `'deletion_blocked'` rather than
+  /// `'deletion_sent'`. Other recipients may already have succeeded.
+  ///
+  /// The reaction path collapses these two, reasoning that a blocked peer
+  /// never received the reaction either so the removal is moot. That does not
+  /// transfer to a message, which may well have been delivered before the
+  /// block took effect — calling it sent would misreport a message the peer
+  /// still holds.
+  ///
+  /// The rumor is **kept**. A block can lift while the build is running: the
+  /// minor restriction reads live remote state, and Keycast's server-side
+  /// `verified_minor` gate — the other blocked source — clears from that same
+  /// state. (The retired-moderation-account case cannot: that list is a
+  /// compile-time `const`, so lifting it needs a new build.)
+  ///
+  /// The stored rumor is also the retraction's event identity, not merely a
+  /// payload. Replaying the stored JSON keeps every attempt one kind-5;
+  /// rebuilding would mint a fresh id per attempt and put N distinct
+  /// retractions on the wire for one user action. Nothing on the receive side
+  /// collapses them — dedup is keyed on gift-wrap id, and NIP-59 gives every
+  /// wrap a fresh ephemeral key and `created_at`, so a replay is always a new
+  /// wrap; what makes it safe is that re-applying a deletion is a no-op.
+  /// Dropping the rumor therefore leaves the row unrepairable rather than
+  /// merely un-retried — including in the mixed case where some recipients
+  /// already received the retraction (#8226).
+  ///
+  /// Retention is inert for the sweep: [getRetryableOwnMessageDeletions]
+  /// additionally requires `deletion_pending`, so a blocked row stays off the
+  /// worklist whether or not the rumor is present.
+  Future<bool> markMessageDeletionBlocked(
+    String rumorId, {
+    String? ownerPubkey,
+  }) => _settleMessageDeletion(
+    rumorId,
+    status: _deletionBlocked,
+    retainRumor: true,
+    ownerPubkey: ownerPubkey,
+  );
+
+  /// Move a deletion row to a terminal [status].
+  ///
+  /// [retainRumor] is required rather than defaulted: whether the payload
+  /// survives is the whole difference between the two terminal states, so a
+  /// future third caller has to decide it deliberately.
+  Future<bool> _settleMessageDeletion(
+    String rumorId, {
+    required String status,
+    required bool retainRumor,
+    String? ownerPubkey,
+  }) async {
+    final rows =
+        await (update(directMessages)..where(
+              (t) =>
+                  t.id.equals(rumorId) &
+                  _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+            ))
+            .write(
+              DirectMessagesCompanion(
+                deletionRumorJson: retainRumor
+                    ? const Value.absent()
+                    : const Value(null),
+                deletionPublishStatus: Value(status),
+              ),
+            );
+    return rows > 0;
+  }
+
+  /// Own deletions still awaiting confirmed delivery, oldest first — the
+  /// retry sweep's worklist.
+  ///
+  /// Scoped to rows this account authored *and* soft-deleted, so a peer's
+  /// deletion applied locally is never re-published from this device.
+  Future<List<DirectMessageRow>> getRetryableOwnMessageDeletions({
+    required String ownerPubkey,
+  }) {
+    return (select(directMessages)
+          ..where(
+            (t) =>
+                _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+                t.senderPubkey.equals(ownerPubkey) &
+                t.isDeleted.equals(true) &
+                t.deletionRumorJson.isNotNull() &
+                t.deletionPublishStatus.equals(_deletionPending),
+          )
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+        .get();
+  }
+
   /// Look up a message by rumor event ID.
   ///
   /// Used to validate sender pubkey before applying a kind 5 deletion.
@@ -208,41 +375,159 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return present;
   }
 
-  /// Check if a message with the same sender and content already exists in a
-  /// conversation within a ±5 second window. Used for cross-protocol dedup
-  /// when both a NIP-17 and NIP-04 copy of the same message arrive.
+  /// Restricts a dedup match to rows that arrived over [counterpart]'s
+  /// protocol, read off the two id columns.
   ///
-  /// The window is deliberately narrow: a genuine repeat of the same text
-  /// (e.g. "ok") is only collapsed when it lands within ±[windowSeconds],
-  /// which is still wide enough for dual-send duplicates, whose timestamps
-  /// differ by at most a few seconds. Widening it drops more legitimate
-  /// repeats — it does not gain a retry signal, because a re-minted rumor
-  /// is indistinguishable from a genuine second send.
+  /// The NIP-04 receive path stores the wire event id in BOTH `id` and
+  /// `gift_wrap_id`; every NIP-17 path stores a rumor id distinct from its
+  /// gift-wrap id. Both columns are `NOT NULL`, so `id = gift_wrap_id` is a
+  /// plain two-valued predicate and its negation is exact.
+  Expression<bool> _arrivedOverCounterpart(DmDedupCounterpart counterpart) {
+    final arrivedOverNip04 = directMessages.id.equalsExp(
+      directMessages.giftWrapId,
+    );
+    return switch (counterpart) {
+      DmDedupCounterpart.nip04Copy => arrivedOverNip04,
+      DmDedupCounterpart.nip17Copy => arrivedOverNip04.not(),
+      DmDedupCounterpart.unconstrained => const Constant(true),
+    };
+  }
+
+  /// Whether a message with the same sender and content is already stored in
+  /// [conversationId] within ±[windowSeconds] **and** arrived over the
+  /// protocol named by [counterpart].
+  ///
+  /// This answers the SELF-AUTHORED question — "have I already persisted this
+  /// send?" — with existence semantics, which is what those callers need: a
+  /// group send's siblings all match the one local row the fan-out wrote, and
+  /// every one of them must be suppressed. Prefer [hasMessageWithSendBatchId]
+  /// when the batch token is available, since it matches exactly instead of
+  /// heuristically. Self-authored callers pass
+  /// [DmDedupCounterpart.unconstrained], because the row may carry either
+  /// arrival shape: every NIP-17 send path before #2654 wrote the gift-wrap id
+  /// into both columns, so a row from that window reads as NIP-04 (#8211).
+  ///
+  /// For the CROSS-PROTOCOL twin — a dual-send that put one message on the
+  /// wire twice, as a NIP-17 rumor and a NIP-04 event with unrelated ids —
+  /// use [claimCrossProtocolTwin] instead. Existence is the wrong question
+  /// there: a twin is 1:1, and asking existence let one stored copy swallow
+  /// every same-text arrival in the window (#8211). Same-protocol replays need
+  /// no help from either method — the primary key on `id` and the UNIQUE index
+  /// on `gift_wrap_id` already make [insertMessage] a no-op for them.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
     required String content,
     required int createdAt,
+    required DmDedupCounterpart counterpart,
     int windowSeconds = 5,
     String? ownerPubkey,
   }) async {
     final query = selectOnly(directMessages)
       ..where(
-        directMessages.conversationId.equals(conversationId) &
-            directMessages.senderPubkey.equals(senderPubkey) &
-            directMessages.content.equals(content) &
-            directMessages.createdAt.isBiggerOrEqualValue(
-              createdAt - windowSeconds,
-            ) &
-            directMessages.createdAt.isSmallerOrEqualValue(
-              createdAt + windowSeconds,
-            ) &
-            _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey),
+        _dedupWindow(
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: content,
+          createdAt: createdAt,
+          counterpart: counterpart,
+          windowSeconds: windowSeconds,
+          ownerPubkey: ownerPubkey,
+        ),
       )
       ..addColumns([directMessages.id])
       ..limit(1);
     final result = await query.getSingleOrNull();
     return result != null;
+  }
+
+  /// The `(sender, content, ~time)` dedup window, shared by
+  /// [hasMatchingMessage] and [claimCrossProtocolTwin] so the arrival-shape
+  /// rule has exactly one definition.
+  Expression<bool> _dedupWindow({
+    required String conversationId,
+    required String senderPubkey,
+    required String content,
+    required int createdAt,
+    required DmDedupCounterpart counterpart,
+    required int windowSeconds,
+    required String? ownerPubkey,
+  }) {
+    return directMessages.conversationId.equals(conversationId) &
+        directMessages.senderPubkey.equals(senderPubkey) &
+        directMessages.content.equals(content) &
+        directMessages.createdAt.isBiggerOrEqualValue(
+          createdAt - windowSeconds,
+        ) &
+        directMessages.createdAt.isSmallerOrEqualValue(
+          createdAt + windowSeconds,
+        ) &
+        _arrivedOverCounterpart(counterpart) &
+        _ownedOrLegacy(directMessages.ownerPubkey, ownerPubkey);
+  }
+
+  /// Claims the cross-protocol twin of an arriving message, marking it so no
+  /// later arrival can claim it again. Returns true when one was claimed,
+  /// meaning the caller must drop the arriving event as a duplicate.
+  ///
+  /// This is the dual-send question, and it is deliberately NOT
+  /// [hasMatchingMessage]. That method asks whether a matching row *exists* —
+  /// correct for a self-authored send, which any number of echoes may
+  /// legitimately match. A twin is 1:1: one message put on the wire twice
+  /// yields exactly one counterpart, so a stored copy may absorb exactly one.
+  /// Asking existence let a single stored NIP-04 row swallow every same-text
+  /// NIP-17 arrival inside the window — #7324's own symptom, surviving in the
+  /// NIP-04-first ordering (#8211). Measured on device before this fix: three
+  /// messages sent, one bubble shown.
+  ///
+  /// The claim is ONE statement on purpose — an `UPDATE ... WHERE id IN
+  /// (SELECT ... LIMIT 1)`. A drift transaction does not serialize the
+  /// statements issued inside it, so a select-then-update pair can interleave
+  /// with a concurrent claim and hand the same row to both arrivals. Here the
+  /// affected row count comes back from the same write, with no await point in
+  /// between.
+  ///
+  /// [counterpart] names the protocol the twin must have arrived over.
+  /// [DmDedupCounterpart.unconstrained] cannot identify a twin and is a caller
+  /// error.
+  Future<bool> claimCrossProtocolTwin({
+    required String conversationId,
+    required String senderPubkey,
+    required String content,
+    required int createdAt,
+    required DmDedupCounterpart counterpart,
+    int windowSeconds = 5,
+    String? ownerPubkey,
+  }) async {
+    if (counterpart == DmDedupCounterpart.unconstrained) {
+      throw ArgumentError.value(
+        counterpart,
+        'counterpart',
+        'A twin must name the protocol it arrived over',
+      );
+    }
+
+    final unclaimed = selectOnly(directMessages)
+      ..addColumns([directMessages.id])
+      ..where(
+        _dedupWindow(
+              conversationId: conversationId,
+              senderPubkey: senderPubkey,
+              content: content,
+              createdAt: createdAt,
+              counterpart: counterpart,
+              windowSeconds: windowSeconds,
+              ownerPubkey: ownerPubkey,
+            ) &
+            directMessages.twinCollapsed.equals(false),
+      )
+      ..orderBy([OrderingTerm(expression: directMessages.createdAt)])
+      ..limit(1);
+
+    final claimed =
+        await (update(directMessages)..where((t) => t.id.isInQuery(unclaimed)))
+            .write(const DirectMessagesCompanion(twinCollapsed: Value(true)));
+    return claimed > 0;
   }
 
   /// Whether a message tagged with group-send [batchId] is already persisted
@@ -253,10 +538,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// sibling — or the happy-path persist racing a concurrent recovery — asks
   /// this to avoid inserting a second copy.
   ///
-  /// Scoped by strict `owner_pubkey` equality (not `_ownedOrLegacy`):
-  /// `send_batch_id` is only ever stamped on self-sent group messages with a
-  /// non-null owner, so the NULL-owner legacy branch would only widen the
-  /// match with nothing to gain.
+  /// Scoped by strict `owner_pubkey` equality (not `_ownedOrLegacy`): generated
+  /// send ids are only stamped on the owner's sends, including self-wrap echoes
+  /// received on another device, so the NULL-owner legacy branch would only
+  /// widen the match with nothing to gain.
   Future<bool> hasMessageWithSendBatchId({
     required String batchId,
     required String ownerPubkey,
@@ -347,15 +632,25 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return attachedDatabase.transaction(action);
   }
 
-  /// Delete all DMs for a specific user.
-  Future<int> clearAllForUser(String ownerPubkey) {
-    return (delete(
-      directMessages,
-    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  /// Deletes DMs for the departing account plus unattributed legacy rows.
+  ///
+  /// Ambiguous rows must never cross an account boundary and become visible to
+  /// the incoming account. Rows owned by every other known account survive.
+  Future<int> clearForAccountSwitch(String ownerPubkey) {
+    return (delete(directMessages)..where(
+          (t) =>
+              t.ownerPubkey.equals(ownerPubkey) |
+              t.ownerPubkey.isNull() |
+              t.ownerPubkey.equals(''),
+        ))
+        .go();
   }
 
-  /// Delete all DMs.
-  Future<int> clearAll() {
-    return delete(directMessages).go();
+  /// Deletes only unattributed legacy rows when the departing account is
+  /// unknown, preserving every row with a valid owner.
+  Future<int> clearUnowned() {
+    return (delete(
+      directMessages,
+    )..where((t) => t.ownerPubkey.isNull() | t.ownerPubkey.equals(''))).go();
   }
 }

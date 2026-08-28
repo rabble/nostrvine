@@ -31,7 +31,6 @@ import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/profile_badge_explanation_sheet.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
@@ -43,6 +42,11 @@ import 'package:openvine/widgets/video_feed_item/video_card_meta.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Size of the avatar block: the avatar plus the sliver of overflow the follow
+/// badge has always drawn into. Also the height the author text is centred
+/// against, so raising it to a 48dp target cannot shift it off the avatar.
+const double _avatarClusterSize = 58;
 
 class VideoOverlayPreviewData {
   const VideoOverlayPreviewData({
@@ -157,6 +161,16 @@ class VideoOverlayActions extends ConsumerWidget {
     // Check if there's meaningful text content to display
     final hasTextContent =
         descriptionText.isNotEmpty || (titleText?.isNotEmpty ?? false);
+
+    // Shared by the title and the description, and on the description it is
+    // attached twice: once to the semantics node that carries the label, once
+    // to the detector that takes the real pointer.
+    final openMetadata = video == null
+        ? null
+        : () {
+            onInteracted?.call();
+            MetadataExpandedSheet.show(context, video);
+          };
 
     // In fullscreen mode, ensure badges clear the status bar icons
     // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
@@ -309,9 +323,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     );
                     // The beta chit yields to both the checkmark and the OG
                     // Viner chit, so a name never carries two of them. The
-                    // Viner rosters are disjoint by construction; the
-                    // checkmark is an independent list that 15 of its 18
-                    // pubkeys share with the beta roster.
+                    // Viner rosters are disjoint by construction; many team
+                    // accounts also appear on the beta roster.
                     final isOgBetaTester =
                         !isOgViner &&
                         !showCheckmark &&
@@ -334,8 +347,8 @@ class VideoOverlayActions extends ConsumerWidget {
                       children: [
                         // Avatar with follow button overlay
                         SizedBox(
-                          width: 58, // 48 avatar + follow button overflow
-                          height: 58,
+                          width: _avatarClusterSize,
+                          height: _avatarClusterSize,
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -364,54 +377,87 @@ class VideoOverlayActions extends ConsumerWidget {
                         const SizedBox(width: 6),
                         // User name and loop count (tappable to go to profile)
                         Expanded(
-                          child: GestureDetector(
-                            onTap: navigateToProfile,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
+                          child: Align(
+                            // Aligned OUTSIDE the detector so the target hugs
+                            // the author content. Inside it, the detector
+                            // filled the whole Expanded, and an opaque hit box
+                            // that wide swallowed the empty video to the right
+                            // of a short name — taking double-tap-to-like and
+                            // press-and-hold-to-peek with it.
+                            alignment: AlignmentDirectional.centerStart,
+                            child: GestureDetector(
+                              // Opaque, so the target is tappable across its
+                              // full height rather than only on the painted
+                              // glyphs: deferring to the child leaves the 58dp
+                              // node it advertises just 20dp of real target.
+                              behavior: HitTestBehavior.opaque,
+                              onTap: navigateToProfile,
+                              // The name + meta column is intrinsically 44dp,
+                              // which failed androidTapTargetGuideline (48) on
+                              // device. Constrained to the avatar block and
+                              // centred, so the text sits where it always has
+                              // while the target clears 48dp. minHeight, not a
+                              // fixed height, so it still grows with the system
+                              // font scale (.claude/rules/accessibility.md);
+                              // minWidth covers a display name too short to
+                              // reach the minimum on its own.
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minWidth: kMinInteractiveDimension,
+                                  minHeight: _avatarClusterSize,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Flexible(
-                                      child: Semantics(
-                                        identifier: 'video_author_name',
-                                        container: true,
-                                        explicitChildNodes: true,
-                                        label: context.l10n
-                                            .videoAuthorSemanticLabel(
+                                    Row(
+                                      // Hugs the name and its badges, so the
+                                      // detector above can hug in turn.
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Flexible(
+                                          child: Semantics(
+                                            identifier: 'video_author_name',
+                                            container: true,
+                                            explicitChildNodes: true,
+                                            label: context.l10n
+                                                .videoAuthorSemanticLabel(
+                                                  displayName,
+                                                ),
+                                            child: DivineHeartText(
                                               displayName,
+                                              style: VineTheme.titleSmallFont(
+                                                color: VineTheme.whiteText,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                        child: DivineHeartText(
-                                          displayName,
-                                          style: VineTheme.titleSmallFont(
-                                            color: VineTheme.whiteText,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
+                                        if (showCheckmark)
+                                          const SpecialProfileCheckmark(),
+                                        if (isOgViner) const OgVinerBadge(),
+                                        if (isOgBetaTester)
+                                          OgBetaBadge(
+                                            onTap: () =>
+                                                showProfileBadgeExplanationSheet(
+                                                  context,
+                                                  ProfileBadgeExplanationType
+                                                      .ogBetaTester,
+                                                ),
+                                          ),
+                                      ],
+                                    ),
+                                    _VideoCardMetaLine(
+                                      meta: resolveVideoCardMeta(
+                                        video: video,
+                                        isOwnVideo: isOwnVideo,
                                       ),
                                     ),
-                                    if (showCheckmark)
-                                      const SpecialProfileCheckmark(),
-                                    if (isOgViner) const OgVinerBadge(),
-                                    if (isOgBetaTester)
-                                      OgBetaBadge(
-                                        onTap: () =>
-                                            showProfileBadgeExplanationSheet(
-                                              context,
-                                              ProfileBadgeExplanationType
-                                                  .ogBetaTester,
-                                            ),
-                                      ),
                                   ],
                                 ),
-                                _VideoCardMetaLine(
-                                  meta: resolveVideoCardMeta(
-                                    video: video,
-                                    isOwnVideo: isOwnVideo,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -471,12 +517,7 @@ class VideoOverlayActions extends ConsumerWidget {
                       label: context.l10n.videoOverlayOpenMetadataFromTitle,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: video == null
-                            ? null
-                            : () {
-                                onInteracted?.call();
-                                MetadataExpandedSheet.show(context, video);
-                              },
+                        onTap: openMetadata,
                         child: DivineHeartText(
                           titleText,
                           style: VineTheme.labelMediumFont(
@@ -501,14 +542,19 @@ class VideoOverlayActions extends ConsumerWidget {
                       button: true,
                       label:
                           context.l10n.videoOverlayOpenMetadataFromDescription,
+                      // The action belongs on the node that carries the label.
+                      // On the detector below it landed on an anonymous child:
+                      // `LinkifiedText` splits into several spans once the text
+                      // holds a hashtag, mention or URL, and then nothing merges
+                      // up to name the tappable node. Plain text merges and
+                      // passes, so this was data-dependent, not layout-dependent.
+                      onTap: openMetadata,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: video == null
-                            ? null
-                            : () {
-                                onInteracted?.call();
-                                MetadataExpandedSheet.show(context, video);
-                              },
+                        // Excluded so it cannot re-create the anonymous node
+                        // the annotation above exists to name.
+                        excludeFromSemantics: true,
+                        onTap: openMetadata,
                         child: LinkifiedText(
                           text: descriptionText,
                           style: VineTheme.bodySmallFont(
@@ -740,78 +786,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           MoreActionButton(video: video, onInteracted: onInteracted),
         ],
       ),
-    );
-  }
-}
-
-/// Username and follow button row for video overlay.
-///
-/// Displays the video author's name (tappable to go to profile) and a follow button.
-class VideoAuthorRow extends ConsumerWidget {
-  const VideoAuthorRow({
-    required this.video,
-    super.key,
-    this.isFullscreen = false,
-  });
-
-  final VideoEvent video;
-  final bool isFullscreen;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Profile is unused here (UserName.fromPubKey handles display),
-    // but watching ensures the widget rebuilds when profile data arrives.
-    ref.watch(userProfileReactiveProvider(video.pubkey));
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Username chip (tappable to go to profile)
-        GestureDetector(
-          onTap: () {
-            Log.info(
-              '👤 User tapped profile: videoId=${video.id}, authorPubkey=${pubkeyForLogs(video.pubkey)}',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-            // Push other user's profile (fullscreen, no bottom nav)
-            final npub = normalizeToNpub(video.pubkey);
-            if (npub != null) {
-              context.push(OtherProfileScreen.pathForNpub(npub));
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: VineTheme.backgroundColor.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.user,
-                  size: 14,
-                  color: VineTheme.whiteText,
-                ),
-                const SizedBox(width: 6),
-                UserName.fromPubKey(
-                  video.pubkey,
-                  embeddedName: video.displayAuthorName,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // Follow button (handles own video check internally)
-        const SizedBox(width: 8),
-        VideoFollowButton(pubkey: video.pubkey, videoId: video.id),
-      ],
     );
   }
 }

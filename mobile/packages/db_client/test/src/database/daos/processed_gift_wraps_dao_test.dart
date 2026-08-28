@@ -69,10 +69,13 @@ void main() {
       expect(await dao.count(), 1);
     });
 
-    test('record accepts a null owner', () async {
-      await dao.record(giftWrapId: wrap1);
+    test('record rejects an empty owner', () async {
+      await expectLater(
+        dao.record(giftWrapId: wrap1, ownerPubkey: ''),
+        throwsArgumentError,
+      );
 
-      expect(await dao.hasGiftWrap(wrap1), isTrue);
+      expect(await dao.hasGiftWrap(wrap1), isFalse);
     });
 
     test('giftWrapIdsPresent returns only the recorded subset', () async {
@@ -87,16 +90,36 @@ void main() {
       expect(await dao.giftWrapIdsPresent(const <String>{}), isEmpty);
     });
 
-    test('clearAll removes every row', () async {
+    test('account-switch cleanup preserves another owner', () async {
       await dao.record(giftWrapId: wrap1, ownerPubkey: ownerA);
       await dao.record(giftWrapId: wrap2, ownerPubkey: ownerB);
 
-      final deleted = await dao.clearAll();
+      final deleted = await dao.clearForAccountSwitch(ownerA);
 
-      expect(deleted, 2);
+      expect(deleted, 1);
       expect(await dao.hasGiftWrap(wrap1), isFalse);
-      expect(await dao.hasGiftWrap(wrap2), isFalse);
-      expect(await dao.count(), 0);
+      expect(await dao.hasGiftWrap(wrap2), isTrue);
+      expect(await dao.count(), 1);
+    });
+
+    test('unknown-owner cleanup removes NULL and empty legacy rows', () async {
+      await database.customStatement(
+        'INSERT INTO processed_gift_wraps '
+        '(gift_wrap_id, processed_at, owner_pubkey) VALUES (?, 100, NULL)',
+        [wrap1],
+      );
+      await database.customStatement(
+        'INSERT INTO processed_gift_wraps '
+        "(gift_wrap_id, processed_at, owner_pubkey) VALUES (?, 100, '')",
+        [wrap2],
+      );
+      const ownedWrap =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      await dao.record(giftWrapId: ownedWrap, ownerPubkey: ownerB);
+
+      expect(await dao.clearUnowned(), 2);
+      expect(await dao.count(), 1);
+      expect(await dao.hasGiftWrap(ownedWrap), isTrue);
     });
   });
 }

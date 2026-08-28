@@ -1410,6 +1410,12 @@ abstract class AppLocalizations {
   /// **'Deleted account'**
   String get profileDeletedAccountName;
 
+  /// Identity-neutral account reference inserted into Report, Block, Unblock, and confirmation copy when a DM peer has vanished. Safety actions remain available even though the peer's name is no longer shown.
+  ///
+  /// In en, this message translates to:
+  /// **'this account'**
+  String get inboxVanishedAccountReference;
+
   /// Shown under the name in a direct-message conversation header when the other participant deleted their account. Replaces their handle.
   ///
   /// In en, this message translates to:
@@ -2130,7 +2136,7 @@ abstract class AppLocalizations {
   /// **'Integrated Apps'**
   String get exploreTabIntegratedApps;
 
-  /// Commercial disclosure pinned above a sponsored featured collection's grid. This is a disclosure, not marketing copy: translate it so it clearly communicates commercial sponsorship rather than an editorial credit. Many languages may render this more naturally as a noun label than a prepositional phrase, or may need the brand name to lead. {sponsor} is a brand name supplied by the server and must not be translated.
+  /// Commercial disclosure shown with a sponsored featured collection in grid and fullscreen views. This is a disclosure, not marketing copy: translate it so it clearly communicates commercial sponsorship rather than an editorial credit. Many languages may render this more naturally as a noun label than a prepositional phrase, or may need the brand name to lead. {sponsor} is a brand name supplied by the server and must not be translated.
   ///
   /// In en, this message translates to:
   /// **'Sponsored by {sponsor}'**
@@ -6731,11 +6737,29 @@ abstract class AppLocalizations {
   /// **'Delete Video?'**
   String get shareMenuDeleteVideoQuestion;
 
-  /// No description provided for @shareMenuVideoDeletionRequested.
+  /// No description provided for @shareMenuDeleteCleanupInProgress.
   ///
   /// In en, this message translates to:
-  /// **'Video deleted'**
-  String get shareMenuVideoDeletionRequested;
+  /// **'Removing video…'**
+  String get shareMenuDeleteCleanupInProgress;
+
+  /// No description provided for @shareMenuDeleteCleanupConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted.'**
+  String get shareMenuDeleteCleanupConfirmed;
+
+  /// No description provided for @shareMenuDeleteCleanupDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted. It may take a little while to disappear everywhere.'**
+  String get shareMenuDeleteCleanupDelayed;
+
+  /// No description provided for @shareMenuDeleteCleanupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video deleted, but we couldn\'t remove every copy. Please contact support.'**
+  String get shareMenuDeleteCleanupFailed;
 
   /// No description provided for @authSessionExpired.
   ///
@@ -7715,6 +7739,18 @@ abstract class AppLocalizations {
   /// **'Failed to export logs'**
   String get supportExportLogsFailed;
 
+  /// Shown when the user exports or copies logs but the in-memory capture buffer is empty, which is what happens after a crash or force-quit. Tells them the logs do not survive a restart so they know to reproduce first.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs yet — they start fresh each launch. Reproduce the problem, then come back without restarting.'**
+  String get supportNoLogsToExport;
+
+  /// Shown on Android when the share sheet was presented but the platform reported no outcome, so the share may well have succeeded. Deliberately not phrased as an error.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs handed off. Check the app you shared to.'**
+  String get supportExportLogsUnconfirmed;
+
   /// Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.
   ///
   /// In en, this message translates to:
@@ -7798,6 +7834,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please describe the issue'**
   String get reportDetailsRequired;
+
+  /// Shown above the content report details field to warn that photos, screenshots, and GIFs cannot be attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Text only — photos and GIFs can’t be attached here.'**
+  String get reportDetailsTextOnly;
 
   /// No description provided for @reportReasonSpam.
   ///
@@ -11672,12 +11714,6 @@ abstract class AppLocalizations {
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
   String get deleteAccountAccountChanged;
 
-  /// Error shown when a relay accepted at least one account or content deletion request but the signed-in account changed before cleanup could finish.
-  ///
-  /// In en, this message translates to:
-  /// **'Some deletion requests were accepted, but cleanup stopped because you switched accounts. Sign back into the original account to finish.'**
-  String get deleteAccountAccountChangedAfterDeletion;
-
   /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
   ///
   /// In en, this message translates to:
@@ -11713,24 +11749,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type your username'**
   String get deleteAccountConfirmationHintUsername;
-
-  /// No description provided for @deleteAccountContentDeletionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content from relays'**
-  String get deleteAccountContentDeletionFailed;
-
-  /// Error shown when the NIP-62 account deletion request could not be confirmed by any relay after bounded retries; account deletion could not proceed to server cleanup or sign-out.
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn\'t confirm account deletion with a relay. Check your connection and try again.'**
-  String get deleteAccountRelayConfirmationFailed;
-
-  /// Shown when every responding relay explicitly rejects the NIP-62 account-deletion request because the publishing account is suspended or banned.
-  ///
-  /// In en, this message translates to:
-  /// **'Your account is restricted, so deletion couldn\'t continue. Contact support for help deleting your account.'**
-  String get deleteAccountAccountRestricted;
 
   /// No description provided for @deleteAccountDeleteAllContentButton.
   ///
@@ -11822,6 +11840,12 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get accountDeletionSignOut;
 
+  /// Error shown when account deletion cannot start because the deletion coordinator is unavailable; no destructive deletion has occurred.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion isn\'t available right now. Nothing was deleted.'**
+  String get deleteAccountDeletionUnavailable;
+
   /// Neutral error when account deletion could not complete and no claim about username state is safe.
   ///
   /// In en, this message translates to:
@@ -11887,12 +11911,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Try again in a bit.'**
   String get deleteAccountServerDeletionFailed;
-
-  /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays.
-  ///
-  /// In en, this message translates to:
-  /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Sign in again to finish.'**
-  String get deleteAccountServerDeletionRequiresReauth;
 
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///
@@ -12116,6 +12134,18 @@ abstract class AppLocalizations {
   /// **'The video uploaded but the post could not be published. Check your relay settings and try again.'**
   String get publishErrorNostrPublishFailed;
 
+  /// Terminal publish error shown when the authoritative Divine relay rejects the signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted, so this post couldn’t be published.'**
+  String get publishErrorAccountRestricted;
+
+  /// Button on a restricted-account publish failure that opens Account status instead of retrying.
+  ///
+  /// In en, this message translates to:
+  /// **'View Account Status'**
+  String get uploadFailureSheetAccountStatusButton;
+
   /// No description provided for @publishErrorAudioReuseNotPermitted.
   ///
   /// In en, this message translates to:
@@ -12281,10 +12311,10 @@ abstract class AppLocalizations {
   /// **'Profile checkmark'**
   String get profileBadgeCheckmarkTitle;
 
-  /// Body copy explaining that the special profile checkmark marks Divine team accounts and manually approved profiles, not NIP-05, verified-account links, or OG Viner status.
+  /// Body copy explaining that the special profile checkmark marks Divine team accounts, not NIP-05, verified-account links, or OG Viner status.
   ///
   /// In en, this message translates to:
-  /// **'Divine gives this checkmark to team accounts and a small set of manually approved profiles. It is separate from NIP-05, verified account links, and OG Viner status.'**
+  /// **'Divine gives this checkmark to team accounts. It is separate from NIP-05, verified account links, and OG Viner status.'**
   String get profileBadgeCheckmarkBody;
 
   /// No description provided for @unfollowConfirmButton.
@@ -16798,6 +16828,36 @@ abstract class AppLocalizations {
   /// **'Support and your moderation message remain available'**
   String get minorAccountReviewRestrictionSupport;
 
+  /// Heading that explains how a restricted minor's existing videos are handled during and after review.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens to your videos'**
+  String get minorAccountReviewContentTitle;
+
+  /// Explains that existing videos are hidden during review, restored after clearance, and deleted if an unanswered review closes.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos are hidden while this review is open. If your account is cleared, they come back. If the review closes without a response, your account is closed and your videos are deleted.'**
+  String get minorAccountReviewContentBody;
+
+  /// Heading above the support action that introduces the restricted-minor reconsideration policy. Approved wording from #8239 — do not reword without a product decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Think we got this wrong?'**
+  String get minorAccountReviewAppealTitle;
+
+  /// Tells a restricted 13-to-15-year-old how to ask support to reconsider the decision without promising a reversal. Approved wording from #8239, used verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.'**
+  String get minorAccountReviewAppealTeenBody;
+
+  /// Tells a restricted child under 13 that a parent or guardian may ask support to reconsider the decision without promising a reversal. The approved #8239 wording with the actor changed to the parent or guardian; the promise language is unchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Your parent or guardian can contact Support Center and tell us what happened. We’ll take another look, but we can’t promise the decision will change.'**
+  String get minorAccountReviewAppealUnder13Body;
+
   /// No description provided for @minorAccountReviewOpenSupportCenter.
   ///
   /// In en, this message translates to:
@@ -16815,24 +16875,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open review page'**
   String get minorAccountReviewOpenReviewPage;
-
-  /// Card title on the restricted-account review screen introducing the account portability flow. Moving is not deletion and is available regardless of review state.
-  ///
-  /// In en, this message translates to:
-  /// **'You can take your account with you'**
-  String get minorAccountReviewMoveAccountTitle;
-
-  /// No description provided for @minorAccountReviewMoveAccountBody.
-  ///
-  /// In en, this message translates to:
-  /// **'You can still use your Divine identity on other infrastructure. Move your account or download your archive.'**
-  String get minorAccountReviewMoveAccountBody;
-
-  /// No description provided for @minorAccountReviewMoveAccountCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Move your account'**
-  String get minorAccountReviewMoveAccountCta;
 
   /// No description provided for @minorAccountReviewCheckAgain.
   ///
@@ -19648,10 +19690,10 @@ abstract class AppLocalizations {
   /// **'Your account stays. Drafts and clips saved on this device are deleted — messages and feeds come back from the network.'**
   String get dbFailureConfirmBody;
 
-  /// Button that performs the local-database reset and then closes the app.
+  /// Destructive confirmation button that performs the local-database reset. Supported platforms close afterward; unsupported platforms remain on the completion step.
   ///
   /// In en, this message translates to:
-  /// **'reset and close'**
+  /// **'reset local database now'**
   String get dbFailureResetConfirm;
 
   /// Button that returns from the reset confirmation to the failure screen.
@@ -19785,6 +19827,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide videos without a capture chain back to a camera. Vine archive videos are always shown.'**
   String get safetySettingsShowVerifiedOnlySubtitle;
+
+  /// Title of the account status screen, and of the settings row that opens it.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status'**
+  String get accountStatusTitle;
+
+  /// Settings row subtitle shown when the signed-in account is under enforcement.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted'**
+  String get accountStatusTileSubtitleRestricted;
+
+  /// Sole line on the account status screen when Funnelcake confirms there is no restriction. Deliberately has no body copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything looks good!'**
+  String get accountStatusAllClearHeading;
+
+  /// Persistent profile-avatar badge label shown when Divine has confirmed an account restriction.
+  ///
+  /// In en, this message translates to:
+  /// **'Account restricted'**
+  String get profileAccountRestricted;
+
+  /// Heading shown when the account is suspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is suspended'**
+  String get accountStatusSuspendedHeading;
+
+  /// Explains what a suspension restricts and that content is hidden rather than deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t post, comment, or send messages on Divine right now. Your videos are hidden rather than deleted, and they come back if the suspension is lifted.'**
+  String get accountStatusSuspendedBody;
+
+  /// Heading shown when the account is banned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is banned'**
+  String get accountStatusBannedHeading;
+
+  /// Explains that a ban takes content down from Divine without claiming physical deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t post, comment, or send messages on Divine, and your videos have been taken down from Divine.'**
+  String get accountStatusBannedBody;
+
+  /// Heading shown when a publish rejection confirms a restriction this app version does not recognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted'**
+  String get accountStatusRestrictedHeading;
+
+  /// Body shown when a publish rejection confirms a restriction this app version does not recognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Some things you can normally do on Divine are unavailable right now. Updating the app may show you more detail.'**
+  String get accountStatusRestrictedBody;
+
+  /// Shown with a retained confirmed restriction after its refresh fails.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t refresh your status. This is the last status we received.'**
+  String get accountStatusLastKnownBody;
+
+  /// Heading shown when account enforcement status could not be checked and no confirmed restriction is retained.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check your status'**
+  String get accountStatusUnavailableHeading;
+
+  /// Body shown when account enforcement status could not be checked and no confirmed restriction is retained.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get accountStatusUnavailableBody;
+
+  /// Heading shown when the account-status route is opened without a signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to check your account status'**
+  String get accountStatusSignedOutHeading;
+
+  /// Body shown when the account-status route is opened without a signed-in account.
+  ///
+  /// In en, this message translates to:
+  /// **'There isn\'t a signed-in account to check right now.'**
+  String get accountStatusSignedOutBody;
+
+  /// Heading for the section explaining that Divine's enforcement does not affect the user's Nostr identity.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account still belongs to you'**
+  String get accountStatusKeysUnaffectedHeading;
+
+  /// Explains that the restriction is limited to Divine-operated surfaces and the user's Nostr identity is untouched.
+  ///
+  /// In en, this message translates to:
+  /// **'This restriction applies to Divine. Your keys and your identity are yours, your followers travel with them, and you can keep using them on other apps and servers that Divine doesn\'t run.'**
+  String get accountStatusKeysUnaffectedBody;
+
+  /// Heading for the appeal section.
+  ///
+  /// In en, this message translates to:
+  /// **'If you think this is wrong'**
+  String get accountStatusAppealHeading;
+
+  /// States the appeals policy plainly and points to support as the channel, without promising a formal appeals process.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine may review requests to reconsider a moderation decision, but is not obligated to. If you want to raise it, contact support and tell us what happened.'**
+  String get accountStatusAppealBody;
+
+  /// Button opening the in-app support center.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get accountStatusContactSupport;
+
+  /// Button opening the account portability page.
+  ///
+  /// In en, this message translates to:
+  /// **'Move your account'**
+  String get accountStatusMoveAccount;
+
+  /// Button that refetches the account status.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get accountStatusRetry;
 }
 
 class _AppLocalizationsDelegate

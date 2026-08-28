@@ -540,6 +540,12 @@ class _ReportFormBody extends StatelessWidget {
                       color: context.vineColors.accentPositive,
                     ),
                   ),
+                  Text(
+                    l10n.reportDetailsTextOnly,
+                    style: VineTheme.labelSmallFont(
+                      color: context.vineColors.onSurfaceVariant,
+                    ),
+                  ),
                   _CappedDetailsField(
                     fieldKey: detailsFieldKey,
                     controller: detailsController,
@@ -761,6 +767,9 @@ class _CappedDetailsFieldState extends State<_CappedDetailsField> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           enableInteractiveSelection: true,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          textCapitalization: TextCapitalization.sentences,
           onChanged: _onChanged,
           style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           minLines: 3,

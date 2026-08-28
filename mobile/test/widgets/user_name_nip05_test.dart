@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/constants/og_beta_testers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -71,14 +72,17 @@ void main() {
       expect(_specialCheckmark(), findsOneWidget);
     });
 
-    testWidgets('shows a checkmark for a grandfathered pubkey', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(pubkey: kLegacyProfileCheckmarkPubkeys.first),
+    testWidgets('does not show a checkmark for a non-team beta tester', (
+      tester,
+    ) async {
+      final pubkey = ogBetaTesterPubkeys.firstWhere(
+        (candidate) => !kDivineTeamPubkeys.contains(candidate),
       );
+      await tester.pumpWidget(buildSubject(pubkey: pubkey));
       await tester.pump();
 
       expect(find.text('Alice'), findsOneWidget);
-      expect(_specialCheckmark(), findsOneWidget);
+      expect(_specialCheckmark(), findsNothing);
     });
 
     testWidgets('matches a Divine team pubkey case-insensitively', (

@@ -21,6 +21,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
@@ -482,7 +483,17 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 8),
+                Center(
+                  child: DivineButton(
+                    type: .link,
+                    label: context.l10n.authContactSupport,
+                    onPressed: isDisabled
+                        ? null
+                        : () => context.push(SupportCenterScreen.path),
+                  ),
+                ),
+                const SizedBox(height: 24),
 
                 // Push alternative methods to bottom
                 const Spacer(),

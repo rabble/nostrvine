@@ -713,35 +713,55 @@ void main() {
     });
 
     group('close', () {
+      test('waits for the cache store repository to finish opening', () async {
+        final tracker = _TrackingIOClient();
+        final repo = MockCacheInfoRepository();
+        final openCompleter = Completer<bool>();
+        when(repo.open).thenAnswer((_) => openCompleter.future);
+        when(repo.close).thenAnswer((_) async => true);
+
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey:
+                'close_open_test_${DateTime.now().millisecondsSinceEpoch}',
+          ),
+          repoOverride: repo,
+          downloaderOverride: FakeCancellableDownloader(),
+          fileServiceClientOverride: tracker,
+        );
+
+        var closeCompleted = false;
+        final closing = manager.close().then((_) => closeCompleted = true);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(tracker.closeCount, 1);
+        expect(closeCompleted, isFalse);
+        verifyNever(repo.close);
+
+        openCompleter.complete(true);
+        await closing;
+
+        expect(closeCompleted, isTrue);
+        verify(repo.close).called(1);
+      });
+
       test('closes the legacy file-service HTTP client', () async {
         final tracker = _TrackingIOClient();
         final repo = MockCacheInfoRepository();
         when(repo.open).thenAnswer((_) async => true);
-        when(repo.getAllObjects).thenAnswer((_) async => []);
         when(repo.close).thenAnswer((_) async => true);
 
-        // Construction kicks off an async open() on the parent
-        // CacheManager's repo store; that pipeline is unrelated to the
-        // leak we're pinning. Swallow any sync/async errors it emits
-        // so the assertion below is what determines pass/fail.
-        await runZonedGuarded(
-          () async {
-            final manager = MediaCacheManager(
-              config: MediaCacheConfig(
-                cacheKey: 'close_test_${DateTime.now().millisecondsSinceEpoch}',
-              ),
-              repoOverride: repo,
-              fileServiceClientOverride: tracker,
-            );
-
-            expect(tracker.closeCount, 0);
-
-            try {
-              await manager.close();
-            } on Object catch (_) {}
-          },
-          (_, _) {},
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'close_test_${DateTime.now().millisecondsSinceEpoch}',
+          ),
+          repoOverride: repo,
+          fileServiceClientOverride: tracker,
         );
+
+        expect(tracker.closeCount, 0);
+
+        await manager.close();
 
         expect(
           tracker.closeCount,

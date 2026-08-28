@@ -10,8 +10,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
-import 'package:models/models.dart'
-    show BugReportData, BugReportResult, LogEntry;
+import 'package:models/models.dart' show BugReportData, LogEntry;
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/storage_management_service.dart';
@@ -27,15 +26,21 @@ import 'package:uuid/uuid.dart';
 
 /// Service for creating and managing bug reports
 class BugReportService {
+  static const _logExportShareSubject = 'Divine Full Logs';
+
   BugReportService({
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
+    Future<PackageInfo> Function()? packageInfoLoader,
   }) : _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
-       _storageManagementService = storageManagementService;
+       _storageManagementService = storageManagementService,
+       _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform;
 
   static const _uuid = Uuid();
+
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
+  final Future<PackageInfo> Function() _packageInfoLoader;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -51,7 +56,7 @@ class BugReportService {
       final reportId = _uuid.v4();
 
       // Get app version from package_info_plus
-      final packageInfo = await PackageInfo.fromPlatform();
+      final packageInfo = await _packageInfoLoader();
       final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
 
       // Get device info using device_info_plus
@@ -221,267 +226,6 @@ class BugReportService {
     return sanitized;
   }
 
-  /// Estimate report size in bytes
-  int estimateReportSize(BugReportData data) {
-    final jsonString = jsonEncode(data.toJson());
-    return jsonString.length;
-  }
-
-  /// Send bug report via email by creating a file attachment.
-  ///
-  /// [sharePositionOrigin] anchors the iOS share sheet popover and is
-  /// required on iPad idiom — see [exportLogsToFile] for the failure mode.
-  /// Resolve it with `shareAnchorForContext` at the widget layer.
-  Future<BugReportResult> sendBugReportViaEmail(
-    BugReportData data, {
-    ui.Rect? sharePositionOrigin,
-  }) async {
-    try {
-      Log.info(
-        'Creating bug report file for email ${data.reportId}',
-        category: LogCategory.system,
-      );
-
-      // Sanitize sensitive data before sending
-      final sanitizedData = sanitizeSensitiveData(data);
-
-      // Get package info for metadata
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
-
-      // Build bug report file content with header
-      final buffer = StringBuffer();
-      buffer.writeln('OpenVine Bug Report');
-      buffer.writeln('═' * 80);
-      buffer.writeln('Report ID: ${sanitizedData.reportId}');
-      buffer.writeln('Timestamp: ${sanitizedData.timestamp.toIso8601String()}');
-      buffer.writeln('App Version: $appVersion');
-      if (sanitizedData.currentScreen != null) {
-        buffer.writeln('Current Screen: ${sanitizedData.currentScreen}');
-      }
-      if (sanitizedData.userPubkey != null) {
-        buffer.writeln(
-          'User Pubkey: ${pubkeyForLogs(sanitizedData.userPubkey)}',
-        );
-      }
-      buffer.writeln('═' * 80);
-      buffer.writeln();
-      buffer.writeln('User Description:');
-      buffer.writeln(sanitizedData.userDescription);
-      buffer.writeln();
-      buffer.writeln('═' * 80);
-      buffer.writeln('Device Information:');
-      buffer.writeln(
-        const JsonEncoder.withIndent('  ').convert(sanitizedData.deviceInfo),
-      );
-      buffer.writeln();
-      buffer.writeln('═' * 80);
-      buffer.writeln(
-        'Recent Logs (${sanitizedData.recentLogs.length} entries):',
-      );
-      for (final log in sanitizedData.recentLogs) {
-        buffer.writeln(
-          '[${log.timestamp.toIso8601String()}] ${log.level.name.toUpperCase()} - ${log.message}',
-        );
-        if (log.error != null) {
-          buffer.writeln('  Error: ${log.error}');
-        }
-        if (log.stackTrace != null) {
-          buffer.writeln('  Stack: ${log.stackTrace}');
-        }
-      }
-      if (sanitizedData.errorCounts.isNotEmpty) {
-        buffer.writeln();
-        buffer.writeln('═' * 80);
-        buffer.writeln('Error Counts:');
-        sanitizedData.errorCounts.forEach((key, value) {
-          // Composed, then sanitized: the key is what identifies a credential.
-          // No test distinguishes this from the upstream pass in
-          // `_sanitizeErrorCounts`, which has already replaced a
-          // credential-shaped key by the time the data reaches here. Keep it:
-          // it is the pass that holds if this method is ever handed data that
-          // did not come through `sanitizeSensitiveData`.
-          buffer.writeln(sanitizeDiagnosticText('  $key: $value'));
-        });
-      }
-
-      final content = buffer.toString();
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final fileName =
-          'openvine_bug_report_${sanitizedData.reportId}_$timestamp.txt';
-
-      // Platform-specific sharing
-      if (kIsWeb) {
-        // Web: Download the file
-        return _sendBugReportWeb(content, fileName, data.reportId);
-      } else {
-        // Native: Share via system dialog (user can choose email)
-        return _sendBugReportNative(
-          content,
-          fileName,
-          data.reportId,
-          sharePositionOrigin: sharePositionOrigin,
-        );
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Exception while creating bug report file: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return BugReportResult.failure(
-        'Failed to create bug report: $e',
-        reportId: data.reportId,
-      );
-    }
-  }
-
-  /// Send bug report on web platform by downloading the file
-  BugReportResult _sendBugReportWeb(
-    String content,
-    String fileName,
-    String reportId,
-  ) {
-    try {
-      final bytes = utf8.encode(content);
-      downloadBytesAsFile(
-        bytes: bytes,
-        fileName: fileName,
-        mimeType: 'text/plain',
-      );
-
-      final sizeMB = (bytes.length / (1024 * 1024)).toStringAsFixed(2);
-      Log.info(
-        'Bug report downloaded: $fileName ($sizeMB MB)',
-        category: LogCategory.system,
-      );
-
-      // Open mailto: link to make it easier for user
-      _openEmailClient(reportId, fileName);
-
-      return BugReportResult(
-        success: true,
-        reportId: reportId,
-        timestamp: DateTime.now(),
-      );
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to download bug report on web: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return BugReportResult.failure(
-        'Failed to download bug report: $e',
-        reportId: reportId,
-      );
-    }
-  }
-
-  /// Open email client with pre-filled bug report details
-  Future<void> _openEmailClient(String reportId, String fileName) async {
-    try {
-      final subject = Uri.encodeComponent('OpenVine Bug Report $reportId');
-      final body = Uri.encodeComponent(
-        'Please attach the downloaded file: $fileName\n\n'
-        'Report ID: $reportId\n\n'
-        'Describe what happened:\n\n',
-      );
-      final mailtoUrl =
-          'mailto:${BugReportConfig.supportEmail}?subject=$subject&body=$body';
-      final uri = Uri.parse(mailtoUrl);
-
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-        Log.info('Opened email client', category: LogCategory.system);
-      }
-    } catch (e) {
-      Log.warning(
-        'Could not open email client: $e',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Send bug report on native platforms by sharing the file
-  Future<BugReportResult> _sendBugReportNative(
-    String content,
-    String fileName,
-    String reportId, {
-    ui.Rect? sharePositionOrigin,
-  }) async {
-    try {
-      // Get temporary directory
-      final tempDir = await getTemporaryDirectory();
-      final filePath = '${tempDir.path}/$fileName';
-
-      // Write to file
-      final file = File(filePath);
-      await file.writeAsString(content);
-
-      final fileSizeMB = (await file.length() / (1024 * 1024)).toStringAsFixed(
-        2,
-      );
-      Log.info(
-        'Bug report file created: $filePath ($fileSizeMB MB)',
-        category: LogCategory.system,
-      );
-
-      // Share the file with instructions
-      final result = await showShareSheetAtOrigin(
-        ShareParams(
-          files: [XFile(filePath)],
-          subject: 'OpenVine Bug Report',
-          text:
-              'Please email this bug report to ${BugReportConfig.supportEmail}\n\nReport ID: $reportId',
-        ),
-        sharePositionOrigin: sharePositionOrigin,
-      );
-
-      if (result.status == ShareResultStatus.success) {
-        Log.info(
-          'Bug report shared successfully',
-          category: LogCategory.system,
-        );
-        return BugReportResult(
-          success: true,
-          reportId: reportId,
-          timestamp: DateTime.now(),
-        );
-      } else if (result.status == ShareResultStatus.dismissed) {
-        Log.info(
-          'Bug report sharing was dismissed',
-          category: LogCategory.system,
-        );
-        return BugReportResult.failure(
-          'Sharing was cancelled',
-          reportId: reportId,
-        );
-      } else {
-        Log.warning(
-          'Bug report sharing failed: ${result.status}',
-          category: LogCategory.system,
-        );
-        return BugReportResult.failure(
-          'Failed to share bug report',
-          reportId: reportId,
-        );
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to share bug report on native platform: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      return BugReportResult.failure(
-        'Failed to share bug report: $e',
-        reportId: reportId,
-      );
-    }
-  }
-
   /// Export logs to a file.
   ///
   /// Behavior depends on the platform:
@@ -528,36 +272,18 @@ class BugReportService {
           'No logs available for export',
           category: LogCategory.system,
         );
-        return const LogExportResult(success: false);
+        return const LogExportResult.noLogs();
       }
 
-      // Get package info for metadata
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
-
-      // Build comprehensive log file with header
-      final buffer = StringBuffer();
-      buffer.writeln('OpenVine Comprehensive Log Export');
-      buffer.writeln('═' * 80);
-      buffer.writeln('Export Time: ${DateTime.now().toIso8601String()}');
-      buffer.writeln('App Version: $appVersion');
-      buffer.writeln('Total Log Lines: ${allLogLines.length}');
-      buffer.writeln('Log Files: ${stats['fileCount']}');
-      buffer.writeln('Total Size: ${stats['totalSizeMB']} MB');
-      final deviceDescription = await buildDeviceDescription();
-      if (deviceDescription != null) {
-        buffer.writeln('Device: $deviceDescription');
-      }
-      buffer.write(buildRuntimeDiagnostics());
-      buffer.write(await buildEnvironmentDiagnostics());
-      if (currentScreen != null) {
-        buffer.writeln('Current Screen: $currentScreen');
-      }
-      if (userPubkey != null) {
-        buffer.writeln('User Pubkey: ${pubkeyForLogs(userPubkey)}');
-      }
-      buffer.writeln('═' * 80);
-      buffer.writeln();
+      final buffer = StringBuffer()
+        ..write(
+          await _buildLogHeader(
+            stats: stats,
+            lineCount: allLogLines.length,
+            currentScreen: currentScreen,
+            userPubkey: userPubkey,
+          ),
+        );
 
       // Add all log lines (already formatted by LogCaptureService)
       for (final line in allLogLines) {
@@ -588,7 +314,7 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
   }
 
@@ -810,7 +536,7 @@ class BugReportService {
         'Logs downloaded via browser: $fileName ($sizeMB MB, $lineCount lines)',
         category: LogCategory.system,
       );
-      return const LogExportResult(success: true);
+      return const LogExportResult.shared();
     } catch (e, stackTrace) {
       Log.error(
         'Failed to download logs on web: $e',
@@ -818,7 +544,7 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
   }
 
@@ -868,7 +594,7 @@ class BugReportService {
         '($fileSizeMB MB, $lineCount lines)',
         category: LogCategory.system,
       );
-      return LogExportResult(success: true, filePath: location.path);
+      return LogExportResult.saved(location.path);
     } catch (e, stackTrace) {
       Log.error(
         'Failed to save logs on desktop: $e',
@@ -876,8 +602,46 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
+  }
+
+  /// The diagnostic preamble the exported log file starts with,
+  /// terminated by a blank line.
+  Future<String> _buildLogHeader({
+    required Map<String, dynamic> stats,
+    required int lineCount,
+    String? currentScreen,
+    String? userPubkey,
+  }) async {
+    final packageInfo = await _packageInfoLoader();
+    final buffer = StringBuffer()
+      ..writeln('OpenVine Comprehensive Log Export')
+      ..writeln('═' * 80)
+      ..writeln('Export Time: ${DateTime.now().toIso8601String()}')
+      ..writeln(
+        'App Version: ${packageInfo.version}+${packageInfo.buildNumber}',
+      )
+      ..writeln('Total Log Lines: $lineCount')
+      ..writeln('Log Files: ${stats['fileCount']}')
+      ..writeln('Total Size: ${stats['totalSizeMB']} MB');
+    final deviceDescription = await buildDeviceDescription();
+    if (deviceDescription != null) {
+      buffer.writeln('Device: $deviceDescription');
+    }
+    buffer
+      ..write(buildRuntimeDiagnostics())
+      ..write(await buildEnvironmentDiagnostics());
+    if (currentScreen != null) {
+      buffer.writeln('Current Screen: $currentScreen');
+    }
+    if (userPubkey != null) {
+      buffer.writeln('User Pubkey: ${pubkeyForLogs(userPubkey)}');
+    }
+    return (buffer
+          ..writeln('═' * 80)
+          ..writeln())
+        .toString();
   }
 
   /// Export logs on mobile platforms using the system share sheet.
@@ -904,27 +668,33 @@ class BugReportService {
         category: LogCategory.system,
       );
 
-      // Share the file
-      // Note: text field is intentionally minimal to ensure the file is the primary content
-      // When users select "Copy" in the share dialog, they should get the file, not metadata
+      // No `text`: share_plus only sets Intent.EXTRA_TEXT when it is
+      // non-blank, and EXTRA_TEXT is what Android's share-sheet "Copy"
+      // action copies. Any value here is a decoy — the chip can never
+      // copy the attachment, so a label there pastes as a placeholder
+      // that looks like a successful copy (#8112).
       final result = await showShareSheetAtOrigin(
-        ShareParams(
-          files: [XFile(filePath)],
-          subject: 'OpenVine Full Logs',
-          text: 'OpenVine Full Logs',
-        ),
+        buildLogExportShareParams(filePath),
         sharePositionOrigin: sharePositionOrigin,
       );
 
-      if (result.status == ShareResultStatus.success) {
-        Log.info('Logs shared successfully', category: LogCategory.system);
-        return const LogExportResult(success: true);
-      } else {
-        Log.warning(
-          'Log sharing was dismissed or failed: ${result.status}',
-          category: LogCategory.system,
-        );
-        return const LogExportResult(success: false);
+      switch (result.status) {
+        case ShareResultStatus.success:
+          Log.info('Logs shared successfully', category: LogCategory.system);
+          return const LogExportResult.shared();
+        case ShareResultStatus.dismissed:
+          Log.info(
+            'Log sharing dismissed by user',
+            category: LogCategory.system,
+          );
+          return const LogExportResult.cancelled();
+        case ShareResultStatus.unavailable:
+          Log.warning(
+            'Log sharing outcome unavailable; the sheet may still have '
+            'completed the share',
+            category: LogCategory.system,
+          );
+          return const LogExportResult.unconfirmed();
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -933,9 +703,15 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return const LogExportResult(success: false);
+      return const LogExportResult.failed();
     }
   }
+
+  @visibleForTesting
+  static ShareParams buildLogExportShareParams(String filePath) => ShareParams(
+    files: [XFile(filePath)],
+    subject: _logExportShareSubject,
+  );
 
   // Private helper methods
 
@@ -1024,23 +800,54 @@ class BugReportService {
 /// mobile and web, [filePath] is null because the platform's share /
 /// download flow already surfaces the file.
 ///
-/// [cancelled] is true when the user dismissed a Save As dialog without
-/// picking a location — distinct from [success] = false (which is a real
-/// failure) so the UI can stay silent on cancel rather than flashing a
-/// "Failed to export logs" toast.
+/// The UI branches on [status]: four of the six outcomes are not failures,
+/// and reporting them as one is what made a working export look broken.
 class LogExportResult {
-  const LogExportResult({
-    required this.success,
-    this.filePath,
-    this.cancelled = false,
-  });
+  const LogExportResult(this.status, {this.filePath});
 
-  const LogExportResult.cancelled()
-    : success = false,
-      filePath = null,
-      cancelled = true;
+  const LogExportResult.shared() : this(LogExportStatus.shared);
 
-  final bool success;
+  const LogExportResult.saved(String path)
+    : this(LogExportStatus.saved, filePath: path);
+
+  const LogExportResult.cancelled() : this(LogExportStatus.cancelled);
+
+  const LogExportResult.noLogs() : this(LogExportStatus.noLogs);
+
+  const LogExportResult.unconfirmed() : this(LogExportStatus.unconfirmed);
+
+  const LogExportResult.failed() : this(LogExportStatus.failed);
+
+  final LogExportStatus status;
   final String? filePath;
-  final bool cancelled;
+}
+
+/// How an export ended.
+enum LogExportStatus {
+  /// The share sheet or browser download completed.
+  shared,
+
+  /// Written to a path the user picked in a desktop Save As dialog.
+  saved,
+
+  /// The user backed out of the share sheet or Save As dialog.
+  cancelled,
+
+  /// The capture buffer held nothing to export.
+  ///
+  /// Distinct from [failed] because the fix is the user's, not ours: the
+  /// buffer is in memory only, so a restart empties it and they need to
+  /// reproduce the problem before exporting.
+  noLogs,
+
+  /// The share sheet was presented but the platform reported no outcome.
+  ///
+  /// `share_plus` returns `ShareResultStatus.unavailable` on Android when it
+  /// cannot attach to an Activity and falls back to `context.startActivity`.
+  /// The sheet still opens and the share can still complete; the callback is
+  /// simply cancelled up front, so there is nothing to observe.
+  unconfirmed,
+
+  /// A real failure — the write threw, or the platform reported an error.
+  failed,
 }

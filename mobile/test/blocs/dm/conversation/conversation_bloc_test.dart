@@ -73,6 +73,9 @@ void main() {
       '3333333333333333333333333333333333333333333333333333333333333333';
   const messageId =
       '4444444444444444444444444444444444444444444444444444444444444444';
+  // A second, distinct rumor id — #7322's concurrent-delete regression.
+  const otherMessageId =
+      '7777777777777777777777777777777777777777777777777777777777777777';
   const giftWrapId =
       '5555555555555555555555555555555555555555555555555555555555555555';
   const sentEventId =
@@ -1678,6 +1681,9 @@ void main() {
     });
 
     group('ConversationMessageDeleted', () {
+      late Completer<void> firstDeleteStarted;
+      late Completer<void> releaseFirstDelete;
+
       blocTest<ConversationBloc, ConversationState>(
         'calls deleteMessageForEveryone on the repository',
         setUp: () {
@@ -1711,11 +1717,11 @@ void main() {
 
       blocTest<ConversationBloc, ConversationState>(
         'wraps non-`ArgumentError` throws in Reportable — matrix-YES, '
-        'invariant (e.g. signer `StateError`)',
+        'invariant (e.g. an uninitialized repository `StateError`)',
         setUp: () {
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
-          ).thenThrow(StateError('Failed to sign kind 5 deletion event'));
+          ).thenThrow(StateError('DmRepository not initialized'));
         },
         build: buildBloc,
         act: (bloc) =>
@@ -1751,6 +1757,50 @@ void main() {
         verify: (_) {
           verify(
             () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+          ).called(1);
+        },
+      );
+
+      // Regression for #7322. The handler was registered with `droppable()`,
+      // which discards on subscription state alone and never inspects the
+      // payload — so a delete for a DIFFERENT message dispatched while the
+      // first was still awaiting its signer round trip never reached the
+      // repository at all: no kind 5, no local soft-delete, and (since no
+      // path here emits) no feedback. Reproduced on a physical iPhone:
+      // three deletes for three distinct rumor ids produced exactly one
+      // handler entry.
+      blocTest<ConversationBloc, ConversationState>(
+        'deleting a second message while the first is still in flight still '
+        'reaches the repository for both',
+        setUp: () {
+          firstDeleteStarted = Completer<void>();
+          releaseFirstDelete = Completer<void>();
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {
+            firstDeleteStarted.complete();
+            await releaseFirstDelete.future;
+          });
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(otherMessageId),
+          ).thenAnswer((_) async {});
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await firstDeleteStarted.future;
+          bloc.add(const ConversationMessageDeleted(rumorId: otherMessageId));
+          // Let the second event enter the transformer while the first handler
+          // is still suspended, then allow the sequential queue to advance.
+          await Future<void>.delayed(Duration.zero);
+          releaseFirstDelete.complete();
+        },
+        verify: (_) {
+          verify(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).called(1);
+          verify(
+            () => mockDmRepository.deleteMessageForEveryone(otherMessageId),
           ).called(1);
         },
       );

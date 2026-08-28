@@ -1,5 +1,5 @@
 // ABOUTME: Bottom sheet shown when a background video upload fails.
-// ABOUTME: Displays error reason with retry and save-to-drafts actions.
+// ABOUTME: Displays error reason with recovery and save-to-drafts actions.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -10,15 +10,19 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/video_clip/clip_thumbnail_image.dart';
 
 /// Shows a bottom sheet when a background upload fails.
 ///
-/// Offers the user two options:
-/// - **Try Again** retries the upload via [BackgroundPublishRetryRequested].
+/// Offers retry for transient failures, or Account status for a confirmed
+/// restriction. Saving to drafts is always available:
+/// - **Try Again** retries via [BackgroundPublishRetryRequested].
+/// - **Account status** removes the terminal upload and explains the restriction.
 /// - **Save to Drafts** removes the upload from the active queue while the
 ///   draft remains in the library for later publishing.
 ///
@@ -37,6 +41,7 @@ Future<void> showUploadFailureSheet(
       _UploadFailureSheetContent(
         upload: upload,
         onRetry: () => Navigator.of(context).pop('retry'),
+        onAccountStatus: () => Navigator.of(context).pop('account_status'),
         onSaveToDrafts: () => Navigator.of(context).pop('save_drafts'),
       ),
     ],
@@ -71,6 +76,21 @@ Future<void> showUploadFailureSheet(
           },
         ),
       );
+    case 'account_status':
+      context.read<BackgroundPublishBloc>().add(
+        BackgroundPublishVanished(draftId: upload.draft.id),
+      );
+      messenger?.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.uploadFailureSheetSavedToDraftsSnackbar,
+          actionLabel: context.l10n.contentWarningView,
+          onActionPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            context.push(LibraryScreen.draftsPath);
+          },
+        ),
+      );
+      context.push(RoutePaths.accountStatus, extra: true);
     case _:
       // Sheet was popped externally (e.g. during route transition).
       // Save to drafts silently so the user's content is preserved.
@@ -84,11 +104,13 @@ class _UploadFailureSheetContent extends StatelessWidget {
   const _UploadFailureSheetContent({
     required this.upload,
     required this.onRetry,
+    required this.onAccountStatus,
     required this.onSaveToDrafts,
   });
 
   final BackgroundUpload upload;
   final VoidCallback onRetry;
+  final VoidCallback onAccountStatus;
   final VoidCallback onSaveToDrafts;
 
   @override
@@ -101,6 +123,10 @@ class _UploadFailureSheetContent extends StatelessWidget {
     };
 
     final draft = upload.draft;
+    final isAccountRestricted = switch (upload.result) {
+      PublishError(kind: PublishErrorKind.accountRestricted) => true,
+      _ => false,
+    };
     final clip = draft.clips.isNotEmpty ? draft.clips.first : null;
 
     return Padding(
@@ -133,8 +159,10 @@ class _UploadFailureSheetContent extends StatelessWidget {
             const SizedBox(height: 32),
             DivineButton(
               expanded: true,
-              label: context.l10n.uploadFailureSheetTryAgainButton,
-              onPressed: onRetry,
+              label: isAccountRestricted
+                  ? context.l10n.uploadFailureSheetAccountStatusButton
+                  : context.l10n.uploadFailureSheetTryAgainButton,
+              onPressed: isAccountRestricted ? onAccountStatus : onRetry,
             ),
 
             const SizedBox(height: 12),

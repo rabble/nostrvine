@@ -34,7 +34,7 @@ part 'openvine_media_cache.g.dart';
 /// ```
 // TODO(any): move declaration to provider or inject in packages in the future
 final openVineMediaCache = MediaCacheManager(
-  config: const MediaCacheConfig.video(cacheKey: 'openvine_video_cache'),
+  config: const MediaCacheConfig.video(cacheKey: kVideoCacheDirectoryName),
 );
 
 /// Provider exposing the media cache singleton for dependency injection.

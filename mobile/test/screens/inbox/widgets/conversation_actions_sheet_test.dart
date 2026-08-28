@@ -14,6 +14,8 @@ void main() {
       required ValueChanged<ConversationAction?> onResult,
       bool isMuted = false,
       bool isBlocked = false,
+      String displayName = 'Alice',
+      bool isVanished = false,
     }) {
       return testMaterialApp(
         home: Builder(
@@ -23,7 +25,8 @@ void main() {
                 onPressed: () async {
                   final result = await ConversationActionsSheet.show(
                     context,
-                    displayName: 'Alice',
+                    displayName: displayName,
+                    isVanished: isVanished,
                     isMuted: isMuted,
                     isBlocked: isBlocked,
                   );
@@ -60,6 +63,26 @@ void main() {
 
         expect(find.text('Unblock Alice'), findsOneWidget);
         expect(find.text('Block Alice'), findsNothing);
+      });
+
+      testWidgets('keeps safety actions with identity-neutral vanished copy', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            onResult: (_) {},
+            displayName: 'Deleted account',
+            isVanished: true,
+          ),
+        );
+
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Report this account'), findsOneWidget);
+        expect(find.text('Block this account'), findsOneWidget);
+        expect(find.text('Report Deleted account'), findsNothing);
+        expect(find.text('Block Deleted account'), findsNothing);
       });
 
       testWidgets('renders $SwitchListTile for mute toggle', (tester) async {

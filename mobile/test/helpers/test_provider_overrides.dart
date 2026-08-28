@@ -88,9 +88,7 @@ MockSharedPreferences createMockSharedPreferences() {
     when(
       () => mockPrefs.remove('ff_${flag.name}'),
     ).thenAnswer((_) async => true);
-    when(
-      () => mockPrefs.containsKey('ff_${flag.name}'),
-    ).thenReturn(false);
+    when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
   }
 
   // Add common SharedPreferences stubs that tests might need
@@ -308,9 +306,7 @@ MockFollowRepository createMockFollowRepository({
   when(() => mock.isFollowing(any())).thenReturn(false);
   when(
     mock.watchMyFollowingCached,
-  ).thenAnswer(
-    (_) => const Stream<CacheResult<FollowingSnapshot>>.empty(),
-  );
+  ).thenAnswer((_) => const Stream<CacheResult<FollowingSnapshot>>.empty());
   when(
     () => mock.watchOthersFollowingCached(
       any(),
@@ -436,6 +432,7 @@ List<dynamic> getStandardTestOverrides({
     // build. Tests that exercise the deleted-account treatment override it
     // again with `additionalOverrides`.
     profileVanishedProvider.overrideWith((ref, pubkey) => Stream.value(false)),
+    profileVanishedSnapshotProvider.overrideWith((ref, pubkey) async => false),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
@@ -550,6 +547,7 @@ Widget testMaterialApp({
   FollowRepository? mockFollowRepository,
   VideoEventService? mockVideoEventService,
   ThemeData? theme,
+  Locale? locale,
 }) {
   return testProviderScope(
     additionalOverrides: additionalOverrides,
@@ -567,6 +565,7 @@ Widget testMaterialApp({
     mockFollowRepository: mockFollowRepository,
     mockVideoEventService: mockVideoEventService,
     child: MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: home,

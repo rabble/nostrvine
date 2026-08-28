@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/utils/relay_rejection_classifier.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Outcome of a REST publish attempt against `POST {apiBaseUrl}/api/events`.
@@ -23,8 +24,8 @@ final class EventApiAccepted extends EventApiPublishResult {
   final String eventId;
 }
 
-/// The API rejected the event with an actionable, non-retryable status
-/// (401/403/422, or a client-side signer/identity mismatch).
+/// The API rejected the event with an actionable status (401/403/422, a
+/// client-side signer/identity mismatch, or an explicit restriction response).
 final class EventApiRejected extends EventApiPublishResult {
   const EventApiRejected({required this.statusCode, required this.reason});
 
@@ -49,9 +50,8 @@ final class EventApiTransientFailure extends EventApiPublishResult {
 /// The request body is the already-signed event JSON. Authorization is
 /// NIP-98 (kind 27235) over the exact publish URL, `POST` method, and a
 /// payload hash of the request body. Outcomes are classified so the caller
-/// can treat acceptances as published, 401/403/422 as real failures, and
-/// everything else (timeouts, 5xx, network errors) as transient — at which
-/// point the caller should fall back to a WebSocket publish.
+/// can treat acceptances as published, inspect explicit rejections, and
+/// classify everything else (timeouts, 5xx, network errors) as transient.
 class EventApiClient {
   EventApiClient({
     required http.Client httpClient,
@@ -168,6 +168,16 @@ class EventApiClient {
           );
           return EventApiAccepted(eventId);
         }
+        final reason = _rejectionReason(response.body);
+        if (!accepted && isAccountRestrictedReason(reason)) {
+          Log.error(
+            'REST publish rejected account for event ${event.id} from '
+            '${pubkeyForLogs(event.pubkey)}: $reason',
+            name: _logName,
+            category: LogCategory.video,
+          );
+          return EventApiRejected(statusCode: status, reason: reason);
+        }
         Log.warning(
           'REST publish 200 without accepted:true and matching event_id '
           'for ${event.id}: '
@@ -195,7 +205,10 @@ class EventApiClient {
         name: _logName,
         category: LogCategory.video,
       );
-      return EventApiRejected(statusCode: status, reason: response.body);
+      return EventApiRejected(
+        statusCode: status,
+        reason: _rejectionReason(response.body),
+      );
     }
 
     // 5xx and any other status: transient — caller falls back to WebSocket.
@@ -205,5 +218,18 @@ class EventApiClient {
       category: LogCategory.video,
     );
     return EventApiTransientFailure('http_$status');
+  }
+
+  String _rejectionReason(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final message = decoded['message'];
+        if (message is String && message.isNotEmpty) return message;
+      }
+    } catch (_) {
+      // Plain-text rejection bodies are already the reason.
+    }
+    return body;
   }
 }

@@ -105,6 +105,24 @@ class DmUnreadCountCubit extends Cubit<int> with CloseGuardedEmit<int> {
   /// provider-listener fires are cheap. The generation guard discards any
   /// late emission from the cancelled subscription so a swap can never
   /// regress the badge to a stale count.
+  ///
+  /// A swap to a repository that has no identity yet resets the count to zero
+  /// (#7330). This cubit lives above `MaterialApp` and survives an in-app
+  /// sign-out/sign-in-as-a-different-account, so without the reset the badge
+  /// keeps rendering the *previous* account's number: `dmRepositoryProvider`
+  /// hands over an uncredentialed [DmRepository] while `nostrSession` is only
+  /// `identityKnown`, its `userPubkey` is empty, and [_countUnread]'s
+  /// deliberate empty-pubkey hold re-emits the value already on screen — which
+  /// `Cubit.emit` then suppresses as unchanged.
+  ///
+  /// This is the only place the reset belongs, because a swap is the only way
+  /// an empty pubkey reaches [_countUnread]: `_userPubkeyController` is fed
+  /// exclusively by `DmRepository.setCredentials` with a non-empty value, so
+  /// the stream never emits `''`. The empty value can only arrive as the
+  /// `startWith(dmRepository.userPubkey)` seed at subscribe time. Leaving the
+  /// hold in [_countUnread] keeps #5374 working: at cold start the seed is
+  /// also empty, and holding a `0` there is what stops the classifier
+  /// misreading every followed 1:1 as a group before the identity lands.
   void setRepositories({
     required DmRepository dmRepository,
     required FollowRepository followRepository,
@@ -126,6 +144,15 @@ class DmUnreadCountCubit extends Cubit<int> with CloseGuardedEmit<int> {
     if (oldSubscription != null) {
       unawaited(oldSubscription.cancel());
     }
+
+    // No count is defensible until the incoming repository can say whose
+    // messages these are. This clears the old account's count during an
+    // account change; it can also show a conservative 0 while the same
+    // identity's Nostr client retries initialization, until the ready wave
+    // recomputes the count. Reset AFTER the generation bump, so the outgoing
+    // subscription can no longer put its count back however this method is
+    // edited later.
+    if (dmRepository.userPubkey.isEmpty) emitIfOpen(0);
 
     // Recompute whenever the accepted conversations, the potential requests,
     // the following list, or the blocklist change. The blocklist tick value is

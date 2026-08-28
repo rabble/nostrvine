@@ -20,6 +20,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/exceptions/video_exceptions.dart';
@@ -48,6 +49,7 @@ import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part '../internal/video_event_publisher_audio.dart';
+part '../internal/video_event_publisher_outcome.dart';
 
 /// Floor for the derived outer publish timeout. Covers empty-config /
 /// pre-init races where `configuredRelayCount` reads as `0` but the
@@ -120,20 +122,6 @@ Duration outerPublishTimeoutFor(int relayCount) {
   return derived;
 }
 
-/// Result of a single REST-then-WebSocket publish attempt.
-enum _EventPublishOutcome {
-  /// The event was accepted (REST 200, or a WebSocket send succeeded).
-  published,
-
-  /// The REST API rejected the event (401/403/422 or signer mismatch).
-  /// Non-retryable — do not fall back or retry.
-  permanentlyRejected,
-
-  /// A transient failure (REST 5xx/timeout/network and the WebSocket
-  /// fallback also failed). The caller may retry.
-  transientFailure,
-}
-
 enum _RelayPresence { found, notFound, unknown }
 
 /// Checks whether a selected sound may be reused in a newly published video.
@@ -158,6 +146,7 @@ class VideoEventPublisher {
     SavedSoundsService? savedSoundsService,
     SoundSyncRepository? Function()? soundSyncRepositoryGetter,
     EventApiClient? eventApiClient,
+    String trustedRelayUrl = AppConstants.defaultRelayUrl,
     AudioReuseConsentChecker? audioReuseConsentChecker,
     IosDeviceAttestationService? iosDeviceAttestationService,
     PublishedEventLocalEcho? publishedEventLocalEcho,
@@ -176,6 +165,7 @@ class VideoEventPublisher {
        _soundSyncRepositoryGetter = soundSyncRepositoryGetter,
        _publishedEventLocalEcho = publishedEventLocalEcho,
        _eventApiClient = eventApiClient,
+       _trustedRelayUrl = trustedRelayUrl,
        _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
@@ -206,6 +196,7 @@ class VideoEventPublisher {
   /// pool on transient REST failures. When null (legacy / test wiring), the
   /// publisher uses the WebSocket-only retry path.
   final EventApiClient? _eventApiClient;
+  final String _trustedRelayUrl;
 
   /// Makes the published event readable before any relay can serve it back.
   /// Null disables the write (tests, callers with no storage wired).
@@ -275,6 +266,10 @@ class VideoEventPublisher {
   Duration get currentOuterPublishTimeout =>
       outerPublishTimeoutFor(_nostrService.configuredRelayCount);
 
+  /// Configured authoritative relay used to classify account restrictions.
+  @visibleForTesting
+  String get trustedRelayUrlForTesting => _trustedRelayUrl;
+
   void _addReplyTags(List<List<String>> tags, VideoReplyContext context) {
     tags
       ..add(['E', context.rootEventId, '', context.rootAuthorPubkey])
@@ -326,8 +321,9 @@ class VideoEventPublisher {
   }
 
   /// Publishes a signed Nostr [event] to the configured relays and returns
-  /// `true` iff at least one relay confirmed acceptance with a NIP-20
-  /// `OK true` response ([PublishOutcome.confirmed]).
+  /// [_EventPublishOutcome.published] iff at least one relay confirmed
+  /// acceptance with a NIP-20 `OK true` response
+  /// ([PublishOutcome.confirmed]).
   ///
   /// A successful WebSocket send is NOT sufficient — relays can accept
   /// the frame and still reject the event at the protocol level (e.g.
@@ -335,33 +331,21 @@ class VideoEventPublisher {
   /// success used to mark rejected videos as published while they were
   /// silently dropped relay-side.
   ///
-  /// **Failure contract** (returns `false`):
-  /// 1. `TimeoutException` — the inner OK-wait (bound by
-  ///    [currentOuterPublishTimeout], which the publish tracker starts
-  ///    before the send fan-out) or the outer backstop
-  ///    `Future.timeout` fires first. See [outerPublishTimeoutFor].
-  /// 2. Relay rejection / no response — [PublishOutcome.failed]: every
-  ///    targeted relay rejected the event with `OK false` or never
-  ///    responded.
-  /// 3. Inner exception — any throw inside the outer try/catch is
-  ///    logged via `Log.error` and converted to `false`.
+  /// **Failure contract** (returns [_EventPublishOutcome.transientFailure]):
+  /// timeouts, ordinary relay rejection/no response, and inner exceptions.
+  /// Video publication retries those outcomes with relay-presence recovery;
+  /// single-shot audio/subtitle callers retain their existing null/false
+  /// handling.
   ///
-  /// All three causes are intentionally treated as transient by the
-  /// retry loop in [publishDirectUpload] (3 attempts, 2s/4s backoff).
-  /// The single-shot call sites in [_publishImportedAudioEvent],
-  /// [_publishAudioEvent], and [republishWithSubtitles] surface a
-  /// `false` return as `null` / `false` per their own contracts.
-  ///
-  /// **Sentinel-return contract** (per audit #3593 / #4592): this
-  /// method intentionally does NOT throw. All four callers are
-  /// internal and already have explicit post-failure recovery paths;
-  /// introducing a `PublishFailedException` would mean wrapping each
-  /// caller in try/catch to preserve the current bool/null/false
-  /// semantics with no observable behaviour change. Per
-  /// `.claude/rules/error_handling.md` the inner failures are
-  /// network/IO + API/domain — matrix-NO — so the Reportable-wrapped
-  /// throw path would not surface to Crashlytics either.
-  Future<bool> _publishEventToNostr(Event event) async {
+  /// **Sentinel-return contract** (audits #3593 / #4592): transport and domain
+  /// failures intentionally remain outcomes rather than exceptions because all
+  /// internal callers already have explicit recovery behavior. The one narrow
+  /// exception is [AccountRestrictedPublishException]: an exact suspended or
+  /// banned response from the configured authoritative relay is not retryable,
+  /// and callers must preserve it so the UI can offer Account status instead of
+  /// another futile attempt. Messages from other relays cannot establish Divine
+  /// account standing, and any relay acceptance still wins.
+  Future<_EventPublishOutcome> _publishEventToNostr(Event event) async {
     try {
       Log.debug(
         'Publishing event to Nostr relays: ${event.id}',
@@ -531,8 +515,26 @@ class VideoEventPublisher {
           category: LogCategory.video,
         );
 
-        return true;
+        return _EventPublishOutcome.published;
       } else {
+        final restrictionReason = publishOutcome == null
+            ? null
+            : accountRestrictedReasonFromOutcome(
+                publishOutcome,
+                trustedRelayUrl: _trustedRelayUrl,
+              );
+        if (restrictionReason != null) {
+          Log.error(
+            'Authoritative WebSocket relay restricted event ${event.id} '
+            'from ${pubkeyForLogs(event.pubkey)}: $restrictionReason',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          throw AccountRestrictedPublishException(
+            reason: restrictionReason,
+            source: AccountRestrictionSource.webSocket,
+          );
+        }
         final failureReason = publishOutcome?.summary ?? 'timeout';
         Log.error(
           '❌ Event publish failed for ${event.id}: $failureReason '
@@ -541,20 +543,22 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        return _EventPublishOutcome.transientFailure;
       }
+    } on AccountRestrictedPublishException {
+      rethrow;
     } catch (e) {
       Log.error(
         'Failed to publish event to relays: $e',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return _EventPublishOutcome.transientFailure;
     }
   }
 
   /// Publishes an already-signed video [event] for [upload] using the
-  /// REST-first strategy with a WebSocket fire-and-forget fallback.
+  /// REST-first strategy with an OK-aware WebSocket fallback.
   ///
   /// Behaviour when an [EventApiClient] is configured:
   /// 1. If [isRetry], first query configured relays by event id and by
@@ -562,8 +566,8 @@ class VideoEventPublisher {
   ///    published and stop (avoids re-publishing a previously accepted
   ///    event whose `OK` was lost).
   /// 2. Up to 3 attempts of `POST /api/events`. A 200 acceptance is
-  ///    published; any REST failure falls back to a WebSocket `publishEvent`
-  ///    (fire-and-forget, not `publishEventAwaitOk`).
+  ///    published; any retryable REST failure falls back to a WebSocket
+  ///    publish that waits for relay `OK` frames.
   /// 3. Before each retry, re-check relay presence so a false-negative
   ///    WebSocket `OK` does not produce a duplicate publish.
   ///
@@ -572,6 +576,10 @@ class VideoEventPublisher {
   ///
   /// The same signed [event] is reused across all attempts — no event is
   /// re-signed per retry, so relays deduplicate by id.
+  ///
+  /// Throws [AccountRestrictedPublishException] when the authoritative REST
+  /// endpoint or configured Divine relay reports that the account is suspended
+  /// or banned.
   @visibleForTesting
   Future<bool> publishSignedVideoEvent({
     required PendingUpload upload,
@@ -623,21 +631,7 @@ class VideoEventPublisher {
       final outcome = await _publishViaRestThenWebSocket(apiClient, event);
       switch (outcome) {
         case _EventPublishOutcome.published:
-          if (attempt > 1) {
-            Log.info(
-              '✅ Publish succeeded on attempt $attempt',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
           return _EventPublishOutcome.published;
-        case _EventPublishOutcome.permanentlyRejected:
-          Log.error(
-            '❌ Publish permanently rejected for ${event.id}; not retrying',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-          return _EventPublishOutcome.permanentlyRejected;
         case _EventPublishOutcome.transientFailure:
           if (attempt < maxRetries) {
             final delaySeconds = attempt * 2; // 2s, 4s backoff
@@ -657,11 +651,14 @@ class VideoEventPublisher {
           }
       }
     }
+    if (await _relayPresence(event) == _RelayPresence.found) {
+      return _EventPublishOutcome.published;
+    }
     return _EventPublishOutcome.transientFailure;
   }
 
-  /// One publish attempt: REST first, WebSocket fire-and-forget on any REST
-  /// failure.
+  /// One publish attempt: REST first, then an OK-aware WebSocket publish on a
+  /// retryable REST failure.
   Future<_EventPublishOutcome> _publishViaRestThenWebSocket(
     EventApiClient apiClient,
     Event event,
@@ -671,72 +668,33 @@ class VideoEventPublisher {
       case EventApiAccepted():
         return _EventPublishOutcome.published;
       case EventApiRejected(:final statusCode, :final reason):
+        if (isAccountRestrictedReason(reason)) {
+          Log.error(
+            'Authoritative REST publish restricted event ${event.id} from '
+            '${pubkeyForLogs(event.pubkey)}: $reason',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          throw AccountRestrictedPublishException(
+            reason: reason,
+            source: AccountRestrictionSource.rest,
+          );
+        }
         Log.warning(
           '⚠️ REST publish rejected ($statusCode) for ${event.id}: $reason; '
-          'falling back to WebSocket fire-and-forget',
+          'falling back to an OK-aware WebSocket publish',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return _publishViaWebSocketFireAndForget(event);
+        return _publishEventToNostr(event);
       case EventApiTransientFailure(:final reason):
         Log.warning(
           '⚠️ REST publish transient failure for ${event.id} ($reason); '
-          'falling back to WebSocket fire-and-forget',
+          'falling back to an OK-aware WebSocket publish',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return _publishViaWebSocketFireAndForget(event);
-    }
-  }
-
-  /// Sends [event] over the WebSocket relay pool without waiting for a NIP-20
-  /// `OK` (fire-and-forget). A [PublishSuccess] frame counts as sent.
-  ///
-  /// Video publishes intentionally avoid `publishEventAwaitOk` here: relays
-  /// that accept and serve the event but drop the `OK` would otherwise make a
-  /// successful upload look failed.
-  Future<_EventPublishOutcome> _publishViaWebSocketFireAndForget(
-    Event event,
-  ) async {
-    try {
-      if (!_nostrService.isInitialized) {
-        await _nostrService.initialize();
-      }
-      final outerTimeout = currentOuterPublishTimeout;
-      PublishResult? result;
-      try {
-        result = await _nostrService.publishEvent(event).timeout(outerTimeout);
-      } on TimeoutException {
-        Log.error(
-          '⏱️ WebSocket publishEvent timed out after '
-          '${outerTimeout.inSeconds}s for ${event.id}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-        return _EventPublishOutcome.transientFailure;
-      }
-      if (result is PublishSuccess) {
-        Log.info(
-          '📡 Event sent to relays (fire-and-forget): ${event.id}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-        return _EventPublishOutcome.published;
-      }
-      Log.error(
-        '❌ WebSocket publishEvent failed for ${event.id}: '
-        '${result.failureReason ?? 'unknown'}',
-        name: 'VideoEventPublisher',
-        category: LogCategory.video,
-      );
-      return _EventPublishOutcome.transientFailure;
-    } catch (e) {
-      Log.error(
-        'WebSocket fire-and-forget publish failed for ${event.id}: $e',
-        name: 'VideoEventPublisher',
-        category: LogCategory.video,
-      );
-      return _EventPublishOutcome.transientFailure;
+        return _publishEventToNostr(event);
     }
   }
 
@@ -745,7 +703,8 @@ class VideoEventPublisher {
   Future<_EventPublishOutcome> _publishWithWebSocketRetries(Event event) async {
     const maxRetries = 3;
     for (var attempt = 1; attempt <= maxRetries; attempt++) {
-      if (await _publishEventToNostr(event)) {
+      final outcome = await _publishEventToNostr(event);
+      if (outcome == _EventPublishOutcome.published) {
         if (attempt > 1) {
           Log.info(
             '✅ Publish succeeded on attempt $attempt',
@@ -868,6 +827,8 @@ class VideoEventPublisher {
   ///
   /// Throws [AudioReuseNotPermittedException] when [selectedAudio] is not
   /// cleared for reuse — see [publishDirectUpload].
+  /// Throws [AccountRestrictedPublishException] when an authoritative Divine
+  /// publish surface reports that the account is suspended or banned.
   Future<bool> publishVideoEvent({
     required PendingUpload upload,
     String? title,
@@ -949,6 +910,8 @@ class VideoEventPublisher {
   ///   [AudioEvent.allowsReuse]). That evidence needs no relay, so it is a
   ///   refusal rather than a transport failure and is raised instead of
   ///   folded into `false`.
+  /// * [AccountRestrictedPublishException] if an authoritative Divine publish
+  ///   surface reports that the signed-in account is suspended or banned.
   Future<bool> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
@@ -1990,6 +1953,9 @@ class VideoEventPublisher {
       // layer can classify it and name the sound as the blocker.
       _totalEventsFailed++;
       rethrow;
+    } on AccountRestrictedPublishException {
+      _totalEventsFailed++;
+      rethrow;
     } catch (e, stackTrace) {
       Log.error(
         'Error publishing direct upload: $e',
@@ -2012,6 +1978,9 @@ class VideoEventPublisher {
   /// one tag per ref ([textTrackRef] followed by each entry in
   /// [extraTextTrackRefs]) for read-time redundancy. Returns the updated
   /// video event after relay acceptance, or `null` if publishing failed.
+  ///
+  /// Throws [AccountRestrictedPublishException] when the configured Divine
+  /// relay reports that the account is suspended or banned.
   Future<VideoEvent?> republishWithSubtitles({
     required VideoEvent existingEvent,
     required String textTrackRef,
@@ -2066,7 +2035,8 @@ class VideoEventPublisher {
 
     // Publish to relays before updating local cache. A WebSocket send is not
     // enough here; rejected subtitle republishes must not appear locally.
-    final published = await _publishEventToNostr(event);
+    final published =
+        await _publishEventToNostr(event) == _EventPublishOutcome.published;
     if (!published) return null;
 
     final updatedVideo = VideoEvent.fromNostrEvent(event);
@@ -2088,6 +2058,9 @@ class VideoEventPublisher {
   /// Publishes a Kind 39307 subtitle event for [video] and returns its
   /// addressable ref `39307:<pubkey>:subtitles:<vineId>`, or `null` on
   /// failure (not authenticated, no addressable id, sign/publish failed).
+  ///
+  /// Throws [AccountRestrictedPublishException] when the configured Divine
+  /// relay reports that the account is suspended or banned.
   Future<String?> publishSubtitleEvent({
     required VideoEvent video,
     required String vttContent,
@@ -2111,6 +2084,9 @@ class VideoEventPublisher {
   /// Unlike [publishSubtitleEvent] this needs no published [VideoEvent], so
   /// the initial publish can attach captions before the video event exists —
   /// addressable `a` refs make the forward reference safe.
+  ///
+  /// Throws [AccountRestrictedPublishException] when the configured Divine
+  /// relay reports that the account is suspended or banned.
   Future<String?> publishSubtitleTrack({
     required String vineId,
     required String vttContent,
@@ -2143,7 +2119,8 @@ class VideoEventPublisher {
       return null;
     }
 
-    final ok = await _publishEventToNostr(event);
+    final ok =
+        await _publishEventToNostr(event) == _EventPublishOutcome.published;
     if (!ok) {
       Log.warning(
         'Failed to publish subtitle event',
