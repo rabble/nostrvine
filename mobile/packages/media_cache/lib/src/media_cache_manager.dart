@@ -1720,7 +1720,17 @@ class MediaCacheManager extends CacheManager {
         // CacheManager.dispose() closes the repository directly, which can
         // race CacheStore's constructor-started open. CacheStore.dispose()
         // waits for that open before releasing the same lifetime connection.
-        await store.dispose();
+        try {
+          await store.dispose();
+        } on Object catch (error) {
+          // Teardown must still complete if the repository never opened or
+          // its final flush fails; every other owned resource is closed above.
+          Log.warning(
+            'MediaCacheManager: store dispose failed: $error',
+            name: 'MediaCache',
+            category: LogCategory.video,
+          );
+        }
       }
     }
   }
