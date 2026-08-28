@@ -25,7 +25,7 @@ class _MockNostrClient extends Mock implements NostrClient {
     when(
       () => queryEventsDetailed(
         any(),
-        requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+        requireAllRelaysSettled: true,
         timeout: any(named: 'timeout'),
       ),
     ).thenAnswer((invocation) async {
@@ -440,7 +440,7 @@ void main() {
         when(
           () => client.queryEventsDetailed(
             any(),
-            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+            requireAllRelaysSettled: true,
             timeout: any(named: 'timeout'),
           ),
         ).thenAnswer(
@@ -531,10 +531,17 @@ void main() {
 
         expect(result.status, equals(PeopleListPublishStatus.submitted));
         verify(() => client.publishEvent(any())).called(1);
+        verify(
+          () => client.queryEventsDetailed(
+            any(),
+            requireAllRelaysSettled: true,
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
       });
 
       test(
-        'a concurrent member added elsewhere survives the next local edit',
+        'a member added elsewhere before a local edit survives replacement',
         () async {
           final client = publishingClient();
           final repository = buildRepository(nostrClient: client);
@@ -542,7 +549,6 @@ void main() {
 
           // Another client added a member since; the reconcile must learn
           // about it before this device rebuilds the replacement.
-          // before this device rebuilds the replacement.
           stubReconcile(
             client,
             events: [
