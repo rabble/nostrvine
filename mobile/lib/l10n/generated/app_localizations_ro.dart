@@ -869,7 +869,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileDeletedAccountName => 'Cont șters';
 
   @override
-  String get inboxVanishedAccountReference => 'acest cont';
+  String get inboxActionReportVanishedAccount => 'Raportează acest cont';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Blochează acest cont';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Deblochează acest cont';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Acest cont a fost raportat';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Acest cont a fost blocat';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Acest cont a fost deblocat';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Astfel, conversația este eliminată din inbox. Dacă îți scrie din nou, începe o conversație nouă.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

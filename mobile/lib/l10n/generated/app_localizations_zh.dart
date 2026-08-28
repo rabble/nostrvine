@@ -757,7 +757,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileDeletedAccountName => '已注销账号';
 
   @override
-  String get inboxVanishedAccountReference => '此账号';
+  String get inboxActionReportVanishedAccount => '举报此账号';
+
+  @override
+  String get inboxActionBlockVanishedAccount => '屏蔽此账号';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => '取消屏蔽此账号';
+
+  @override
+  String get inboxReportedVanishedAccount => '已举报此账号';
+
+  @override
+  String get inboxBlockedVanishedAccount => '已屏蔽此账号';
+
+  @override
+  String get inboxUnblockedVanishedAccount => '已取消屏蔽此账号';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      '这会从你的收件箱中移除这段会话。如果对方再次给你发消息，会开始一个新会话。';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => '该账号已注销';

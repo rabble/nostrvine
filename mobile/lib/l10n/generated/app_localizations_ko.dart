@@ -736,7 +736,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileDeletedAccountName => '삭제된 계정';
 
   @override
-  String get inboxVanishedAccountReference => '이 계정';
+  String get inboxActionReportVanishedAccount => '이 계정 신고';
+
+  @override
+  String get inboxActionBlockVanishedAccount => '이 계정 차단';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => '이 계정 차단 해제';
+
+  @override
+  String get inboxReportedVanishedAccount => '이 계정을 신고했어요';
+
+  @override
+  String get inboxBlockedVanishedAccount => '이 계정을 차단했어요';
+
+  @override
+  String get inboxUnblockedVanishedAccount => '이 계정의 차단을 해제했어요';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      '이 대화가 받은 편지함에서 삭제돼요. 상대방이 다시 메시지를 보내면 새 대화가 시작돼요.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => '이 계정은 삭제되었습니다';

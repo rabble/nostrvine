@@ -771,7 +771,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileDeletedAccountName => 'Silinmiş hesap';
 
   @override
-  String get inboxVanishedAccountReference => 'bu hesap';
+  String get inboxActionReportVanishedAccount => 'Bu hesabı bildir';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Bu hesabı engelle';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Bu hesabın engelini kaldır';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Bu hesap bildirildi';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Bu hesap engellendi';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Bu hesabın engeli kaldırıldı';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Bu, sohbeti gelen kutundan kaldırır. Sana tekrar yazarsa yeni bir sohbet başlar.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => 'Bu hesap silindi';

@@ -803,7 +803,26 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileDeletedAccountName => 'Akaun dipadam';
 
   @override
-  String get inboxVanishedAccountReference => 'akaun ini';
+  String get inboxActionReportVanishedAccount => 'Laporkan akaun ini';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Sekat akaun ini';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Nyahsekat akaun ini';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Akaun ini dilaporkan';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Akaun ini disekat';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Akaun ini dinyahsekat';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Ini mengalih keluar perbualan daripada peti masuk anda. Jika dia menghantar mesej lagi, perbualan baharu akan bermula.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

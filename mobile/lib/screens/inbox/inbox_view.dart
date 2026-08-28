@@ -1046,9 +1046,20 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     if (knownName != null) {
       displayName = knownName;
     } else {
-      final profile = await ref.read(
-        fetchUserProfileProvider(otherPubkey).future,
-      );
+      UserProfile? profile;
+      try {
+        profile = await ref.read(fetchUserProfileProvider(otherPubkey).future);
+      } catch (error, stackTrace) {
+        // A profile-cache failure must not suppress safety actions either.
+        Log.warning(
+          'Could not read the conversation peer profile; opening conversation '
+          'actions with the generated identity fallback',
+          name: 'InboxView',
+          category: LogCategory.ui,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
       if (!context.mounted) return;
       displayName = dmPeerDisplayName(
         context,
@@ -1066,10 +1077,12 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
-    final actionDisplayName = isVanished
-        ? context.l10n.inboxVanishedAccountReference
-        : displayName;
-
+    final blockConfirmation = switch ((isBlocked, isVanished)) {
+      (true, true) => context.l10n.inboxUnblockedVanishedAccount,
+      (true, false) => context.l10n.inboxUnblockedUser(displayName),
+      (false, true) => context.l10n.inboxBlockedVanishedAccount,
+      (false, false) => context.l10n.inboxBlockedUser(displayName),
+    };
     setState(() => _highlightedConversationId = conversation.id);
     try {
       final action = await ConversationActionsSheet.show(
@@ -1108,7 +1121,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
               SnackBar(
                 content: Text(
                   reported
-                      ? context.l10n.inboxReportedUser(actionDisplayName)
+                      ? isVanished
+                            ? context.l10n.inboxReportedVanishedAccount
+                            : context.l10n.inboxReportedUser(displayName)
                       : context.l10n.reportNotSent,
                 ),
               ),
@@ -1122,20 +1137,18 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             actionsCubit.blockUser(otherPubkey);
           }
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isBlocked
-                      ? context.l10n.inboxUnblockedUser(actionDisplayName)
-                      : context.l10n.inboxBlockedUser(actionDisplayName),
-                ),
-              ),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(blockConfirmation)));
           }
 
         case ConversationAction.remove:
           if (!context.mounted) return;
-          final confirmed = await _confirmRemove(context, displayName);
+          final confirmed = await _confirmRemove(
+            context,
+            displayName,
+            isVanished: isVanished,
+          );
           if (confirmed && context.mounted) {
             final removed = await actionsCubit.removeConversation(
               conversation.id,
@@ -1154,7 +1167,11 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     }
   }
 
-  Future<bool> _confirmRemove(BuildContext context, String displayName) async {
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    String displayName, {
+    required bool isVanished,
+  }) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1166,7 +1183,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           ),
         ),
         content: Text(
-          context.l10n.inboxRemoveConfirmBody(displayName),
+          isVanished
+              ? context.l10n.inboxRemoveConfirmBodyVanishedAccount
+              : context.l10n.inboxRemoveConfirmBody(displayName),
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
           ),

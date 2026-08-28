@@ -810,7 +810,27 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileDeletedAccountName => 'Tinanggal na account';
 
   @override
-  String get inboxVanishedAccountReference => 'ang account na ito';
+  String get inboxActionReportVanishedAccount => 'I-report ang account na ito';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'I-block ang account na ito';
+
+  @override
+  String get inboxActionUnblockVanishedAccount =>
+      'I-unblock ang account na ito';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Na-report ang account na ito';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Na-block ang account na ito';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Na-unblock ang account na ito';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Aalisin nito sa iyong inbox ang usapan. Kung magme-message ulit siya, magsisimula ng bagong usapan.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

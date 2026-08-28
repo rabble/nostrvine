@@ -1410,11 +1410,47 @@ abstract class AppLocalizations {
   /// **'Deleted account'**
   String get profileDeletedAccountName;
 
-  /// Identity-neutral account reference inserted into Report, Block, Unblock, and confirmation copy when a DM peer has vanished. Safety actions remain available even though the peer's name is no longer shown.
+  /// Report action for a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
   ///
   /// In en, this message translates to:
-  /// **'this account'**
-  String get inboxVanishedAccountReference;
+  /// **'Report this account'**
+  String get inboxActionReportVanishedAccount;
+
+  /// Block action for a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'Block this account'**
+  String get inboxActionBlockVanishedAccount;
+
+  /// Unblock action for a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock this account'**
+  String get inboxActionUnblockVanishedAccount;
+
+  /// Confirmation after reporting a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported this account'**
+  String get inboxReportedVanishedAccount;
+
+  /// Confirmation after blocking a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked this account'**
+  String get inboxBlockedVanishedAccount;
+
+  /// Confirmation after unblocking a direct-message peer whose account was deleted. A complete sentence so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked this account'**
+  String get inboxUnblockedVanishedAccount;
+
+  /// Remove-conversation confirmation for a direct-message peer whose account was deleted. Complete copy without a display-name placeholder so each locale controls its grammar.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the conversation from your inbox. If they message you again, a new conversation starts.'**
+  String get inboxRemoveConfirmBodyVanishedAccount;
 
   /// Shown under the name in a direct-message conversation header when the other participant deleted their account. Replaces their handle.
   ///

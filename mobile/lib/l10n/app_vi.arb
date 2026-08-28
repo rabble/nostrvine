@@ -413,7 +413,13 @@
   "profileMyLibraryLabel": "Thư viện của tôi",
   "profileMessageLabel": "Tin nhắn",
   "profileDeletedAccountName": "Tài khoản đã xóa",
-  "inboxVanishedAccountReference": "tài khoản này",
+  "inboxActionReportVanishedAccount": "Báo cáo tài khoản này",
+  "inboxActionBlockVanishedAccount": "Chặn tài khoản này",
+  "inboxActionUnblockVanishedAccount": "Bỏ chặn tài khoản này",
+  "inboxReportedVanishedAccount": "Đã báo cáo tài khoản này",
+  "inboxBlockedVanishedAccount": "Đã chặn tài khoản này",
+  "inboxUnblockedVanishedAccount": "Đã bỏ chặn tài khoản này",
+  "inboxRemoveConfirmBodyVanishedAccount": "Thao tác này xóa cuộc trò chuyện khỏi hộp thư đến. Nếu họ nhắn tin cho bạn lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },

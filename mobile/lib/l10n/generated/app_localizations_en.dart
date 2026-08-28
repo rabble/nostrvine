@@ -842,7 +842,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileDeletedAccountName => 'Deleted account';
 
   @override
-  String get inboxVanishedAccountReference => 'this account';
+  String get inboxActionReportVanishedAccount => 'Report this account';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Block this account';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Unblock this account';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Reported this account';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Blocked this account';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Unblocked this account';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'This removes the conversation from your inbox. If they message you again, a new conversation starts.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle =>

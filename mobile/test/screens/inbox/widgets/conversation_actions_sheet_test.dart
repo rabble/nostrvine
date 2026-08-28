@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_actions_sheet.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -16,8 +17,10 @@ void main() {
       bool isBlocked = false,
       String displayName = 'Alice',
       bool isVanished = false,
+      Locale? locale,
     }) {
       return testMaterialApp(
+        locale: locale,
         home: Builder(
           builder: (context) {
             return Scaffold(
@@ -68,6 +71,7 @@ void main() {
       testWidgets('keeps safety actions with identity-neutral vanished copy', (
         tester,
       ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
         await tester.pumpWidget(
           buildSubject(
             onResult: (_) {},
@@ -79,10 +83,48 @@ void main() {
         await tester.tap(find.text('Show sheet'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Report this account'), findsOneWidget);
-        expect(find.text('Block this account'), findsOneWidget);
-        expect(find.text('Report Deleted account'), findsNothing);
-        expect(find.text('Block Deleted account'), findsNothing);
+        expect(
+          find.text(l10n.inboxActionReportVanishedAccount),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionBlockVanishedAccount),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionReport(l10n.profileDeletedAccountName)),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.inboxActionBlock(l10n.profileDeletedAccountName)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('localizes vanished actions as complete sentences', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('fil'));
+        await tester.pumpWidget(
+          buildSubject(
+            onResult: (_) {},
+            displayName: 'Deleted account',
+            isVanished: true,
+            locale: const Locale('fil'),
+          ),
+        );
+
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.inboxActionReportVanishedAccount),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.inboxActionReport('ang account na ito')),
+          findsNothing,
+        );
       });
 
       testWidgets('renders $SwitchListTile for mute toggle', (tester) async {

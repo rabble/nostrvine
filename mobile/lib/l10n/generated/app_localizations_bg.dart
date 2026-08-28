@@ -841,7 +841,26 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileDeletedAccountName => 'Изтрит акаунт';
 
   @override
-  String get inboxVanishedAccountReference => 'този акаунт';
+  String get inboxActionReportVanishedAccount => 'Докладвай този акаунт';
+
+  @override
+  String get inboxActionBlockVanishedAccount => 'Блокирай този акаунт';
+
+  @override
+  String get inboxActionUnblockVanishedAccount => 'Отблокирай този акаунт';
+
+  @override
+  String get inboxReportedVanishedAccount => 'Този акаунт е докладван';
+
+  @override
+  String get inboxBlockedVanishedAccount => 'Този акаунт е блокиран';
+
+  @override
+  String get inboxUnblockedVanishedAccount => 'Този акаунт е отблокиран';
+
+  @override
+  String get inboxRemoveConfirmBodyVanishedAccount =>
+      'Това премахва разговора от входящата ти кутия. Ако ти пише отново, започва нов разговор.';
 
   @override
   String get inboxConversationDeletedAccountSubtitle => 'Този акаунт е изтрит';

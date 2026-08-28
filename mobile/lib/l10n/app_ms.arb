@@ -413,7 +413,13 @@
   "profileMyLibraryLabel": "Pustaka Saya",
   "profileMessageLabel": "Mesej",
   "profileDeletedAccountName": "Akaun dipadam",
-  "inboxVanishedAccountReference": "akaun ini",
+  "inboxActionReportVanishedAccount": "Laporkan akaun ini",
+  "inboxActionBlockVanishedAccount": "Sekat akaun ini",
+  "inboxActionUnblockVanishedAccount": "Nyahsekat akaun ini",
+  "inboxReportedVanishedAccount": "Akaun ini dilaporkan",
+  "inboxBlockedVanishedAccount": "Akaun ini disekat",
+  "inboxUnblockedVanishedAccount": "Akaun ini dinyahsekat",
+  "inboxRemoveConfirmBodyVanishedAccount": "Ini mengalih keluar perbualan daripada peti masuk anda. Jika dia menghantar mesej lagi, perbualan baharu akan bermula.",
   "@profileDeletedAccountName": {
     "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar."
   },
