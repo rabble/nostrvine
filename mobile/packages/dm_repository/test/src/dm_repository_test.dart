@@ -653,6 +653,21 @@ void main() {
         ),
       ).thenAnswer((_) async => false);
 
+      // Same default for the cross-protocol twin claim, which the peer receive
+      // paths use instead of hasMatchingMessage (#8211): no twin is available,
+      // so an arrival persists. Dedup tests restub this to true.
+      when(
+        () => mockDirectMessagesDao.claimCrossProtocolTwin(
+          counterpart: any(named: 'counterpart'),
+          conversationId: any(named: 'conversationId'),
+          senderPubkey: any(named: 'senderPubkey'),
+          content: any(named: 'content'),
+          createdAt: any(named: 'createdAt'),
+          windowSeconds: any(named: 'windowSeconds'),
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => false);
+
       // Global stub for the durable batch-id dedup probe: the send + recovery
       // paths now match a group send's persisted local message by its stamped
       // sendBatchId (not the collision-prone content/timestamp window). Default
@@ -8020,6 +8035,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
             ),
           ]),
         );
@@ -9450,6 +9466,7 @@ void main() {
               fileSize: 1024,
               dimensions: '1920x1080',
               isDeleted: false,
+              twinCollapsed: false,
             ),
           ]),
         );
@@ -10163,7 +10180,7 @@ void main() {
           () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
         ).thenAnswer((_) async => false);
         when(
-          () => mockDirectMessagesDao.hasMatchingMessage(
+          () => mockDirectMessagesDao.claimCrossProtocolTwin(
             counterpart: DmDedupCounterpart.nip17Copy,
             conversationId: any(named: 'conversationId'),
             senderPubkey: any(named: 'senderPubkey'),
@@ -11537,6 +11554,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: 14,
             isDeleted: false,
+            twinCollapsed: false,
           ),
         );
 
@@ -11572,6 +11590,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
             ),
           );
 
@@ -11716,6 +11735,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: true,
+              twinCollapsed: false,
             ),
           );
 
@@ -11766,6 +11786,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: messageKind,
             isDeleted: false,
+            twinCollapsed: false,
           ),
         );
         when(
@@ -11999,6 +12020,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: 14,
             isDeleted: true,
+            twinCollapsed: false,
             deletionRumorJson: rumorJson,
             deletionPublishStatus: 'deletion_pending',
           ),
@@ -12189,6 +12211,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: true,
+              twinCollapsed: false,
               deletionRumorJson: '{"kind":5}',
               deletionPublishStatus: 'deletion_pending',
             ),
@@ -13497,6 +13520,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
             ),
           ],
         );
@@ -13844,6 +13868,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: 14,
             isDeleted: false,
+            twinCollapsed: false,
           ),
         );
 
@@ -13944,6 +13969,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: 14,
             isDeleted: false,
+            twinCollapsed: false,
           ),
         );
 
@@ -13994,7 +14020,8 @@ void main() {
             createdAt: 1700000000,
             giftWrapId: _giftWrapEventId,
             messageKind: 14,
-            isDeleted: true, // Already deleted
+            isDeleted: true,
+            twinCollapsed: false, // Already deleted
           ),
         );
 
@@ -14329,6 +14356,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: messageKind,
             isDeleted: isDeleted,
+            twinCollapsed: false,
           ),
         );
       }
@@ -14731,7 +14759,7 @@ void main() {
         'so redelivery skips decrypt',
         () async {
           when(
-            () => mockDirectMessagesDao.hasMatchingMessage(
+            () => mockDirectMessagesDao.claimCrossProtocolTwin(
               counterpart: DmDedupCounterpart.nip04Copy,
               conversationId: any(named: 'conversationId'),
               senderPubkey: _validPubkeyB,
@@ -15469,6 +15497,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
             ),
           );
 
@@ -15528,6 +15557,7 @@ void main() {
                 giftWrapId: _giftWrapEventId2,
                 messageKind: 14,
                 isDeleted: false,
+                twinCollapsed: false,
               ),
             ],
           );
@@ -15589,6 +15619,7 @@ void main() {
               giftWrapId: _giftWrapEventId,
               messageKind: 14,
               isDeleted: false,
+              twinCollapsed: false,
             ),
           );
 
@@ -15648,6 +15679,7 @@ void main() {
                 giftWrapId: _giftWrapEventId2,
                 messageKind: EventKind.fileMessage,
                 isDeleted: false,
+                twinCollapsed: false,
                 fileType: 'image/jpeg',
               ),
             ],
@@ -22366,6 +22398,7 @@ void main() {
         giftWrapId: _giftWrapEventId,
         messageKind: 14,
         isDeleted: false,
+        twinCollapsed: false,
         sendBatchId: sendBatchId,
       );
 
@@ -23069,6 +23102,7 @@ void main() {
                   giftWrapId: _giftWrapEventId,
                   messageKind: 14,
                   isDeleted: false,
+                  twinCollapsed: false,
                 ),
               ],
             );

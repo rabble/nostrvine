@@ -811,6 +811,23 @@ class DirectMessages extends Table {
   BoolColumn get isDeleted =>
       boolean().withDefault(const Constant(false)).named('is_deleted')();
 
+  /// Whether this row has already absorbed its cross-protocol twin.
+  ///
+  /// A dual-send puts one message on the wire twice — a NIP-17 rumor and a
+  /// NIP-04 event with unrelated ids — so nothing but the
+  /// `(sender, content, ~time)` window can collapse them. That window matched
+  /// on *existence*, so one stored copy absorbed every later same-text arrival
+  /// inside it, and a peer's genuine repeat was lost in the NIP-04-first
+  /// ordering — the very symptom #7324 was filed for, surviving in the other
+  /// direction (#8211).
+  ///
+  /// A twin is 1:1: one message on the wire twice yields exactly one
+  /// counterpart, so a row may absorb exactly one. This marks the row that
+  /// already did. Self-send matching does not use it — any number of echoes
+  /// may legitimately match the user's own persisted send.
+  BoolColumn get twinCollapsed =>
+      boolean().withDefault(const Constant(false)).named('twin_collapsed')();
+
   /// Hex public key of the account that received/sent this message.
   /// NULL for legacy messages created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();

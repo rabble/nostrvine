@@ -129,7 +129,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -199,6 +199,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 10) {
         await _repairSchemaV10();
       }
+      if (from < 11) {
+        await _repairSchemaV11();
+      }
     },
     beforeOpen: (details) async {
       // v1 databases are normalized by onUpgrade. This guarded path remains
@@ -213,6 +216,7 @@ class AppDatabase extends _$AppDatabase {
         await _createConsolidatedIndexes();
         await _repairSchemaV8();
         await _repairSchemaV10();
+        await _repairSchemaV11();
       }
 
       // Run cleanup of expired data on every app startup
@@ -235,6 +239,20 @@ class AppDatabase extends _$AppDatabase {
       'direct_messages',
       'deletion_publish_status',
       'TEXT NULL',
+    );
+  }
+
+  /// Adds the cross-protocol twin marker to stored DMs (#8211).
+  ///
+  /// Existing rows default to "no twin absorbed yet". That is the safe
+  /// direction: at worst one already-collapsed row absorbs a second twin that
+  /// will never arrive, whereas defaulting to collapsed would let a genuine
+  /// duplicate through on every historical row.
+  Future<void> _repairSchemaV11() async {
+    await _addColumnIfMissing(
+      'direct_messages',
+      'twin_collapsed',
+      'INTEGER NOT NULL DEFAULT 0 CHECK ("twin_collapsed" IN (0, 1))',
     );
   }
 

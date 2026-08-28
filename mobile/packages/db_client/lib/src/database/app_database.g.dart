@@ -9290,6 +9290,21 @@ class $DirectMessagesTable extends DirectMessages
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _twinCollapsedMeta = const VerificationMeta(
+    'twinCollapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> twinCollapsed = GeneratedColumn<bool>(
+    'twin_collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("twin_collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
     'ownerPubkey',
   );
@@ -9358,6 +9373,7 @@ class $DirectMessagesTable extends DirectMessages
     blurhash,
     thumbnailUrl,
     isDeleted,
+    twinCollapsed,
     ownerPubkey,
     sendBatchId,
     deletionRumorJson,
@@ -9537,6 +9553,15 @@ class $DirectMessagesTable extends DirectMessages
         isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
       );
     }
+    if (data.containsKey('twin_collapsed')) {
+      context.handle(
+        _twinCollapsedMeta,
+        twinCollapsed.isAcceptableOrUnknown(
+          data['twin_collapsed']!,
+          _twinCollapsedMeta,
+        ),
+      );
+    }
     if (data.containsKey('owner_pubkey')) {
       context.handle(
         _ownerPubkeyMeta,
@@ -9666,6 +9691,10 @@ class $DirectMessagesTable extends DirectMessages
         DriftSqlType.bool,
         data['${effectivePrefix}is_deleted'],
       )!,
+      twinCollapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}twin_collapsed'],
+      )!,
       ownerPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
@@ -9762,6 +9791,22 @@ class DirectMessageRow extends DataClass
   /// re-delivering the gift-wrapped event on the next poll cycle.
   final bool isDeleted;
 
+  /// Whether this row has already absorbed its cross-protocol twin.
+  ///
+  /// A dual-send puts one message on the wire twice — a NIP-17 rumor and a
+  /// NIP-04 event with unrelated ids — so nothing but the
+  /// `(sender, content, ~time)` window can collapse them. That window matched
+  /// on *existence*, so one stored copy absorbed every later same-text arrival
+  /// inside it, and a peer's genuine repeat was lost in the NIP-04-first
+  /// ordering — the very symptom #7324 was filed for, surviving in the other
+  /// direction (#8211).
+  ///
+  /// A twin is 1:1: one message on the wire twice yields exactly one
+  /// counterpart, so a row may absorb exactly one. This marks the row that
+  /// already did. Self-send matching does not use it — any number of echoes
+  /// may legitimately match the user's own persisted send.
+  final bool twinCollapsed;
+
   /// Hex public key of the account that received/sent this message.
   /// NULL for legacy messages created before multi-account support.
   final String? ownerPubkey;
@@ -9822,6 +9867,7 @@ class DirectMessageRow extends DataClass
     this.blurhash,
     this.thumbnailUrl,
     required this.isDeleted,
+    required this.twinCollapsed,
     this.ownerPubkey,
     this.sendBatchId,
     this.deletionRumorJson,
@@ -9877,6 +9923,7 @@ class DirectMessageRow extends DataClass
       map['thumbnail_url'] = Variable<String>(thumbnailUrl);
     }
     map['is_deleted'] = Variable<bool>(isDeleted);
+    map['twin_collapsed'] = Variable<bool>(twinCollapsed);
     if (!nullToAbsent || ownerPubkey != null) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
@@ -9941,6 +9988,7 @@ class DirectMessageRow extends DataClass
           ? const Value.absent()
           : Value(thumbnailUrl),
       isDeleted: Value(isDeleted),
+      twinCollapsed: Value(twinCollapsed),
       ownerPubkey: ownerPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerPubkey),
@@ -9985,6 +10033,7 @@ class DirectMessageRow extends DataClass
       blurhash: serializer.fromJson<String?>(json['blurhash']),
       thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      twinCollapsed: serializer.fromJson<bool>(json['twinCollapsed']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
       sendBatchId: serializer.fromJson<String?>(json['sendBatchId']),
       deletionRumorJson: serializer.fromJson<String?>(
@@ -10020,6 +10069,7 @@ class DirectMessageRow extends DataClass
       'blurhash': serializer.toJson<String?>(blurhash),
       'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
       'isDeleted': serializer.toJson<bool>(isDeleted),
+      'twinCollapsed': serializer.toJson<bool>(twinCollapsed),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
       'sendBatchId': serializer.toJson<String?>(sendBatchId),
       'deletionRumorJson': serializer.toJson<String?>(deletionRumorJson),
@@ -10051,6 +10101,7 @@ class DirectMessageRow extends DataClass
     Value<String?> blurhash = const Value.absent(),
     Value<String?> thumbnailUrl = const Value.absent(),
     bool? isDeleted,
+    bool? twinCollapsed,
     Value<String?> ownerPubkey = const Value.absent(),
     Value<String?> sendBatchId = const Value.absent(),
     Value<String?> deletionRumorJson = const Value.absent(),
@@ -10085,6 +10136,7 @@ class DirectMessageRow extends DataClass
     blurhash: blurhash.present ? blurhash.value : this.blurhash,
     thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
     isDeleted: isDeleted ?? this.isDeleted,
+    twinCollapsed: twinCollapsed ?? this.twinCollapsed,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
     sendBatchId: sendBatchId.present ? sendBatchId.value : this.sendBatchId,
     deletionRumorJson: deletionRumorJson.present
@@ -10137,6 +10189,9 @@ class DirectMessageRow extends DataClass
           ? data.thumbnailUrl.value
           : this.thumbnailUrl,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      twinCollapsed: data.twinCollapsed.present
+          ? data.twinCollapsed.value
+          : this.twinCollapsed,
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
@@ -10176,6 +10231,7 @@ class DirectMessageRow extends DataClass
           ..write('blurhash: $blurhash, ')
           ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('twinCollapsed: $twinCollapsed, ')
           ..write('ownerPubkey: $ownerPubkey, ')
           ..write('sendBatchId: $sendBatchId, ')
           ..write('deletionRumorJson: $deletionRumorJson, ')
@@ -10207,6 +10263,7 @@ class DirectMessageRow extends DataClass
     blurhash,
     thumbnailUrl,
     isDeleted,
+    twinCollapsed,
     ownerPubkey,
     sendBatchId,
     deletionRumorJson,
@@ -10237,6 +10294,7 @@ class DirectMessageRow extends DataClass
           other.blurhash == this.blurhash &&
           other.thumbnailUrl == this.thumbnailUrl &&
           other.isDeleted == this.isDeleted &&
+          other.twinCollapsed == this.twinCollapsed &&
           other.ownerPubkey == this.ownerPubkey &&
           other.sendBatchId == this.sendBatchId &&
           other.deletionRumorJson == this.deletionRumorJson &&
@@ -10265,6 +10323,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<String?> blurhash;
   final Value<String?> thumbnailUrl;
   final Value<bool> isDeleted;
+  final Value<bool> twinCollapsed;
   final Value<String?> ownerPubkey;
   final Value<String?> sendBatchId;
   final Value<String?> deletionRumorJson;
@@ -10292,6 +10351,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.blurhash = const Value.absent(),
     this.thumbnailUrl = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.twinCollapsed = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.sendBatchId = const Value.absent(),
     this.deletionRumorJson = const Value.absent(),
@@ -10320,6 +10380,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.blurhash = const Value.absent(),
     this.thumbnailUrl = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.twinCollapsed = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
     this.sendBatchId = const Value.absent(),
     this.deletionRumorJson = const Value.absent(),
@@ -10353,6 +10414,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Expression<String>? blurhash,
     Expression<String>? thumbnailUrl,
     Expression<bool>? isDeleted,
+    Expression<bool>? twinCollapsed,
     Expression<String>? ownerPubkey,
     Expression<String>? sendBatchId,
     Expression<String>? deletionRumorJson,
@@ -10382,6 +10444,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       if (blurhash != null) 'blurhash': blurhash,
       if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (twinCollapsed != null) 'twin_collapsed': twinCollapsed,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (sendBatchId != null) 'send_batch_id': sendBatchId,
       if (deletionRumorJson != null) 'deletion_rumor_json': deletionRumorJson,
@@ -10413,6 +10476,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<String?>? blurhash,
     Value<String?>? thumbnailUrl,
     Value<bool>? isDeleted,
+    Value<bool>? twinCollapsed,
     Value<String?>? ownerPubkey,
     Value<String?>? sendBatchId,
     Value<String?>? deletionRumorJson,
@@ -10441,6 +10505,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       blurhash: blurhash ?? this.blurhash,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       isDeleted: isDeleted ?? this.isDeleted,
+      twinCollapsed: twinCollapsed ?? this.twinCollapsed,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       sendBatchId: sendBatchId ?? this.sendBatchId,
       deletionRumorJson: deletionRumorJson ?? this.deletionRumorJson,
@@ -10516,6 +10581,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (twinCollapsed.present) {
+      map['twin_collapsed'] = Variable<bool>(twinCollapsed.value);
+    }
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
@@ -10560,6 +10628,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
           ..write('blurhash: $blurhash, ')
           ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('twinCollapsed: $twinCollapsed, ')
           ..write('ownerPubkey: $ownerPubkey, ')
           ..write('sendBatchId: $sendBatchId, ')
           ..write('deletionRumorJson: $deletionRumorJson, ')
@@ -22536,6 +22605,7 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<String?> blurhash,
       Value<String?> thumbnailUrl,
       Value<bool> isDeleted,
+      Value<bool> twinCollapsed,
       Value<String?> ownerPubkey,
       Value<String?> sendBatchId,
       Value<String?> deletionRumorJson,
@@ -22565,6 +22635,7 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<String?> blurhash,
       Value<String?> thumbnailUrl,
       Value<bool> isDeleted,
+      Value<bool> twinCollapsed,
       Value<String?> ownerPubkey,
       Value<String?> sendBatchId,
       Value<String?> deletionRumorJson,
@@ -22683,6 +22754,11 @@ class $$DirectMessagesTableFilterComposer
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
     column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get twinCollapsed => $composableBuilder(
+    column: $table.twinCollapsed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22821,6 +22897,11 @@ class $$DirectMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get twinCollapsed => $composableBuilder(
+    column: $table.twinCollapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
@@ -22934,6 +23015,11 @@ class $$DirectMessagesTableAnnotationComposer
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 
+  GeneratedColumn<bool> get twinCollapsed => $composableBuilder(
+    column: $table.twinCollapsed,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
     builder: (column) => column,
@@ -23013,6 +23099,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> blurhash = const Value.absent(),
                 Value<String?> thumbnailUrl = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<bool> twinCollapsed = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<String?> sendBatchId = const Value.absent(),
                 Value<String?> deletionRumorJson = const Value.absent(),
@@ -23040,6 +23127,7 @@ class $$DirectMessagesTableTableManager
                 blurhash: blurhash,
                 thumbnailUrl: thumbnailUrl,
                 isDeleted: isDeleted,
+                twinCollapsed: twinCollapsed,
                 ownerPubkey: ownerPubkey,
                 sendBatchId: sendBatchId,
                 deletionRumorJson: deletionRumorJson,
@@ -23069,6 +23157,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> blurhash = const Value.absent(),
                 Value<String?> thumbnailUrl = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<bool> twinCollapsed = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
                 Value<String?> sendBatchId = const Value.absent(),
                 Value<String?> deletionRumorJson = const Value.absent(),
@@ -23096,6 +23185,7 @@ class $$DirectMessagesTableTableManager
                 blurhash: blurhash,
                 thumbnailUrl: thumbnailUrl,
                 isDeleted: isDeleted,
+                twinCollapsed: twinCollapsed,
                 ownerPubkey: ownerPubkey,
                 sendBatchId: sendBatchId,
                 deletionRumorJson: deletionRumorJson,
