@@ -63,7 +63,7 @@ jobs:
       #
       # The list is explicit rather than a glob over integration_test/e2e/,
       # because `service` and "runnable on a Linux CI runner" are different
-      # axes. Every suite in that directory is tagged `service`; these four
+      # axes. Every suite in that directory is tagged `service`; these five
       # are the ones this runner can actually execute. The remaining four are
       # excluded
       # for reasons no workflow change can fix:
@@ -85,7 +85,8 @@ jobs:
             integration_test/e2e/relay_list_admission_test.dart \
             integration_test/e2e/dm_inbox_relay_admission_test.dart \
             integration_test/e2e/reel_reply_retry_double_send_test.dart \
-            integration_test/e2e/block_leaves_kind3_follow_test.dart; do
+            integration_test/e2e/block_leaves_kind3_follow_test.dart \
+            integration_test/e2e/dm_group_delete_for_everyone_test.dart; do
             echo "── $suite"
             xvfb-run -a flutter test "$suite" --tags service -d linux
           done

@@ -1171,9 +1171,9 @@ class OutgoingDms extends Table {
   @override
   String get tableName => 'outgoing_dms';
 
-  /// Primary key. Equal to the rumor's event id (`rumor_event_json` →
-  /// `id`), so a single logical message has exactly one queue row even
-  /// across retries.
+  /// Opaque durable queue-row handle. It equals the rumor event id for 1:1
+  /// and legacy sends. Group sends append the recipient pubkey because one
+  /// shared wire rumor needs separate delivery state for each recipient.
   TextColumn get id => text()();
 
   /// Deterministic conversation identifier (SHA-256 of sorted
