@@ -39,10 +39,12 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Soft-deleted locally; the kind-5 wrap still needs a confirmed delivery.
   static const String _deletionPending = 'deletion_pending';
 
-  /// A relay confirmed the wrap. Terminal.
+  /// A relay confirmed the wrap for every recipient. Terminal.
   static const String _deletionSent = 'deletion_sent';
 
-  /// Send policy refused every recipient. Terminal, but NOT delivered.
+  /// Send policy blocked every recipient that failed. Terminal, and NOT a
+  /// claim of full delivery — recipients outside the block may already have
+  /// received the retraction.
   static const String _deletionBlocked = 'deletion_blocked';
 
   /// Build a filter expression that returns rows owned by [ownerPubkey]
