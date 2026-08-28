@@ -3928,15 +3928,18 @@ class DmRepository {
   /// durable row, and the sweep then delivers one copy while the retry
   /// delivers another.
   ///
-  /// Only ever called for a row that survives the call — the soft-unconfirmed
-  /// and hard-failure arms of both [sendMessage] and [sendGroupMessage], plus
-  /// a [sendGroupMessage] sibling whose enqueue-failure unwind could not
-  /// delete it. The blocked branch deletes its row, a cancelled group sibling
-  /// never had one, an unwound sibling no longer has one, and the success
-  /// branch consumes it (except on partial delivery — see
-  /// [NIP17SendResult.queuedRumorId]).
+  /// Called only for a row that survives the call: retryable failures and
+  /// partial successes whose recipient wrap landed but self-wrap did not.
   NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
       switch (result) {
+        NIP17SendSuccess() when !result.selfWrapPublished => NIP17SendSuccess(
+          rumorEventId: result.rumorEventId,
+          messageEventId: result.messageEventId,
+          recipientPubkey: result.recipientPubkey,
+          selfWrapPublished: false,
+          queuedRumorId: rumorId,
+          timestamp: result.timestamp,
+        ),
         NIP17SendSuccess() => result,
         NIP17SendFailure() => NIP17SendFailure(
           result.error,
@@ -4846,7 +4849,7 @@ class DmRepository {
     // The durable batch id when available; null for a legacy (pre-column)
     // in-flight batch, which falls back to the `(createdAt, content)` tuple.
     final String? batchId;
-    final row = await dao.getById(rumorId);
+    var row = await dao.getById(rumorId);
     if (row != null) {
       if (row.ownerPubkey != _userPubkey) {
         throw ArgumentError.value(
@@ -4873,11 +4876,26 @@ class DmRepository {
         rumorId,
         ownerPubkey: _ownerPubkey,
       );
-      if (message == null || message.senderPubkey != _userPubkey) return 0;
-      conversationId = message.conversationId;
-      createdAt = message.createdAt;
-      content = message.content;
-      batchId = message.sendBatchId;
+      if (message != null) {
+        if (message.senderPubkey != _userPubkey) return 0;
+        conversationId = message.conversationId;
+        createdAt = message.createdAt;
+        content = message.content;
+        batchId = message.sendBatchId;
+      } else {
+        // A queue-only group bubble exposes the shared wire rumor id, while
+        // each durable row is keyed by its per-recipient queue handle. Resolve
+        // one sibling from the stored rumor before expanding the whole batch.
+        row = await dao.getByRumorId(
+          rumorId: rumorId,
+          ownerPubkey: _userPubkey,
+        );
+        if (row == null) return 0;
+        conversationId = row.conversationId;
+        createdAt = row.createdAt;
+        content = row.content;
+        batchId = row.sendBatchId;
+      }
     }
 
     final rows = await dao.getForConversation(
@@ -5119,8 +5137,8 @@ class DmRepository {
   ///
   /// When an [OutgoingDmsDao] is injected, each per-recipient send
   /// goes through the durable queue with the same atomicity contract
-  /// as [sendMessage]: enqueue a `pending`/`pending` row keyed by the
-  /// per-recipient rumor id, publish, then transition the row by wrap
+  /// as [sendMessage]: enqueue a `pending`/`pending` row keyed by a
+  /// per-recipient queue handle, publish, then transition the row by wrap
   /// outcome (full delivery → row deleted in the same transaction
   /// that inserts `direct_messages`; partial delivery → recipient
   /// `sent` + self `failed` so the recovery path can replay only the
@@ -5498,6 +5516,7 @@ class DmRepository {
               rumorId: queueIds[i],
               result: results[i],
             );
+            results[i] = _stampQueuedRow(results[i], queueIds[i]);
           }
         }
       });

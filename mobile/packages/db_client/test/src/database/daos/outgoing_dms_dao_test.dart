@@ -30,6 +30,7 @@ void main() {
   // Helper: build a fresh queued OutgoingDm with both wraps pending.
   OutgoingDm makeDm({
     required String id,
+    String? rumorId,
     String owner = ownerA,
     String recipientPubkey = recipient,
     String conversationIdValue = conversationId,
@@ -46,7 +47,7 @@ void main() {
       recipientPubkey: recipientPubkey,
       content: 'hello',
       createdAt: createdAt,
-      rumorEventJson: '{"id":"$id","kind":14,"content":"hello"}',
+      rumorEventJson: '{"id":"${rumorId ?? id}","kind":14,"content":"hello"}',
       recipientWrapStatus: recipientStatus,
       selfWrapStatus: selfStatus,
       retryCount: retryCount,
@@ -77,6 +78,13 @@ void main() {
   });
 
   group('OutgoingDm value equality', () {
+    test('rumorId reads the wire id independently of the queue handle', () {
+      final row = makeDm(id: 'queue-handle', rumorId: 'wire-rumor');
+
+      expect(row.id, equals('queue-handle'));
+      expect(row.rumorId, equals('wire-rumor'));
+    });
+
     test(
       'rows differing only in wrap status are NOT equal — id-only equality '
       'made a pending row compare equal to its failed re-read, so Bloc.emit '
@@ -185,6 +193,46 @@ void main() {
         expect(fetched.retryCount, equals(0));
         expect(fetched.recipientWrapLastError, isNull);
         expect(fetched.selfWrapLastError, isNull);
+      });
+
+      test('finds a per-recipient queue row by its shared rumor id', () async {
+        await dao.enqueue(
+          makeDm(id: 'wire-rumor:$recipient', rumorId: 'wire-rumor'),
+        );
+        await dao.enqueue(
+          makeDm(
+            id: 'wire-rumor:$recipient2',
+            rumorId: 'wire-rumor',
+            recipientPubkey: recipient2,
+          ),
+        );
+
+        final row = await dao.getByRumorId(
+          rumorId: 'wire-rumor',
+          ownerPubkey: ownerA,
+        );
+
+        expect(row, isNotNull);
+        expect(row!.rumorId, equals('wire-rumor'));
+        expect(row.id, isNot(equals(row.rumorId)));
+      });
+
+      test('ignores an unrelated row with a corrupt wrap status', () async {
+        await dao.enqueue(makeDm(id: 'corrupt-row'));
+        await database.customStatement(
+          "UPDATE outgoing_dms SET recipient_wrap_status = 'cancelled' "
+          "WHERE id = 'corrupt-row'",
+        );
+        await dao.enqueue(
+          makeDm(id: 'wire-rumor:$recipient', rumorId: 'wire-rumor'),
+        );
+
+        final row = await dao.getByRumorId(
+          rumorId: 'wire-rumor',
+          ownerPubkey: ownerA,
+        );
+
+        expect(row?.id, equals('wire-rumor:$recipient'));
       });
 
       test(

@@ -19150,9 +19150,11 @@ void main() {
           final enqueuedC = captured.last as OutgoingDm;
 
           // Recipient B: full delivery → row deleted.
+          expect(results.first.queuedRumorId, isNull);
           verify(() => mockOutgoingDmsDao.deleteById(enqueuedB.id)).called(1);
           // Recipient C: partial → recipient sent + self failed, row
           // preserved for recovery.
+          expect(results.last.queuedRumorId, equals(enqueuedC.id));
           verify(
             () => mockOutgoingDmsDao.markRecipientWrapStatus(
               id: enqueuedC.id,
@@ -22552,6 +22554,7 @@ void main() {
       OutgoingDm sibling({
         required String id,
         required OutgoingWrapStatus recipientWrapStatus,
+        String? rumorId,
         String conversationId = groupConversationId,
         String content = batchContent,
         int createdAt = batchCreatedAt,
@@ -22563,7 +22566,7 @@ void main() {
         recipientPubkey: _validPubkeyC,
         content: content,
         createdAt: createdAt,
-        rumorEventJson: '{}',
+        rumorEventJson: rumorId == null ? '{}' : '{"id":"$rumorId"}',
         recipientWrapStatus: recipientWrapStatus,
         selfWrapStatus: OutgoingWrapStatus.pending,
         queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
@@ -22688,6 +22691,59 @@ void main() {
           verify(
             () => mockOutgoingDmsDao.deleteById(failedSiblingId),
           ).called(1);
+        },
+      );
+
+      test(
+        'resolves a queue-only shared rumor id to its per-recipient handles',
+        () async {
+          const sharedRumorId = 'shared-wire-rumor';
+          const batchId = 'shared-batch';
+          final pending = sibling(
+            id: '$sharedRumorId:$_validPubkeyB',
+            rumorId: sharedRumorId,
+            recipientWrapStatus: OutgoingWrapStatus.pending,
+            sendBatchId: batchId,
+          );
+          final failed = sibling(
+            id: '$sharedRumorId:$_validPubkeyC',
+            rumorId: sharedRumorId,
+            recipientWrapStatus: OutgoingWrapStatus.failed,
+            sendBatchId: batchId,
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(sharedRumorId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockDirectMessagesDao.getMessageById(
+              sharedRumorId,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockOutgoingDmsDao.getByRumorId(
+              rumorId: sharedRumorId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => pending);
+          when(
+            () => mockOutgoingDmsDao.getForConversation(
+              conversationId: groupConversationId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).thenAnswer((_) async => [pending, failed]);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final cancelled = await repository.cancelOutgoingBatch(
+            rumorId: sharedRumorId,
+          );
+
+          expect(cancelled, equals(2));
+          verify(() => mockOutgoingDmsDao.deleteById(pending.id)).called(1);
+          verify(() => mockOutgoingDmsDao.deleteById(failed.id)).called(1);
         },
       );
 
@@ -22859,6 +22915,12 @@ void main() {
             () => mockDirectMessagesDao.getMessageById(
               winnerRumorId,
               ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockOutgoingDmsDao.getByRumorId(
+              rumorId: winnerRumorId,
+              ownerPubkey: _validPubkeyA,
             ),
           ).thenAnswer((_) async => null);
 

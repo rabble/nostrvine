@@ -870,17 +870,14 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, sentPartial with only the failing rumor id] '
+          'emits [sending, sentPartial with the partial queue handle] '
           'when one per-recipient sendGroupMessage has self-wrap unpublished',
           setUp: () {
-            // Each per-recipient send produces its own rumor id.
-            // recipient1 fully delivers, recipient2 partial — only the
-            // partial one should land in lastPartialSend.rumorIds, so
-            // the recovery path republishes only that self-wrap.
-            const rumorIdRecipient1 =
+            // Both recipients share one wire rumor, but partial self-wrap
+            // recovery must retain the affected recipient's queue handle.
+            const sharedRumorId =
                 '7777777777777777777777777777777777777777777777777777777777777777';
-            const rumorIdRecipient2 =
-                '8888888888888888888888888888888888888888888888888888888888888888';
+            const partialQueueId = '$sharedRumorId:$recipientPubkey2';
             when(
               () => mockDmRepository.sendGroupMessage(
                 recipientPubkeys: [recipientPubkey, recipientPubkey2],
@@ -889,15 +886,16 @@ void main() {
             ).thenAnswer(
               (_) async => [
                 NIP17SendResult.success(
-                  rumorEventId: rumorIdRecipient1,
-                  messageEventId: rumorIdRecipient1,
+                  rumorEventId: sharedRumorId,
+                  messageEventId: 'wrap-1',
                   recipientPubkey: recipientPubkey,
                 ),
                 NIP17SendResult.success(
-                  rumorEventId: rumorIdRecipient2,
-                  messageEventId: rumorIdRecipient2,
+                  rumorEventId: sharedRumorId,
+                  messageEventId: 'wrap-2',
                   recipientPubkey: recipientPubkey2,
                   selfWrapPublished: false,
+                  queuedRumorId: partialQueueId,
                 ),
               ],
             );
@@ -927,7 +925,7 @@ void main() {
                   equals(
                     const PartialSend(
                       rumorIds: [
-                        '8888888888888888888888888888888888888888888888888888888888888888',
+                        '7777777777777777777777777777777777777777777777777777777777777777:$recipientPubkey2',
                       ],
                     ),
                   ),

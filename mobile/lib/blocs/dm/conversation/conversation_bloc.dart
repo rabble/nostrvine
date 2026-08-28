@@ -276,7 +276,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           throw Exception(result.error ?? 'Failed to send message');
         }
         if (result.selfWrapPublished == false) {
-          partialRumorIds.add(result.rumorEventId!);
+          partialRumorIds.add(result.queuedRumorId ?? result.rumorEventId!);
         }
       } else {
         final results = await _dmRepository.sendGroupMessage(
@@ -304,12 +304,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             results.first.error ?? 'Failed to send group message',
           );
         }
-        // For groups, "self-wrap" is per-recipient. We collect the rumor
-        // ids of the successful per-recipient sends whose self-wrap
-        // failed — only those rumors need a recovery republish.
+        // For groups, "self-wrap" is per-recipient. Recovery needs each
+        // surviving durable queue handle, not the shared wire rumor id.
         for (final result in results) {
           if (result.success && result.selfWrapPublished == false) {
-            partialRumorIds.add(result.rumorEventId!);
+            partialRumorIds.add(result.queuedRumorId ?? result.rumorEventId!);
           }
         }
       }

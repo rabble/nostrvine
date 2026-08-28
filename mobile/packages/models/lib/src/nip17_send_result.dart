@@ -34,10 +34,9 @@ import 'package:meta/meta.dart';
 /// Pre-existing callers that only check [success] continue to work
 /// unchanged via the base-class getter. [selfWrapPublished] surfaces
 /// partial delivery so a half-delivered send can be visibly
-/// distinguished from a fully-delivered one. Acting on it (e.g.
-/// retrying only the missing self-wrap publish without re-publishing
-/// to the recipient) is left to future callers — the durable
-/// outgoing-message queue tracked in #3909 is not yet on `main`.
+/// distinguished from a fully-delivered one. [queuedRumorId] identifies the
+/// durable row when recovery must retry only the missing self-wrap without
+/// re-publishing to the recipient.
 sealed class NIP17SendResult {
   const NIP17SendResult();
 
@@ -51,11 +50,13 @@ sealed class NIP17SendResult {
     required String messageEventId,
     required String recipientPubkey,
     bool selfWrapPublished = true,
+    String? queuedRumorId,
   }) => NIP17SendSuccess(
     rumorEventId: rumorEventId,
     messageEventId: messageEventId,
     recipientPubkey: recipientPubkey,
     selfWrapPublished: selfWrapPublished,
+    queuedRumorId: queuedRumorId,
     timestamp: DateTime.now(),
   );
 
@@ -97,8 +98,7 @@ sealed class NIP17SendResult {
   /// pre-publish crypto build timeouts where retry is still the honest outcome.
   bool get retryablePending => false;
 
-  /// The `outgoing_dms` row this send left parked for the retry sweep, when
-  /// it enqueued one before failing.
+  /// The `outgoing_dms` row this send left parked for recovery.
   ///
   /// A caller that wants to try the same message again must re-drive **this**
   /// row (`DmRepository.recoverFullSend`) rather than calling `sendMessage`
@@ -106,15 +106,10 @@ sealed class NIP17SendResult {
   /// the sweep and the retry each deliver a copy. Receiver-side gift-wrap
   /// dedup keys on the rumor id and cannot collapse two of them.
   ///
-  /// `null` on every success, on a [blocked] result (the send gate returns
-  /// before the enqueue), and whenever the queue DAO is not wired in.
-  ///
-  /// On success that usually means there is no row left to point at — a fully
-  /// delivered send consumes it. Partial delivery is the exception: when
-  /// [selfWrapPublished] is `false` the row survives with a retryable
-  /// self-wrap and this still reads `null`. Finishing that row is the retry
-  /// sweep's job (or `recoverSelfWrap`'s); it must never be re-published to
-  /// the recipient, who already has the message — so no handle is offered.
+  /// `null` on a fully delivered success, on a [blocked] result (the send gate
+  /// returns before the enqueue), and whenever the queue DAO is not wired in.
+  /// A partial success may carry the surviving row so `recoverSelfWrap` can
+  /// publish only the missing self-wrap without re-delivering to the recipient.
   String? get queuedRumorId => null;
 
   /// The rumor event ID (kind 14/15) — the canonical message
@@ -161,6 +156,7 @@ final class NIP17SendSuccess extends NIP17SendResult {
     required this.messageEventId,
     required this.recipientPubkey,
     required this.selfWrapPublished,
+    this.queuedRumorId,
     this.timestamp,
   });
 
@@ -177,6 +173,9 @@ final class NIP17SendSuccess extends NIP17SendResult {
   final bool selfWrapPublished;
 
   @override
+  final String? queuedRumorId;
+
+  @override
   final DateTime? timestamp;
 
   @override
@@ -190,6 +189,7 @@ final class NIP17SendSuccess extends NIP17SendResult {
         other.messageEventId == messageEventId &&
         other.recipientPubkey == recipientPubkey &&
         other.selfWrapPublished == selfWrapPublished &&
+        other.queuedRumorId == queuedRumorId &&
         other.timestamp == timestamp;
   }
 
@@ -199,6 +199,7 @@ final class NIP17SendSuccess extends NIP17SendResult {
     messageEventId,
     recipientPubkey,
     selfWrapPublished,
+    queuedRumorId,
     timestamp,
   );
 
@@ -207,7 +208,8 @@ final class NIP17SendSuccess extends NIP17SendResult {
       'NIP17SendSuccess(rumorEventId: $rumorEventId, '
       'messageEventId: $messageEventId, '
       'recipient: $recipientPubkey, '
-      'selfWrapPublished: $selfWrapPublished)';
+      'selfWrapPublished: $selfWrapPublished, '
+      'queuedRumorId: $queuedRumorId)';
 }
 
 /// Recipient gift wrap was not published — the message did not reach

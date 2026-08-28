@@ -2,11 +2,26 @@
 // ABOUTME: Tracks per-wrap publish status (recipient + self gift wrap)
 // ABOUTME: so partial deliveries can be retried without double-delivering.
 
+import 'dart:convert';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
 import 'package:meta/meta.dart';
 
 part 'outgoing_dms_dao.g.dart';
+
+String? _rumorIdFromJson(String rumorEventJson) {
+  try {
+    final decoded = jsonDecode(rumorEventJson);
+    if (decoded is Map<String, dynamic>) {
+      final value = decoded['id'];
+      if (value is String && value.isNotEmpty) return value;
+    }
+  } on FormatException {
+    return null;
+  }
+  return null;
+}
 
 /// Status of one of the two NIP-17 gift-wrap publishes for an outgoing DM.
 ///
@@ -83,7 +98,11 @@ class OutgoingDm {
     this.sendBatchId,
   });
 
-  /// Rumor event id (kind 14/15). Stable across retries.
+  /// Opaque durable queue-row handle.
+  ///
+  /// This equals [rumorId] for 1:1 and legacy sends. Group sends use a
+  /// per-recipient handle because every recipient shares one wire rumor while
+  /// delivery state is tracked separately per recipient.
   final String id;
   final String conversationId;
   final String recipientPubkey;
@@ -117,6 +136,12 @@ class OutgoingDm {
   /// conversation state also uses it for group batch membership. NULL only
   /// for legacy rows.
   final String? sendBatchId;
+
+  /// The kind-14/15 wire rumor id, stable across retries and recipients.
+  ///
+  /// Legacy and malformed fixtures fall back to [id]. Production rows always
+  /// store the complete rumor JSON before publishing.
+  String get rumorId => _rumorIdFromJson(rumorEventJson) ?? id;
 
   /// Whether **both** wraps have landed. The repository deletes the
   /// queue row only when this is true (in the same transaction that
@@ -528,6 +553,24 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       ]);
     final rows = await query.get();
     return rows.map(_rowToModel).toList();
+  }
+
+  /// Finds one owner-scoped queue row carrying [rumorId] on the wire.
+  ///
+  /// Group rows use per-recipient queue handles, so their primary-key `id`
+  /// differs from the shared rumor id exposed by an optimistic message bubble.
+  Future<OutgoingDm?> getByRumorId({
+    required String rumorId,
+    required String ownerPubkey,
+  }) async {
+    final query = select(outgoingDms)
+      ..where((t) => t.ownerPubkey.equals(ownerPubkey));
+    for (final row in await query.get()) {
+      if (_rumorIdFromJson(row.rumorEventJson) == rumorId) {
+        return _rowToModel(row);
+      }
+    }
+    return null;
   }
 
   /// Watch every row for the given account, oldest first.

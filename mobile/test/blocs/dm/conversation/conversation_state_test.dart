@@ -30,6 +30,7 @@ String _pairConversationId(String recipient) =>
 /// additionally exposes [replyToId], which the reply-linkage case needs.
 OutgoingDm _outgoingDm({
   required String id,
+  String? rumorId,
   String content = 'test',
   int createdAtSec = 1700000000,
   String? replyToId,
@@ -46,7 +47,7 @@ OutgoingDm _outgoingDm({
     recipientPubkey: recipientPubkey,
     content: content,
     createdAt: createdAtSec,
-    rumorEventJson: '{}',
+    rumorEventJson: rumorId == null ? '{}' : '{"id":"$rumorId"}',
     replyToId: replyToId,
     recipientWrapStatus: recipientWrap,
     selfWrapStatus: selfWrap,
@@ -114,6 +115,32 @@ void main() {
           expect(bubble.replyToId, isNull);
         },
       );
+
+      test('a shared-rumor group batch exposes the wire id while retaining '
+          'queue handles for recovery', () {
+        const wireId = 'shared-wire-rumor';
+        final pending = _outgoingDm(
+          id: '$wireId:$_recipientB',
+          rumorId: wireId,
+          sendBatchId: 'batch-shared',
+        );
+        final failed = _outgoingDm(
+          id: '$wireId:$_recipientC',
+          rumorId: wireId,
+          recipientPubkey: _recipientC,
+          recipientWrap: OutgoingWrapStatus.failed,
+          sendBatchId: 'batch-shared',
+        );
+        final state = ConversationState(pendingOutgoing: [pending, failed]);
+
+        expect(state.displayedMessages.single.id, equals(wireId));
+        expect(state.statusFor(wireId), equals(DmDeliveryStatus.failed));
+        expect(
+          state.failedSiblingRumorIdsFor(wireId),
+          equals(['$wireId:$_recipientC']),
+          reason: 'recovery still receives the durable queue handle',
+        );
+      });
 
       test(
         'partial group delivery renders exactly ONE bubble with the '
@@ -186,8 +213,8 @@ void main() {
       );
 
       test(
-        'a fully in-flight batch renders one bubble keyed to the lowest '
-        'rumor id',
+        'a legacy in-flight batch renders one bubble keyed to the lowest '
+        'queue handle',
         () {
           final rowB = _outgoingDm(id: 'rumor-b', content: 'live batch');
           final rowC = _outgoingDm(
@@ -458,7 +485,7 @@ void main() {
                 'both sends into a single bubble; the durable sendBatchId '
                 'keeps them independent',
           );
-          // Each batch projects one bubble keyed to its own lowest rumor id.
+          // Legacy fixtures without rumor JSON fall back to queue handles.
           expect(
             displayed.map((m) => m.id),
             unorderedEquals(['rumor-a1', 'rumor-b1']),

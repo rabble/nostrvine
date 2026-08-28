@@ -124,9 +124,12 @@ class ConversationState extends Equatable {
   ///   until the user explicitly cancels.
   final List<OutgoingDm> pendingOutgoing;
 
-  /// Lookup of queue rows by rumor id once the map is built.
+  /// Lookup by either the durable queue handle or the wire rumor id.
+  ///
+  /// Group siblings share one wire rumor id, so the latter key resolves an
+  /// arbitrary sibling; [_siblingRowsFor] then expands it by batch id.
   Map<String, OutgoingDm> get _outgoingByRumorId => {
-    for (final row in pendingOutgoing) row.id: row,
+    for (final row in pendingOutgoing) ...{row.id: row, row.rumorId: row},
   };
 
   /// Whether [q] belongs to a GROUP send — the repository's own
@@ -158,8 +161,8 @@ class ConversationState extends Equatable {
   static String _batchKeyOfMessage(DmMessage m) =>
       m.sendBatchId ?? '${m.senderPubkey}|${m.createdAt}|${m.content}';
 
-  /// The fan-out batch containing [id] — a queue-row rumor id or a
-  /// persisted message id.
+  /// The fan-out batch containing [id] — a durable queue handle, wire rumor
+  /// id, or persisted message id.
   ///
   /// A group send enqueues one queue row PER RECIPIENT for one logical
   /// message; every sibling carries the same durable `sendBatchId`
@@ -192,7 +195,7 @@ class ConversationState extends Equatable {
     ];
   }
 
-  /// Rumor ids of the hard-failed queue rows in [id]'s fan-out batch —
+  /// Durable handles of the hard-failed queue rows in [id]'s fan-out batch —
   /// the exact set a manual Resend must replay. For a 1:1 failed bubble
   /// this is just `[id]`.
   List<String> failedSiblingRumorIdsFor(String id) => [
@@ -200,7 +203,7 @@ class ConversationState extends Equatable {
       if (q.recipientWrapStatus == OutgoingWrapStatus.failed) q.id,
   ];
 
-  /// Rumor ids of every sibling in [id]'s fan-out batch whose recipient
+  /// Durable handles of every sibling in [id]'s fan-out batch whose recipient
   /// has NOT received the message (pending + failed) — the set a snackbar
   /// "cancel send" must drop. Deliberately EXCLUDES delivered-awaiting-
   /// self-wrap rows: those recipients already have the message, and
@@ -275,7 +278,7 @@ class ConversationState extends Equatable {
     final grouped = <String, List<OutgoingDm>>{};
     final pendingBubbles = <DmMessage>[];
     for (final q in pendingOutgoing) {
-      if (persistedIds.contains(q.id)) continue;
+      if (persistedIds.contains(q.rumorId)) continue;
       if (_isGroupRow(q)) {
         grouped.putIfAbsent(_batchKeyOf(q), () => []).add(q);
       } else {
@@ -334,12 +337,14 @@ class ConversationState extends Equatable {
 
 DmMessage _outgoingToBubble(OutgoingDm row) {
   return DmMessage(
-    id: row.id,
+    // Message actions (reaction, reply, delete) must address the wire rumor,
+    // never the per-recipient durable queue handle used by group sends.
+    id: row.rumorId,
     conversationId: row.conversationId,
     senderPubkey: row.ownerPubkey,
     content: row.content,
     createdAt: row.createdAt,
-    giftWrapId: row.id,
+    giftWrapId: row.rumorId,
     // Carry the reply linkage so an optimistic reply bubble can resolve its
     // parent's shared video and render the quoted preview immediately, before
     // the persisted `watchMessages` tick replaces this row.
