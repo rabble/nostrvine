@@ -413,6 +413,10 @@ class MediaCacheManager extends CacheManager {
   /// only ever costs one extra window-gated sweep, never a missed budget.
   int _knownCacheBytes = 0;
 
+  /// Increments when a download settles, allowing a directory walk to detect
+  /// that its byte snapshot raced a completed download.
+  int _successfulDownloadRevision = 0;
+
   /// One-shot sweep armed when a download crosses the byte budget inside the
   /// throttle window, so the directory converges back under budget even if
   /// no further download ever lands (#8242). Cancelled by [close] and
@@ -945,7 +949,9 @@ class MediaCacheManager extends CacheManager {
       }
     }
 
-    unawaited(startDownload());
+    final settlement = startDownload();
+    pendingOperation.settlement = settlement;
+    unawaited(settlement);
 
     final operation = CancellableCacheOperation.fromDownload(
       _DeferredDownload(
@@ -1099,6 +1105,7 @@ class MediaCacheManager extends CacheManager {
 
   void _recordSuccessfulDownload(File file) {
     _downloadsSinceSweep++;
+    _successfulDownloadRevision++;
     try {
       // statSync reports a vanished file as notFound with size -1 rather
       // than throwing; either way the estimate runs low until the next
@@ -1193,6 +1200,14 @@ class MediaCacheManager extends CacheManager {
         evictedCount = evicted.deletedCount;
         evictedBytes = evicted.deletedBytes;
         directoryBytes = evicted.directoryBytes;
+        if (_successfulDownloadRevision !=
+            evicted.successfulDownloadRevisionAtScanStart) {
+          // The walked total may have missed or only partially counted a file
+          // that settled during the pass. Force a trailing reconciliation so
+          // the stale snapshot cannot suppress the final budget crossing.
+          _knownCacheBytes = budget + 1;
+          _armTrailingSweep();
+        }
       }
       final elapsed = clock.now().difference(started);
       Log.info(
@@ -1273,7 +1288,14 @@ class MediaCacheManager extends CacheManager {
   /// which also re-syncs [_knownCacheBytes] and disarms any pending trailing
   /// sweep — after this pass, only a fresh download can arm one again, so an
   /// over-budget residue of undeletable bytes cannot spin sweeps in a loop.
-  Future<({int deletedCount, int deletedBytes, int directoryBytes})>
+  Future<
+    ({
+      int deletedCount,
+      int deletedBytes,
+      int directoryBytes,
+      int successfulDownloadRevisionAtScanStart,
+    })
+  >
   _evictToByteBudget(
     String baseDir,
     List<CacheObject> objects,
@@ -1285,6 +1307,7 @@ class MediaCacheManager extends CacheManager {
     // manifest, in-flight partial downloads, files matching neither managed
     // pattern — count towards the total but are never eviction candidates,
     // so the loop below simply stops once the candidates run out.
+    final successfulDownloadRevisionAtScanStart = _successfulDownloadRevision;
     final sizesByName = <String, int>{};
     final modifiedByName = <String, DateTime>{};
     var total = 0;
@@ -1322,7 +1345,13 @@ class MediaCacheManager extends CacheManager {
     if (total <= budget) {
       _knownCacheBytes = total;
       _cancelTrailingSweep();
-      return (deletedCount: 0, deletedBytes: 0, directoryBytes: total);
+      return (
+        deletedCount: 0,
+        deletedBytes: 0,
+        directoryBytes: total,
+        successfulDownloadRevisionAtScanStart:
+            successfulDownloadRevisionAtScanStart,
+      );
     }
 
     final entriesByName = <String, _BudgetedCacheFile>{};
@@ -1404,6 +1433,8 @@ class MediaCacheManager extends CacheManager {
       deletedCount: deletedCount,
       deletedBytes: deletedBytes,
       directoryBytes: total,
+      successfulDownloadRevisionAtScanStart:
+          successfulDownloadRevisionAtScanStart,
     );
   }
 
@@ -1620,12 +1651,25 @@ class MediaCacheManager extends CacheManager {
 
   /// Closes this manager and releases owned downloader resources.
   ///
-  /// Cancels active cancellable downloads and completes pending cache
-  /// operations with `null` so awaiting callers do not hang.
+  /// Cancels active cancellable downloads, drains their persistence work, and
+  /// completes pending cache operations with `null` so callers do not hang.
   Future<void> close() async {
     if (_isClosed) return;
     _isClosed = true;
     _cancelTrailingSweep();
+
+    // CacheStore opens its JSON repository without exposing that Future.
+    // Hold a second connection so disposal cannot race the initial open, then
+    // release it after CacheStore closes its own connection and flushes writes.
+    final repo = config.repo;
+    final synchronizeRepoClose = repo is SafeCacheInfoRepository;
+    if (synchronizeRepoClose) {
+      try {
+        await repo.open();
+      } on Object {
+        // Disposal below still owns the original CacheStore connection.
+      }
+    }
 
     final activeOps = _activeCancellableOperations.toList(growable: false);
     for (final operation in activeOps) {
@@ -1645,19 +1689,16 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations.clear();
 
     await _downloader.close();
+    await Future.wait([
+      for (final operation in pending)
+        if (operation.settlement != null) operation.settlement!,
+    ]);
+    await _aliasWriteQueue;
     _fileServiceClient?.close();
     try {
       await super.dispose();
-    } on Object catch (error) {
-      // flutter_cache_manager's store close null-checks state that only
-      // exists once the repository has been opened, so disposing a manager
-      // that never touched its store throws. close() must stay safe to call
-      // from teardown paths regardless.
-      Log.warning(
-        'MediaCacheManager: store dispose failed: $error',
-        name: 'MediaCache',
-        category: LogCategory.video,
-      );
+    } finally {
+      if (synchronizeRepoClose) await repo.close();
     }
   }
 }
@@ -1738,6 +1779,7 @@ class _PendingCacheOperation {
 
   final completer = Completer<CancellableDownloadResult>();
   final StreamController<int>? _progressController;
+  Future<void>? settlement;
 
   Stream<int> get progressBytes =>
       _progressController?.stream ?? const Stream.empty();

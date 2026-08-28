@@ -58,8 +58,12 @@ void main() {
       await tearDownTestDirectories();
     });
 
-    tearDown(() {
-      cacheManager.resetForTesting();
+    tearDown(() async {
+      final repo = cacheManager.config.repo;
+      if (repo is MockCacheInfoRepository) {
+        when(repo.close).thenAnswer((_) async => true);
+      }
+      await cacheManager.close();
     });
 
     group('cancelInFlightDownloads', () {
@@ -1210,7 +1214,7 @@ void main() {
           when(repo.open).thenAnswer((_) async => true);
           when(repo.getAllObjects).thenAnswer((_) async => [cacheObject]);
 
-          cacheManager.resetForTesting();
+          await cacheManager.close();
           cacheManager = TestableMediaCacheManager(
             config: MediaCacheConfig(
               cacheKey: cacheKey,

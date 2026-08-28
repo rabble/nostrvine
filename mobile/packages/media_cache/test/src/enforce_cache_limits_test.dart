@@ -860,6 +860,59 @@ void main() {
         expect(target.existsSync(), isTrue);
         expect(reads, readsAfterForcedSweep);
       });
+
+      test('reconciles a download that settles during byte eviction', () async {
+        final deleteStarted = Completer<void>();
+        final deleteGate = Completer<void>();
+        var reads = 0;
+        when(repo.getAllObjects).thenAnswer((_) async {
+          reads++;
+          return reads == 1
+              ? [obj('old_1_1.mp4', id: 1, touched: DateTime(2020))]
+              : <CacheObject>[];
+        });
+        when(() => repo.deleteAll(any())).thenAnswer((_) async {
+          deleteStarted.complete();
+          await deleteGate.future;
+          return 1;
+        });
+        when(() => repo.updateOrInsert(any())).thenAnswer((_) async => 0);
+
+        final downloader = FakeCancellableDownloader();
+        final cacheKey = 'raced_${DateTime.now().microsecondsSinceEpoch}';
+        final dir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
+        writeFile(dir, 'old_1_1.mp4', 60);
+        writeFile(dir, 'externally-managed.bin', 60);
+        final manager = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+            maxCacheSizeBytes: 100,
+          ),
+          repoOverride: repo,
+          downloaderOverride: downloader,
+          sweepThrottleOverride: const Duration(milliseconds: 50),
+        );
+
+        final sweep = manager.enforceCacheLimits(force: true);
+        await deleteStarted.future;
+
+        final target = await completeDownload(manager, downloader, bytes: 80);
+        deleteGate.complete();
+        await sweep;
+
+        for (var i = 0; i < 400 && target.existsSync(); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(
+          target.existsSync(),
+          isFalse,
+          reason: 'a completion raced by the first scan must trigger a retry',
+        );
+        expect(reads, 2);
+        await manager.close();
+      });
     });
 
     test('runs a throttled sweep after enough downloads', () async {
