@@ -720,11 +720,14 @@ class ProfileRepository implements ProfileReader {
     });
   }
 
-  /// Caches profile stats (video stats and engagement data) from a
-  /// [UserProfileResult] into the local [ProfileStatsDao].
+  /// Caches profile stats — social counts, video stats and engagement data —
+  /// from a [UserProfileResult] into the local [ProfileStatsDao].
   ///
-  /// Follower/following counts are owned by FollowRepository because it merges
-  /// REST, relay, and persisted inputs with hysteresis stabilization.
+  /// The REST `social` counts are cached here because they are the
+  /// authoritative follower/following numbers (#8197) and the only ones
+  /// available before any relay work finishes, so the profile header can
+  /// render immediately. FollowRepository still owns the relay-fallback path
+  /// and its hysteresis stabilization for the case where REST cannot answer.
   Future<void> _cacheProfileStatsFromResult(
     String pubkey,
     UserProfileResult result,

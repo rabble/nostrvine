@@ -5730,6 +5730,58 @@ void main() {
       );
 
       test(
+        'a 0/0 REST body is not authoritative and is not persisted',
+        () async {
+          // funnelcake answers 200 for every pubkey and turns ClickHouse
+          // failures into {0, 0}, so a zero body cannot be trusted as data
+          // (#8259 review). It must fall through to the relay path.
+          final mockStatsDao = _MockProfileStatsDao();
+          final mockFunnelcakeClient = _MockFunnelcakeApiClient();
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getSocialCounts(testTargetPubkey),
+          ).thenAnswer(
+            (_) async => const SocialCounts(
+              pubkey: testTargetPubkey,
+              followerCount: 0,
+              followingCount: 0,
+            ),
+          );
+          when(() => mockStatsDao.getStatsRaw(testTargetPubkey)).thenAnswer(
+            (_) async => ProfileStatRow(
+              pubkey: testTargetPubkey,
+              followerCount: 512,
+              followingCount: 430,
+              cachedAt: DateTime.now(),
+            ),
+          );
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockStatsDao,
+            indexerRelayUrls: const [],
+          );
+
+          final stats = await repository.getFollowerStats(testTargetPubkey);
+
+          expect(stats.followers, equals(512));
+          expect(stats.following, equals(430));
+          verifyNever(
+            () => mockStatsDao.upsertStats(
+              pubkey: any(named: 'pubkey'),
+              followerCount: 0,
+              followingCount: 0,
+            ),
+          );
+        },
+      );
+
+      test(
         'persists when only the following count changed',
         () async {
           final mockStatsDao = _MockProfileStatsDao();

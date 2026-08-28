@@ -301,6 +301,70 @@ void main() {
       });
     });
 
+    group('getFollowerStats - REST 0/0 is not an answer', () {
+      // `/api/users/{pubkey}/social` returns 200 for every pubkey and
+      // funnelcake collapses ClickHouse failures into {0, 0}, so a zero body
+      // cannot be distinguished from "never indexed", "vanished", or "the
+      // summary table is down". It must not be displayed or persisted over a
+      // known-good baseline (#8259 review).
+      test('keeps the persisted baseline instead of showing zeros', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          // restFollowers / restFollowing default to 0 — the "funnelcake
+          // knows nothing" shape.
+          persistedRow: _persistedRow(followers: 512, following: 430),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(512));
+        expect(stats.following, equals(430));
+      });
+
+      test('does not persist zeros over a known-good baseline', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          // restFollowers / restFollowing default to 0 — the "funnelcake
+          // knows nothing" shape.
+          persistedRow: _persistedRow(followers: 512, following: 430),
+        );
+
+        await repository.getFollowerStats(_testPubkey);
+
+        verifyNever(
+          () => dao.upsertStats(
+            pubkey: any(named: 'pubkey'),
+            followerCount: 0,
+            followingCount: 0,
+          ),
+        );
+      });
+
+      test('a partial zero still counts as an answer', () async {
+        // 0 followers with a non-zero following is real data, not the
+        // "funnelcake knows nothing" shape.
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowing: 42,
+          persistedRow: _persistedRow(followers: 512, following: 430),
+        );
+
+        final stats = await repository.getFollowerStats(_testPubkey);
+
+        expect(stats.followers, equals(0));
+        expect(stats.following, equals(42));
+      });
+    });
+
     group('getFollowerStats - relay-fallback hysteresis', () {
       test(
         'holds the following count across an overnight gap (#6902)',

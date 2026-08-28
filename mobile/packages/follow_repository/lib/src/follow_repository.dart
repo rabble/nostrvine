@@ -1061,7 +1061,19 @@ class FollowRepository {
     String pubkey,
   ) async {
     final restResult = await _fetchFollowerStatsViaRest(pubkey);
-    if (restResult != null) {
+    // A 0/0 body is not an answer, so it must not be authoritative.
+    // `/api/users/{pubkey}/social` answers 200 for every pubkey — there is no
+    // 404 for an account funnelcake has never ingested — and `get_social_stats`
+    // collapses any ClickHouse failure into `{0, 0}` rather than an error. Four
+    // different server states therefore arrive byte-identical: never indexed,
+    // genuinely zero, vanished, and the summary table being down. Treating them
+    // as authoritative would display zeros and, worse, persist them over a good
+    // baseline; the last of those states was observed returning zeros for every
+    // pubkey in production during review of this change.
+    final restHasSignal =
+        restResult != null &&
+        (restResult.followers > 0 || restResult.following > 0);
+    if (restResult != null && restHasSignal) {
       Log.info(
         'Follower counts from REST (authoritative): '
         '${restResult.followers} followers, '
@@ -1071,6 +1083,14 @@ class FollowRepository {
         category: LogCategory.system,
       );
       return (stats: restResult, isAuthoritative: true);
+    }
+    if (restResult != null) {
+      Log.info(
+        'REST returned 0/0 for ${pubkeyForLogs(pubkey)} — treating as no '
+        'answer and falling back to relays',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
     }
 
     final wsResult = await _fetchFollowerStatsViaWebSocket(pubkey);
