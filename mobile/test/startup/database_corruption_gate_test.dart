@@ -98,6 +98,7 @@ void main() {
 
     testWidgets('explains the restart repairs the database', (tester) async {
       await tester.pumpWidget(buildScreen(() {}));
+      await tester.pump();
 
       expect(find.text(l10n.databaseCorruptionTitle), findsOneWidget);
       expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
@@ -174,12 +175,12 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(DivineButton));
-      await tester.pump();
-
       // Closing before the flag lands strands the user on the same corrupt
       // database: the restart only repairs anything if the next launch can
       // read the flag this write is still committing.
+      expect(find.byType(DivineButton), findsNothing);
+      expect(find.text(l10n.databaseCorruptionBody), findsNothing);
+      expect(find.text(l10n.commonLoading), findsOneWidget);
       expect(closed, isFalse);
 
       persisted.complete();
@@ -190,28 +191,39 @@ void main() {
       expect(closed, isTrue);
     });
 
-    testWidgets('shows no dead close action while iOS recovery is persisting', (
+    testWidgets('holds iOS restart instructions until recovery is durable', (
       tester,
     ) async {
       final persisted = Completer<void>();
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
-      await tester.pumpWidget(
-        buildScreen(
-          () {},
-          awaitRecoveryPersisted: () => persisted.future,
-          canCloseApp: false,
-        ),
-      );
-      await tester.pump();
+      try {
+        await tester.pumpWidget(
+          buildScreen(
+            () {},
+            awaitRecoveryPersisted: () => persisted.future,
+          ),
+        );
+        await tester.pump();
 
-      expect(find.byType(DivineButton), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DivineButton), findsNothing);
+        expect(find.text(l10n.databaseCorruptionBody), findsNothing);
+        expect(find.text(l10n.commonLoading), findsOneWidget);
+        expect(
+          tester.getSemantics(find.byType(CircularProgressIndicator)),
+          matchesSemantics(label: l10n.commonLoading),
+        );
 
-      persisted.complete();
-      await tester.pump();
+        persisted.complete();
+        await tester.pump();
 
-      expect(find.byType(DivineButton), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(DivineButton), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text(l10n.commonLoading), findsNothing);
+        expect(find.text(l10n.databaseCorruptionBody), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 }

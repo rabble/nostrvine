@@ -100,13 +100,6 @@ class DatabaseCorruptionScreen extends StatelessWidget {
                       color: context.vineColors.primaryText,
                     ),
                   ),
-                  Text(
-                    l10n.databaseCorruptionBody,
-                    textAlign: TextAlign.center,
-                    style: VineTheme.bodyMediumFont(
-                      color: context.vineColors.onSurfaceVariant,
-                    ),
-                  ),
                   _CloseAppAffordance(
                     awaitRecoveryPersisted: awaitRecoveryPersisted,
                     canCloseApp: canCloseApp ?? platformCanCloseApp,
@@ -122,7 +115,8 @@ class DatabaseCorruptionScreen extends StatelessWidget {
   }
 }
 
-/// The close affordance, held until the recovery flag is durable.
+/// The recovery instructions and close affordance, held until the recovery
+/// flag is durable.
 ///
 /// Closing before the write lands would strand the user on the same corrupt
 /// database: the restart only repairs anything if the next launch can read the
@@ -153,29 +147,46 @@ class _CloseAppAffordanceState extends State<_CloseAppAffordance> {
     return FutureBuilder<void>(
       future: _persisted,
       builder: (context, snapshot) {
-        // Any terminal state releases the button, including a failed write:
+        // Any terminal state releases the instructions, including a failed
+        // write:
         // the service has already logged it, and a user who restarts anyway is
         // better off than one held in a session that cannot recover.
         final settled = snapshot.connectionState == ConnectionState.done;
         if (!settled) {
-          if (!widget.canCloseApp) {
-            return const SizedBox.square(
-              dimension: 24,
-              child: CircularProgressIndicator(),
-            );
-          }
-          return DivineButton(
-            label: context.l10n.databaseCorruptionCloseButton,
-            onPressed: null,
-            isLoading: true,
-            type: DivineButtonType.secondary,
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 12,
+            children: [
+              CircularProgressIndicator(
+                semanticsLabel: context.l10n.commonLoading,
+              ),
+              Text(
+                context.l10n.commonLoading,
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
+              ),
+            ],
           );
         }
-        if (!widget.canCloseApp) return const SizedBox.shrink();
-        return DivineButton(
-          label: context.l10n.databaseCorruptionCloseButton,
-          onPressed: widget.onCloseApp,
-          type: DivineButtonType.secondary,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: [
+            Text(
+              context.l10n.databaseCorruptionBody,
+              textAlign: TextAlign.center,
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
+            ),
+            if (widget.canCloseApp)
+              DivineButton(
+                label: context.l10n.databaseCorruptionCloseButton,
+                onPressed: widget.onCloseApp,
+                type: DivineButtonType.secondary,
+              ),
+          ],
         );
       },
     );
