@@ -1116,6 +1116,39 @@ void main() {
       service.dispose();
     });
 
+    test(
+      'switching accounts reloads the incoming account pending unblocks',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'blocklist_active_pubkey': accountA,
+          'pending_unblocks.$accountB': jsonEncode({someoneElse: 2000}),
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final service = ContentBlocklistRepository(prefs: prefs);
+
+        await service.syncMuteListsInBackground(mockNostrService, accountA);
+        await service.syncMuteListsInBackground(mockNostrService, accountB);
+        controller.add(
+          Event(
+              accountB,
+              10000,
+              const [
+                ['p', someoneElse],
+              ],
+              '',
+              createdAt: 1000,
+            )
+            ..id = 'stale-account-b-mute-list'
+            ..sig = 'signature',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(service.isMutedByUs(someoneElse), isFalse);
+
+        service.dispose();
+      },
+    );
+
     test('first identity adopts legacy un-namespaced persisted data', () async {
       SharedPreferences.setMockInitialValues({
         'blocked_users_list': jsonEncode([blockerX]),
@@ -3523,6 +3556,59 @@ void main() {
         expect(restarted.isMutedByUs(target), isTrue);
       });
 
+      test('is not re-adopted from a stale list in the same second', () async {
+        final prefs = await prefsAfterAWithheldUnblock();
+        final pending =
+            jsonDecode(
+                  prefs.getString('pending_unblocks.$ourPubkey')!,
+                )
+                as Map<String, dynamic>;
+        final unblockedAt = pending[target]! as int;
+        final ownList = StreamController<Event>.broadcast();
+        addTearDown(ownList.close);
+        when(
+          () => mockClient.subscribe(any()),
+        ).thenAnswer((_) => ownList.stream);
+
+        final restarted = ContentBlocklistRepository(prefs: prefs);
+        await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
+        ownList.add(
+          buildEvent(
+            kind: 10000,
+            tags: const [
+              ['p', target],
+            ],
+            createdAt: unblockedAt,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(restarted.isMutedByUs(target), isFalse);
+      });
+
+      test('retries an unblock after the relay rejects its publish', () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        stubHealthy();
+        stubReadSettled();
+        final service = ContentBlocklistRepository(prefs: prefs);
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await service.blockUser(target);
+        when(
+          () => mockClient.publishEvent(any()),
+        ).thenThrow(Exception('relay rejected publish'));
+
+        await service.unblockUser(target);
+
+        stubHealthy();
+        expect(await service.retryPendingMuteListPublish(), isTrue);
+        expect(await service.retryPendingMuteListPublish(), isFalse);
+      });
+
       test('republishes so the relay drops the stale tag', () async {
         final prefs = await prefsAfterAWithheldUnblock();
         final ownList = StreamController<Event>.broadcast();
@@ -3600,7 +3686,7 @@ void main() {
         await restarted.syncMuteListsInBackground(mockClient, ourPubkey);
         // The startup legacy migration publishes on its own; let it finish so
         // it is not mistaken for the reconcile republish below.
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         clearInteractions(mockSigner);
 
         ownList.add(

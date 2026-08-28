@@ -335,6 +335,7 @@ class ContentBlocklistRepository {
       _loadBlockedUsers();
       _loadMutedUsers();
       _loadSeveredFollowers();
+      _loadPendingUnblocks();
       _notifyChanged();
       Log.info(
         'Adopted new identity; blocklist state reset and reloaded '
@@ -522,6 +523,7 @@ class ContentBlocklistRepository {
         final unblockedAt = entry.value;
         if (unblockedAt is int) _pendingUnblocks[entry.key] = unblockedAt;
       }
+      if (_pendingUnblocks.isNotEmpty) _muteListPublishPending = true;
     } on Object catch (e) {
       Log.error(
         'Failed to load pending unblocks: $e',
@@ -676,6 +678,9 @@ class ContentBlocklistRepository {
   ///
   /// Returns `true` when the event was accepted by at least one relay.
   Future<bool> _publishMuteListToNostr() async {
+    // Keep every unsuccessful attempt retryable. This is set before the
+    // dependency guards too, because block/unblock actions can race startup.
+    _muteListPublishPending = true;
     final signer = _signer;
     final nostrClient = _nostrClient;
 
@@ -704,7 +709,6 @@ class ContentBlocklistRepository {
         // with it -- the encrypted private section, every t/word/e mute, and
         // any p mute authored on another client (#6750). The block is already
         // persisted locally, so withholding costs propagation, not safety.
-        _muteListPublishPending = true;
         Log.warning(
           'Withholding mute list publish - could not confirm the current '
           'kind 10000. Blocks stay local until a read succeeds.',
@@ -1133,6 +1137,7 @@ class ContentBlocklistRepository {
     var skippedSelf = false;
     final newlyBlocked = <String>[];
     final newlySeveredFollowers = <String>[];
+    var retiredPendingUnblock = false;
 
     for (final pubkey in pubkeys) {
       if (pubkey.isEmpty) continue;
@@ -1142,6 +1147,8 @@ class ContentBlocklistRepository {
       }
       if (_runtimeBlocklist.add(pubkey)) {
         newlyBlocked.add(pubkey);
+        retiredPendingUnblock =
+            _pendingUnblocks.remove(pubkey) != null || retiredPendingUnblock;
       }
       if (!_severedFollowers.contains(pubkey) &&
           !newlySeveredFollowers.contains(pubkey)) {
@@ -1159,6 +1166,7 @@ class ContentBlocklistRepository {
 
     if (newlyBlocked.isNotEmpty) {
       await _saveBlockedUsers();
+      if (retiredPendingUnblock) await _savePendingUnblocks();
       for (final pubkey in newlyBlocked) {
         _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
       }
@@ -1753,7 +1761,7 @@ class ContentBlocklistRepository {
     if (_pendingUnblocks.isNotEmpty) {
       final retired = <String>[];
       for (final entry in _pendingUnblocks.entries) {
-        if (!relayMuted.contains(entry.key) || entry.value <= createdAt) {
+        if (!relayMuted.contains(entry.key) || entry.value < createdAt) {
           // Either the tag is gone, so the unblock landed, or this list is
           // newer than the unblock and the tag is a fresh mute from another
           // client. Both retire the intent; the second also lets the mute
