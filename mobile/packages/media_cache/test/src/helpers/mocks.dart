@@ -33,6 +33,7 @@ class TestableMediaCacheManager extends MediaCacheManager {
     super.tempDirectoryProvider,
     super.repoOverride,
     super.downloaderOverride,
+    super.fileServiceClientOverride,
     this.mockGetFileFromCache,
     this.mockDownloadFile,
     this.mockRemoveFile,

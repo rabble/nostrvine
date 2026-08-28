@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/io_client.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,6 +26,18 @@ class _ThrowingCancellableDownloader implements CancellableDownloader {
 
   @override
   Future<void> close() async {}
+}
+
+class _TrackingIOClient extends IOClient {
+  _TrackingIOClient() : super(HttpClient());
+
+  int closeCount = 0;
+
+  @override
+  void close() {
+    closeCount++;
+    super.close();
+  }
 }
 
 Future<File?> _cancelAndWait(CancellableCacheOperation operation) async {
@@ -423,6 +436,7 @@ void main() {
         final mockFileInfo = MockFileInfo();
         final repo = MockCacheInfoRepository();
         final downloadCompleter = Completer<FileInfo>();
+        final fileServiceClient = _TrackingIOClient();
 
         when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/late_video.mp4');
@@ -438,6 +452,7 @@ void main() {
             enableSyncManifest: true,
           ),
           repoOverride: repo,
+          fileServiceClientOverride: fileServiceClient,
           mockGetFileFromCache: (key) async => null,
           mockDownloadFile: (url, {key, authHeaders}) =>
               downloadCompleter.future,
@@ -455,6 +470,7 @@ void main() {
 
         expect(await cacheFuture, isNull);
         expect(closeCompleted, isFalse);
+        expect(fileServiceClient.closeCount, 1);
         expect(
           await cacheManager.cacheFile(
             'https://example.com/after-close.mp4',

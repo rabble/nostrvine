@@ -85,6 +85,7 @@ void main() {
       final seedThumb = writeFile(dir, 'thumbnail_a1b2c3.jpg', 10);
       final aliases = writeFile(dir, 'aliases.json', 10);
       final nested = Directory('${dir.path}/nested')..createSync();
+      final nestedOrphan = writeFile(nested, 'nested_300_3.mp4', 10);
 
       when(repo.getAllObjects).thenAnswer(
         (_) async => [obj('vid_key_100_1.mp4', id: 1)],
@@ -98,6 +99,11 @@ void main() {
       expect(seedThumb.existsSync(), isTrue, reason: 'seed thumbnail kept');
       expect(aliases.existsSync(), isTrue, reason: 'alias manifest kept');
       expect(nested.existsSync(), isTrue, reason: 'subdirectory kept');
+      expect(
+        nestedOrphan.existsSync(),
+        isFalse,
+        reason: 'nested orphan removed',
+      );
     });
 
     test('releases the repository lease after each sweep', () async {

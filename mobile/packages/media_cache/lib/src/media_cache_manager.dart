@@ -363,7 +363,7 @@ class MediaCacheManager extends CacheManager {
 
   /// HTTP client backing the legacy non-cancellable
   /// [CacheManager.getFileStream] / [CacheManager.getSingleFile] path.
-  /// Retained so it can be closed symmetrically in [dispose]. `null` on
+  /// Retained so it can be closed symmetrically in [close]. `null` on
   /// web (no `dart:io` HttpClient there).
   final IOClient? _fileServiceClient;
 
@@ -1293,24 +1293,33 @@ class MediaCacheManager extends CacheManager {
     };
     final freshnessCutoff = clock.now().subtract(_reclamationFreshnessWindow);
     var reclaimed = 0;
-    // `Directory.list()` yields between entries, so a large reclamation pass
-    // does not block the isolate the way a `listSync()` loop would.
-    await for (final entity in dir.list(followLinks: false)) {
-      if (entity is! File) continue;
-      final name = path.basename(entity.path);
-      if (trackedNames.contains(name)) continue;
-      if (manifestNames.contains(name)) continue;
-      if (_inFlightRelativePaths.contains(name)) continue;
-      if (!_managedCacheFilePattern.hasMatch(name) &&
-          !_webHelperCacheFilePattern.hasMatch(name)) {
-        continue;
+    final pendingDirectories = <Directory>[dir];
+    while (pendingDirectories.isNotEmpty) {
+      final directory = pendingDirectories.removeLast();
+      // `Directory.list()` yields between entries, so a large reclamation pass
+      // does not block the isolate the way a `listSync()` loop would.
+      await for (final entity in directory.list(followLinks: false)) {
+        if (entity is Directory) {
+          pendingDirectories.add(entity);
+          continue;
+        }
+        if (entity is! File) continue;
+        final name = path.basename(entity.path);
+        final relativePath = path.relative(entity.path, from: baseDir);
+        if (trackedNames.contains(relativePath)) continue;
+        if (manifestNames.contains(name)) continue;
+        if (_inFlightRelativePaths.contains(relativePath)) continue;
+        if (!_managedCacheFilePattern.hasMatch(name) &&
+            !_webHelperCacheFilePattern.hasMatch(name)) {
+          continue;
+        }
+        // Freshness guard (see [_reclamationFreshnessWindow]): a download that
+        // settled after the snapshots above were taken is untracked here yet
+        // fully live, and WebHelper's in-flight writes have no shield entry.
+        // Both carry a fresh mtime, so recently-written files stay untouched.
+        if (entity.statSync().modified.isAfter(freshnessCutoff)) continue;
+        if (await _deleteFile(entity)) reclaimed++;
       }
-      // Freshness guard (see [_reclamationFreshnessWindow]): a download that
-      // settled after the snapshots above were taken is untracked here yet
-      // fully live, and WebHelper's in-flight writes have no shield entry.
-      // Both carry a fresh mtime, so recently-written files stay untouched.
-      if (entity.statSync().modified.isAfter(freshnessCutoff)) continue;
-      if (await _deleteFile(entity)) reclaimed++;
     }
     return reclaimed;
   }
@@ -1345,22 +1354,18 @@ class MediaCacheManager extends CacheManager {
     final pendingDirectories = <Directory>[Directory(baseDir)];
     while (pendingDirectories.isNotEmpty) {
       final directory = pendingDirectories.removeLast();
-      try {
-        await for (final entity in directory.list(followLinks: false)) {
-          if (entity is Directory) {
-            pendingDirectories.add(entity);
-            continue;
-          }
-          if (entity is! File) continue;
-          final stat = entity.statSync();
-          if (stat.type == FileSystemEntityType.notFound) continue;
-          final relativePath = path.relative(entity.path, from: baseDir);
-          sizesByRelativePath[relativePath] = stat.size;
-          modifiedByRelativePath[relativePath] = stat.modified;
-          total += stat.size;
+      await for (final entity in directory.list(followLinks: false)) {
+        if (entity is Directory) {
+          pendingDirectories.add(entity);
+          continue;
         }
-      } on Object {
-        // An unreadable subtree must not discard bytes already measured.
+        if (entity is! File) continue;
+        final stat = entity.statSync();
+        if (stat.type == FileSystemEntityType.notFound) continue;
+        final relativePath = path.relative(entity.path, from: baseDir);
+        sizesByRelativePath[relativePath] = stat.size;
+        modifiedByRelativePath[relativePath] = stat.modified;
+        total += stat.size;
       }
     }
     if (total <= budget) {
@@ -1681,19 +1686,6 @@ class MediaCacheManager extends CacheManager {
     _cancelTrailingSweep();
     final activeSweep = _activeSweepCompletion?.future;
 
-    // CacheStore opens its JSON repository without exposing that Future.
-    // Hold a second connection so disposal cannot race the initial open, then
-    // release it after CacheStore closes its own connection and flushes writes.
-    final repo = config.repo;
-    final synchronizeRepoClose = repo is SafeCacheInfoRepository;
-    if (synchronizeRepoClose) {
-      try {
-        await repo.open();
-      } on Object {
-        // Disposal below still owns the original CacheStore connection.
-      }
-    }
-
     final activeOps = _activeCancellableOperations.toList(growable: false);
     for (final operation in activeOps) {
       operation.cancel();
@@ -1712,6 +1704,9 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations.clear();
 
     try {
+      // Abort the legacy WebHelper request before waiting for its settlement;
+      // it does not share the cancellable downloader closed below.
+      _fileServiceClient?.close();
       await _downloader.close();
       await Future.wait([
         for (final operation in pending)
@@ -1722,12 +1717,10 @@ class MediaCacheManager extends CacheManager {
         if (activeSweep != null) await activeSweep;
         await _aliasWriteQueue;
       } finally {
-        _fileServiceClient?.close();
-        try {
-          await super.dispose();
-        } finally {
-          if (synchronizeRepoClose) await repo.close();
-        }
+        // CacheManager.dispose() closes the repository directly, which can
+        // race CacheStore's constructor-started open. CacheStore.dispose()
+        // waits for that open before releasing the same lifetime connection.
+        await store.dispose();
       }
     }
   }
