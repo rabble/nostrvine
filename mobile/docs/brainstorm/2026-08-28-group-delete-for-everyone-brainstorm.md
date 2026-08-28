@@ -38,7 +38,7 @@ confirmed on the wire, so nothing surfaces the failure.
 
 ## Findings that shaped the exploration
 
-Full evidence in `tasks/findings_8188.md`. The four that changed the answer:
+The four findings that changed the answer:
 
 1. **The issue's stated mechanism is wrong.** Siblings do not differ by their
    p-tag *set* — the set is identical; only the *order* differs, because
@@ -152,8 +152,8 @@ sweep and the UI's sibling aggregation keep working unchanged.
 - **No schema migration.** Verified: `recoverFullSend` already treats its
   `rumorId` argument as an opaque queue handle (the rumor comes from
   `row.rumorEventJson`, the recipient from `row.recipientPubkey`); nothing
-  validates the format of `outgoing_dms.id`; `queuedRumorId` is only ever handed
-  back to `recoverFullSend`.
+  validates the format of `outgoing_dms.id`; recovery resolves the row through
+  the opaque handle for either a full-send retry or a self-wrap-only retry.
 - **`deleteMessageForEveryone` needs zero changes** — its existing single `e`
   tag becomes correct automatically.
 - **The receive path needs zero changes** — a recipient already stores under

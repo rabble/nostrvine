@@ -289,6 +289,8 @@ class ConversationState extends Equatable {
       if (persistedBatchKeys.contains(_batchKeyOf(batch.first))) {
         continue;
       }
+      // Legacy rows have no wire rumor JSON and therefore expose their queue
+      // handle as the bubble id; keep their representative deterministic.
       batch.sort((a, b) => a.id.compareTo(b.id));
       pendingBubbles.add(_outgoingToBubble(batch.first));
     }

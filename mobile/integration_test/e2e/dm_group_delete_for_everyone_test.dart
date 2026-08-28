@@ -8,7 +8,6 @@ library;
 
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
-import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -310,16 +309,20 @@ void main() {
         );
         expect(published.success, isTrue);
 
-        Future<int> reactionCount(_Party party) async {
-          final rows = await party.db
-              .customSelect(
-                'SELECT COUNT(*) c FROM dm_message_reactions '
-                'WHERE target_message_id = ?',
-                variables: [Variable<String>(sharedId)],
-              )
-              .getSingle();
-          return rows.data['c']! as int;
-        }
+        // Until #7338 lands, each recipient files an inbound group DM under
+        // its local 1:1 fallback conversation with the sender.
+        Future<int> reactionCount(_Party party) async =>
+            (await party.reactionsDao
+                    .watchForConversation(
+                      conversationId: DmRepository.computeConversationId([
+                        sender.pubkey,
+                        party.pubkey,
+                      ]),
+                      ownerPubkey: party.pubkey,
+                    )
+                    .first)
+                .where((row) => row.targetMessageId == sharedId)
+                .length;
 
         final landed = await waitFor(
           () async =>

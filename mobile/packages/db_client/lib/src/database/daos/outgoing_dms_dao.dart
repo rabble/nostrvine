@@ -76,7 +76,7 @@ class UnknownOutgoingWrapStatusException implements Exception {
 /// at the repository / service / bloc layers don't import Drift types.
 @immutable
 class OutgoingDm {
-  const OutgoingDm({
+  OutgoingDm({
     required this.id,
     required this.conversationId,
     required this.recipientPubkey,
@@ -96,7 +96,7 @@ class OutgoingDm {
     this.selfWrapLastError,
     this.lastAttemptAt,
     this.sendBatchId,
-  });
+  }) : rumorId = _rumorIdFromJson(rumorEventJson) ?? id;
 
   /// Opaque durable queue-row handle.
   ///
@@ -140,8 +140,9 @@ class OutgoingDm {
   /// The kind-14/15 wire rumor id, stable across retries and recipients.
   ///
   /// Legacy and malformed fixtures fall back to [id]. Production rows always
-  /// store the complete rumor JSON before publishing.
-  String get rumorId => _rumorIdFromJson(rumorEventJson) ?? id;
+  /// store the complete rumor JSON before publishing. Parsed once when the
+  /// model is created because conversation state reads this value per bubble.
+  final String rumorId;
 
   /// Whether **both** wraps have landed. The repository deletes the
   /// queue row only when this is true (in the same transaction that
@@ -343,10 +344,9 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
   /// event ids) is preserved. Use [markRecipientWrapStatus],
   /// [markSelfWrapStatus], or [incrementRetry] to update a row in place.
   Future<void> enqueue(OutgoingDm dm) async {
-    await into(outgoingDms).insert(
-      _modelToCompanion(dm),
-      mode: InsertMode.insertOrIgnore,
-    );
+    await into(
+      outgoingDms,
+    ).insert(_modelToCompanion(dm), mode: InsertMode.insertOrIgnore);
   }
 
   /// Update the recipient gift-wrap status for [id]. Pass [eventId] when
@@ -439,12 +439,8 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
   /// [getRetryableForOwner] forever — an explicit user resend is the signal
   /// to re-arm it. Returns `false` when no row exists for [id].
   Future<bool> resetRetryCount(String id) async {
-    final affected =
-        await (update(
-          outgoingDms,
-        )..where((t) => t.id.equals(id))).write(
-          const OutgoingDmsCompanion(retryCount: Value(0)),
-        );
+    final affected = await (update(outgoingDms)..where((t) => t.id.equals(id)))
+        .write(const OutgoingDmsCompanion(retryCount: Value(0)));
     return affected > 0;
   }
 
@@ -522,10 +518,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
             t.ownerPubkey.equals(ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.createdAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
     return query.watch().map((rows) => rows.map(_rowToModel).toList());
   }
@@ -546,10 +539,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
             t.ownerPubkey.equals(ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.createdAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
     final rows = await query.get();
     return rows.map(_rowToModel).toList();

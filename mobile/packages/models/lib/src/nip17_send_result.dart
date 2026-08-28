@@ -100,16 +100,19 @@ sealed class NIP17SendResult {
 
   /// The `outgoing_dms` row this send left parked for recovery.
   ///
-  /// A caller that wants to try the same message again must re-drive **this**
-  /// row (`DmRepository.recoverFullSend`) rather than calling `sendMessage`
-  /// again: a second call mints a fresh rumor and a second durable row, so
-  /// the sweep and the retry each deliver a copy. Receiver-side gift-wrap
-  /// dedup keys on the rumor id and cannot collapse two of them.
+  /// On [NIP17SendFailure], a caller that wants to try the same message again
+  /// must re-drive **this** row (`DmRepository.recoverFullSend`) rather than
+  /// calling `sendMessage` again: a second call mints a fresh rumor and a
+  /// second durable row, so the sweep and the retry each deliver a copy.
+  /// Receiver-side gift-wrap dedup keys on the rumor id and cannot collapse
+  /// two of them.
   ///
   /// `null` on a fully delivered success, on a [blocked] result (the send gate
   /// returns before the enqueue), and whenever the queue DAO is not wired in.
-  /// A partial success may carry the surviving row so `recoverSelfWrap` can
-  /// publish only the missing self-wrap without re-delivering to the recipient.
+  /// On [NIP17SendSuccess] with [selfWrapPublished] false, a group send carries
+  /// the surviving row so `recoverSelfWrap` can publish only the missing
+  /// self-wrap without re-delivering to the recipient. A 1:1 partial success
+  /// may omit it because its rumor event id is also its queue-row handle.
   String? get queuedRumorId => null;
 
   /// The rumor event ID (kind 14/15) — the canonical message

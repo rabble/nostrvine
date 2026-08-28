@@ -492,13 +492,12 @@ class DmRepository {
   /// would silently drop the siblings rather than throw.
   ///
   /// This needs no migration: nothing reads the column's format. Every
-  /// consumer treats it as an opaque handle — `recoverFullSend` takes the
-  /// rumor from `row.rumorEventJson` and the recipient from
-  /// `row.recipientPubkey`, and `NIP17SendResult.queuedRumorId` is only ever
-  /// handed back to `recoverFullSend`. A 64-hex rumor id can never contain
-  /// `:`, so group handles and the plain 1:1 ids (and any row written before
-  /// this change) stay in disjoint keyspaces — the same property
-  /// `ConversationState._batchKeyOf` already relies on.
+  /// consumer treats it as an opaque handle: `recoverFullSend` takes the rumor
+  /// from `row.rumorEventJson` and the recipient from `row.recipientPubkey`,
+  /// while `recoverSelfWrap` resolves the same row after partial delivery. A
+  /// 64-hex rumor id can never contain `:`, so group handles and the plain 1:1
+  /// ids (and any row written before this change) stay in disjoint keyspaces —
+  /// the same property `ConversationState._batchKeyOf` already relies on.
   static String _groupQueueId(String rumorId, String recipientPubkey) =>
       '$rumorId:$recipientPubkey';
 
@@ -5467,8 +5466,9 @@ class DmRepository {
               ownerPubkey: _userPubkey,
             );
 
-        // Key the insert off the first LIVE success — a cancelled sibling's
-        // rumor id must not name the persisted message.
+        // Key the insert off the first LIVE success so a cancelled sibling's
+        // giftWrapId does not land in storage. If cancellation removed every
+        // success, there is no local message to persist.
         final firstLiveSuccess = results[liveSuccessIndexes.first];
         if (!alreadyPersisted) {
           await _directMessagesDao.insertMessage(
