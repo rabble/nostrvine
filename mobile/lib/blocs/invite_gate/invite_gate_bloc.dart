@@ -83,11 +83,16 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
       // straight out of the server's response body, which is exactly why it
       // is classified here instead of shown.
       addError(error, stackTrace);
+      final reason = InviteErrorUtils.activationFailureReason(error);
+      final inviteCodeError = _inviteCodeErrorForFailureReason(reason);
+      final generalError = _generalErrorForFailureReason(reason);
       emit(
         state.copyWith(
           isValidatingCode: false,
-          generalError: _generalErrorForException(error),
-          clearInviteCodeError: true,
+          inviteCodeError: inviteCodeError,
+          generalError: generalError,
+          clearInviteCodeError: inviteCodeError == null,
+          clearGeneralError: generalError == null,
         ),
       );
     } catch (error, stackTrace) {
@@ -180,14 +185,23 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     return null;
   }
 
-  /// Reuses [InviteErrorUtils.activationFailureReason], which already maps the
-  /// whole [InviteApiErrorCode] family — plus status-code and keyword
-  /// fallbacks for exceptions that carry no structured code.
-  InviteGateError _generalErrorForException(InviteApiException error) {
-    switch (InviteErrorUtils.activationFailureReason(error)) {
+  InviteCodeError? _inviteCodeErrorForFailureReason(
+    InviteActivationFailureReason reason,
+  ) {
+    return switch (reason) {
+      InviteActivationFailureReason.alreadyUsed => InviteCodeError.alreadyUsed,
+      _ => null,
+    };
+  }
+
+  InviteGateError? _generalErrorForFailureReason(
+    InviteActivationFailureReason reason,
+  ) {
+    switch (reason) {
       case InviteActivationFailureReason.creatorFull:
         return InviteGateError.creatorFull;
       case InviteActivationFailureReason.alreadyUsed:
+        return null;
       case InviteActivationFailureReason.invalid:
         return InviteGateError.inviteUnavailable;
       case InviteActivationFailureReason.authFailure:

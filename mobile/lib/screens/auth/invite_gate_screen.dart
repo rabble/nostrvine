@@ -135,13 +135,8 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
         final queryParameters = <String, String>{
           if (widget.initialCode?.isNotEmpty ?? false)
             'code': widget.initialCode!,
-          // Forwarded verbatim on purpose: create-account reads `?error=` from
-          // its OWN url too (auth_routes.dart), so dropping it here would
-          // change this redirect's documented parameter preservation without
-          // closing that screen's ingress. Its state still stores the raw
-          // string; migrating it is tracked separately.
-          // TODO(#8305): drop this once DivineAuthFormState carries a reason
-          // code instead of a message.
+          // Preserve the error signal if onboarding flips back to invite-only;
+          // the invite gate discards the raw text before rendering it.
           if (widget.initialError?.isNotEmpty ?? false)
             'error': widget.initialError!,
           if (widget.initialSourceSlug?.isNotEmpty ?? false)

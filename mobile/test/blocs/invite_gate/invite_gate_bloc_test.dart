@@ -194,6 +194,27 @@ void main() {
       errors: () => [isA<InviteApiException>()],
     );
 
+    blocTest<InviteGateBloc, InviteGateState>(
+      'maps thrown already-used failures to the invite code field',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('USED-0003'),
+        ).thenThrow(
+          const InviteApiException(
+            'Invite unavailable',
+            code: InviteApiErrorCode.inviteAlreadyUsed,
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('used0003')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        const InviteGateState(inviteCodeError: InviteCodeError.alreadyUsed),
+      ],
+      errors: () => [isA<InviteApiException>()],
+    );
+
     test(
       'ignores duplicate validation submissions while request is in flight',
       () async {
