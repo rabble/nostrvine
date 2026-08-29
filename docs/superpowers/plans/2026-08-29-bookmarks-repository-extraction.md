@@ -10,6 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-29-bookmarks-repository-extraction-design.md`
 
+> **Implementation outcome:** This is the execution plan that preceded PR
+> #8325, not an as-built file map. The final implementation kept the public
+> value types in `src/bookmarks_repository.dart`, used an app-layer
+> `BookmarkSignerAdapter` instead of changing `AuthService`, removed the
+> fake-only signer contract tests, and finished with 88 package tests at
+> 293/293 covered lines.
+
 ## Global Constraints
 
 - **All Flutter commands run from `mobile/`**, prefixed `mise exec --` (a bare `dart`/`flutter` picks up the PATH SDK, not the pinned 3.44.9).

@@ -9,6 +9,13 @@ investigation log lives outside version control at `tasks/findings_6969.md`
 (that directory is gitignored). Where a fact is load-bearing, the evidence is
 restated inline here so this document stands alone.
 
+> **Implementation outcome:** This document records the proposed design, not
+> the final file map. PR #8325 kept `BookmarkItem`, `BookmarkToggleResult`, and
+> `BookmarkToggleFailure` in `src/bookmarks_repository.dart`, wired
+> `AuthService` through an app-layer `BookmarkSignerAdapter`, and removed the
+> fake-only signer contract tests. The final package suite has 88 tests and
+> 293/293 covered lines.
+
 ---
 
 ## 1. What this changes, and what it deliberately does not

@@ -38,7 +38,7 @@ void main() {
     test('forwards the hex pubkey, not some other encoding', () {
       const hex =
           '9be8bd90d818407bcf574d11b1c57f104fd5'
-          '000000000000000000000000000';
+          '0000000000000000000000000000';
       when(() => authService.currentPublicKeyHex).thenReturn(hex);
 
       expect(adapter.currentPublicKeyHex, equals(hex));
@@ -67,7 +67,7 @@ void main() {
       expect(adapter.currentIdentity, isNull);
     });
 
-    test('forwards every createAndSignEvent argument, createdAt included', () {
+    test('forwards arguments including createdAt', () async {
       int? seenKind;
       String? seenContent;
       List<List<String>>? seenTags;
@@ -88,7 +88,7 @@ void main() {
         return null;
       });
 
-      adapter.createAndSignEvent(
+      await adapter.createAndSignEvent(
         kind: 10003,
         content: 'ciphertext',
         tags: const [
