@@ -16,6 +16,17 @@
 #     *.mocks.dart) and the l10n generated dir (mobile/lib/l10n/generated/),
 #   • build / .dart_tool artifacts.
 #
+# It counts CODE ONLY: each file is piped through lib/dart_code_only.awk first,
+# so comments and string-literal bodies are stripped before the match. This
+# matches the seven sibling ratchets that already do it (raw colors, raw
+# TextStyle, Material buttons, raw dialogs, implicit font color, unsafe back
+# pop, profile read/write split). Without it a file that merely *mentions*
+# Future.delayed counts as an offender — which is how lib/utils/async_utils.dart
+# (8 mentions, all doc examples of what NOT to write) and the dartdoc reference
+# on _reorderAnimController in video_editor_timeline_clip_strip.dart (which
+# documents that the file deliberately does NOT use it) both sat in the baseline,
+# making the stated goal of reaching zero unreachable by construction (#6934).
+#
 # Regenerate after MIGRATING a file off Future.delayed (never to add one):
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_future_delayed_production_ceiling.sh
 # Usage:
@@ -47,8 +58,20 @@ emit_current() {
     ! -name "*.g.dart" ! -name "*.freezed.dart" ! -name "*.gr.dart" \
     ! -name "*.config.dart" ! -name "*.mocks.dart" \
     -print0 2>/dev/null \
-    | xargs -0 grep -lE "Future\.delayed" 2>/dev/null \
-    | sed "s#^$MOBILE_DIR/##" | LC_ALL=C sort -u || true
+  | while IFS= read -r -d '' f; do
+      # grep -cE (not -qE) consumes the whole stream. `-q` exits on the first
+      # match, which SIGPIPEs awk, and under `set -o pipefail` that makes the
+      # pipeline status 141 — silently dropping every file whose match lands
+      # before awk finishes writing. Undercounting is the dangerous direction
+      # for a ceiling. The sibling ratchets use `grep -oE | grep -c .` for the
+      # same reason.
+      count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
+        | grep -cE "Future\.delayed" || true)"
+      count="${count//[[:space:]]/}"
+      if [[ "${count:-0}" -gt 0 ]]; then
+        printf '%s\n' "${f#"$MOBILE_DIR"/}"
+      fi
+    done | LC_ALL=C sort -u || true
 }
 
 print_baseline_header() {

@@ -10,7 +10,5 @@ lib/screens/video_metadata/video_metadata_preview_screen.dart
 lib/services/connection_status_service.dart
 lib/services/upload_initialization_helper.dart
 lib/services/video_processing_service.dart
-lib/utils/async_utils.dart
 lib/widgets/profile/more_sheet/more_sheet_content.dart
-lib/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart
 lib/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart
