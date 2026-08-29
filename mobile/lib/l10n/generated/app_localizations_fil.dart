@@ -3541,6 +3541,34 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi available ang paglalagay ng code ngayon. I-tap ang link sa email mo, o ipadala ulit para kumuha ng bago.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Maglagay ng invite code tulad ng ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Mukhang hindi valid ang invite code na iyan.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Nagamit na o binawi na ang invite code na iyan.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Ubos na ang mga invite ng creator na ito';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Hindi available ang invite code na iyan. Sumali sa waitlist at padadalhan ka namin ng invite kapag may bakante.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Hindi namin ma-check ang code na iyan. Subukan ulit.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'May nangyaring mali. Subukan ulit ang invite code mo.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Hindi na available ang invite code na iyon. Bumalik sa iyong invite code, sumali sa waitlist, o makipag-ugnayan sa support.';
 
@@ -6192,6 +6220,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Hindi na-save sa $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Tinanggihan ang permission para sa $destination';
   }
@@ -8099,6 +8132,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Bumalik sa feed';
+
+  @override
+  String get cameraCouldNotStart => 'Hindi ma-start ang camera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Hindi pa available ang camera sa platform na ito.\nPwede ka pa ring mag-browse at manood ng mga video.';
 
   @override
   String get cameraPermissionErrorTitle => 'Error sa pahintulot';

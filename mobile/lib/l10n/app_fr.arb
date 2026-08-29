@@ -1352,6 +1352,13 @@
     "authVerificationErrorPinLocked": "Trop de tentatives. Appuie sur Renvoyer pour obtenir un nouveau code.",
     "authVerificationErrorPinFailed": "On n'a pas pu vérifier ce code. Réessaie.",
     "authVerificationErrorPinUnavailable": "La saisie du code n'est pas disponible pour l'instant. Appuie sur le lien dans ton e-mail, ou renvoie pour en recevoir un nouveau.",
+    "authInviteCodeErrorMalformed": "Saisis un code d'invitation comme ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Ce code d'invitation ne semble pas valide.",
+    "authInviteCodeErrorAlreadyUsed": "Ce code d'invitation a déjà été utilisé ou révoqué.",
+    "authInviteGateErrorCreatorFull": "Les invitations de ce créateur sont épuisées",
+    "authInviteGateErrorUnavailable": "Ce code d'invitation n'est pas disponible. Inscris-toi sur la liste d'attente et on t'enverra une invitation dès qu'il y aura de la place.",
+    "authInviteGateErrorCheckFailed": "Impossible de vérifier ce code. Réessaie.",
+    "authInviteGateErrorUnknown": "Un problème est survenu. Réessaie avec ton code d'invitation.",
     "authInviteErrorAlreadyUsed": "Ce code d'invitation n'est plus disponible. Retourne à ton code d'invitation, rejoins la liste d'attente, ou contacte le support.",
     "authInviteErrorInvalid": "Ce code d'invitation ne peut pas être utilisé pour l'instant. Retourne à ton code d'invitation, rejoins la liste d'attente, ou contacte le support.",
     "authInviteErrorTemporary": "On n'a pas pu confirmer ton invitation pour l'instant. Retourne à ton code d'invitation et réessaie, ou contacte le support.",
@@ -2253,6 +2260,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Impossible d'enregistrer dans {destination}",
     "libraryGalleryPermissionDenied": "Permission refusée pour {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2523,6 +2531,8 @@
     "cameraPermissionWebUnsupportedTitle": "La caméra n'est pas encore prise en charge sur le web",
     "cameraPermissionWebUnsupportedDescription": "La capture et l'enregistrement vidéo avec la caméra ne sont pas encore disponibles dans la version web.",
     "cameraPermissionBackToFeed": "Retour au fil",
+    "cameraCouldNotStart": "Impossible de démarrer la caméra",
+    "cameraUnsupportedPlatform": "La caméra n'est pas encore disponible sur cette plateforme.\nTu peux quand même parcourir et regarder des vidéos.",
     "cameraPermissionErrorTitle": "Erreur d'autorisation",
     "cameraPermissionErrorDescription": "Une erreur s'est produite lors de la vérification des autorisations.",
     "cameraPermissionRetry": "Réessayer",

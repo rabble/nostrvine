@@ -6,6 +6,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
+import 'package:openvine/utils/invite_error_utils.dart';
 
 class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
   InviteGateBloc({required InviteApiClient inviteApiClient})
@@ -29,7 +30,7 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     if (!InviteApiClient.looksLikeInviteCode(normalizedCode)) {
       emit(
         state.copyWith(
-          inviteCodeError: 'Enter an invite code like ABCD-EFGH.',
+          inviteCodeError: InviteCodeError.malformed,
           clearGeneralError: true,
         ),
       );
@@ -76,19 +77,37 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
           clearGeneralError: generalError == null,
         ),
       );
-    } on InviteApiException catch (error) {
+    } on InviteApiException catch (error, stackTrace) {
+      // Invite API rejection — matrix-NO (API/domain row), so a bare
+      // addError. The exception's own `message` can be arbitrary text lifted
+      // straight out of the server's response body, which is exactly why it
+      // is classified here instead of shown.
+      addError(error, stackTrace);
+      final reason = InviteErrorUtils.activationFailureReason(error);
+      final isInvalidCode =
+          error.code == InviteApiErrorCode.inviteNotFound ||
+          error.code == InviteApiErrorCode.inviteInvalidFormat;
+      final inviteCodeError = isInvalidCode
+          ? InviteCodeError.notFound
+          : _inviteCodeErrorForFailureReason(reason);
+      final generalError = isInvalidCode
+          ? null
+          : _generalErrorForFailureReason(reason);
       emit(
         state.copyWith(
           isValidatingCode: false,
-          generalError: error.message,
-          clearInviteCodeError: true,
+          inviteCodeError: inviteCodeError,
+          generalError: generalError,
+          clearInviteCodeError: inviteCodeError == null,
+          clearGeneralError: generalError == null,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
       emit(
         state.copyWith(
           isValidatingCode: false,
-          generalError: 'Failed to validate invite code',
+          generalError: InviteGateError.checkFailed,
           clearInviteCodeError: true,
         ),
       );
@@ -102,7 +121,7 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     emit(
       state.copyWith(
         generalError: event.error,
-        clearGeneralError: event.error == null || event.error!.isEmpty,
+        clearGeneralError: event.error == null,
       ),
     );
   }
@@ -142,33 +161,64 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     emit(state.copyWith(clearAccessGrant: true));
   }
 
-  String? _inviteCodeErrorForResult(InviteValidationResult result) {
+  /// The server already answers with a reason code, so classify from that and
+  /// let the UI localize. Rejections that are not about the typed code
+  /// (a full or disabled creator page) belong in the block message instead,
+  /// and return null here.
+  InviteCodeError? _inviteCodeErrorForResult(InviteValidationResult result) {
     switch (result.errorCode) {
-      case 'creator_page_full':
-      case 'invite_revoked':
-      case 'invite_code_rotated':
-      case 'creator_page_disabled':
+      case InviteApiErrorCode.creatorPageFull:
+      case InviteApiErrorCode.inviteRevoked:
+      case InviteApiErrorCode.inviteCodeRotated:
+      case InviteApiErrorCode.creatorPageDisabled:
         return null;
-      case 'invite_not_found':
-      case 'invite_invalid_format':
-        return 'That invite code does not look valid.';
+      case InviteApiErrorCode.inviteNotFound:
+      case InviteApiErrorCode.inviteInvalidFormat:
+        return InviteCodeError.notFound;
     }
 
-    return result.used
-        ? 'That invite code has already been used or revoked.'
-        : 'That invite code does not look valid.';
+    return result.used ? InviteCodeError.alreadyUsed : InviteCodeError.notFound;
   }
 
-  String? _generalErrorForResult(InviteValidationResult result) {
+  InviteGateError? _generalErrorForResult(InviteValidationResult result) {
     switch (result.errorCode) {
-      case 'creator_page_full':
-        return "This creator's invites are full";
-      case 'invite_revoked':
-      case 'invite_code_rotated':
-      case 'creator_page_disabled':
-        return 'That invite code is unavailable. Join the waitlist and '
-            "we'll send an invite when there's room.";
+      case InviteApiErrorCode.creatorPageFull:
+        return InviteGateError.creatorFull;
+      case InviteApiErrorCode.inviteRevoked:
+      case InviteApiErrorCode.inviteCodeRotated:
+      case InviteApiErrorCode.creatorPageDisabled:
+        return InviteGateError.inviteUnavailable;
     }
     return null;
+  }
+
+  InviteCodeError? _inviteCodeErrorForFailureReason(
+    InviteActivationFailureReason reason,
+  ) {
+    return switch (reason) {
+      InviteActivationFailureReason.alreadyUsed => InviteCodeError.alreadyUsed,
+      InviteActivationFailureReason.invalid ||
+      InviteActivationFailureReason.creatorFull ||
+      InviteActivationFailureReason.authFailure ||
+      InviteActivationFailureReason.temporary ||
+      InviteActivationFailureReason.unknown => null,
+    };
+  }
+
+  InviteGateError? _generalErrorForFailureReason(
+    InviteActivationFailureReason reason,
+  ) {
+    switch (reason) {
+      case InviteActivationFailureReason.creatorFull:
+        return InviteGateError.creatorFull;
+      case InviteActivationFailureReason.alreadyUsed:
+        return null;
+      case InviteActivationFailureReason.invalid:
+        return InviteGateError.inviteUnavailable;
+      case InviteActivationFailureReason.authFailure:
+      case InviteActivationFailureReason.temporary:
+      case InviteActivationFailureReason.unknown:
+        return InviteGateError.checkFailed;
+    }
   }
 }

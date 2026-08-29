@@ -1435,6 +1435,13 @@
     "authVerificationErrorPinLocked": "Твърде много опити. Натисни Изпрати отново, за да получиш нов код.",
     "authVerificationErrorPinFailed": "Не успяхме да потвърдим този код. Опитай пак.",
     "authVerificationErrorPinUnavailable": "Въвеждането на код не е налично в момента. Натисни връзката в имейла си или изпрати отново, за да получиш нова.",
+    "authInviteCodeErrorMalformed": "Въведи код за покана като ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Този код за покана не изглежда валиден.",
+    "authInviteCodeErrorAlreadyUsed": "Този код за покана вече е използван или е отменен.",
+    "authInviteGateErrorCreatorFull": "Поканите на този създател свършиха",
+    "authInviteGateErrorUnavailable": "Този код за покана не е наличен. Запиши се в списъка на чакащите и ще ти изпратим покана, щом се освободи място.",
+    "authInviteGateErrorCheckFailed": "Не успяхме да проверим този код. Опитай пак.",
+    "authInviteGateErrorUnknown": "Нещо се обърка. Опитай пак с кода си за покана.",
     "authInviteErrorAlreadyUsed": "Този код за покана вече не е наличен. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.",
     "authInviteErrorInvalid": "Този код за покана не може да се използва в момента. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.",
     "authInviteErrorTemporary": "Не можахме да потвърдим поканата ти в момента. Върни се към кода за покана и опитай пак или се свържи с поддръжката.",
@@ -2426,6 +2433,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Не успяхме да запазим в {destination}",
     "libraryGalleryPermissionDenied": "Разрешението за {destination} е отказано",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2794,6 +2802,8 @@
     "cameraPermissionWebUnsupportedTitle": "Камерата още не се поддържа в уеб",
     "cameraPermissionWebUnsupportedDescription": "Снимането и записът с камера още не са налични в уеб версията.",
     "cameraPermissionBackToFeed": "Назад към фийда",
+    "cameraCouldNotStart": "Не успяхме да стартираме камерата",
+    "cameraUnsupportedPlatform": "Камерата все още не е налична на тази платформа.\nВсе пак можеш да разглеждаш и гледаш видеа.",
     "cameraPermissionErrorTitle": "Грешка с разрешенията",
     "cameraPermissionErrorDescription": "Нещо се обърка, докато проверявахме разрешенията.",
     "cameraPermissionRetry": "Опитай пак",

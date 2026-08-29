@@ -3533,6 +3533,34 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een code invoeren is nu niet beschikbaar. Tik op de link in je e-mail, of verstuur opnieuw voor een nieuwe.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Voer een uitnodigingscode in zoals ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Deze uitnodigingscode lijkt niet geldig.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Deze uitnodigingscode is al gebruikt of ingetrokken.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'De uitnodigingen van deze creator zijn op';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Deze uitnodigingscode is niet beschikbaar. Zet je op de wachtlijst, dan sturen we een uitnodiging zodra er plek is.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'We konden die code niet controleren. Probeer het opnieuw.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Er ging iets mis. Probeer je uitnodigingscode opnieuw.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Die invite-code is niet meer beschikbaar. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.';
 
@@ -6175,6 +6203,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Opslaan bij $destination mislukt';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Toestemming geweigerd voor $destination';
   }
@@ -8072,6 +8105,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Terug naar feed';
+
+  @override
+  String get cameraCouldNotStart => 'Camera kon niet worden gestart';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'De camera is nog niet beschikbaar op dit platform.\nJe kunt nog steeds video’s bekijken.';
 
   @override
   String get cameraPermissionErrorTitle => 'Machtigingsfout';

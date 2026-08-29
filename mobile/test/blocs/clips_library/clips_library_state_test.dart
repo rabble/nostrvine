@@ -324,22 +324,15 @@ void main() {
     });
 
     group(GallerySaveResultError, () {
-      test('supports value equality', () {
+      test('supports value equality regardless of cause', () {
         expect(
-          const GallerySaveResultError('error message'),
-          equals(const GallerySaveResultError('error message')),
+          const GallerySaveResultError(),
+          equals(const GallerySaveResultError()),
         );
       });
 
-      test('different messages are not equal', () {
-        expect(
-          const GallerySaveResultError('error 1'),
-          isNot(equals(const GallerySaveResultError('error 2'))),
-        );
-      });
-
-      test('props contains message', () {
-        expect(const GallerySaveResultError('error').props, ['error']);
+      test('props are empty', () {
+        expect(const GallerySaveResultError().props, isEmpty);
       });
     });
   });

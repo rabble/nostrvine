@@ -3563,6 +3563,34 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Code-Eingabe ist gerade nicht verfügbar. Tippe auf den Link in deiner E-Mail oder sende erneut, um einen neuen zu bekommen.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Gib einen Einladungscode wie ABCD-EFGH ein.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Dieser Einladungscode sieht nicht gültig aus.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Dieser Einladungscode wurde bereits verwendet oder widerrufen.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Die Einladungen dieses Creators sind aufgebraucht';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Dieser Einladungscode ist nicht verfügbar. Trag dich in die Warteliste ein und wir schicken dir eine Einladung, sobald wieder Platz ist.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Wir konnten diesen Code nicht prüfen. Versuch es noch mal.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Etwas ist schiefgelaufen. Versuch es noch mal mit deinem Einladungscode.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Dieser Einladungscode ist nicht mehr verfügbar. Geh zurück zu deinem Einladungscode, tritt der Warteliste bei oder kontaktier den Support.';
 
@@ -6224,6 +6252,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Speichern in $destination fehlgeschlagen';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination: Berechtigung verweigert';
   }
@@ -8139,6 +8172,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Zurück zum Feed';
+
+  @override
+  String get cameraCouldNotStart => 'Kamera konnte nicht gestartet werden';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Die Kamera ist auf dieser Plattform noch nicht verfügbar.\nDu kannst trotzdem Videos ansehen.';
 
   @override
   String get cameraPermissionErrorTitle => 'Berechtigungsfehler';

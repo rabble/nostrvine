@@ -6029,6 +6029,48 @@ abstract class AppLocalizations {
   /// **'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.'**
   String get authVerificationErrorPinUnavailable;
 
+  /// Inline error on the invite-code field when the typed text is not shaped like an invite code.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an invite code like ABCD-EFGH.'**
+  String get authInviteCodeErrorMalformed;
+
+  /// Inline error on the invite-code field when the server does not recognise the code.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code does not look valid.'**
+  String get authInviteCodeErrorNotFound;
+
+  /// Inline error on the invite-code field when the code was already claimed or revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code has already been used or revoked.'**
+  String get authInviteCodeErrorAlreadyUsed;
+
+  /// Block error on the invite gate when the creator has no invites left.
+  ///
+  /// In en, this message translates to:
+  /// **'This creator\'s invites are full'**
+  String get authInviteGateErrorCreatorFull;
+
+  /// Block error on the invite gate when the code is real but no longer usable.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code is unavailable. Join the waitlist and we\'ll send an invite when there\'s room.'**
+  String get authInviteGateErrorUnavailable;
+
+  /// Block error on the invite gate when the invite service could not give a verdict. Retryable.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check that code. Try again.'**
+  String get authInviteGateErrorCheckFailed;
+
+  /// Block error on the invite gate when an inbound link reported an unclassifiable problem.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try your invite code again.'**
+  String get authInviteGateErrorUnknown;
+
   /// No description provided for @authInviteErrorAlreadyUsed.
   ///
   /// In en, this message translates to:
@@ -10595,6 +10637,12 @@ abstract class AppLocalizations {
   /// **'{successCount} saved, {failureCount} failed'**
   String libraryClipsSavePartialResult(int successCount, int failureCount);
 
+  /// Snackbar shown when saving selected clips to the device gallery fails unexpectedly. {destination} is the platform gallery name (e.g. "Camera Roll").
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save to {destination}'**
+  String libraryClipsSaveFailed(String destination);
+
   /// No description provided for @libraryGalleryPermissionDenied.
   ///
   /// In en, this message translates to:
@@ -13697,6 +13745,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to feed'**
   String get cameraPermissionBackToFeed;
+
+  /// Shown in the camera preview placeholder when the camera fails to initialize.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the camera'**
+  String get cameraCouldNotStart;
+
+  /// Shown in the camera preview placeholder on platforms with no camera support at all (currently Linux), where retrying cannot help.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera is not available on this platform yet.\nYou can still browse and watch videos.'**
+  String get cameraUnsupportedPlatform;
 
   /// No description provided for @cameraPermissionErrorTitle.
   ///

@@ -3451,6 +3451,34 @@ class AppLocalizationsId extends AppLocalizations {
       'Input kode sedang tidak tersedia. Ketuk tautan di emailmu, atau kirim ulang untuk mendapatkan kode baru.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Masukkan kode undangan seperti ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Kode undangan itu sepertinya tidak valid.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Kode undangan itu sudah dipakai atau dicabut.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Undangan kreator ini sudah habis';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Kode undangan itu tidak tersedia. Gabung ke daftar tunggu dan kami akan mengirim undangan begitu ada tempat.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Kami tidak bisa memeriksa kode itu. Coba lagi.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Ada yang salah. Coba lagi dengan kode undanganmu.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Kode undangan itu sudah tidak tersedia. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.';
 
@@ -6079,6 +6107,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Tidak bisa menyimpan ke $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Izin ditolak untuk $destination';
   }
@@ -7960,6 +7993,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Kembali ke feed';
+
+  @override
+  String get cameraCouldNotStart => 'Tidak bisa memulai kamera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Kamera belum tersedia di platform ini.\nKamu tetap bisa menjelajah dan menonton video.';
 
   @override
   String get cameraPermissionErrorTitle => 'Kesalahan izin';

@@ -9,6 +9,7 @@ import 'package:divine_camera/divine_camera.dart'
         DivineVideoStabilizationMode,
         PhotoCaptureResult;
 import 'package:flutter/widgets.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -17,8 +18,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// Linux stub implementation of [CameraService].
 ///
 /// Camera hardware access is not yet available on Linux. This service
-/// always reports [isInitialized] as `false` and surfaces a friendly
-/// error message via [initializationError] so the placeholder UI renders.
+/// always reports [isInitialized] as `false` and reports
+/// [CameraInitializationError.unsupportedPlatform] via [initializationError]
+/// so the placeholder UI renders localized copy.
 /// All recording methods are safe no-ops.
 class CameraLinuxService extends CameraService {
   /// Creates a Linux camera service stub.
@@ -28,9 +30,8 @@ class CameraLinuxService extends CameraService {
   });
 
   @override
-  String? get initializationError =>
-      'Camera is not yet available on Linux.\n'
-      'You can still browse and watch videos.';
+  CameraInitializationError? get initializationError =>
+      CameraInitializationError.unsupportedPlatform;
 
   @override
   bool get isInitialized => false;

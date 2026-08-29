@@ -65,7 +65,7 @@ class SoundWaveformBloc extends Bloc<SoundWaveformEvent, SoundWaveformState> {
         stackTrace: s,
       );
       addError(e, s);
-      emit(SoundWaveformError(e.toString()));
+      emit(const SoundWaveformError());
     }
   }
 

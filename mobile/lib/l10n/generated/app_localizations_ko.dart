@@ -3313,6 +3313,28 @@ class AppLocalizationsKo extends AppLocalizations {
       '지금은 코드 입력을 사용할 수 없어요. 이메일의 링크를 탭하거나 다시 보내기로 새 코드를 받으세요.';
 
   @override
+  String get authInviteCodeErrorMalformed => 'ABCD-EFGH 형식의 초대 코드를 입력해요.';
+
+  @override
+  String get authInviteCodeErrorNotFound => '그 초대 코드는 올바르지 않은 것 같아요.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed => '그 초대 코드는 이미 사용했거나 취소됐어요.';
+
+  @override
+  String get authInviteGateErrorCreatorFull => '이 크리에이터의 초대장이 모두 소진됐어요';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      '그 초대 코드는 사용할 수 없어요. 대기자 명단에 등록하면 자리가 나는 대로 초대장을 보내드릴게요.';
+
+  @override
+  String get authInviteGateErrorCheckFailed => '그 코드를 확인할 수 없었어요. 다시 시도해 주세요.';
+
+  @override
+  String get authInviteGateErrorUnknown => '문제가 생겼어요. 초대 코드를 다시 시도해 주세요.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       '그 초대 코드는 더 이상 쓸 수 없어요. 초대 코드로 돌아가거나, 대기자 명단에 등록하거나, 고객센터에 문의해주세요.';
 
@@ -5859,6 +5881,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '$destination에 저장할 수 없어요';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination 권한이 거부되었어요';
   }
@@ -7669,6 +7696,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => '피드로 돌아가기';
+
+  @override
+  String get cameraCouldNotStart => '카메라를 시작할 수 없어요';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      '이 플랫폼에서는 아직 카메라를 사용할 수 없어요.\n영상 둘러보기와 재생은 계속할 수 있어요.';
 
   @override
   String get cameraPermissionErrorTitle => '권한 오류';

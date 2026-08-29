@@ -1352,6 +1352,13 @@
     "authVerificationErrorPinLocked": "Prea multe încercări. Apasă Retrimite pentru a primi un cod nou.",
     "authVerificationErrorPinFailed": "Nu am putut verifica codul. Încearcă din nou.",
     "authVerificationErrorPinUnavailable": "Introducerea codului nu e disponibilă acum. Apasă linkul din email sau retrimite pentru a primi unul nou.",
+    "authInviteCodeErrorMalformed": "Introdu un cod de invitație de forma ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Codul de invitație nu pare valid.",
+    "authInviteCodeErrorAlreadyUsed": "Codul de invitație a fost deja folosit sau revocat.",
+    "authInviteGateErrorCreatorFull": "Invitațiile acestui creator s-au epuizat",
+    "authInviteGateErrorUnavailable": "Codul de invitație nu este disponibil. Înscrie-te pe lista de așteptare și îți trimitem o invitație când se eliberează un loc.",
+    "authInviteGateErrorCheckFailed": "Nu am putut verifica acest cod. Încearcă din nou.",
+    "authInviteGateErrorUnknown": "Ceva nu a mers bine. Încearcă din nou codul de invitație.",
     "authInviteErrorAlreadyUsed": "Acest cod de invitație nu mai e disponibil. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
     "authInviteErrorInvalid": "Acest cod de invitație nu poate fi folosit acum. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
     "authInviteErrorTemporary": "N-am putut confirma invitația ta acum. Întoarce-te la codul tău și încearcă din nou, sau contactează asistența.",
@@ -2253,6 +2260,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Nu s-a putut salva în {destination}",
     "libraryGalleryPermissionDenied": "Permisiune refuzată pentru {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2523,6 +2531,8 @@
     "cameraPermissionWebUnsupportedTitle": "Camera nu este încă acceptată pe web",
     "cameraPermissionWebUnsupportedDescription": "Captura și înregistrarea cu camera nu sunt încă disponibile în versiunea web.",
     "cameraPermissionBackToFeed": "Înapoi la feed",
+    "cameraCouldNotStart": "Nu s-a putut porni camera",
+    "cameraUnsupportedPlatform": "Camera nu este încă disponibilă pe această platformă.\nPoți totuși să explorezi și să vizionezi videoclipuri.",
     "cameraPermissionErrorTitle": "Eroare de permisiuni",
     "cameraPermissionErrorDescription": "A apărut o eroare la verificarea permisiunilor.",
     "cameraPermissionRetry": "Încearcă din nou",

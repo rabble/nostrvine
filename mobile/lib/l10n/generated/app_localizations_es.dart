@@ -3561,6 +3561,34 @@ class AppLocalizationsEs extends AppLocalizations {
       'El ingreso del código no está disponible ahora mismo. Tocá el link en tu email o reenviá para conseguir uno nuevo.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Ingresá un código de invitación como ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Ese código de invitación no parece válido.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Ese código de invitación ya se usó o fue revocado.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Las invitaciones de este creador se agotaron';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Ese código de invitación no está disponible. Sumate a la lista de espera y te enviamos una invitación cuando haya lugar.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'No pudimos verificar ese código. Probá de nuevo.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Algo salió mal. Probá de nuevo con tu código de invitación.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Ese código de invitación ya no está disponible. Volvé a tu código, unite a la lista de espera o contactá a soporte.';
 
@@ -6201,6 +6229,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'No se pudo guardar en $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Permiso denegado para $destination';
   }
@@ -8112,6 +8145,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Volver al feed';
+
+  @override
+  String get cameraCouldNotStart => 'No se pudo iniciar la cámara';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'La cámara todavía no está disponible en esta plataforma.\nIgual podés explorar y ver videos.';
 
   @override
   String get cameraPermissionErrorTitle => 'Error de permisos';

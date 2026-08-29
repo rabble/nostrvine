@@ -561,7 +561,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         emit(
           state.copyWith(
             status: ClipsLibraryStatus.loaded,
-            lastGallerySaveResult: GallerySaveResultError(e.toString()),
+            lastGallerySaveResult: const GallerySaveResultError(),
           ),
         );
         return;

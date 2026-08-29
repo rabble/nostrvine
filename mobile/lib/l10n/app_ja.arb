@@ -1342,6 +1342,13 @@
     "authVerificationErrorPinLocked": "試行回数が多すぎるよ。再送信をタップして新しいコードをもらってね。",
     "authVerificationErrorPinFailed": "そのコードを確認できなかったよ。もう一回試してみて。",
     "authVerificationErrorPinUnavailable": "今はコード入力が使えないよ。メールのリンクをタップするか、再送信で新しいのをもらってね。",
+    "authInviteCodeErrorMalformed": "ABCD-EFGH のような招待コードを入力してください。",
+    "authInviteCodeErrorNotFound": "その招待コードは有効ではないようです。",
+    "authInviteCodeErrorAlreadyUsed": "その招待コードはすでに使用済みか、無効になっています。",
+    "authInviteGateErrorCreatorFull": "このクリエイターの招待枠はいっぱいです",
+    "authInviteGateErrorUnavailable": "その招待コードは利用できません。順番待ちリストに登録すると、空きが出しだい招待をお送りします。",
+    "authInviteGateErrorCheckFailed": "そのコードを確認できませんでした。もう一度お試しください。",
+    "authInviteGateErrorUnknown": "問題が発生しました。招待コードをもう一度お試しください。",
     "authInviteErrorAlreadyUsed": "その招待コードはもう使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
     "authInviteErrorInvalid": "その招待コードは今は使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
     "authInviteErrorTemporary": "今は招待を確認できなかった。招待コードに戻ってもう一回試すか、サポートに連絡してね。",
@@ -2243,6 +2250,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "{destination}に保存できませんでした",
     "libraryGalleryPermissionDenied": "{destination}の権限が拒否されました",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2513,6 +2521,8 @@
     "cameraPermissionWebUnsupportedTitle": "カメラはまだWebでサポートされていません",
     "cameraPermissionWebUnsupportedDescription": "カメラでの撮影と録画は、Web版ではまだ利用できません。",
     "cameraPermissionBackToFeed": "フィードに戻る",
+    "cameraCouldNotStart": "カメラを起動できませんでした",
+    "cameraUnsupportedPlatform": "このプラットフォームではカメラをまだ利用できません。\n動画の閲覧と視聴はできます。",
     "cameraPermissionErrorTitle": "権限エラー",
     "cameraPermissionErrorDescription": "権限の確認中に問題が発生しました。",
     "cameraPermissionRetry": "再試行",

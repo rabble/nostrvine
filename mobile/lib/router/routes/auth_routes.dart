@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/invite_availability_providers.dart';
 import 'package:openvine/router/invite_availability_redirects.dart';
@@ -43,6 +44,9 @@ List<RouteBase> authRoutes(Ref ref) {
             return InviteGateScreen(
               initialCode: state.uri.queryParameters['code'],
               initialError: state.uri.queryParameters['error'],
+              initialErrorReason: InviteGateError.fromQuery(
+                state.uri.queryParameters['errorReason'],
+              ),
               initialSourceSlug: state.uri.queryParameters['sourceSlug'],
             );
           },

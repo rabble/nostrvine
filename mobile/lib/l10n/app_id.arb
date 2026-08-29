@@ -1349,6 +1349,13 @@
     "authVerificationErrorPinLocked": "Terlalu banyak percobaan. Ketuk kirim ulang untuk mendapatkan kode baru.",
     "authVerificationErrorPinFailed": "Kami tidak bisa memverifikasi kode itu. Silakan coba lagi.",
     "authVerificationErrorPinUnavailable": "Input kode sedang tidak tersedia. Ketuk tautan di emailmu, atau kirim ulang untuk mendapatkan kode baru.",
+    "authInviteCodeErrorMalformed": "Masukkan kode undangan seperti ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Kode undangan itu sepertinya tidak valid.",
+    "authInviteCodeErrorAlreadyUsed": "Kode undangan itu sudah dipakai atau dicabut.",
+    "authInviteGateErrorCreatorFull": "Undangan kreator ini sudah habis",
+    "authInviteGateErrorUnavailable": "Kode undangan itu tidak tersedia. Gabung ke daftar tunggu dan kami akan mengirim undangan begitu ada tempat.",
+    "authInviteGateErrorCheckFailed": "Kami tidak bisa memeriksa kode itu. Coba lagi.",
+    "authInviteGateErrorUnknown": "Ada yang salah. Coba lagi dengan kode undanganmu.",
     "authInviteErrorAlreadyUsed": "Kode undangan itu sudah tidak tersedia. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "authInviteErrorInvalid": "Kode undangan itu tidak bisa digunakan sekarang. Kembali ke kode undanganmu, gabung daftar tunggu, atau hubungi dukungan.",
     "authInviteErrorTemporary": "Kami tidak bisa mengkonfirmasi undanganmu sekarang. Kembali ke kode undanganmu dan coba lagi, atau hubungi dukungan.",
@@ -2250,6 +2257,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Tidak bisa menyimpan ke {destination}",
     "libraryGalleryPermissionDenied": "Izin ditolak untuk {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2520,6 +2528,8 @@
     "cameraPermissionWebUnsupportedTitle": "Kamera belum didukung di web",
     "cameraPermissionWebUnsupportedDescription": "Pengambilan gambar dan perekaman kamera belum tersedia di versi web.",
     "cameraPermissionBackToFeed": "Kembali ke feed",
+    "cameraCouldNotStart": "Tidak bisa memulai kamera",
+    "cameraUnsupportedPlatform": "Kamera belum tersedia di platform ini.\nKamu tetap bisa menjelajah dan menonton video.",
     "cameraPermissionErrorTitle": "Kesalahan izin",
     "cameraPermissionErrorDescription": "Terjadi kesalahan saat memeriksa izin.",
     "cameraPermissionRetry": "Coba lagi",

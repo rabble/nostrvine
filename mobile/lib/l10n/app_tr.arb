@@ -1349,6 +1349,13 @@
     "authVerificationErrorPinLocked": "Çok fazla deneme. Yeni kod almak için Tekrar Gönder'e dokun.",
     "authVerificationErrorPinFailed": "Kod doğrulanamadı. Lütfen tekrar dene.",
     "authVerificationErrorPinUnavailable": "Kod girişi şu anda kullanılamıyor. E-postandaki bağlantıya dokun ya da yenisini almak için tekrar gönder.",
+    "authInviteCodeErrorMalformed": "ABCD-EFGH gibi bir davet kodu gir.",
+    "authInviteCodeErrorNotFound": "Bu davet kodu geçerli görünmüyor.",
+    "authInviteCodeErrorAlreadyUsed": "Bu davet kodu zaten kullanılmış ya da iptal edilmiş.",
+    "authInviteGateErrorCreatorFull": "Bu içerik üreticisinin davetleri tükendi",
+    "authInviteGateErrorUnavailable": "Bu davet kodu kullanılamıyor. Bekleme listesine katıl, yer açılınca sana davet göndereceğiz.",
+    "authInviteGateErrorCheckFailed": "Bu kodu kontrol edemedik. Tekrar dene.",
+    "authInviteGateErrorUnknown": "Bir şeyler ters gitti. Davet kodunu tekrar dene.",
     "authInviteErrorAlreadyUsed": "Bu davet kodu artık kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
     "authInviteErrorInvalid": "Bu davet kodu şu anda kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
     "authInviteErrorTemporary": "Davetini şu anda doğrulayamadık. Davet koduna geri dönüp tekrar dene veya destekle iletişime geç.",
@@ -2250,6 +2257,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "{destination} konumuna kaydedilemedi",
     "libraryGalleryPermissionDenied": "{destination} izni reddedildi",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2520,6 +2528,8 @@
     "cameraPermissionWebUnsupportedTitle": "Kamera henüz web'de desteklenmiyor",
     "cameraPermissionWebUnsupportedDescription": "Kamera ile çekim ve kayıt henüz web sürümünde kullanılamıyor.",
     "cameraPermissionBackToFeed": "Akışa geri dön",
+    "cameraCouldNotStart": "Kamera başlatılamadı",
+    "cameraUnsupportedPlatform": "Kamera bu platformda henüz kullanılamıyor.\nYine de videolara göz atıp izleyebilirsin.",
     "cameraPermissionErrorTitle": "İzin hatası",
     "cameraPermissionErrorDescription": "İzinler kontrol edilirken bir sorun oluştu.",
     "cameraPermissionRetry": "Tekrar dene",

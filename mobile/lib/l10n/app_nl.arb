@@ -1352,6 +1352,13 @@
     "authVerificationErrorPinLocked": "Te veel pogingen. Tik op Opnieuw versturen voor een nieuwe code.",
     "authVerificationErrorPinFailed": "We konden die code niet verifiëren. Probeer het opnieuw.",
     "authVerificationErrorPinUnavailable": "Een code invoeren is nu niet beschikbaar. Tik op de link in je e-mail, of verstuur opnieuw voor een nieuwe.",
+    "authInviteCodeErrorMalformed": "Voer een uitnodigingscode in zoals ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Deze uitnodigingscode lijkt niet geldig.",
+    "authInviteCodeErrorAlreadyUsed": "Deze uitnodigingscode is al gebruikt of ingetrokken.",
+    "authInviteGateErrorCreatorFull": "De uitnodigingen van deze creator zijn op",
+    "authInviteGateErrorUnavailable": "Deze uitnodigingscode is niet beschikbaar. Zet je op de wachtlijst, dan sturen we een uitnodiging zodra er plek is.",
+    "authInviteGateErrorCheckFailed": "We konden die code niet controleren. Probeer het opnieuw.",
+    "authInviteGateErrorUnknown": "Er ging iets mis. Probeer je uitnodigingscode opnieuw.",
     "authInviteErrorAlreadyUsed": "Die invite-code is niet meer beschikbaar. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
     "authInviteErrorInvalid": "Die invite-code kan nu niet worden gebruikt. Ga terug naar je invite-code, kom op de wachtlijst of neem contact op met support.",
     "authInviteErrorTemporary": "We konden je invite nu niet bevestigen. Ga terug naar je invite-code en probeer het opnieuw, of neem contact op met support.",
@@ -2253,6 +2260,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Opslaan bij {destination} mislukt",
     "libraryGalleryPermissionDenied": "Toestemming geweigerd voor {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2523,6 +2531,8 @@
     "cameraPermissionWebUnsupportedTitle": "Camera wordt nog niet ondersteund op het web",
     "cameraPermissionWebUnsupportedDescription": "Camerabeelden opnemen en video opnemen zijn nog niet beschikbaar in de webversie.",
     "cameraPermissionBackToFeed": "Terug naar feed",
+    "cameraCouldNotStart": "Camera kon niet worden gestart",
+    "cameraUnsupportedPlatform": "De camera is nog niet beschikbaar op dit platform.\nJe kunt nog steeds video’s bekijken.",
     "cameraPermissionErrorTitle": "Machtigingsfout",
     "cameraPermissionErrorDescription": "Er is iets misgegaan bij het controleren van machtigingen.",
     "cameraPermissionRetry": "Opnieuw proberen",

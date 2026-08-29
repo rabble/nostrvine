@@ -1352,6 +1352,13 @@
     "authVerificationErrorPinLocked": "Muitas tentativas. Toque em Reenviar para receber um novo código.",
     "authVerificationErrorPinFailed": "Não conseguimos verificar esse código. Tente novamente.",
     "authVerificationErrorPinUnavailable": "A entrada de código não está disponível no momento. Toque no link do seu e-mail ou reenvie para receber um novo.",
+    "authInviteCodeErrorMalformed": "Digite um código de convite como ABCD-EFGH.",
+    "authInviteCodeErrorNotFound": "Esse código de convite não parece válido.",
+    "authInviteCodeErrorAlreadyUsed": "Esse código de convite já foi usado ou revogado.",
+    "authInviteGateErrorCreatorFull": "Os convites deste criador acabaram",
+    "authInviteGateErrorUnavailable": "Esse código de convite não está disponível. Entre na lista de espera e enviaremos um convite quando abrir uma vaga.",
+    "authInviteGateErrorCheckFailed": "Não conseguimos verificar esse código. Tente de novo.",
+    "authInviteGateErrorUnknown": "Algo deu errado. Tente seu código de convite de novo.",
     "authInviteErrorAlreadyUsed": "Esse código de convite não está mais disponível. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
     "authInviteErrorInvalid": "Esse código de convite não pode ser usado agora. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
     "authInviteErrorTemporary": "Não conseguimos confirmar seu convite agora. Volte para o seu código de convite e tente novamente ou contate o suporte.",
@@ -2253,6 +2260,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Não foi possível salvar em {destination}",
     "libraryGalleryPermissionDenied": "Permissão negada para {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -2523,6 +2531,8 @@
     "cameraPermissionWebUnsupportedTitle": "A câmera ainda não é compatível na web",
     "cameraPermissionWebUnsupportedDescription": "A captura e a gravação com câmera ainda não estão disponíveis na versão web.",
     "cameraPermissionBackToFeed": "Voltar ao feed",
+    "cameraCouldNotStart": "Não foi possível iniciar a câmera",
+    "cameraUnsupportedPlatform": "A câmera ainda não está disponível nesta plataforma.\nVocê ainda pode navegar e assistir aos vídeos.",
     "cameraPermissionErrorTitle": "Erro de permissão",
     "cameraPermissionErrorDescription": "Ocorreu um erro ao verificar as permissões.",
     "cameraPermissionRetry": "Tentar novamente",

@@ -3,6 +3,7 @@
 
 import 'package:divine_camera/divine_camera.dart';
 import 'package:flutter/widgets.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -20,7 +21,7 @@ class CameraMobileService extends CameraService {
   });
 
   bool _isInitialized = false;
-  String? _initializationError;
+  CameraInitializationError? _initializationError;
   final DivineCamera _camera = DivineCamera.instance;
 
   @override
@@ -30,7 +31,7 @@ class CameraMobileService extends CameraService {
     bool enableAutoLensSwitch = false,
     bool preferUnprocessedAudio = false,
   }) async {
-    // Clear any previous error
+    _isInitialized = false;
     _initializationError = null;
 
     Log.info(
@@ -67,16 +68,19 @@ class CameraMobileService extends CameraService {
         );
       }
       _isInitialized = true;
-    } catch (e) {
-      _initializationError = 'Camera initialization failed: $e';
+    } catch (e, stackTrace) {
+      _initializationError = CameraInitializationError.failed;
       Log.error(
         '📷 Failed to initialize camera: $e',
         name: 'CameraMobileService',
         category: .video,
+        error: e,
+        stackTrace: stackTrace,
       );
+      Error.throwWithStackTrace(e, stackTrace);
+    } finally {
+      onUpdateState(forceCameraRebuild: true);
     }
-
-    onUpdateState(forceCameraRebuild: true);
   }
 
   @override
@@ -455,7 +459,7 @@ class CameraMobileService extends CameraService {
       _camera.state.currentLensMetadata;
 
   @override
-  String? get initializationError => _initializationError;
+  CameraInitializationError? get initializationError => _initializationError;
 
   void Function()? _remoteRecordTriggerCallback;
 

@@ -1855,6 +1855,13 @@
   "authVerificationErrorPinLocked": "Thử sai quá nhiều lần. Chạm gửi lại để lấy mã mới.",
   "authVerificationErrorPinFailed": "Bọn mình không xác minh được mã đó. Vui lòng thử lại.",
   "authVerificationErrorPinUnavailable": "Hiện không nhập mã được. Hãy bấm liên kết trong email, hoặc gửi lại để lấy mã mới.",
+  "authInviteCodeErrorMalformed": "Nhập mã mời dạng ABCD-EFGH.",
+  "authInviteCodeErrorNotFound": "Mã mời đó có vẻ không hợp lệ.",
+  "authInviteCodeErrorAlreadyUsed": "Mã mời đó đã được dùng hoặc đã bị thu hồi.",
+  "authInviteGateErrorCreatorFull": "Nhà sáng tạo này đã hết lời mời",
+  "authInviteGateErrorUnavailable": "Mã mời đó không khả dụng. Hãy tham gia danh sách chờ, chúng tôi sẽ gửi lời mời khi còn chỗ.",
+  "authInviteGateErrorCheckFailed": "Chúng tôi không kiểm tra được mã đó. Hãy thử lại.",
+  "authInviteGateErrorUnknown": "Đã xảy ra lỗi. Hãy thử lại mã mời của bạn.",
   "authInviteErrorAlreadyUsed": "Mã mời đó không còn khả dụng. Quay lại mã mời của bạn, tham gia danh sách chờ, hoặc liên hệ hỗ trợ.",
   "authInviteErrorInvalid": "Mã mời đó hiện không dùng được. Quay lại mã mời của bạn, tham gia danh sách chờ, hoặc liên hệ hỗ trợ.",
   "authInviteErrorTemporary": "Bọn mình chưa xác nhận được mã mời của bạn. Quay lại mã mời và thử lại, hoặc liên hệ hỗ trợ.",
@@ -3449,6 +3456,7 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "Không lưu được vào {destination}",
   "libraryGalleryPermissionDenied": "Quyền truy cập {destination} bị từ chối",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {
@@ -4630,6 +4638,8 @@
   "cameraPermissionWebUnsupportedTitle": "Chưa hỗ trợ camera trên web",
   "cameraPermissionWebUnsupportedDescription": "Chưa thể quay và ghi hình trong phiên bản web.",
   "cameraPermissionBackToFeed": "Quay lại bảng tin",
+  "cameraCouldNotStart": "Không khởi động được máy ảnh",
+  "cameraUnsupportedPlatform": "Máy ảnh chưa khả dụng trên nền tảng này.\nBạn vẫn có thể duyệt và xem video.",
   "cameraPermissionErrorTitle": "Lỗi quyền truy cập",
   "cameraPermissionErrorDescription": "Có gì đó không ổn khi kiểm tra quyền.",
   "cameraPermissionRetry": "Thử lại",

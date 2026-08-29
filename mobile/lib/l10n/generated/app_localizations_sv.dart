@@ -3517,6 +3517,34 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kodinmatning är inte tillgänglig just nu. Tryck på länken i din e-post eller skicka igen för att få en ny.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Ange en inbjudningskod som ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Den inbjudningskoden ser inte giltig ut.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Den inbjudningskoden är redan använd eller återkallad.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Den här kreatörens inbjudningar är slut';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Den inbjudningskoden är inte tillgänglig. Ställ dig i kön så skickar vi en inbjudan när det finns plats.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Vi kunde inte kontrollera koden. Försök igen.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Något gick fel. Försök med din inbjudningskod igen.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Den inbjudningskoden är inte längre tillgänglig. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.';
 
@@ -6142,6 +6170,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Det gick inte att spara till $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Behörighet nekad för $destination';
   }
@@ -8032,6 +8065,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Tillbaka till flödet';
+
+  @override
+  String get cameraCouldNotStart => 'Det gick inte att starta kameran';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Kameran är inte tillgänglig på den här plattformen än.\nDu kan fortfarande bläddra och titta på videor.';
 
   @override
   String get cameraPermissionErrorTitle => 'Behörighetsfel';

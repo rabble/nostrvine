@@ -536,8 +536,14 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                   ),
                   error: true,
                 );
-              case GallerySaveResultError(:final message):
-                _showSnackBar(context, label: message, error: true);
+              case GallerySaveResultError():
+                _showSnackBar(
+                  context,
+                  label: context.l10n.libraryClipsSaveFailed(
+                    GallerySaveService.destinationName,
+                  ),
+                  error: true,
+                );
             }
           },
         ),

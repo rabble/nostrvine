@@ -845,6 +845,13 @@
     "authVerificationErrorPinLocked": "시도 횟수가 너무 많아요. 다시 보내기를 탭해서 새 코드를 받으세요.",
     "authVerificationErrorPinFailed": "코드를 확인할 수 없어요. 다시 시도해주세요.",
     "authVerificationErrorPinUnavailable": "지금은 코드 입력을 사용할 수 없어요. 이메일의 링크를 탭하거나 다시 보내기로 새 코드를 받으세요.",
+    "authInviteCodeErrorMalformed": "ABCD-EFGH 형식의 초대 코드를 입력해요.",
+    "authInviteCodeErrorNotFound": "그 초대 코드는 올바르지 않은 것 같아요.",
+    "authInviteCodeErrorAlreadyUsed": "그 초대 코드는 이미 사용했거나 취소됐어요.",
+    "authInviteGateErrorCreatorFull": "이 크리에이터의 초대장이 모두 소진됐어요",
+    "authInviteGateErrorUnavailable": "그 초대 코드는 사용할 수 없어요. 대기자 명단에 등록하면 자리가 나는 대로 초대장을 보내드릴게요.",
+    "authInviteGateErrorCheckFailed": "그 코드를 확인할 수 없었어요. 다시 시도해 주세요.",
+    "authInviteGateErrorUnknown": "문제가 생겼어요. 초대 코드를 다시 시도해 주세요.",
     "authInviteErrorAlreadyUsed": "그 초대 코드는 더 이상 쓸 수 없어요. 초대 코드로 돌아가거나, 대기자 명단에 등록하거나, 고객센터에 문의해주세요.",
     "authInviteErrorInvalid": "그 초대 코드는 지금 쓸 수 없어요. 초대 코드로 돌아가거나, 대기자 명단에 등록하거나, 고객센터에 문의해주세요.",
     "authInviteErrorTemporary": "지금은 초대 코드를 확인할 수 없어요. 초대 코드로 돌아가서 다시 시도하거나 고객센터에 문의해주세요.",
@@ -1711,6 +1718,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "{destination}에 저장할 수 없어요",
     "libraryGalleryPermissionDenied": "{destination} 권한이 거부되었어요",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
@@ -1981,6 +1989,8 @@
     "cameraPermissionWebUnsupportedTitle": "카메라는 아직 웹에서 지원되지 않습니다",
     "cameraPermissionWebUnsupportedDescription": "카메라 촬영 및 녹화는 웹 버전에서 아직 사용할 수 없습니다.",
     "cameraPermissionBackToFeed": "피드로 돌아가기",
+    "cameraCouldNotStart": "카메라를 시작할 수 없어요",
+    "cameraUnsupportedPlatform": "이 플랫폼에서는 아직 카메라를 사용할 수 없어요.\n영상 둘러보기와 재생은 계속할 수 있어요.",
     "cameraPermissionErrorTitle": "권한 오류",
     "cameraPermissionErrorDescription": "권한을 확인하는 중 문제가 발생했습니다.",
     "cameraPermissionRetry": "다시 시도",

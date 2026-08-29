@@ -3516,6 +3516,34 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kemasukan kod tidak tersedia sekarang. Ketik pautan dalam e-mel anda, atau hantar semula untuk mendapatkan yang baharu.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Masukkan kod jemputan seperti ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Kod jemputan itu nampaknya tidak sah.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Kod jemputan itu telah digunakan atau dibatalkan.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Jemputan pencipta ini telah habis';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Kod jemputan itu tidak tersedia. Sertai senarai menunggu dan kami akan menghantar jemputan sebaik ada tempat.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Kami tidak dapat menyemak kod itu. Cuba lagi.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Ada sesuatu yang tidak kena. Cuba kod jemputan anda sekali lagi.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Kod jemputan itu tidak lagi tersedia. Kembali ke kod jemputan anda, sertai senarai menunggu, atau hubungi sokongan.';
 
@@ -6158,6 +6186,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Tidak dapat menyimpan ke $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Kebenaran $destination ditolak';
   }
@@ -8050,6 +8083,13 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'Kembali ke suapan';
+
+  @override
+  String get cameraCouldNotStart => 'Tidak dapat memulakan kamera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Kamera belum tersedia pada platform ini.\nAnda masih boleh melayari dan menonton video.';
 
   @override
   String get cameraPermissionErrorTitle => 'Ralat Kebenaran';

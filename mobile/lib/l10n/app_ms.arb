@@ -1855,6 +1855,13 @@
   "authVerificationErrorPinLocked": "Terlalu banyak percubaan. Ketik hantar semula untuk mendapatkan kod baharu.",
   "authVerificationErrorPinFailed": "Kami tidak dapat mengesahkan kod itu. Sila cuba lagi.",
   "authVerificationErrorPinUnavailable": "Kemasukan kod tidak tersedia sekarang. Ketik pautan dalam e-mel anda, atau hantar semula untuk mendapatkan yang baharu.",
+  "authInviteCodeErrorMalformed": "Masukkan kod jemputan seperti ABCD-EFGH.",
+  "authInviteCodeErrorNotFound": "Kod jemputan itu nampaknya tidak sah.",
+  "authInviteCodeErrorAlreadyUsed": "Kod jemputan itu telah digunakan atau dibatalkan.",
+  "authInviteGateErrorCreatorFull": "Jemputan pencipta ini telah habis",
+  "authInviteGateErrorUnavailable": "Kod jemputan itu tidak tersedia. Sertai senarai menunggu dan kami akan menghantar jemputan sebaik ada tempat.",
+  "authInviteGateErrorCheckFailed": "Kami tidak dapat menyemak kod itu. Cuba lagi.",
+  "authInviteGateErrorUnknown": "Ada sesuatu yang tidak kena. Cuba kod jemputan anda sekali lagi.",
   "authInviteErrorAlreadyUsed": "Kod jemputan itu tidak lagi tersedia. Kembali ke kod jemputan anda, sertai senarai menunggu, atau hubungi sokongan.",
   "authInviteErrorInvalid": "Kod jemputan itu tidak boleh digunakan sekarang. Kembali ke kod jemputan anda, sertai senarai menunggu, atau hubungi sokongan.",
   "authInviteErrorTemporary": "Kami tidak dapat mengesahkan jemputan anda sekarang. Kembali ke kod jemputan anda dan cuba lagi, atau hubungi sokongan.",
@@ -3449,6 +3456,7 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "Tidak dapat menyimpan ke {destination}",
   "libraryGalleryPermissionDenied": "Kebenaran {destination} ditolak",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {
@@ -4630,6 +4638,8 @@
   "cameraPermissionWebUnsupportedTitle": "Kamera belum disokong di web",
   "cameraPermissionWebUnsupportedDescription": "Penangkapan dan rakaman kamera belum tersedia dalam versi web.",
   "cameraPermissionBackToFeed": "Kembali ke suapan",
+  "cameraCouldNotStart": "Tidak dapat memulakan kamera",
+  "cameraUnsupportedPlatform": "Kamera belum tersedia pada platform ini.\nAnda masih boleh melayari dan menonton video.",
   "cameraPermissionErrorTitle": "Ralat Kebenaran",
   "cameraPermissionErrorDescription": "Sesuatu telah berlaku semasa menyemak kebenaran.",
   "cameraPermissionRetry": "Cuba Semula",

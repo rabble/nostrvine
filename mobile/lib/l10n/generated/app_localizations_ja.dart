@@ -3297,6 +3297,28 @@ class AppLocalizationsJa extends AppLocalizations {
       '今はコード入力が使えないよ。メールのリンクをタップするか、再送信で新しいのをもらってね。';
 
   @override
+  String get authInviteCodeErrorMalformed => 'ABCD-EFGH のような招待コードを入力してください。';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'その招待コードは有効ではないようです。';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed => 'その招待コードはすでに使用済みか、無効になっています。';
+
+  @override
+  String get authInviteGateErrorCreatorFull => 'このクリエイターの招待枠はいっぱいです';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'その招待コードは利用できません。順番待ちリストに登録すると、空きが出しだい招待をお送りします。';
+
+  @override
+  String get authInviteGateErrorCheckFailed => 'そのコードを確認できませんでした。もう一度お試しください。';
+
+  @override
+  String get authInviteGateErrorUnknown => '問題が発生しました。招待コードをもう一度お試しください。';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'その招待コードはもう使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。';
 
@@ -5838,6 +5860,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '$destinationに保存できませんでした';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destinationの権限が拒否されました';
   }
@@ -7653,6 +7680,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cameraPermissionBackToFeed => 'フィードに戻る';
+
+  @override
+  String get cameraCouldNotStart => 'カメラを起動できませんでした';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'このプラットフォームではカメラをまだ利用できません。\n動画の閲覧と視聴はできます。';
 
   @override
   String get cameraPermissionErrorTitle => '権限エラー';
