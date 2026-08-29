@@ -4734,9 +4734,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mga paglabag na hindi nakalista sa itaas';
 
   @override
-  String reportFailed(Object error) {
-    return 'Hindi na-report ang content: $error';
-  }
+  String get reportFailed => 'Hindi na-report ang content. Subukan ulit.';
 
   @override
   String get reportNotSent =>

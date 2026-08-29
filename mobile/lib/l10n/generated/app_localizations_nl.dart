@@ -4721,9 +4721,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Overtredingen die hierboven niet staan';
 
   @override
-  String reportFailed(Object error) {
-    return 'Inhoud melden mislukt: $error';
-  }
+  String get reportFailed => 'Inhoud melden mislukt. Probeer het opnieuw.';
 
   @override
   String get reportNotSent =>

@@ -4762,9 +4762,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verstöße, die oben nicht aufgeführt sind';
 
   @override
-  String reportFailed(Object error) {
-    return 'Inhalt konnte nicht gemeldet werden: $error';
-  }
+  String get reportFailed =>
+      'Inhalt konnte nicht gemeldet werden. Bitte versuch es nochmal.';
 
   @override
   String get reportNotSent =>

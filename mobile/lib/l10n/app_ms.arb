@@ -2413,7 +2413,7 @@
   "reportReasonAiGeneratedSubtitle": "Kandungan yang disyaki dijana AI",
   "reportReasonOther": "Pelanggaran Dasar Lain",
   "reportReasonOtherSubtitle": "Pelanggaran yang tidak disenaraikan di atas",
-  "reportFailed": "Gagal melaporkan kandungan: {error}",
+  "reportFailed": "Gagal melaporkan kandungan. Sila cuba lagi.",
   "@reportFailed": {
     "placeholders": {
       "error": {

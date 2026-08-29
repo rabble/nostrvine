@@ -1645,7 +1645,7 @@
     "reportReasonFalseInfo": "Informazioni false",
     "reportReasonAiGenerated": "Contenuto generato da IA",
     "reportReasonOther": "Altra violazione delle policy",
-    "reportFailed": "Impossibile segnalare il contenuto: {error}",
+    "reportFailed": "Impossibile segnalare il contenuto. Riprova.",
     "@reportFailed": {
         "placeholders": {
             "error": {

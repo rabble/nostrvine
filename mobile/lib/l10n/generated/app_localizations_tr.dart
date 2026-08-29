@@ -4640,9 +4640,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Yukarıda listelenmeyen ihlaller';
 
   @override
-  String reportFailed(Object error) {
-    return 'İçerik bildirilemedi: $error';
-  }
+  String get reportFailed => 'İçerik bildirilemedi. Lütfen tekrar dene.';
 
   @override
   String get reportNotSent =>

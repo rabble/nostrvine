@@ -1645,7 +1645,7 @@
     "reportReasonFalseInfo": "Valse informatie",
     "reportReasonAiGenerated": "AI-gegenereerde inhoud",
     "reportReasonOther": "Andere beleidsschending",
-    "reportFailed": "Inhoud melden mislukt: {error}",
+    "reportFailed": "Inhoud melden mislukt. Probeer het opnieuw.",
     "@reportFailed": {
         "placeholders": {
             "error": {

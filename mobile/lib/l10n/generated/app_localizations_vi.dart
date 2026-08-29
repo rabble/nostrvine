@@ -4669,9 +4669,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Các vi phạm không có trong danh sách trên';
 
   @override
-  String reportFailed(Object error) {
-    return 'Không báo cáo được nội dung: $error';
-  }
+  String get reportFailed => 'Không báo cáo được nội dung. Vui lòng thử lại.';
 
   @override
   String get reportNotSent =>

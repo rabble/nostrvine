@@ -4583,9 +4583,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'ከላይ ያልተዘረዘሩ ጥሰቶች';
 
   @override
-  String reportFailed(Object error) {
-    return 'ይዘትን ሪፖርት ማድረግ አልተሳካም፦ $error';
-  }
+  String get reportFailed => 'ይዘትን ሪፖርት ማድረግ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get reportNotSent => 'ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';

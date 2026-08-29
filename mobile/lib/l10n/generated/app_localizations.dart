@@ -8060,8 +8060,8 @@ abstract class AppLocalizations {
   /// No description provided for @reportFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to report content: {error}'**
-  String reportFailed(Object error);
+  /// **'Failed to report content. Please try again.'**
+  String get reportFailed;
 
   /// Shown when a submitted report reached no channel off the device — every publish target refused it, which in practice almost always means no connectivity. Covers both content and user reports, so it must not name either subject.
   ///

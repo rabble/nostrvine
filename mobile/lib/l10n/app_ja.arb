@@ -1635,7 +1635,7 @@
     "reportReasonFalseInfo": "虚偽の情報",
     "reportReasonAiGenerated": "AI 生成コンテンツ",
     "reportReasonOther": "その他のポリシー違反",
-    "reportFailed": "コンテンツの報告がうまくいかなかった: {error}",
+    "reportFailed": "コンテンツの報告がうまくいかなかった。もう一回試してみて。",
     "@reportFailed": {
         "placeholders": {
             "error": {

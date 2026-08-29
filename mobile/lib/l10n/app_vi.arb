@@ -2413,7 +2413,7 @@
   "reportReasonAiGeneratedSubtitle": "Nghi ngờ nội dung do AI tạo ra",
   "reportReasonOther": "Vi phạm chính sách khác",
   "reportReasonOtherSubtitle": "Các vi phạm không có trong danh sách trên",
-  "reportFailed": "Không báo cáo được nội dung: {error}",
+  "reportFailed": "Không báo cáo được nội dung. Vui lòng thử lại.",
   "@reportFailed": {
     "placeholders": {
       "error": {

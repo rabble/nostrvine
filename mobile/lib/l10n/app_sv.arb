@@ -1645,7 +1645,7 @@
     "reportReasonFalseInfo": "Felaktig information",
     "reportReasonAiGenerated": "AI-genererat innehåll",
     "reportReasonOther": "Annat policybrott",
-    "reportFailed": "Kunde inte rapportera innehåll: {error}",
+    "reportFailed": "Kunde inte rapportera innehåll. Försök igen.",
     "@reportFailed": {
         "placeholders": {
             "error": {

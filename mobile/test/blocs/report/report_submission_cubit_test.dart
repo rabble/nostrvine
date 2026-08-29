@@ -115,7 +115,7 @@ void main() {
       ),
     );
 
-    Future<String?> submit(ReportSubmissionCubit cubit) => cubit.submit(
+    Future<void> submit(ReportSubmissionCubit cubit) => cubit.submit(
       reason: ContentFilterReason.spam,
       reasonTitle: 'Spam',
       details: 'Spam',
@@ -176,8 +176,10 @@ void main() {
       final cubit = buildCubit();
       addTearDown(cubit.close);
 
-      // The detail is returned, never emitted: state carries no error strings.
-      expect(await submit(cubit), equals('Not authenticated'));
+      await submit(cubit);
+
+      // #3589: the service's prose is logged, never returned and never
+      // emitted. The status is the whole contract the UI reads.
       expect(cubit.state.status, ReportSubmissionStatus.failure);
     });
 

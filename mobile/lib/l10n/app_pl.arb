@@ -1645,7 +1645,7 @@
     "reportReasonFalseInfo": "Fałszywe informacje",
     "reportReasonAiGenerated": "Treść wygenerowana przez AI",
     "reportReasonOther": "Inne naruszenie regulaminu",
-    "reportFailed": "Nie udało się zgłosić treści: {error}",
+    "reportFailed": "Nie udało się zgłosić treści. Spróbuj ponownie.",
     "@reportFailed": {
         "placeholders": {
             "error": {

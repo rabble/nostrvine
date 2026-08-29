@@ -2413,7 +2413,7 @@
   "reportReasonAiGeneratedSubtitle": "مشتبہ AI تیار کردہ مواد",
   "reportReasonOther": "پالیسی کی دیگر خلاف ورزی",
   "reportReasonOtherSubtitle": "اوپر درج نہیں کی گئی خلاف ورزیاں",
-  "reportFailed": "مواد کی رپورٹ ناکام: {error}",
+  "reportFailed": "مواد کی رپورٹ ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
   "@reportFailed": {
     "placeholders": {
       "error": {

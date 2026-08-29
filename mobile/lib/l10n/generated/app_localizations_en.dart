@@ -4787,9 +4787,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
-  String reportFailed(Object error) {
-    return 'Failed to report content: $error';
-  }
+  String get reportFailed => 'Failed to report content. Please try again.';
 
   @override
   String get reportNotSent =>

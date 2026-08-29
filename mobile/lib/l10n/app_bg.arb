@@ -1851,7 +1851,7 @@
     "reportReasonFalseInfo": "Невярна информация",
     "reportReasonAiGenerated": "AI-генерирано съдържание",
     "reportReasonOther": "Друго нарушение на правилата",
-    "reportFailed": "Неуспешно докладване на съдържание: {error}",
+    "reportFailed": "Неуспешно докладване на съдържание. Опитай пак.",
     "@reportFailed": {
         "placeholders": {
             "error": {

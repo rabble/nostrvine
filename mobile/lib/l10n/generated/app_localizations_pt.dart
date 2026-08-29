@@ -4732,9 +4732,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Violações não listadas acima';
 
   @override
-  String reportFailed(Object error) {
-    return 'Falha ao denunciar conteúdo: $error';
-  }
+  String get reportFailed =>
+      'Falha ao denunciar conteúdo. Por favor, tente novamente.';
 
   @override
   String get reportNotSent =>

@@ -1180,7 +1180,7 @@
     "reportReasonFalseInfo": "Maling Impormasyon",
     "reportReasonAiGenerated": "AI-Generated na Content",
     "reportReasonOther": "Iba pang Paglabag sa Patakaran",
-    "reportFailed": "Hindi na-report ang content: {error}",
+    "reportFailed": "Hindi na-report ang content. Subukan ulit.",
     "reportNotSent": "Hindi naipadala ang report mo. Tingnan ang koneksyon mo at subukan ulit.",
     "reportReceivedTitle": "Natanggap ang Report",
     "reportReceivedThankYou": "Salamat sa pagtulong panatilihing ligtas ang Divine.",

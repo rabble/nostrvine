@@ -4698,9 +4698,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Överträdelser som inte listas ovan';
 
   @override
-  String reportFailed(Object error) {
-    return 'Kunde inte rapportera innehåll: $error';
-  }
+  String get reportFailed => 'Kunde inte rapportera innehåll. Försök igen.';
 
   @override
   String get reportNotSent =>

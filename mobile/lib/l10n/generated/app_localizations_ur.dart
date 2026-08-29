@@ -4704,9 +4704,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'اوپر درج نہیں کی گئی خلاف ورزیاں';
 
   @override
-  String reportFailed(Object error) {
-    return 'مواد کی رپورٹ ناکام: $error';
-  }
+  String get reportFailed => 'مواد کی رپورٹ ناکام۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get reportNotSent =>

@@ -2413,7 +2413,7 @@
   "reportReasonAiGeneratedSubtitle": "疑似 AI 生成的内容",
   "reportReasonOther": "其他违规",
   "reportReasonOtherSubtitle": "以上未列出的违规行为",
-  "reportFailed": "举报内容失败：{error}",
+  "reportFailed": "举报内容失败，请重试。",
   "@reportFailed": {
     "placeholders": {
       "error": {

@@ -2031,7 +2031,7 @@
     "reportReasonFalseInfo": "የውሸት መረጃ",
     "reportReasonAiGenerated": "በAI የተፈጠረ ይዘት",
     "reportReasonOther": "ሌላ የፖሊሲ ጥሰት",
-    "reportFailed": "ይዘትን ሪፖርት ማድረግ አልተሳካም፦ {error}",
+    "reportFailed": "ይዘትን ሪፖርት ማድረግ አልተሳካም። እባክህ እንደገና ሞክር።",
     "@reportFailed": {
         "placeholders": {
             "error": {

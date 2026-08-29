@@ -1642,7 +1642,7 @@
     "reportReasonFalseInfo": "Informasi Salah",
     "reportReasonAiGenerated": "Konten Dihasilkan AI",
     "reportReasonOther": "Pelanggaran Kebijakan Lainnya",
-    "reportFailed": "Gagal melaporkan konten: {error}",
+    "reportFailed": "Gagal melaporkan konten. Silakan coba lagi.",
     "@reportFailed": {
         "placeholders": {
             "error": {

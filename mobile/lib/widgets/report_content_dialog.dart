@@ -405,7 +405,7 @@ class _ReportContentViewState extends State<_ReportContentView> {
     final detailsText = _detailsController.text.trim();
     final details = detailsText.isEmpty ? selectedReasonTitle : detailsText;
 
-    final failureDetail = await cubit.submit(
+    await cubit.submit(
       reason: reason,
       reasonTitle: selectedReasonTitle,
       details: details,
@@ -418,9 +418,7 @@ class _ReportContentViewState extends State<_ReportContentView> {
         // Nothing left the device, so the confirmation would be false in four
         // places at once. Surface the failure and leave Submit live.
         ReportSubmissionStatus.notSent => l10n.reportNotSent,
-        ReportSubmissionStatus.failure => l10n.reportFailed(
-          failureDetail ?? '',
-        ),
+        ReportSubmissionStatus.failure => l10n.reportFailed,
         _ => null,
       };
     });

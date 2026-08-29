@@ -1145,7 +1145,7 @@
     "reportReasonFalseInfo": "허위 정보",
     "reportReasonAiGenerated": "AI 생성 콘텐츠",
     "reportReasonOther": "기타 정책 위반",
-    "reportFailed": "콘텐츠 신고에 실패했어요: {error}",
+    "reportFailed": "콘텐츠 신고에 실패했어요. 다시 시도해보세요.",
     "@reportFailed": {
         "placeholders": {
             "error": {

@@ -4823,9 +4823,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Naruszenia niewymienione powyżej';
 
   @override
-  String reportFailed(Object error) {
-    return 'Nie udało się zgłosić treści: $error';
-  }
+  String get reportFailed => 'Nie udało się zgłosić treści. Spróbuj ponownie.';
 
   @override
   String get reportNotSent =>

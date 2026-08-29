@@ -4839,9 +4839,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încălcări care nu sunt listate mai sus';
 
   @override
-  String reportFailed(Object error) {
-    return 'N-am putut raporta conținutul: $error';
-  }
+  String get reportFailed => 'N-am putut raporta conținutul. Încearcă din nou.';
 
   @override
   String get reportNotSent =>

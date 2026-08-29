@@ -1645,7 +1645,7 @@
     "reportReasonFalseInfo": "Falschinformationen",
     "reportReasonAiGenerated": "KI-generierter Inhalt",
     "reportReasonOther": "Andere Richtlinienverletzung",
-    "reportFailed": "Inhalt konnte nicht gemeldet werden: {error}",
+    "reportFailed": "Inhalt konnte nicht gemeldet werden. Bitte versuch es nochmal.",
     "@reportFailed": {
         "placeholders": {
             "error": {

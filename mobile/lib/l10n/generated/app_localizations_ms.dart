@@ -4703,9 +4703,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pelanggaran yang tidak disenaraikan di atas';
 
   @override
-  String reportFailed(Object error) {
-    return 'Gagal melaporkan kandungan: $error';
-  }
+  String get reportFailed => 'Gagal melaporkan kandungan. Sila cuba lagi.';
 
   @override
   String get reportNotSent =>

@@ -1635,7 +1635,7 @@
     "reportReasonFalseInfo": "معلومات كاذبة",
     "reportReasonAiGenerated": "محتوى مُولَّد بالذكاء الاصطناعي",
     "reportReasonOther": "انتهاك آخر للسياسة",
-    "reportFailed": "تعذر الإبلاغ عن المحتوى: {error}",
+    "reportFailed": "تعذر الإبلاغ عن المحتوى. يرجى المحاولة مرّة أخرى.",
     "@reportFailed": {
         "placeholders": {
             "error": {

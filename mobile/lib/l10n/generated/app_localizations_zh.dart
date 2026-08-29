@@ -4395,9 +4395,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportReasonOtherSubtitle => '以上未列出的违规行为';
 
   @override
-  String reportFailed(Object error) {
-    return '举报内容失败：$error';
-  }
+  String get reportFailed => '举报内容失败，请重试。';
 
   @override
   String get reportNotSent => '举报发送失败。请检查连接后重试。';

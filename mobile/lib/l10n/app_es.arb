@@ -1649,7 +1649,7 @@
     "reportReasonFalseInfo": "Información falsa",
     "reportReasonAiGenerated": "Contenido generado por IA",
     "reportReasonOther": "Otra violación de políticas",
-    "reportFailed": "No se pudo reportar el contenido: {error}",
+    "reportFailed": "No se pudo reportar el contenido. Intentalo de nuevo.",
     "@reportFailed": {
         "placeholders": {
             "error": {

@@ -4752,9 +4752,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Нарушения, които не са изброени по-горе';
 
   @override
-  String reportFailed(Object error) {
-    return 'Неуспешно докладване на съдържание: $error';
-  }
+  String get reportFailed => 'Неуспешно докладване на съдържание. Опитай пак.';
 
   @override
   String get reportNotSent =>

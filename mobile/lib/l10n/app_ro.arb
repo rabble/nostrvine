@@ -1645,7 +1645,7 @@
     "reportReasonFalseInfo": "Informații false",
     "reportReasonAiGenerated": "Conținut generat de AI",
     "reportReasonOther": "Altă încălcare a politicii",
-    "reportFailed": "N-am putut raporta conținutul: {error}",
+    "reportFailed": "N-am putut raporta conținutul. Încearcă din nou.",
     "@reportFailed": {
         "placeholders": {
             "error": {

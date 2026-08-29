@@ -1642,7 +1642,7 @@
     "reportReasonFalseInfo": "Yanlış Bilgi",
     "reportReasonAiGenerated": "Yapay Zeka Üretimi İçerik",
     "reportReasonOther": "Diğer Politika İhlali",
-    "reportFailed": "İçerik bildirilemedi: {error}",
+    "reportFailed": "İçerik bildirilemedi. Lütfen tekrar dene.",
     "@reportFailed": {
         "placeholders": {
             "error": {

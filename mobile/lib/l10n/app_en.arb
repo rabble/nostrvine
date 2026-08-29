@@ -2905,14 +2905,7 @@
   "reportReasonAiGeneratedSubtitle": "Suspected AI-generated content",
   "reportReasonOther": "Other Policy Violation",
   "reportReasonOtherSubtitle": "Violations not listed above",
-  "reportFailed": "Failed to report content: {error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "Failed to report content. Please try again.",
   "reportNotSent": "Couldn't send your report. Check your connection and try again.",
   "@reportNotSent": {
     "description": "Shown when a submitted report reached no channel off the device — every publish target refused it, which in practice almost always means no connectivity. Covers both content and user reports, so it must not name either subject."

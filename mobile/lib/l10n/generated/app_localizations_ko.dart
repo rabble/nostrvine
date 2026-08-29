@@ -4430,9 +4430,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonOtherSubtitle => '위에 나열되지 않은 위반';
 
   @override
-  String reportFailed(Object error) {
-    return '콘텐츠 신고에 실패했어요: $error';
-  }
+  String get reportFailed => '콘텐츠 신고에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get reportNotSent => '신고를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해보세요.';

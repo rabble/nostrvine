@@ -4415,9 +4415,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportReasonOtherSubtitle => '上記に記載されていない違反';
 
   @override
-  String reportFailed(Object error) {
-    return 'コンテンツの報告がうまくいかなかった: $error';
-  }
+  String get reportFailed => 'コンテンツの報告がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get reportNotSent => '報告を送信できなかった。接続を確認してもう一回試してみて。';
