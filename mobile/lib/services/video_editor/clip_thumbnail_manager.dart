@@ -447,7 +447,11 @@ class ClipThumbnailManager {
       if (live.contains(thumb.path)) continue;
       try {
         File(thumb.path).deleteSync();
-      } catch (_) {}
+      } catch (_) {
+        // Best-effort cleanup; temp cache can be reaped by the OS later. The
+        // frame is already unreferenced, and a strip can borrow a path a
+        // sibling clip already deleted, so a missing file is the common case.
+      }
     }
   }
 
@@ -455,7 +459,9 @@ class ClipThumbnailManager {
     for (final thumb in thumbnails) {
       try {
         File(thumb.path).deleteSync();
-      } catch (_) {}
+      } catch (_) {
+        // Best-effort cleanup; temp cache can be reaped by the OS later.
+      }
     }
   }
 

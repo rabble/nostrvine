@@ -1208,7 +1208,21 @@ class VideoRecorderBloc
     } finally {
       try {
         await File(workCopyPath).delete();
-      } catch (_) {}
+      } catch (e) {
+        // Swallowed, but not silent: this runs in a finally, so throwing would
+        // replace the enrichment result with a cleanup error. The copy lives
+        // beside the recording in the documents directory, which no sweeper
+        // covers — the media cache budget is temp-only, storage management
+        // clears only the seam dir, and clip recovery deliberately skips
+        // `.work.mp4`. A leak is therefore permanent and full clip size, and
+        // this method created the file itself, so a failure is unexpected
+        // rather than routine.
+        Log.warning(
+          'Work copy cleanup failed for $workCopyPath: $e',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+      }
     }
   }
 
@@ -2294,9 +2308,7 @@ class VideoRecorderBloc
         category: LogCategory.system,
       );
     }
-    try {
-      await WakelockPlus.disable();
-    } catch (_) {}
+    await _disableWakelockSafely();
     try {
       await _cameraService.dispose();
     } catch (e) {

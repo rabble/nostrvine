@@ -89,6 +89,23 @@ void main() {
 
         expect(mocks.secureStorage, isEmpty);
       });
+
+      test('clearBunker swallows a storage delete failure', () async {
+        // AuthService calls _clearBunkerInfo() unguarded on both the normal
+        // and the post-key-deletion sign-out paths (#3588). Those callers rely
+        // on this method absorbing and logging a keychain failure itself; if it
+        // ever started throwing, a destructive sign-out would abort partway and
+        // strand the session authenticated-in-memory with no keys on disk.
+        final throwingStorage = _MockSecureStorage();
+        when(
+          () => throwingStorage.delete(key: any(named: 'key')),
+        ).thenThrow(Exception('keychain unavailable'));
+
+        await expectLater(
+          SignerSecureStore(throwingStorage).clearBunker(),
+          completes,
+        );
+      });
     });
 
     group('amber (NIP-55)', () {
@@ -133,6 +150,21 @@ void main() {
         await nullStore.clearAmber();
 
         expect(mocks.secureStorage, isEmpty);
+      });
+
+      test('clearAmber swallows a storage delete failure', () async {
+        // Same contract as clearBunker: AuthService clears Amber info
+        // unguarded on the sign-out paths (#3588), so a keychain failure must
+        // be absorbed and logged here rather than aborting the sign-out.
+        final throwingStorage = _MockSecureStorage();
+        when(
+          () => throwingStorage.delete(key: any(named: 'key')),
+        ).thenThrow(Exception('keychain unavailable'));
+
+        await expectLater(
+          SignerSecureStore(throwingStorage).clearAmber(),
+          completes,
+        );
       });
     });
 

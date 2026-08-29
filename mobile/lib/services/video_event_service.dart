@@ -2360,33 +2360,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           return;
         }
 
-        // 🎯 CACHE DEBUG: Log cached event details
-        if (cachedEvents.isNotEmpty &&
-            subscriptionType == SubscriptionType.discovery) {
-          final loopCounts = <int>[];
-          for (final event in cachedEvents) {
-            try {
-              final videoEvent = VideoEvent.fromNostrEvent(event);
-              loopCounts.add(videoEvent.originalLoops ?? 0);
-            } catch (_) {}
-          }
-          loopCounts.sort((a, b) => b.compareTo(a)); // Sort descending
-          final maxLoops = loopCounts.isNotEmpty ? loopCounts.first : 0;
-          final minLoops = loopCounts.isNotEmpty ? loopCounts.last : 0;
-          Log.info(
-            '🎯 CACHE DEBUG: Loaded ${cachedEvents.length} cached discovery videos, loop range: $maxLoops - $minLoops',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          if (loopCounts.length >= 5) {
-            Log.info(
-              '🎯 CACHE DEBUG: Top 5 cached loop counts: ${loopCounts.take(5).join(", ")}',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-          }
-        }
-
         // Process cached events immediately (same flow as relay events, minus
         // the write-back — they were just read out of the store).
         for (final event in cachedEvents) {
@@ -2404,9 +2377,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           completeFeedLoadTrace('cache', eventTotal: cachedEvents.length);
         }
 
-        // 🎯 RELAY DEBUG: Track loop counts from relay
-        final relayLoopCounts = <int>[];
-
         final eventStream = _nostrService.subscribe(
           filters,
           onEose: () {
@@ -2421,26 +2391,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               name: 'VideoEventService',
               category: LogCategory.video,
             );
-
-            // 🎯 RELAY DEBUG: Summarize relay loop counts at EOSE
-            if (subscriptionType == SubscriptionType.discovery &&
-                relayLoopCounts.isNotEmpty) {
-              relayLoopCounts.sort((a, b) => b.compareTo(a)); // Sort descending
-              final maxLoops = relayLoopCounts.first;
-              final minLoops = relayLoopCounts.last;
-              Log.info(
-                '🎯 RELAY DEBUG: Relay returned ${relayLoopCounts.length} videos, loop range: $maxLoops - $minLoops',
-                name: 'VideoEventService',
-                category: LogCategory.video,
-              );
-              if (relayLoopCounts.length >= 5) {
-                Log.info(
-                  '🎯 RELAY DEBUG: Top 5 relay loop counts: ${relayLoopCounts.take(5).join(", ")}',
-                  name: 'VideoEventService',
-                  category: LogCategory.video,
-                );
-              }
-            }
 
             // Extra logging for hashtag subscriptions
             if (subscriptionType == SubscriptionType.hashtag) {
@@ -2549,14 +2499,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
                 name: 'VideoEventService',
                 category: LogCategory.video,
               );
-            }
-
-            // 🎯 RELAY DEBUG: Track loop counts for discovery subscriptions
-            if (subscriptionType == SubscriptionType.discovery) {
-              try {
-                final videoEvent = VideoEvent.fromNostrEvent(event);
-                relayLoopCounts.add(videoEvent.originalLoops ?? 0);
-              } catch (_) {}
             }
 
             // Normal priority: the live feed is on screen, so these rows

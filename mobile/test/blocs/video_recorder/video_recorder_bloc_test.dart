@@ -94,9 +94,14 @@ class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
 /// `toggle(enable: false)`) so the best-effort teardown path can be
 /// exercised. Enabling stays a no-op so a recording can still start.
 class _ThrowingWakelockDisablePlatform extends WakelockPlusPlatformInterface {
+  int disableCalls = 0;
+
   @override
   Future<void> toggle({required bool enable}) async {
-    if (!enable) throw Exception('wakelock disable failed');
+    if (!enable) {
+      disableCalls++;
+      throw Exception('wakelock disable failed');
+    }
   }
 
   @override
@@ -2543,6 +2548,23 @@ void main() {
         await bloc.close();
         verify(() => cameraService.dispose()).called(1);
       });
+
+      test(
+        'disables wakelock without letting a failure abort cleanup',
+        () async {
+          final platform = _ThrowingWakelockDisablePlatform();
+          wakelockPlusPlatformInstance = platform;
+          addTearDown(() {
+            wakelockPlusPlatformInstance = _FakeWakelockPlatform();
+          });
+          final bloc = buildBloc();
+
+          await expectLater(bloc.close(), completes);
+
+          expect(platform.disableCalls, 1);
+          verify(() => cameraService.dispose()).called(1);
+        },
+      );
     });
 
     group('stop-motion', () {

@@ -3496,14 +3496,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _userRelays = [];
     _bunkerSigner?.close();
     _bunkerSigner = null;
-    try {
-      await _clearBunkerInfo();
-    } catch (_) {}
+    await _clearBunkerInfo();
     _amberSigner?.close();
     _amberSigner = null;
-    try {
-      await _clearAmberInfo();
-    } catch (_) {}
+    await _clearAmberInfo();
     _setKeycastSigner(null);
     _setRpcCapability(AuthRpcCapability.unavailable);
     _keyStorage.clearCache();
