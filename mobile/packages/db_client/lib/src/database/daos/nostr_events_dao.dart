@@ -17,6 +17,14 @@ part 'nostr_events_dao.g.dart';
 /// re-fetching from relays.
 const Duration defaultEventCacheExpiry = Duration(days: 1);
 
+/// `expire_at` for rows that must survive [NostrEventsDao.deleteExpiredEvents].
+///
+/// NULL cannot express this: the sweep deletes `expire_at IS NULL` rows as well
+/// as past-dated ones, so NULL means *already expired*, not *never expires*.
+/// Anything that must outlive a cold start needs a real timestamp far enough
+/// out that it never arrives in practice (#8316).
+const int neverExpiresAtUnix = 4102444800; // 2100-01-01T00:00:00Z
+
 @DriftAccessor(tables: [NostrEvents, VideoMetrics])
 class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     with _$NostrEventsDaoMixin {

@@ -1933,6 +1933,21 @@ void main() {
       });
 
       group('deleteExpiredEvents', () {
+        test('deletes legacy events with a null expiry', () async {
+          await database.customStatement('''
+            INSERT INTO event
+              (id, pubkey, created_at, kind, tags, content, sig, expire_at)
+            VALUES
+              ('legacy-null-expiry', '$testPubkey', 1000, 1, '[]',
+               'legacy', 'sig', NULL)
+          ''');
+
+          final deletedCount = await dao.deleteExpiredEvents(null);
+
+          expect(deletedCount, 1);
+          expect(await dao.getEventById('legacy-null-expiry'), isNull);
+        });
+
         test(
           'deletes events with expired timestamps using current time',
           () async {
