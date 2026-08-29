@@ -1,6 +1,5 @@
-// ABOUTME: Monitors network connectivity and relay connection status
-// ABOUTME: Provides reactive connection state updates for UI components
-// ABOUTME: Supports reconnect callbacks for sync-on-reconnect functionality
+// ABOUTME: Holds relay connection state and publishes it to UI and services
+// ABOUTME: Fed by callers via updateRelayStatus; it polls nothing itself
 
 import 'dart:async';
 
@@ -10,7 +9,15 @@ import 'package:unified_logger/unified_logger.dart';
 /// Callback type for reconnect events
 typedef OnReconnectCallback = void Function();
 
-/// Monitors connection status for relays and network connectivity
+/// Holds relay connection state and publishes changes to its listeners.
+///
+/// This is a passive store: it learns about connectivity only through
+/// [updateRelayStatus], and performs no polling or probing of its own.
+///
+/// Nothing currently calls [updateRelayStatus], so [isOnline] stays at its
+/// initial `true` for the life of the app even when every relay is down —
+/// tracked in #8331. Until that is wired up, treat [isOnline] as "not known
+/// to be offline" rather than as a live signal.
 class ConnectionStatusService extends ChangeNotifier {
   ConnectionStatusService();
 
