@@ -791,7 +791,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Agregá tu nombre, bio y foto para arrancar';
 
   @override
-  String get profilePleaseTryAgain => 'Intentalo de nuevo';
+  String get profilePleaseTryAgain => 'Probá de nuevo';
 
   @override
   String get profileSecureYourAccount => 'Asegurá tu cuenta';
