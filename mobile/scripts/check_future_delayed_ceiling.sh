@@ -40,10 +40,19 @@ emit_current() {
     -not -path "*/.dart_tool/*" -not -path "*/build/*" -not -path "*/temp/*" \
     -name "*.dart" \
     ! -name "*.g.dart" ! -name "*.freezed.dart" ! -name "*.mocks.dart" \
-    ! -name "future_delayed_detector_test.dart" \
     -print0 2>/dev/null \
-    | xargs -0 grep -lE "Future\.delayed" 2>/dev/null \
-    | sed "s#^$MOBILE_DIR/##" | LC_ALL=C sort -u || true
+  | while IFS= read -r -d '' f; do
+      # Code only, and grep -cE not -qE: `-q` exits on the first match, awk
+      # then dies of SIGPIPE, and under `set -o pipefail` the pipeline reports
+      # 141 — silently dropping every file whose match lands before awk
+      # finishes writing. Undercounting is the dangerous direction here.
+      count="$(awk -f "$SCRIPT_DIR/lib/dart_code_only.awk" "$f" 2>/dev/null \
+        | grep -cE "Future\.delayed" || true)"
+      count="${count//[[:space:]]/}"
+      if [[ "${count:-0}" -gt 0 ]]; then
+        printf '%s\n' "${f#"$MOBILE_DIR"/}"
+      fi
+    done | LC_ALL=C sort -u || true
 }
 
 print_baseline_header() {
