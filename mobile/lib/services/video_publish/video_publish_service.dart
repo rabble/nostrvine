@@ -993,7 +993,12 @@ class VideoPublishService {
       if (serverUrl != null && serverUrl.isNotEmpty) {
         return Uri.tryParse(serverUrl)?.host ?? serverUrl;
       }
-    } catch (_) {}
+    } catch (_) {
+      // Intentional no-op: the host only decorates an error message. Falling
+      // through to null renders the generic copy instead of the server-named
+      // one, which is strictly better than replacing a real publish failure
+      // with a failure to look up its server name.
+    }
     return null;
   }
 

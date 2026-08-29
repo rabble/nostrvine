@@ -366,12 +366,20 @@ class RelayDiscoveryService {
     } finally {
       try {
         await relay.disconnect();
-      } catch (_) {}
+      } catch (_) {
+        // Intentional no-op: best-effort teardown of the throwaway indexer
+        // connection. The relay list has already been returned or logged
+        // above; a failing disconnect must not mask that result.
+      }
       // Its own guard: a throw from disconnect must not skip the dispose,
       // which is what releases the socket's stream subscriptions.
       try {
         relay.dispose();
-      } catch (_) {}
+      } catch (_) {
+        // Intentional no-op: this is the last statement that touches the
+        // relay, so there is nothing left to protect and no caller above
+        // that could act on a dispose failure.
+      }
     }
   }
 
