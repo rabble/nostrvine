@@ -120,8 +120,10 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
           // page token does, so it never needed clearing here.
           overlayVisibility.clearPageOpen();
         } else if (ModalRoute.of(context)?.isCurrent ?? false) {
-          // A freshly mounted shell can still sit below a live page owner.
-          // Clear only when navigation proves the shell is the top route.
+          // `didPush` runs when this shell route is newly installed, before a
+          // branch-navigator sheet belonging to this shell can exist. Clear
+          // stale owners only when the fresh shell is also the top root route;
+          // otherwise it may still sit below a live page owner.
           overlayVisibility.clearOverlays();
         }
       }
