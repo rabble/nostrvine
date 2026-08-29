@@ -2293,6 +2293,7 @@ void main() {
           verify: (_) {
             expect(monitor.traces.single.attributes['outcome'], 'error');
           },
+          errors: () => [isA<Exception>()],
         );
       });
 

@@ -14,7 +14,7 @@
 enum CameraInitializationError {
   /// The platform refused or failed to bring the camera up. Covers every
   /// hardware, permission-adjacent and plugin failure — the distinction
-  /// between them is diagnostic, reaches logs through `addError`, and is not
+  /// between them is diagnostic, reaches the BLoC through `addError`, and is not
   /// something the user can act on differently.
   failed,
 

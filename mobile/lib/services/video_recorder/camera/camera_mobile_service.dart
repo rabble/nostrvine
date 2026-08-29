@@ -31,7 +31,7 @@ class CameraMobileService extends CameraService {
     bool enableAutoLensSwitch = false,
     bool preferUnprocessedAudio = false,
   }) async {
-    // Clear any previous error
+    _isInitialized = false;
     _initializationError = null;
 
     Log.info(
@@ -68,16 +68,19 @@ class CameraMobileService extends CameraService {
         );
       }
       _isInitialized = true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _initializationError = CameraInitializationError.failed;
       Log.error(
         '📷 Failed to initialize camera: $e',
         name: 'CameraMobileService',
         category: .video,
+        error: e,
+        stackTrace: stackTrace,
       );
+      Error.throwWithStackTrace(e, stackTrace);
+    } finally {
+      onUpdateState(forceCameraRebuild: true);
     }
-
-    onUpdateState(forceCameraRebuild: true);
   }
 
   @override

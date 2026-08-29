@@ -376,8 +376,9 @@ class VideoRecorderBloc
         preferUnprocessedAudio:
             prefs.getBool(MusicModePreferenceService.prefsKey) ?? false,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       initError = e;
+      addError(e, stackTrace);
     } finally {
       trace
         ..putAttribute('lens', initialLens.name)
