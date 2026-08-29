@@ -2431,12 +2431,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Sleutels konden niet van dit apparaat verwijderd worden. Probeer het opnieuw.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Verwijderen van sleutels mislukt: $error';
-  }
+      'Dit account kon niet van dit apparaat verwijderd worden. Probeer het opnieuw.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Account en data verwijderen';
@@ -4596,11 +4591,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Fout bij openen van $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Waarom meld je deze inhoud?';
 
   @override
@@ -5183,11 +5173,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName openen mislukt';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Fout bij openen van $pageName: $error';
   }
 
   @override
@@ -5908,11 +5893,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Lijsten laden mislukt';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Lijsten laden mislukt: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Publieke lijsten worden ontdekt...';
@@ -7736,11 +7716,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Je moet 16 jaar of ouder zijn om content te maken';
-
-  @override
-  String keyImportError(String error) {
-    return 'Fout: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

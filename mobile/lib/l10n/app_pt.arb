@@ -1635,17 +1635,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Erro ao abrir {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Por que você está denunciando este conteúdo?",
     "reportPolicyNotice": "O Divine vai agir sobre denúncias de conteúdo em até 24 horas, removendo o conteúdo e expulsando o usuário que o publicou.",
     "reportBlockUser": "Bloquear este usuário",
@@ -1864,17 +1853,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Erro ao abrir {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2137,14 +2115,6 @@
         }
     },
     "invitesTitle": "Convidar amigos",
-    "keyImportError": "Erro: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{{count} clipe excluído} other{{count} clipes excluídos}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3255,15 +3225,7 @@
     "nostrSettingsMoveAccountSubtitle": "Baixe seu arquivo e mova suas publicações e vídeos para outro relay ou servidor de mídia.",
     "nostrSettingsRemoveKeys": "Remover chaves do dispositivo",
     "nostrSettingsRemoveKeysSubtitle": "Apague sua chave privada apenas deste dispositivo. Seu conteúdo continua nos relays, mas você vai precisar do backup da nsec para acessar sua conta de novo.",
-    "nostrSettingsCouldNotRemoveKeys": "Não foi possível remover as chaves deste dispositivo. Tente novamente.",
-    "nostrSettingsFailedToRemoveKeys": "Falha ao remover chaves: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Não foi possível remover esta conta deste dispositivo. Tente novamente.",
     "nostrSettingsDeleteAccount": "Excluir conta e dados",
     "nostrSettingsDeleteAccountSubtitle": "Envia solicitações de exclusão do seu conteúdo e desconecta você neste dispositivo. Relays, clientes, índices de busca e outros dispositivos conectados podem manter cópias.",
     "safetySettingsWhatYouSee": "O QUE VOCÊ VÊ",
@@ -3342,14 +3304,6 @@
     },
     "discoverListsTitle": "Descobrir listas",
     "discoverListsFailedToLoad": "Falha ao carregar listas",
-    "discoverListsFailedToLoadWithError": "Falha ao carregar listas: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Descobrindo listas públicas...",
     "discoverListsRelayTimeout": "O relay não devolveu listas a tempo. Tente de novo.",
     "discoverListsServiceUnavailable": "Serviço indisponível.",

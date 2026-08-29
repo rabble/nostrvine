@@ -1639,17 +1639,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Error al abrir {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "¿Por qué estás reportando este contenido?",
     "reportPolicyNotice": "Divine va a actuar sobre los reportes de contenido dentro de las 24 horas, removiendo el contenido y expulsando al usuario que lo publicó.",
     "reportBlockUser": "Bloquear a este usuario",
@@ -1868,17 +1857,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Error al abrir {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2141,14 +2119,6 @@
         }
     },
     "invitesTitle": "Invitar amigos",
-    "keyImportError": "Error: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "keyImportInsecureBunkerRelay": "El relay del bunker tiene que usar wss:// (ws:// solo se permite para localhost)",
     "@keyImportInsecureBunkerRelay": {
         "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
@@ -3259,15 +3229,7 @@
     "nostrSettingsMoveAccountSubtitle": "Descarga tu archivo y mueve tus publicaciones y videos a otro relay o servidor de medios.",
     "nostrSettingsRemoveKeys": "Quitar claves del dispositivo",
     "nostrSettingsRemoveKeysSubtitle": "Eliminá tu clave privada solo de este dispositivo. Tu contenido sigue en los relays, pero vas a necesitar tu respaldo de nsec para volver a entrar a tu cuenta.",
-    "nostrSettingsCouldNotRemoveKeys": "No se pudieron quitar las claves de este dispositivo. Probá de nuevo.",
-    "nostrSettingsFailedToRemoveKeys": "Falló al quitar las claves: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "No se pudo quitar esta cuenta de este dispositivo. Probá de nuevo.",
     "nostrSettingsDeleteAccount": "Eliminar cuenta y datos",
     "nostrSettingsDeleteAccountSubtitle": "Envía solicitudes de eliminación de tu contenido y cierra tu sesión en este dispositivo. Los relays, clientes, índices de búsqueda y otros dispositivos con la sesión iniciada pueden conservar copias.",
     "safetySettingsWhatYouSee": "LO QUE VES",
@@ -3346,14 +3308,6 @@
     },
     "discoverListsTitle": "Descubrir listas",
     "discoverListsFailedToLoad": "No se pudieron cargar las listas",
-    "discoverListsFailedToLoadWithError": "No se pudieron cargar las listas: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Descubriendo listas públicas...",
     "discoverListsRelayTimeout": "El relay no devolvió listas a tiempo. Inténtalo de nuevo.",
     "discoverListsServiceUnavailable": "Servicio no disponible.",

@@ -2264,12 +2264,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      '이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return '키 제거에 실패했어요: $error';
-  }
+      '이 기기에서 이 계정을 제거하지 못했어요. 다시 시도해주세요.';
 
   @override
   String get nostrSettingsDeleteAccount => '계정 및 데이터 삭제';
@@ -4328,11 +4323,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName을(를) 여는 중 오류 발생: $error';
-  }
-
-  @override
   String get reportWhyReporting => '이 콘텐츠를 왜 신고하시나요?';
 
   @override
@@ -4885,11 +4875,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName을(를) 열 수 없어요';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName을(를) 여는 중 오류 발생: $error';
   }
 
   @override
@@ -5595,11 +5580,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => '리스트를 불러오지 못했어요';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return '리스트를 불러오지 못했어요: $error';
-  }
 
   @override
   String get discoverListsLoading => '공개 리스트를 찾는 중...';
@@ -7335,11 +7315,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
-
-  @override
-  String keyImportError(String error) {
-    return '오류: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

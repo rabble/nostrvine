@@ -1625,17 +1625,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "خطأ في فتح {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "لماذا تُبلِّغ عن هذا المحتوى؟",
     "reportPolicyNotice": "ستتصرف Divine بشأن بلاغات المحتوى خلال 24 ساعة بإزالة المحتوى وإخراج المستخدم الذي قدَّم المحتوى المخالف.",
     "reportBlockUser": "حظر هذا المستخدم",
@@ -1854,17 +1843,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "خطأ في فتح {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2127,14 +2105,6 @@
         }
     },
     "invitesTitle": "دعوة الأصدقاء",
-    "keyImportError": "خطأ: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{تم حذف مقطع واحد} other{تم حذف {count} مقاطع}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3248,15 +3218,7 @@
     "nostrSettingsMoveAccountSubtitle": "نزّل أرشيفك وانقل منشوراتك ومقاطع الفيديو الخاصة بك إلى مرحّل أو خادم وسائط آخر.",
     "nostrSettingsRemoveKeys": "إزالة المفاتيح من الجهاز",
     "nostrSettingsRemoveKeysSubtitle": "احذف مفتاحك الخاص من هذا الجهاز فقط. سيبقى محتواك على المحولات، لكنّك ستحتاج إلى نسخة nsec الاحتياطية للوصول إلى حسابك مرّة أخرى.",
-    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.",
-    "nostrSettingsFailedToRemoveKeys": "فشلت إزالة المفاتيح: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة هذا الحساب من هذا الجهاز. حاول مرّة أخرى.",
     "nostrSettingsDeleteAccount": "حذف الحساب والبيانات",
     "nostrSettingsDeleteAccountSubtitle": "يرسل طلبات حذف لمحتواك ويسجّل خروجك من هذا الجهاز. قد تحتفظ المحوّلات والعملاء وفهارس البحث والأجهزة الأخرى المسجّلة الدخول بنسخ.",
     "safetySettingsWhatYouSee": "ما تراه",
@@ -3342,14 +3304,6 @@
     },
     "discoverListsTitle": "اكتشف القوائم",
     "discoverListsFailedToLoad": "فشل تحميل القوائم",
-    "discoverListsFailedToLoadWithError": "فشل تحميل القوائم: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "جاري اكتشاف القوائم العامة...",
     "discoverListsRelayTimeout": "لم يُرجع الريلاي القوائم في الوقت المناسب. حاول مرة أخرى.",
     "discoverListsServiceUnavailable": "الخدمة غير متاحة.",

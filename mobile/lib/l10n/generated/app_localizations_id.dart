@@ -2350,12 +2350,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Gagal menghapus kunci dari perangkat ini. Coba lagi.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Gagal menghapus kunci: $error';
-  }
+      'Gagal menghapus akun ini dari perangkat ini. Coba lagi.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Hapus Akun dan Data';
@@ -4511,11 +4506,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Kesalahan membuka $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Kenapa kamu melaporkan konten ini?';
 
   @override
@@ -5094,11 +5084,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Tidak bisa membuka $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Kesalahan membuka $pageName: $error';
   }
 
   @override
@@ -5814,11 +5799,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Gagal memuat daftar';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Gagal memuat daftar: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Mencari daftar publik...';
@@ -7628,11 +7608,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Kamu harus berusia 16 tahun atau lebih untuk membuat konten';
-
-  @override
-  String keyImportError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

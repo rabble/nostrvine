@@ -1108,15 +1108,7 @@
     "nostrSettingsMoveAccountSubtitle": "ማህደርዎን ያውርዱ እና ልጥፎችዎን እና ቪዲዮዎችዎን ወደ ሌላ relay ወይም የሚዲያ አገልጋይ ያንቀሳቅሱ።",
     "nostrSettingsRemoveKeys": "ቁልፎችን ከመሣሪያው አስወግድ",
     "nostrSettingsRemoveKeysSubtitle": "የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።",
-    "nostrSettingsCouldNotRemoveKeys": "ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
-    "nostrSettingsFailedToRemoveKeys": "ቁልፎችን ማስወገድ አልተሳካም፦ {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "ይህን መለያ ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "nostrSettingsDeleteAccount": "መለያ እና ውሂብ ሰርዝ",
     "nostrSettingsDeleteAccountSubtitle": "የይዘትዎን የመሰረዝ ጥያቄዎች ይልካል እና ከዚህ መሣሪያ ያስወጣዎታል። ቅብብሎሾች፣ ደንበኞች፣ የፍለጋ ማውጫዎች እና ሌሎች የገቡ መሣሪያዎች ቅጂዎችን ሊይዙ ይችላሉ።",
     "relayDiagnosticTitle": "ቅብብል ምርመራዎች",
@@ -2029,17 +2021,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName}: {error}ን መክፈት ላይ ስህተት",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "ይህን ይዘት ለምን ሪፖርት ያደርጋሉ?",
     "reportPolicyNotice": "Divine ይዘቱን በማስወገድ እና አጸያፊ ይዘቱን ያቀረበውን ተጠቃሚ በማስወጣት የይዘት ሪፖርቶችን በ24 ሰዓታት ውስጥ ይሰራል።",
     "reportBlockUser": "ይህን ተጠቃሚ አግድ",
@@ -2285,17 +2266,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName}: {error}ን መክፈት ላይ ስህተት",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2559,14 +2529,6 @@
     },
     "discoverListsTitle": "ዝርዝሮችን ያግኙ",
     "discoverListsFailedToLoad": "ዝርዝሮችን መጫን አልተሳካም",
-    "discoverListsFailedToLoadWithError": "ዝርዝሮችን መጫን አልተሳካም፦ {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "የህዝብ ዝርዝሮችን በመፈለግ ላይ...",
     "discoverListsRelayTimeout": "ሪሌው በጊዜው ዝርዝሮችን አልመለሰም። እንደገና ሞክር።",
     "discoverListsServiceUnavailable": "አገልግሎቱ አይገኝም።",
@@ -2914,14 +2876,6 @@
     "searchListsSectionHeader": "ዝርዝሮች",
     "searchListsLoadingLabel": "የዝርዝር ውጤቶችን በመጫን ላይ",
     "cameraAgeRestriction": "ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት",
-    "keyImportError": "ስህተት፡ {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "keyImportInsecureBunkerRelay": "የBunker ሪሌይ wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)",
     "timeNow": "አሁን",
     "@timeNow": {

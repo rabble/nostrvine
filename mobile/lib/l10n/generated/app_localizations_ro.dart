@@ -2488,12 +2488,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Eliminarea cheilor a eșuat: $error';
-  }
+      'N-am putut elimina acest cont de pe acest dispozitiv. Încearcă din nou.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Șterge contul și datele';
@@ -4716,11 +4711,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Eroare la deschiderea $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'De ce raportezi acest conținut?';
 
   @override
@@ -5317,11 +5307,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'N-am putut deschide $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Eroare la deschiderea $pageName: $error';
   }
 
   @override
@@ -6040,11 +6025,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'N-am putut încărca listele';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'N-am putut încărca listele: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Se descoperă liste publice...';
@@ -7884,11 +7864,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Trebuie să ai cel puțin 16 ani pentru a crea conținut';
-
-  @override
-  String keyImportError(String error) {
-    return 'Eroare: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

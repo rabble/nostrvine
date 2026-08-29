@@ -1632,17 +1632,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName} açılırken hata: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Bu içeriği neden bildiriyorsun?",
     "reportPolicyNotice": "Divine, içerik bildirimlerine 24 saat içinde içeriği kaldırarak ve söz konusu içeriği sağlayan kullanıcıyı çıkararak işlem yapar.",
     "reportBlockUser": "Bu kullanıcıyı engelle",
@@ -1861,17 +1850,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName} açılırken hata: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2134,14 +2112,6 @@
         }
     },
     "invitesTitle": "Arkadaşları Davet Et",
-    "keyImportError": "Hata: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 klip silindi} other{{count} klip silindi}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3255,15 +3225,7 @@
     "nostrSettingsMoveAccountSubtitle": "Arşivini indir ve gönderilerini ve videolarını başka bir relay'e veya medya sunucusuna taşı.",
     "nostrSettingsRemoveKeys": "Anahtarları Cihazdan Kaldır",
     "nostrSettingsRemoveKeysSubtitle": "Özel anahtarını yalnızca bu cihazdan sil. İçeriğin rölelerde kalır, ancak hesabına tekrar erişmek için nsec yedeğine ihtiyacın olur.",
-    "nostrSettingsCouldNotRemoveKeys": "Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
-    "nostrSettingsFailedToRemoveKeys": "Anahtarlar kaldırılamadı: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Bu hesap bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
     "nostrSettingsDeleteAccount": "Hesabı ve Verileri Sil",
     "nostrSettingsDeleteAccountSubtitle": "İçeriğin için silme istekleri gönderir ve bu cihazda oturumunu kapatır. Röleler, istemciler, arama dizinleri ve oturum açmış diğer cihazlar kopyaları saklayabilir.",
     "safetySettingsWhatYouSee": "GÖRDÜKLERİN",
@@ -3342,14 +3304,6 @@
     },
     "discoverListsTitle": "Listeleri Keşfet",
     "discoverListsFailedToLoad": "Listeler yüklenemedi",
-    "discoverListsFailedToLoadWithError": "Listeler yüklenemedi: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Herkese açık listeler keşfediliyor...",
     "discoverListsRelayTimeout": "Relay listeleri zamanında döndürmedi. Tekrar dene.",
     "discoverListsServiceUnavailable": "Hizmet kullanılamıyor.",

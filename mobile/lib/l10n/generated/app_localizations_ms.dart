@@ -2410,11 +2410,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat mengalih keluar akaun ini daripada peranti ini. Sila cuba lagi.';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Gagal mengalih keluar akaun ini: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'Padam Akaun dan Data';
 
   @override
@@ -4581,11 +4576,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Ralat membuka $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Mengapa anda melaporkan kandungan ini?';
 
   @override
@@ -5170,11 +5160,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Tidak dapat membuka $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Ralat membuka $pageName: $error';
   }
 
   @override
@@ -5893,11 +5878,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Gagal memuatkan senarai';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Gagal memuatkan senarai: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Menemui senarai awam...';
@@ -7715,11 +7695,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Anda mestilah berumur 16 tahun ke atas untuk mencipta kandungan';
-
-  @override
-  String keyImportError(String error) {
-    return 'Ralat: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

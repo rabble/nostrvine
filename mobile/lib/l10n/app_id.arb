@@ -1632,17 +1632,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Kenapa kamu melaporkan konten ini?",
     "reportPolicyNotice": "Divine akan menindak laporan konten dalam 24 jam dengan menghapus konten dan mengeluarkan pengguna yang memberikan konten yang melanggar.",
     "reportBlockUser": "Blokir pengguna ini",
@@ -1861,17 +1850,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2134,14 +2112,6 @@
         }
     },
     "invitesTitle": "Undang Teman",
-    "keyImportError": "Error: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 klip dihapus} other{{count} klip dihapus}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3255,15 +3225,7 @@
     "nostrSettingsMoveAccountSubtitle": "Unduh arsipmu dan pindahkan postingan serta videomu ke relay atau server media lain.",
     "nostrSettingsRemoveKeys": "Hapus Kunci dari Perangkat",
     "nostrSettingsRemoveKeysSubtitle": "Hapus kunci privatmu hanya dari perangkat ini. Kontenmu tetap di relay, tapi kamu butuh backup nsec untuk masuk lagi.",
-    "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus kunci dari perangkat ini. Coba lagi.",
-    "nostrSettingsFailedToRemoveKeys": "Gagal menghapus kunci: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus akun ini dari perangkat ini. Coba lagi.",
     "nostrSettingsDeleteAccount": "Hapus Akun dan Data",
     "nostrSettingsDeleteAccountSubtitle": "Mengirim permintaan penghapusan untuk kontenmu dan mengeluarkanmu dari akun di perangkat ini. Relay, klien, indeks pencarian, dan perangkat lain yang masih masuk mungkin menyimpan salinan.",
     "safetySettingsWhatYouSee": "YANG KAMU LIHAT",
@@ -3342,14 +3304,6 @@
     },
     "discoverListsTitle": "Jelajahi Daftar",
     "discoverListsFailedToLoad": "Gagal memuat daftar",
-    "discoverListsFailedToLoadWithError": "Gagal memuat daftar: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Mencari daftar publik...",
     "discoverListsRelayTimeout": "Relay tidak mengembalikan daftar tepat waktu. Coba lagi.",
     "discoverListsServiceUnavailable": "Layanan tidak tersedia.",

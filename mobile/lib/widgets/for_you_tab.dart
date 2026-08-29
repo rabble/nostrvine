@@ -90,7 +90,7 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
       _feedLoadStartTime = null;
       return RefreshableFeedStateView(
         onRefresh: _refreshForYou,
-        child: _ForYouErrorState(error: forYouAsync.error.toString()),
+        child: const _ForYouErrorState(),
       );
     }
 
@@ -598,9 +598,7 @@ class _ForYouEmptyState extends StatelessWidget {
 
 /// Error state widget for ForYouTab
 class _ForYouErrorState extends StatelessWidget {
-  const _ForYouErrorState({required this.error});
-
-  final String error;
+  const _ForYouErrorState();
 
   @override
   Widget build(BuildContext context) {
@@ -613,17 +611,6 @@ class _ForYouErrorState extends StatelessWidget {
           Text(
             context.l10n.forYouErrorTitle,
             style: VineTheme.titleMediumFont(color: VineTheme.likeRed),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              error,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.secondaryText,
-              ),
-              textAlign: TextAlign.center,
-            ),
           ),
         ],
       ),

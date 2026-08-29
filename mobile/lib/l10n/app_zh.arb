@@ -1272,14 +1272,6 @@
   "nostrSettingsRemoveKeys": "从此设备移除此账号",
   "nostrSettingsRemoveKeysSubtitle": "从此设备移除此账号的本地登录。此账号的本地草稿和片段仍会保留。",
   "nostrSettingsCouldNotRemoveKeys": "无法从此设备移除此账号，请重试。",
-  "nostrSettingsFailedToRemoveKeys": "移除此账号失败：{error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "删除账号和数据",
   "nostrSettingsDeleteAccountSubtitle": "为你的内容发送删除请求，并在此设备上退出登录。中继、客户端、搜索索引和其他已登录设备可能仍会保留副本。",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -2397,17 +2389,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "打开{pageName}时出错：{error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "你为什么要举报该内容？",
   "reportPolicyNotice": "Divine 会在 24 小时内处理内容举报：移除违规内容，并将发布违规内容的用户清出平台。",
   "reportBlockUser": "屏蔽该用户",
@@ -2694,17 +2675,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "打开{pageName}时出错：{error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3288,14 +3258,6 @@
   },
   "discoverListsTitle": "发现列表",
   "discoverListsFailedToLoad": "列表加载失败",
-  "discoverListsFailedToLoadWithError": "列表加载失败：{error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "正在发现公开列表...",
   "discoverListsRelayTimeout": "中继没有及时返回列表。再试一次。",
   "discoverListsServiceUnavailable": "服务不可用。",
@@ -4241,14 +4203,6 @@
   "searchListsSectionHeader": "列表",
   "searchListsLoadingLabel": "正在加载列表结果",
   "cameraAgeRestriction": "你必须年满 16 岁才能创作内容",
-  "keyImportError": "错误：{error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Bunker 中继必须使用 wss://（仅 localhost 允许 ws://）",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

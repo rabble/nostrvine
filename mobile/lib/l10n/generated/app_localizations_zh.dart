@@ -2272,11 +2272,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nostrSettingsCouldNotRemoveKeys => '无法从此设备移除此账号，请重试。';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return '移除此账号失败：$error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => '删除账号和数据';
 
   @override
@@ -4297,11 +4292,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '打开$pageName时出错：$error';
-  }
-
-  @override
   String get reportWhyReporting => '你为什么要举报该内容？';
 
   @override
@@ -4843,11 +4833,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '无法打开$pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '打开$pageName时出错：$error';
   }
 
   @override
@@ -5550,11 +5535,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => '列表加载失败';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return '列表加载失败：$error';
-  }
 
   @override
   String get discoverListsLoading => '正在发现公开列表...';
@@ -7256,11 +7236,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => '你必须年满 16 岁才能创作内容';
-
-  @override
-  String keyImportError(String error) {
-    return '错误：$error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

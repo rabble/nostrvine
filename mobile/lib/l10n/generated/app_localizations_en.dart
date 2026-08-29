@@ -2448,11 +2448,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not remove this account from this device. Please try again.';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Failed to remove this account: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'Delete Account and Data';
 
   @override
@@ -4668,11 +4663,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Error opening $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Why are you reporting this content?';
 
   @override
@@ -5261,11 +5251,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Could not open $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Error opening $pageName: $error';
   }
 
   @override
@@ -5984,11 +5969,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Failed to load lists';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Failed to load lists: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Discovering public lists...';
@@ -7812,11 +7792,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'You must be 16 or older to create content';
-
-  @override
-  String keyImportError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

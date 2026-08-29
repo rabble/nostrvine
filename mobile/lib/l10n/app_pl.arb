@@ -1635,17 +1635,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Błąd otwierania {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Dlaczego zgłaszasz tę treść?",
     "reportPolicyNotice": "Divine zareaguje na zgłoszenia treści w ciągu 24 godzin, usuwając treść i wyrzucając użytkownika, który dostarczył obraźliwą treść.",
     "reportBlockUser": "Zablokuj tego użytkownika",
@@ -1864,17 +1853,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Błąd otwierania {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2137,14 +2115,6 @@
         }
     },
     "invitesTitle": "Zaproś znajomych",
-    "keyImportError": "Błąd: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{Usunięto 1 klip} few{Usunięto {count} klipy} many{Usunięto {count} klipów} other{Usunięto {count} klipów}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3255,15 +3225,7 @@
     "nostrSettingsMoveAccountSubtitle": "Pobierz swoje archiwum i przenieś posty oraz filmy do innego relaya lub serwera multimediów.",
     "nostrSettingsRemoveKeys": "Usuń klucze z urządzenia",
     "nostrSettingsRemoveKeysSubtitle": "Usuń swój klucz prywatny tylko z tego urządzenia. Twoje treści zostają na przekaźnikach, ale do ponownego dostępu do konta potrzebna będzie kopia zapasowa nsec.",
-    "nostrSettingsCouldNotRemoveKeys": "Nie udało się usunąć kluczy z tego urządzenia. Spróbuj ponownie.",
-    "nostrSettingsFailedToRemoveKeys": "Nie udało się usunąć kluczy: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Nie udało się usunąć tego konta z tego urządzenia. Spróbuj ponownie.",
     "nostrSettingsDeleteAccount": "Usuń konto i dane",
     "nostrSettingsDeleteAccountSubtitle": "Wysyła żądania usunięcia twoich treści i wylogowuje cię na tym urządzeniu. Przekaźniki, klienty, indeksy wyszukiwania i inne zalogowane urządzenia mogą zachować kopie.",
     "safetySettingsWhatYouSee": "CO WIDZISZ",
@@ -3342,14 +3304,6 @@
     },
     "discoverListsTitle": "Odkrywaj listy",
     "discoverListsFailedToLoad": "Nie udało się wczytać list",
-    "discoverListsFailedToLoadWithError": "Nie udało się wczytać list: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Odkrywanie publicznych list...",
     "discoverListsRelayTimeout": "Relay nie zwrócił list na czas. Spróbuj ponownie.",
     "discoverListsServiceUnavailable": "Usługa niedostępna.",

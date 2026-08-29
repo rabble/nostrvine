@@ -2371,12 +2371,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'ቁልፎችን ማስወገድ አልተሳካም፦ $error';
-  }
+      'ይህን መለያ ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get nostrSettingsDeleteAccount => 'መለያ እና ውሂብ ሰርዝ';
@@ -4478,11 +4473,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName: $errorን መክፈት ላይ ስህተት';
-  }
-
-  @override
   String get reportWhyReporting => 'ይህን ይዘት ለምን ሪፖርት ያደርጋሉ?';
 
   @override
@@ -5040,11 +5030,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName መክፈት አልተቻለም';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName: $errorን መክፈት ላይ ስህተት';
   }
 
   @override
@@ -5751,11 +5736,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'ዝርዝሮችን መጫን አልተሳካም';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'ዝርዝሮችን መጫን አልተሳካም፦ $error';
-  }
 
   @override
   String get discoverListsLoading => 'የህዝብ ዝርዝሮችን በመፈለግ ላይ...';
@@ -7527,11 +7507,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት';
-
-  @override
-  String keyImportError(String error) {
-    return 'ስህተት፡ $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

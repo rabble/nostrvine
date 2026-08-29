@@ -1625,14 +1625,6 @@
   "nostrSettingsRemoveKeys": "Remove this account from this device",
   "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. Your local drafts and clips stay saved for this account.",
   "nostrSettingsCouldNotRemoveKeys": "Could not remove this account from this device. Please try again.",
-  "nostrSettingsFailedToRemoveKeys": "Failed to remove this account: {error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "Delete Account and Data",
   "nostrSettingsDeleteAccountSubtitle": "Sends deletion requests for your content and signs you out on this device. Relays, clients, search indexes, and other signed-in devices may keep copies.",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -2914,17 +2906,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "Error opening {pageName}: {error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "Why are you reporting this content?",
   "reportPolicyNotice": "Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.",
   "reportBlockUser": "Block this user",
@@ -3253,17 +3234,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "Error opening {pageName}: {error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3892,14 +3862,6 @@
   },
   "discoverListsTitle": "Discover Lists",
   "discoverListsFailedToLoad": "Failed to load lists",
-  "discoverListsFailedToLoadWithError": "Failed to load lists: {error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "Discovering public lists...",
   "discoverListsRelayTimeout": "The relay did not return lists in time. Try again.",
   "discoverListsServiceUnavailable": "Service not available.",
@@ -5013,14 +4975,6 @@
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
   "cameraAgeRestriction": "You must be 16 or older to create content",
-  "keyImportError": "Error: {error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Bunker relay must use wss:// (ws:// is allowed only for localhost)",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

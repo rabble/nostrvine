@@ -2252,12 +2252,8 @@ class AppLocalizationsJa extends AppLocalizations {
       'このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。';
 
   @override
-  String get nostrSettingsCouldNotRemoveKeys => 'このデバイスから鍵を削除できなかった。もう一回試してみて。';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return '鍵の削除に失敗: $error';
-  }
+  String get nostrSettingsCouldNotRemoveKeys =>
+      'このデバイスからこのアカウントを削除できなかった。もう一回試してみて。';
 
   @override
   String get nostrSettingsDeleteAccount => 'アカウントとデータを削除';
@@ -4312,11 +4308,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageNameを開く時にエラー: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'このコンテンツを報告する理由は?';
 
   @override
@@ -4866,11 +4857,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageNameが開けなかった';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageNameを開く時にエラー: $error';
   }
 
   @override
@@ -5575,11 +5561,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'リストの読み込みに失敗';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'リストの読み込みに失敗: $error';
-  }
 
   @override
   String get discoverListsLoading => '公開リストを探してるよ...';
@@ -7319,11 +7300,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'コンテンツを作るには16歳以上である必要があるよ';
-
-  @override
-  String keyImportError(String error) {
-    return 'エラー: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

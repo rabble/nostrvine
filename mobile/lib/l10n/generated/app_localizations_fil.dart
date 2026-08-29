@@ -2428,12 +2428,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Hindi naalis ang mga key sa device na ito. Subukan ulit.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Hindi naalis ang mga key: $error';
-  }
+      'Hindi naalis ang account na ito sa device na ito. Subukan ulit.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Burahin ang Account at Data';
@@ -4612,11 +4607,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Error sa pagbukas ng $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Bakit mo rine-report ang content na ito?';
 
   @override
@@ -5201,11 +5191,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Hindi nabuksan ang $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Error sa pagbukas ng $pageName: $error';
   }
 
   @override
@@ -5924,11 +5909,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Hindi na-load ang mga listahan';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Hindi na-load ang mga listahan: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Naghahanap ng mga public list...';
@@ -7764,11 +7744,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Dapat 16 taong gulang ka pataas para gumawa ng content';
-
-  @override
-  String keyImportError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

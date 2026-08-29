@@ -2449,12 +2449,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'No se pudieron quitar las claves de este dispositivo. Probá de nuevo.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Falló al quitar las claves: $error';
-  }
+      'No se pudo quitar esta cuenta de este dispositivo. Probá de nuevo.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Eliminar cuenta y datos';
@@ -4627,11 +4622,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Error al abrir $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => '¿Por qué estás reportando este contenido?';
 
   @override
@@ -5211,11 +5201,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'No se pudo abrir $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Error al abrir $pageName: $error';
   }
 
   @override
@@ -5934,11 +5919,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'No se pudieron cargar las listas';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'No se pudieron cargar las listas: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Descubriendo listas públicas...';
@@ -7776,11 +7756,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Tenés que tener 16 años o más para crear contenido';
-
-  @override
-  String keyImportError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

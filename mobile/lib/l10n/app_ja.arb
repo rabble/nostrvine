@@ -1625,17 +1625,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName}を開く時にエラー: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "このコンテンツを報告する理由は?",
     "reportPolicyNotice": "Divine はコンテンツの報告に24時間以内に対応して、問題のあるコンテンツを削除し、違反ユーザーを排除するよ。",
     "reportBlockUser": "このユーザーをブロック",
@@ -1854,17 +1843,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName}を開く時にエラー: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2127,14 +2105,6 @@
         }
     },
     "invitesTitle": "友達を招待しよう",
-    "keyImportError": "エラー: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, other{{count}件のクリップを削除しました}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3248,15 +3218,7 @@
     "nostrSettingsMoveAccountSubtitle": "アーカイブをダウンロードして、投稿や動画を別のリレーまたはメディアサーバーへ移します。",
     "nostrSettingsRemoveKeys": "このデバイスから鍵を削除",
     "nostrSettingsRemoveKeysSubtitle": "このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。",
-    "nostrSettingsCouldNotRemoveKeys": "このデバイスから鍵を削除できなかった。もう一回試してみて。",
-    "nostrSettingsFailedToRemoveKeys": "鍵の削除に失敗: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "このデバイスからこのアカウントを削除できなかった。もう一回試してみて。",
     "nostrSettingsDeleteAccount": "アカウントとデータを削除",
     "nostrSettingsDeleteAccountSubtitle": "コンテンツの削除リクエストを送信して、このデバイスからサインアウトするよ。リレーやクライアント、検索インデックス、ほかのサインイン中のデバイスにはコピーが残ることがあるよ。",
     "safetySettingsWhatYouSee": "あなたが見るもの",
@@ -3342,14 +3304,6 @@
     },
     "discoverListsTitle": "リストを見つける",
     "discoverListsFailedToLoad": "リストの読み込みに失敗",
-    "discoverListsFailedToLoadWithError": "リストの読み込みに失敗: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "公開リストを探してるよ...",
     "discoverListsRelayTimeout": "リレーが時間内にリストを返さなかったよ。もう一度試してね。",
     "discoverListsServiceUnavailable": "サービスを利用できません。",

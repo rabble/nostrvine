@@ -2417,12 +2417,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Kunde inte ta bort nycklar från enheten. Försök igen.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Kunde inte ta bort nycklar: $error';
-  }
+      'Kunde inte ta bort det här kontot från enheten. Försök igen.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Radera konto och data';
@@ -4577,11 +4572,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Fel vid öppning av $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Varför rapporterar du det här innehållet?';
 
   @override
@@ -5158,11 +5148,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Kunde inte öppna $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Fel vid öppning av $pageName: $error';
   }
 
   @override
@@ -5879,11 +5864,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Kunde inte ladda listor';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Kunde inte ladda listor: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Söker upp publika listor...';
@@ -7696,11 +7676,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Du måste vara 16 år eller äldre för att skapa innehåll';
-
-  @override
-  String keyImportError(String error) {
-    return 'Fel: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

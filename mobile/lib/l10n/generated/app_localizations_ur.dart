@@ -2424,11 +2424,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس اکاؤنٹ کو اس ڈیوائس سے نہیں ہٹایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'یہ اکاؤنٹ نہیں ہٹایا جا سکا: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'اکاؤنٹ اور ڈیٹا حذف کریں';
 
   @override
@@ -4587,11 +4582,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName کھولنے میں خرابی: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'آپ یہ مواد کیوں رپورٹ کر رہے ہیں؟';
 
   @override
@@ -5166,11 +5156,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName نہیں کھل سکا';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName کھولنے میں خرابی: $error';
   }
 
   @override
@@ -5886,11 +5871,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'فہرستیں لوڈ نہیں ہو سکیں';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'فہرستیں لوڈ نہیں ہو سکیں: $error';
-  }
 
   @override
   String get discoverListsLoading => 'عوامی فہرستیں دریافت ہو رہی ہیں...';
@@ -7703,11 +7683,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'مواد بنانے کے لیے آپ کی عمر 16 سال یا زیادہ ہونی چاہیے';
-
-  @override
-  String keyImportError(String error) {
-    return 'خرابی: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

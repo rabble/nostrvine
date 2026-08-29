@@ -1272,14 +1272,6 @@
   "nostrSettingsRemoveKeys": "Xóa tài khoản này khỏi thiết bị này",
   "nostrSettingsRemoveKeysSubtitle": "Xóa đăng nhập cục bộ của tài khoản này khỏi thiết bị. Các bản nháp và clip cục bộ của tài khoản này vẫn được giữ.",
   "nostrSettingsCouldNotRemoveKeys": "Không xóa được tài khoản này khỏi thiết bị. Vui lòng thử lại.",
-  "nostrSettingsFailedToRemoveKeys": "Không xóa được tài khoản này: {error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "Xóa tài khoản và dữ liệu",
   "nostrSettingsDeleteAccountSubtitle": "Gửi yêu cầu xóa nội dung của bạn và đăng xuất bạn trên thiết bị này. Các relay, ứng dụng khác, chỉ mục tìm kiếm và thiết bị đã đăng nhập khác có thể vẫn giữ bản sao.",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -2397,17 +2389,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "Lỗi khi mở {pageName}: {error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "Tại sao bạn báo cáo nội dung này?",
   "reportPolicyNotice": "Divine sẽ xử lý báo cáo nội dung trong vòng 24 giờ bằng cách gỡ nội dung và loại người dùng đăng nội dung vi phạm.",
   "reportBlockUser": "Chặn người dùng này",
@@ -2694,17 +2675,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "Lỗi khi mở {pageName}: {error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3288,14 +3258,6 @@
   },
   "discoverListsTitle": "Khám phá danh sách",
   "discoverListsFailedToLoad": "Không tải được danh sách",
-  "discoverListsFailedToLoadWithError": "Không tải được danh sách: {error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "Đang khám phá danh sách công khai...",
   "discoverListsRelayTimeout": "Relay không trả về danh sách kịp lúc. Thử lại nhé.",
   "discoverListsServiceUnavailable": "Dịch vụ không khả dụng.",
@@ -4241,14 +4203,6 @@
   "searchListsSectionHeader": "Danh sách",
   "searchListsLoadingLabel": "Đang tải kết quả danh sách",
   "cameraAgeRestriction": "Bạn phải đủ 16 tuổi để tạo nội dung",
-  "keyImportError": "Lỗi: {error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Relay bunker phải dùng wss:// (ws:// chỉ được phép cho localhost)",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

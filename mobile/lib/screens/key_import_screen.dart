@@ -305,10 +305,15 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         );
       }
     } catch (e) {
+      Log.error(
+        'Key import failed: $e',
+        name: 'KeyImportScreen',
+        category: LogCategory.ui,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.keyImportError('$e')),
+            content: Text(context.l10n.keyImportFailedToImport),
             backgroundColor: VineTheme.error,
           ),
         );

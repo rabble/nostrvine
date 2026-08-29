@@ -2359,12 +2359,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Anahtarlar kaldırılamadı: $error';
-  }
+      'Bu hesap bu cihazdan kaldırılamadı. Lütfen tekrar dene.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Hesabı ve Verileri Sil';
@@ -4521,11 +4516,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName açılırken hata: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Bu içeriği neden bildiriyorsun?';
 
   @override
@@ -5101,11 +5091,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName açılamadı';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName açılırken hata: $error';
   }
 
   @override
@@ -5819,11 +5804,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Listeler yüklenemedi';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Listeler yüklenemedi: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Herkese açık listeler keşfediliyor...';
@@ -7628,11 +7608,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın';
-
-  @override
-  String keyImportError(String error) {
-    return 'Hata: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

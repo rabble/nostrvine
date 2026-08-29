@@ -2401,12 +2401,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'فشلت إزالة المفاتيح: $error';
-  }
+      'تعذّرت إزالة هذا الحساب من هذا الجهاز. حاول مرّة أخرى.';
 
   @override
   String get nostrSettingsDeleteAccount => 'حذف الحساب والبيانات';
@@ -4539,11 +4534,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'خطأ في فتح $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'لماذا تُبلِّغ عن هذا المحتوى؟';
 
   @override
@@ -5116,11 +5106,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'تعذر فتح $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'خطأ في فتح $pageName: $error';
   }
 
   @override
@@ -5833,11 +5818,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'فشل تحميل القوائم';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'فشل تحميل القوائم: $error';
-  }
 
   @override
   String get discoverListsLoading => 'جاري اكتشاف القوائم العامة...';
@@ -7646,11 +7626,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى';
-
-  @override
-  String keyImportError(String error) {
-    return 'خطأ: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

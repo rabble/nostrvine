@@ -4141,12 +4141,6 @@ abstract class AppLocalizations {
   /// **'Could not remove this account from this device. Please try again.'**
   String get nostrSettingsCouldNotRemoveKeys;
 
-  /// No description provided for @nostrSettingsFailedToRemoveKeys.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to remove this account: {error}'**
-  String nostrSettingsFailedToRemoveKeys(String error);
-
   /// No description provided for @nostrSettingsDeleteAccount.
   ///
   /// In en, this message translates to:
@@ -7835,12 +7829,6 @@ abstract class AppLocalizations {
   /// **'Could not open {pageName}'**
   String supportCouldNotOpenPage(String pageName);
 
-  /// No description provided for @supportErrorOpeningPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Error opening {pageName}: {error}'**
-  String supportErrorOpeningPage(String pageName, Object error);
-
   /// No description provided for @reportWhyReporting.
   ///
   /// In en, this message translates to:
@@ -8842,12 +8830,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open {pageName}'**
   String legalCouldNotOpenPage(String pageName);
-
-  /// No description provided for @legalErrorOpeningPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Error opening {pageName}: {error}'**
-  String legalErrorOpeningPage(String pageName, Object error);
 
   /// No description provided for @categoryAction.
   ///
@@ -10138,12 +10120,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load lists'**
   String get discoverListsFailedToLoad;
-
-  /// No description provided for @discoverListsFailedToLoadWithError.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load lists: {error}'**
-  String discoverListsFailedToLoadWithError(String error);
 
   /// No description provided for @discoverListsLoading.
   ///
@@ -13165,12 +13141,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You must be 16 or older to create content'**
   String get cameraAgeRestriction;
-
-  /// No description provided for @keyImportError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String keyImportError(String error);
 
   /// Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host.
   ///

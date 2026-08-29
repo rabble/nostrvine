@@ -2397,11 +2397,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không xóa được tài khoản này khỏi thiết bị. Vui lòng thử lại.';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Không xóa được tài khoản này: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'Xóa tài khoản và dữ liệu';
 
   @override
@@ -4548,11 +4543,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Lỗi khi mở $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Tại sao bạn báo cáo nội dung này?';
 
   @override
@@ -5132,11 +5122,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Không mở được $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Lỗi khi mở $pageName: $error';
   }
 
   @override
@@ -5852,11 +5837,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Không tải được danh sách';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Không tải được danh sách: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Đang khám phá danh sách công khai...';
@@ -7670,11 +7650,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'Bạn phải đủ 16 tuổi để tạo nội dung';
-
-  @override
-  String keyImportError(String error) {
-    return 'Lỗi: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

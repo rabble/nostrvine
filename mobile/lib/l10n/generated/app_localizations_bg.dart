@@ -2462,12 +2462,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Не успяхме да махнем ключовете от това устройство. Опитай пак.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Махането на ключовете не успя: $error';
-  }
+      'Не успяхме да махнем този акаунт от това устройство. Опитай пак.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Изтрий акаунта и данните';
@@ -4629,11 +4624,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Грешка при отваряне на $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Защо подаваш сигнал за това съдържание?';
 
   @override
@@ -5217,11 +5207,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Не може да се отвори $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Грешка при отваряне на $pageName: $error';
   }
 
   @override
@@ -5939,11 +5924,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get discoverListsFailedToLoad => 'Зареждането на списъците не успя';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Зареждането на списъците не успя: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Откриваме публични списъци...';
@@ -7776,11 +7756,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Трябва да си на 16 или повече, за да създаваш съдържание';
-
-  @override
-  String keyImportError(String error) {
-    return 'Грешка: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

@@ -208,9 +208,15 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                   .lists
                   .isNotEmpty;
               if (!hasRenderedLists || error is! TimeoutException) {
+                if (error is! TimeoutException) {
+                  Log.error(
+                    'Public list stream failed: $error',
+                    category: LogCategory.ui,
+                  );
+                }
                 _errorMessage = error is TimeoutException
                     ? context.l10n.discoverListsRelayTimeout
-                    : context.l10n.discoverListsFailedToLoadWithError('$error');
+                    : context.l10n.discoverListsFailedToLoad;
               }
             });
           }
@@ -229,7 +235,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         ref.read(discoveredListsProvider.notifier).setLoading(false);
         setState(() {
           _isRefreshing = false;
-          _errorMessage = context.l10n.discoverListsFailedToLoadWithError('$e');
+          _errorMessage = context.l10n.discoverListsFailedToLoad;
         });
         Log.error(
           'Failed to discover public lists: $e',

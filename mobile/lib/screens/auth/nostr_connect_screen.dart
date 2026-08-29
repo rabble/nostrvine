@@ -382,10 +382,15 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
         });
       }
     } catch (e) {
+      Log.error(
+        'Nostr Connect session failed: $e',
+        name: 'NostrConnectScreen',
+        category: LogCategory.ui,
+      );
       if (!mounted) return;
       setState(() {
         _sessionState = NostrConnectState.error;
-        _errorMessage = 'Failed to connect: $e';
+        _errorMessage = context.l10n.authFailedToConnect;
       });
     }
   }

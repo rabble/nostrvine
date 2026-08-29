@@ -1841,17 +1841,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Грешка при отваряне на {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Защо подаваш сигнал за това съдържание?",
     "reportPolicyNotice": "Divine ще преглежда сигналите за съдържание до 24 часа и при нужда ще премахва съдържание или ще блокира акаунта, който го е публикувал.",
     "reportBlockUser": "Блокирай този потребител",
@@ -2070,17 +2059,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Грешка при отваряне на {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2525,14 +2503,6 @@
     "searchListsSectionHeader": "Списъци",
     "searchListsLoadingLabel": "Резултатите от списъка се зареждат",
     "cameraAgeRestriction": "Трябва да си на 16 или повече, за да създаваш съдържание",
-    "keyImportError": "Грешка: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "timeNow": "Сега",
     "@timeNow": {
         "description": "Relative time label for less than one minute ago (short form)"
@@ -3386,15 +3356,7 @@
     "nostrSettingsMoveAccountSubtitle": "Изтегли архива си и премести публикациите и видеата си към друг relay или медиен сървър.",
     "nostrSettingsRemoveKeys": "Махни ключовете от устройството",
     "nostrSettingsRemoveKeysSubtitle": "Изтрий частния си ключ само от това устройство. Съдържанието ти остава на релетата, но ще ти трябва nsec резервно копие, за да влезеш отново в акаунта си.",
-    "nostrSettingsCouldNotRemoveKeys": "Не успяхме да махнем ключовете от това устройство. Опитай пак.",
-    "nostrSettingsFailedToRemoveKeys": "Махането на ключовете не успя: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Не успяхме да махнем този акаунт от това устройство. Опитай пак.",
     "nostrSettingsDeleteAccount": "Изтрий акаунта и данните",
     "nostrSettingsDeleteAccountSubtitle": "Изпраща заявки за изтриване на съдържанието ти и те отписва на това устройство. Релетата, клиентите, индексите за търсене и другите устройства с вход може да запазят копия.",
     "safetySettingsWhatYouSee": "КАКВО ВИЖДАШ",
@@ -3473,14 +3435,6 @@
     },
     "discoverListsTitle": "Открий списъци",
     "discoverListsFailedToLoad": "Зареждането на списъците не успя",
-    "discoverListsFailedToLoadWithError": "Зареждането на списъците не успя: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Откриваме публични списъци...",
     "discoverListsRelayTimeout": "Релето не върна списъци навреме. Опитай пак.",
     "discoverListsServiceUnavailable": "Услугата не е налична.",

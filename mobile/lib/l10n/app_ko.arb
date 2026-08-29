@@ -1121,17 +1121,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName}을(를) 여는 중 오류 발생: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "이 콘텐츠를 왜 신고하시나요?",
     "reportPolicyNotice": "Divine은 24시간 이내에 신고된 콘텐츠를 조치하여 콘텐츠를 삭제하고 문제가 된 콘텐츠를 제공한 사용자를 퇴출해요.",
     "reportBlockUser": "이 사용자 차단",
@@ -1350,17 +1339,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName}을(를) 여는 중 오류 발생: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -1623,14 +1601,6 @@
         }
     },
     "invitesTitle": "친구 초대",
-    "keyImportError": "오류: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{클립 1개 삭제됨} other{클립 {count}개 삭제됨}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2744,15 +2714,7 @@
     "nostrSettingsMoveAccountSubtitle": "아카이브를 다운로드하고 게시물과 동영상을 다른 릴레이나 미디어 서버로 옮기세요.",
     "nostrSettingsRemoveKeys": "기기에서 키 제거",
     "nostrSettingsRemoveKeysSubtitle": "이 기기에서만 개인 키를 삭제해요. 콘텐츠는 릴레이에 그대로 남지만, 다시 계정에 접근하려면 nsec 백업이 필요해요.",
-    "nostrSettingsCouldNotRemoveKeys": "이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.",
-    "nostrSettingsFailedToRemoveKeys": "키 제거에 실패했어요: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "이 기기에서 이 계정을 제거하지 못했어요. 다시 시도해주세요.",
     "nostrSettingsDeleteAccount": "계정 및 데이터 삭제",
     "nostrSettingsDeleteAccountSubtitle": "콘텐츠 삭제 요청을 보내고 이 기기에서 로그아웃해요. 릴레이, 클라이언트, 검색 색인, 그리고 로그인된 다른 기기에는 사본이 남을 수 있어요.",
     "safetySettingsWhatYouSee": "보이는 것",
@@ -2838,14 +2800,6 @@
     },
     "discoverListsTitle": "리스트 둘러보기",
     "discoverListsFailedToLoad": "리스트를 불러오지 못했어요",
-    "discoverListsFailedToLoadWithError": "리스트를 불러오지 못했어요: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "공개 리스트를 찾는 중...",
     "discoverListsRelayTimeout": "릴레이가 제때 리스트를 주지 않았어요. 다시 시도해 주세요.",
     "discoverListsServiceUnavailable": "서비스를 사용할 수 없어요.",
