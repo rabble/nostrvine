@@ -36,6 +36,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -72,19 +73,22 @@ List<Override> _gridOverrides(
   List<Override> extra = const [],
 }) => [
   sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
-  authServiceProvider.overrideWithValue(
-    authService ?? createMockAuthService(),
-  ),
+  authServiceProvider.overrideWithValue(authService ?? createMockAuthService()),
   nostrServiceProvider.overrideWithValue(
     nostrService ?? createMockNostrService(),
   ),
   brokenVideoTrackerProvider.overrideWith((ref) async => tracker),
   subscribedListVideoCacheProvider.overrideWithValue(null),
-  userProfileReactiveProvider.overrideWith(
-    (ref, pubkey) => Stream.value(null),
-  ),
+  userProfileReactiveProvider.overrideWith((ref, pubkey) => Stream.value(null)),
   ...extra,
 ];
+
+MockAuthService _authenticatedAuthService(String pubkey) {
+  final authService = createMockAuthService();
+  when(() => authService.authState).thenReturn(AuthState.authenticated);
+  when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+  return authService;
+}
 
 void main() {
   group('ComposableVideoGrid', () {
@@ -404,7 +408,11 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: _gridOverrides(mockTracker, nostrService: mockNostr),
+              overrides: _gridOverrides(
+                mockTracker,
+                nostrService: mockNostr,
+                authService: _authenticatedAuthService(_ownPubkey),
+              ),
               child: MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
@@ -472,6 +480,7 @@ void main() {
             overrides: _gridOverrides(
               mockTracker,
               nostrService: mockNostr,
+              authService: _authenticatedAuthService(_ownPubkey),
               extra: [
                 contentDeletionServiceProvider.overrideWith(
                   (ref) async => deletionService,
@@ -572,6 +581,7 @@ void main() {
             overrides: _gridOverrides(
               mockTracker,
               nostrService: mockNostr,
+              authService: _authenticatedAuthService(_ownPubkey),
               extra: [
                 contentDeletionServiceProvider.overrideWith(
                   (ref) async => deletionService,
@@ -760,6 +770,11 @@ void main() {
         when(() => mockNostr.publicKey).thenReturn(nostrClientPubkey);
         final mockAuth = createMockAuthService();
         when(() => mockAuth.currentPublicKeyHex).thenReturn(authServicePubkey);
+        when(() => mockAuth.authState).thenReturn(
+          authServicePubkey == null
+              ? AuthState.unauthenticated
+              : AuthState.authenticated,
+        );
 
         await tester.pumpWidget(
           ProviderScope(
@@ -804,9 +819,9 @@ void main() {
           );
 
           expect(
-            tileNode(tester).getSemanticsData().hasAction(
-              SemanticsAction.longPress,
-            ),
+            tileNode(
+              tester,
+            ).getSemanticsData().hasAction(SemanticsAction.longPress),
             isFalse,
             reason:
                 'Advertising a long-press on a video the viewer does not own '
@@ -831,9 +846,9 @@ void main() {
         );
 
         expect(
-          tileNode(tester).getSemanticsData().hasAction(
-            SemanticsAction.longPress,
-          ),
+          tileNode(
+            tester,
+          ).getSemanticsData().hasAction(SemanticsAction.longPress),
           isTrue,
         );
         expect(
@@ -885,13 +900,15 @@ void main() {
         await pumpGridFor(
           tester,
           video: videoBy(_ownPubkey),
-          nostrClientPubkey: '',
+          // Client replacement is queued during sign-out, so the old client
+          // can still expose its cached key for a rebuild. Auth state must win.
+          nostrClientPubkey: _ownPubkey,
         );
 
         expect(
-          tileNode(tester).getSemanticsData().hasAction(
-            SemanticsAction.longPress,
-          ),
+          tileNode(
+            tester,
+          ).getSemanticsData().hasAction(SemanticsAction.longPress),
           isFalse,
         );
         handle.dispose();
