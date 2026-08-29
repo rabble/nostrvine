@@ -8057,6 +8057,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Kembali ke suapan';
 
   @override
+  String get cameraCouldNotStart => 'Tidak dapat memulakan kamera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Kamera belum tersedia pada platform ini.\nAnda masih boleh melayari dan menonton video.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Ralat Kebenaran';
 
   @override

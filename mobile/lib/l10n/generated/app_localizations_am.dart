@@ -7868,6 +7868,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'ወደ ምግብ ተመለስ';
 
   @override
+  String get cameraCouldNotStart => 'ካሜራውን ማስጀመር አልተቻለም';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'ካሜራው በዚህ መድረክ ላይ ገና አይገኝም።\nአሁንም ቪዲዮዎችን ማሰስና መመልከት ይችላሉ።';
+
+  @override
   String get cameraPermissionErrorTitle => 'የፍቃድ ስህተት';
 
   @override

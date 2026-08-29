@@ -10,6 +10,7 @@ import 'package:divine_camera/divine_camera.dart'
         PhotoCaptureResult;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_linux_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_mobile_service.dart';
@@ -161,8 +162,12 @@ abstract class CameraService {
   /// Returns null if metadata is not available.
   CameraLensMetadata? get currentLensMetadata;
 
-  /// Error message if initialization failed, null if successful.
-  String? get initializationError;
+  /// Why initialization failed, or null if it succeeded.
+  ///
+  /// A reason code rather than a message: `state_management.md` forbids error
+  /// strings in state, and this value is carried into `VideoRecorderBlocState`
+  /// and localized by the UI.
+  CameraInitializationError? get initializationError;
 
   /// Enables or disables remote record control via volume buttons.
   ///

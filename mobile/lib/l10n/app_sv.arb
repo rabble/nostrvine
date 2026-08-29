@@ -2524,6 +2524,8 @@
     "cameraPermissionWebUnsupportedTitle": "Kameran stöds inte på webben än",
     "cameraPermissionWebUnsupportedDescription": "Kamerainspelning och videoinspelning är ännu inte tillgängliga i webbversionen.",
     "cameraPermissionBackToFeed": "Tillbaka till flödet",
+    "cameraCouldNotStart": "Det gick inte att starta kameran",
+    "cameraUnsupportedPlatform": "Kameran är inte tillgänglig på den här plattformen än.\nDu kan fortfarande bläddra och titta på videor.",
     "cameraPermissionErrorTitle": "Behörighetsfel",
     "cameraPermissionErrorDescription": "Något gick fel när behörigheterna kontrollerades.",
     "cameraPermissionRetry": "Försök igen",

@@ -8014,6 +8014,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Quay lại bảng tin';
 
   @override
+  String get cameraCouldNotStart => 'Không khởi động được máy ảnh';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Máy ảnh chưa khả dụng trên nền tảng này.\nBạn vẫn có thể duyệt và xem video.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Lỗi quyền truy cập';
 
   @override

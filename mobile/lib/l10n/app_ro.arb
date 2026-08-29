@@ -2524,6 +2524,8 @@
     "cameraPermissionWebUnsupportedTitle": "Camera nu este încă acceptată pe web",
     "cameraPermissionWebUnsupportedDescription": "Captura și înregistrarea cu camera nu sunt încă disponibile în versiunea web.",
     "cameraPermissionBackToFeed": "Înapoi la feed",
+    "cameraCouldNotStart": "Nu s-a putut porni camera",
+    "cameraUnsupportedPlatform": "Camera nu este încă disponibilă pe această platformă.\nPoți totuși să explorezi și să vizionezi videoclipuri.",
     "cameraPermissionErrorTitle": "Eroare de permisiuni",
     "cameraPermissionErrorDescription": "A apărut o eroare la verificarea permisiunilor.",
     "cameraPermissionRetry": "Încearcă din nou",

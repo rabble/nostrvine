@@ -4631,6 +4631,8 @@
   "cameraPermissionWebUnsupportedTitle": "Chưa hỗ trợ camera trên web",
   "cameraPermissionWebUnsupportedDescription": "Chưa thể quay và ghi hình trong phiên bản web.",
   "cameraPermissionBackToFeed": "Quay lại bảng tin",
+  "cameraCouldNotStart": "Không khởi động được máy ảnh",
+  "cameraUnsupportedPlatform": "Máy ảnh chưa khả dụng trên nền tảng này.\nBạn vẫn có thể duyệt và xem video.",
   "cameraPermissionErrorTitle": "Lỗi quyền truy cập",
   "cameraPermissionErrorDescription": "Có gì đó không ổn khi kiểm tra quyền.",
   "cameraPermissionRetry": "Thử lại",

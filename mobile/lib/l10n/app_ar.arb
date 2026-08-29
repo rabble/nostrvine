@@ -2514,6 +2514,8 @@
     "cameraPermissionWebUnsupportedTitle": "الكاميرا غير مدعومة على الويب بعد",
     "cameraPermissionWebUnsupportedDescription": "التقاط الكاميرا وتسجيلها غير متاحين في إصدار الويب بعد.",
     "cameraPermissionBackToFeed": "العودة إلى الخلاصة",
+    "cameraCouldNotStart": "تعذّر تشغيل الكاميرا",
+    "cameraUnsupportedPlatform": "الكاميرا غير متاحة على هذه المنصة بعد.\nلا يزال بالإمكان تصفّح الفيديوهات ومشاهدتها.",
     "cameraPermissionErrorTitle": "خطأ في الأذونات",
     "cameraPermissionErrorDescription": "حدث خطأ أثناء التحقق من الأذونات.",
     "cameraPermissionRetry": "إعادة المحاولة",

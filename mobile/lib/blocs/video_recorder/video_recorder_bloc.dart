@@ -26,6 +26,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
@@ -397,23 +398,21 @@ class VideoRecorderBloc
         category: LogCategory.video,
       );
       emit(
-        state.copyWith(
-          initializationErrorMessage:
-              'Camera initialization failed: $initError',
-        ),
+        state.copyWith(initializationError: CameraInitializationError.failed),
       );
       return;
     }
 
     if (!_cameraService.isInitialized) {
       final error =
-          _cameraService.initializationError ?? 'Camera initialization failed';
+          _cameraService.initializationError ??
+          CameraInitializationError.failed;
       Log.warning(
         '⚠️ Camera failed to initialize: $error',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
-      emit(state.copyWith(initializationErrorMessage: error));
+      emit(state.copyWith(initializationError: error));
       return;
     }
 

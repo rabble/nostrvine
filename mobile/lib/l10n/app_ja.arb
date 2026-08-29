@@ -2514,6 +2514,8 @@
     "cameraPermissionWebUnsupportedTitle": "カメラはまだWebでサポートされていません",
     "cameraPermissionWebUnsupportedDescription": "カメラでの撮影と録画は、Web版ではまだ利用できません。",
     "cameraPermissionBackToFeed": "フィードに戻る",
+    "cameraCouldNotStart": "カメラを起動できませんでした",
+    "cameraUnsupportedPlatform": "このプラットフォームではカメラをまだ利用できません。\n動画の閲覧と視聴はできます。",
     "cameraPermissionErrorTitle": "権限エラー",
     "cameraPermissionErrorDescription": "権限の確認中に問題が発生しました。",
     "cameraPermissionRetry": "再試行",

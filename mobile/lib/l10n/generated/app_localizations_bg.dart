@@ -8116,6 +8116,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Назад към фийда';
 
   @override
+  String get cameraCouldNotStart => 'Не успяхме да стартираме камерата';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Камерата все още не е налична на тази платформа.\nВсе пак можеш да разглеждаш и гледаш видеа.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Грешка с разрешенията';
 
   @override

@@ -8079,6 +8079,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Terug naar feed';
 
   @override
+  String get cameraCouldNotStart => 'Camera kon niet worden gestart';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'De camera is nog niet beschikbaar op dit platform.\nJe kunt nog steeds video’s bekijken.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Machtigingsfout';
 
   @override

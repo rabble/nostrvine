@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/config/screenshot_mode.dart';
+import 'package:openvine/l10n/camera_initialization_error_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/platform_helpers.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
@@ -82,7 +84,7 @@ class _StackItems extends StatelessWidget {
       (VideoRecorderBloc b) => (
         isCameraInitialized: b.state.isCameraInitialized,
         cameraRebuildCount: b.state.cameraRebuildCount,
-        initializationErrorMessage: b.state.initializationErrorMessage,
+        initializationError: b.state.initializationError,
       ),
     );
     return Stack(
@@ -95,7 +97,12 @@ class _StackItems extends StatelessWidget {
           _CameraPreview(enableTapToFocus: enableTapToFocus)
         else
           VideoRecorderCameraPlaceholder(
-            errorMessage: state.initializationErrorMessage,
+            errorMessage: switch (state.initializationError) {
+              null => null,
+              final error => context.l10n.cameraInitializationErrorMessage(
+                error,
+              ),
+            },
           ),
         const VideoRecorderGhostFrame(),
         const _OverlayGrid(),

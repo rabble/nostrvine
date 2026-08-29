@@ -13704,6 +13704,18 @@ abstract class AppLocalizations {
   /// **'Back to feed'**
   String get cameraPermissionBackToFeed;
 
+  /// Shown in the camera preview placeholder when the camera fails to initialize.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the camera'**
+  String get cameraCouldNotStart;
+
+  /// Shown in the camera preview placeholder on platforms with no camera support at all (currently Linux), where retrying cannot help.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera is not available on this platform yet.\nYou can still browse and watch videos.'**
+  String get cameraUnsupportedPlatform;
+
   /// No description provided for @cameraPermissionErrorTitle.
   ///
   /// In en, this message translates to:

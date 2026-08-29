@@ -8103,6 +8103,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Voltar ao feed';
 
   @override
+  String get cameraCouldNotStart => 'Não foi possível iniciar a câmera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'A câmera ainda não está disponível nesta plataforma.\nVocê ainda pode navegar e assistir aos vídeos.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Erro de permissão';
 
   @override

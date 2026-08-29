@@ -7970,6 +7970,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Akışa geri dön';
 
   @override
+  String get cameraCouldNotStart => 'Kamera başlatılamadı';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Kamera bu platformda henüz kullanılamıyor.\nYine de videolara göz atıp izleyebilirsin.';
+
+  @override
   String get cameraPermissionErrorTitle => 'İzin hatası';
 
   @override

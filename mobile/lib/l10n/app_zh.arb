@@ -4631,6 +4631,8 @@
   "cameraPermissionWebUnsupportedTitle": "网页版暂不支持相机",
   "cameraPermissionWebUnsupportedDescription": "网页版暂时无法拍摄和录制视频。",
   "cameraPermissionBackToFeed": "返回信息流",
+  "cameraCouldNotStart": "无法启动相机",
+  "cameraUnsupportedPlatform": "此平台暂不支持相机。\n你仍然可以浏览和观看视频。",
   "cameraPermissionErrorTitle": "权限错误",
   "cameraPermissionErrorDescription": "检查权限时出了点问题。",
   "cameraPermissionRetry": "重试",

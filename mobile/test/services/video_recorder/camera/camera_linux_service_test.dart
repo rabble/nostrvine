@@ -1,6 +1,7 @@
 import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_linux_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -23,13 +24,14 @@ void main() {
     });
 
     group('initializationError', () {
-      test('returns a message mentioning Linux', () {
-        expect(service.initializationError, isNotNull);
-        expect(service.initializationError, contains('Linux'));
-      });
-
-      test('tells user they can still browse', () {
-        expect(service.initializationError, contains('browse and watch'));
+      // The reason has to be `unsupportedPlatform` rather than `failed`: the
+      // two map to different copy, and only `failed` implies retrying could
+      // help. Linux has no camera support to retry into.
+      test('reports unsupportedPlatform, not a message', () {
+        expect(
+          service.initializationError,
+          CameraInitializationError.unsupportedPlatform,
+        );
       });
     });
 

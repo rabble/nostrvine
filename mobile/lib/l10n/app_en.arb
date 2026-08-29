@@ -5396,6 +5396,14 @@
   "cameraPermissionWebUnsupportedTitle": "Camera not supported on web yet",
   "cameraPermissionWebUnsupportedDescription": "Camera capture and recording are not available in the web version yet.",
   "cameraPermissionBackToFeed": "Back to feed",
+  "cameraCouldNotStart": "Couldn't start the camera",
+  "@cameraCouldNotStart": {
+    "description": "Shown in the camera preview placeholder when the camera fails to initialize."
+  },
+  "cameraUnsupportedPlatform": "The camera is not available on this platform yet.\nYou can still browse and watch videos.",
+  "@cameraUnsupportedPlatform": {
+    "description": "Shown in the camera preview placeholder on platforms with no camera support at all (currently Linux), where retrying cannot help."
+  },
   "cameraPermissionErrorTitle": "Permission Error",
   "cameraPermissionErrorDescription": "Something went wrong while checking permissions.",
   "cameraPermissionRetry": "Retry",

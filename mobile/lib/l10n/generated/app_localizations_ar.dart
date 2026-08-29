@@ -7996,6 +7996,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'العودة إلى الخلاصة';
 
   @override
+  String get cameraCouldNotStart => 'تعذّر تشغيل الكاميرا';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'الكاميرا غير متاحة على هذه المنصة بعد.\nلا يزال بالإمكان تصفّح الفيديوهات ومشاهدتها.';
+
+  @override
   String get cameraPermissionErrorTitle => 'خطأ في الأذونات';
 
   @override

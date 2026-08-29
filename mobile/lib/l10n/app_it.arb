@@ -2524,6 +2524,8 @@
     "cameraPermissionWebUnsupportedTitle": "La fotocamera non è ancora supportata sul web",
     "cameraPermissionWebUnsupportedDescription": "L'acquisizione e la registrazione con fotocamera non sono ancora disponibili nella versione web.",
     "cameraPermissionBackToFeed": "Torna al feed",
+    "cameraCouldNotStart": "Impossibile avviare la fotocamera",
+    "cameraUnsupportedPlatform": "La fotocamera non è ancora disponibile su questa piattaforma.\nPuoi comunque sfogliare e guardare i video.",
     "cameraPermissionErrorTitle": "Errore di autorizzazione",
     "cameraPermissionErrorDescription": "Si è verificato un errore durante il controllo delle autorizzazioni.",
     "cameraPermissionRetry": "Riprova",

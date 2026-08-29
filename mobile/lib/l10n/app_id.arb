@@ -2521,6 +2521,8 @@
     "cameraPermissionWebUnsupportedTitle": "Kamera belum didukung di web",
     "cameraPermissionWebUnsupportedDescription": "Pengambilan gambar dan perekaman kamera belum tersedia di versi web.",
     "cameraPermissionBackToFeed": "Kembali ke feed",
+    "cameraCouldNotStart": "Tidak bisa memulai kamera",
+    "cameraUnsupportedPlatform": "Kamera belum tersedia di platform ini.\nKamu tetap bisa menjelajah dan menonton video.",
     "cameraPermissionErrorTitle": "Kesalahan izin",
     "cameraPermissionErrorDescription": "Terjadi kesalahan saat memeriksa izin.",
     "cameraPermissionRetry": "Coba lagi",

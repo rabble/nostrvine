@@ -2524,6 +2524,8 @@
     "cameraPermissionWebUnsupportedTitle": "La caméra n'est pas encore prise en charge sur le web",
     "cameraPermissionWebUnsupportedDescription": "La capture et l'enregistrement vidéo avec la caméra ne sont pas encore disponibles dans la version web.",
     "cameraPermissionBackToFeed": "Retour au fil",
+    "cameraCouldNotStart": "Impossible de démarrer la caméra",
+    "cameraUnsupportedPlatform": "La caméra n'est pas encore disponible sur cette plateforme.\nTu peux quand même parcourir et regarder des vidéos.",
     "cameraPermissionErrorTitle": "Erreur d'autorisation",
     "cameraPermissionErrorDescription": "Une erreur s'est produite lors de la vérification des autorisations.",
     "cameraPermissionRetry": "Réessayer",

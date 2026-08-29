@@ -8230,6 +8230,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Înapoi la feed';
 
   @override
+  String get cameraCouldNotStart => 'Nu s-a putut porni camera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Camera nu este încă disponibilă pe această platformă.\nPoți totuși să explorezi și să vizionezi videoclipuri.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Eroare de permisiuni';
 
   @override

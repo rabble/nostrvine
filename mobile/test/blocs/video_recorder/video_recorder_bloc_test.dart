@@ -15,6 +15,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_recorder/camera_initialization_error.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
@@ -31,7 +32,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
-
 import '../../mocks/mock_path_provider_platform.dart';
 
 class _MockCameraService extends Mock implements CameraService {}
@@ -2338,7 +2338,9 @@ void main() {
         'failed camera return must not leave the recorder permanently locked',
         setUp: () {
           when(() => cameraService.isInitialized).thenReturn(false);
-          when(() => cameraService.initializationError).thenReturn('boom');
+          when(
+            () => cameraService.initializationError,
+          ).thenReturn(CameraInitializationError.failed);
         },
         build: () => buildBloc()
           ..emit(
@@ -2347,7 +2349,7 @@ void main() {
         act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
         verify: (bloc) {
           // Confirm we actually hit the init-failure return path…
-          expect(bloc.state.initializationErrorMessage, isNotNull);
+          expect(bloc.state.initializationError, isNotNull);
           // …and the lock was still cleared up front.
           expect(bloc.state.recordingLockedForNavigation, isFalse);
         },

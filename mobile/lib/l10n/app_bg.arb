@@ -2795,6 +2795,8 @@
     "cameraPermissionWebUnsupportedTitle": "Камерата още не се поддържа в уеб",
     "cameraPermissionWebUnsupportedDescription": "Снимането и записът с камера още не са налични в уеб версията.",
     "cameraPermissionBackToFeed": "Назад към фийда",
+    "cameraCouldNotStart": "Не успяхме да стартираме камерата",
+    "cameraUnsupportedPlatform": "Камерата все още не е налична на тази платформа.\nВсе пак можеш да разглеждаш и гледаш видеа.",
     "cameraPermissionErrorTitle": "Грешка с разрешенията",
     "cameraPermissionErrorDescription": "Нещо се обърка, докато проверявахме разрешенията.",
     "cameraPermissionRetry": "Опитай пак",

@@ -2524,6 +2524,8 @@
     "cameraPermissionWebUnsupportedTitle": "A câmera ainda não é compatível na web",
     "cameraPermissionWebUnsupportedDescription": "A captura e a gravação com câmera ainda não estão disponíveis na versão web.",
     "cameraPermissionBackToFeed": "Voltar ao feed",
+    "cameraCouldNotStart": "Não foi possível iniciar a câmera",
+    "cameraUnsupportedPlatform": "A câmera ainda não está disponível nesta plataforma.\nVocê ainda pode navegar e assistir aos vídeos.",
     "cameraPermissionErrorTitle": "Erro de permissão",
     "cameraPermissionErrorDescription": "Ocorreu um erro ao verificar as permissões.",
     "cameraPermissionRetry": "Tentar novamente",

@@ -1982,6 +1982,8 @@
     "cameraPermissionWebUnsupportedTitle": "카메라는 아직 웹에서 지원되지 않습니다",
     "cameraPermissionWebUnsupportedDescription": "카메라 촬영 및 녹화는 웹 버전에서 아직 사용할 수 없습니다.",
     "cameraPermissionBackToFeed": "피드로 돌아가기",
+    "cameraCouldNotStart": "카메라를 시작할 수 없어요",
+    "cameraUnsupportedPlatform": "이 플랫폼에서는 아직 카메라를 사용할 수 없어요.\n영상 둘러보기와 재생은 계속할 수 있어요.",
     "cameraPermissionErrorTitle": "권한 오류",
     "cameraPermissionErrorDescription": "권한을 확인하는 중 문제가 발생했습니다.",
     "cameraPermissionRetry": "다시 시도",

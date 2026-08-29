@@ -1666,6 +1666,8 @@
     "cameraPermissionWebUnsupportedTitle": "Hindi pa supported ang camera sa web",
     "cameraPermissionWebUnsupportedDescription": "Hindi pa available ang camera capture at recording sa web version.",
     "cameraPermissionBackToFeed": "Bumalik sa feed",
+    "cameraCouldNotStart": "Hindi ma-start ang camera",
+    "cameraUnsupportedPlatform": "Hindi pa available ang camera sa platform na ito.\nPwede ka pa ring mag-browse at manood ng mga video.",
     "cameraPermissionErrorTitle": "Error sa pahintulot",
     "cameraPermissionErrorDescription": "May nangyaring problema habang sinusuri ang mga permission.",
     "cameraPermissionRetry": "Subukan ulit",

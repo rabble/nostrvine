@@ -8046,6 +8046,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'فیڈ پر واپس';
 
   @override
+  String get cameraCouldNotStart => 'کیمرہ شروع نہیں ہو سکا';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'اس پلیٹ فارم پر کیمرہ ابھی دستیاب نہیں ہے۔\nآپ پھر بھی ویڈیوز دیکھ سکتے ہیں۔';
+
+  @override
   String get cameraPermissionErrorTitle => 'اجازت کی خرابی';
 
   @override

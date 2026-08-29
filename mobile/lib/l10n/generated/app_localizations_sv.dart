@@ -8039,6 +8039,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Tillbaka till flödet';
 
   @override
+  String get cameraCouldNotStart => 'Det gick inte att starta kameran';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Kameran är inte tillgänglig på den här plattformen än.\nDu kan fortfarande bläddra och titta på videor.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Behörighetsfel';
 
   @override

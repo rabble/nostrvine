@@ -2521,6 +2521,8 @@
     "cameraPermissionWebUnsupportedTitle": "Kamera henüz web'de desteklenmiyor",
     "cameraPermissionWebUnsupportedDescription": "Kamera ile çekim ve kayıt henüz web sürümünde kullanılamıyor.",
     "cameraPermissionBackToFeed": "Akışa geri dön",
+    "cameraCouldNotStart": "Kamera başlatılamadı",
+    "cameraUnsupportedPlatform": "Kamera bu platformda henüz kullanılamıyor.\nYine de videolara göz atıp izleyebilirsin.",
     "cameraPermissionErrorTitle": "İzin hatası",
     "cameraPermissionErrorDescription": "İzinler kontrol edilirken bir sorun oluştu.",
     "cameraPermissionRetry": "Tekrar dene",

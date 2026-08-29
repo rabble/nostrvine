@@ -7676,6 +7676,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cameraPermissionBackToFeed => '피드로 돌아가기';
 
   @override
+  String get cameraCouldNotStart => '카메라를 시작할 수 없어요';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      '이 플랫폼에서는 아직 카메라를 사용할 수 없어요.\n영상 둘러보기와 재생은 계속할 수 있어요.';
+
+  @override
   String get cameraPermissionErrorTitle => '권한 오류';
 
   @override

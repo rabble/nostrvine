@@ -7660,6 +7660,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'フィードに戻る';
 
   @override
+  String get cameraCouldNotStart => 'カメラを起動できませんでした';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'このプラットフォームではカメラをまだ利用できません。\n動画の閲覧と視聴はできます。';
+
+  @override
   String get cameraPermissionErrorTitle => '権限エラー';
 
   @override

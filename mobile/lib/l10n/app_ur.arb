@@ -4631,6 +4631,8 @@
   "cameraPermissionWebUnsupportedTitle": "کیمرہ ابھی ویب پر تعاون یافتہ نہیں",
   "cameraPermissionWebUnsupportedDescription": "کیمرہ کیپچر اور ریکارڈنگ ابھی ویب ورژن میں دستیاب نہیں ہیں۔",
   "cameraPermissionBackToFeed": "فیڈ پر واپس",
+  "cameraCouldNotStart": "کیمرہ شروع نہیں ہو سکا",
+  "cameraUnsupportedPlatform": "اس پلیٹ فارم پر کیمرہ ابھی دستیاب نہیں ہے۔\nآپ پھر بھی ویڈیوز دیکھ سکتے ہیں۔",
   "cameraPermissionErrorTitle": "اجازت کی خرابی",
   "cameraPermissionErrorDescription": "اجازتیں چیک کرتے وقت کچھ غلط ہو گیا۔",
   "cameraPermissionRetry": "دوبارہ کوشش کریں",

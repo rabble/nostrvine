@@ -4631,6 +4631,8 @@
   "cameraPermissionWebUnsupportedTitle": "Kamera belum disokong di web",
   "cameraPermissionWebUnsupportedDescription": "Penangkapan dan rakaman kamera belum tersedia dalam versi web.",
   "cameraPermissionBackToFeed": "Kembali ke suapan",
+  "cameraCouldNotStart": "Tidak dapat memulakan kamera",
+  "cameraUnsupportedPlatform": "Kamera belum tersedia pada platform ini.\nAnda masih boleh melayari dan menonton video.",
   "cameraPermissionErrorTitle": "Ralat Kebenaran",
   "cameraPermissionErrorDescription": "Sesuatu telah berlaku semasa menyemak kebenaran.",
   "cameraPermissionRetry": "Cuba Semula",

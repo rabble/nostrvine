@@ -8106,6 +8106,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get cameraPermissionBackToFeed => 'Bumalik sa feed';
 
   @override
+  String get cameraCouldNotStart => 'Hindi ma-start ang camera';
+
+  @override
+  String get cameraUnsupportedPlatform =>
+      'Hindi pa available ang camera sa platform na ito.\nPwede ka pa ring mag-browse at manood ng mga video.';
+
+  @override
   String get cameraPermissionErrorTitle => 'Error sa pahintulot';
 
   @override

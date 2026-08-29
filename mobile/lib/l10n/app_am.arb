@@ -3185,6 +3185,8 @@
     "cameraPermissionWebUnsupportedTitle": "ካሜራ እስካሁን በድር ላይ አይደገፍም።",
     "cameraPermissionWebUnsupportedDescription": "የካሜራ ቀረጻ እና ቀረጻ እስካሁን በድር ስሪት ውስጥ አይገኙም።",
     "cameraPermissionBackToFeed": "ወደ ምግብ ተመለስ",
+    "cameraCouldNotStart": "ካሜራውን ማስጀመር አልተቻለም",
+    "cameraUnsupportedPlatform": "ካሜራው በዚህ መድረክ ላይ ገና አይገኝም።\nአሁንም ቪዲዮዎችን ማሰስና መመልከት ይችላሉ።",
     "cameraPermissionErrorTitle": "የፍቃድ ስህተት",
     "cameraPermissionErrorDescription": "ፈቃዶችን በመፈተሽ ላይ ሳለ የሆነ ችግር ተፈጥሯል።",
     "cameraPermissionRetry": "እንደገና ይሞክሩ",

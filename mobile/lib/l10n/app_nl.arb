@@ -2524,6 +2524,8 @@
     "cameraPermissionWebUnsupportedTitle": "Camera wordt nog niet ondersteund op het web",
     "cameraPermissionWebUnsupportedDescription": "Camerabeelden opnemen en video opnemen zijn nog niet beschikbaar in de webversie.",
     "cameraPermissionBackToFeed": "Terug naar feed",
+    "cameraCouldNotStart": "Camera kon niet worden gestart",
+    "cameraUnsupportedPlatform": "De camera is nog niet beschikbaar op dit platform.\nJe kunt nog steeds video’s bekijken.",
     "cameraPermissionErrorTitle": "Machtigingsfout",
     "cameraPermissionErrorDescription": "Er is iets misgegaan bij het controleren van machtigingen.",
     "cameraPermissionRetry": "Opnieuw proberen",

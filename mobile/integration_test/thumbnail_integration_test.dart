@@ -90,13 +90,12 @@ void main() {
           Log.debug('📷 Initializing recording provider...');
           bloc.add(const VideoRecorderInitializeRequested());
           final initState = await bloc.stream.firstWhere(
-            (s) =>
-                s.isCameraInitialized || s.initializationErrorMessage != null,
+            (s) => s.isCameraInitialized || s.initializationError != null,
           );
           if (!initState.isCameraInitialized) {
             throw Exception(
               'Camera failed to initialize: '
-              '${initState.initializationErrorMessage}',
+              '${initState.initializationError}',
             );
           }
           Log.debug('✅ Recording provider initialized successfully');

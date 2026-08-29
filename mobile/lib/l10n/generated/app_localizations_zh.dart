@@ -7600,6 +7600,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cameraPermissionBackToFeed => '返回信息流';
 
   @override
+  String get cameraCouldNotStart => '无法启动相机';
+
+  @override
+  String get cameraUnsupportedPlatform => '此平台暂不支持相机。\n你仍然可以浏览和观看视频。';
+
+  @override
   String get cameraPermissionErrorTitle => '权限错误';
 
   @override
