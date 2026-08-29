@@ -52,7 +52,6 @@ lib/widgets/auth/auth_form_scaffold.dart	1
 lib/widgets/auth/auth_hero_section.dart	2
 lib/widgets/categories/category_glyph.dart	1
 lib/widgets/classic_vines_tab.dart	7
-lib/widgets/composable_video_grid.dart	8
 lib/widgets/content_warning.dart	11
 lib/widgets/environment_indicator.dart	1
 lib/widgets/error_message.dart	1

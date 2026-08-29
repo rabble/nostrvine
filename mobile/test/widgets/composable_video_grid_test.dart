@@ -24,6 +24,7 @@ import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -32,13 +33,18 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+// Override lives in riverpod's misc barrel; flutter_riverpod does not
+// re-export the type name even though it accepts List<Override>.
+import 'package:riverpod/misc.dart' show Override;
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -52,6 +58,43 @@ class _MockEnforcementRepository extends Mock
     implements CreatorDeleteEnforcementRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+/// Provider overrides every scope in this file needs.
+///
+/// [ComposableVideoGrid] renders `UserName`, which reaches the user-profile
+/// provider chain and transitively requires SharedPreferences. Without the
+/// override the scope throws `UnimplementedError: sharedPreferencesProvider
+/// must be overridden`, which is why this file's tile-rendering tests were
+/// previously disabled with `skip: true`.
+List<Override> _gridOverrides(
+  broken_tracker.BrokenVideoTracker tracker, {
+  MockNostrClient? nostrService,
+  MockAuthService? authService,
+  List<Override> extra = const [],
+}) => [
+  sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
+  authServiceProvider.overrideWithValue(authService ?? createMockAuthService()),
+  nostrServiceProvider.overrideWithValue(
+    nostrService ?? createMockNostrService(),
+  ),
+  brokenVideoTrackerProvider.overrideWith((ref) async => tracker),
+  subscribedListVideoCacheProvider.overrideWithValue(null),
+  userProfileReactiveProvider.overrideWith((ref, pubkey) => Stream.value(null)),
+  ...extra,
+];
+
+/// A mock auth service reporting a signed-in session for [pubkey].
+///
+/// `createMockAuthService` stubs `authState` and `isAuthenticated`
+/// independently, so both are set here: the grid reads the bool, and leaving
+/// them inconsistent would make a "signed in" fixture behave as signed out.
+MockAuthService _authenticatedAuthService(String pubkey) {
+  final authService = createMockAuthService();
+  when(() => authService.authState).thenReturn(AuthState.authenticated);
+  when(() => authService.isAuthenticated).thenReturn(true);
+  when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
+  return authService;
+}
 
 void main() {
   group('ComposableVideoGrid', () {
@@ -110,9 +153,7 @@ void main() {
     testWidgets('renders grid with provided videos', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -131,8 +172,7 @@ void main() {
 
       // Should render 2 video tiles
       expect(find.byType(GestureDetector), findsNWidgets(2));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('filters out broken videos using BrokenVideoTracker', (
       tester,
@@ -142,9 +182,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -162,17 +200,14 @@ void main() {
 
       // Should only render 2 tiles (broken_video filtered out)
       expect(find.byType(GestureDetector), findsNWidgets(2));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('shows empty state when no videos after filtering', (
       tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -199,9 +234,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -240,9 +273,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -279,9 +310,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -307,15 +336,12 @@ void main() {
       expect(tappedIndex, equals(1));
       expect(tappedVideos, isNotNull);
       expect(tappedVideos!.length, equals(2));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('uses correct grid parameters', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -332,22 +358,20 @@ void main() {
 
       await tester.pump();
 
-      // Find GridView and verify delegate
-      final gridView = tester.widget<GridView>(find.byType(GridView));
+      // The grid is built from slivers inside a CustomScrollView, so the
+      // delegate hangs off SliverGrid rather than a GridView.
+      final sliverGrid = tester.widget<SliverGrid>(find.byType(SliverGrid));
       final delegate =
-          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+          sliverGrid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
 
       expect(delegate.crossAxisCount, equals(3));
       expect(delegate.childAspectRatio, equals(1.0));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
-    testWidgets('displays video metadata correctly', (tester) async {
+    testWidgets('renders the video title over the thumbnail', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -363,12 +387,10 @@ void main() {
 
       await tester.pump();
 
-      // Check for video metadata display
+      // The info overlay carries the author and the title. Engagement counts
+      // and the duration badge are no longer rendered here.
       expect(find.text('Video 1'), findsOneWidget);
-      expect(find.text('10'), findsOneWidget); // likes count
-      expect(find.text('5s'), findsOneWidget); // duration badge
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     group('delete confirmation copy', () {
       testWidgets(
@@ -392,16 +414,11 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
-                brokenVideoTrackerProvider.overrideWith(
-                  (ref) async => mockTracker,
-                ),
-                subscribedListVideoCacheProvider.overrideWithValue(null),
-                nostrServiceProvider.overrideWithValue(mockNostr),
-                userProfileReactiveProvider.overrideWith(
-                  (ref, pubkey) => Stream.value(null),
-                ),
-              ],
+              overrides: _gridOverrides(
+                mockTracker,
+                nostrService: mockNostr,
+                authService: _authenticatedAuthService(_ownPubkey),
+              ),
               child: MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
@@ -466,23 +483,20 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              brokenVideoTrackerProvider.overrideWith(
-                (ref) async => mockTracker,
-              ),
-              subscribedListVideoCacheProvider.overrideWithValue(null),
-              nostrServiceProvider.overrideWithValue(mockNostr),
-              userProfileReactiveProvider.overrideWith(
-                (ref, pubkey) => Stream.value(null),
-              ),
-              contentDeletionServiceProvider.overrideWith(
-                (ref) async => deletionService,
-              ),
-              creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
-                enforcementRepository,
-              ),
-              videoEventServiceProvider.overrideWithValue(videoEventService),
-            ],
+            overrides: _gridOverrides(
+              mockTracker,
+              nostrService: mockNostr,
+              authService: _authenticatedAuthService(_ownPubkey),
+              extra: [
+                contentDeletionServiceProvider.overrideWith(
+                  (ref) async => deletionService,
+                ),
+                creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                  enforcementRepository,
+                ),
+                videoEventServiceProvider.overrideWithValue(videoEventService),
+              ],
+            ),
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -570,23 +584,20 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              brokenVideoTrackerProvider.overrideWith(
-                (ref) async => mockTracker,
-              ),
-              subscribedListVideoCacheProvider.overrideWithValue(null),
-              nostrServiceProvider.overrideWithValue(mockNostr),
-              userProfileReactiveProvider.overrideWith(
-                (ref, pubkey) => Stream.value(null),
-              ),
-              contentDeletionServiceProvider.overrideWith(
-                (ref) async => deletionService,
-              ),
-              creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
-                enforcementRepository,
-              ),
-              videoEventServiceProvider.overrideWithValue(videoEventService),
-            ],
+            overrides: _gridOverrides(
+              mockTracker,
+              nostrService: mockNostr,
+              authService: _authenticatedAuthService(_ownPubkey),
+              extra: [
+                contentDeletionServiceProvider.overrideWith(
+                  (ref) async => deletionService,
+                ),
+                creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                  enforcementRepository,
+                ),
+                videoEventServiceProvider.overrideWithValue(videoEventService),
+              ],
+            ),
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -659,10 +670,7 @@ void main() {
         Future<void> Function()? onLoadMore,
       }) {
         return ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-            subscribedListVideoCacheProvider.overrideWithValue(null),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -738,6 +746,178 @@ void main() {
         await tester.pump();
 
         expect(find.byType(BrandedLoadingIndicator), findsNothing);
+      });
+    });
+
+    group('owner action affordance', () {
+      const otherPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+      VideoEvent videoBy(String pubkey) => VideoEvent(
+        id: 'video-by-$pubkey',
+        pubkey: pubkey,
+        content: 'A video',
+        title: 'A video',
+        authorName: 'Creator',
+        videoUrl: 'https://example.com/v.mp4',
+        thumbnailUrl: 'https://example.com/v.jpg',
+        duration: 5,
+        createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+        timestamp: DateTime(2026),
+      );
+
+      Future<void> pumpGridFor(
+        WidgetTester tester, {
+        required VideoEvent video,
+        required String nostrClientPubkey,
+        String? authServicePubkey,
+      }) async {
+        final mockNostr = createMockNostrService();
+        when(() => mockNostr.publicKey).thenReturn(nostrClientPubkey);
+        final mockAuth = createMockAuthService();
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(authServicePubkey);
+        final signedIn = authServicePubkey != null;
+        when(() => mockAuth.authState).thenReturn(
+          signedIn ? AuthState.authenticated : AuthState.unauthenticated,
+        );
+        when(() => mockAuth.isAuthenticated).thenReturn(signedIn);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(
+              mockTracker,
+              nostrService: mockNostr,
+              authService: mockAuth,
+            ),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: [video],
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      SemanticsNode tileNode(WidgetTester tester) {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        return tester.getSemantics(
+          find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+        );
+      }
+
+      testWidgets(
+        'does not advertise a long-press action on a video the viewer '
+        'does not own',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+
+          await pumpGridFor(
+            tester,
+            video: videoBy(otherPubkey),
+            nostrClientPubkey: _ownPubkey,
+            authServicePubkey: _ownPubkey,
+          );
+
+          expect(
+            tileNode(
+              tester,
+            ).getSemanticsData().hasAction(SemanticsAction.longPress),
+            isFalse,
+            reason:
+                'Advertising a long-press on a video the viewer does not own '
+                'invites assistive-tech users to perform an action that '
+                'silently does nothing.',
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets('labels the owner long-press action with the options hint', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await pumpGridFor(
+          tester,
+          video: videoBy(_ownPubkey),
+          nostrClientPubkey: _ownPubkey,
+          authServicePubkey: _ownPubkey,
+        );
+
+        expect(
+          tileNode(
+            tester,
+          ).getSemanticsData().hasAction(SemanticsAction.longPress),
+          isTrue,
+        );
+        expect(
+          tileNode(tester),
+          isSemantics(onLongPressHint: l10n.videoGridOptionsTitle),
+          reason:
+              'Without a hint, assistive tech announces that a long-press '
+              'exists but cannot say what it does.',
+        );
+        handle.dispose();
+      });
+
+      testWidgets(
+        'opens the owner sheet when the Nostr client public-key cache is '
+        'still empty but the auth service knows the owner',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          // NostrClient.publicKey is a plain cache read that starts empty and
+          // is not re-refreshed on a miss (#6813), so ownership must not
+          // depend on it alone.
+          await pumpGridFor(
+            tester,
+            video: videoBy(_ownPubkey),
+            nostrClientPubkey: '',
+            authServicePubkey: _ownPubkey,
+          );
+
+          await tester.longPress(
+            find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.videoGridDeleteVideo),
+            findsOneWidget,
+            reason:
+                'The signed-in owner must keep the edit/delete affordance even '
+                'while the Nostr client key cache is empty.',
+          );
+        },
+      );
+
+      testWidgets('advertises no long-press action when signed out', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+
+        await pumpGridFor(
+          tester,
+          video: videoBy(_ownPubkey),
+          // Client replacement is queued during sign-out, so the old client
+          // can still expose its cached key for a rebuild. Auth state must win.
+          nostrClientPubkey: _ownPubkey,
+        );
+
+        expect(
+          tileNode(
+            tester,
+          ).getSemanticsData().hasAction(SemanticsAction.longPress),
+          isFalse,
+        );
+        handle.dispose();
       });
     });
   });

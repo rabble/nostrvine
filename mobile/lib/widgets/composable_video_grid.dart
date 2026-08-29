@@ -6,23 +6,20 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
-import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/utils/delete_result_localization.dart';
-import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
-import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
-import 'package:openvine/widgets/show_edit_dialog_for_video.dart';
+import 'package:openvine/widgets/owner_video_actions_sheet.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
@@ -123,10 +120,43 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     super.dispose();
   }
 
+  /// Pubkey of the signed-in viewer, or `null` when signed out.
+  ///
+  /// `NostrClient.publicKey` is a plain cache read that starts empty and is not
+  /// re-refreshed on a miss (#6813), so it cannot be the only source: an owner
+  /// would silently lose the edit/delete affordance whenever the cache is cold.
+  /// [AuthService.currentPublicKeyHex] resolves from the identity, key
+  /// container or profile and is populated far earlier, so it leads and the
+  /// client cache is the fallback — matching `video_providers.dart` and
+  /// `ProfileVideosGrid`.
+  String? _resolveViewerPubkey() {
+    // Identity gating for UI, so the auth state is the right rebuild trigger:
+    // signing readiness (`nostrSessionProvider`) is a different question.
+    ref.watch(currentAuthStateProvider);
+    final authService = ref.read(authServiceProvider);
+    // Sign-out queues the client replacement, so the outgoing client can still
+    // hand back its cached key on a rebuild. Neither identity source is
+    // trustworthy until the session itself says it is authenticated.
+    //
+    // Read as a bool rather than comparing against `AuthState.authenticated`:
+    // naming the enum would mean importing `services/auth_service.dart` into
+    // the UI layer, which `check_ui_service_boundary.sh` forbids.
+    // `AuthService.isAuthenticated` is defined as exactly that comparison.
+    if (!authService.isAuthenticated) return null;
+
+    final fromAuthService = authService.currentPublicKeyHex;
+    if (fromAuthService != null && fromAuthService.isNotEmpty) {
+      return fromAuthService;
+    }
+    final cached = ref.read(nostrServiceProvider).publicKey;
+    return cached.isEmpty ? null : cached;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch broken video tracker asynchronously
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
+    final viewerPubkey = _resolveViewerPubkey();
 
     return brokenTrackerAsync.when(
       loading: () => Center(
@@ -136,7 +166,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       ),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
-        return _buildGrid(context, widget.videos);
+        return _buildGrid(context, widget.videos, viewerPubkey);
       },
       data: (tracker) {
         // Filter out broken videos
@@ -144,12 +174,16 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
             .where((video) => !tracker.isVideoBroken(video.id))
             .toList();
 
-        return _buildGrid(context, filteredVideos);
+        return _buildGrid(context, filteredVideos, viewerPubkey);
       },
     );
   }
 
-  Widget _buildGrid(BuildContext context, List<VideoEvent> videosToShow) {
+  Widget _buildGrid(
+    BuildContext context,
+    List<VideoEvent> videosToShow,
+    String? viewerPubkey,
+  ) {
     if (videosToShow.isEmpty && widget.emptyBuilder != null) {
       return _buildEmptyState(context);
     }
@@ -175,13 +209,17 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       final listIds = subscribedListCache?.getListsForVideo(video.id);
       final isInSubscribedList = listIds != null && listIds.isNotEmpty;
 
+      final isOwnVideo = viewerPubkey != null && viewerPubkey == video.pubkey;
+
       return _VideoItem(
         video: video,
         aspectRatio: widget.thumbnailAspectRatio,
         onVideoTap: widget.onVideoTap,
         index: index,
         displayedVideos: videosToShow,
-        onLongPress: () => _showVideoContextMenu(context, video),
+        onLongPress: isOwnVideo
+            ? () => _showVideoContextMenu(context, video)
+            : null,
         isInSubscribedList: isInSubscribedList,
       );
     }
@@ -256,258 +294,20 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     );
   }
 
-  /// Show context menu for long press on video tiles
-  void _showVideoContextMenu(BuildContext context, VideoEvent video) {
-    // Check if user owns this video
-    final nostrService = ref.read(nostrServiceProvider);
-    final userPubkey = nostrService.publicKey;
-    final isOwnVideo = userPubkey == video.pubkey;
-
-    // Only show context menu for own videos
-    if (!isOwnVideo) {
-      return;
-    }
-
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: context.vineColors.background,
-      builder: (sheetContext) => BlocProvider.value(
-        value: _ownerVideoActionsCubit,
-        child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
-          builder: (_, state) {
-            final operation = state.forVideo(video.id);
-            final isDeletePublishing =
-                operation.deleteStatus == OwnerVideoDeleteStatus.deleting;
-            final isDeleteInProgress =
-                isDeletePublishing ||
-                operation.cleanupStatus == OwnerVideoCleanupStatus.inProgress;
-            return SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        DivineIcon(
-                          icon: DivineIconName.dotsThreeVertical,
-                          color: sheetContext.vineColors.primaryText,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            sheetContext.l10n.videoGridOptionsTitle,
-                            style: TextStyle(
-                              color: sheetContext.vineColors.primaryText,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => sheetContext.popModalIfMounted(),
-                          icon: DivineIcon(
-                            icon: DivineIconName.x,
-                            color: sheetContext.vineColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Edit option
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: sheetContext.vineColors.card,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DivineIcon(
-                        icon: DivineIconName.pencilSimple,
-                        color: sheetContext.vineColors.accentPositive,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      sheetContext.l10n.videoGridEditVideo,
-                      style: TextStyle(
-                        color: sheetContext.vineColors.primaryText,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: Text(
-                      sheetContext.l10n.videoGridEditVideoSubtitle,
-                      style: TextStyle(
-                        color: sheetContext.vineColors.secondaryText,
-                        fontSize: 12,
-                      ),
-                    ),
-                    enabled: !isDeleteInProgress,
-                    onTap: isDeleteInProgress
-                        ? null
-                        : () {
-                            if (_ownerVideoActionsCubit.isDeleteInProgress(
-                              video.id,
-                            )) {
-                              return;
-                            }
-                            if (!sheetContext.popModalIfMounted()) return;
-                            showEditDialogForVideo(context, video);
-                          },
-                  ),
-
-                  // Delete option
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: sheetContext.vineColors.card,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: isDeleteInProgress
-                          ? const CircularProgressIndicator(strokeWidth: 2)
-                          : const DivineIcon(
-                              icon: DivineIconName.trash,
-                              color: VineTheme.error,
-                              size: 20,
-                            ),
-                    ),
-                    title: Text(
-                      sheetContext.l10n.videoGridDeleteVideo,
-                      style: TextStyle(
-                        color: sheetContext.vineColors.primaryText,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: Text(
-                      sheetContext.l10n.videoGridDeleteVideoSubtitle,
-                      style: TextStyle(
-                        color: sheetContext.vineColors.secondaryText,
-                        fontSize: 12,
-                      ),
-                    ),
-                    enabled: !isDeleteInProgress,
-                    onTap: isDeleteInProgress
-                        ? null
-                        : () {
-                            if (!sheetContext.popModalIfMounted()) return;
-                            _showDeleteConfirmation(context, video);
-                          },
-                  ),
-
-                  const SizedBox(height: 16),
-                ],
-              ),
-            );
-          },
+  /// Show the owner action sheet for a long-pressed video tile.
+  ///
+  /// Ownership is decided in [_buildGrid] so a non-owned tile never wires the
+  /// gesture — and therefore never advertises the action to assistive tech.
+  Future<void> _showVideoContextMenu(BuildContext context, VideoEvent video) =>
+      showOwnerVideoActionsSheet(
+        context: context,
+        video: video,
+        cubit: _ownerVideoActionsCubit,
+        onEditRequested: () => context.push(
+          VideoMetadataEditScreen.pathFor(video.id),
+          extra: video,
         ),
-      ),
-    );
-  }
-
-  /// Show delete confirmation dialog
-  Future<void> _showDeleteConfirmation(
-    BuildContext context,
-    VideoEvent video,
-  ) async {
-    final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
-
-    if (confirmed && context.mounted) {
-      await _deleteVideo(context, video);
-    }
-  }
-
-  /// Delete the video and confirm Divine-controlled media cleanup.
-  Future<void> _deleteVideo(BuildContext context, VideoEvent video) async {
-    try {
-      if (_ownerVideoActionsCubit.isDeleteInProgress(video.id)) return;
-      // Show loading snackbar
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: context.vineColors.primaryText,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(context.l10n.videoGridDeletingContent),
-              ],
-            ),
-            backgroundColor: VineTheme.warning,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-
-      final start = await _ownerVideoActionsCubit.deleteVideo(video);
-      if (start == OwnerVideoDeleteStart.busy) return;
-      if (!context.mounted) return;
-      final operation = _ownerVideoActionsCubit.state.forVideo(video.id);
-      if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
-        showOwnerVideoCleanupCompletion(
-          context,
-          _ownerVideoActionsCubit,
-          video.id,
-        );
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  operation.deleteStatus == OwnerVideoDeleteStatus.success
-                      ? Icons.check_circle
-                      : Icons.error,
-                  color: context.vineColors.primaryText,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    operation.deleteStatus == OwnerVideoDeleteStatus.success
-                        ? localizedOwnerVideoDeleteSuccessMessage(
-                            context,
-                            operation,
-                          )
-                        : operation.deleteResult == null
-                        ? context.l10n.shareMenuDeleteFailedGeneric
-                        : localizedDeleteFailureMessage(
-                            context,
-                            operation.deleteResult!,
-                          ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor:
-                operation.deleteStatus == OwnerVideoDeleteStatus.success
-                ? VineTheme.vineGreen
-                : VineTheme.error,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
-            backgroundColor: VineTheme.error,
-          ),
-        );
-      }
-    }
-  }
+      );
 }
 
 class _VideoItem extends StatelessWidget {
@@ -515,16 +315,19 @@ class _VideoItem extends StatelessWidget {
     required this.video,
     required this.aspectRatio,
     required this.onVideoTap,
-    required this.onLongPress,
     required this.index,
     required this.displayedVideos,
+    this.onLongPress,
     this.isInSubscribedList = false,
   });
 
   final VideoEvent video;
   final double aspectRatio;
   final Function(List<VideoEvent> videos, int index) onVideoTap;
-  final VoidCallback onLongPress;
+
+  /// Opens the own-video actions sheet; `null` for videos the viewer does not
+  /// own, so neither the gesture nor the semantics action is offered.
+  final VoidCallback? onLongPress;
   final int index;
   final List<VideoEvent> displayedVideos;
   final bool isInSubscribedList;
@@ -535,6 +338,10 @@ class _VideoItem extends StatelessWidget {
       identifier: 'video_thumbnail_$index',
       label: context.l10n.profileVideoThumbnailLabel(index + 1),
       button: true,
+      onLongPress: onLongPress,
+      onLongPressHint: onLongPress == null
+          ? null
+          : context.l10n.videoGridOptionsTitle,
       child: GestureDetector(
         onTap: () => onVideoTap(displayedVideos, index),
         onLongPress: onLongPress,

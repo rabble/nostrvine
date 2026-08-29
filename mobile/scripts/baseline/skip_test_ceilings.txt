@@ -74,7 +74,6 @@ test/unit/services/video_event_service_infinite_scroll_test.dart	4 # recover: 3 
 test/unit/services/video_event_service_subscription_test.dart	1 # rewrite: kind 22 fixture never ingested; needs a 34236 event (#4836)
 test/widget/screens/hashtag_feed_screen_test.dart	1 # rewrite: container lacks sharedpreferencesprovider override (#4836)
 test/widgets/all_settings_screens_scaffold_test.dart	2 # rewrite: relaysettingsscreen throws: no sharedprefs override (#4836)
-test/widgets/composable_video_grid_test.dart	5 # rewrite: fails on missing sharedprefs override, not the stated ws (#4836)
 test/widgets/comprehensive_clickable_hashtag_text_test.dart	4 # rewrite: taps need a gorouter harness; style expects materialcolor (#4836)
 test/widgets/profile_menu_drafts_test.dart	1 # delete: inline fake sheet; libraryscreen has no 'drafts' text (#4836)
 test/widgets/settings_bottom_nav_test.dart	1 # delete: settings screens have no bottomnavigationbar or fab (#4836)
