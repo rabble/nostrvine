@@ -12,16 +12,13 @@ typedef OnReconnectCallback = void Function();
 
 /// Monitors connection status for relays and network connectivity
 class ConnectionStatusService extends ChangeNotifier {
-  ConnectionStatusService() {
-    _startMonitoring();
-  }
+  ConnectionStatusService();
 
   bool _isConnected = true;
   bool _isConnecting = false;
   final Map<String, bool> _relayStatuses = {};
 
   final _statusController = StreamController<bool>.broadcast();
-  Timer? _monitoringTimer;
 
   /// Callbacks to invoke when connection is restored (offline -> online)
   final List<OnReconnectCallback> _reconnectCallbacks = [];
@@ -113,17 +110,6 @@ class ConnectionStatusService extends ChangeNotifier {
     }
   }
 
-  /// Forces a connection check
-  Future<void> checkConnection() async {
-    setConnecting(true);
-
-    // Simulate connection check - in real implementation, this would
-    // ping relays or check network connectivity
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    setConnecting(false);
-  }
-
   /// Gets connection information for debugging/analytics
   Map<String, dynamic> getConnectionInfo() {
     return {
@@ -136,23 +122,8 @@ class ConnectionStatusService extends ChangeNotifier {
     };
   }
 
-  /// Starts periodic monitoring of connection status
-  void _startMonitoring() {
-    _monitoringTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => checkConnection(),
-    );
-  }
-
-  /// Stops monitoring and cleans up resources
-  void stopMonitoring() {
-    _monitoringTimer?.cancel();
-    _monitoringTimer = null;
-  }
-
   @override
   void dispose() {
-    stopMonitoring();
     _statusController.close();
     super.dispose();
   }

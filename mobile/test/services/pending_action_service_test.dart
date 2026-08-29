@@ -2,6 +2,8 @@
 // ABOUTME: Tests offline action queuing, sync on reconnect, and action
 // ABOUTME: cancellation using Drift database
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -274,6 +276,83 @@ void main() {
         expect(executedActions.length, equals(1));
         expect(executedActions.first.targetId, equals('event123'));
         expect(service.pendingActions, isEmpty);
+      });
+
+      test(
+        'does not run twice when called again during the DAO read',
+        () async {
+          // Regression for a TOCTOU window (#6934). _isSyncing used to be set
+          // only AFTER `await _dao.getPendingActions(...)`, so two calls
+          // arriving inside that suspension point both cleared the guard and
+          // both ran the loop — publishing every queued action twice. The 30s
+          // ConnectionStatusService loop produced exactly such a pair, 100ms
+          // apart. The guard is now claimed before the first await.
+          when(() => mockConnectionService.isOnline).thenReturn(true);
+
+          await service.queueAction(
+            type: PendingActionType.like,
+            targetId: 'event123',
+            authorPubkey: 'author123',
+          );
+
+          final gate = Completer<void>();
+          var executorCalls = 0;
+          service.registerExecutor(PendingActionType.like, (_) async {
+            executorCalls++;
+            await gate.future;
+          });
+
+          // No yield between the two calls. An async body runs synchronously up
+          // to its first await, so the fixed version claims _isSyncing before
+          // suspending on the DAO read and the second call bails out. With the
+          // flag set after that await instead, both calls clear the guard and
+          // both run the loop — which is the bug. Yielding here would hide it,
+          // because the first call would have set the flag either way.
+          final first = service.syncPendingActions();
+          final second = service.syncPendingActions();
+
+          gate.complete();
+          await Future.wait([first, second]);
+
+          expect(
+            executorCalls,
+            equals(1),
+            reason: 'a concurrent call must not re-publish the queued action',
+          );
+        },
+      );
+
+      test('releases the sync guard when an executor throws', () async {
+        // The old code set _isSyncing = false only on the success path, so a
+        // throwing executor left the service permanently unable to sync.
+        when(() => mockConnectionService.isOnline).thenReturn(true);
+
+        await service.queueAction(
+          type: PendingActionType.like,
+          targetId: 'event123',
+          authorPubkey: 'author123',
+        );
+
+        var calls = 0;
+        service.registerExecutor(PendingActionType.like, (_) async {
+          calls++;
+          throw Exception('Network error');
+        });
+
+        await service.syncPendingActions();
+        final afterFirstSync = calls;
+        await service.syncPendingActions();
+
+        expect(
+          afterFirstSync,
+          greaterThan(0),
+          reason: 'the first sync must have reached the executor',
+        );
+        expect(
+          calls,
+          greaterThan(afterFirstSync),
+          reason: 'a second sync must still be possible after a failure',
+        );
       });
 
       test('marks action as failed after max retries', () async {

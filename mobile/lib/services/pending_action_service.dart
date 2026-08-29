@@ -257,39 +257,47 @@ class PendingActionService extends ChangeNotifier {
       return;
     }
 
-    final actions = await _dao.getPendingActions(_userPubkey);
-    if (actions.isEmpty) {
-      Log.debug(
-        'No pending actions to sync',
-        name: 'PendingActionService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
+    // Claim the slot before the first suspension point. The DAO read below
+    // is an await, so two calls arriving close together could both clear the
+    // guard above and run the loop, publishing every queued action twice.
+    // The finally also releases the slot when _syncAction throws, which
+    // previously left the service unable to sync again for the session.
     _isSyncing = true;
-    notifyListeners();
-
-    Log.info(
-      'Starting sync of ${actions.length} pending actions',
-      name: 'PendingActionService',
-      category: LogCategory.system,
-    );
-
-    for (final action in actions) {
-      if (!_connectionStatusService.isOnline) {
-        Log.warning(
-          'Lost connectivity during sync, pausing',
+    try {
+      final actions = await _dao.getPendingActions(_userPubkey);
+      if (actions.isEmpty) {
+        Log.debug(
+          'No pending actions to sync',
           name: 'PendingActionService',
           category: LogCategory.system,
         );
-        break;
+        return;
       }
 
-      await _syncAction(action);
+      notifyListeners();
+
+      Log.info(
+        'Starting sync of ${actions.length} pending actions',
+        name: 'PendingActionService',
+        category: LogCategory.system,
+      );
+
+      for (final action in actions) {
+        if (!_connectionStatusService.isOnline) {
+          Log.warning(
+            'Lost connectivity during sync, pausing',
+            name: 'PendingActionService',
+            category: LogCategory.system,
+          );
+          break;
+        }
+
+        await _syncAction(action);
+      }
+    } finally {
+      _isSyncing = false;
     }
 
-    _isSyncing = false;
     await _refreshCache();
     notifyListeners();
 
