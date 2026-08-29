@@ -27,6 +27,7 @@ import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
+import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -179,8 +180,10 @@ class VideoPublishService {
     this.languagePreferenceService,
     this.mentionResolutionService,
     PerformanceTraceMonitor? performanceMonitor,
+    DraftUploadMaterializer draftMaterializer = const DraftUploadMaterializer(),
     Duration subtitlePublishTimeout = _defaultSubtitlePublishTimeout,
-  }) : _performanceMonitor =
+  }) : _draftMaterializer = draftMaterializer,
+       _performanceMonitor =
            performanceMonitor ?? const NoOpPerformanceTraceMonitor(),
        _subtitlePublishTimeout = subtitlePublishTimeout;
 
@@ -214,6 +217,7 @@ class VideoPublishService {
   /// Reports the publish phase breakdown to Firebase Performance. Optional so
   /// unit tests get the no-op monitor and never reach Firebase.
   final PerformanceTraceMonitor _performanceMonitor;
+  final DraftUploadMaterializer _draftMaterializer;
 
   /// Deadline for each optional caption-asset network step. Captions are
   /// best-effort, so a stalled upload / relay publish must never hold up the
@@ -863,10 +867,27 @@ class VideoPublishService {
     Log.info('📝 Starting upload to Blossom...', category: .video);
     _logProofModeStatus(draft);
 
-    final pendingUpload = await uploadManager.startUploadFromDraft(
+    final materialized = await _draftMaterializer.materialize(
       draft: draft,
+      pendingUploads: uploadManager.pendingUploads,
+    );
+
+    final pendingUpload = await uploadManager.startUpload(
+      videoFile: materialized.videoFile,
       nostrPubkey: pubkey,
+      title: draft.title,
+      description: draft.description,
+      hashtags: draft.hashtags.toList(),
+      videoWidth: materialized.videoWidth,
+      videoHeight: materialized.videoHeight,
+      videoDuration: materialized.videoDuration,
+      proofManifestJson: draft.proofManifestJson,
+      thumbnailTimestamp: draft.thumbnailTimestamp,
       onProgress: (value) => _reportUploadProgress(draft.id, value),
+    );
+    uploadManager.registerTransientRenderPaths(
+      pendingUpload.id,
+      materialized.transientRenderPaths,
     );
     _backgroundUploadId = pendingUpload.id;
 
