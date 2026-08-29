@@ -495,6 +495,12 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     }
   }
 
+  /// Surfaces a "Delete for everyone" that every recipient refused (#8201).
+  ///
+  /// The message is already back in the thread — the repository un-hides it,
+  /// because nothing was retracted — so the retry affordance is the same
+  /// Delete action on that bubble, not a button on this toast. A mixed
+  /// outcome stays hidden and never reaches this listener.
   void _onRetractionRefused(BuildContext context, ConversationState state) {
     final message = context.l10n.dmDeleteRefusedMessage;
     ScaffoldMessenger.of(context)

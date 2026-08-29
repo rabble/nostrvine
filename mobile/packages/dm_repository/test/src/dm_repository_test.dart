@@ -13312,6 +13312,7 @@ void main() {
         when(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: any(named: 'restoreToThread'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => true);
@@ -13505,6 +13506,7 @@ void main() {
         verifyNever(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: any(named: 'restoreToThread'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         );
@@ -13527,6 +13529,7 @@ void main() {
           verify(
             () => mockDirectMessagesDao.markMessageDeletionBlocked(
               _rumorEventId,
+              restoreToThread: any(named: 'restoreToThread'),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).called(1);
@@ -13687,6 +13690,7 @@ void main() {
         when(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: any(named: 'restoreToThread'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).thenAnswer((_) async => true);
@@ -13830,9 +13834,11 @@ void main() {
         final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
 
         expect(outcome, equals(DmMessageDeletionOutcome.blocked));
+        // Nothing was retracted anywhere, so the message comes back.
         verify(
           () => mockDirectMessagesDao.markMessageDeletionBlocked(
             _rumorEventId,
+            restoreToThread: true,
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
         ).called(1);
@@ -13855,6 +13861,80 @@ void main() {
           () => mockDirectMessagesDao.markMessageDeletionSent(
             any(),
             ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      });
+
+      test('keeps a partially delivered retraction hidden', () async {
+        // #8206 review, item 1. `_fanOutDeletion` records blocked whenever
+        // every FAILED recipient was blocked, so a group where one member
+        // accepted the kind-5 and another refused lands here. The retraction
+        // really happened for the member that accepted, so the sender's copy
+        // must stay hidden rather than claim the message "is still there".
+        final repo = createRepository();
+        stubPendingDeletion();
+        when(
+          () => mockConversationsDao.getConversation(
+            conversationId,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => ConversationRow(
+            id: conversationId,
+            participantPubkeys:
+                '["$_validPubkeyA","$_validPubkeyB","$_validPubkeyC"]',
+            isGroup: true,
+            createdAt: 1700000000,
+            isRead: true,
+            currentUserHasSent: true,
+          ),
+        );
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: _validPubkeyB,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+        when(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: _validPubkeyC,
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+          ),
+        ).thenAnswer((_) async => const NIP17SendResult.blocked('blocked'));
+
+        final outcome = await repo.retryMessageDeletion(rumorId: _rumorEventId);
+
+        expect(outcome, equals(DmMessageDeletionOutcome.blocked));
+        verify(
+          () => mockDirectMessagesDao.markMessageDeletionBlocked(
+            _rumorEventId,
+            restoreToThread: false,
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).called(1);
+        // Nothing came back to the thread, so the preview must not be
+        // rebuilt to put it back in the inbox either.
+        verifyNever(
+          () => mockConversationsDao.upsertConversation(
+            id: conversationId,
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: 'Hello',
+            lastMessageTimestamp: 1700000000,
+            lastMessageSenderPubkey: _validPubkeyA,
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: true,
           ),
         );
       });

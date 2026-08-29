@@ -617,6 +617,35 @@ void main() {
           expect(pending, isEmpty);
         });
 
+        test('re-hides a row that a confirmed retraction settles', () async {
+          // A restored blocked row is visible AND holds a rumor, which is
+          // exactly what `retryMessageDeletion` accepts. If that replay ever
+          // confirms, the message must not stay on screen — the inverse of
+          // the #8165 lie this branch exists to fix.
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+          await dao.markMessageDeletionBlocked(
+            'msg_del',
+            restoreToThread: true,
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          await dao.markMessageDeletionSent(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isTrue);
+        });
+
         test('excludes a blocked deletion', () async {
           await insertOwnMessage();
           await dao.markMessageDeletionPending(
@@ -626,6 +655,7 @@ void main() {
           );
           await dao.markMessageDeletionBlocked(
             'msg_del',
+            restoreToThread: true,
             ownerPubkey: 'pubkey_alice',
           );
 
@@ -693,6 +723,7 @@ void main() {
 
           final settled = await dao.markMessageDeletionBlocked(
             'msg_del',
+            restoreToThread: true,
             ownerPubkey: 'pubkey_alice',
           );
 
@@ -719,6 +750,7 @@ void main() {
 
             await dao.markMessageDeletionBlocked(
               'msg_del',
+              restoreToThread: true,
               ownerPubkey: 'pubkey_alice',
             );
 
@@ -742,6 +774,7 @@ void main() {
           );
           await dao.markMessageDeletionBlocked(
             'msg_del',
+            restoreToThread: true,
             ownerPubkey: 'pubkey_alice',
           );
 
@@ -807,6 +840,7 @@ void main() {
 
           await dao.markMessageDeletionBlocked(
             'msg_del',
+            restoreToThread: true,
             ownerPubkey: 'pubkey_alice',
           );
 
@@ -815,6 +849,36 @@ void main() {
             ownerPubkey: 'pubkey_alice',
           );
           expect(row!.isDeleted, isFalse);
+        });
+
+        // A mixed outcome — some recipients accepted, the rest blocked — is
+        // recorded blocked too, but must NOT come back: the message really is
+        // retracted for the recipients that accepted, so un-hiding it would
+        // claim it "is still there" for a thread that mostly dropped it
+        // (#8206 review, item 1).
+        test('keeps a partially delivered retraction hidden', () async {
+          await insertOwnMessage();
+          await dao.markMessageDeletionPending(
+            'msg_del',
+            deletionRumorJson: '{"kind":5}',
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          await dao.markMessageDeletionBlocked(
+            'msg_del',
+            restoreToThread: false,
+            ownerPubkey: 'pubkey_alice',
+          );
+
+          final row = await dao.getMessageById(
+            'msg_del',
+            ownerPubkey: 'pubkey_alice',
+          );
+          expect(row!.isDeleted, isTrue);
+          expect(row.deletionPublishStatus, equals('deletion_blocked'));
+          // The payload survives either way — it is the retraction's identity,
+          // not what makes the row recoverable.
+          expect(row.deletionRumorJson, isNotNull);
         });
       });
     });

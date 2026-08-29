@@ -6262,7 +6262,7 @@ class DmRepository {
     required List<String> recipients,
   }) async {
     try {
-      final result = await _fanOutDeletion(
+      final (:result, :anyRecipientAccepted) = await _fanOutDeletion(
         deletion: deletion,
         recipients: recipients,
       );
@@ -6279,28 +6279,41 @@ class DmRepository {
           return DmMessageDeletionOutcome.sent;
         case NIP17SendFailure(:final error, :final blocked):
           if (blocked) {
+            // Only a WHOLLY refused retraction comes back to the thread. When
+            // some recipients accepted, the message really is retracted for
+            // them, so un-hiding it here would tell the sender it "is still
+            // there" and offer a retry that mints a second kind-5 for people
+            // who already applied the first. That mixed outcome needs its own
+            // partial-retraction UX, and stays hidden until it has one
+            // (#8206 review, item 1).
+            final restored = !anyRecipientAccepted;
             await _directMessagesDao.markMessageDeletionBlocked(
               rumorId,
+              restoreToThread: restored,
               ownerPubkey: _ownerPubkey,
             );
-            // The pending write removed this message from the denormalized
-            // inbox preview. Blocking restores the row to the thread, so the
-            // preview must be rebuilt from that restored visible set too.
-            try {
-              await _refreshConversationPreview(conversationId);
-            } on Object catch (e, stackTrace) {
-              // The durable outcome is already blocked. A denormalized preview
-              // failure must not relabel it unconfirmed and invite retries.
-              Log.error(
-                'Failed to restore conversation preview after blocked '
-                'deletion of $rumorId: $e',
-                category: LogCategory.system,
-                error: e,
-                stackTrace: stackTrace,
-              );
+            if (restored) {
+              // The pending write removed this message from the denormalized
+              // inbox preview. Restoring it to the thread has to rebuild the
+              // preview from that restored visible set too.
+              try {
+                await _refreshConversationPreview(conversationId);
+              } on Object catch (e, stackTrace) {
+                // The durable outcome is already blocked. A denormalized
+                // preview failure must not relabel it unconfirmed and invite
+                // retries.
+                Log.error(
+                  'Failed to restore conversation preview after blocked '
+                  'deletion of $rumorId: $e',
+                  category: LogCategory.system,
+                  error: e,
+                  stackTrace: stackTrace,
+                );
+              }
             }
             Log.info(
-              'Deletion of $rumorId refused by send policy; not retrying',
+              'Deletion of $rumorId refused by send policy; not retrying '
+              '(restoredToThread=$restored)',
               category: LogCategory.system,
             );
             return DmMessageDeletionOutcome.blocked;
@@ -6421,7 +6434,8 @@ class DmRepository {
   /// `retryablePending`. Nothing can observe it here: this result is consumed
   /// only by [_driveMessageDeletion], which branches on `blocked` alone and
   /// returns a [DmMessageDeletionOutcome], so the flag would be dead weight.
-  Future<NIP17SendResult> _fanOutDeletion({
+  Future<({NIP17SendResult result, bool anyRecipientAccepted})>
+  _fanOutDeletion({
     required Event deletion,
     required List<String> recipients,
   }) async {
@@ -6482,19 +6496,28 @@ class DmRepository {
           failures.add(result);
       }
     }
+    final anyRecipientAccepted = lastSuccess != null;
     if (failures.isEmpty) {
-      return lastSuccess ??
-          const NIP17SendResult.failure('No deletion wrap recipients');
+      return (
+        result:
+            lastSuccess ??
+            const NIP17SendResult.failure('No deletion wrap recipients'),
+        anyRecipientAccepted: anyRecipientAccepted,
+      );
     }
     final summary = failures.map((f) => f.error).join('; ');
     // Terminal-refused only when every failure was a policy block — the
     // non-blocked members have all confirmed by then, and no retry can change
     // a refusal. A mixed outcome is still recorded blocked rather than sent,
-    // because `sent` is the claim that would be false.
-    if (failures.every((f) => f.blocked)) {
-      return NIP17SendResult.blocked(summary);
-    }
-    return NIP17SendResult.failure(summary);
+    // because `sent` is the claim that would be false. `anyRecipientAccepted`
+    // is what separates the two for the caller, which must not un-hide a
+    // message some recipients have already dropped (#8206 review, item 1).
+    return (
+      result: failures.every((f) => f.blocked)
+          ? NIP17SendResult.blocked(summary)
+          : NIP17SendResult.failure(summary),
+      anyRecipientAccepted: anyRecipientAccepted,
+    );
   }
 
   /// Refreshes the denormalized preview columns of [conversationId] from its

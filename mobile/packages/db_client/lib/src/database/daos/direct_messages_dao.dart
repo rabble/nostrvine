@@ -335,25 +335,33 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// `retryMessageDeletion` so the replay carries a byte-identical id; that is
   /// gated on the retry UX decision on #8201.
   ///
-  /// The message is also **returned to the thread** (#8201). It was hidden
-  /// optimistically when the deletion was enqueued; leaving it hidden once the
-  /// send is refused repeats the #8165 lie in a new place — the retraction was
-  /// not confirmed for every recipient, and the row is the only thing the user
-  /// can act on to try again. Note this un-hides the sender's own copy in the
-  /// mixed case too, where recipients outside the block already applied the
-  /// retraction. It also fires beyond a policy refusal: the marker this status
-  /// is derived from is a bare substring match with several Keycast sources, so
+  /// [restoreToThread] returns the message to the thread (#8201). It was
+  /// hidden optimistically when the deletion was enqueued; leaving it hidden
+  /// once the send is wholly refused repeats the #8165 lie in a new place —
+  /// nothing was retracted, and the row is the only thing the user can act on
+  /// to try again.
+  ///
+  /// The caller passes `false` for a **mixed** outcome, where recipients
+  /// outside the block already applied the retraction. Un-hiding there would
+  /// claim the message "is still there" for a thread that mostly dropped it,
+  /// and the retry it invites mints a second kind-5 for those recipients.
+  /// A partial retraction needs its own UX; until it has one, the row stays
+  /// hidden and only the status records what happened.
+  ///
+  /// Blocked also fires beyond a policy refusal: the marker this status is
+  /// derived from is a bare substring match with several Keycast sources, so
   /// #7337's scope-denied signer 403 reaches this branch once an authorization
   /// without kind-13 signing scope is in play — a row recorded blocked was not
   /// necessarily refused by send policy at all.
   Future<bool> markMessageDeletionBlocked(
     String rumorId, {
+    required bool restoreToThread,
     String? ownerPubkey,
   }) => _settleMessageDeletion(
     rumorId,
     status: deletionBlocked,
     retainRumor: true,
-    restoreToThread: true,
+    restoreToThread: restoreToThread,
     ownerPubkey: ownerPubkey,
   );
 
@@ -363,6 +371,14 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// whether the payload survives, and whether the message comes back, are the
   /// whole difference between the two terminal states, so a future third
   /// caller has to decide both deliberately.
+  ///
+  /// `is_deleted` is written in both directions rather than left absent. A
+  /// terminal status used to be reachable only from `deletion_pending`, where
+  /// the row was already hidden, so "leave it alone" and "hide it" coincided.
+  /// A restored blocked row is the first state where they do not: it is
+  /// visible AND holds a rumor, which is exactly what `retryMessageDeletion`
+  /// accepts, so a later confirmed retraction reaching
+  /// [markMessageDeletionSent] would otherwise leave the message on screen.
   Future<bool> _settleMessageDeletion(
     String rumorId, {
     required String status,
@@ -381,9 +397,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
                 deletionRumorJson: retainRumor
                     ? const Value.absent()
                     : const Value(null),
-                isDeleted: restoreToThread
-                    ? const Value(false)
-                    : const Value.absent(),
+                isDeleted: Value(!restoreToThread),
                 deletionPublishStatus: Value(status),
               ),
             );

@@ -80,14 +80,20 @@ class DmMessage extends Equatable {
   /// bubbles and aggregate their delivery status.
   final String? sendBatchId;
 
-  /// Whether a "Delete for everyone" on this message was refused by send
-  /// policy and will not be retried (#8201).
+  /// Whether a "Delete for everyone" on this message was refused for every
+  /// recipient (#8201).
   ///
   /// This is the only deletion state a thread can show. A retraction still in
   /// flight, or one that landed, both leave the row soft-deleted and therefore
   /// filtered out of the conversation stream — so a visible message is either
-  /// ordinary or one whose retraction was refused. The bubble is back on
-  /// screen because the message was never retracted; saying so is the point.
+  /// ordinary or one whose retraction was wholly refused. The bubble is back
+  /// on screen because nothing was retracted; saying so is the point.
+  ///
+  /// A **mixed** outcome — some recipients accepted, the rest blocked — is
+  /// recorded blocked too, but stays hidden and never sets this flag, because
+  /// the message really is retracted for the recipients that accepted.
+  /// "Refused" is also not always a send-policy verdict: the marker behind the
+  /// status has several Keycast sources.
   final bool retractionBlocked;
 
   /// Whether this is a file message (kind 15).
