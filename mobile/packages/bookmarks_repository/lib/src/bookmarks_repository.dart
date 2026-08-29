@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bookmarks_repository/src/bookmark_signer.dart';
 import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -156,7 +156,7 @@ class _PrivateItemsRead {
 class BookmarkService {
   BookmarkService({
     required NostrClient nostrService,
-    required AuthService authService,
+    required BookmarkSigner authService,
     required SharedPreferences prefs,
     DateTime Function() now = DateTime.now,
   }) : _nostrService = nostrService,
@@ -167,7 +167,7 @@ class BookmarkService {
   }
 
   final NostrClient _nostrService;
-  final AuthService _authService;
+  final BookmarkSigner _authService;
   final SharedPreferences _prefs;
   final DateTime Function() _now;
 

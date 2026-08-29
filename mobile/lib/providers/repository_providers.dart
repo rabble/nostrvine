@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:badge_repository/badge_repository.dart';
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -38,7 +39,6 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
@@ -567,7 +567,14 @@ NotifySubscriptionsRepository notifySubscriptionsRepository(Ref ref) {
   return repository;
 }
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 @riverpod
 Future<BookmarkService> bookmarkService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);

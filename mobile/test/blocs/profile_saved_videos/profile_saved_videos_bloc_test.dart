@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +13,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class _MockBookmarkService extends Mock implements BookmarkService {}

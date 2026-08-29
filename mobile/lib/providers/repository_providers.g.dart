@@ -765,12 +765,26 @@ final class NotifySubscriptionsRepositoryProvider
 String _$notifySubscriptionsRepositoryHash() =>
     r'54ed8c30c8819f524052ba4abaccb01dfaeaacce';
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 
 @ProviderFor(bookmarkService)
 final bookmarkServiceProvider = BookmarkServiceProvider._();
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 
 final class BookmarkServiceProvider
     extends
@@ -780,7 +794,14 @@ final class BookmarkServiceProvider
           FutureOr<BookmarkService>
         >
     with $FutureModifier<BookmarkService>, $FutureProvider<BookmarkService> {
-  /// Bookmark service for NIP-51 bookmarks
+  /// Bookmark service for NIP-51 bookmarks.
+  ///
+  /// Deliberately left as an autoDispose `Future` provider by the #6969
+  /// package extraction, so that move stayed behaviour-preserving. Both
+  /// consumers read it with `ref.read(...future)`, which leaves no listener, so
+  /// every read tears the element down and builds a fresh instance — dropping
+  /// its in-memory snapshot and its serialization queue. That is #7596, and it
+  /// is fixed next, not here.
   BookmarkServiceProvider._()
     : super(
         from: null,

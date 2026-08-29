@@ -4,24 +4,22 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip04/nip04.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
+import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/utils/nostr_timestamp.dart';
-import 'package:openvine/services/auth/nostr_identity.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockAuthService extends Mock implements AuthService {}
+class _MockBookmarkSigner extends Mock implements BookmarkSigner {}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -33,15 +31,14 @@ void main() {
 
   group(BookmarkService, () {
     late _MockNostrClient nostrClient;
-    late _MockAuthService authService;
+    late _MockBookmarkSigner authService;
     late SharedPreferences prefs;
     late String pubkey;
 
-    /// A real local identity, so NIP-44 in these tests is the actual crypto
-    /// rather than a stub. `NostrIdentity` is sealed and cannot be mocked, and
-    /// using the real signer is what makes the private-item fixtures genuine
-    /// NIP-51 payloads.
-    late LocalNostrIdentity identity;
+    /// A real local signer, so NIP-44 in these tests is the actual crypto
+    /// rather than a stub. Using the real signer is what makes the
+    /// private-item fixtures genuine NIP-51 payloads.
+    late LocalNostrSigner identity;
 
     /// The tags of the last kind-10003 handed to the signer.
     List<List<String>>? signedTags;
@@ -170,11 +167,9 @@ void main() {
     setUp(() async {
       final privateKeyHex = generatePrivateKey();
       pubkey = getPublicKey(privateKeyHex);
-      identity = LocalNostrIdentity(
-        keyContainer: SecureKeyContainer.fromPrivateKeyHex(privateKeyHex),
-      );
+      identity = LocalNostrSigner(privateKeyHex);
       nostrClient = _MockNostrClient();
-      authService = _MockAuthService();
+      authService = _MockBookmarkSigner();
       signedTags = null;
       signedContent = null;
       signedCreatedAt = null;
@@ -1859,13 +1854,10 @@ void main() {
         test('refuses to publish when the signer cannot decrypt', () async {
           // Content encrypted to a different identity: real ciphertext this
           // signer will never read.
-          final stranger = LocalNostrIdentity(
-            keyContainer: SecureKeyContainer.fromPrivateKeyHex(
-              generatePrivateKey(),
-            ),
-          );
+          final strangerKey = generatePrivateKey();
+          final stranger = LocalNostrSigner(strangerKey);
           final foreign = await stranger.nip44Encrypt(
-            stranger.pubkey,
+            getPublicKey(strangerKey),
             jsonEncode([
               ['e', privateVideo],
             ]),
