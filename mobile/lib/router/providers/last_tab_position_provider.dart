@@ -16,6 +16,16 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
 
       if (ctx.type == RouteType.home) return;
 
+      // Inbox is tab 2's base state. Returning to it must clear any remembered
+      // notification feed, or leaving and restoring the tab reopens stale
+      // notification content instead of the inbox the user last visited.
+      if (ctx.type == RouteType.inbox) {
+        if (state.containsKey(RouteType.notifications)) {
+          state = {...state}..remove(RouteType.notifications);
+        }
+        return;
+      }
+
       // Only track video-based routes
       if (ctx.type == RouteType.videoRecorder ||
           ctx.type == RouteType.videoEditor ||

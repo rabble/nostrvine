@@ -215,6 +215,20 @@ void main() {
         expect(result.location, equals('/notifications/3'));
       });
 
+      testWidgets('returns to inbox after leaving a notification feed', (
+        tester,
+      ) async {
+        final result = await pressBackAfterVisiting(tester, [
+          '/home/0',
+          '/notifications/3',
+          '/inbox',
+          '/explore',
+        ]);
+
+        expect(result.handled, isTrue);
+        expect(result.location, equals('/inbox'));
+      });
+
       // Proves the pop arm is reachable: GoRouter.canPop() is false at a
       // branch root and true once a route is pushed, so a pushed hashtag grid
       // pops back where it came from instead of replacing the stack with

@@ -123,6 +123,18 @@ void main() {
         );
       });
 
+      test('clears a notification feed after returning to the inbox', () async {
+        await visit(['/notifications/3', '/inbox']);
+
+        expect(
+          container
+              .read(lastTabPositionProvider.notifier)
+              .recordedPosition(RouteType.notifications),
+          isNull,
+          reason: 'tab 2 should restore the inbox the user last visited',
+        );
+      });
+
       test(
         'stays null for notifications after only visiting the inbox',
         () async {
