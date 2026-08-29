@@ -17,7 +17,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/owner_video_actions_sheet.dart';
@@ -133,10 +132,19 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
   String? _resolveViewerPubkey() {
     // Identity gating for UI, so the auth state is the right rebuild trigger:
     // signing readiness (`nostrSessionProvider`) is a different question.
-    final authState = ref.watch(currentAuthStateProvider);
-    if (authState != AuthState.authenticated) return null;
+    ref.watch(currentAuthStateProvider);
+    final authService = ref.read(authServiceProvider);
+    // Sign-out queues the client replacement, so the outgoing client can still
+    // hand back its cached key on a rebuild. Neither identity source is
+    // trustworthy until the session itself says it is authenticated.
+    //
+    // Read as a bool rather than comparing against `AuthState.authenticated`:
+    // naming the enum would mean importing `services/auth_service.dart` into
+    // the UI layer, which `check_ui_service_boundary.sh` forbids.
+    // `AuthService.isAuthenticated` is defined as exactly that comparison.
+    if (!authService.isAuthenticated) return null;
 
-    final fromAuthService = ref.read(authServiceProvider).currentPublicKeyHex;
+    final fromAuthService = authService.currentPublicKeyHex;
     if (fromAuthService != null && fromAuthService.isNotEmpty) {
       return fromAuthService;
     }

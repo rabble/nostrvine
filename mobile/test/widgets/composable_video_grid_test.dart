@@ -83,9 +83,15 @@ List<Override> _gridOverrides(
   ...extra,
 ];
 
+/// A mock auth service reporting a signed-in session for [pubkey].
+///
+/// `createMockAuthService` stubs `authState` and `isAuthenticated`
+/// independently, so both are set here: the grid reads the bool, and leaving
+/// them inconsistent would make a "signed in" fixture behave as signed out.
 MockAuthService _authenticatedAuthService(String pubkey) {
   final authService = createMockAuthService();
   when(() => authService.authState).thenReturn(AuthState.authenticated);
+  when(() => authService.isAuthenticated).thenReturn(true);
   when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
   return authService;
 }
@@ -770,11 +776,11 @@ void main() {
         when(() => mockNostr.publicKey).thenReturn(nostrClientPubkey);
         final mockAuth = createMockAuthService();
         when(() => mockAuth.currentPublicKeyHex).thenReturn(authServicePubkey);
+        final signedIn = authServicePubkey != null;
         when(() => mockAuth.authState).thenReturn(
-          authServicePubkey == null
-              ? AuthState.unauthenticated
-              : AuthState.authenticated,
+          signedIn ? AuthState.authenticated : AuthState.unauthenticated,
         );
+        when(() => mockAuth.isAuthenticated).thenReturn(signedIn);
 
         await tester.pumpWidget(
           ProviderScope(
