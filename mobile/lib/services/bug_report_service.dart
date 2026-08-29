@@ -32,8 +32,10 @@ class BugReportService {
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
     Future<PackageInfo> Function()? packageInfoLoader,
+    Future<Map<String, dynamic>> Function()? supportDiagnosticsLoader,
   }) : _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
        _storageManagementService = storageManagementService,
+       _supportDiagnosticsLoader = supportDiagnosticsLoader,
        _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform;
 
   static const _uuid = Uuid();
@@ -41,6 +43,7 @@ class BugReportService {
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
   final Future<PackageInfo> Function() _packageInfoLoader;
+  final Future<Map<String, dynamic>> Function()? _supportDiagnosticsLoader;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -136,6 +139,20 @@ class BugReportService {
 
       // Get error counts from the injected ErrorAnalyticsTracker
       final errorCounts = _errorTracker.getAllErrorCounts();
+
+      Map<String, dynamic>? supportDiagnostics;
+      try {
+        supportDiagnostics = await _supportDiagnosticsLoader?.call();
+      } on Object catch (error) {
+        Log.warning(
+          'Failed to collect local support diagnostics: $error',
+          category: LogCategory.system,
+        );
+      }
+
+      if (supportDiagnostics != null && supportDiagnostics.isNotEmpty) {
+        deviceInfo = {...deviceInfo, 'localStorage': supportDiagnostics};
+      }
 
       // Create bug report data
       final reportData = BugReportData(

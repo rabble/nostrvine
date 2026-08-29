@@ -102,6 +102,43 @@ void main() {
       expect(data.errorCounts, {'NewVideosTab:feed_load_failed': 1});
     });
 
+    test('includes durable local support diagnostics in the report', () async {
+      final service = BugReportService(
+        supportDiagnosticsLoader: () async => {
+          'databaseRecovery': {
+            'outcome': 'recreatedKeyLoss',
+            'occurredAt': '2026-08-29T17:34:56.000Z',
+          },
+          'contentInventory': {'visibleDraftRows': 0, 'foreignDraftRows': 4},
+        },
+      );
+
+      final data = await service.collectDiagnostics(
+        userDescription: 'My drafts are missing',
+      );
+
+      expect(data.deviceInfo['localStorage'], {
+        'databaseRecovery': {
+          'outcome': 'recreatedKeyLoss',
+          'occurredAt': '2026-08-29T17:34:56.000Z',
+        },
+        'contentInventory': {'visibleDraftRows': 0, 'foreignDraftRows': 4},
+      });
+    });
+
+    test('diagnostic collection failure does not block a report', () async {
+      final service = BugReportService(
+        supportDiagnosticsLoader: () async => throw StateError('db busy'),
+      );
+
+      final data = await service.collectDiagnostics(
+        userDescription: 'My drafts are missing',
+      );
+
+      expect(data.userDescription, 'My drafts are missing');
+      expect(data.additionalContext, isNull);
+    });
+
     test('collectDiagnostics returns sanitized description', () async {
       final data = await service.collectDiagnostics(
         userDescription: 'My key is $_rawNsec and email liz@example.com',

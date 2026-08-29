@@ -3,8 +3,14 @@
 // ABOUTME: without creating an import cycle with storage_providers.
 
 import 'package:openvine/providers/analytics_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/documents_path_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/storage_providers.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/database_recovery_store.dart';
+import 'package:openvine/services/local_content_diagnostics_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bug_report_providers.g.dart';
@@ -12,8 +18,24 @@ part 'bug_report_providers.g.dart';
 /// Bug report service for collecting diagnostics and exporting logs.
 @riverpod
 BugReportService bugReportService(Ref ref) {
+  final database = ref.watch(databaseProvider);
+  final preferences = ref.watch(sharedPreferencesProvider);
+  final clipLibrary = ref.watch(clipLibraryServiceProvider);
   return BugReportService(
     errorTracker: ref.watch(errorAnalyticsTrackerProvider),
     storageManagementService: ref.watch(storageManagementServiceProvider),
+    supportDiagnosticsLoader: () async {
+      final recovery = DatabaseRecoveryStore(preferences: preferences).read();
+      final localContent = await LocalContentDiagnosticsService(
+        clipsDao: database.clipsDao,
+        draftsDao: database.draftsDao,
+        ownerPubkey: clipLibrary.ownerPubkey,
+        documentsPath: ref.read(documentsPathProvider),
+      ).collect();
+      return {
+        if (recovery != null) 'databaseRecovery': recovery.toDiagnostics(),
+        'contentInventory': localContent,
+      };
+    },
   );
 }
