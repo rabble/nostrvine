@@ -285,4 +285,98 @@ void main() {
       expect(trackingService.importProfilesCalled, isTrue);
     });
   });
+
+  group('SeedDataPreloadService cold-start survival', () {
+    late Directory tempDir;
+    late String dbPath;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('seed_expiry_');
+      dbPath = '${tempDir.path}/seed.db';
+    });
+
+    tearDown(() async {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+      // rootBundle caches by asset key, so without this a later test in this
+      // file is served an earlier test's seed payload. Restore the framework's
+      // asset handler too — nulling it would strand asset loading for every
+      // later suite in the shared VGV isolate.
+      rootBundle.clear();
+      restoreFlutterAssetsDefaultHandler();
+    });
+
+    /// A file-backed database, so the seed can be written on one open and read
+    /// back on the next. The failure this pins only appears on the *second*
+    /// open, when `beforeOpen` runs `deleteExpiredEvents`.
+    AppDatabase openDb() => AppDatabase.test(NativeDatabase(File(dbPath)));
+
+    Map<String, dynamic> seedEvent(String id) => <String, dynamic>{
+      'id': id,
+      'pubkey':
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'created_at': 1700000000,
+      'kind': 1,
+      'tags': <List<String>>[],
+      'content': 'seeded',
+      'sig': 's' * 128,
+    };
+
+    test('seeded events survive a second cold start', () async {
+      _mockSeedAsset(
+        _encodeBundle(events: [seedEvent('1'.padLeft(64, '0'))]),
+      );
+
+      // Launch 1: empty database, seed loads.
+      var db = openDb();
+      await SeedDataPreloadService.loadSeedDataIfNeeded(db);
+      expect(await db.nostrEventsDao.getEventCount(), 1);
+      await db.close();
+
+      // Launch 2: beforeOpen runs deleteExpiredEvents, which removes rows whose
+      // expire_at IS NULL as well as past-dated ones. Before #8316 the seed
+      // omitted the column, so every seeded event was destroyed here.
+      db = openDb();
+      expect(await db.nostrEventsDao.getEventCount(), 1);
+      await db.close();
+    });
+
+    test(
+      'a seeded event is not restored once relay rows keep the count non-zero',
+      () async {
+        // The reload is gated on an empty database, so a destroyed seed can
+        // never come back on a device that has fetched anything at all. This
+        // is what made the original loss permanent rather than self-healing.
+        _mockSeedAsset(
+          _encodeBundle(events: [seedEvent('2'.padLeft(64, '0'))]),
+        );
+
+        var db = openDb();
+        await SeedDataPreloadService.loadSeedDataIfNeeded(db);
+
+        // An ordinary relay-cached event, written through the DAO so it carries
+        // the default 1-day expiry.
+        final relayEvent = Event(
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          1,
+          const [],
+          'from a relay',
+          createdAt: 1700000001,
+        )..sig = 'r' * 128;
+        await db.nostrEventsDao.upsertEvent(relayEvent);
+        await db.close();
+
+        db = openDb();
+        await SeedDataPreloadService.loadSeedDataIfNeeded(db);
+
+        expect(
+          await db.nostrEventsDao.getEventById('2'.padLeft(64, '0')),
+          isNotNull,
+          reason: 'the seeded event must still be there on the second launch',
+        );
+        await db.close();
+      },
+    );
+  });
 }
