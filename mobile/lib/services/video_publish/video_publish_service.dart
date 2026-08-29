@@ -731,13 +731,12 @@ class VideoPublishService {
     return _startNewUpload(pubkey, draft);
   }
 
-  /// Resolves the video file path from a draft, mirroring the logic
-  /// in [UploadManager.startUploadFromDraft].
+  /// Resolves the video file path from a draft, mirroring the materializer.
   ///
   /// Note: when `finalRenderedClip` is absent and the draft has multiple
   /// clips, this returns the first source clip path. However,
-  /// [UploadManager.startUploadFromDraft] merges multiple clips into a
-  /// temp file at a different path, so [findReusableUpload] will not
+  /// [DraftUploadMaterializer] merges multiple clips into a temp file at a
+  /// different path, so [findReusableUpload] will not
   /// match in that case. The caller falls through to a new upload, which
   /// is the correct behavior since the merged file is ephemeral.
   Future<String?> _resolveVideoPath(DivineVideoDraft draft) async {

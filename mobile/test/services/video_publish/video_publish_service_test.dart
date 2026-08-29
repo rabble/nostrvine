@@ -1745,6 +1745,69 @@ void main() {
       );
     });
 
+    group('draft upload composition', () {
+      test(
+        'forwards materialized output and registers transient renders',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          final videoFile = File('/materialized/video.mp4');
+          const transientPaths = {'/materialized/stop-motion.mp4'};
+          when(
+            () => mockDraftMaterializer.materialize(
+              draft: any(named: 'draft'),
+              pendingUploads: any(named: 'pendingUploads'),
+              videoDuration: any(named: 'videoDuration'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              videoFile: videoFile,
+              videoWidth: 1080,
+              videoHeight: 1920,
+              videoDuration: const Duration(seconds: 5),
+              transientRenderPaths: transientPaths,
+            ),
+          );
+          final draft = _createTestDraft(
+            proofManifestJson: '{"proof":"manifest"}',
+            thumbnailTimestamp: const Duration(seconds: 2),
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockUploadManager.startUpload(
+              videoFile: videoFile,
+              nostrPubkey: 'test_pubkey',
+              title: 'Test Video',
+              description: 'Test description',
+              hashtags: any(
+                named: 'hashtags',
+                that: unorderedEquals(['test', 'video']),
+              ),
+              videoWidth: 1080,
+              videoHeight: 1920,
+              videoDuration: const Duration(seconds: 5),
+              proofManifestJson: '{"proof":"manifest"}',
+              thumbnailTimestamp: const Duration(seconds: 2),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+          verify(
+            () => mockUploadManager.registerTransientRenderPaths(
+              'test_upload_id',
+              transientPaths,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('upload reuse', () {
       test('reuses readyToPublish upload matching video path', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -2705,6 +2768,8 @@ DivineVideoDraft _createTestDraft({
   Map<String, dynamic> editorStateHistory = const {},
   Set<String> collaboratorPubkeys = const {},
   Map<String, dynamic>? editorEditingParameters,
+  String? proofManifestJson,
+  Duration? thumbnailTimestamp,
 }) {
   return DivineVideoDraft.create(
     clips: [_createTestClip()],
@@ -2716,6 +2781,8 @@ DivineVideoDraft _createTestDraft({
     editorStateHistory: editorStateHistory,
     collaboratorPubkeys: collaboratorPubkeys,
     editorEditingParameters: editorEditingParameters,
+    proofManifestJson: proofManifestJson,
+    thumbnailTimestamp: thumbnailTimestamp,
   );
 }
 

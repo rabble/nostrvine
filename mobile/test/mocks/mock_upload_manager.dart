@@ -38,9 +38,9 @@ class MockUploadManager implements UploadManager {
       videoWidth: videoWidth,
       videoHeight: videoHeight,
       videoDuration: videoDuration,
-      proofManifestJson: nativeProof != null
-          ? json.encode(nativeProof.toJson())
-          : null,
+      proofManifestJson:
+          proofManifestJson ??
+          (nativeProof != null ? json.encode(nativeProof.toJson()) : null),
       thumbnailTimestamp: thumbnailTimestamp,
     );
 

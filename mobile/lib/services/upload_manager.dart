@@ -180,7 +180,7 @@ class UploadManager implements BackgroundAwareService {
   // a disposed manager for up to 5 minutes.
   final Map<String, Timer> _processingPollTimers = {};
 
-  // Uploads the user paused or cancelled while their transfer was still in
+  // Uploads the user cancelled while their transfer was still in
   // flight. Cancelling an OS background transfer emits a `cancelled` terminal
   // event that resolves the in-flight [_performUpload] future as a failure; a
   // marker here lets that path recognise a user-initiated stop and skip
@@ -360,7 +360,7 @@ class UploadManager implements BackgroundAwareService {
   PendingUpload? findReusableUpload(String filePath) =>
       _store.findReusableUpload(filePath);
 
-  /// Start a new video upload (legacy method - prefer startUploadFromDraft)
+  /// Start a new video upload.
   Future<PendingUpload> startUpload({
     required File videoFile,
     required String nostrPubkey,
@@ -735,8 +735,8 @@ class UploadManager implements BackgroundAwareService {
       );
       await _performUploadWithRetry(upload, videoFile, onProgress);
     } catch (e, stackTrace) {
-      // A user-initiated pause/cancel tears down the in-flight transfer, which
-      // surfaces here as a failure. pauseUpload/cancelUpload already wrote the
+      // A user-initiated cancel tears down the in-flight transfer, which
+      // surfaces here as a failure. cancelUpload already wrote the
       // authoritative status, so don't overwrite it or report the stop as a
       // crash — see [_userStoppedUploadIds].
       if (_userStoppedUploadIds.contains(upload.id)) {
