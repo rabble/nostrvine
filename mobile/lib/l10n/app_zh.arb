@@ -204,14 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "分享主页失败：{error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileShareFailed": "分享主页失败，请重试。",
   "profileCopyPublicKey": "复制公钥（npub）",
   "profileGetEmbedCode": "获取嵌入代码",
   "profilePublicKeyCopied": "公钥已复制到剪贴板",
@@ -460,14 +453,10 @@
   "profileSetupImageUrlTitle": "添加图片链接",
   "profileSetupImageSelectionFailed": "选择图片失败，请在下方粘贴图片链接。",
   "profileSetupImagesTypeGroup": "图片",
-  "profileSetupCameraAccessFailed": "相机访问失败：{error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "相机权限已关闭，请在设置中开启后拍照。",
+  "cameraPickErrorPermissionRestricted": "此设备不允许访问相机。",
+  "cameraPickErrorBusy": "选择器已经打开，请关闭后重试。",
+  "cameraPickErrorGeneric": "无法打开相机，请重试。",
   "profileSetupGotItButton": "知道了",
   "profileSetupUploadFailedGeneric": "上传失败，请稍后重试。",
   "profileSetupUploadNetworkError": "网络错误：请检查网络连接后重试。",
@@ -573,14 +562,6 @@
   "featuredTabLoadFailed": "无法加载此合集。",
   "featuredTabRetry": "重试",
   "exploreNoVideosAvailable": "暂无视频",
-  "exploreErrorPrefix": "错误：{error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "发现列表",
   "exploreAboutLists": "关于列表",
   "exploreAboutListsDescription": "列表帮你用两种方式整理和策划 Divine 内容：",
@@ -590,14 +571,7 @@
   "exploreVideoListsDescription": "把喜欢的视频做成播放列表，稍后观看",
   "exploreMyLists": "我的列表",
   "exploreSubscribedLists": "订阅的列表",
-  "exploreErrorLoadingLists": "加载列表出错：{error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "加载列表出错，请重试。",
   "exploreNewVideosCount": "{count, plural, =1{1 条新视频} other{{count} 条新视频}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1160,14 +1134,6 @@
   "relaySettingsEventsSent": "已发送事件",
   "relaySettingsRequestsThisSession": "本次会话请求数",
   "relaySettingsFailedRequests": "失败请求",
-  "relaySettingsLastError": "最近错误：{error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "正在加载中继信息...",
   "relaySettingsAboutRelay": "关于中继",
   "relaySettingsSupportedNips": "支持的 NIP",
@@ -1288,14 +1254,6 @@
   "nostrSettingsRemoveKeys": "从此设备移除此账号",
   "nostrSettingsRemoveKeysSubtitle": "从此设备移除此账号的本地登录。此账号的本地草稿和片段仍会保留。",
   "nostrSettingsCouldNotRemoveKeys": "无法从此设备移除此账号，请重试。",
-  "nostrSettingsFailedToRemoveKeys": "移除此账号失败：{error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "删除账号和数据",
   "nostrSettingsDeleteAccountSubtitle": "为你的内容发送删除请求，并在此设备上退出登录。中继、客户端、搜索索引和其他已登录设备可能仍会保留副本。",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -1396,14 +1354,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "查询失败：{error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "查询失败，请重试。",
   "relayDiagnosticConnectedToRelays": "已连接 {count} 个中继！",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1413,14 +1364,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "无法连接到任何中继",
-  "relayDiagnosticConnectionRetryFailed": "连接重试失败：{error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "连接重试失败，请重试。",
   "relayDiagnosticConnectedAuthenticated": "已连接并完成认证",
   "relayDiagnosticConnectedOnly": "已连接",
   "relayDiagnosticNotConnected": "未连接",
@@ -2095,14 +2039,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "更新视频失败：{error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "请重新登录后再试。",
+  "videoUpdateErrorNoPlayableVideo": "这个视频没有可播放的源，无法编辑。",
+  "videoUpdateErrorCouldNotSign": "更新签名失败，请重试。",
+  "videoUpdateErrorPublishRejected": "中继未接受此次更新，请稍后重试。",
+  "videoUpdateErrorGeneric": "无法更新这个视频，请重试。",
   "shareMenuDeleteVideoQuestion": "删除视频？",
   "shareMenuDeleteCleanupInProgress": "正在移除视频…",
   "shareMenuDeleteCleanupConfirmed": "视频已删除。",
@@ -2111,22 +2052,6 @@
   "authSessionExpired": "你的登录已过期，请重新登录。",
   "authSignInFailed": "登录失败，请重试。",
   "webAuthNotSupportedSecureMode": "安全模式下不支持网页认证。请使用移动应用进行安全的密钥管理。",
-  "webAuthIntegrationFailed": "认证集成失败：{error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "意外错误：{error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "请输入 bunker URI",
   "webAuthConnectTitle": "连接到 Divine",
   "webAuthChooseMethod": "选择你偏好的 Nostr 认证方式",
@@ -2429,17 +2354,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "打开{pageName}时出错：{error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "你为什么要举报该内容？",
   "reportPolicyNotice": "Divine 会在 24 小时内处理内容举报：移除违规内容，并将发布违规内容的用户清出平台。",
   "reportBlockUser": "屏蔽该用户",
@@ -2471,14 +2385,7 @@
   "reportReasonAiGeneratedSubtitle": "疑似 AI 生成的内容",
   "reportReasonOther": "其他违规",
   "reportReasonOtherSubtitle": "以上未列出的违规行为",
-  "reportFailed": "举报内容失败：{error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "举报内容失败，请重试。",
   "reportNotSent": "举报发送失败。请检查连接后重试。",
   "reportReceivedTitle": "举报已收到",
   "reportReceivedThankYou": "谢谢你帮助维护 Divine 的安全。",
@@ -2599,7 +2506,7 @@
   "keyManagementKeycastEmailUnverified": "复制私钥前请先验证你的邮箱地址。",
   "keyManagementKeycastDenied": "这个账号的密钥由 Divine 托管，所以这里无法复制。",
   "keyManagementKeycastNoKey": "这个账号没有任何密钥记录。",
-  "keyManagementKeycastGenericFailure": "连不上登录服务",
+  "keyManagementKeycastGenericFailure": "连不上登录服务，请重试。",
   "keyManagementRestrictedTitle": "你的密钥由 Divine 托管",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2614,23 +2521,9 @@
   "keyManagementConfirmImportBody": "这会用导入的身份替换你当前的身份。\n\n如果事先没有备份，你当前的密钥将会丢失。",
   "keyManagementImportConfirm": "导入",
   "keyManagementImportSuccess": "密钥导入成功！",
-  "keyManagementImportFailed": "导入密钥失败：{error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "导入密钥失败，请重试。",
   "keyManagementExportSuccess": "私钥已复制到剪贴板！\n\n请妥善保管。",
-  "keyManagementExportFailed": "导出密钥失败：{error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "导出密钥失败，请重试。",
   "keyManagementYourPublicKeyLabel": "你的公钥（npub）",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2698,14 +2591,7 @@
     }
   },
   "soundUnableToPreview": "无法预览声音——没有可用音频",
-  "soundPreviewFailed": "预览播放失败：{error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "预览播放失败，请重试。",
   "soundViewSource": "查看来源",
   "soundCloseTooltip": "关闭",
   "exploreNotExploreRoute": "不是探索路由",
@@ -2726,17 +2612,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "打开{pageName}时出错：{error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3311,24 +3186,9 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "更新订阅失败：{error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "更新订阅失败，请重试。",
   "discoverListsTitle": "发现列表",
   "discoverListsFailedToLoad": "列表加载失败",
-  "discoverListsFailedToLoadWithError": "列表加载失败：{error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "正在发现公开列表...",
   "discoverListsRelayTimeout": "中继没有及时返回列表。再试一次。",
   "discoverListsServiceUnavailable": "服务不可用。",
@@ -4013,14 +3873,7 @@
       }
     }
   },
-  "soundDetailLoadError": "声音加载失败：{error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "声音加载失败，请重试。",
   "soundDetailNotFoundMessage": "找不到这个声音",
   "soundDetailNotFoundTitle": "找不到声音",
   "videoFeedLoopCountLabel": "🔁 循环 {count} 次",
@@ -4153,14 +4006,7 @@
   "userNotAvailableTitle": "账号不可用",
   "userNotAvailableBody": "该账号暂时不可用。",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "设置保存失败：{error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "设置保存失败，请重试。",
   "blossomValidServerUrl": "请输入有效的服务器 URL（如 https://blossom.band）",
   "blossomSettingsSaved": "Blossom 设置已保存",
   "blossomSaveTooltip": "保存",
@@ -4274,14 +4120,6 @@
   "searchListsSectionHeader": "列表",
   "searchListsLoadingLabel": "正在加载列表结果",
   "cameraAgeRestriction": "你必须年满 16 岁才能创作内容",
-  "keyImportError": "错误：{error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Bunker 中继必须使用 wss://（仅 localhost 允许 ws://）",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

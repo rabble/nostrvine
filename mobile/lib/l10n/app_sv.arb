@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Kunde inte dela profil: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Kunde inte dela profil. Försök igen.",
     "profileCopyPublicKey": "Kopiera publik nyckel (npub)",
     "profileGetEmbedCode": "Hämta inbäddningskod",
     "profilePublicKeyCopied": "Publik nyckel kopierad till urklipp",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Sparar...",
     "profileSetupImageUrlTitle": "Lägg till bild-URL",
     "profileSetupImageSelectionFailed": "Bildval misslyckades. Klistra in en bild-URL nedan istället.",
-    "profileSetupCameraAccessFailed": "Kameraåtkomst misslyckades: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Kameraåtkomst är av. Slå på den i Inställningar för att ta ett foto.",
+    "cameraPickErrorPermissionRestricted": "Kameraåtkomst är inte tillåten på den här enheten.",
+    "cameraPickErrorBusy": "Väljaren är redan öppen. Stäng den och försök igen.",
+    "cameraPickErrorGeneric": "Kunde inte öppna kameran. Försök igen.",
     "profileSetupGotItButton": "Jag fattar",
     "profileSetupUploadFailedGeneric": "Det gick inte att ladda upp bilden. Försök igen senare.",
     "profileSetupUploadNetworkError": "Nätverksfel: Kolla din internetanslutning och försök igen.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Kunde inte läsa in den här samlingen.",
     "featuredTabRetry": "Försök igen",
     "exploreNoVideosAvailable": "Inga videor tillgängliga",
-    "exploreErrorPrefix": "Fel: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Upptäck listor",
     "exploreAboutLists": "Om listor",
     "exploreAboutListsDescription": "Listor hjälper dig organisera och kuratera Divine-innehåll på två sätt:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Skapa spellistor med dina favoritvideor för att titta på senare",
     "exploreMyLists": "Mina listor",
     "exploreSubscribedLists": "Prenumererade listor",
-    "exploreErrorLoadingLists": "Fel vid inläsning av listor: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Fel vid inläsning av listor. Försök igen.",
     "exploreNewVideosCount": "{count, plural, one{1 ny video} other{{count} nya videor}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Skickade händelser",
     "relaySettingsRequestsThisSession": "Förfrågningar i den här sessionen",
     "relaySettingsFailedRequests": "Misslyckade förfrågningar",
-    "relaySettingsLastError": "Senaste fel: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Läser in relinfo...",
     "relaySettingsAboutRelay": "Om relen",
     "relaySettingsSupportedNips": "NIP:er som stöds",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Förfrågan misslyckades: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Förfrågan misslyckades. Försök igen.",
     "relayDiagnosticConnectedToRelays": "Ansluten till {count} rel(er)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Kunde inte ansluta till några reler",
-    "relayDiagnosticConnectionRetryFailed": "Förnyat anslutningsförsök misslyckades: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Förnyat anslutningsförsök misslyckades. Försök igen.",
     "relayDiagnosticConnectedAuthenticated": "Ansluten och autentiserad",
     "relayDiagnosticConnectedOnly": "Ansluten",
     "relayDiagnosticNotConnected": "Inte ansluten",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Byt omslag",
     "shareMenuVideoUpdated": "Videon uppdaterades",
     "shareMenuVideoUpdatedWithInviteFailures": "Videon uppdaterades, men {count, plural, =1{1 inbjudan till medarbetare skickades inte.} other{{count} inbjudningar till medarbetare skickades inte.}}",
-    "shareMenuFailedToUpdateVideo": "Kunde inte uppdatera videon: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Logga in igen och försök sedan på nytt.",
+    "videoUpdateErrorNoPlayableVideo": "Den här videon har ingen spelbar källa och kan inte redigeras.",
+    "videoUpdateErrorCouldNotSign": "Kunde inte signera ändringen. Försök igen.",
+    "videoUpdateErrorPublishRejected": "Relät accepterade inte ändringen. Försök igen om en stund.",
+    "videoUpdateErrorGeneric": "Kunde inte uppdatera videon. Försök igen.",
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
     "shareMenuDeleteCleanupInProgress": "Tar bort videon…",
     "shareMenuDeleteCleanupConfirmed": "Videon har raderats.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "Din session har löpt ut. Logga in igen.",
     "authSignInFailed": "Kunde inte logga in. Försök igen.",
     "webAuthNotSupportedSecureMode": "Webbautentisering stöds inte i säkert läge. Använd mobilappen för säker nyckelhantering.",
-    "webAuthIntegrationFailed": "Autentiseringsintegrering misslyckades: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Oväntat fel: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Ange en bunker-URI",
     "webAuthConnectTitle": "Anslut till Divine",
     "webAuthChooseMethod": "Välj din föredragna Nostr-autentiseringsmetod",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Fel vid öppning av {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Varför rapporterar du det här innehållet?",
     "reportPolicyNotice": "Divine agerar på innehållsrapporter inom 24 timmar genom att ta bort innehållet och stänga av användaren som tillhandahöll det felaktiga innehållet.",
     "reportBlockUser": "Blockera den här användaren",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Felaktig information",
     "reportReasonAiGenerated": "AI-genererat innehåll",
     "reportReasonOther": "Annat policybrott",
-    "reportFailed": "Kunde inte rapportera innehåll: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Kunde inte rapportera innehåll. Försök igen.",
     "reportNotSent": "Kunde inte skicka din anmälan. Kontrollera din anslutning och försök igen.",
     "reportReceivedTitle": "Rapport mottagen",
     "reportReceivedThankYou": "Tack för att du hjälper till att hålla Divine säkert.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Bekräfta din e-postadress innan du kopierar nyckeln.",
     "keyManagementKeycastDenied": "Divine sköter nycklarna för det här kontot, så de kan inte kopieras här.",
     "keyManagementKeycastNoKey": "Det finns ingen nyckel registrerad för det här kontot.",
-    "keyManagementKeycastGenericFailure": "inloggningstjänsten kunde inte nås",
+    "keyManagementKeycastGenericFailure": "Inloggningstjänsten kunde inte nås. Försök igen.",
     "keyManagementRestrictedTitle": "Dina nycklar hanteras av Divine",
     "keyManagementRestrictedBody": "För att hålla ditt konto säkert går det inte att säkerhetskopiera nyckeln eller importera en annan nyckel här.",
     "keyManagementNeverShare": "Dela aldrig din nsec med någon!",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "Detta ersätter din nuvarande identitet med den importerade.\n\nDin nuvarande nyckel går förlorad om du inte säkerhetskopierade den först.",
     "keyManagementImportConfirm": "Importera",
     "keyManagementImportSuccess": "Nyckeln importerades!",
-    "keyManagementImportFailed": "Kunde inte importera nyckeln: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Kunde inte importera nyckeln. Försök igen.",
     "keyManagementExportSuccess": "Privat nyckel kopierad till urklipp!\n\nFörvara den på ett säkert ställe.",
-    "keyManagementExportFailed": "Kunde inte exportera nyckeln: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Kunde inte exportera nyckeln. Försök igen.",
     "saveOriginalSavedToCameraRoll": "Sparad i kamerarullen",
     "saveOriginalShare": "Dela",
     "saveOriginalDone": "Klar",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Kan inte förhandsvisa ljud – inget ljud tillgängligt",
-    "soundPreviewFailed": "Kunde inte spela förhandsvisning: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Kunde inte spela förhandsvisning. Försök igen.",
     "soundViewSource": "Visa källa",
     "soundCloseTooltip": "Stäng",
     "exploreNotExploreRoute": "Inte en upptäcktsrutt",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Fel vid öppning av {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlogg",
     "categoryVlogging": "Vloggning",
     "categoryWrestling": "Brottning",
-    "blossomFailedToSaveSettings": "Kunde inte spara inställningarna: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Kunde inte spara inställningarna. Försök igen.",
     "blueskyFailedToUpdateCrosspost": "Kunde inte uppdatera crosspost-inställningen",
     "cameraAgeRestriction": "Du måste vara 16 år eller äldre för att skapa innehåll",
     "categoriesCouldNotLoadCategories": "Kunde inte ladda kategorier",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Avbryt",
     "commonDelete": "Radera",
     "commonRetry": "Försök igen",
-    "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen. Försök igen.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Bjud in vänner",
-    "keyImportError": "Fel: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 klipp borttaget} other{{count} klipp borttagna}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Ladda ner ditt arkiv och flytta dina inlägg och videor till en annan relay eller medieserver.",
     "nostrSettingsRemoveKeys": "Ta bort nycklar från enheten",
     "nostrSettingsRemoveKeysSubtitle": "Radera din privata nyckel från endast den här enheten. Ditt innehåll stannar på relerna, men du behöver din nsec-säkerhetskopia för att komma åt kontot igen.",
-    "nostrSettingsCouldNotRemoveKeys": "Kunde inte ta bort nycklar från enheten. Försök igen.",
-    "nostrSettingsFailedToRemoveKeys": "Kunde inte ta bort nycklar: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Kunde inte ta bort det här kontot från enheten. Försök igen.",
     "nostrSettingsDeleteAccount": "Radera konto och data",
     "nostrSettingsDeleteAccountSubtitle": "Skickar raderingsförfrågningar för ditt innehåll och loggar ut dig på den här enheten. Reläer, klienter, sökindex och andra inloggade enheter kan behålla kopior.",
     "safetySettingsWhatYouSee": "VAD DU SER",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Upptäck listor",
     "discoverListsFailedToLoad": "Kunde inte ladda listor",
-    "discoverListsFailedToLoadWithError": "Kunde inte ladda listor: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Söker upp publika listor...",
     "discoverListsRelayTimeout": "Relayen returnerade inga listor i tid. Försök igen.",
     "discoverListsServiceUnavailable": "Tjänsten är inte tillgänglig.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Beroende på reglerna där du bor kan du kanske komma tillbaka och ansöka om ett eget konto. Är du då mellan 13 och 15 behöver du samtycke från en förälder eller vårdnadshavare.",
     "minorAccountReviewParentConsentPauseNote": "Det här är en paus medan Divines supportteam granskar videon. Om den godkänns guidar de dig genom att sätta upp det nya kontot.",
     "minorAccountReviewUnder13WhyTitle": "Här är varför",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Ljud: {soundName} av {creatorName}. Tryck för att se detaljer.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Kunde inte läsa in ljud: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Kunde inte läsa in ljud. Försök igen.",
     "soundDetailNotFoundMessage": "Det här ljudet kunde inte hittas",
     "soundDetailNotFoundTitle": "Ljudet hittades inte",
     "videoFeedLoopCountLabel": "🔁 {count} loopar",

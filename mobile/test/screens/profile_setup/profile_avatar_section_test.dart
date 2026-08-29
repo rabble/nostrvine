@@ -8,11 +8,14 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/l10n/camera_pick_error_l10n.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/camera_pick_error.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/image_crop_launcher_provider.dart';
 import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
@@ -20,6 +23,7 @@ import 'package:openvine/screens/profile_setup/widgets/profile_avatar_section.da
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../helpers/image_picker_stub.dart';
+import '../../helpers/shared_channel_override.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileEditorBloc
@@ -358,6 +362,44 @@ void main() {
           debugDefaultTargetPlatformOverride = null;
         }
       });
+
+      testWidgets(
+        'camera permission denial shows localized copy, not the exception',
+        (tester) async {
+          // #3589: this branch used to render
+          // `PlatformException(camera_access_denied, The user did not allow
+          // camera access., null, null)` verbatim. It had no test at all —
+          // both existing failure tests go through the gallery branch, which
+          // uses a different key.
+          debugDefaultTargetPlatformOverride = TargetPlatform.android;
+          try {
+            overrideSharedChannel(imagePickerChannel, (call) async {
+              throw PlatformException(
+                code: 'camera_access_denied',
+                message: 'The user did not allow camera access.',
+              );
+            });
+            await pump(tester);
+
+            await tester.tap(find.byType(DivineIconButton));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text(l10n.profileSetupImageTakePhoto));
+            await tester.pumpAndSettle();
+
+            expect(
+              find.text(
+                l10n.cameraPickErrorMessage(CameraPickError.permissionDenied),
+              ),
+              findsOneWidget,
+            );
+            expect(find.textContaining('PlatformException'), findsNothing);
+            expect(find.textContaining('camera_access_denied'), findsNothing);
+            verifyNever(() => bloc.add(any()));
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
+        },
+      );
 
       Future<void> openUrlSheet(WidgetTester tester) async {
         await tester.tap(find.byType(DivineIconButton));

@@ -1169,10 +1169,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should show a localized error without leaking exception details.
-        expect(
-          find.text('Failed to play preview: Please try again'),
-          findsOneWidget,
-        );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.soundPreviewFailed), findsOneWidget);
         expect(find.textContaining('Playback failed'), findsNothing);
       });
     });

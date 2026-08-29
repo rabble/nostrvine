@@ -8,6 +8,8 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer;
 import 'package:nostr_sdk/nostr_sdk.dart' show NostrConnectFailureReason;
 
+enum AuthFailureReason { incorrectPassword }
+
 /// Result of authentication operations
 class AuthResult {
   const AuthResult({
@@ -15,6 +17,7 @@ class AuthResult {
     this.errorMessage,
     this.keyContainer,
     this.nostrConnectFailureReason,
+    this.failureReason,
   });
 
   factory AuthResult.success(SecureKeyContainer keyContainer) =>
@@ -22,6 +25,12 @@ class AuthResult {
 
   factory AuthResult.failure(String errorMessage) =>
       AuthResult(success: false, errorMessage: errorMessage);
+
+  factory AuthResult.incorrectPassword() => const AuthResult(
+    success: false,
+    errorMessage: 'Incorrect password',
+    failureReason: AuthFailureReason.incorrectPassword,
+  );
 
   /// Failure result for the nostrconnect:// flow, carrying a localizable
   /// reason code instead of a raw English string. The UI maps the reason to a
@@ -35,4 +44,7 @@ class AuthResult {
 
   /// Set only by the nostrconnect:// failure path; `null` for every other flow.
   final NostrConnectFailureReason? nostrConnectFailureReason;
+
+  /// A localizable reason for authentication failures with actionable UI copy.
+  final AuthFailureReason? failureReason;
 }

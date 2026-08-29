@@ -491,9 +491,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Nu am putut partaja profilul: $error';
-  }
+  String get profileShareFailed =>
+      'Nu am putut partaja profilul. Încearcă din nou.';
 
   @override
   String get profileCopyPublicKey => 'Copiază cheia publică (npub)';
@@ -993,9 +992,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'imagini';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Accesul la cameră a eșuat: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Accesul la cameră este dezactivat. Activează-l din Setări ca să faci o poză.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Accesul la cameră nu este permis pe acest dispozitiv.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Selectorul este deja deschis. Închide-l și încearcă din nou.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'N-am putut deschide camera. Încearcă din nou.';
 
   @override
   String get profileSetupGotItButton => 'Am înțeles';
@@ -1316,11 +1326,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Niciun videoclip disponibil';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Eroare: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Descoperă liste';
 
   @override
@@ -1351,9 +1356,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreSubscribedLists => 'Liste la care ești abonat';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Eroare la încărcarea listelor: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Eroare la încărcarea listelor. Încearcă din nou.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2270,11 +2274,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Cereri eșuate';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Ultima eroare: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo =>
       'Se încarcă informațiile despre relay...';
 
@@ -2498,12 +2497,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Eliminarea cheilor a eșuat: $error';
-  }
+      'N-am putut elimina acest cont de pe acest dispozitiv. Încearcă din nou.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Șterge contul și datele';
@@ -2676,9 +2670,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Interogarea a eșuat: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Interogarea a eșuat. Încearcă din nou.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2697,9 +2690,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'N-am putut conecta la niciun relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Reîncercarea conexiunii a eșuat: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Reîncercarea conexiunii a eșuat. Încearcă din nou.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -4100,9 +4092,24 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'N-am putut actualiza videoclipul: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Conectează-te din nou, apoi încearcă iar.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Acest videoclip nu are o sursă redabilă, așa că nu poate fi editat.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'N-am putut semna modificarea. Încearcă din nou.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Releul nu a acceptat modificarea. Încearcă din nou în scurt timp.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'N-am putut actualiza acest videoclip. Încearcă din nou.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4139,16 +4146,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrarea de autentificare a eșuat: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Eroare neașteptată: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Introdu un URI bunker';
@@ -4736,11 +4733,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Eroare la deschiderea $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'De ce raportezi acest conținut?';
 
   @override
@@ -4847,9 +4839,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încălcări care nu sunt listate mai sus';
 
   @override
-  String reportFailed(Object error) {
-    return 'N-am putut raporta conținutul: $error';
-  }
+  String get reportFailed => 'N-am putut raporta conținutul. Încearcă din nou.';
 
   @override
   String get reportNotSent =>
@@ -5109,7 +5099,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'serviciul de autentificare nu a putut fi contactat';
+      'Serviciul de autentificare nu a putut fi contactat. Încearcă din nou.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5140,18 +5130,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keyManagementImportSuccess => 'Cheie importată cu succes!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'N-am putut importa cheia: $error';
-  }
+  String get keyManagementImportFailed =>
+      'N-am putut importa cheia. Încearcă din nou.';
 
   @override
   String get keyManagementExportSuccess =>
       'Cheia privată a fost copiată în clipboard!\n\nȚine-o într-un loc sigur.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'N-am putut exporta cheia: $error';
-  }
+  String get keyManagementExportFailed =>
+      'N-am putut exporta cheia. Încearcă din nou.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Cheia ta publică (npub)';
@@ -5283,9 +5271,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu pot previzualiza sunetul - niciun audio disponibil';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'N-am putut reda previzualizarea: $error';
-  }
+  String get soundPreviewFailed =>
+      'N-am putut reda previzualizarea. Încearcă din nou.';
 
   @override
   String get soundViewSource => 'Vezi sursa';
@@ -5337,11 +5324,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'N-am putut deschide $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Eroare la deschiderea $pageName: $error';
   }
 
   @override
@@ -6055,20 +6037,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Nu s-a putut actualiza abonamentul: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Nu s-a putut actualiza abonamentul. Încearcă din nou.';
 
   @override
   String get discoverListsTitle => 'Descoperă liste';
 
   @override
   String get discoverListsFailedToLoad => 'N-am putut încărca listele';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'N-am putut încărca listele: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Se descoperă liste publice...';
@@ -7400,9 +7376,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Nu am putut încărca sunetul: $error';
-  }
+  String get soundDetailLoadError =>
+      'Nu am putut încărca sunetul. Încearcă din nou.';
 
   @override
   String get soundDetailNotFoundMessage => 'Acest sunet nu a putut fi găsit';
@@ -7666,9 +7641,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Nu s-au putut salva setările: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Nu s-au putut salva setările. Încearcă din nou.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7908,11 +7882,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Trebuie să ai cel puțin 16 ani pentru a crea conținut';
-
-  @override
-  String keyImportError(String error) {
-    return 'Eroare: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

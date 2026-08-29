@@ -465,9 +465,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'መገለጫን ማጋራት አልተሳካም፦ $error';
-  }
+  String get profileShareFailed => 'መገለጫን ማጋራት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get profileCopyPublicKey => 'የህዝብ ቁልፍ ቅዳ (npub)';
@@ -935,9 +933,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'ምስሎች';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'የካሜራ መዳረሻ አልተሳካም፦ $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'የካሜራ መዳረሻ ጠፍቷል። ፎቶ ለማንሳት ከቅንብሮች አብራው።';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'በዚህ መሣሪያ ላይ የካሜራ መዳረሻ አይፈቀድም።';
+
+  @override
+  String get cameraPickErrorBusy => 'መምረጫው አስቀድሞ ተከፍቷል። ዝጋውና እንደገና ሞክር።';
+
+  @override
+  String get cameraPickErrorGeneric => 'ካሜራውን መክፈት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get profileSetupGotItButton => 'ገባኝ';
@@ -1251,11 +1258,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreNoVideosAvailable => 'ምንም ቪዲዮዎች የሉም';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'ስህተት፡ $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'ዝርዝሮችን ያግኙ';
 
   @override
@@ -1286,9 +1288,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreSubscribedLists => 'የተመዘገቡ ዝርዝሮች';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'ዝርዝሮችን መጫን ላይ ስህተት፦ $error';
-  }
+  String get exploreErrorLoadingLists => 'ዝርዝሮችን መጫን ላይ ስህተት። እባክህ እንደገና ሞክር።';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2173,11 +2173,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get relaySettingsFailedRequests => 'ያልተሳኩ ጥያቄዎች';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'የመጨረሻው ስህተት፡ $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'የማስተላለፊያ መረጃን በመጫን ላይ...';
 
   @override
@@ -2381,12 +2376,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'ቁልፎችን ማስወገድ አልተሳካም፦ $error';
-  }
+      'ይህን መለያ ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get nostrSettingsDeleteAccount => 'መለያ እና ውሂብ ሰርዝ';
@@ -2538,9 +2528,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'መጠይቁ አልተሳካም፡ $error';
-  }
+  String get relayDiagnosticQueryFailed => 'መጠይቁ አልተሳካም፡። እባክህ እንደገና ሞክር።';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2552,9 +2540,8 @@ class AppLocalizationsAm extends AppLocalizations {
       'ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'የግንኙነት ድጋሚ መሞከር አልተሳካም፦ $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'የግንኙነት ድጋሚ መሞከር አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'ተገናኝቷል እና የተረጋገጠ';
@@ -3889,9 +3876,21 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'ቪዲዮውን ማዘመን አልተሳካም፦ $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'እንደገና ግባ፣ ከዚያ ደግመህ ሞክር።';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'ይህ ቪዲዮ ሊጫወት የሚችል ምንጭ የለውም፣ ስለዚህ ሊስተካከል አይችልም።';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => 'ማዘመኛውን መፈረም አልተቻለም። እንደገና ሞክር።';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'ማስተላለፊያው ማዘመኛውን አልተቀበለም። ትንሽ ቆይተህ እንደገና ሞክር።';
+
+  @override
+  String get videoUpdateErrorGeneric => 'ይህን ቪዲዮ ማዘመን አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -3927,16 +3926,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'የማረጋገጫ ውህደት አልተሳካም፦ $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'ያልተጠበቀ ስህተት፡ $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'እባክህ ማስቀመጫ አስገባ URI';
@@ -4498,11 +4487,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName: $errorን መክፈት ላይ ስህተት';
-  }
-
-  @override
   String get reportWhyReporting => 'ይህን ይዘት ለምን ሪፖርት ያደርጋሉ?';
 
   @override
@@ -4599,9 +4583,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'ከላይ ያልተዘረዘሩ ጥሰቶች';
 
   @override
-  String reportFailed(Object error) {
-    return 'ይዘትን ሪፖርት ማድረግ አልተሳካም፦ $error';
-  }
+  String get reportFailed => 'ይዘትን ሪፖርት ማድረግ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get reportNotSent => 'ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
@@ -4846,7 +4828,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementKeycastNoKey => 'ለዚህ መለያ የተመዘገበ ቁልፍ የለም።';
 
   @override
-  String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
+  String get keyManagementKeycastGenericFailure =>
+      'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get keyManagementRestrictedTitle => 'ቁልፎችህ በDivine ይተዳደራሉ';
@@ -4876,18 +4859,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementImportSuccess => 'ቁልፍ በተሳካ ሁኔታ ገብቷል!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'ቁልፍ ማስመጣት አልተሳካም፦ $error';
-  }
+  String get keyManagementImportFailed => 'ቁልፍ ማስመጣት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get keyManagementExportSuccess =>
       'የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'ቁልፉን ወደ ውጭ መላክ አልተሳካም፦ $error';
-  }
+  String get keyManagementExportFailed =>
+      'ቁልፉን ወደ ውጭ መላክ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'የህዝብ ቁልፍህ (npub)';
@@ -5008,9 +4988,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundUnableToPreview => 'ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'ቅድመ እይታን ማጫወት አልተሳካም፦ $error';
-  }
+  String get soundPreviewFailed => 'ቅድመ እይታን ማጫወት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get soundViewSource => 'ምንጭ ይመልከቱ';
@@ -5060,11 +5038,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName መክፈት አልተቻለም';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName: $errorን መክፈት ላይ ስህተት';
   }
 
   @override
@@ -5766,20 +5739,14 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'የደንበኝነት ምዝገባን ማዘመን አልተሳካም፦ $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'የደንበኝነት ምዝገባን ማዘመን አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get discoverListsTitle => 'ዝርዝሮችን ያግኙ';
 
   @override
   String get discoverListsFailedToLoad => 'ዝርዝሮችን መጫን አልተሳካም';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'ዝርዝሮችን መጫን አልተሳካም፦ $error';
-  }
 
   @override
   String get discoverListsLoading => 'የህዝብ ዝርዝሮችን በመፈለግ ላይ...';
@@ -7067,9 +7034,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'ድምጽ መጫን አልተሳካም፦ $error';
-  }
+  String get soundDetailLoadError => 'ድምጽ መጫን አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get soundDetailNotFoundMessage => 'ይህ ድምጽ ሊገኝ አልቻለም';
@@ -7323,9 +7288,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'ቅንብሮችን ማስቀመጥ አልተሳካም፦ $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'ቅንብሮችን ማስቀመጥ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get blossomValidServerUrl =>
@@ -7551,11 +7515,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት';
-
-  @override
-  String keyImportError(String error) {
-    return 'ስህተት፡ $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

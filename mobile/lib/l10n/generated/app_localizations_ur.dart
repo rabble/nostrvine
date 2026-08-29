@@ -469,9 +469,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'پروفائل شیئر نہیں ہو سکا: $error';
-  }
+  String get profileShareFailed =>
+      'پروفائل شیئر نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get profileCopyPublicKey => 'عوامی کلید (npub) کاپی کریں';
@@ -957,9 +956,19 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'تصاویر';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'کیمرہ تک رسائی ناکام: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'کیمرے تک رسائی بند ہے۔ تصویر لینے کے لیے ترتیبات میں اسے آن کریں۔';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'اس ڈیوائس پر کیمرے تک رسائی کی اجازت نہیں ہے۔';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'پکر پہلے سے کھلا ہے۔ اسے بند کر کے دوبارہ کوشش کریں۔';
+
+  @override
+  String get cameraPickErrorGeneric => 'کیمرہ نہیں کھل سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get profileSetupGotItButton => 'سمجھ گیا';
@@ -1279,11 +1288,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreNoVideosAvailable => 'کوئی ویڈیو دستیاب نہیں';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'خرابی: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'فہرستیں دریافت کریں';
 
   @override
@@ -1314,9 +1318,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreSubscribedLists => 'سبسکرائب شدہ فہرستیں';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'فہرستیں لوڈ کرنے میں خرابی: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'فہرستیں لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2221,11 +2224,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get relaySettingsFailedRequests => 'ناکام درخواستیں';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'آخری خرابی: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'ریلے معلومات لوڈ ہو رہی ہیں...';
 
   @override
@@ -2434,11 +2432,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس اکاؤنٹ کو اس ڈیوائس سے نہیں ہٹایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'یہ اکاؤنٹ نہیں ہٹایا جا سکا: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'اکاؤنٹ اور ڈیٹا حذف کریں';
 
   @override
@@ -2588,9 +2581,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'استفسار ناکام: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'استفسار ناکام۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2602,9 +2594,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'کسی بھی ریلے سے منسلک نہیں ہو سکا';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'کنکشن کی دوبارہ کوشش ناکام: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'کنکشن کی دوبارہ کوشش ناکام۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'منسلک اور تصدیق شدہ';
@@ -3979,9 +3970,24 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'ویڈیو اپڈیٹ نہیں ہو سکی: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'دوبارہ سائن ان کریں، پھر کوشش کریں۔';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'اس ویڈیو کا کوئی قابلِ چلاؤ ماخذ نہیں، اس لیے اسے ایڈٹ نہیں کیا جا سکتا۔';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'اپ ڈیٹ پر دستخط نہیں ہو سکے۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'ریلے نے اپ ڈیٹ قبول نہیں کی۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'اس ویڈیو کو اپ ڈیٹ نہیں کیا جا سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4019,16 +4025,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'محفوظ موڈ میں ویب تصدیق تعاون یافتہ نہیں ہے۔ محفوظ کلید مینجمنٹ کے لیے براہ کرم موبائل ایپ استعمال کریں۔';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'تصدیقی انضمام ناکام: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'غیر متوقع خرابی: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'براہ کرم bunker URI درج کریں';
@@ -4607,11 +4603,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName کھولنے میں خرابی: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'آپ یہ مواد کیوں رپورٹ کر رہے ہیں؟';
 
   @override
@@ -4713,9 +4704,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'اوپر درج نہیں کی گئی خلاف ورزیاں';
 
   @override
-  String reportFailed(Object error) {
-    return 'مواد کی رپورٹ ناکام: $error';
-  }
+  String get reportFailed => 'مواد کی رپورٹ ناکام۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get reportNotSent =>
@@ -4969,7 +4958,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'لاگ اِن سروس سے رابطہ نہیں ہو سکا';
+      'لاگ اِن سروس سے رابطہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get keyManagementRestrictedTitle => 'آپ کی کلیدیں Divine سنبھالتی ہے';
@@ -4999,18 +4988,16 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keyManagementImportSuccess => 'کلید کامیابی سے درآمد ہو گئی!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'کلید درآمد نہیں ہو سکی: $error';
-  }
+  String get keyManagementImportFailed =>
+      'کلید درآمد نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get keyManagementExportSuccess =>
       'نجی کلید کلپ بورڈ پر کاپی ہو گئی!\n\nاسے کسی محفوظ جگہ رکھیں۔';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'کلید ایکسپورٹ نہیں ہو سکی: $error';
-  }
+  String get keyManagementExportFailed =>
+      'کلید ایکسپورٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'آپ کی عوامی کلید (npub)';
@@ -5134,9 +5121,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'آواز کا پیش منظر نہیں دکھایا جا سکتا — کوئی آڈیو دستیاب نہیں';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'پیش منظر نہیں چلایا جا سکا: $error';
-  }
+  String get soundPreviewFailed =>
+      'پیش منظر نہیں چلایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get soundViewSource => 'ماخذ دیکھیں';
@@ -5186,11 +5172,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName نہیں کھل سکا';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName کھولنے میں خرابی: $error';
   }
 
   @override
@@ -5901,20 +5882,14 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'سبسکرپشن اپڈیٹ نہیں ہو سکی: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'سبسکرپشن اپڈیٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get discoverListsTitle => 'فہرستیں دریافت کریں';
 
   @override
   String get discoverListsFailedToLoad => 'فہرستیں لوڈ نہیں ہو سکیں';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'فہرستیں لوڈ نہیں ہو سکیں: $error';
-  }
 
   @override
   String get discoverListsLoading => 'عوامی فہرستیں دریافت ہو رہی ہیں...';
@@ -7229,9 +7204,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'آواز لوڈ نہیں ہو سکی: $error';
-  }
+  String get soundDetailLoadError =>
+      'آواز لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get soundDetailNotFoundMessage => 'یہ آواز نہیں مل سکی';
@@ -7491,9 +7465,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'ترتیبات محفوظ نہیں ہو سکیں: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'ترتیبات محفوظ نہیں ہو سکیں۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get blossomValidServerUrl =>
@@ -7727,11 +7700,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'مواد بنانے کے لیے آپ کی عمر 16 سال یا زیادہ ہونی چاہیے';
-
-  @override
-  String keyImportError(String error) {
-    return 'خرابی: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

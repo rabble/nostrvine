@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/video_metadata_update_error_l10n.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -113,10 +115,10 @@ class _VideoMetadataEditBottomBarState
       } else if (result is VideoUpdateOriginalUnavailable) {
         _reportOriginalVideoUnavailable();
       } else if (result is VideoUpdateFailure) {
-        _reportUpdateFailure(result.error);
+        _reportUpdateFailure(result.reason, result.reason.name);
       }
     } catch (e) {
-      _reportUpdateFailure(e);
+      _reportUpdateFailure(VideoMetadataUpdateError.generic, e);
     }
   }
 
@@ -131,9 +133,9 @@ class _VideoMetadataEditBottomBarState
     );
   }
 
-  void _reportUpdateFailure(Object error) {
+  void _reportUpdateFailure(VideoMetadataUpdateError reason, Object detail) {
     Log.error(
-      'Failed to update video: $error',
+      'Failed to update video: $detail',
       name: 'VideoMetadataEditBottomBar',
       category: LogCategory.ui,
     );
@@ -142,7 +144,7 @@ class _VideoMetadataEditBottomBarState
     setState(() => _isUpdating = false);
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
-        context.l10n.shareMenuFailedToUpdateVideo('$error'),
+        context.l10n.videoMetadataUpdateErrorMessage(reason),
         error: true,
       ),
     );

@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Nu am putut partaja profilul: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Nu am putut partaja profilul. Încearcă din nou.",
     "profileCopyPublicKey": "Copiază cheia publică (npub)",
     "profileGetEmbedCode": "Obține codul de încorporare",
     "profilePublicKeyCopied": "Cheia publică a fost copiată",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Se salvează...",
     "profileSetupImageUrlTitle": "Adaugă URL de imagine",
     "profileSetupImageSelectionFailed": "Selectarea imaginii a eșuat. Lipește mai jos un URL de imagine.",
-    "profileSetupCameraAccessFailed": "Accesul la cameră a eșuat: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Accesul la cameră este dezactivat. Activează-l din Setări ca să faci o poză.",
+    "cameraPickErrorPermissionRestricted": "Accesul la cameră nu este permis pe acest dispozitiv.",
+    "cameraPickErrorBusy": "Selectorul este deja deschis. Închide-l și încearcă din nou.",
+    "cameraPickErrorGeneric": "N-am putut deschide camera. Încearcă din nou.",
     "profileSetupGotItButton": "Am înțeles",
     "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.",
     "profileSetupUploadNetworkError": "Eroare de rețea: verifică conexiunea la internet și încearcă din nou.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Nu am putut încărca această colecție.",
     "featuredTabRetry": "Încearcă din nou",
     "exploreNoVideosAvailable": "Niciun videoclip disponibil",
-    "exploreErrorPrefix": "Eroare: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Descoperă liste",
     "exploreAboutLists": "Despre liste",
     "exploreAboutListsDescription": "Listele te ajută să organizezi și să curaâezi conținutul Divine în două feluri:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Creează playlisturi cu videoclipurile preferate ca să le vezi mai târziu",
     "exploreMyLists": "Listele mele",
     "exploreSubscribedLists": "Liste la care ești abonat",
-    "exploreErrorLoadingLists": "Eroare la încărcarea listelor: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Eroare la încărcarea listelor. Încearcă din nou.",
     "exploreNewVideosCount": "{count, plural, =1{1 videoclip nou} other{{count} videoclipuri noi}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Evenimente trimise",
     "relaySettingsRequestsThisSession": "Cereri în această sesiune",
     "relaySettingsFailedRequests": "Cereri eșuate",
-    "relaySettingsLastError": "Ultima eroare: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Se încarcă informațiile despre relay...",
     "relaySettingsAboutRelay": "Despre relay",
     "relaySettingsSupportedNips": "NIP-uri suportate",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Interogarea a eșuat: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Interogarea a eșuat. Încearcă din nou.",
     "relayDiagnosticConnectedToRelays": "Conectat la {count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "N-am putut conecta la niciun relay",
-    "relayDiagnosticConnectionRetryFailed": "Reîncercarea conexiunii a eșuat: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Reîncercarea conexiunii a eșuat. Încearcă din nou.",
     "relayDiagnosticConnectedAuthenticated": "Conectat și autentificat",
     "relayDiagnosticConnectedOnly": "Conectat",
     "relayDiagnosticNotConnected": "Neconectat",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Schimbă coperta",
     "shareMenuVideoUpdated": "Videoclip actualizat cu succes",
     "shareMenuVideoUpdatedWithInviteFailures": "Videoclip actualizat, dar {count, plural, =1{1 invitație pentru colaborator nu a fost trimisă.} other{{count} invitații pentru colaboratori nu au fost trimise.}}",
-    "shareMenuFailedToUpdateVideo": "N-am putut actualiza videoclipul: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Conectează-te din nou, apoi încearcă iar.",
+    "videoUpdateErrorNoPlayableVideo": "Acest videoclip nu are o sursă redabilă, așa că nu poate fi editat.",
+    "videoUpdateErrorCouldNotSign": "N-am putut semna modificarea. Încearcă din nou.",
+    "videoUpdateErrorPublishRejected": "Releul nu a acceptat modificarea. Încearcă din nou în scurt timp.",
+    "videoUpdateErrorGeneric": "N-am putut actualiza acest videoclip. Încearcă din nou.",
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuDeleteCleanupInProgress": "Se elimină videoclipul…",
     "shareMenuDeleteCleanupConfirmed": "Videoclip șters.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "Sesiunea ta a expirat. Autentifică-te din nou.",
     "authSignInFailed": "N-am putut autentifica. Încearcă din nou.",
     "webAuthNotSupportedSecureMode": "Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.",
-    "webAuthIntegrationFailed": "Integrarea de autentificare a eșuat: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Eroare neașteptată: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Introdu un URI bunker",
     "webAuthConnectTitle": "Conectează-te la Divine",
     "webAuthChooseMethod": "Alege metoda ta preferată de autentificare Nostr",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Eroare la deschiderea {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "De ce raportezi acest conținut?",
     "reportPolicyNotice": "Divine va acționa asupra rapoartelor de conținut în 24 de ore eliminând conținutul și excluțând utilizatorul care a furnizat conținutul ofensator.",
     "reportBlockUser": "Blochează acest utilizator",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Informații false",
     "reportReasonAiGenerated": "Conținut generat de AI",
     "reportReasonOther": "Altă încălcare a politicii",
-    "reportFailed": "N-am putut raporta conținutul: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "N-am putut raporta conținutul. Încearcă din nou.",
     "reportNotSent": "Nu s-a putut trimite raportarea. Verifică conexiunea și încearcă din nou.",
     "reportReceivedTitle": "Raport primit",
     "reportReceivedThankYou": "Mersi că ne ajuți să păstrăm Divine în siguranță.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Confirmă adresa de e-mail înainte de a copia cheia.",
     "keyManagementKeycastDenied": "Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.",
     "keyManagementKeycastNoKey": "Nu există nicio cheie înregistrată pentru acest cont.",
-    "keyManagementKeycastGenericFailure": "serviciul de autentificare nu a putut fi contactat",
+    "keyManagementKeycastGenericFailure": "Serviciul de autentificare nu a putut fi contactat. Încearcă din nou.",
     "keyManagementRestrictedTitle": "Cheile tale sunt gestionate de Divine",
     "keyManagementRestrictedBody": "Ca să îți păstrăm contul în siguranță, salvarea cheii și importul altei chei nu sunt disponibile aici.",
     "keyManagementNeverShare": "Nu împărți niciodată nsec-ul cu nimeni!",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "Asta âți va înlocui identitatea curentă cu cea importată.\n\nCheia ta curentă va fi pierdută dacă n-ai făcut backup mai întâi.",
     "keyManagementImportConfirm": "Importă",
     "keyManagementImportSuccess": "Cheie importată cu succes!",
-    "keyManagementImportFailed": "N-am putut importa cheia: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "N-am putut importa cheia. Încearcă din nou.",
     "keyManagementExportSuccess": "Cheia privată a fost copiată în clipboard!\n\nȚine-o într-un loc sigur.",
-    "keyManagementExportFailed": "N-am putut exporta cheia: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "N-am putut exporta cheia. Încearcă din nou.",
     "saveOriginalSavedToCameraRoll": "Salvat în galerie",
     "saveOriginalShare": "Partajează",
     "saveOriginalDone": "Gata",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Nu pot previzualiza sunetul - niciun audio disponibil",
-    "soundPreviewFailed": "N-am putut reda previzualizarea: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "N-am putut reda previzualizarea. Încearcă din nou.",
     "soundViewSource": "Vezi sursa",
     "soundCloseTooltip": "Închide",
     "exploreNotExploreRoute": "Nu e o rută de explorare",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Eroare la deschiderea {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Nu s-au putut salva setările: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Nu s-au putut salva setările. Încearcă din nou.",
     "blueskyFailedToUpdateCrosspost": "Nu s-a putut actualiza setarea de crosspost",
     "cameraAgeRestriction": "Trebuie să ai cel puțin 16 ani pentru a crea conținut",
     "categoriesCouldNotLoadCategories": "Nu s-au putut încărca categoriile",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Anulează",
     "commonDelete": "Șterge",
     "commonRetry": "Reîncearcă",
-    "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul. Încearcă din nou.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Invită prieteni",
-    "keyImportError": "Eroare: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 clip șters} other{{count} clipuri șterse}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Descarcă-ți arhiva și mută postările și videoclipurile pe alt relay sau server media.",
     "nostrSettingsRemoveKeys": "Elimină cheile de pe dispozitiv",
     "nostrSettingsRemoveKeysSubtitle": "Șterge cheia ta privată doar de pe acest dispozitiv. Conținutul tău rămâne pe relay-uri, dar vei avea nevoie de backup-ul nsec ca să-ți accesezi din nou contul.",
-    "nostrSettingsCouldNotRemoveKeys": "N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.",
-    "nostrSettingsFailedToRemoveKeys": "Eliminarea cheilor a eșuat: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "N-am putut elimina acest cont de pe acest dispozitiv. Încearcă din nou.",
     "nostrSettingsDeleteAccount": "Șterge contul și datele",
     "nostrSettingsDeleteAccountSubtitle": "Trimite cereri de ștergere pentru conținutul tău și te deconectează pe acest dispozitiv. Relay-urile, clienții, indexurile de căutare și alte dispozitive conectate pot păstra copii.",
     "safetySettingsWhatYouSee": "CE VEZI",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Descoperă liste",
     "discoverListsFailedToLoad": "N-am putut încărca listele",
-    "discoverListsFailedToLoadWithError": "N-am putut încărca listele: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Se descoperă liste publice...",
     "discoverListsRelayTimeout": "Releul nu a returnat liste la timp. Încearcă din nou.",
     "discoverListsServiceUnavailable": "Serviciul nu este disponibil.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "În funcție de regulile din locul unde trăiești, s-ar putea să poți reveni și să ceri propriul cont. În acel caz, dacă ai între 13 și 15 ani, îți va trebui acordul unui părinte sau tutore.",
     "minorAccountReviewParentConsentPauseNote": "Este o pauză cât timp echipa de asistență Divine analizează videoclipul. Dacă este aprobat, te vor ghida în configurarea noului cont.",
     "minorAccountReviewUnder13WhyTitle": "Iată de ce",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Sunet: {soundName} de {creatorName}. Atinge ca să vezi detaliile.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Nu am putut încărca sunetul: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Nu am putut încărca sunetul. Încearcă din nou.",
     "soundDetailNotFoundMessage": "Acest sunet nu a putut fi găsit",
     "soundDetailNotFoundTitle": "Sunet negăsit",
     "videoFeedLoopCountLabel": "🔁 {count} bucle",

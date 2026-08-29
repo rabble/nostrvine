@@ -440,9 +440,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Hindi na-share ang profile: $error';
-  }
+  String get profileShareFailed => 'Hindi na-share ang profile. Subukan ulit.';
 
   @override
   String get profileCopyPublicKey => 'Kopyahin ang public key (npub)';
@@ -937,9 +935,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'mga larawan';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Nabigo ang camera access: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Naka-off ang camera access. I-on ito sa Settings para makakuha ng litrato.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Hindi pinapayagan ang camera access sa device na ito.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Bukas na ang picker. Isara mo muna at subukan ulit.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'Hindi nabuksan ang camera. Subukan ulit.';
 
   @override
   String get profileSetupGotItButton => 'Sige';
@@ -1263,11 +1272,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Walang available na video';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Error: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Tuklasin ang mga List';
 
   @override
@@ -1298,9 +1302,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get exploreSubscribedLists => 'Mga Subscribed List';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'May error sa pag-load ng mga list: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'May error sa pag-load ng mga list. Subukan ulit.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2224,11 +2227,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Mga Bigong Request';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Huling Error: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo =>
       'Naglo-load ng impormasyon ng relay...';
 
@@ -2438,12 +2436,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Hindi naalis ang mga key sa device na ito. Subukan ulit.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Hindi naalis ang mga key: $error';
-  }
+      'Hindi naalis ang account na ito sa device na ito. Subukan ulit.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Burahin ang Account at Data';
@@ -2595,9 +2588,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Nabigo ang query: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Nabigo ang query. Subukan ulit.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2609,9 +2600,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nakakonekta sa kahit anong relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Nabigo ang muling pagkonekta: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Nabigo ang muling pagkonekta. Subukan ulit.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -4004,9 +3994,24 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Hindi na-update ang video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Mag-sign in ulit, tapos subukan ulit.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Walang mapa-play na source ang video na ito, kaya hindi ito ma-edit.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Hindi na-sign ang update. Subukan ulit.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Hindi tinanggap ng relay ang update. Subukan ulit maya-maya.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Hindi na-update ang video na ito. Subukan ulit.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4043,16 +4048,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Hindi suportado ang web authentication sa secure mode. Gamitin ang mobile app para sa secure key management.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Hindi nag-integrate ang authentication: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Hindi inaasahang error: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Maglagay ng bunker URI';
@@ -4632,11 +4627,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Error sa pagbukas ng $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Bakit mo rine-report ang content na ito?';
 
   @override
@@ -4744,9 +4734,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mga paglabag na hindi nakalista sa itaas';
 
   @override
-  String reportFailed(Object error) {
-    return 'Hindi na-report ang content: $error';
-  }
+  String get reportFailed => 'Hindi na-report ang content. Subukan ulit.';
 
   @override
   String get reportNotSent =>
@@ -4999,7 +4987,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'hindi maabot ang login service';
+      'Hindi maabot ang login service. Subukan ulit.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5030,18 +5018,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get keyManagementImportSuccess => 'Matagumpay na na-import ang key!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Hindi na-import ang key: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Hindi na-import ang key. Subukan ulit.';
 
   @override
   String get keyManagementExportSuccess =>
       'Nakopya ang private key sa clipboard!\n\nItago ito sa ligtas na lugar.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Hindi na-export ang key: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Hindi na-export ang key. Subukan ulit.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Ang public key mo (npub)';
@@ -5166,9 +5152,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ma-preview ang sound - walang available na audio';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Hindi na-play ang preview: $error';
-  }
+  String get soundPreviewFailed => 'Hindi na-play ang preview. Subukan ulit.';
 
   @override
   String get soundViewSource => 'Tingnan ang source';
@@ -5221,11 +5205,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Hindi nabuksan ang $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Error sa pagbukas ng $pageName: $error';
   }
 
   @override
@@ -5939,20 +5918,14 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Hindi na-update ang subscription: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Hindi na-update ang subscription. Subukan ulit.';
 
   @override
   String get discoverListsTitle => 'Tuklasin ang mga Listahan';
 
   @override
   String get discoverListsFailedToLoad => 'Hindi na-load ang mga listahan';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Hindi na-load ang mga listahan: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Naghahanap ng mga public list...';
@@ -7282,9 +7255,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Hindi ma-load ang tunog: $error';
-  }
+  String get soundDetailLoadError => 'Hindi ma-load ang tunog. Subukan ulit.';
 
   @override
   String get soundDetailNotFoundMessage => 'Hindi mahanap ang tunog na ito';
@@ -7548,9 +7519,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Hindi na-save ang settings: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Hindi na-save ang settings. Subukan ulit.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7788,11 +7758,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Dapat 16 taong gulang ka pataas para gumawa ng content';
-
-  @override
-  String keyImportError(String error) {
-    return 'Error: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

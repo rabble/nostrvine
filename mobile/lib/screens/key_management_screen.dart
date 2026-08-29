@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/router/route_paths.dart';
 import 'package:openvine/screens/key_management/keycast_key_export_card.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -305,10 +306,15 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         context.safePop();
       }
     } catch (e) {
+      Log.error(
+        'Key import failed: $e',
+        name: 'KeyManagementScreen',
+        category: LogCategory.ui,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.keyManagementImportFailed(e),
+            context.l10n.keyManagementImportFailed,
             error: true,
             duration: const Duration(seconds: 5),
           ),
@@ -344,10 +350,15 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         );
       }
     } catch (e) {
+      Log.error(
+        'Key export failed: $e',
+        name: 'KeyManagementScreen',
+        category: LogCategory.ui,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.keyManagementExportFailed(e),
+            context.l10n.keyManagementExportFailed,
             error: true,
           ),
         );

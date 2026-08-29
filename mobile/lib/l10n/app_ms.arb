@@ -204,14 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "Gagal berkongsi profil: {error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileShareFailed": "Gagal berkongsi profil. Sila cuba lagi.",
   "profileCopyPublicKey": "Salin kunci awam (npub)",
   "profileGetEmbedCode": "Dapatkan kod terbenam",
   "profilePublicKeyCopied": "Kunci awam disalin ke papan klip",
@@ -460,14 +453,10 @@
   "profileSetupImageUrlTitle": "Tambah URL imej",
   "profileSetupImageSelectionFailed": "Pemilihan imej gagal. Sila tampal URL imej di bawah.",
   "profileSetupImagesTypeGroup": "imej",
-  "profileSetupCameraAccessFailed": "Akses kamera gagal: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "Akses kamera dimatikan. Hidupkan dalam Tetapan untuk mengambil gambar.",
+  "cameraPickErrorPermissionRestricted": "Akses kamera tidak dibenarkan pada peranti ini.",
+  "cameraPickErrorBusy": "Pemilih sudah dibuka. Tutup dan cuba lagi.",
+  "cameraPickErrorGeneric": "Gagal membuka kamera. Cuba lagi.",
   "profileSetupGotItButton": "Faham",
   "profileSetupUploadFailedGeneric": "Muat naik gagal. Sila cuba lagi nanti.",
   "profileSetupUploadNetworkError": "Ralat rangkaian: Sila semak sambungan internet anda dan cuba lagi.",
@@ -573,14 +562,6 @@
   "featuredTabLoadFailed": "Koleksi ini tidak dapat dimuatkan.",
   "featuredTabRetry": "Cuba lagi",
   "exploreNoVideosAvailable": "Tiada video tersedia",
-  "exploreErrorPrefix": "Ralat: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "Terokai Senarai",
   "exploreAboutLists": "Perihal Senarai",
   "exploreAboutListsDescription": "Senarai membantu anda menyusun dan mengurus kandungan Divine dalam dua cara:",
@@ -590,14 +571,7 @@
   "exploreVideoListsDescription": "Cipta senarai main video kegemaran anda untuk ditonton nanti",
   "exploreMyLists": "Senarai Saya",
   "exploreSubscribedLists": "Senarai Langganan",
-  "exploreErrorLoadingLists": "Ralat memuatkan senarai: {error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "Ralat memuatkan senarai. Sila cuba lagi.",
   "exploreNewVideosCount": "{count, plural, =1{1 video baharu} other{{count} video baharu}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1160,14 +1134,6 @@
   "relaySettingsEventsSent": "Acara Dihantar",
   "relaySettingsRequestsThisSession": "Permintaan Sesi Ini",
   "relaySettingsFailedRequests": "Permintaan Gagal",
-  "relaySettingsLastError": "Ralat Terakhir: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "Memuatkan maklumat relay...",
   "relaySettingsAboutRelay": "Perihal Relay",
   "relaySettingsSupportedNips": "NIP Disokong",
@@ -1288,14 +1254,6 @@
   "nostrSettingsRemoveKeys": "Alih keluar akaun ini daripada peranti ini",
   "nostrSettingsRemoveKeysSubtitle": "Alih keluar log masuk setempat akaun ini daripada peranti ini. Draf dan klip setempat anda kekal disimpan untuk akaun ini.",
   "nostrSettingsCouldNotRemoveKeys": "Tidak dapat mengalih keluar akaun ini daripada peranti ini. Sila cuba lagi.",
-  "nostrSettingsFailedToRemoveKeys": "Gagal mengalih keluar akaun ini: {error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "Padam Akaun dan Data",
   "nostrSettingsDeleteAccountSubtitle": "Menghantar permintaan pemadaman untuk kandungan anda dan melog keluar anda pada peranti ini. Relay, klien, indeks carian dan peranti lain yang dilog masuk mungkin menyimpan salinan.",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -1396,14 +1354,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "Pertanyaan gagal: {error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "Pertanyaan gagal. Sila cuba lagi.",
   "relayDiagnosticConnectedToRelays": "Bersambung ke {count} relay!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1413,14 +1364,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "Gagal bersambung ke mana-mana relay",
-  "relayDiagnosticConnectionRetryFailed": "Cubaan semula sambungan gagal: {error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "Cubaan semula sambungan gagal. Sila cuba lagi.",
   "relayDiagnosticConnectedAuthenticated": "Bersambung & Disahkan",
   "relayDiagnosticConnectedOnly": "Bersambung",
   "relayDiagnosticNotConnected": "Tidak bersambung",
@@ -2095,14 +2039,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "Gagal mengemas kini video: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "Log masuk semula, kemudian cuba kemas kini.",
+  "videoUpdateErrorNoPlayableVideo": "Video ini tiada sumber yang boleh dimainkan, jadi ia tidak boleh diedit.",
+  "videoUpdateErrorCouldNotSign": "Gagal menandatangani kemas kini. Cuba lagi.",
+  "videoUpdateErrorPublishRejected": "Relay tidak menerima kemas kini. Cuba lagi sebentar lagi.",
+  "videoUpdateErrorGeneric": "Gagal mengemas kini video ini. Cuba lagi.",
   "shareMenuDeleteVideoQuestion": "Padam Video?",
   "shareMenuDeleteCleanupInProgress": "Mengalih keluar video…",
   "shareMenuDeleteCleanupConfirmed": "Video dipadamkan.",
@@ -2111,22 +2052,6 @@
   "authSessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",
   "authSignInFailed": "Gagal log masuk. Sila cuba lagi.",
   "webAuthNotSupportedSecureMode": "Pengesahan web tidak disokong dalam mod selamat. Sila guna apl mudah alih untuk pengurusan kunci selamat.",
-  "webAuthIntegrationFailed": "Integrasi pengesahan gagal: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "Ralat tidak dijangka: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "Sila masukkan URI bunker",
   "webAuthConnectTitle": "Bersambung ke Divine",
   "webAuthChooseMethod": "Pilih kaedah pengesahan Nostr pilihan anda",
@@ -2429,17 +2354,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "Ralat membuka {pageName}: {error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "Mengapa anda melaporkan kandungan ini?",
   "reportPolicyNotice": "Divine akan mengambil tindakan terhadap laporan kandungan dalam masa 24 jam dengan mengalih keluar kandungan itu dan mengeluarkan pengguna yang menyediakan kandungan yang melanggar.",
   "reportBlockUser": "Sekat pengguna ini",
@@ -2471,14 +2385,7 @@
   "reportReasonAiGeneratedSubtitle": "Kandungan yang disyaki dijana AI",
   "reportReasonOther": "Pelanggaran Dasar Lain",
   "reportReasonOtherSubtitle": "Pelanggaran yang tidak disenaraikan di atas",
-  "reportFailed": "Gagal melaporkan kandungan: {error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "Gagal melaporkan kandungan. Sila cuba lagi.",
   "reportNotSent": "Laporan anda tidak dapat dihantar. Semak sambungan anda dan cuba lagi.",
   "reportReceivedTitle": "Laporan Diterima",
   "reportReceivedThankYou": "Terima kasih kerana membantu memastikan Divine selamat.",
@@ -2599,7 +2506,7 @@
   "keyManagementKeycastEmailUnverified": "Sahkan alamat e-mel anda sebelum menyalin kunci anda.",
   "keyManagementKeycastDenied": "Divine menguruskan kunci akaun ini, jadi ia tidak boleh disalin di sini.",
   "keyManagementKeycastNoKey": "Tiada kunci direkodkan untuk akaun ini.",
-  "keyManagementKeycastGenericFailure": "perkhidmatan log masuk tidak dapat dihubungi",
+  "keyManagementKeycastGenericFailure": "Perkhidmatan log masuk tidak dapat dihubungi. Sila cuba lagi.",
   "keyManagementRestrictedTitle": "Kunci anda diuruskan oleh Divine",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2614,23 +2521,9 @@
   "keyManagementConfirmImportBody": "Ini akan menggantikan identiti semasa anda dengan yang diimport.\n\nKunci semasa anda akan hilang kecuali anda telah menyandarnya dahulu.",
   "keyManagementImportConfirm": "Import",
   "keyManagementImportSuccess": "Kunci berjaya diimport!",
-  "keyManagementImportFailed": "Gagal mengimport kunci: {error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "Gagal mengimport kunci. Sila cuba lagi.",
   "keyManagementExportSuccess": "Kunci peribadi disalin ke papan klip!\n\nSimpannya di tempat yang selamat.",
-  "keyManagementExportFailed": "Gagal mengeksport kunci: {error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "Gagal mengeksport kunci. Sila cuba lagi.",
   "keyManagementYourPublicKeyLabel": "Kunci awam anda (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2698,14 +2591,7 @@
     }
   },
   "soundUnableToPreview": "Tidak dapat pratonton bunyi - tiada audio tersedia",
-  "soundPreviewFailed": "Gagal memainkan pratonton: {error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "Gagal memainkan pratonton. Sila cuba lagi.",
   "soundViewSource": "Lihat sumber",
   "soundCloseTooltip": "Tutup",
   "exploreNotExploreRoute": "Bukan laluan terokai",
@@ -2726,17 +2612,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "Ralat membuka {pageName}: {error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3311,24 +3186,9 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "Gagal mengemas kini langganan: {error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "Gagal mengemas kini langganan. Sila cuba lagi.",
   "discoverListsTitle": "Terokai Senarai",
   "discoverListsFailedToLoad": "Gagal memuatkan senarai",
-  "discoverListsFailedToLoadWithError": "Gagal memuatkan senarai: {error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "Menemui senarai awam...",
   "discoverListsRelayTimeout": "Relay tidak memulangkan senarai tepat pada masanya. Cuba lagi.",
   "discoverListsServiceUnavailable": "Perkhidmatan tidak tersedia.",
@@ -4013,14 +3873,7 @@
       }
     }
   },
-  "soundDetailLoadError": "Gagal memuatkan bunyi: {error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "Gagal memuatkan bunyi. Sila cuba lagi.",
   "soundDetailNotFoundMessage": "Bunyi ini tidak dapat ditemui",
   "soundDetailNotFoundTitle": "Bunyi Tidak Ditemui",
   "videoFeedLoopCountLabel": "🔁 {count} loop",
@@ -4153,14 +4006,7 @@
   "userNotAvailableTitle": "Akaun tidak tersedia",
   "userNotAvailableBody": "Akaun ini tidak tersedia sekarang.",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "Gagal menyimpan tetapan: {error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "Gagal menyimpan tetapan. Sila cuba lagi.",
   "blossomValidServerUrl": "Sila masukkan URL pelayan yang sah (cth. https://blossom.band)",
   "blossomSettingsSaved": "Tetapan Blossom disimpan",
   "blossomSaveTooltip": "Simpan",
@@ -4274,14 +4120,6 @@
   "searchListsSectionHeader": "Senarai",
   "searchListsLoadingLabel": "Memuatkan hasil senarai",
   "cameraAgeRestriction": "Anda mestilah berumur 16 tahun ke atas untuk mencipta kandungan",
-  "keyImportError": "Ralat: {error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Relay bunker mestilah menggunakan wss:// (ws:// dibenarkan untuk localhost sahaja)",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

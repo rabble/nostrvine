@@ -123,7 +123,7 @@
     "profileInvalidId": "잘못된 프로필 ID",
     "profileShareText": "Divine에서 {displayName}님을 확인해보세요!\n\nhttps://divine.video/profile/{npub}",
     "profileShareSubject": "Divine의 {displayName}",
-    "profileShareFailed": "프로필을 공유하지 못했어요: {error}",
+    "profileShareFailed": "프로필을 공유하지 못했어요. 다시 시도해보세요.",
     "profileCopyPublicKey": "공개 키 복사 (npub)",
     "profileGetEmbedCode": "임베드 코드 가져오기",
     "profilePublicKeyCopied": "공개 키를 클립보드에 복사했어요",
@@ -226,7 +226,10 @@
     "profileSetupSavingButton": "저장 중...",
     "profileSetupImageUrlTitle": "이미지 URL 추가",
     "profileSetupImageSelectionFailed": "이미지 선택에 실패했어요. 아래에 이미지 URL을 붙여넣어보세요.",
-    "profileSetupCameraAccessFailed": "카메라 접근 실패: {error}",
+    "cameraPickErrorPermissionDenied": "카메라 접근이 꺼져 있어요. 설정에서 켜면 사진을 찍을 수 있어요.",
+    "cameraPickErrorPermissionRestricted": "이 기기에서는 카메라 접근이 허용되지 않아요.",
+    "cameraPickErrorBusy": "선택기가 이미 열려 있어요. 닫고 다시 시도해보세요.",
+    "cameraPickErrorGeneric": "카메라를 열지 못했어요. 다시 시도해보세요.",
     "profileSetupGotItButton": "알겠어요",
     "profileSetupUploadFailedGeneric": "이미지를 올리지 못했어요. 잠시 후 다시 시도해주세요.",
     "profileSetupUploadNetworkError": "네트워크 오류: 인터넷 연결을 확인하고 다시 시도해주세요.",
@@ -307,7 +310,6 @@
     "featuredTabLoadFailed": "이 컬렉션을 불러오지 못했어요.",
     "featuredTabRetry": "다시 시도",
     "exploreNoVideosAvailable": "이용 가능한 영상이 없어요",
-    "exploreErrorPrefix": "오류: {error}",
     "exploreDiscoverLists": "리스트 둘러보기",
     "exploreAboutLists": "리스트란?",
     "exploreAboutListsDescription": "리스트는 Divine 콘텐츠를 두 가지 방식으로 정리하고 큐레이션할 수 있게 해줘요:",
@@ -317,7 +319,7 @@
     "exploreVideoListsDescription": "좋아하는 영상의 플레이리스트를 만들어서 나중에 다시 보세요",
     "exploreMyLists": "내 리스트",
     "exploreSubscribedLists": "구독 리스트",
-    "exploreErrorLoadingLists": "리스트를 불러오지 못했어요: {error}",
+    "exploreErrorLoadingLists": "리스트를 불러오지 못했어요. 다시 시도해보세요.",
     "exploreNewVideosCount": "{count, plural, other{새 영상 {count}개}}",
     "exploreLoadNewVideosLabel": "{count, plural, other{새 영상 {count}개 불러오기}}",
     "videoPlayerPlayVideo": "영상 재생",
@@ -528,7 +530,6 @@
     "relaySettingsEventsSent": "보낸 이벤트",
     "relaySettingsRequestsThisSession": "이번 세션 요청",
     "relaySettingsFailedRequests": "실패한 요청",
-    "relaySettingsLastError": "마지막 오류: {error}",
     "relaySettingsLoadingRelayInfo": "릴레이 정보 불러오는 중...",
     "relaySettingsAboutRelay": "릴레이 정보",
     "relaySettingsSupportedNips": "지원 NIP",
@@ -596,10 +597,10 @@
     "relayDiagnosticAllEndpointsHealthy": "모든 REST 엔드포인트가 정상이에요!",
     "relayDiagnosticSomeEndpointsFailed": "일부 REST 엔드포인트가 실패했어요 - 위 세부 정보를 확인해주세요",
     "relayDiagnosticFoundVideoEvents": "데이터베이스에서 영상 이벤트 {count}개를 찾았어요",
-    "relayDiagnosticQueryFailed": "쿼리 실패: {error}",
+    "relayDiagnosticQueryFailed": "쿼리 실패. 다시 시도해보세요.",
     "relayDiagnosticConnectedToRelays": "릴레이 {count}개에 연결됐어요!",
     "relayDiagnosticFailedToConnect": "릴레이 연결에 실패했어요",
-    "relayDiagnosticConnectionRetryFailed": "연결 재시도 실패: {error}",
+    "relayDiagnosticConnectionRetryFailed": "연결 재시도 실패. 다시 시도해보세요.",
     "relayDiagnosticConnectedAuthenticated": "연결 및 인증됨",
     "relayDiagnosticConnectedOnly": "연결됨",
     "relayDiagnosticNotConnected": "연결되지 않음",
@@ -919,7 +920,11 @@
     "shareMenuChangeCover": "커버 변경",
     "shareMenuVideoUpdated": "영상을 업데이트했어요",
     "shareMenuVideoUpdatedWithInviteFailures": "동영상이 업데이트되었지만 {count, plural, =1{공동 작업자 초대 1개가 전송되지 않았습니다.} other{공동 작업자 초대 {count}개가 전송되지 않았습니다.}}",
-    "shareMenuFailedToUpdateVideo": "영상 업데이트에 실패했어요: {error}",
+    "videoUpdateErrorNotAuthenticated": "다시 로그인한 다음 시도해보세요.",
+    "videoUpdateErrorNoPlayableVideo": "이 영상에는 재생 가능한 소스가 없어서 수정할 수 없어요.",
+    "videoUpdateErrorCouldNotSign": "업데이트에 서명하지 못했어요. 다시 시도해보세요.",
+    "videoUpdateErrorPublishRejected": "릴레이가 업데이트를 받지 않았어요. 잠시 후 다시 시도해보세요.",
+    "videoUpdateErrorGeneric": "이 영상을 업데이트하지 못했어요. 다시 시도해보세요.",
     "shareMenuDeleteVideoQuestion": "영상을 삭제할까요?",
     "shareMenuDeleteCleanupInProgress": "영상을 삭제하는 중…",
     "shareMenuDeleteCleanupConfirmed": "영상을 삭제했어요.",
@@ -928,8 +933,6 @@
     "authSessionExpired": "세션이 만료됐어요. 다시 로그인해주세요.",
     "authSignInFailed": "로그인에 실패했어요. 다시 시도해주세요.",
     "webAuthNotSupportedSecureMode": "보안 모드에서는 웹 인증을 지원하지 않아요. 안전한 키 관리를 위해 모바일 앱을 이용해주세요.",
-    "webAuthIntegrationFailed": "인증 연동에 실패했어요: {error}",
-    "webAuthUnexpectedError": "예상치 못한 오류가 발생했어요: {error}",
     "webAuthEnterBunkerUri": "Bunker URI를 입력해주세요",
     "webAuthConnectTitle": "Divine에 연결",
     "webAuthChooseMethod": "원하는 Nostr 인증 방법을 고르세요",
@@ -1125,17 +1128,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName}을(를) 여는 중 오류 발생: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "이 콘텐츠를 왜 신고하시나요?",
     "reportPolicyNotice": "Divine은 24시간 이내에 신고된 콘텐츠를 조치하여 콘텐츠를 삭제하고 문제가 된 콘텐츠를 제공한 사용자를 퇴출해요.",
     "reportBlockUser": "이 사용자 차단",
@@ -1153,14 +1145,7 @@
     "reportReasonFalseInfo": "허위 정보",
     "reportReasonAiGenerated": "AI 생성 콘텐츠",
     "reportReasonOther": "기타 정책 위반",
-    "reportFailed": "콘텐츠 신고에 실패했어요: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "콘텐츠 신고에 실패했어요. 다시 시도해보세요.",
     "reportNotSent": "신고를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해보세요.",
     "reportReceivedTitle": "신고 접수 완료",
     "reportReceivedThankYou": "Divine을 안전하게 지키는 데 도움을 주셔서 감사해요.",
@@ -1262,7 +1247,7 @@
     "keyManagementKeycastEmailUnverified": "키를 복사하기 전에 이메일 주소를 인증하세요.",
     "keyManagementKeycastDenied": "이 계정의 키는 Divine이 관리하므로 여기에서 복사할 수 없습니다.",
     "keyManagementKeycastNoKey": "이 계정에 등록된 키가 없어요.",
-    "keyManagementKeycastGenericFailure": "로그인 서비스에 연결할 수 없습니다",
+    "keyManagementKeycastGenericFailure": "로그인 서비스에 연결할 수 없었어요. 다시 시도해보세요.",
     "keyManagementRestrictedTitle": "키는 Divine이 관리합니다",
     "keyManagementRestrictedBody": "계정을 안전하게 지키기 위해 키 백업과 다른 키 가져오기는 여기서 제공하지 않아요.",
     "keyManagementNeverShare": "nsec을 절대 다른 사람과 공유하지 마세요!",
@@ -1272,23 +1257,9 @@
     "keyManagementConfirmImportBody": "현재 신원이 가져온 신원으로 대체돼요.\n\n먼저 백업하지 않으면 현재 키를 잃을 수 있어요.",
     "keyManagementImportConfirm": "가져오기",
     "keyManagementImportSuccess": "키를 성공적으로 가져왔어요!",
-    "keyManagementImportFailed": "키 가져오기에 실패했어요: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "키 가져오기에 실패했어요. 다시 시도해보세요.",
     "keyManagementExportSuccess": "개인 키를 클립보드에 복사했어요!\n\n안전한 곳에 보관하세요.",
-    "keyManagementExportFailed": "키 내보내기에 실패했어요: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "키 내보내기에 실패했어요. 다시 시도해보세요.",
     "saveOriginalSavedToCameraRoll": "카메라 롤에 저장했어요",
     "saveOriginalShare": "공유",
     "saveOriginalDone": "완료",
@@ -1326,14 +1297,7 @@
         }
     },
     "soundUnableToPreview": "사운드를 미리 들을 수 없어요 - 오디오가 없어요",
-    "soundPreviewFailed": "미리 듣기를 재생하지 못했어요: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "미리 듣기를 재생하지 못했어요. 다시 시도해보세요.",
     "soundViewSource": "원본 보기",
     "soundCloseTooltip": "닫기",
     "exploreNotExploreRoute": "둘러보기 경로가 아니에요",
@@ -1354,17 +1318,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName}을(를) 여는 중 오류 발생: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -1469,14 +1422,7 @@
     "categoryVlog": "브이로그",
     "categoryVlogging": "브이로깅",
     "categoryWrestling": "레슬링",
-    "blossomFailedToSaveSettings": "설정 저장에 실패했어요: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "설정 저장에 실패했어요. 다시 시도해보세요.",
     "blueskyFailedToUpdateCrosspost": "크로스포스트 설정 업데이트에 실패했어요",
     "cameraAgeRestriction": "콘텐츠를 만들려면 16세 이상이어야 해요",
     "categoriesCouldNotLoadCategories": "카테고리를 불러올 수 없었어요",
@@ -1485,14 +1431,7 @@
     "commonCancel": "취소",
     "commonDelete": "삭제",
     "commonRetry": "다시 시도",
-    "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요. 다시 시도해보세요.",
     "exploreVideoCounter": "동영상 {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -1627,14 +1566,6 @@
         }
     },
     "invitesTitle": "친구 초대",
-    "keyImportError": "오류: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{클립 1개 삭제됨} other{클립 {count}개 삭제됨}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -2749,15 +2680,7 @@
     "nostrSettingsMoveAccountSubtitle": "아카이브를 다운로드하고 게시물과 동영상을 다른 릴레이나 미디어 서버로 옮기세요.",
     "nostrSettingsRemoveKeys": "기기에서 키 제거",
     "nostrSettingsRemoveKeysSubtitle": "이 기기에서만 개인 키를 삭제해요. 콘텐츠는 릴레이에 그대로 남지만, 다시 계정에 접근하려면 nsec 백업이 필요해요.",
-    "nostrSettingsCouldNotRemoveKeys": "이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.",
-    "nostrSettingsFailedToRemoveKeys": "키 제거에 실패했어요: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "이 기기에서 이 계정을 제거하지 못했어요. 다시 시도해주세요.",
     "nostrSettingsDeleteAccount": "계정 및 데이터 삭제",
     "nostrSettingsDeleteAccountSubtitle": "콘텐츠 삭제 요청을 보내고 이 기기에서 로그아웃해요. 릴레이, 클라이언트, 검색 색인, 그리고 로그인된 다른 기기에는 사본이 남을 수 있어요.",
     "safetySettingsWhatYouSee": "보이는 것",
@@ -2843,14 +2766,6 @@
     },
     "discoverListsTitle": "리스트 둘러보기",
     "discoverListsFailedToLoad": "리스트를 불러오지 못했어요",
-    "discoverListsFailedToLoadWithError": "리스트를 불러오지 못했어요: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "공개 리스트를 찾는 중...",
     "discoverListsRelayTimeout": "릴레이가 제때 리스트를 주지 않았어요. 다시 시도해 주세요.",
     "discoverListsServiceUnavailable": "서비스를 사용할 수 없어요.",
@@ -3943,8 +3858,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "사운드: {creatorName}님의 {soundName}. 탭하면 세부 정보를 볼 수 있어요.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "사운드를 불러오지 못했어요: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "사운드를 불러오지 못했어요. 다시 시도해보세요.",
     "soundDetailNotFoundMessage": "이 사운드를 찾을 수 없어요",
     "soundDetailNotFoundTitle": "사운드를 찾을 수 없어요",
     "videoFeedLoopCountLabel": "🔁 루프 {count}회",

@@ -457,9 +457,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Kunde inte dela profil: $error';
-  }
+  String get profileShareFailed => 'Kunde inte dela profil. Försök igen.';
 
   @override
   String get profileCopyPublicKey => 'Kopiera publik nyckel (npub)';
@@ -940,9 +938,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'bilder';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Kameraåtkomst misslyckades: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Kameraåtkomst är av. Slå på den i Inställningar för att ta ett foto.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Kameraåtkomst är inte tillåten på den här enheten.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Väljaren är redan öppen. Stäng den och försök igen.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Kunde inte öppna kameran. Försök igen.';
 
   @override
   String get profileSetupGotItButton => 'Jag fattar';
@@ -1266,11 +1274,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Inga videor tillgängliga';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Fel: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Upptäck listor';
 
   @override
@@ -1301,9 +1304,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get exploreSubscribedLists => 'Prenumererade listor';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Fel vid inläsning av listor: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Fel vid inläsning av listor. Försök igen.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2217,11 +2219,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Misslyckade förfrågningar';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Senaste fel: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'Läser in relinfo...';
 
   @override
@@ -2427,12 +2424,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Kunde inte ta bort nycklar från enheten. Försök igen.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Kunde inte ta bort nycklar: $error';
-  }
+      'Kunde inte ta bort det här kontot från enheten. Försök igen.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Radera konto och data';
@@ -2584,9 +2576,8 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Förfrågan misslyckades: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Förfrågan misslyckades. Försök igen.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2598,9 +2589,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte ansluta till några reler';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Förnyat anslutningsförsök misslyckades: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Förnyat anslutningsförsök misslyckades. Försök igen.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -3976,9 +3966,24 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Kunde inte uppdatera videon: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Logga in igen och försök sedan på nytt.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Den här videon har ingen spelbar källa och kan inte redigeras.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Kunde inte signera ändringen. Försök igen.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relät accepterade inte ändringen. Försök igen om en stund.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Kunde inte uppdatera videon. Försök igen.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4014,16 +4019,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Webbautentisering stöds inte i säkert läge. Använd mobilappen för säker nyckelhantering.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Autentiseringsintegrering misslyckades: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Oväntat fel: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Ange en bunker-URI';
@@ -4597,11 +4592,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Fel vid öppning av $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Varför rapporterar du det här innehållet?';
 
   @override
@@ -4708,9 +4698,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Överträdelser som inte listas ovan';
 
   @override
-  String reportFailed(Object error) {
-    return 'Kunde inte rapportera innehåll: $error';
-  }
+  String get reportFailed => 'Kunde inte rapportera innehåll. Försök igen.';
 
   @override
   String get reportNotSent =>
@@ -4961,7 +4949,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'inloggningstjänsten kunde inte nås';
+      'Inloggningstjänsten kunde inte nås. Försök igen.';
 
   @override
   String get keyManagementRestrictedTitle => 'Dina nycklar hanteras av Divine';
@@ -4991,18 +4979,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get keyManagementImportSuccess => 'Nyckeln importerades!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Kunde inte importera nyckeln: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Kunde inte importera nyckeln. Försök igen.';
 
   @override
   String get keyManagementExportSuccess =>
       'Privat nyckel kopierad till urklipp!\n\nFörvara den på ett säkert ställe.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Kunde inte exportera nyckeln: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Kunde inte exportera nyckeln. Försök igen.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Din publika nyckel (npub)';
@@ -5125,9 +5111,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kan inte förhandsvisa ljud – inget ljud tillgängligt';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Kunde inte spela förhandsvisning: $error';
-  }
+  String get soundPreviewFailed =>
+      'Kunde inte spela förhandsvisning. Försök igen.';
 
   @override
   String get soundViewSource => 'Visa källa';
@@ -5178,11 +5163,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Kunde inte öppna $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Fel vid öppning av $pageName: $error';
   }
 
   @override
@@ -5894,20 +5874,14 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Kunde inte uppdatera prenumerationen: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Kunde inte uppdatera prenumerationen. Försök igen.';
 
   @override
   String get discoverListsTitle => 'Upptäck listor';
 
   @override
   String get discoverListsFailedToLoad => 'Kunde inte ladda listor';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Kunde inte ladda listor: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Söker upp publika listor...';
@@ -7222,9 +7196,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Kunde inte läsa in ljud: $error';
-  }
+  String get soundDetailLoadError => 'Kunde inte läsa in ljud. Försök igen.';
 
   @override
   String get soundDetailNotFoundMessage => 'Det här ljudet kunde inte hittas';
@@ -7485,9 +7457,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Kunde inte spara inställningarna: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Kunde inte spara inställningarna. Försök igen.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7720,11 +7691,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Du måste vara 16 år eller äldre för att skapa innehåll';
-
-  @override
-  String keyImportError(String error) {
-    return 'Fel: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

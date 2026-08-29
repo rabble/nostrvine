@@ -20,6 +20,7 @@ import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SupportCenterScreen extends ConsumerWidget {
@@ -218,10 +219,15 @@ class SupportCenterScreen extends ConsumerWidget {
         }
       }
     } catch (e) {
+      Log.error(
+        'Failed to open $pageName: $e',
+        name: 'SupportCenterScreen',
+        category: LogCategory.ui,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.supportErrorOpeningPage(pageName, e),
+            context.l10n.supportCouldNotOpenPage(pageName),
             error: true,
           ),
         );

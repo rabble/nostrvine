@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Profiel delen mislukt: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Profiel delen mislukt. Probeer het opnieuw.",
     "profileCopyPublicKey": "Publieke sleutel kopiëren (npub)",
     "profileGetEmbedCode": "Embedcode ophalen",
     "profilePublicKeyCopied": "Publieke sleutel gekopieerd naar klembord",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Opslaan...",
     "profileSetupImageUrlTitle": "Afbeeldings-URL toevoegen",
     "profileSetupImageSelectionFailed": "Afbeelding kiezen mislukt. Plak hieronder een afbeeldings-URL.",
-    "profileSetupCameraAccessFailed": "Cameratoegang mislukt: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Cameratoegang staat uit. Zet het aan in Instellingen om een foto te maken.",
+    "cameraPickErrorPermissionRestricted": "Cameratoegang is niet toegestaan op dit apparaat.",
+    "cameraPickErrorBusy": "De kiezer is al open. Sluit hem en probeer het opnieuw.",
+    "cameraPickErrorGeneric": "De camera kon niet geopend worden. Probeer het opnieuw.",
     "profileSetupGotItButton": "Begrepen",
     "profileSetupUploadFailedGeneric": "Uploaden van afbeelding mislukt. Probeer het later opnieuw.",
     "profileSetupUploadNetworkError": "Netwerkfout: check je internetverbinding en probeer opnieuw.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Deze collectie kon niet worden geladen.",
     "featuredTabRetry": "Probeer opnieuw",
     "exploreNoVideosAvailable": "Geen video's beschikbaar",
-    "exploreErrorPrefix": "Fout: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Lijsten ontdekken",
     "exploreAboutLists": "Over lijsten",
     "exploreAboutListsDescription": "Met lijsten kun je Divine-inhoud op twee manieren organiseren en samenstellen:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Maak afspeellijsten van je favoriete video's om later te bekijken",
     "exploreMyLists": "Mijn lijsten",
     "exploreSubscribedLists": "Gevolgde lijsten",
-    "exploreErrorLoadingLists": "Fout bij laden van lijsten: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Fout bij laden van lijsten. Probeer het opnieuw.",
     "exploreNewVideosCount": "{count, plural, one{1 nieuwe video} other{{count} nieuwe video''s}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Verzonden events",
     "relaySettingsRequestsThisSession": "Verzoeken deze sessie",
     "relaySettingsFailedRequests": "Mislukte verzoeken",
-    "relaySettingsLastError": "Laatste fout: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Relay-info laden...",
     "relaySettingsAboutRelay": "Over relay",
     "relaySettingsSupportedNips": "Ondersteunde NIPs",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query mislukt: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Query mislukt. Probeer het opnieuw.",
     "relayDiagnosticConnectedToRelays": "Verbonden met {count} relay(s)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Verbinden met relays mislukt",
-    "relayDiagnosticConnectionRetryFailed": "Verbinding opnieuw proberen mislukt: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Verbinding opnieuw proberen mislukt. Probeer het opnieuw.",
     "relayDiagnosticConnectedAuthenticated": "Verbonden & geauthenticeerd",
     "relayDiagnosticConnectedOnly": "Verbonden",
     "relayDiagnosticNotConnected": "Niet verbonden",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Cover wijzigen",
     "shareMenuVideoUpdated": "Video succesvol bijgewerkt",
     "shareMenuVideoUpdatedWithInviteFailures": "Video bijgewerkt, maar {count, plural, =1{1 uitnodiging voor medewerker is niet verzonden.} other{{count} uitnodigingen voor medewerkers zijn niet verzonden.}}",
-    "shareMenuFailedToUpdateVideo": "Video bijwerken mislukt: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Log opnieuw in en probeer het dan nog eens.",
+    "videoUpdateErrorNoPlayableVideo": "Deze video heeft geen afspeelbare bron en kan niet worden bewerkt.",
+    "videoUpdateErrorCouldNotSign": "De wijziging kon niet ondertekend worden. Probeer het opnieuw.",
+    "videoUpdateErrorPublishRejected": "De relay accepteerde de wijziging niet. Probeer het zo nog eens.",
+    "videoUpdateErrorGeneric": "Deze video kon niet bijgewerkt worden. Probeer het opnieuw.",
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteCleanupInProgress": "Video verwijderen…",
     "shareMenuDeleteCleanupConfirmed": "Video verwijderd.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "Je sessie is verlopen. Log opnieuw in.",
     "authSignInFailed": "Inloggen mislukt. Probeer het opnieuw.",
     "webAuthNotSupportedSecureMode": "Webauthenticatie wordt niet ondersteund in veilige modus. Gebruik de mobiele app voor veilig sleutelbeheer.",
-    "webAuthIntegrationFailed": "Authenticatie-integratie mislukt: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Onverwachte fout: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Voer een bunker-URI in",
     "webAuthConnectTitle": "Verbinden met Divine",
     "webAuthChooseMethod": "Kies je voorkeursmethode voor Nostr-authenticatie",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Fout bij openen van {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Waarom meld je deze inhoud?",
     "reportPolicyNotice": "Divine handelt binnen 24 uur op meldingen van inhoud door de inhoud te verwijderen en de gebruiker die de schendende inhoud plaatste eruit te zetten.",
     "reportBlockUser": "Deze gebruiker blokkeren",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Valse informatie",
     "reportReasonAiGenerated": "AI-gegenereerde inhoud",
     "reportReasonOther": "Andere beleidsschending",
-    "reportFailed": "Inhoud melden mislukt: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Inhoud melden mislukt. Probeer het opnieuw.",
     "reportNotSent": "Kan je melding niet versturen. Controleer je verbinding en probeer het opnieuw.",
     "reportReceivedTitle": "Melding ontvangen",
     "reportReceivedThankYou": "Bedankt dat je helpt Divine veilig te houden.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Bevestig je e-mailadres voordat je je sleutel kopieert.",
     "keyManagementKeycastDenied": "Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.",
     "keyManagementKeycastNoKey": "Voor dit account staat geen sleutel geregistreerd.",
-    "keyManagementKeycastGenericFailure": "de inlogservice was niet bereikbaar",
+    "keyManagementKeycastGenericFailure": "De inlogservice was niet bereikbaar. Probeer het opnieuw.",
     "keyManagementRestrictedTitle": "Je sleutels worden beheerd door Divine",
     "keyManagementRestrictedBody": "Om je account veilig te houden zijn sleutelback-up en het importeren van een andere sleutel hier niet beschikbaar.",
     "keyManagementNeverShare": "Deel je nsec nooit met iemand!",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "Dit vervangt je huidige identiteit door de geïmporteerde.\n\nJe huidige sleutel is weg tenzij je eerst een back-up hebt gemaakt.",
     "keyManagementImportConfirm": "Importeren",
     "keyManagementImportSuccess": "Sleutel succesvol geïmporteerd!",
-    "keyManagementImportFailed": "Sleutel importeren mislukt: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Sleutel importeren mislukt. Probeer het opnieuw.",
     "keyManagementExportSuccess": "Privésleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.",
-    "keyManagementExportFailed": "Sleutel exporteren mislukt: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Sleutel exporteren mislukt. Probeer het opnieuw.",
     "saveOriginalSavedToCameraRoll": "Opgeslagen in camerarol",
     "saveOriginalShare": "Delen",
     "saveOriginalDone": "Klaar",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Geluid voorbeluisteren lukt niet — geen audio beschikbaar",
-    "soundPreviewFailed": "Voorbeluistering afspelen mislukt: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Voorbeluistering afspelen mislukt. Probeer het opnieuw.",
     "soundViewSource": "Bron bekijken",
     "soundCloseTooltip": "Sluiten",
     "exploreNotExploreRoute": "Geen explore-route",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Fout bij openen van {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vloggen",
     "categoryWrestling": "Worstelen",
-    "blossomFailedToSaveSettings": "Instellingen opslaan mislukt: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Instellingen opslaan mislukt. Probeer het opnieuw.",
     "blueskyFailedToUpdateCrosspost": "Crosspost-instelling bijwerken mislukt",
     "cameraAgeRestriction": "Je moet 16 jaar of ouder zijn om content te maken",
     "categoriesCouldNotLoadCategories": "Categorieën konden niet worden geladen",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Annuleren",
     "commonDelete": "Verwijderen",
     "commonRetry": "Opnieuw proberen",
-    "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt. Probeer het opnieuw.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Vrienden uitnodigen",
-    "keyImportError": "Fout: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 clip verwijderd} other{{count} clips verwijderd}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Download je archief en verplaats je berichten en video's naar een andere relay of mediaserver.",
     "nostrSettingsRemoveKeys": "Sleutels van apparaat verwijderen",
     "nostrSettingsRemoveKeysSubtitle": "Verwijder je privésleutel alleen van dit apparaat. Je inhoud blijft op relays staan, maar je hebt je nsec-back-up nodig om weer bij je account te komen.",
-    "nostrSettingsCouldNotRemoveKeys": "Sleutels konden niet van dit apparaat verwijderd worden. Probeer het opnieuw.",
-    "nostrSettingsFailedToRemoveKeys": "Verwijderen van sleutels mislukt: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Dit account kon niet van dit apparaat verwijderd worden. Probeer het opnieuw.",
     "nostrSettingsDeleteAccount": "Account en data verwijderen",
     "nostrSettingsDeleteAccountSubtitle": "Stuurt verwijderverzoeken voor je content en meldt je op dit apparaat af. Relays, clients, zoekindexen en andere aangemelde apparaten kunnen kopieën bewaren.",
     "safetySettingsWhatYouSee": "WAT JIJ ZIET",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Lijsten ontdekken",
     "discoverListsFailedToLoad": "Lijsten laden mislukt",
-    "discoverListsFailedToLoadWithError": "Lijsten laden mislukt: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Publieke lijsten worden ontdekt...",
     "discoverListsRelayTimeout": "De relay leverde niet op tijd lijsten. Probeer het opnieuw.",
     "discoverListsServiceUnavailable": "Service niet beschikbaar.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Afhankelijk van de regels waar je woont kun je dan misschien terugkomen en een eigen account aanvragen. Ben je dan tussen de 13 en 15, dan heb je toestemming van een ouder of voogd nodig.",
     "minorAccountReviewParentConsentPauseNote": "Dit is een pauze terwijl het Divine-supportteam de video bekijkt. Als hij wordt goedgekeurd, helpen ze je met het opzetten van het nieuwe account.",
     "minorAccountReviewUnder13WhyTitle": "Dit is waarom",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Geluid: {soundName} van {creatorName}. Tik om details te bekijken.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Geluid laden mislukt: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Geluid laden mislukt. Probeer het opnieuw.",
     "soundDetailNotFoundMessage": "Dit geluid kon niet worden gevonden",
     "soundDetailNotFoundTitle": "Geluid niet gevonden",
     "videoFeedLoopCountLabel": "🔁 {count} loops",

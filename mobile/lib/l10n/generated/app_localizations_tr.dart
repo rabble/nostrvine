@@ -407,9 +407,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Profil paylaşılamadı: $error';
-  }
+  String get profileShareFailed => 'Profil paylaşılamadı. Lütfen tekrar dene.';
 
   @override
   String get profileCopyPublicKey => 'Açık anahtarı (npub) kopyala';
@@ -894,9 +892,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'görseller';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Kamera erişimi başarısız: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Kamera erişimi kapalı. Fotoğraf çekmek için Ayarlar\'dan aç.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Bu cihazda kamera erişimine izin verilmiyor.';
+
+  @override
+  String get cameraPickErrorBusy => 'Seçici zaten açık. Kapat ve tekrar dene.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Kamera açılamadı. Tekrar dene.';
 
   @override
   String get profileSetupGotItButton => 'Anlaşıldı';
@@ -1218,11 +1225,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Hiç video yok';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Hata: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Listeleri Keşfet';
 
   @override
@@ -1253,9 +1255,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get exploreSubscribedLists => 'Abone Olunan Listeler';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Listeler yüklenirken hata: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Listeler yüklenirken hata. Lütfen tekrar dene.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2157,11 +2158,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Başarısız İstekler';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Son Hata: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'Röle bilgisi yükleniyor...';
 
   @override
@@ -2369,12 +2365,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Anahtarlar kaldırılamadı: $error';
-  }
+      'Bu hesap bu cihazdan kaldırılamadı. Lütfen tekrar dene.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Hesabı ve Verileri Sil';
@@ -2526,9 +2517,8 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Sorgu başarısız: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Sorgu başarısız. Lütfen tekrar dene.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2539,9 +2529,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'Hiçbir röleye bağlanılamadı';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Bağlantı yeniden denemesi başarısız: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Bağlantı yeniden denemesi başarısız. Lütfen tekrar dene.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -3917,9 +3906,23 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Video güncellenemedi: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Tekrar giriş yap, sonra yeniden dene.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Bu videonun oynatılabilir bir kaynağı yok, bu yüzden düzenlenemiyor.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Değişiklik imzalanamadı. Tekrar dene.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay değişikliği kabul etmedi. Birazdan tekrar dene.';
+
+  @override
+  String get videoUpdateErrorGeneric => 'Bu video güncellenemedi. Tekrar dene.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -3956,16 +3959,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Web kimlik doğrulaması güvenli modda desteklenmiyor. Güvenli anahtar yönetimi için lütfen mobil uygulamayı kullan.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Kimlik doğrulama entegrasyonu başarısız: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Beklenmeyen hata: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Lütfen bir bunker URI\'si gir';
@@ -4541,11 +4534,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName açılırken hata: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Bu içeriği neden bildiriyorsun?';
 
   @override
@@ -4652,9 +4640,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportReasonOtherSubtitle => 'Yukarıda listelenmeyen ihlaller';
 
   @override
-  String reportFailed(Object error) {
-    return 'İçerik bildirilemedi: $error';
-  }
+  String get reportFailed => 'İçerik bildirilemedi. Lütfen tekrar dene.';
 
   @override
   String get reportNotSent =>
@@ -4905,7 +4891,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'giriş servisine ulaşılamadı';
+      'Giriş servisine ulaşılamadı. Lütfen tekrar dene.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -4936,18 +4922,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keyManagementImportSuccess => 'Anahtar başarıyla içe aktarıldı!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Anahtar içe aktarılamadı: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Anahtar içe aktarılamadı. Lütfen tekrar dene.';
 
   @override
   String get keyManagementExportSuccess =>
       'Özel anahtar panoya kopyalandı!\n\nGüvenli bir yerde sakla.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Anahtar dışa aktarılamadı: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Anahtar dışa aktarılamadı. Lütfen tekrar dene.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Açık anahtarın (npub)';
@@ -5069,9 +5053,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundUnableToPreview => 'Ses önizlenemiyor - ses mevcut değil';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Önizleme oynatılamadı: $error';
-  }
+  String get soundPreviewFailed => 'Önizleme oynatılamadı. Lütfen tekrar dene.';
 
   @override
   String get soundViewSource => 'Kaynağı gör';
@@ -5121,11 +5103,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName açılamadı';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName açılırken hata: $error';
   }
 
   @override
@@ -5834,20 +5811,14 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Abonelik güncellenemedi: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Abonelik güncellenemedi. Lütfen tekrar dene.';
 
   @override
   String get discoverListsTitle => 'Listeleri Keşfet';
 
   @override
   String get discoverListsFailedToLoad => 'Listeler yüklenemedi';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Listeler yüklenemedi: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Herkese açık listeler keşfediliyor...';
@@ -7156,9 +7127,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Ses yüklenemedi: $error';
-  }
+  String get soundDetailLoadError => 'Ses yüklenemedi. Lütfen tekrar dene.';
 
   @override
   String get soundDetailNotFoundMessage => 'Bu ses bulunamadı';
@@ -7418,9 +7387,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Ayarlar kaydedilemedi: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Ayarlar kaydedilemedi. Lütfen tekrar dene.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7652,11 +7620,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın';
-
-  @override
-  String keyImportError(String error) {
-    return 'Hata: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

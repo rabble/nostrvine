@@ -391,9 +391,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'プロフィールの共有がうまくいかなかった: $error';
-  }
+  String get profileShareFailed => 'プロフィールの共有がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get profileCopyPublicKey => '公開鍵 (npub) をコピー';
@@ -854,9 +852,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupImagesTypeGroup => '画像';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'カメラにアクセスできなかった: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'カメラへのアクセスがオフになってる。設定でオンにすると写真を撮れるよ。';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'このデバイスではカメラへのアクセスが許可されてない。';
+
+  @override
+  String get cameraPickErrorBusy => 'ピッカーはもう開いてる。閉じてからもう一回試してみて。';
+
+  @override
+  String get cameraPickErrorGeneric => 'カメラを開けなかった。もう一回試してみて。';
 
   @override
   String get profileSetupGotItButton => '了解！';
@@ -1163,11 +1170,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exploreNoVideosAvailable => '動画がないよ';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'エラー: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'リストを見つけよう';
 
   @override
@@ -1197,9 +1199,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exploreSubscribedLists => '購読中のリスト';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'リストの読み込みに失敗: $error';
-  }
+  String get exploreErrorLoadingLists => 'リストの読み込みに失敗。もう一回試してみて。';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2061,11 +2061,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relaySettingsFailedRequests => '失敗したリクエスト';
 
   @override
-  String relaySettingsLastError(String error) {
-    return '最後のエラー: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'リレー情報を読み込み中...';
 
   @override
@@ -2262,12 +2257,8 @@ class AppLocalizationsJa extends AppLocalizations {
       'このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。';
 
   @override
-  String get nostrSettingsCouldNotRemoveKeys => 'このデバイスから鍵を削除できなかった。もう一回試してみて。';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return '鍵の削除に失敗: $error';
-  }
+  String get nostrSettingsCouldNotRemoveKeys =>
+      'このデバイスからこのアカウントを削除できなかった。もう一回試してみて。';
 
   @override
   String get nostrSettingsDeleteAccount => 'アカウントとデータを削除';
@@ -2418,9 +2409,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'クエリがうまくいかなかった: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'クエリがうまくいかなかった。もう一回試してみて。';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2431,9 +2420,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'どのリレーにも接続できなかった';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return '接続の再試行がうまくいかなかった: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      '接続の再試行がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => '接続・認証済み';
@@ -3730,9 +3718,20 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return '動画の更新がうまくいかなかった: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'もう一度ログインしてから試してみて。';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo => 'この動画には再生できるソースがないから、編集できない。';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => '更新に署名できなかった。もう一回試してみて。';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'リレーが更新を受け付けなかった。少ししてからもう一回試してみて。';
+
+  @override
+  String get videoUpdateErrorGeneric => 'この動画を更新できなかった。もう一回試してみて。';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -3768,16 +3767,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'セキュアモードではウェブ認証は対応してないよ。安全な鍵管理にはモバイルアプリを使ってね。';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return '認証連携がうまくいかなかった: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return '予期しないエラー: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'bunker URI を入れてね';
@@ -4332,11 +4321,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageNameを開く時にエラー: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'このコンテンツを報告する理由は?';
 
   @override
@@ -4431,9 +4415,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportReasonOtherSubtitle => '上記に記載されていない違反';
 
   @override
-  String reportFailed(Object error) {
-    return 'コンテンツの報告がうまくいかなかった: $error';
-  }
+  String get reportFailed => 'コンテンツの報告がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get reportNotSent => '報告を送信できなかった。接続を確認してもう一回試してみて。';
@@ -4675,7 +4657,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementKeycastNoKey => 'このアカウントに登録されている鍵はありません。';
 
   @override
-  String get keyManagementKeycastGenericFailure => 'ログインサービスに接続できませんでした';
+  String get keyManagementKeycastGenericFailure =>
+      'ログインサービスに接続できなかった。もう一回試してみて。';
 
   @override
   String get keyManagementRestrictedTitle => '鍵は Divine が管理しています';
@@ -4704,17 +4687,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementImportSuccess => '鍵をインポートしたよ！';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return '鍵のインポートがうまくいかなかった: $error';
-  }
+  String get keyManagementImportFailed => '鍵のインポートがうまくいかなかった。もう一回試してみて。';
 
   @override
   String get keyManagementExportSuccess => '秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return '鍵のエクスポートがうまくいかなかった: $error';
-  }
+  String get keyManagementExportFailed => '鍵のエクスポートがうまくいかなかった。もう一回試してみて。';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'あなたの公開鍵 (npub)';
@@ -4834,9 +4813,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundUnableToPreview => 'サウンドをプレビューできない - 音声がないよ';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'プレビューの再生がうまくいかなかった: $error';
-  }
+  String get soundPreviewFailed => 'プレビューの再生がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get soundViewSource => '元動画を見る';
@@ -4886,11 +4863,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageNameが開けなかった';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageNameを開く時にエラー: $error';
   }
 
   @override
@@ -5590,20 +5562,14 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'サブスクリプションの更新がうまくいかなかった: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'サブスクリプションの更新がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get discoverListsTitle => 'リストを見つける';
 
   @override
   String get discoverListsFailedToLoad => 'リストの読み込みに失敗';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'リストの読み込みに失敗: $error';
-  }
 
   @override
   String get discoverListsLoading => '公開リストを探してるよ...';
@@ -6866,9 +6832,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'サウンドの読み込みに失敗したよ: $error';
-  }
+  String get soundDetailLoadError => 'サウンドの読み込みに失敗したよ。もう一回試してみて。';
 
   @override
   String get soundDetailNotFoundMessage => 'このサウンドは見つからなかったよ';
@@ -7116,9 +7080,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return '設定の保存がうまくいかなかった: $error';
-  }
+  String get blossomFailedToSaveSettings => '設定の保存がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get blossomValidServerUrl =>
@@ -7343,11 +7305,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'コンテンツを作るには16歳以上である必要があるよ';
-
-  @override
-  String keyImportError(String error) {
-    return 'エラー: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

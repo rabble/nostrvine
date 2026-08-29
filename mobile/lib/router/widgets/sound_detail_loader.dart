@@ -8,6 +8,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Loader widget that fetches a sound by ID before displaying SoundDetailScreen.
 /// Used when navigating via deep link without the sound object.
@@ -37,16 +38,23 @@ class SoundDetailLoader extends ConsumerWidget {
         return SoundDetailScreen(sound: sound);
       },
       loading: () => const BrandedLoadingScaffold(),
-      error: (error, stack) => Scaffold(
-        backgroundColor: context.vineColors.background,
-        appBar: DiVineAppBar(title: context.l10n.featureFlagError),
-        body: Center(
-          child: Text(
-            context.l10n.soundDetailLoadError(error.toString()),
-            style: TextStyle(color: context.vineColors.primaryText),
+      error: (error, stack) {
+        Log.error(
+          'Failed to load sound: $error',
+          name: 'SoundDetailLoader',
+          category: LogCategory.ui,
+        );
+        return Scaffold(
+          backgroundColor: context.vineColors.background,
+          appBar: DiVineAppBar(title: context.l10n.featureFlagError),
+          body: Center(
+            child: Text(
+              context.l10n.soundDetailLoadError,
+              style: TextStyle(color: context.vineColors.primaryText),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

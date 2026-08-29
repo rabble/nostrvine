@@ -831,8 +831,8 @@ abstract class AppLocalizations {
   /// No description provided for @profileShareFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to share profile: {error}'**
-  String profileShareFailed(Object error);
+  /// **'Failed to share profile. Please try again.'**
+  String get profileShareFailed;
 
   /// No description provided for @profileCopyPublicKey.
   ///
@@ -1638,11 +1638,29 @@ abstract class AppLocalizations {
   /// **'images'**
   String get profileSetupImagesTypeGroup;
 
-  /// No description provided for @profileSetupCameraAccessFailed.
+  /// No description provided for @cameraPickErrorPermissionDenied.
   ///
   /// In en, this message translates to:
-  /// **'Camera access failed: {error}'**
-  String profileSetupCameraAccessFailed(Object error);
+  /// **'Camera access is off. Turn it on in Settings to take a photo.'**
+  String get cameraPickErrorPermissionDenied;
+
+  /// No description provided for @cameraPickErrorPermissionRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access isn\'t allowed on this device.'**
+  String get cameraPickErrorPermissionRestricted;
+
+  /// No description provided for @cameraPickErrorBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The picker is already open. Close it and try again.'**
+  String get cameraPickErrorBusy;
+
+  /// No description provided for @cameraPickErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the camera. Try again.'**
+  String get cameraPickErrorGeneric;
 
   /// No description provided for @profileSetupGotItButton.
   ///
@@ -2208,12 +2226,6 @@ abstract class AppLocalizations {
   /// **'No videos available'**
   String get exploreNoVideosAvailable;
 
-  /// No description provided for @exploreErrorPrefix.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String exploreErrorPrefix(Object error);
-
   /// No description provided for @exploreDiscoverLists.
   ///
   /// In en, this message translates to:
@@ -2271,8 +2283,8 @@ abstract class AppLocalizations {
   /// No description provided for @exploreErrorLoadingLists.
   ///
   /// In en, this message translates to:
-  /// **'Error loading lists: {error}'**
-  String exploreErrorLoadingLists(Object error);
+  /// **'Error loading lists. Please try again.'**
+  String get exploreErrorLoadingLists;
 
   /// No description provided for @exploreNewVideosCount.
   ///
@@ -3805,12 +3817,6 @@ abstract class AppLocalizations {
   /// **'Failed Requests'**
   String get relaySettingsFailedRequests;
 
-  /// No description provided for @relaySettingsLastError.
-  ///
-  /// In en, this message translates to:
-  /// **'Last Error: {error}'**
-  String relaySettingsLastError(String error);
-
   /// No description provided for @relaySettingsLoadingRelayInfo.
   ///
   /// In en, this message translates to:
@@ -4153,12 +4159,6 @@ abstract class AppLocalizations {
   /// **'Could not remove this account from this device. Please try again.'**
   String get nostrSettingsCouldNotRemoveKeys;
 
-  /// No description provided for @nostrSettingsFailedToRemoveKeys.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to remove this account: {error}'**
-  String nostrSettingsFailedToRemoveKeys(String error);
-
   /// No description provided for @nostrSettingsDeleteAccount.
   ///
   /// In en, this message translates to:
@@ -4424,8 +4424,8 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticQueryFailed.
   ///
   /// In en, this message translates to:
-  /// **'Query failed: {error}'**
-  String relayDiagnosticQueryFailed(String error);
+  /// **'Query failed. Please try again.'**
+  String get relayDiagnosticQueryFailed;
 
   /// No description provided for @relayDiagnosticConnectedToRelays.
   ///
@@ -4442,8 +4442,8 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticConnectionRetryFailed.
   ///
   /// In en, this message translates to:
-  /// **'Connection retry failed: {error}'**
-  String relayDiagnosticConnectionRetryFailed(String error);
+  /// **'Connection retry failed. Please try again.'**
+  String get relayDiagnosticConnectionRetryFailed;
 
   /// No description provided for @relayDiagnosticConnectedAuthenticated.
   ///
@@ -6797,11 +6797,35 @@ abstract class AppLocalizations {
   /// **'Video updated, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}'**
   String shareMenuVideoUpdatedWithInviteFailures(int count);
 
-  /// No description provided for @shareMenuFailedToUpdateVideo.
+  /// No description provided for @videoUpdateErrorNotAuthenticated.
   ///
   /// In en, this message translates to:
-  /// **'Failed to update video: {error}'**
-  String shareMenuFailedToUpdateVideo(String error);
+  /// **'Sign in again, then try updating.'**
+  String get videoUpdateErrorNotAuthenticated;
+
+  /// No description provided for @videoUpdateErrorNoPlayableVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'This video has no playable source, so it can\'t be updated.'**
+  String get videoUpdateErrorNoPlayableVideo;
+
+  /// No description provided for @videoUpdateErrorCouldNotSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign the update. Try again.'**
+  String get videoUpdateErrorCouldNotSign;
+
+  /// No description provided for @videoUpdateErrorPublishRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The relay wouldn\'t accept the update. Try again in a moment.'**
+  String get videoUpdateErrorPublishRejected;
+
+  /// No description provided for @videoUpdateErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this video. Try again.'**
+  String get videoUpdateErrorGeneric;
 
   /// Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely.
   ///
@@ -6862,18 +6886,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Web authentication not supported in secure mode. Please use mobile app for secure key management.'**
   String get webAuthNotSupportedSecureMode;
-
-  /// No description provided for @webAuthIntegrationFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication integration failed: {error}'**
-  String webAuthIntegrationFailed(String error);
-
-  /// No description provided for @webAuthUnexpectedError.
-  ///
-  /// In en, this message translates to:
-  /// **'Unexpected error: {error}'**
-  String webAuthUnexpectedError(String error);
 
   /// No description provided for @webAuthEnterBunkerUri.
   ///
@@ -7859,12 +7871,6 @@ abstract class AppLocalizations {
   /// **'Could not open {pageName}'**
   String supportCouldNotOpenPage(String pageName);
 
-  /// No description provided for @supportErrorOpeningPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Error opening {pageName}: {error}'**
-  String supportErrorOpeningPage(String pageName, Object error);
-
   /// No description provided for @reportWhyReporting.
   ///
   /// In en, this message translates to:
@@ -8054,8 +8060,8 @@ abstract class AppLocalizations {
   /// No description provided for @reportFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to report content: {error}'**
-  String reportFailed(Object error);
+  /// **'Failed to report content. Please try again.'**
+  String get reportFailed;
 
   /// Shown when a submitted report reached no channel off the device — every publish target refused it, which in practice almost always means no connectivity. Covers both content and user reports, so it must not name either subject.
   ///
@@ -8474,7 +8480,7 @@ abstract class AppLocalizations {
   /// Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence.
   ///
   /// In en, this message translates to:
-  /// **'the login service could not be reached'**
+  /// **'Couldn\'t reach the login service. Please try again.'**
   String get keyManagementKeycastGenericFailure;
 
   /// Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody).
@@ -8528,8 +8534,8 @@ abstract class AppLocalizations {
   /// No description provided for @keyManagementImportFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to import key: {error}'**
-  String keyManagementImportFailed(Object error);
+  /// **'Failed to import key. Please try again.'**
+  String get keyManagementImportFailed;
 
   /// No description provided for @keyManagementExportSuccess.
   ///
@@ -8540,8 +8546,8 @@ abstract class AppLocalizations {
   /// No description provided for @keyManagementExportFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to export key: {error}'**
-  String keyManagementExportFailed(Object error);
+  /// **'Failed to export key. Please try again.'**
+  String get keyManagementExportFailed;
 
   /// Label above the truncated npub display on the key management screen.
   ///
@@ -8768,8 +8774,8 @@ abstract class AppLocalizations {
   /// No description provided for @soundPreviewFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to play preview: {error}'**
-  String soundPreviewFailed(Object error);
+  /// **'Failed to play preview. Please try again.'**
+  String get soundPreviewFailed;
 
   /// No description provided for @soundViewSource.
   ///
@@ -8866,12 +8872,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open {pageName}'**
   String legalCouldNotOpenPage(String pageName);
-
-  /// No description provided for @legalErrorOpeningPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Error opening {pageName}: {error}'**
-  String legalErrorOpeningPage(String pageName, Object error);
 
   /// No description provided for @categoryAction.
   ///
@@ -10154,8 +10154,8 @@ abstract class AppLocalizations {
   /// No description provided for @discoverListsFailedToUpdateSubscription.
   ///
   /// In en, this message translates to:
-  /// **'Failed to update subscription: {error}'**
-  String discoverListsFailedToUpdateSubscription(String error);
+  /// **'Failed to update subscription. Please try again.'**
+  String get discoverListsFailedToUpdateSubscription;
 
   /// No description provided for @discoverListsTitle.
   ///
@@ -10168,12 +10168,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load lists'**
   String get discoverListsFailedToLoad;
-
-  /// No description provided for @discoverListsFailedToLoadWithError.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load lists: {error}'**
-  String discoverListsFailedToLoadWithError(String error);
 
   /// No description provided for @discoverListsLoading.
   ///
@@ -12338,8 +12332,8 @@ abstract class AppLocalizations {
   /// No description provided for @soundDetailLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load sound: {error}'**
-  String soundDetailLoadError(String error);
+  /// **'Failed to load sound. Please try again.'**
+  String get soundDetailLoadError;
 
   /// No description provided for @soundDetailNotFoundMessage.
   ///
@@ -12785,8 +12779,8 @@ abstract class AppLocalizations {
   /// No description provided for @blossomFailedToSaveSettings.
   ///
   /// In en, this message translates to:
-  /// **'Failed to save settings: {error}'**
-  String blossomFailedToSaveSettings(String error);
+  /// **'Failed to save settings. Please try again.'**
+  String get blossomFailedToSaveSettings;
 
   /// No description provided for @blossomValidServerUrl.
   ///
@@ -13195,12 +13189,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You must be 16 or older to create content'**
   String get cameraAgeRestriction;
-
-  /// No description provided for @keyImportError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String keyImportError(String error);
 
   /// Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host.
   ///

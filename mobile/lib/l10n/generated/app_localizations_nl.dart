@@ -469,9 +469,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Profiel delen mislukt: $error';
-  }
+  String get profileShareFailed =>
+      'Profiel delen mislukt. Probeer het opnieuw.';
 
   @override
   String get profileCopyPublicKey => 'Publieke sleutel kopiëren (npub)';
@@ -958,9 +957,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'afbeeldingen';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Cameratoegang mislukt: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Cameratoegang staat uit. Zet het aan in Instellingen om een foto te maken.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Cameratoegang is niet toegestaan op dit apparaat.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'De kiezer is al open. Sluit hem en probeer het opnieuw.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'De camera kon niet geopend worden. Probeer het opnieuw.';
 
   @override
   String get profileSetupGotItButton => 'Begrepen';
@@ -1281,11 +1291,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Geen video\'s beschikbaar';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Fout: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Lijsten ontdekken';
 
   @override
@@ -1316,9 +1321,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreSubscribedLists => 'Gevolgde lijsten';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Fout bij laden van lijsten: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Fout bij laden van lijsten. Probeer het opnieuw.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2229,11 +2233,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Mislukte verzoeken';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Laatste fout: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'Relay-info laden...';
 
   @override
@@ -2441,12 +2440,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Sleutels konden niet van dit apparaat verwijderd worden. Probeer het opnieuw.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Verwijderen van sleutels mislukt: $error';
-  }
+      'Dit account kon niet van dit apparaat verwijderd worden. Probeer het opnieuw.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Account en data verwijderen';
@@ -2598,9 +2592,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Query mislukt: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Query mislukt. Probeer het opnieuw.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2611,9 +2604,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'Verbinden met relays mislukt';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Verbinding opnieuw proberen mislukt: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Verbinding opnieuw proberen mislukt. Probeer het opnieuw.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -3992,9 +3984,24 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Video bijwerken mislukt: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Log opnieuw in en probeer het dan nog eens.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Deze video heeft geen afspeelbare bron en kan niet worden bewerkt.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'De wijziging kon niet ondertekend worden. Probeer het opnieuw.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'De relay accepteerde de wijziging niet. Probeer het zo nog eens.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Deze video kon niet bijgewerkt worden. Probeer het opnieuw.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4030,16 +4037,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Webauthenticatie wordt niet ondersteund in veilige modus. Gebruik de mobiele app voor veilig sleutelbeheer.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Authenticatie-integratie mislukt: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Onverwachte fout: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Voer een bunker-URI in';
@@ -4616,11 +4613,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Fout bij openen van $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Waarom meld je deze inhoud?';
 
   @override
@@ -4729,9 +4721,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Overtredingen die hierboven niet staan';
 
   @override
-  String reportFailed(Object error) {
-    return 'Inhoud melden mislukt: $error';
-  }
+  String get reportFailed => 'Inhoud melden mislukt. Probeer het opnieuw.';
 
   @override
   String get reportNotSent =>
@@ -4984,7 +4974,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'de inlogservice was niet bereikbaar';
+      'De inlogservice was niet bereikbaar. Probeer het opnieuw.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5015,18 +5005,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get keyManagementImportSuccess => 'Sleutel succesvol geïmporteerd!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Sleutel importeren mislukt: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Sleutel importeren mislukt. Probeer het opnieuw.';
 
   @override
   String get keyManagementExportSuccess =>
       'Privésleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Sleutel exporteren mislukt: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Sleutel exporteren mislukt. Probeer het opnieuw.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Je publieke sleutel (npub)';
@@ -5149,9 +5137,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geluid voorbeluisteren lukt niet — geen audio beschikbaar';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Voorbeluistering afspelen mislukt: $error';
-  }
+  String get soundPreviewFailed =>
+      'Voorbeluistering afspelen mislukt. Probeer het opnieuw.';
 
   @override
   String get soundViewSource => 'Bron bekijken';
@@ -5203,11 +5190,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName openen mislukt';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Fout bij openen van $pageName: $error';
   }
 
   @override
@@ -5923,20 +5905,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Abonnement bijwerken mislukt: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Abonnement bijwerken mislukt. Probeer het opnieuw.';
 
   @override
   String get discoverListsTitle => 'Lijsten ontdekken';
 
   @override
   String get discoverListsFailedToLoad => 'Lijsten laden mislukt';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Lijsten laden mislukt: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Publieke lijsten worden ontdekt...';
@@ -7258,9 +7234,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Geluid laden mislukt: $error';
-  }
+  String get soundDetailLoadError =>
+      'Geluid laden mislukt. Probeer het opnieuw.';
 
   @override
   String get soundDetailNotFoundMessage =>
@@ -7523,9 +7498,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Instellingen opslaan mislukt: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Instellingen opslaan mislukt. Probeer het opnieuw.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7760,11 +7734,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Je moet 16 jaar of ouder zijn om content te maken';
-
-  @override
-  String keyImportError(String error) {
-    return 'Fout: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

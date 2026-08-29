@@ -320,14 +320,7 @@
       }
     }
   },
-  "profileShareFailed": "Failed to share profile: {error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileShareFailed": "Failed to share profile. Please try again.",
   "profileCopyPublicKey": "Copy public key (npub)",
   "profileGetEmbedCode": "Get embed code",
   "profilePublicKeyCopied": "Public key copied to clipboard",
@@ -615,14 +608,10 @@
   "profileSetupImageUrlTitle": "Add image URL",
   "profileSetupImageSelectionFailed": "Image selection failed. Please paste an image URL below instead.",
   "profileSetupImagesTypeGroup": "images",
-  "profileSetupCameraAccessFailed": "Camera access failed: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "Camera access is off. Turn it on in Settings to take a photo.",
+  "cameraPickErrorPermissionRestricted": "Camera access isn't allowed on this device.",
+  "cameraPickErrorBusy": "The picker is already open. Close it and try again.",
+  "cameraPickErrorGeneric": "Couldn't open the camera. Try again.",
   "profileSetupGotItButton": "Got it",
   "profileSetupUploadFailedGeneric": "Upload failed. Please try again later.",
   "profileSetupUploadNetworkError": "Network error: Please check your internet connection and try again.",
@@ -808,14 +797,6 @@
     "description": "Retry button on the featured Explore tab's failure state."
   },
   "exploreNoVideosAvailable": "No videos available",
-  "exploreErrorPrefix": "Error: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "Discover Lists",
   "exploreAboutLists": "About Lists",
   "exploreAboutListsDescription": "Lists help you organize and curate Divine content in two ways:",
@@ -825,14 +806,7 @@
   "exploreVideoListsDescription": "Create playlists of your favorite videos to watch later",
   "exploreMyLists": "My Lists",
   "exploreSubscribedLists": "Subscribed Lists",
-  "exploreErrorLoadingLists": "Error loading lists: {error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "Error loading lists. Please try again.",
   "exploreNewVideosCount": "{count, plural, =1{1 new video} other{{count} new videos}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1494,14 +1468,6 @@
   "relaySettingsEventsSent": "Events Sent",
   "relaySettingsRequestsThisSession": "Requests This Session",
   "relaySettingsFailedRequests": "Failed Requests",
-  "relaySettingsLastError": "Last Error: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "Loading relay info...",
   "relaySettingsAboutRelay": "About Relay",
   "relaySettingsSupportedNips": "Supported NIPs",
@@ -1641,14 +1607,6 @@
   "nostrSettingsRemoveKeys": "Remove this account from this device",
   "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. Your local drafts and clips stay saved for this account.",
   "nostrSettingsCouldNotRemoveKeys": "Could not remove this account from this device. Please try again.",
-  "nostrSettingsFailedToRemoveKeys": "Failed to remove this account: {error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "Delete Account and Data",
   "nostrSettingsDeleteAccountSubtitle": "Sends deletion requests for your content and signs you out on this device. Relays, clients, search indexes, and other signed-in devices may keep copies.",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -1749,14 +1707,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "Query failed: {error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "Query failed. Please try again.",
   "relayDiagnosticConnectedToRelays": "{count, plural, =1{Connected to {count} relay!} other{Connected to {count} relays!}}",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1766,14 +1717,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "Failed to connect to any relays",
-  "relayDiagnosticConnectionRetryFailed": "Connection retry failed: {error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "Connection retry failed. Please try again.",
   "relayDiagnosticConnectedAuthenticated": "Connected & Authenticated",
   "relayDiagnosticConnectedOnly": "Connected",
   "relayDiagnosticNotConnected": "Not connected",
@@ -2511,14 +2455,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "Failed to update video: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "Sign in again, then try updating.",
+  "videoUpdateErrorNoPlayableVideo": "This video has no playable source, so it can't be updated.",
+  "videoUpdateErrorCouldNotSign": "Couldn't sign the update. Try again.",
+  "videoUpdateErrorPublishRejected": "The relay wouldn't accept the update. Try again in a moment.",
+  "videoUpdateErrorGeneric": "Couldn't update this video. Try again.",
   "shareMenuOriginalVideoUnavailable": "Couldn't load the original video. Try again in a moment.",
   "@shareMenuOriginalVideoUnavailable": {
     "description": "Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely."
@@ -2535,22 +2476,6 @@
   },
   "authSignInFailed": "Failed to sign in. Please try again.",
   "webAuthNotSupportedSecureMode": "Web authentication not supported in secure mode. Please use mobile app for secure key management.",
-  "webAuthIntegrationFailed": "Authentication integration failed: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "Unexpected error: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "Please enter a bunker URI",
   "webAuthConnectTitle": "Connect to Divine",
   "webAuthChooseMethod": "Choose your preferred Nostr authentication method",
@@ -2946,17 +2871,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "Error opening {pageName}: {error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "Why are you reporting this content?",
   "reportPolicyNotice": "Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.",
   "reportBlockUser": "Block this user",
@@ -2991,14 +2905,7 @@
   "reportReasonAiGeneratedSubtitle": "Suspected AI-generated content",
   "reportReasonOther": "Other Policy Violation",
   "reportReasonOtherSubtitle": "Violations not listed above",
-  "reportFailed": "Failed to report content: {error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "Failed to report content. Please try again.",
   "reportNotSent": "Couldn't send your report. Check your connection and try again.",
   "@reportNotSent": {
     "description": "Shown when a submitted report reached no channel off the device — every publish target refused it, which in practice almost always means no connectivity. Covers both content and user reports, so it must not name either subject."
@@ -3155,7 +3062,7 @@
   "@keyManagementKeycastNoKey": {
     "description": "Error shown when the login service answers definitively that it holds no exportable key for this account, so retrying will not help."
   },
-  "keyManagementKeycastGenericFailure": "the login service could not be reached",
+  "keyManagementKeycastGenericFailure": "Couldn't reach the login service. Please try again.",
   "@keyManagementKeycastGenericFailure": {
     "description": "Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence."
   },
@@ -3173,23 +3080,9 @@
   "keyManagementConfirmImportBody": "This will replace your current identity with the imported one.\n\nYour current key will be lost unless you backed it up first.",
   "keyManagementImportConfirm": "Import",
   "keyManagementImportSuccess": "Key imported successfully!",
-  "keyManagementImportFailed": "Failed to import key: {error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "Failed to import key. Please try again.",
   "keyManagementExportSuccess": "Private key copied to clipboard!\n\nStore it somewhere safe.",
-  "keyManagementExportFailed": "Failed to export key: {error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "Failed to export key. Please try again.",
   "keyManagementYourPublicKeyLabel": "Your public key (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -3257,14 +3150,7 @@
     }
   },
   "soundUnableToPreview": "Unable to preview sound - no audio available",
-  "soundPreviewFailed": "Failed to play preview: {error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "Failed to play preview. Please try again.",
   "soundViewSource": "View source",
   "soundCloseTooltip": "Close",
   "exploreNotExploreRoute": "Not an explore route",
@@ -3285,17 +3171,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "Error opening {pageName}: {error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3918,24 +3793,9 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "Failed to update subscription: {error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "Failed to update subscription. Please try again.",
   "discoverListsTitle": "Discover Lists",
   "discoverListsFailedToLoad": "Failed to load lists",
-  "discoverListsFailedToLoadWithError": "Failed to load lists: {error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "Discovering public lists...",
   "discoverListsRelayTimeout": "The relay did not return lists in time. Try again.",
   "discoverListsServiceUnavailable": "Service not available.",
@@ -4739,14 +4599,7 @@
       }
     }
   },
-  "soundDetailLoadError": "Failed to load sound: {error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "Failed to load sound. Please try again.",
   "soundDetailNotFoundMessage": "This sound could not be found",
   "soundDetailNotFoundTitle": "Sound Not Found",
   "videoFeedLoopCountLabel": "{count, plural, =1{🔁 {count} loop} other{🔁 {count} loops}}",
@@ -4922,14 +4775,7 @@
   "userNotAvailableTitle": "Account not available",
   "userNotAvailableBody": "This account isn't available right now.",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "Failed to save settings: {error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "Failed to save settings. Please try again.",
   "blossomValidServerUrl": "Please enter a valid server URL (e.g., https://blossom.band)",
   "blossomSettingsSaved": "Blossom settings saved",
   "blossomSaveTooltip": "Save",
@@ -5049,14 +4895,6 @@
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
   "cameraAgeRestriction": "You must be 16 or older to create content",
-  "keyImportError": "Error: {error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Bunker relay must use wss:// (ws:// is allowed only for localhost)",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

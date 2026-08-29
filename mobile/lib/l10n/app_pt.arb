@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Falha ao compartilhar perfil: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Falha ao compartilhar perfil. Por favor, tente novamente.",
     "profileCopyPublicKey": "Copiar chave pública (npub)",
     "profileGetEmbedCode": "Obter código de incorporação",
     "profilePublicKeyCopied": "Chave pública copiada para a área de transferência",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Salvando...",
     "profileSetupImageUrlTitle": "Adicionar URL da imagem",
     "profileSetupImageSelectionFailed": "Falha ao selecionar a imagem. Cole uma URL de imagem abaixo.",
-    "profileSetupCameraAccessFailed": "Falha no acesso à câmera: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "O acesso à câmera está desligado. Ative nas Configurações para tirar uma foto.",
+    "cameraPickErrorPermissionRestricted": "O acesso à câmera não é permitido neste dispositivo.",
+    "cameraPickErrorBusy": "O seletor já está aberto. Feche e tente novamente.",
+    "cameraPickErrorGeneric": "Não foi possível abrir a câmera. Tente novamente.",
     "profileSetupGotItButton": "Entendi",
     "profileSetupUploadFailedGeneric": "Não foi possível enviar a imagem. Tente novamente mais tarde.",
     "profileSetupUploadNetworkError": "Erro de rede: verifique sua conexão com a internet e tente novamente.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Não foi possível carregar esta coleção.",
     "featuredTabRetry": "Tentar de novo",
     "exploreNoVideosAvailable": "Nenhum vídeo disponível",
-    "exploreErrorPrefix": "Erro: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Descobrir listas",
     "exploreAboutLists": "Sobre listas",
     "exploreAboutListsDescription": "Listas te ajudam a organizar e curar conteúdo do Divine de duas formas:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Crie playlists dos seus vídeos favoritos para assistir depois",
     "exploreMyLists": "Minhas listas",
     "exploreSubscribedLists": "Listas inscritas",
-    "exploreErrorLoadingLists": "Erro ao carregar listas: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Erro ao carregar listas. Por favor, tente novamente.",
     "exploreNewVideosCount": "{count, plural, one{{count} vídeo novo} other{{count} vídeos novos}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Eventos enviados",
     "relaySettingsRequestsThisSession": "Solicitações nesta sessão",
     "relaySettingsFailedRequests": "Solicitações falhas",
-    "relaySettingsLastError": "Último erro: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Carregando informações do relay...",
     "relaySettingsAboutRelay": "Sobre o relay",
     "relaySettingsSupportedNips": "NIPs suportados",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Consulta falhou: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Consulta falhou. Por favor, tente novamente.",
     "relayDiagnosticConnectedToRelays": "Conectado a {count} relay(s)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Falha ao conectar a qualquer relay",
-    "relayDiagnosticConnectionRetryFailed": "Tentativa de reconexão falhou: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Tentativa de reconexão falhou. Por favor, tente novamente.",
     "relayDiagnosticConnectedAuthenticated": "Conectado e autenticado",
     "relayDiagnosticConnectedOnly": "Conectado",
     "relayDiagnosticNotConnected": "Não conectado",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Alterar capa",
     "shareMenuVideoUpdated": "Vídeo atualizado com sucesso",
     "shareMenuVideoUpdatedWithInviteFailures": "Vídeo atualizado, mas {count, plural, =1{{count} convite de colaborador não foi enviado.} other{{count} convites de colaboradores não foram enviados.}}",
-    "shareMenuFailedToUpdateVideo": "Falha ao atualizar vídeo: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Entre novamente e tente de novo.",
+    "videoUpdateErrorNoPlayableVideo": "Este vídeo não tem uma fonte reproduzível, então não pode ser editado.",
+    "videoUpdateErrorCouldNotSign": "Não foi possível assinar a atualização. Tente novamente.",
+    "videoUpdateErrorPublishRejected": "O relay não aceitou a atualização. Tente de novo em instantes.",
+    "videoUpdateErrorGeneric": "Não foi possível atualizar este vídeo. Tente novamente.",
     "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
     "shareMenuDeleteCleanupInProgress": "Removendo vídeo…",
     "shareMenuDeleteCleanupConfirmed": "Vídeo excluído.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "Sua sessão expirou. Entre novamente.",
     "authSignInFailed": "Falha ao entrar. Tente novamente.",
     "webAuthNotSupportedSecureMode": "Autenticação web não suportada no modo seguro. Use o app para celular para gerenciamento seguro de chaves.",
-    "webAuthIntegrationFailed": "Falha na integração de autenticação: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Erro inesperado: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Digite uma URI bunker",
     "webAuthConnectTitle": "Conectar ao Divine",
     "webAuthChooseMethod": "Escolha seu método preferido de autenticação Nostr",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Erro ao abrir {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Por que você está denunciando este conteúdo?",
     "reportPolicyNotice": "O Divine vai agir sobre denúncias de conteúdo em até 24 horas, removendo o conteúdo e expulsando o usuário que o publicou.",
     "reportBlockUser": "Bloquear este usuário",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Informações falsas",
     "reportReasonAiGenerated": "Conteúdo gerado por IA",
     "reportReasonOther": "Outra violação de política",
-    "reportFailed": "Falha ao denunciar conteúdo: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Falha ao denunciar conteúdo. Por favor, tente novamente.",
     "reportNotSent": "Não foi possível enviar sua denúncia. Verifique sua conexão e tente novamente.",
     "reportReceivedTitle": "Denúncia recebida",
     "reportReceivedThankYou": "Obrigado por ajudar a manter o Divine seguro.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Verifique seu endereço de e-mail antes de copiar sua chave.",
     "keyManagementKeycastDenied": "A Divine cuida das chaves desta conta, então elas não podem ser copiadas aqui.",
     "keyManagementKeycastNoKey": "Não há nenhuma chave registrada para esta conta.",
-    "keyManagementKeycastGenericFailure": "não foi possível acessar o serviço de login",
+    "keyManagementKeycastGenericFailure": "Não foi possível acessar o serviço de login. Tente novamente.",
     "keyManagementRestrictedTitle": "Suas chaves são gerenciadas pela Divine",
     "keyManagementRestrictedBody": "Para manter sua conta segura, backup da chave e importação de outra chave não estão disponíveis aqui.",
     "keyManagementNeverShare": "Nunca compartilhe sua nsec com ninguém!",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "Isso vai substituir sua identidade atual pela importada.\n\nSua chave atual será perdida a menos que você tenha feito backup antes.",
     "keyManagementImportConfirm": "Importar",
     "keyManagementImportSuccess": "Chave importada com sucesso!",
-    "keyManagementImportFailed": "Falha ao importar chave: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Falha ao importar chave. Por favor, tente novamente.",
     "keyManagementExportSuccess": "Chave privada copiada para a área de transferência!\n\nGuarde em um lugar seguro.",
-    "keyManagementExportFailed": "Falha ao exportar chave: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Falha ao exportar chave. Por favor, tente novamente.",
     "saveOriginalSavedToCameraRoll": "Salvo no rolo da câmera",
     "saveOriginalShare": "Compartilhar",
     "saveOriginalDone": "Concluído",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Não é possível pré-visualizar o som - sem áudio disponível",
-    "soundPreviewFailed": "Falha ao reproduzir pré-visualização: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Falha ao reproduzir pré-visualização. Tente novamente.",
     "soundViewSource": "Ver origem",
     "soundCloseTooltip": "Fechar",
     "exploreNotExploreRoute": "Não é uma rota de explorar",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Erro ao abrir {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Luta livre",
-    "blossomFailedToSaveSettings": "Falha ao salvar configurações: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Falha ao salvar configurações. Tente novamente.",
     "blueskyFailedToUpdateCrosspost": "Falha ao atualizar configuração de crosspost",
     "cameraAgeRestriction": "Você precisa ter 16 anos ou mais para criar conteúdo",
     "categoriesCouldNotLoadCategories": "Não foi possível carregar as categorias",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Cancelar",
     "commonDelete": "Excluir",
     "commonRetry": "Tentar novamente",
-    "discoverListsFailedToUpdateSubscription": "Falha ao atualizar assinatura: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Falha ao atualizar assinatura. Por favor, tente novamente.",
     "exploreVideoCounter": "Vídeo {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Convidar amigos",
-    "keyImportError": "Erro: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{{count} clipe excluído} other{{count} clipes excluídos}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Baixe seu arquivo e mova suas publicações e vídeos para outro relay ou servidor de mídia.",
     "nostrSettingsRemoveKeys": "Remover chaves do dispositivo",
     "nostrSettingsRemoveKeysSubtitle": "Apague sua chave privada apenas deste dispositivo. Seu conteúdo continua nos relays, mas você vai precisar do backup da nsec para acessar sua conta de novo.",
-    "nostrSettingsCouldNotRemoveKeys": "Não foi possível remover as chaves deste dispositivo. Tente novamente.",
-    "nostrSettingsFailedToRemoveKeys": "Falha ao remover chaves: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Não foi possível remover esta conta deste dispositivo. Tente novamente.",
     "nostrSettingsDeleteAccount": "Excluir conta e dados",
     "nostrSettingsDeleteAccountSubtitle": "Envia solicitações de exclusão do seu conteúdo e desconecta você neste dispositivo. Relays, clientes, índices de busca e outros dispositivos conectados podem manter cópias.",
     "safetySettingsWhatYouSee": "O QUE VOCÊ VÊ",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Descobrir listas",
     "discoverListsFailedToLoad": "Falha ao carregar listas",
-    "discoverListsFailedToLoadWithError": "Falha ao carregar listas: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Descobrindo listas públicas...",
     "discoverListsRelayTimeout": "O relay não devolveu listas a tempo. Tente de novo.",
     "discoverListsServiceUnavailable": "Serviço indisponível.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Dependendo das regras de onde você mora, talvez dê para voltar e pedir sua própria conta. Nesse caso, se você tiver entre 13 e 15 anos, vai precisar do consentimento de um pai, mãe ou responsável.",
     "minorAccountReviewParentConsentPauseNote": "É uma pausa enquanto a equipe de suporte da Divine analisa o vídeo. Se for aprovado, eles vão te orientar na configuração da nova conta.",
     "minorAccountReviewUnder13WhyTitle": "É por isso",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Som: {soundName} de {creatorName}. Toque para ver os detalhes.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Falha ao carregar o som: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Falha ao carregar o som. Por favor, tente novamente.",
     "soundDetailNotFoundMessage": "Não foi possível encontrar este som",
     "soundDetailNotFoundTitle": "Som não encontrado",
     "videoFeedLoopCountLabel": "🔁 {count} loops",

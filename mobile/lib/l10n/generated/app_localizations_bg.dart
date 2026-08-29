@@ -473,9 +473,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Не успяхме да споделим профила: $error';
-  }
+  String get profileShareFailed =>
+      'Не успяхме да споделим профила. Опитай пак.';
 
   @override
   String get profileCopyPublicKey => 'Копирай публичния ключ (npub)';
@@ -964,9 +963,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'снимки';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Неуспешен достъп до камерата: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Достъпът до камерата е изключен. Включи го от Настройки, за да снимаш.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Достъпът до камерата не е разрешен на това устройство.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Селекторът вече е отворен. Затвори го и опитай пак.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'Камерата не можа да се отвори. Опитай пак.';
 
   @override
   String get profileSetupGotItButton => 'Разбрах';
@@ -1289,11 +1299,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Няма налични видеа';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Грешка: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Открий списъци';
 
   @override
@@ -1324,9 +1329,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreSubscribedLists => 'Абонирани списъци';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Грешка при зареждане на списъците: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Грешка при зареждане на списъците. Опитай пак.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2256,11 +2260,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Неуспешни заявки';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Последна грешка: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo =>
       'Информацията за релето се зарежда...';
 
@@ -2472,12 +2471,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Не успяхме да махнем ключовете от това устройство. Опитай пак.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Махането на ключовете не успя: $error';
-  }
+      'Не успяхме да махнем този акаунт от това устройство. Опитай пак.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Изтрий акаунта и данните';
@@ -2629,9 +2623,7 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Неуспешна заявка: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Неуспешна заявка. Опитай пак.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2643,9 +2635,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да се свържем с нито едно реле';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Неуспешен повторен опит за свързване: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Неуспешен повторен опит за свързване. Опитай пак.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Свързан и удостоверен';
@@ -4027,9 +4018,23 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Не успяхме да обновим видеото: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'Влез отново и опитай пак.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Това видео няма възпроизводим източник, затова не може да се редактира.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Промяната не можа да бъде подписана. Опитай пак.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Релето не прие промяната. Опитай пак след малко.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Това видео не можа да бъде обновено. Опитай пак.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4065,16 +4070,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Уеб удостоверяването не се поддържа в защитен режим. Използвай мобилното приложение, за да управляваш ключовете си сигурно.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Неуспешно интегриране на удостоверяването: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Неочаквана грешка: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Въведи Bunker URI';
@@ -4649,11 +4644,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Грешка при отваряне на $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Защо подаваш сигнал за това съдържание?';
 
   @override
@@ -4762,9 +4752,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Нарушения, които не са изброени по-горе';
 
   @override
-  String reportFailed(Object error) {
-    return 'Неуспешно докладване на съдържание: $error';
-  }
+  String get reportFailed => 'Неуспешно докладване на съдържание. Опитай пак.';
 
   @override
   String get reportNotSent =>
@@ -5017,7 +5005,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'услугата за вход е недостъпна';
+      'Услугата за вход е недостъпна. Опитай пак.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5048,18 +5036,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get keyManagementImportSuccess => 'Ключът е импортиран успешно!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Неуспешно импортиране на ключ: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Неуспешно импортиране на ключ. Опитай пак.';
 
   @override
   String get keyManagementExportSuccess =>
       'Частният ключ е копиран в клипборда!\n\nСъхранявайте го на сигурно място.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Неуспешно експортиране на ключ: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Неуспешно експортиране на ключ. Опитай пак.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Твоят публичен ключ (npub)';
@@ -5183,9 +5169,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не може да се визуализира звук - няма наличен звук';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Неуспешно пускане на визуализация: $error';
-  }
+  String get soundPreviewFailed =>
+      'Неуспешно пускане на визуализация. Опитай пак.';
 
   @override
   String get soundViewSource => 'Виж източника';
@@ -5237,11 +5222,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Не може да се отвори $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Грешка при отваряне на $pageName: $error';
   }
 
   @override
@@ -5954,20 +5934,14 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Неуспешно актуализиране на абонамента: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Неуспешно актуализиране на абонамента. Опитай пак.';
 
   @override
   String get discoverListsTitle => 'Открий списъци';
 
   @override
   String get discoverListsFailedToLoad => 'Зареждането на списъците не успя';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Зареждането на списъците не успя: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Откриваме публични списъци...';
@@ -7299,9 +7273,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Неуспешно зареждане на звука: $error';
-  }
+  String get soundDetailLoadError =>
+      'Неуспешно зареждане на звука. Опитай пак.';
 
   @override
   String get soundDetailNotFoundMessage => 'Този звук не можа да бъде намерен';
@@ -7564,9 +7537,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Неуспешно запазване на настройките: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Неуспешно запазване на настройките. Опитай пак.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7800,11 +7772,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Трябва да си на 16 или повече, за да създаваш съдържание';
-
-  @override
-  String keyImportError(String error) {
-    return 'Грешка: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

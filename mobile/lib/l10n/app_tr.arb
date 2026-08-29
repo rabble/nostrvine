@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Profil paylaşılamadı: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Profil paylaşılamadı. Lütfen tekrar dene.",
     "profileCopyPublicKey": "Açık anahtarı (npub) kopyala",
     "profileGetEmbedCode": "Gömme kodunu al",
     "profilePublicKeyCopied": "Açık anahtar panoya kopyalandı",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Kaydediliyor...",
     "profileSetupImageUrlTitle": "Görsel URL'si ekle",
     "profileSetupImageSelectionFailed": "Görsel seçimi başarısız oldu. Lütfen aşağıya bir görsel URL'si yapıştır.",
-    "profileSetupCameraAccessFailed": "Kamera erişimi başarısız: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Kamera erişimi kapalı. Fotoğraf çekmek için Ayarlar'dan aç.",
+    "cameraPickErrorPermissionRestricted": "Bu cihazda kamera erişimine izin verilmiyor.",
+    "cameraPickErrorBusy": "Seçici zaten açık. Kapat ve tekrar dene.",
+    "cameraPickErrorGeneric": "Kamera açılamadı. Tekrar dene.",
     "profileSetupGotItButton": "Anlaşıldı",
     "profileSetupUploadFailedGeneric": "Görsel yüklenemedi. Lütfen daha sonra tekrar dene.",
     "profileSetupUploadNetworkError": "Ağ hatası: Lütfen internet bağlantını kontrol et ve tekrar dene.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Bu koleksiyon yüklenemedi.",
     "featuredTabRetry": "Tekrar dene",
     "exploreNoVideosAvailable": "Hiç video yok",
-    "exploreErrorPrefix": "Hata: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Listeleri Keşfet",
     "exploreAboutLists": "Listeler Hakkında",
     "exploreAboutListsDescription": "Listeler, Divine içeriğini iki şekilde düzenlemene ve derlemene yardımcı olur:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Sonra izlemek için favori videolarından oynatma listeleri oluştur",
     "exploreMyLists": "Listelerim",
     "exploreSubscribedLists": "Abone Olunan Listeler",
-    "exploreErrorLoadingLists": "Listeler yüklenirken hata: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Listeler yüklenirken hata. Lütfen tekrar dene.",
     "exploreNewVideosCount": "{count, plural, one{1 yeni video} other{{count} yeni video}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -787,14 +761,6 @@
     "relaySettingsEventsSent": "Gönderilen Olaylar",
     "relaySettingsRequestsThisSession": "Bu Oturumdaki İstekler",
     "relaySettingsFailedRequests": "Başarısız İstekler",
-    "relaySettingsLastError": "Son Hata: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Röle bilgisi yükleniyor...",
     "relaySettingsAboutRelay": "Röle Hakkında",
     "relaySettingsSupportedNips": "Desteklenen NIP'ler",
@@ -951,14 +917,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Sorgu başarısız: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Sorgu başarısız. Lütfen tekrar dene.",
     "relayDiagnosticConnectedToRelays": "{count} röleye bağlandı!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -968,14 +927,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Hiçbir röleye bağlanılamadı",
-    "relayDiagnosticConnectionRetryFailed": "Bağlantı yeniden denemesi başarısız: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Bağlantı yeniden denemesi başarısız. Lütfen tekrar dene.",
     "relayDiagnosticConnectedAuthenticated": "Bağlı ve Kimlik Doğrulandı",
     "relayDiagnosticConnectedOnly": "Bağlı",
     "relayDiagnosticNotConnected": "Bağlı değil",
@@ -1437,14 +1389,11 @@
     "shareMenuChangeCover": "Kapağı Değiştir",
     "shareMenuVideoUpdated": "Video başarıyla güncellendi",
     "shareMenuVideoUpdatedWithInviteFailures": "Video güncellendi, ancak {count, plural, =1{1 katılımcı daveti gönderilmedi.} other{{count} katılımcı daveti gönderilmedi.}}",
-    "shareMenuFailedToUpdateVideo": "Video güncellenemedi: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Tekrar giriş yap, sonra yeniden dene.",
+    "videoUpdateErrorNoPlayableVideo": "Bu videonun oynatılabilir bir kaynağı yok, bu yüzden düzenlenemiyor.",
+    "videoUpdateErrorCouldNotSign": "Değişiklik imzalanamadı. Tekrar dene.",
+    "videoUpdateErrorPublishRejected": "Relay değişikliği kabul etmedi. Birazdan tekrar dene.",
+    "videoUpdateErrorGeneric": "Bu video güncellenemedi. Tekrar dene.",
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
     "shareMenuDeleteCleanupInProgress": "Video kaldırılıyor…",
     "shareMenuDeleteCleanupConfirmed": "Video silindi.",
@@ -1453,22 +1402,6 @@
     "authSessionExpired": "Oturumun sona erdi. Lütfen tekrar giriş yap.",
     "authSignInFailed": "Giriş başarısız. Lütfen tekrar dene.",
     "webAuthNotSupportedSecureMode": "Web kimlik doğrulaması güvenli modda desteklenmiyor. Güvenli anahtar yönetimi için lütfen mobil uygulamayı kullan.",
-    "webAuthIntegrationFailed": "Kimlik doğrulama entegrasyonu başarısız: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Beklenmeyen hata: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Lütfen bir bunker URI'si gir",
     "webAuthConnectTitle": "Divine'a Bağlan",
     "webAuthChooseMethod": "Tercih ettiğin Nostr kimlik doğrulama yöntemini seç",
@@ -1664,17 +1597,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName} açılırken hata: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Bu içeriği neden bildiriyorsun?",
     "reportPolicyNotice": "Divine, içerik bildirimlerine 24 saat içinde içeriği kaldırarak ve söz konusu içeriği sağlayan kullanıcıyı çıkararak işlem yapar.",
     "reportBlockUser": "Bu kullanıcıyı engelle",
@@ -1692,14 +1614,7 @@
     "reportReasonFalseInfo": "Yanlış Bilgi",
     "reportReasonAiGenerated": "Yapay Zeka Üretimi İçerik",
     "reportReasonOther": "Diğer Politika İhlali",
-    "reportFailed": "İçerik bildirilemedi: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "İçerik bildirilemedi. Lütfen tekrar dene.",
     "reportNotSent": "Bildirimin gönderilemedi. Bağlantını kontrol et ve tekrar dene.",
     "reportReceivedTitle": "Bildirim Alındı",
     "reportReceivedThankYou": "Divine'ı güvenli tutmaya yardımcı olduğun için teşekkürler.",
@@ -1801,7 +1716,7 @@
     "keyManagementKeycastEmailUnverified": "Anahtarını kopyalamadan önce e-posta adresini doğrula.",
     "keyManagementKeycastDenied": "Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.",
     "keyManagementKeycastNoKey": "Bu hesap için kayıtlı bir anahtar yok.",
-    "keyManagementKeycastGenericFailure": "giriş servisine ulaşılamadı",
+    "keyManagementKeycastGenericFailure": "Giriş servisine ulaşılamadı. Lütfen tekrar dene.",
     "keyManagementRestrictedTitle": "Anahtarların Divine tarafından yönetiliyor",
     "keyManagementRestrictedBody": "Hesabını güvende tutmak için anahtar yedekleme ve farklı bir anahtar içe aktarma burada kullanılamıyor.",
     "keyManagementNeverShare": "nsec'ini asla kimseyle paylaşma!",
@@ -1811,23 +1726,9 @@
     "keyManagementConfirmImportBody": "Bu mevcut kimliğini içe aktarılan kimlikle değiştirecek.\n\nÖnce yedeklemediysen mevcut anahtarın kaybolacak.",
     "keyManagementImportConfirm": "İçe Aktar",
     "keyManagementImportSuccess": "Anahtar başarıyla içe aktarıldı!",
-    "keyManagementImportFailed": "Anahtar içe aktarılamadı: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Anahtar içe aktarılamadı. Lütfen tekrar dene.",
     "keyManagementExportSuccess": "Özel anahtar panoya kopyalandı!\n\nGüvenli bir yerde sakla.",
-    "keyManagementExportFailed": "Anahtar dışa aktarılamadı: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Anahtar dışa aktarılamadı. Lütfen tekrar dene.",
     "saveOriginalSavedToCameraRoll": "Kamera Rulosuna Kaydedildi",
     "saveOriginalShare": "Paylaş",
     "saveOriginalDone": "Bitti",
@@ -1865,14 +1766,7 @@
         }
     },
     "soundUnableToPreview": "Ses önizlenemiyor - ses mevcut değil",
-    "soundPreviewFailed": "Önizleme oynatılamadı: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Önizleme oynatılamadı. Lütfen tekrar dene.",
     "soundViewSource": "Kaynağı gör",
     "soundCloseTooltip": "Kapat",
     "exploreNotExploreRoute": "Keşif rotası değil",
@@ -1893,17 +1787,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName} açılırken hata: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2008,14 +1891,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlog",
     "categoryWrestling": "Güreş",
-    "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi. Lütfen tekrar dene.",
     "blueskyFailedToUpdateCrosspost": "Çapraz gönderi ayarı güncellenemedi",
     "cameraAgeRestriction": "İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın",
     "categoriesCouldNotLoadCategories": "Kategoriler yüklenemedi",
@@ -2024,14 +1900,7 @@
     "commonCancel": "İptal",
     "commonDelete": "Sil",
     "commonRetry": "Tekrar dene",
-    "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi. Lütfen tekrar dene.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2166,14 +2035,6 @@
         }
     },
     "invitesTitle": "Arkadaşları Davet Et",
-    "keyImportError": "Hata: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 klip silindi} other{{count} klip silindi}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Arşivini indir ve gönderilerini ve videolarını başka bir relay'e veya medya sunucusuna taşı.",
     "nostrSettingsRemoveKeys": "Anahtarları Cihazdan Kaldır",
     "nostrSettingsRemoveKeysSubtitle": "Özel anahtarını yalnızca bu cihazdan sil. İçeriğin rölelerde kalır, ancak hesabına tekrar erişmek için nsec yedeğine ihtiyacın olur.",
-    "nostrSettingsCouldNotRemoveKeys": "Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
-    "nostrSettingsFailedToRemoveKeys": "Anahtarlar kaldırılamadı: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Bu hesap bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
     "nostrSettingsDeleteAccount": "Hesabı ve Verileri Sil",
     "nostrSettingsDeleteAccountSubtitle": "İçeriğin için silme istekleri gönderir ve bu cihazda oturumunu kapatır. Röleler, istemciler, arama dizinleri ve oturum açmış diğer cihazlar kopyaları saklayabilir.",
     "safetySettingsWhatYouSee": "GÖRDÜKLERİN",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Listeleri Keşfet",
     "discoverListsFailedToLoad": "Listeler yüklenemedi",
-    "discoverListsFailedToLoadWithError": "Listeler yüklenemedi: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Herkese açık listeler keşfediliyor...",
     "discoverListsRelayTimeout": "Relay listeleri zamanında döndürmedi. Tekrar dene.",
     "discoverListsServiceUnavailable": "Hizmet kullanılamıyor.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Yaşadığın yerdeki kurallara bağlı olarak geri gelip kendi hesabın için başvurabilirsin. O durumda 13-15 yaş arasındaysan bir ebeveyn veya vasinin onayı gerekir.",
     "minorAccountReviewParentConsentPauseNote": "Bu, Divine destek ekibi videoyu incelerken verilen bir mola. Onaylanırsa, yeni hesabı kurma sürecinde sana yol gösterecekler.",
     "minorAccountReviewUnder13WhyTitle": "Nedeni şu",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Ses: {creatorName} tarafından {soundName}. Ayrıntıları görmek için dokun.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Ses yüklenemedi: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Ses yüklenemedi. Lütfen tekrar dene.",
     "soundDetailNotFoundMessage": "Bu ses bulunamadı",
     "soundDetailNotFoundTitle": "Ses Bulunamadı",
     "videoFeedLoopCountLabel": "🔁 {count} döngü",

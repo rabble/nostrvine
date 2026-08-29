@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Impossibile condividere il profilo: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Impossibile condividere il profilo. Riprova.",
     "profileCopyPublicKey": "Copia chiave pubblica (npub)",
     "profileGetEmbedCode": "Ottieni codice embed",
     "profilePublicKeyCopied": "Chiave pubblica copiata negli appunti",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Salvataggio...",
     "profileSetupImageUrlTitle": "Aggiungi URL immagine",
     "profileSetupImageSelectionFailed": "Selezione immagine fallita. Incolla qui sotto l'URL di un'immagine.",
-    "profileSetupCameraAccessFailed": "Accesso alla fotocamera fallito: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "L'accesso alla fotocamera è disattivato. Attivalo nelle Impostazioni per scattare una foto.",
+    "cameraPickErrorPermissionRestricted": "L'accesso alla fotocamera non è consentito su questo dispositivo.",
+    "cameraPickErrorBusy": "Il selettore è già aperto. Chiudilo e riprova.",
+    "cameraPickErrorGeneric": "Impossibile aprire la fotocamera. Riprova.",
     "profileSetupGotItButton": "Capito",
     "profileSetupUploadFailedGeneric": "Impossibile caricare l'immagine. Riprova più tardi.",
     "profileSetupUploadNetworkError": "Errore di rete: controlla la connessione a internet e riprova.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Non è stato possibile caricare questa raccolta.",
     "featuredTabRetry": "Riprova",
     "exploreNoVideosAvailable": "Nessun video disponibile",
-    "exploreErrorPrefix": "Errore: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Scopri liste",
     "exploreAboutLists": "Info sulle liste",
     "exploreAboutListsDescription": "Le liste ti aiutano a organizzare e curare i contenuti di Divine in due modi:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Crea playlist dei tuoi video preferiti da guardare dopo",
     "exploreMyLists": "Le mie liste",
     "exploreSubscribedLists": "Liste iscritte",
-    "exploreErrorLoadingLists": "Errore nel caricamento delle liste: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Errore nel caricamento delle liste. Riprova.",
     "exploreNewVideosCount": "{count, plural, one{1 nuovo video} other{{count} nuovi video}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Eventi inviati",
     "relaySettingsRequestsThisSession": "Richieste in questa sessione",
     "relaySettingsFailedRequests": "Richieste fallite",
-    "relaySettingsLastError": "Ultimo errore: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Caricamento info relay...",
     "relaySettingsAboutRelay": "Info sul relay",
     "relaySettingsSupportedNips": "NIP supportati",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query fallita: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Query fallita. Riprova.",
     "relayDiagnosticConnectedToRelays": "Connesso a {count} relay!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Impossibile connettersi ad alcun relay",
-    "relayDiagnosticConnectionRetryFailed": "Nuovo tentativo di connessione fallito: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Nuovo tentativo di connessione fallito. Riprova.",
     "relayDiagnosticConnectedAuthenticated": "Connesso e autenticato",
     "relayDiagnosticConnectedOnly": "Connesso",
     "relayDiagnosticNotConnected": "Non connesso",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Cambia copertina",
     "shareMenuVideoUpdated": "Video aggiornato con successo",
     "shareMenuVideoUpdatedWithInviteFailures": "Video aggiornato, ma {count, plural, =1{1 invito ai collaboratori non è stato inviato.} other{{count} inviti ai collaboratori non sono stati inviati.}}",
-    "shareMenuFailedToUpdateVideo": "Impossibile aggiornare il video: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Accedi di nuovo, poi riprova.",
+    "videoUpdateErrorNoPlayableVideo": "Questo video non ha una sorgente riproducibile, quindi non può essere modificato.",
+    "videoUpdateErrorCouldNotSign": "Impossibile firmare la modifica. Riprova.",
+    "videoUpdateErrorPublishRejected": "Il relay non ha accettato la modifica. Riprova tra poco.",
+    "videoUpdateErrorGeneric": "Impossibile aggiornare questo video. Riprova.",
     "shareMenuDeleteVideoQuestion": "Eliminare il video?",
     "shareMenuDeleteCleanupInProgress": "Rimozione del video…",
     "shareMenuDeleteCleanupConfirmed": "Video eliminato.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "La tua sessione è scaduta. Accedi di nuovo.",
     "authSignInFailed": "Accesso fallito. Riprova.",
     "webAuthNotSupportedSecureMode": "Autenticazione web non supportata in modalità sicura. Usa l'app mobile per una gestione sicura delle chiavi.",
-    "webAuthIntegrationFailed": "Integrazione di autenticazione fallita: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Errore imprevisto: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Inserisci un URI bunker",
     "webAuthConnectTitle": "Connettiti a Divine",
     "webAuthChooseMethod": "Scegli il tuo metodo di autenticazione Nostr preferito",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Errore nell'apertura di {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Perché stai segnalando questo contenuto?",
     "reportPolicyNotice": "Divine agirà sulle segnalazioni di contenuti entro 24 ore rimuovendo il contenuto ed espellendo l'utente che ha fornito il contenuto offensivo.",
     "reportBlockUser": "Blocca questo utente",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Informazioni false",
     "reportReasonAiGenerated": "Contenuto generato da IA",
     "reportReasonOther": "Altra violazione delle policy",
-    "reportFailed": "Impossibile segnalare il contenuto: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Impossibile segnalare il contenuto. Riprova.",
     "reportNotSent": "Impossibile inviare la segnalazione. Controlla la connessione e riprova.",
     "reportReceivedTitle": "Segnalazione ricevuta",
     "reportReceivedThankYou": "Grazie per aiutarci a mantenere Divine sicuro.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Verifica il tuo indirizzo email prima di copiare la chiave.",
     "keyManagementKeycastDenied": "Divine gestisce le chiavi di questo account, quindi non possono essere copiate qui.",
     "keyManagementKeycastNoKey": "Non c'è nessuna chiave registrata per questo account.",
-    "keyManagementKeycastGenericFailure": "non è stato possibile raggiungere il servizio di accesso",
+    "keyManagementKeycastGenericFailure": "Non è stato possibile raggiungere il servizio di accesso. Riprova.",
     "keyManagementRestrictedTitle": "Le tue chiavi sono gestite da Divine",
     "keyManagementRestrictedBody": "Per tenere al sicuro il tuo account, il backup della chiave e l'importazione di un'altra chiave non sono disponibili qui.",
     "keyManagementNeverShare": "Non condividere mai la tua nsec con nessuno!",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "Questo sostituirà la tua identità attuale con quella importata.\n\nLa tua chiave attuale andrà persa a meno che tu non ne abbia fatto prima il backup.",
     "keyManagementImportConfirm": "Importa",
     "keyManagementImportSuccess": "Chiave importata con successo!",
-    "keyManagementImportFailed": "Impossibile importare la chiave: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Impossibile importare la chiave. Riprova.",
     "keyManagementExportSuccess": "Chiave privata copiata negli appunti!\n\nConservala in un posto sicuro.",
-    "keyManagementExportFailed": "Impossibile esportare la chiave: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Impossibile esportare la chiave. Riprova.",
     "saveOriginalSavedToCameraRoll": "Salvato nel rullino",
     "saveOriginalShare": "Condividi",
     "saveOriginalDone": "Fatto",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Impossibile ascoltare l'anteprima - nessun audio disponibile",
-    "soundPreviewFailed": "Impossibile riprodurre l'anteprima: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Impossibile riprodurre l'anteprima. Riprova.",
     "soundViewSource": "Vedi sorgente",
     "soundCloseTooltip": "Chiudi",
     "exploreNotExploreRoute": "Non è un percorso di esplorazione",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Errore nell'apertura di {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Impossibile salvare le impostazioni: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Impossibile salvare le impostazioni. Riprova.",
     "blueskyFailedToUpdateCrosspost": "Impossibile aggiornare l'impostazione di crosspost",
     "cameraAgeRestriction": "Devi avere almeno 16 anni per creare contenuti",
     "categoriesCouldNotLoadCategories": "Impossibile caricare le categorie",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Annulla",
     "commonDelete": "Elimina",
     "commonRetry": "Riprova",
-    "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento. Riprova.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Invita amici",
-    "keyImportError": "Errore: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 clip eliminato} other{{count} clip eliminati}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Scarica il tuo archivio e sposta post e video su un altro relay o server multimediale.",
     "nostrSettingsRemoveKeys": "Rimuovi le chiavi dal dispositivo",
     "nostrSettingsRemoveKeysSubtitle": "Elimina la tua chiave privata solo da questo dispositivo. I tuoi contenuti restano sui relay, ma ti servirà il backup della nsec per accedere di nuovo al tuo account.",
-    "nostrSettingsCouldNotRemoveKeys": "Impossibile rimuovere le chiavi da questo dispositivo. Riprova.",
-    "nostrSettingsFailedToRemoveKeys": "Rimozione delle chiavi non riuscita: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Impossibile rimuovere questo account da questo dispositivo. Riprova.",
     "nostrSettingsDeleteAccount": "Elimina account e dati",
     "nostrSettingsDeleteAccountSubtitle": "Invia richieste di eliminazione per i tuoi contenuti e ti disconnette su questo dispositivo. Relay, client, indici di ricerca e altri dispositivi con l'accesso effettuato potrebbero conservare copie.",
     "safetySettingsWhatYouSee": "COSA VEDI",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Scopri liste",
     "discoverListsFailedToLoad": "Impossibile caricare le liste",
-    "discoverListsFailedToLoadWithError": "Impossibile caricare le liste: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Cercando liste pubbliche...",
     "discoverListsRelayTimeout": "Il relay non ha restituito liste in tempo. Riprova.",
     "discoverListsServiceUnavailable": "Servizio non disponibile.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "A seconda delle regole di dove vivi, potresti tornare e chiedere un account tuo. In quel caso, se hai tra i 13 e i 15 anni, servirà il consenso di un genitore o tutore.",
     "minorAccountReviewParentConsentPauseNote": "È una pausa mentre il team di assistenza Divine esamina il video. Se viene approvato, ti guideranno nella configurazione del nuovo account.",
     "minorAccountReviewUnder13WhyTitle": "Ecco perché",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Audio: {soundName} di {creatorName}. Tocca per vedere i dettagli.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Impossibile caricare l'audio: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Impossibile caricare l'audio. Riprova.",
     "soundDetailNotFoundMessage": "Impossibile trovare questo audio",
     "soundDetailNotFoundTitle": "Audio non trovato",
     "videoFeedLoopCountLabel": "🔁 {count} loop",

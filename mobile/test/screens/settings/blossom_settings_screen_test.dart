@@ -202,5 +202,39 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'generic save failure renders complete copy, not a dangling separator',
+      (tester) async {
+        // #3589: the genericFailure arm used to call
+        // `blossomFailedToSaveSettings('')`, so the snackbar rendered
+        // "Failed to save settings: " — the separator with nothing after it,
+        // in all 22 locales. The key is now placeholder-free.
+        when(
+          () => mockService.setBlossomServer(any()),
+        ).thenThrow(Exception('blossom backend unavailable'));
+
+        await pumpAndSave(tester, 'https://blossom.example');
+
+        expect(find.text(l10n.blossomFailedToSaveSettings), findsOneWidget);
+
+        final rendered = tester
+            .widget<Text>(find.text(l10n.blossomFailedToSaveSettings))
+            .data!;
+        expect(
+          rendered.trimRight(),
+          equals(rendered),
+          reason: 'copy must not end in a separator awaiting an argument',
+        );
+        expect(rendered, isNot(endsWith(':')));
+
+        // And the exception itself must not reach the user.
+        expect(
+          find.textContaining('blossom backend unavailable'),
+          findsNothing,
+        );
+        expect(find.textContaining('Exception'), findsNothing);
+      },
+    );
   });
 }

@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Не успяхме да споделим профила: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Не успяхме да споделим профила. Опитай пак.",
     "profileCopyPublicKey": "Копирай публичния ключ (npub)",
     "profileGetEmbedCode": "Вземи код за вграждане",
     "profilePublicKeyCopied": "Публичният ключ е копиран",
@@ -403,14 +396,10 @@
     "profileSetupSavingButton": "Запазва се...",
     "profileSetupImageUrlTitle": "Добави URL адрес на изображението",
     "profileSetupImageSelectionFailed": "Не успяхме да изберем изображение. Постави URL на изображение по-долу.",
-    "profileSetupCameraAccessFailed": "Неуспешен достъп до камерата: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Достъпът до камерата е изключен. Включи го от Настройки, за да снимаш.",
+    "cameraPickErrorPermissionRestricted": "Достъпът до камерата не е разрешен на това устройство.",
+    "cameraPickErrorBusy": "Селекторът вече е отворен. Затвори го и опитай пак.",
+    "cameraPickErrorGeneric": "Камерата не можа да се отвори. Опитай пак.",
     "profileSetupGotItButton": "Разбрах",
     "profileSetupUploadFailedGeneric": "Качването на изображението се провали. Опитай отново след малко.",
     "profileSetupUploadNetworkError": "Мрежова грешка: провери интернет връзката си и опитай пак.",
@@ -498,14 +487,6 @@
     "featuredTabLoadFailed": "Тази колекция не можа да се зареди.",
     "featuredTabRetry": "Опитай пак",
     "exploreNoVideosAvailable": "Няма налични видеа",
-    "exploreErrorPrefix": "Грешка: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Открий списъци",
     "exploreAboutLists": "Относно списъците",
     "exploreAboutListsDescription": "Списъците ти помагат да организираш и управляваш Divine съдържание по два начина:",
@@ -515,14 +496,7 @@
     "exploreVideoListsDescription": "Създай плейлисти с любимите си видеа, за да ги гледаш по-късно",
     "exploreMyLists": "Моите списъци",
     "exploreSubscribedLists": "Абонирани списъци",
-    "exploreErrorLoadingLists": "Грешка при зареждане на списъците: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Грешка при зареждане на списъците. Опитай пак.",
     "exploreNewVideosCount": "{count, plural, =1{1 ново видео} other{{count} нови видеа}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -873,14 +847,6 @@
     "relaySettingsEventsSent": "Изпратени събития",
     "relaySettingsRequestsThisSession": "Иска тази сесия",
     "relaySettingsFailedRequests": "Неуспешни заявки",
-    "relaySettingsLastError": "Последна грешка: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Информацията за релето се зарежда...",
     "relaySettingsAboutRelay": "Относно релето",
     "relaySettingsSupportedNips": "Поддържани NIP",
@@ -1037,14 +1003,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Неуспешна заявка: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Неуспешна заявка. Опитай пак.",
     "relayDiagnosticConnectedToRelays": "Свързани сме с {count} реле(та)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -1054,14 +1013,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Не успяхме да се свържем с нито едно реле",
-    "relayDiagnosticConnectionRetryFailed": "Неуспешен повторен опит за свързване: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Неуспешен повторен опит за свързване. Опитай пак.",
     "relayDiagnosticConnectedAuthenticated": "Свързан и удостоверен",
     "relayDiagnosticConnectedOnly": "Свързан",
     "relayDiagnosticNotConnected": "Не е свързан",
@@ -1629,14 +1581,11 @@
     "shareMenuChangeCover": "Смяна на корицата",
     "shareMenuVideoUpdated": "Видеото е обновено",
     "shareMenuVideoUpdatedWithInviteFailures": "Видеото е актуализирано, но {count, plural, =1{1 покана за сътрудник не беше изпратена.} other{{count} покани за сътрудници не бяха изпратени.}}",
-    "shareMenuFailedToUpdateVideo": "Не успяхме да обновим видеото: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Влез отново и опитай пак.",
+    "videoUpdateErrorNoPlayableVideo": "Това видео няма възпроизводим източник, затова не може да се редактира.",
+    "videoUpdateErrorCouldNotSign": "Промяната не можа да бъде подписана. Опитай пак.",
+    "videoUpdateErrorPublishRejected": "Релето не прие промяната. Опитай пак след малко.",
+    "videoUpdateErrorGeneric": "Това видео не можа да бъде обновено. Опитай пак.",
     "shareMenuDeleteVideoQuestion": "Да изтрием видеото?",
     "shareMenuDeleteCleanupInProgress": "Премахване на видеото…",
     "shareMenuDeleteCleanupConfirmed": "Видеото е изтрито.",
@@ -1645,22 +1594,6 @@
     "authSessionExpired": "Сесията ти изтече. Влез отново.",
     "authSignInFailed": "Входът не мина. Опитай пак.",
     "webAuthNotSupportedSecureMode": "Уеб удостоверяването не се поддържа в защитен режим. Използвай мобилното приложение, за да управляваш ключовете си сигурно.",
-    "webAuthIntegrationFailed": "Неуспешно интегриране на удостоверяването: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Неочаквана грешка: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Въведи Bunker URI",
     "webAuthConnectTitle": "Свържи се с Divine",
     "webAuthChooseMethod": "Избери предпочитания Nostr метод за удостоверяване",
@@ -1873,17 +1806,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Грешка при отваряне на {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Защо подаваш сигнал за това съдържание?",
     "reportPolicyNotice": "Divine ще преглежда сигналите за съдържание до 24 часа и при нужда ще премахва съдържание или ще блокира акаунта, който го е публикувал.",
     "reportBlockUser": "Блокирай този потребител",
@@ -1901,14 +1823,7 @@
     "reportReasonFalseInfo": "Невярна информация",
     "reportReasonAiGenerated": "AI-генерирано съдържание",
     "reportReasonOther": "Друго нарушение на правилата",
-    "reportFailed": "Неуспешно докладване на съдържание: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Неуспешно докладване на съдържание. Опитай пак.",
     "reportNotSent": "Не успяхме да изпратим сигнала ти. Провери връзката си и опитай пак.",
     "reportReceivedTitle": "Докладът е получен",
     "reportReceivedThankYou": "Благодарим, че помагаш да запазим Divine безопасен.",
@@ -2010,7 +1925,7 @@
     "keyManagementKeycastEmailUnverified": "Потвърди имейл адреса си, преди да копираш ключа.",
     "keyManagementKeycastDenied": "Divine управлява ключовете на този профил, така че те не могат да се копират тук.",
     "keyManagementKeycastNoKey": "За този профил няма записан ключ.",
-    "keyManagementKeycastGenericFailure": "услугата за вход е недостъпна",
+    "keyManagementKeycastGenericFailure": "Услугата за вход е недостъпна. Опитай пак.",
     "keyManagementRestrictedTitle": "Ключовете ти се управляват от Divine",
     "keyManagementRestrictedBody": "За да е сигурен профилът ти, резервно копие на ключа и внасяне на друг ключ не са налични тук.",
     "keyManagementNeverShare": "Никога не споделяй своя nsec с никого!",
@@ -2020,23 +1935,9 @@
     "keyManagementConfirmImportBody": "Това ще замени текущата ти самоличност с импортираната.\n\nТекущият ти ключ ще бъде загубен, освен ако първо не си го архивирал.",
     "keyManagementImportConfirm": "Импортиране",
     "keyManagementImportSuccess": "Ключът е импортиран успешно!",
-    "keyManagementImportFailed": "Неуспешно импортиране на ключ: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Неуспешно импортиране на ключ. Опитай пак.",
     "keyManagementExportSuccess": "Частният ключ е копиран в клипборда!\n\nСъхранявайте го на сигурно място.",
-    "keyManagementExportFailed": "Неуспешно експортиране на ключ: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Неуспешно експортиране на ключ. Опитай пак.",
     "saveOriginalSavedToCameraRoll": "Запазено в галерията",
     "saveOriginalShare": "Сподели",
     "saveOriginalDone": "Готово",
@@ -2074,14 +1975,7 @@
         }
     },
     "soundUnableToPreview": "Не може да се визуализира звук - няма наличен звук",
-    "soundPreviewFailed": "Неуспешно пускане на визуализация: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Неуспешно пускане на визуализация. Опитай пак.",
     "soundViewSource": "Виж източника",
     "soundCloseTooltip": "Затвори",
     "exploreNotExploreRoute": "Не е маршрут за изследване",
@@ -2102,17 +1996,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Грешка при отваряне на {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2367,14 +2250,7 @@
             }
         }
     },
-    "discoverListsFailedToUpdateSubscription": "Неуспешно актуализиране на абонамента: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Неуспешно актуализиране на абонамента. Опитай пак.",
     "commonRetry": "Опитай пак",
     "commonDelete": "Изтрий",
     "commonCancel": "Отказ",
@@ -2510,14 +2386,7 @@
     "followingFailedToLoadList": "Неуспешно зареждане на следния списък",
     "followersFailedToLoadList": "Неуспешно зареждане на списъка с последователи",
     "classicVinersTitle": "OG Viners",
-    "blossomFailedToSaveSettings": "Неуспешно запазване на настройките: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Неуспешно запазване на настройките. Опитай пак.",
     "blueskyFailedToUpdateCrosspost": "Неуспешно актуализиране на настройката за кръстосана публикация",
     "invitesTitle": "Покани приятели",
     "invitesGenerateCardTitle": "{count, plural, =1{1 покана е готова за генериране} other{{count} покани са готови за генериране}}",
@@ -2558,14 +2427,6 @@
     "searchListsSectionHeader": "Списъци",
     "searchListsLoadingLabel": "Резултатите от списъка се зареждат",
     "cameraAgeRestriction": "Трябва да си на 16 или повече, за да създаваш съдържание",
-    "keyImportError": "Грешка: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "timeNow": "Сега",
     "@timeNow": {
         "description": "Relative time label for less than one minute ago (short form)"
@@ -3419,15 +3280,7 @@
     "nostrSettingsMoveAccountSubtitle": "Изтегли архива си и премести публикациите и видеата си към друг relay или медиен сървър.",
     "nostrSettingsRemoveKeys": "Махни ключовете от устройството",
     "nostrSettingsRemoveKeysSubtitle": "Изтрий частния си ключ само от това устройство. Съдържанието ти остава на релетата, но ще ти трябва nsec резервно копие, за да влезеш отново в акаунта си.",
-    "nostrSettingsCouldNotRemoveKeys": "Не успяхме да махнем ключовете от това устройство. Опитай пак.",
-    "nostrSettingsFailedToRemoveKeys": "Махането на ключовете не успя: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Не успяхме да махнем този акаунт от това устройство. Опитай пак.",
     "nostrSettingsDeleteAccount": "Изтрий акаунта и данните",
     "nostrSettingsDeleteAccountSubtitle": "Изпраща заявки за изтриване на съдържанието ти и те отписва на това устройство. Релетата, клиентите, индексите за търсене и другите устройства с вход може да запазят копия.",
     "safetySettingsWhatYouSee": "КАКВО ВИЖДАШ",
@@ -3506,14 +3359,6 @@
     },
     "discoverListsTitle": "Открий списъци",
     "discoverListsFailedToLoad": "Зареждането на списъците не успя",
-    "discoverListsFailedToLoadWithError": "Зареждането на списъците не успя: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Откриваме публични списъци...",
     "discoverListsRelayTimeout": "Релето не върна списъци навреме. Опитай пак.",
     "discoverListsServiceUnavailable": "Услугата не е налична.",
@@ -4613,8 +4458,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Звук: {soundName} от {creatorName}. Докосни, за да видиш подробности.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Неуспешно зареждане на звука: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Неуспешно зареждане на звука. Опитай пак.",
     "soundDetailNotFoundMessage": "Този звук не можа да бъде намерен",
     "soundDetailNotFoundTitle": "Звукът не е намерен",
     "videoFeedLoopCountLabel": "🔁 {count} лупа",

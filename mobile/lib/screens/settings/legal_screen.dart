@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/route_paths.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LegalScreen extends StatelessWidget {
@@ -130,10 +131,15 @@ class LegalScreen extends StatelessWidget {
         }
       }
     } catch (e) {
+      Log.error(
+        'Failed to open $pageName: $e',
+        name: 'LegalScreen',
+        category: LogCategory.ui,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.legalErrorOpeningPage(pageName, e),
+            context.l10n.legalCouldNotOpenPage(pageName),
             error: true,
           ),
         );

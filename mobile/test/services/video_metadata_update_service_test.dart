@@ -16,6 +16,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -146,7 +147,14 @@ void main() {
           initialCollaboratorPubkeys: const {},
         );
 
-        expect(result, isA<VideoUpdateFailure>());
+        expect(
+          result,
+          isA<VideoUpdateFailure>().having(
+            (f) => f.reason,
+            'reason',
+            VideoMetadataUpdateError.notAuthenticated,
+          ),
+        );
         verifyNever(
           () => mockAuthService.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -182,7 +190,14 @@ void main() {
             initialCollaboratorPubkeys: const {},
           );
 
-          expect(result, isA<VideoUpdateFailure>());
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.noPlayableVideoUrl,
+            ),
+          );
         },
       );
     });
@@ -1255,7 +1270,14 @@ void main() {
             initialCollaboratorPubkeys: const {},
           );
 
-          expect(result, isA<VideoUpdateFailure>());
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.publishRejected,
+            ),
+          );
           verifyNever(
             () => mockPersonalEventCacheService.cacheUserEvent(any()),
           );
@@ -1281,7 +1303,51 @@ void main() {
             initialCollaboratorPubkeys: const {},
           );
 
-          expect(result, isA<VideoUpdateFailure>());
+          // `couldNotSign` is the *null-return* arm: in production
+          // `SignerFactory.createAndSignEvent` catches and returns null. A
+          // throw from the auth service itself is an infrastructure failure
+          // that propagates to the outer handler, so it maps to `generic`.
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.generic,
+            ),
+          );
+          verifyNever(() => mockNostrService.publishEvent(any()));
+        },
+      );
+
+      test(
+        'returns couldNotSign when createAndSignEvent returns null',
+        () async {
+          // The production path: SignerFactory catches internally and returns
+          // null rather than throwing, so this is the arm a real signer
+          // refusal takes.
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(
+            result,
+            isA<VideoUpdateFailure>().having(
+              (f) => f.reason,
+              'reason',
+              VideoMetadataUpdateError.couldNotSign,
+            ),
+          );
           verifyNever(() => mockNostrService.publishEvent(any()));
         },
       );

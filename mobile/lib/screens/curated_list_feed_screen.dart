@@ -651,7 +651,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.discoverListsFailedToUpdateSubscription('$e'),
+              context.l10n.discoverListsFailedToUpdateSubscription,
             ),
             backgroundColor: VineTheme.likeRed,
           ),

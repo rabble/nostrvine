@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Nie udało się udostępnić profilu: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Nie udało się udostępnić profilu. Spróbuj ponownie.",
     "profileCopyPublicKey": "Skopiuj klucz publiczny (npub)",
     "profileGetEmbedCode": "Pobierz kod do osadzenia",
     "profilePublicKeyCopied": "Klucz publiczny skopiowany do schowka",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Zapisywanie...",
     "profileSetupImageUrlTitle": "Dodaj URL obrazu",
     "profileSetupImageSelectionFailed": "Wybór obrazu nieudany. Wklej URL obrazu poniżej.",
-    "profileSetupCameraAccessFailed": "Dostęp do aparatu nieudany: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Dostęp do aparatu jest wyłączony. Włącz go w Ustawieniach, żeby zrobić zdjęcie.",
+    "cameraPickErrorPermissionRestricted": "Dostęp do aparatu nie jest dozwolony na tym urządzeniu.",
+    "cameraPickErrorBusy": "Selektor jest już otwarty. Zamknij go i spróbuj ponownie.",
+    "cameraPickErrorGeneric": "Nie udało się otworzyć aparatu. Spróbuj ponownie.",
     "profileSetupGotItButton": "Rozumiem",
     "profileSetupUploadFailedGeneric": "Nie udało się przesłać obrazu. Spróbuj ponownie później.",
     "profileSetupUploadNetworkError": "Błąd sieci: Sprawdź połączenie z internetem i spróbuj ponownie.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Nie udało się wczytać tej kolekcji.",
     "featuredTabRetry": "Spróbuj ponownie",
     "exploreNoVideosAvailable": "Brak dostępnych filmów",
-    "exploreErrorPrefix": "Błąd: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Odkrywaj listy",
     "exploreAboutLists": "O listach",
     "exploreAboutListsDescription": "Listy pomagają ci porządkować i kuratorować treści Divine na dwa sposoby:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Twórz playlisty ulubionych filmów do oglądania później",
     "exploreMyLists": "Moje listy",
     "exploreSubscribedLists": "Subskrybowane listy",
-    "exploreErrorLoadingLists": "Błąd wczytywania list: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Błąd wczytywania list. Spróbuj ponownie.",
     "exploreNewVideosCount": "{count, plural, =1{1 nowy film} few{{count} nowe filmy} many{{count} nowych filmów} other{{count} nowego filmu}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Wysłane zdarzenia",
     "relaySettingsRequestsThisSession": "Żądania w tej sesji",
     "relaySettingsFailedRequests": "Nieudane żądania",
-    "relaySettingsLastError": "Ostatni błąd: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Wczytywanie informacji o przekaźniku...",
     "relaySettingsAboutRelay": "O przekaźniku",
     "relaySettingsSupportedNips": "Obsługiwane NIP-y",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Zapytanie nieudane: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Zapytanie nieudane. Spróbuj ponownie.",
     "relayDiagnosticConnectedToRelays": "{count, plural, one{Połączono z 1 przekaźnikiem!} few{Połączono z {count} przekaźnikami!} many{Połączono z {count} przekaźnikami!} other{Połączono z {count} przekaźnikami!}}",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Nie udało się połączyć z żadnym przekaźnikiem",
-    "relayDiagnosticConnectionRetryFailed": "Ponowne połączenie nieudane: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Ponowne połączenie nieudane. Spróbuj ponownie.",
     "relayDiagnosticConnectedAuthenticated": "Połączono i uwierzytelniono",
     "relayDiagnosticConnectedOnly": "Połączono",
     "relayDiagnosticNotConnected": "Nie połączono",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Zmień okładkę",
     "shareMenuVideoUpdated": "Film zaktualizowany pomyślnie",
     "shareMenuVideoUpdatedWithInviteFailures": "Film zaktualizowany, ale {count, plural, =1{1 zaproszenie współpracownika nie zostało wysłane.} other{{count} zaproszeń współpracowników nie zostało wysłanych.}}",
-    "shareMenuFailedToUpdateVideo": "Nie udało się zaktualizować filmu: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Zaloguj się ponownie i spróbuj jeszcze raz.",
+    "videoUpdateErrorNoPlayableVideo": "Ten film nie ma odtwarzalnego źródła, więc nie można go edytować.",
+    "videoUpdateErrorCouldNotSign": "Nie udało się podpisać zmiany. Spróbuj ponownie.",
+    "videoUpdateErrorPublishRejected": "Przekaźnik nie przyjął zmiany. Spróbuj za chwilę.",
+    "videoUpdateErrorGeneric": "Nie udało się zaktualizować tego filmu. Spróbuj ponownie.",
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
     "shareMenuDeleteCleanupInProgress": "Usuwanie filmu…",
     "shareMenuDeleteCleanupConfirmed": "Film usunięty.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",
     "authSignInFailed": "Nie udało się zalogować. Spróbuj ponownie.",
     "webAuthNotSupportedSecureMode": "Uwierzytelnianie przez WWW nie jest obsługiwane w trybie bezpiecznym. Użyj aplikacji mobilnej do bezpiecznego zarządzania kluczami.",
-    "webAuthIntegrationFailed": "Integracja uwierzytelnienia nieudana: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Nieoczekiwany błąd: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Wprowadź URI bunker",
     "webAuthConnectTitle": "Połącz z Divine",
     "webAuthChooseMethod": "Wybierz preferowaną metodę uwierzytelnienia Nostr",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Błąd otwierania {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Dlaczego zgłaszasz tę treść?",
     "reportPolicyNotice": "Divine zareaguje na zgłoszenia treści w ciągu 24 godzin, usuwając treść i wyrzucając użytkownika, który dostarczył obraźliwą treść.",
     "reportBlockUser": "Zablokuj tego użytkownika",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Fałszywe informacje",
     "reportReasonAiGenerated": "Treść wygenerowana przez AI",
     "reportReasonOther": "Inne naruszenie regulaminu",
-    "reportFailed": "Nie udało się zgłosić treści: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Nie udało się zgłosić treści. Spróbuj ponownie.",
     "reportNotSent": "Nie udało się wysłać zgłoszenia. Sprawdź połączenie i spróbuj ponownie.",
     "reportReceivedTitle": "Zgłoszenie odebrane",
     "reportReceivedThankYou": "Dziękujemy za pomoc w utrzymaniu Divine bezpiecznym.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Potwierdź swój adres e-mail, zanim skopiujesz klucz.",
     "keyManagementKeycastDenied": "Divine zarządza kluczami tego konta, więc nie można ich tutaj skopiować.",
     "keyManagementKeycastNoKey": "Dla tego konta nie ma zapisanego klucza.",
-    "keyManagementKeycastGenericFailure": "nie udało się połączyć z serwisem logowania",
+    "keyManagementKeycastGenericFailure": "Nie udało się połączyć z serwisem logowania. Spróbuj ponownie.",
     "keyManagementRestrictedTitle": "Twoimi kluczami zarządza Divine",
     "keyManagementRestrictedBody": "Aby zapewnić bezpieczeństwo konta, kopia zapasowa klucza i import innego klucza nie są tutaj dostępne.",
     "keyManagementNeverShare": "Nigdy nie udostępniaj swojego nsec nikomu!",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "To zastąpi twoją aktualną tożsamość importowaną.\n\nTwój aktualny klucz zostanie utracony, chyba że zrobiłeś najpierw kopię zapasową.",
     "keyManagementImportConfirm": "Importuj",
     "keyManagementImportSuccess": "Klucz zaimportowany pomyślnie!",
-    "keyManagementImportFailed": "Nie udało się zaimportować klucza: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Nie udało się zaimportować klucza. Spróbuj ponownie.",
     "keyManagementExportSuccess": "Klucz prywatny skopiowany do schowka!\n\nPrzechowuj go w bezpiecznym miejscu.",
-    "keyManagementExportFailed": "Nie udało się wyeksportować klucza: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Nie udało się wyeksportować klucza. Spróbuj ponownie.",
     "saveOriginalSavedToCameraRoll": "Zapisano w rolce aparatu",
     "saveOriginalShare": "Udostępnij",
     "saveOriginalDone": "Gotowe",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Nie można odtworzyć podglądu dźwięku - brak dostępnego audio",
-    "soundPreviewFailed": "Nie udało się odtworzyć podglądu: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Nie udało się odtworzyć podglądu. Spróbuj ponownie.",
     "soundViewSource": "Zobacz źródło",
     "soundCloseTooltip": "Zamknij",
     "exploreNotExploreRoute": "Nie jest trasa eksploracji",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Błąd otwierania {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogowanie",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Nie udało się zapisać ustawień: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Nie udało się zapisać ustawień. Spróbuj ponownie.",
     "blueskyFailedToUpdateCrosspost": "Nie udało się zaktualizować ustawienia crosspostu",
     "cameraAgeRestriction": "Musisz mieć co najmniej 16 lat, aby tworzyć treści",
     "categoriesCouldNotLoadCategories": "Nie udało się załadować kategorii",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Anuluj",
     "commonDelete": "Usuń",
     "commonRetry": "Ponów",
-    "discoverListsFailedToUpdateSubscription": "Nie udało się zaktualizować subskrypcji: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Nie udało się zaktualizować subskrypcji. Spróbuj ponownie.",
     "exploreVideoCounter": "Film {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Zaproś znajomych",
-    "keyImportError": "Błąd: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{Usunięto 1 klip} few{Usunięto {count} klipy} many{Usunięto {count} klipów} other{Usunięto {count} klipów}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Pobierz swoje archiwum i przenieś posty oraz filmy do innego relaya lub serwera multimediów.",
     "nostrSettingsRemoveKeys": "Usuń klucze z urządzenia",
     "nostrSettingsRemoveKeysSubtitle": "Usuń swój klucz prywatny tylko z tego urządzenia. Twoje treści zostają na przekaźnikach, ale do ponownego dostępu do konta potrzebna będzie kopia zapasowa nsec.",
-    "nostrSettingsCouldNotRemoveKeys": "Nie udało się usunąć kluczy z tego urządzenia. Spróbuj ponownie.",
-    "nostrSettingsFailedToRemoveKeys": "Nie udało się usunąć kluczy: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Nie udało się usunąć tego konta z tego urządzenia. Spróbuj ponownie.",
     "nostrSettingsDeleteAccount": "Usuń konto i dane",
     "nostrSettingsDeleteAccountSubtitle": "Wysyła żądania usunięcia twoich treści i wylogowuje cię na tym urządzeniu. Przekaźniki, klienty, indeksy wyszukiwania i inne zalogowane urządzenia mogą zachować kopie.",
     "safetySettingsWhatYouSee": "CO WIDZISZ",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Odkrywaj listy",
     "discoverListsFailedToLoad": "Nie udało się wczytać list",
-    "discoverListsFailedToLoadWithError": "Nie udało się wczytać list: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Odkrywanie publicznych list...",
     "discoverListsRelayTimeout": "Relay nie zwrócił list na czas. Spróbuj ponownie.",
     "discoverListsServiceUnavailable": "Usługa niedostępna.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "W zależności od przepisów w twoim kraju możesz wtedy wrócić i poprosić o własne konto. Jeśli będziesz mieć od 13 do 15 lat, potrzebna będzie zgoda rodzica lub opiekuna.",
     "minorAccountReviewParentConsentPauseNote": "To przerwa na czas, gdy zespół wsparcia Divine sprawdza film. Jeśli zostanie zatwierdzony, przeprowadzą cię przez zakładanie nowego konta.",
     "minorAccountReviewUnder13WhyTitle": "Oto dlaczego",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Dźwięk: {soundName} od {creatorName}. Dotknij, aby zobaczyć szczegóły.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Nie udało się wczytać dźwięku: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Nie udało się wczytać dźwięku. Spróbuj ponownie.",
     "soundDetailNotFoundMessage": "Nie udało się znaleźć tego dźwięku",
     "soundDetailNotFoundTitle": "Nie znaleziono dźwięku",
     "videoFeedLoopCountLabel": "🔁 {count} pętli",

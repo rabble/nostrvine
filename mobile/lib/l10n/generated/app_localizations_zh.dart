@@ -417,9 +417,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return '分享主页失败：$error';
-  }
+  String get profileShareFailed => '分享主页失败，请重试。';
 
   @override
   String get profileCopyPublicKey => '复制公钥（npub）';
@@ -874,9 +872,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupImagesTypeGroup => '图片';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return '相机访问失败：$error';
-  }
+  String get cameraPickErrorPermissionDenied => '相机权限已关闭，请在设置中开启后拍照。';
+
+  @override
+  String get cameraPickErrorPermissionRestricted => '此设备不允许访问相机。';
+
+  @override
+  String get cameraPickErrorBusy => '选择器已经打开，请关闭后重试。';
+
+  @override
+  String get cameraPickErrorGeneric => '无法打开相机，请重试。';
 
   @override
   String get profileSetupGotItButton => '知道了';
@@ -1176,11 +1181,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreNoVideosAvailable => '暂无视频';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return '错误：$error';
-  }
-
-  @override
   String get exploreDiscoverLists => '发现列表';
 
   @override
@@ -1208,9 +1208,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreSubscribedLists => '订阅的列表';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return '加载列表出错：$error';
-  }
+  String get exploreErrorLoadingLists => '加载列表出错，请重试。';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2080,11 +2078,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get relaySettingsFailedRequests => '失败请求';
 
   @override
-  String relaySettingsLastError(String error) {
-    return '最近错误：$error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => '正在加载中继信息...';
 
   @override
@@ -2282,11 +2275,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nostrSettingsCouldNotRemoveKeys => '无法从此设备移除此账号，请重试。';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return '移除此账号失败：$error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => '删除账号和数据';
 
   @override
@@ -2434,9 +2422,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return '查询失败：$error';
-  }
+  String get relayDiagnosticQueryFailed => '查询失败，请重试。';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2447,9 +2433,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => '无法连接到任何中继';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return '连接重试失败：$error';
-  }
+  String get relayDiagnosticConnectionRetryFailed => '连接重试失败，请重试。';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => '已连接并完成认证';
@@ -3723,9 +3707,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return '更新视频失败：$error';
-  }
+  String get videoUpdateErrorNotAuthenticated => '请重新登录后再试。';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo => '这个视频没有可播放的源，无法编辑。';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => '更新签名失败，请重试。';
+
+  @override
+  String get videoUpdateErrorPublishRejected => '中继未接受此次更新，请稍后重试。';
+
+  @override
+  String get videoUpdateErrorGeneric => '无法更新这个视频，请重试。';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -3758,16 +3752,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get webAuthNotSupportedSecureMode => '安全模式下不支持网页认证。请使用移动应用进行安全的密钥管理。';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return '认证集成失败：$error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return '意外错误：$error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => '请输入 bunker URI';
@@ -4317,11 +4301,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '打开$pageName时出错：$error';
-  }
-
-  @override
   String get reportWhyReporting => '你为什么要举报该内容？';
 
   @override
@@ -4416,9 +4395,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportReasonOtherSubtitle => '以上未列出的违规行为';
 
   @override
-  String reportFailed(Object error) {
-    return '举报内容失败：$error';
-  }
+  String get reportFailed => '举报内容失败，请重试。';
 
   @override
   String get reportNotSent => '举报发送失败。请检查连接后重试。';
@@ -4653,7 +4630,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keyManagementKeycastNoKey => '这个账号没有任何密钥记录。';
 
   @override
-  String get keyManagementKeycastGenericFailure => '连不上登录服务';
+  String get keyManagementKeycastGenericFailure => '连不上登录服务，请重试。';
 
   @override
   String get keyManagementRestrictedTitle => '你的密钥由 Divine 托管';
@@ -4681,17 +4658,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keyManagementImportSuccess => '密钥导入成功！';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return '导入密钥失败：$error';
-  }
+  String get keyManagementImportFailed => '导入密钥失败，请重试。';
 
   @override
   String get keyManagementExportSuccess => '私钥已复制到剪贴板！\n\n请妥善保管。';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return '导出密钥失败：$error';
-  }
+  String get keyManagementExportFailed => '导出密钥失败，请重试。';
 
   @override
   String get keyManagementYourPublicKeyLabel => '你的公钥（npub）';
@@ -4811,9 +4784,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundUnableToPreview => '无法预览声音——没有可用音频';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return '预览播放失败：$error';
-  }
+  String get soundPreviewFailed => '预览播放失败，请重试。';
 
   @override
   String get soundViewSource => '查看来源';
@@ -4863,11 +4834,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '无法打开$pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '打开$pageName时出错：$error';
   }
 
   @override
@@ -5565,20 +5531,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return '更新订阅失败：$error';
-  }
+  String get discoverListsFailedToUpdateSubscription => '更新订阅失败，请重试。';
 
   @override
   String get discoverListsTitle => '发现列表';
 
   @override
   String get discoverListsFailedToLoad => '列表加载失败';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return '列表加载失败：$error';
-  }
 
   @override
   String get discoverListsLoading => '正在发现公开列表...';
@@ -6809,9 +6768,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return '声音加载失败：$error';
-  }
+  String get soundDetailLoadError => '声音加载失败，请重试。';
 
   @override
   String get soundDetailNotFoundMessage => '找不到这个声音';
@@ -7058,9 +7015,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return '设置保存失败：$error';
-  }
+  String get blossomFailedToSaveSettings => '设置保存失败，请重试。';
 
   @override
   String get blossomValidServerUrl => '请输入有效的服务器 URL（如 https://blossom.band）';
@@ -7280,11 +7235,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => '你必须年满 16 岁才能创作内容';
-
-  @override
-  String keyImportError(String error) {
-    return '错误：$error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

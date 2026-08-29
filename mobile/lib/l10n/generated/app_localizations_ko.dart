@@ -392,9 +392,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return '프로필을 공유하지 못했어요: $error';
-  }
+  String get profileShareFailed => '프로필을 공유하지 못했어요. 다시 시도해보세요.';
 
   @override
   String get profileCopyPublicKey => '공개 키 복사 (npub)';
@@ -856,9 +854,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupImagesTypeGroup => '이미지';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return '카메라 접근 실패: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      '카메라 접근이 꺼져 있어요. 설정에서 켜면 사진을 찍을 수 있어요.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted => '이 기기에서는 카메라 접근이 허용되지 않아요.';
+
+  @override
+  String get cameraPickErrorBusy => '선택기가 이미 열려 있어요. 닫고 다시 시도해보세요.';
+
+  @override
+  String get cameraPickErrorGeneric => '카메라를 열지 못했어요. 다시 시도해보세요.';
 
   @override
   String get profileSetupGotItButton => '알겠어요';
@@ -1167,11 +1173,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreNoVideosAvailable => '이용 가능한 영상이 없어요';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return '오류: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => '리스트 둘러보기';
 
   @override
@@ -1201,9 +1202,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreSubscribedLists => '구독 리스트';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return '리스트를 불러오지 못했어요: $error';
-  }
+  String get exploreErrorLoadingLists => '리스트를 불러오지 못했어요. 다시 시도해보세요.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2071,11 +2070,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relaySettingsFailedRequests => '실패한 요청';
 
   @override
-  String relaySettingsLastError(String error) {
-    return '마지막 오류: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => '릴레이 정보 불러오는 중...';
 
   @override
@@ -2274,12 +2268,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      '이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return '키 제거에 실패했어요: $error';
-  }
+      '이 기기에서 이 계정을 제거하지 못했어요. 다시 시도해주세요.';
 
   @override
   String get nostrSettingsDeleteAccount => '계정 및 데이터 삭제';
@@ -2430,9 +2419,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return '쿼리 실패: $error';
-  }
+  String get relayDiagnosticQueryFailed => '쿼리 실패. 다시 시도해보세요.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2443,9 +2430,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => '릴레이 연결에 실패했어요';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return '연결 재시도 실패: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed => '연결 재시도 실패. 다시 시도해보세요.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => '연결 및 인증됨';
@@ -3746,9 +3731,21 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return '영상 업데이트에 실패했어요: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => '다시 로그인한 다음 시도해보세요.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      '이 영상에는 재생 가능한 소스가 없어서 수정할 수 없어요.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => '업데이트에 서명하지 못했어요. 다시 시도해보세요.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      '릴레이가 업데이트를 받지 않았어요. 잠시 후 다시 시도해보세요.';
+
+  @override
+  String get videoUpdateErrorGeneric => '이 영상을 업데이트하지 못했어요. 다시 시도해보세요.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -3784,16 +3781,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       '보안 모드에서는 웹 인증을 지원하지 않아요. 안전한 키 관리를 위해 모바일 앱을 이용해주세요.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return '인증 연동에 실패했어요: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return '예상치 못한 오류가 발생했어요: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Bunker URI를 입력해주세요';
@@ -4348,11 +4335,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return '$pageName을(를) 여는 중 오류 발생: $error';
-  }
-
-  @override
   String get reportWhyReporting => '이 콘텐츠를 왜 신고하시나요?';
 
   @override
@@ -4448,9 +4430,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonOtherSubtitle => '위에 나열되지 않은 위반';
 
   @override
-  String reportFailed(Object error) {
-    return '콘텐츠 신고에 실패했어요: $error';
-  }
+  String get reportFailed => '콘텐츠 신고에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get reportNotSent => '신고를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해보세요.';
@@ -4692,7 +4672,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keyManagementKeycastNoKey => '이 계정에 등록된 키가 없어요.';
 
   @override
-  String get keyManagementKeycastGenericFailure => '로그인 서비스에 연결할 수 없습니다';
+  String get keyManagementKeycastGenericFailure =>
+      '로그인 서비스에 연결할 수 없었어요. 다시 시도해보세요.';
 
   @override
   String get keyManagementRestrictedTitle => '키는 Divine이 관리합니다';
@@ -4721,18 +4702,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keyManagementImportSuccess => '키를 성공적으로 가져왔어요!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return '키 가져오기에 실패했어요: $error';
-  }
+  String get keyManagementImportFailed => '키 가져오기에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get keyManagementExportSuccess =>
       '개인 키를 클립보드에 복사했어요!\n\n안전한 곳에 보관하세요.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return '키 내보내기에 실패했어요: $error';
-  }
+  String get keyManagementExportFailed => '키 내보내기에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get keyManagementYourPublicKeyLabel => '공개 키 (npub)';
@@ -4853,9 +4830,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundUnableToPreview => '사운드를 미리 들을 수 없어요 - 오디오가 없어요';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return '미리 듣기를 재생하지 못했어요: $error';
-  }
+  String get soundPreviewFailed => '미리 듣기를 재생하지 못했어요. 다시 시도해보세요.';
 
   @override
   String get soundViewSource => '원본 보기';
@@ -4905,11 +4880,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName을(를) 열 수 없어요';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return '$pageName을(를) 여는 중 오류 발생: $error';
   }
 
   @override
@@ -5610,20 +5580,14 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return '구독 업데이트에 실패했어요: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      '구독 업데이트에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get discoverListsTitle => '리스트 둘러보기';
 
   @override
   String get discoverListsFailedToLoad => '리스트를 불러오지 못했어요';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return '리스트를 불러오지 못했어요: $error';
-  }
 
   @override
   String get discoverListsLoading => '공개 리스트를 찾는 중...';
@@ -6883,9 +6847,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return '사운드를 불러오지 못했어요: $error';
-  }
+  String get soundDetailLoadError => '사운드를 불러오지 못했어요. 다시 시도해보세요.';
 
   @override
   String get soundDetailNotFoundMessage => '이 사운드를 찾을 수 없어요';
@@ -7134,9 +7096,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return '설정 저장에 실패했어요: $error';
-  }
+  String get blossomFailedToSaveSettings => '설정 저장에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7359,11 +7319,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
-
-  @override
-  String keyImportError(String error) {
-    return '오류: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

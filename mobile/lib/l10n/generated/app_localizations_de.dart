@@ -472,9 +472,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Profil konnte nicht geteilt werden: $error';
-  }
+  String get profileShareFailed =>
+      'Profil konnte nicht geteilt werden. Bitte versuch es nochmal.';
 
   @override
   String get profileCopyPublicKey => 'Public Key (npub) kopieren';
@@ -965,9 +964,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'Bilder';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Kamerazugriff fehlgeschlagen: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Der Kamerazugriff ist aus. Schalte ihn in den Einstellungen ein, um ein Foto zu machen.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Der Kamerazugriff ist auf diesem Gerät nicht erlaubt.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Die Auswahl ist schon offen. Schließ sie und versuch es nochmal.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'Die Kamera konnte nicht geöffnet werden. Versuch es nochmal.';
 
   @override
   String get profileSetupGotItButton => 'Verstanden';
@@ -1291,11 +1301,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Keine Videos verfügbar';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Fehler: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Listen entdecken';
 
   @override
@@ -1326,9 +1331,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreSubscribedLists => 'Abonnierte Listen';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Fehler beim Laden der Listen: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Fehler beim Laden der Listen. Bitte versuch es nochmal.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2247,11 +2251,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Fehlgeschlagene Anfragen';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Letzter Fehler: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'Relay-Infos werden geladen...';
 
   @override
@@ -2462,12 +2461,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Schlüssel konnten nicht von diesem Gerät entfernt werden. Versuch es nochmal.';
-
-  @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Schlüssel konnten nicht entfernt werden: $error';
-  }
+      'Dieses Konto konnte nicht von diesem Gerät entfernt werden. Versuch es nochmal.';
 
   @override
   String get nostrSettingsDeleteAccount => 'Konto und Daten löschen';
@@ -2619,9 +2613,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Abfrage fehlgeschlagen: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Abfrage fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2633,9 +2626,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verbindung zu Relays fehlgeschlagen';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Verbindungsversuch fehlgeschlagen: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Verbindungsversuch fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -4027,9 +4019,24 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Video konnte nicht aktualisiert werden: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Melde dich neu an und versuch es dann nochmal.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Dieses Video hat keine abspielbare Quelle und kann nicht bearbeitet werden.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Die Änderung konnte nicht signiert werden. Versuch es nochmal.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Das Relay hat die Änderung nicht angenommen. Versuch es gleich nochmal.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Dieses Video konnte nicht aktualisiert werden. Versuch es nochmal.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4067,16 +4074,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Web-Authentifizierung wird im sicheren Modus nicht unterstützt. Bitte nutze die mobile App für sichere Schlüsselverwaltung.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Authentifizierungs-Integration fehlgeschlagen: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Unerwarteter Fehler: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Bitte gib eine Bunker-URI ein';
@@ -4657,11 +4654,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Fehler beim Öffnen von $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Warum meldest du diesen Inhalt?';
 
   @override
@@ -4770,9 +4762,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verstöße, die oben nicht aufgeführt sind';
 
   @override
-  String reportFailed(Object error) {
-    return 'Inhalt konnte nicht gemeldet werden: $error';
-  }
+  String get reportFailed =>
+      'Inhalt konnte nicht gemeldet werden. Bitte versuch es nochmal.';
 
   @override
   String get reportNotSent =>
@@ -5027,7 +5018,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'der Login-Dienst war nicht erreichbar';
+      'Der Login-Dienst war nicht erreichbar. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5058,18 +5049,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get keyManagementImportSuccess => 'Schlüssel erfolgreich importiert!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Schlüssel konnte nicht importiert werden: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Schlüssel konnte nicht importiert werden. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementExportSuccess =>
       'Private Key in die Zwischenablage kopiert!\n\nBewahre ihn sicher auf.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Schlüssel konnte nicht exportiert werden: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Schlüssel konnte nicht exportiert werden. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Dein Public Key (npub)';
@@ -5195,9 +5184,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Vorschau nicht möglich — kein Audio verfügbar';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Vorschau-Wiedergabe fehlgeschlagen: $error';
-  }
+  String get soundPreviewFailed =>
+      'Vorschau-Wiedergabe fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String get soundViewSource => 'Quelle ansehen';
@@ -5249,11 +5237,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return '$pageName konnte nicht geöffnet werden';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Fehler beim Öffnen von $pageName: $error';
   }
 
   @override
@@ -5974,20 +5957,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Abo konnte nicht aktualisiert werden: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Abo konnte nicht aktualisiert werden. Bitte versuch es nochmal.';
 
   @override
   String get discoverListsTitle => 'Listen entdecken';
 
   @override
   String get discoverListsFailedToLoad => 'Listen konnten nicht geladen werden';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Listen konnten nicht geladen werden: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Öffentliche Listen werden entdeckt...';
@@ -7316,9 +7293,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Sound konnte nicht geladen werden: $error';
-  }
+  String get soundDetailLoadError =>
+      'Sound konnte nicht geladen werden. Bitte versuch es nochmal.';
 
   @override
   String get soundDetailNotFoundMessage =>
@@ -7584,9 +7560,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get classicVinersTitle => 'OG Viner';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Einstellungen konnten nicht gespeichert werden: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Einstellungen konnten nicht gespeichert werden. Bitte versuch es nochmal.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7821,11 +7796,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Du musst mindestens 16 Jahre alt sein, um Inhalte zu erstellen';
-
-  @override
-  String keyImportError(String error) {
-    return 'Fehler: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

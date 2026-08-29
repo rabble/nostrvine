@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Échec du partage du profil : {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Échec du partage du profil. Réessaie.",
     "profileCopyPublicKey": "Copier la clé publique (npub)",
     "profileGetEmbedCode": "Obtenir le code d'intégration",
     "profilePublicKeyCopied": "Clé publique copiée",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Enregistrement...",
     "profileSetupImageUrlTitle": "Ajouter une URL d'image",
     "profileSetupImageSelectionFailed": "Échec de la sélection d'image. Colle plutôt une URL d'image ci-dessous.",
-    "profileSetupCameraAccessFailed": "Accès caméra échoué : {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "L'accès à la caméra est désactivé. Active-le dans les Réglages pour prendre une photo.",
+    "cameraPickErrorPermissionRestricted": "L'accès à la caméra n'est pas autorisé sur cet appareil.",
+    "cameraPickErrorBusy": "Le sélecteur est déjà ouvert. Ferme-le et réessaie.",
+    "cameraPickErrorGeneric": "Impossible d'ouvrir la caméra. Réessaie.",
     "profileSetupGotItButton": "Compris",
     "profileSetupUploadFailedGeneric": "L'envoi de l'image a échoué. Réessaie plus tard.",
     "profileSetupUploadNetworkError": "Erreur réseau : vérifie ta connexion internet et réessaie.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Impossible de charger cette collection.",
     "featuredTabRetry": "Réessayer",
     "exploreNoVideosAvailable": "Aucune vidéo disponible",
-    "exploreErrorPrefix": "Erreur : {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Découvrir les listes",
     "exploreAboutLists": "À propos des listes",
     "exploreAboutListsDescription": "Les listes t'aident à organiser et curater le contenu Divine de deux façons :",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Crée des playlists de tes vidéos préférées à regarder plus tard",
     "exploreMyLists": "Mes listes",
     "exploreSubscribedLists": "Listes abonnées",
-    "exploreErrorLoadingLists": "Erreur de chargement des listes : {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Erreur de chargement des listes. Réessaie.",
     "exploreNewVideosCount": "{count, plural, one{{count} nouvelle vidéo} other{{count} nouvelles vidéos}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -790,14 +764,6 @@
     "relaySettingsEventsSent": "Événements envoyés",
     "relaySettingsRequestsThisSession": "Requêtes cette session",
     "relaySettingsFailedRequests": "Requêtes échouées",
-    "relaySettingsLastError": "Dernière erreur : {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Chargement des infos du relay...",
     "relaySettingsAboutRelay": "À propos du relay",
     "relaySettingsSupportedNips": "NIPs supportés",
@@ -954,14 +920,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Requête échouée : {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Requête échouée. Réessaie.",
     "relayDiagnosticConnectedToRelays": "Connecté à {count} relay(s) !",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -971,14 +930,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Échec de la connexion aux relays",
-    "relayDiagnosticConnectionRetryFailed": "Nouvelle tentative de connexion échouée : {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Nouvelle tentative de connexion échouée. Réessaie.",
     "relayDiagnosticConnectedAuthenticated": "Connecté et authentifié",
     "relayDiagnosticConnectedOnly": "Connecté",
     "relayDiagnosticNotConnected": "Non connecté",
@@ -1440,14 +1392,11 @@
     "shareMenuChangeCover": "Changer la couverture",
     "shareMenuVideoUpdated": "Vidéo mise à jour avec succès",
     "shareMenuVideoUpdatedWithInviteFailures": "Vidéo mise à jour, mais {count, plural, =1{{count} invitation de collaborateur n''a pas été envoyée.} other{{count} invitations de collaborateur n''ont pas été envoyées.}}",
-    "shareMenuFailedToUpdateVideo": "Échec de la mise à jour de la vidéo : {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Reconnecte-toi, puis réessaie.",
+    "videoUpdateErrorNoPlayableVideo": "Cette vidéo n'a pas de source lisible, elle ne peut pas être modifiée.",
+    "videoUpdateErrorCouldNotSign": "Impossible de signer la modification. Réessaie.",
+    "videoUpdateErrorPublishRejected": "Le relais n'a pas accepté la modification. Réessaie dans un instant.",
+    "videoUpdateErrorGeneric": "Impossible de mettre à jour cette vidéo. Réessaie.",
     "shareMenuDeleteVideoQuestion": "Supprimer la vidéo ?",
     "shareMenuDeleteCleanupInProgress": "Suppression de la vidéo…",
     "shareMenuDeleteCleanupConfirmed": "Vidéo supprimée.",
@@ -1456,22 +1405,6 @@
     "authSessionExpired": "Ta session a expiré. Reconnecte-toi.",
     "authSignInFailed": "Échec de la connexion. Réessaie.",
     "webAuthNotSupportedSecureMode": "Authentification web non supportée en mode sécurisé. Utilise l'app mobile pour une gestion sécurisée des clés.",
-    "webAuthIntegrationFailed": "Échec de l'intégration d'authentification : {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Erreur inattendue : {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Entre une URI bunker",
     "webAuthConnectTitle": "Se connecter à Divine",
     "webAuthChooseMethod": "Choisis ta méthode d'authentification Nostr préférée",
@@ -1667,17 +1600,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Erreur d'ouverture de {pageName} : {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Pourquoi signales-tu ce contenu ?",
     "reportPolicyNotice": "Divine agira sur les signalements de contenu dans les 24 heures en retirant le contenu et en excluant l'utilisateur qui a fourni le contenu en infraction.",
     "reportBlockUser": "Bloquer cet utilisateur",
@@ -1695,14 +1617,7 @@
     "reportReasonFalseInfo": "Fausses informations",
     "reportReasonAiGenerated": "Contenu généré par IA",
     "reportReasonOther": "Autre violation des règles",
-    "reportFailed": "Échec du signalement du contenu : {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Échec du signalement du contenu. Réessaie.",
     "reportNotSent": "Impossible d'envoyer ton signalement. Vérifie ta connexion et réessaie.",
     "reportReceivedTitle": "Signalement reçu",
     "reportReceivedThankYou": "Merci de nous aider à garder Divine sûr.",
@@ -1804,7 +1719,7 @@
     "keyManagementKeycastEmailUnverified": "Vérifie ton adresse e-mail avant de copier ta clé.",
     "keyManagementKeycastDenied": "Divine gère les clés de ce compte, elles ne peuvent donc pas être copiées ici.",
     "keyManagementKeycastNoKey": "Aucune clé n'est enregistrée pour ce compte.",
-    "keyManagementKeycastGenericFailure": "le service de connexion est injoignable",
+    "keyManagementKeycastGenericFailure": "Le service de connexion est injoignable. Réessaie.",
     "keyManagementRestrictedTitle": "Tes clés sont gérées par Divine",
     "keyManagementRestrictedBody": "Pour la sécurité de ton compte, la sauvegarde de la clé et l'import d'une autre clé ne sont pas disponibles ici.",
     "keyManagementNeverShare": "Ne partage jamais ta nsec avec qui que ce soit !",
@@ -1814,23 +1729,9 @@
     "keyManagementConfirmImportBody": "Ça va remplacer ton identité actuelle par celle importée.\n\nTa clé actuelle sera perdue si tu ne l'as pas sauvegardée avant.",
     "keyManagementImportConfirm": "Importer",
     "keyManagementImportSuccess": "Clé importée avec succès !",
-    "keyManagementImportFailed": "Échec de l'importation de la clé : {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Échec de l'importation de la clé. Réessaie.",
     "keyManagementExportSuccess": "Clé privée copiée dans le presse-papiers !\n\nRange-la dans un endroit sûr.",
-    "keyManagementExportFailed": "Échec de l'exportation de la clé : {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Échec de l'exportation de la clé. Réessaie.",
     "saveOriginalSavedToCameraRoll": "Enregistré dans la pellicule",
     "saveOriginalShare": "Partager",
     "saveOriginalDone": "Terminé",
@@ -1868,14 +1769,7 @@
         }
     },
     "soundUnableToPreview": "Impossible d'écouter l'aperçu - aucun audio disponible",
-    "soundPreviewFailed": "Échec de la lecture de l'aperçu : {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Échec de la lecture de l'aperçu. Réessaie.",
     "soundViewSource": "Voir la source",
     "soundCloseTooltip": "Fermer",
     "exploreNotExploreRoute": "Pas une route d'exploration",
@@ -1896,17 +1790,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Erreur d'ouverture de {pageName} : {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2011,14 +1894,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Catch",
-    "blossomFailedToSaveSettings": "Impossible de sauvegarder les paramètres : {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Impossible de sauvegarder les paramètres. Réessaie.",
     "blueskyFailedToUpdateCrosspost": "Impossible de mettre à jour le paramètre de crosspost",
     "cameraAgeRestriction": "Tu dois avoir 16 ans ou plus pour créer du contenu",
     "categoriesCouldNotLoadCategories": "Impossible de charger les catégories",
@@ -2027,14 +1903,7 @@
     "commonCancel": "Annuler",
     "commonDelete": "Supprimer",
     "commonRetry": "Réessayer",
-    "discoverListsFailedToUpdateSubscription": "Impossible de mettre à jour l'abonnement : {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Impossible de mettre à jour l'abonnement. Réessaie.",
     "exploreVideoCounter": "Vidéo {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2169,14 +2038,6 @@
         }
     },
     "invitesTitle": "Inviter des amis",
-    "keyImportError": "Erreur : {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{{count} clip supprimé} other{{count} clips supprimés}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Télécharge ton archive et déplace tes publications et vidéos vers un autre relais ou serveur média.",
     "nostrSettingsRemoveKeys": "Retirer les clés de l'appareil",
     "nostrSettingsRemoveKeysSubtitle": "Supprime ta clé privée de cet appareil uniquement. Ton contenu reste sur les relays, mais tu auras besoin de ta sauvegarde nsec pour accéder à nouveau à ton compte.",
-    "nostrSettingsCouldNotRemoveKeys": "Impossible de retirer les clés de cet appareil. Réessaie.",
-    "nostrSettingsFailedToRemoveKeys": "Échec du retrait des clés : {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Impossible de retirer ce compte de cet appareil. Réessaie.",
     "nostrSettingsDeleteAccount": "Supprimer le compte et les données",
     "nostrSettingsDeleteAccountSubtitle": "Envoie des demandes de suppression pour ton contenu et te déconnecte sur cet appareil. Les relays, clients, index de recherche et autres appareils connectés peuvent garder des copies.",
     "safetySettingsWhatYouSee": "CE QUE TU VOIS",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Découvrir des listes",
     "discoverListsFailedToLoad": "Échec du chargement des listes",
-    "discoverListsFailedToLoadWithError": "Échec du chargement des listes : {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Recherche de listes publiques...",
     "discoverListsRelayTimeout": "Le relais n'a pas renvoyé de listes à temps. Réessaie.",
     "discoverListsServiceUnavailable": "Service indisponible.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Selon les règles là où tu vis, tu pourras peut-être revenir et demander ton propre compte. Dans ce cas, si tu as entre 13 et 15 ans, il te faudra l'accord d'un parent ou tuteur.",
     "minorAccountReviewParentConsentPauseNote": "C'est une pause le temps que l'équipe du support Divine examine la vidéo. Si elle est approuvée, elle te guidera pour créer le nouveau compte.",
     "minorAccountReviewUnder13WhyTitle": "Voilà pourquoi",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Son : {soundName} par {creatorName}. Touche pour voir les détails.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Échec du chargement du son : {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Échec du chargement du son. Réessaie.",
     "soundDetailNotFoundMessage": "Ce son est introuvable",
     "soundDetailNotFoundTitle": "Son introuvable",
     "videoFeedLoopCountLabel": "🔁 {count} loops",

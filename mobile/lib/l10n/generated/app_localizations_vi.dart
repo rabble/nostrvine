@@ -440,9 +440,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Không thể chia sẻ hồ sơ: $error';
-  }
+  String get profileShareFailed => 'Không thể chia sẻ hồ sơ. Vui lòng thử lại.';
 
   @override
   String get profileCopyPublicKey => 'Sao chép khóa công khai (npub)';
@@ -927,9 +925,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'hình ảnh';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Không truy cập được camera: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Quyền camera đang tắt. Bật trong Cài đặt để chụp ảnh.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Thiết bị này không cho phép truy cập camera.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Bộ chọn đang mở rồi. Đóng lại rồi thử lại.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Không mở được camera. Thử lại nhé.';
 
   @override
   String get profileSetupGotItButton => 'Đã hiểu';
@@ -1248,11 +1256,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Không có video nào';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Lỗi: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Khám phá danh sách';
 
   @override
@@ -1283,9 +1286,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreSubscribedLists => 'Danh sách đã đăng ký';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Lỗi khi tải danh sách: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Lỗi khi tải danh sách. Vui lòng thử lại.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2193,11 +2195,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Yêu cầu thất bại';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Lỗi gần nhất: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'Đang tải thông tin relay...';
 
   @override
@@ -2407,11 +2404,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không xóa được tài khoản này khỏi thiết bị. Vui lòng thử lại.';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Không xóa được tài khoản này: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'Xóa tài khoản và dữ liệu';
 
   @override
@@ -2561,9 +2553,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Truy vấn thất bại: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Truy vấn thất bại. Vui lòng thử lại.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2575,9 +2566,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không kết nối được với relay nào';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Thử kết nối lại thất bại: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Thử kết nối lại thất bại. Vui lòng thử lại.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Đã kết nối & xác thực';
@@ -3947,9 +3937,23 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Không cập nhật được video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'Đăng nhập lại rồi thử lại.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Video này không có nguồn phát được nên không thể chỉnh sửa.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Không ký được bản cập nhật. Thử lại nhé.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay không chấp nhận bản cập nhật. Thử lại sau giây lát.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Không cập nhật được video này. Thử lại nhé.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -3986,16 +3990,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Tích hợp xác thực thất bại: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Lỗi bất ngờ: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Vui lòng nhập URI bunker';
@@ -4568,11 +4562,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Lỗi khi mở $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Tại sao bạn báo cáo nội dung này?';
 
   @override
@@ -4680,9 +4669,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Các vi phạm không có trong danh sách trên';
 
   @override
-  String reportFailed(Object error) {
-    return 'Không báo cáo được nội dung: $error';
-  }
+  String get reportFailed => 'Không báo cáo được nội dung. Vui lòng thử lại.';
 
   @override
   String get reportNotSent =>
@@ -4936,7 +4923,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'không kết nối được với dịch vụ đăng nhập';
+      'Không kết nối được với dịch vụ đăng nhập. Vui lòng thử lại.';
 
   @override
   String get keyManagementRestrictedTitle => 'Khóa của bạn do Divine quản lý';
@@ -4966,18 +4953,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keyManagementImportSuccess => 'Đã nhập khóa thành công!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Không nhập được khóa: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Không nhập được khóa. Vui lòng thử lại.';
 
   @override
   String get keyManagementExportSuccess =>
       'Đã sao chép khóa riêng tư vào khay nhớ tạm!\n\nHãy cất nó ở nơi an toàn.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Không xuất được khóa: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Không xuất được khóa. Vui lòng thử lại.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Khóa công khai của bạn (npub)';
@@ -5099,9 +5084,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundUnableToPreview => 'Không nghe thử được - không có audio';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Không phát được bản nghe thử: $error';
-  }
+  String get soundPreviewFailed =>
+      'Không phát được bản nghe thử. Vui lòng thử lại.';
 
   @override
   String get soundViewSource => 'Xem nguồn';
@@ -5152,11 +5136,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Không mở được $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Lỗi khi mở $pageName: $error';
   }
 
   @override
@@ -5867,20 +5846,14 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Không cập nhật được đăng ký: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Không cập nhật được đăng ký. Vui lòng thử lại.';
 
   @override
   String get discoverListsTitle => 'Khám phá danh sách';
 
   @override
   String get discoverListsFailedToLoad => 'Không tải được danh sách';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Không tải được danh sách: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Đang khám phá danh sách công khai...';
@@ -7198,9 +7171,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Không tải được âm thanh: $error';
-  }
+  String get soundDetailLoadError =>
+      'Không tải được âm thanh. Vui lòng thử lại.';
 
   @override
   String get soundDetailNotFoundMessage => 'Không tìm thấy âm thanh này';
@@ -7461,9 +7433,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Không lưu được cài đặt: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Không lưu được cài đặt. Vui lòng thử lại.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7694,11 +7665,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get cameraAgeRestriction => 'Bạn phải đủ 16 tuổi để tạo nội dung';
-
-  @override
-  String keyImportError(String error) {
-    return 'Lỗi: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

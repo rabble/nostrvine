@@ -437,9 +437,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Gagal berkongsi profil: $error';
-  }
+  String get profileShareFailed => 'Gagal berkongsi profil. Sila cuba lagi.';
 
   @override
   String get profileCopyPublicKey => 'Salin kunci awam (npub)';
@@ -927,9 +925,19 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'imej';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Akses kamera gagal: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Akses kamera dimatikan. Hidupkan dalam Tetapan untuk mengambil gambar.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Akses kamera tidak dibenarkan pada peranti ini.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Pemilih sudah dibuka. Tutup dan cuba lagi.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Gagal membuka kamera. Cuba lagi.';
 
   @override
   String get profileSetupGotItButton => 'Faham';
@@ -1250,11 +1258,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Tiada video tersedia';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Ralat: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Terokai Senarai';
 
   @override
@@ -1285,9 +1288,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreSubscribedLists => 'Senarai Langganan';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Ralat memuatkan senarai: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Ralat memuatkan senarai. Sila cuba lagi.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2205,11 +2207,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get relaySettingsFailedRequests => 'Permintaan Gagal';
 
   @override
-  String relaySettingsLastError(String error) {
-    return 'Ralat Terakhir: $error';
-  }
-
-  @override
   String get relaySettingsLoadingRelayInfo => 'Memuatkan maklumat relay...';
 
   @override
@@ -2420,11 +2417,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat mengalih keluar akaun ini daripada peranti ini. Sila cuba lagi.';
 
   @override
-  String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Gagal mengalih keluar akaun ini: $error';
-  }
-
-  @override
   String get nostrSettingsDeleteAccount => 'Padam Akaun dan Data';
 
   @override
@@ -2574,9 +2566,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Pertanyaan gagal: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Pertanyaan gagal. Sila cuba lagi.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2588,9 +2578,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Gagal bersambung ke mana-mana relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Cubaan semula sambungan gagal: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Cubaan semula sambungan gagal. Sila cuba lagi.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Bersambung & Disahkan';
@@ -3975,9 +3964,24 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Gagal mengemas kini video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Log masuk semula, kemudian cuba kemas kini.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Video ini tiada sumber yang boleh dimainkan, jadi ia tidak boleh diedit.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Gagal menandatangani kemas kini. Cuba lagi.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay tidak menerima kemas kini. Cuba lagi sebentar lagi.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Gagal mengemas kini video ini. Cuba lagi.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>
@@ -4014,16 +4018,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get webAuthNotSupportedSecureMode =>
       'Pengesahan web tidak disokong dalam mod selamat. Sila guna apl mudah alih untuk pengurusan kunci selamat.';
-
-  @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrasi pengesahan gagal: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Ralat tidak dijangka: $error';
-  }
 
   @override
   String get webAuthEnterBunkerUri => 'Sila masukkan URI bunker';
@@ -4601,11 +4595,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String supportErrorOpeningPage(String pageName, Object error) {
-    return 'Ralat membuka $pageName: $error';
-  }
-
-  @override
   String get reportWhyReporting => 'Mengapa anda melaporkan kandungan ini?';
 
   @override
@@ -4714,9 +4703,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pelanggaran yang tidak disenaraikan di atas';
 
   @override
-  String reportFailed(Object error) {
-    return 'Gagal melaporkan kandungan: $error';
-  }
+  String get reportFailed => 'Gagal melaporkan kandungan. Sila cuba lagi.';
 
   @override
   String get reportNotSent =>
@@ -4971,7 +4958,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'perkhidmatan log masuk tidak dapat dihubungi';
+      'Perkhidmatan log masuk tidak dapat dihubungi. Sila cuba lagi.';
 
   @override
   String get keyManagementRestrictedTitle => 'Kunci anda diuruskan oleh Divine';
@@ -5001,18 +4988,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get keyManagementImportSuccess => 'Kunci berjaya diimport!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Gagal mengimport kunci: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Gagal mengimport kunci. Sila cuba lagi.';
 
   @override
   String get keyManagementExportSuccess =>
       'Kunci peribadi disalin ke papan klip!\n\nSimpannya di tempat yang selamat.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Gagal mengeksport kunci: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Gagal mengeksport kunci. Sila cuba lagi.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Kunci awam anda (npub)';
@@ -5136,9 +5121,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat pratonton bunyi - tiada audio tersedia';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Gagal memainkan pratonton: $error';
-  }
+  String get soundPreviewFailed => 'Gagal memainkan pratonton. Sila cuba lagi.';
 
   @override
   String get soundViewSource => 'Lihat sumber';
@@ -5190,11 +5173,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String legalCouldNotOpenPage(String pageName) {
     return 'Tidak dapat membuka $pageName';
-  }
-
-  @override
-  String legalErrorOpeningPage(String pageName, Object error) {
-    return 'Ralat membuka $pageName: $error';
   }
 
   @override
@@ -5908,20 +5886,14 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Gagal mengemas kini langganan: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Gagal mengemas kini langganan. Sila cuba lagi.';
 
   @override
   String get discoverListsTitle => 'Terokai Senarai';
 
   @override
   String get discoverListsFailedToLoad => 'Gagal memuatkan senarai';
-
-  @override
-  String discoverListsFailedToLoadWithError(String error) {
-    return 'Gagal memuatkan senarai: $error';
-  }
 
   @override
   String get discoverListsLoading => 'Menemui senarai awam...';
@@ -7240,9 +7212,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Gagal memuatkan bunyi: $error';
-  }
+  String get soundDetailLoadError => 'Gagal memuatkan bunyi. Sila cuba lagi.';
 
   @override
   String get soundDetailNotFoundMessage => 'Bunyi ini tidak dapat ditemui';
@@ -7503,9 +7473,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Gagal menyimpan tetapan: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Gagal menyimpan tetapan. Sila cuba lagi.';
 
   @override
   String get blossomValidServerUrl =>
@@ -7739,11 +7708,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get cameraAgeRestriction =>
       'Anda mestilah berumur 16 tahun ke atas untuk mencipta kandungan';
-
-  @override
-  String keyImportError(String error) {
-    return 'Ralat: $error';
-  }
 
   @override
   String get keyImportInsecureBunkerRelay =>

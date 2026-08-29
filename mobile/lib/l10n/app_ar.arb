@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "تعذّرت مشاركة الملف الشخصي: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "تعذّرت مشاركة الملف الشخصي. يرجى المحاولة مرّة أخرى.",
     "profileCopyPublicKey": "نسخ المفتاح العام (npub)",
     "profileGetEmbedCode": "الحصول على كود التضمين",
     "profilePublicKeyCopied": "تم نسخ المفتاح العام إلى الحافظة",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "جاري الحفظ...",
     "profileSetupImageUrlTitle": "إضافة رابط صورة",
     "profileSetupImageSelectionFailed": "فشل اختيار الصورة. يرجى لصق رابط الصورة أدناه بدلاً من ذلك.",
-    "profileSetupCameraAccessFailed": "فشل الوصول إلى الكاميرا: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "الوصول إلى الكاميرا مغلق. فعّله من الإعدادات لالتقاط صورة.",
+    "cameraPickErrorPermissionRestricted": "الوصول إلى الكاميرا غير مسموح على هذا الجهاز.",
+    "cameraPickErrorBusy": "المُنتقي مفتوح بالفعل. أغلقه وحاول مرّة أخرى.",
+    "cameraPickErrorGeneric": "تعذّر فتح الكاميرا. حاول مرّة أخرى.",
     "profileSetupGotItButton": "فهمت",
     "profileSetupUploadFailedGeneric": "فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.",
     "profileSetupUploadNetworkError": "خطأ في الشبكة: يرجى التحقق من اتصالك والمحاولة مرّة أخرى.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "تعذّر تحميل هذه المجموعة.",
     "featuredTabRetry": "حاول مرة أخرى",
     "exploreNoVideosAvailable": "لا توجد فيديوهات متاحة",
-    "exploreErrorPrefix": "خطأ: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "اكتشف القوائم",
     "exploreAboutLists": "عن القوائم",
     "exploreAboutListsDescription": "القوائم تساعدك في تنظيم محتوى Divine بطريقتين:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "أنشئ قوائم تشغيل لفيديوهاتك المفضلة لمشاهدتها لاحقًا",
     "exploreMyLists": "قوائمي",
     "exploreSubscribedLists": "القوائم المشترك بها",
-    "exploreErrorLoadingLists": "خطأ في تحميل القوائم: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "خطأ في تحميل القوائم. يرجى المحاولة مرّة أخرى.",
     "exploreNewVideosCount": "{count, plural, zero{لا توجد فيديوهات جديدة} one{فيديو جديد واحد} two{فيديوان جديدان} few{{count} فيديوهات جديدة} many{{count} فيديو جديد} other{{count} فيديو جديد}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -787,14 +761,6 @@
     "relaySettingsEventsSent": "الأحداث المرسلة",
     "relaySettingsRequestsThisSession": "الطلبات في هذه الجلسة",
     "relaySettingsFailedRequests": "الطلبات الفاشلة",
-    "relaySettingsLastError": "آخر خطأ: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "جاري تحميل معلومات المحول...",
     "relaySettingsAboutRelay": "عن المحول",
     "relaySettingsSupportedNips": "NIPs المدعومة",
@@ -951,14 +917,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "فشل الاستعلام: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "فشل الاستعلام. يرجى المحاولة مرّة أخرى.",
     "relayDiagnosticConnectedToRelays": "تم الاتصال بـ {count} محول!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -968,14 +927,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "فشل الاتصال بأي محول",
-    "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال. يرجى المحاولة مرّة أخرى.",
     "relayDiagnosticConnectedAuthenticated": "متصل ومُصادَق عليه",
     "relayDiagnosticConnectedOnly": "متصل",
     "relayDiagnosticNotConnected": "غير متصل",
@@ -1430,14 +1382,11 @@
     "shareMenuChangeCover": "تغيير الغلاف",
     "shareMenuVideoUpdated": "تم تحديث الفيديو بنجاح",
     "shareMenuVideoUpdatedWithInviteFailures": "تم تحديث الفيديو، لكن {count, plural, =1{لم يتم إرسال دعوة متعاون واحدة.} other{لم يتم إرسال {count} دعوات متعاونين.}}",
-    "shareMenuFailedToUpdateVideo": "فشل تحديث الفيديو: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "سجّل الدخول من جديد ثم حاول مرّة أخرى.",
+    "videoUpdateErrorNoPlayableVideo": "هذا الفيديو ليس له مصدر قابل للتشغيل، لذا لا يمكن تعديله.",
+    "videoUpdateErrorCouldNotSign": "تعذّر توقيع التحديث. حاول مرّة أخرى.",
+    "videoUpdateErrorPublishRejected": "لم يقبل الريلاي التحديث. حاول مرّة أخرى بعد قليل.",
+    "videoUpdateErrorGeneric": "تعذّر تحديث هذا الفيديو. حاول مرّة أخرى.",
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
     "shareMenuDeleteCleanupInProgress": "جارٍ إزالة الفيديو…",
     "shareMenuDeleteCleanupConfirmed": "تم حذف الفيديو.",
@@ -1446,22 +1395,6 @@
     "authSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.",
     "authSignInFailed": "فشل تسجيل الدخول. حاول مرّة أخرى.",
     "webAuthNotSupportedSecureMode": "مصادقة الويب غير مدعومة في الوضع الآمن. يرجى استخدام تطبيق الجوال لإدارة المفاتيح بأمان.",
-    "webAuthIntegrationFailed": "فشل تكامل المصادقة: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "خطأ غير متوقّع: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "يرجى إدخال رابط bunker",
     "webAuthConnectTitle": "الاتصال بـ Divine",
     "webAuthChooseMethod": "اختر طريقة مصادقة Nostr المفضّلة لديك",
@@ -1657,17 +1590,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "خطأ في فتح {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "لماذا تُبلِّغ عن هذا المحتوى؟",
     "reportPolicyNotice": "ستتصرف Divine بشأن بلاغات المحتوى خلال 24 ساعة بإزالة المحتوى وإخراج المستخدم الذي قدَّم المحتوى المخالف.",
     "reportBlockUser": "حظر هذا المستخدم",
@@ -1685,14 +1607,7 @@
     "reportReasonFalseInfo": "معلومات كاذبة",
     "reportReasonAiGenerated": "محتوى مُولَّد بالذكاء الاصطناعي",
     "reportReasonOther": "انتهاك آخر للسياسة",
-    "reportFailed": "تعذر الإبلاغ عن المحتوى: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "تعذر الإبلاغ عن المحتوى. يرجى المحاولة مرّة أخرى.",
     "reportNotSent": "تعذّر إرسال بلاغك. تحقق من اتصالك وحاول مرة أخرى.",
     "reportReceivedTitle": "تم استلام البلاغ",
     "reportReceivedThankYou": "شكرًا لمساعدتك في الحفاظ على سلامة Divine.",
@@ -1794,7 +1709,7 @@
     "keyManagementKeycastEmailUnverified": "أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.",
     "keyManagementKeycastDenied": "تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.",
     "keyManagementKeycastNoKey": "لا يوجد مفتاح مسجّل لهذا الحساب.",
-    "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول",
+    "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول. حاول مرّة أخرى.",
     "keyManagementRestrictedTitle": "مفاتيحك يديرها Divine",
     "keyManagementRestrictedBody": "للحفاظ على أمان حسابك، النسخ الاحتياطي للمفتاح واستيراد مفتاح آخر غير متاحين هنا.",
     "keyManagementNeverShare": "لا تُشارك nsec مع أي شخص أبدًا!",
@@ -1804,23 +1719,9 @@
     "keyManagementConfirmImportBody": "سيحل هذا محل هويتك الحالية بالهوية المستوردة.\n\nسيُفقد مفتاحك الحالي ما لم تقم بعمل نسخة احتياطية منه أولًا.",
     "keyManagementImportConfirm": "استيراد",
     "keyManagementImportSuccess": "تم استيراد المفتاح بنجاح!",
-    "keyManagementImportFailed": "تعذر استيراد المفتاح: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "تعذر استيراد المفتاح. يرجى المحاولة مرّة أخرى.",
     "keyManagementExportSuccess": "تم نسخ المفتاح الخاص إلى الحافظة!\n\nاحفظه في مكان آمن.",
-    "keyManagementExportFailed": "تعذر تصدير المفتاح: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "تعذر تصدير المفتاح. يرجى المحاولة مرّة أخرى.",
     "saveOriginalSavedToCameraRoll": "تم الحفظ في ألبوم الكاميرا",
     "saveOriginalShare": "مشاركة",
     "saveOriginalDone": "تم",
@@ -1858,14 +1759,7 @@
         }
     },
     "soundUnableToPreview": "تعذر معاينة الصوت - لا يوجد صوت متاح",
-    "soundPreviewFailed": "تعذر تشغيل المعاينة: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "تعذر تشغيل المعاينة. يرجى المحاولة مرّة أخرى.",
     "soundViewSource": "عرض المصدر",
     "soundCloseTooltip": "إغلاق",
     "exploreNotExploreRoute": "ليس مسار استكشاف",
@@ -1886,17 +1780,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "خطأ في فتح {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2001,14 +1884,7 @@
     "categoryVlog": "مدونة فيديو",
     "categoryVlogging": "تدوين فيديو",
     "categoryWrestling": "مصارعة",
-    "blossomFailedToSaveSettings": "فشل حفظ الإعدادات: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "فشل حفظ الإعدادات. يرجى المحاولة مرّة أخرى.",
     "blueskyFailedToUpdateCrosspost": "فشل تحديث إعداد النشر المتقاطع",
     "cameraAgeRestriction": "يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى",
     "categoriesCouldNotLoadCategories": "تعذّر تحميل الفئات",
@@ -2017,14 +1893,7 @@
     "commonCancel": "إلغاء",
     "commonDelete": "حذف",
     "commonRetry": "إعادة المحاولة",
-    "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك. يرجى المحاولة مرّة أخرى.",
     "exploreVideoCounter": "فيديو {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2159,14 +2028,6 @@
         }
     },
     "invitesTitle": "دعوة الأصدقاء",
-    "keyImportError": "خطأ: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{تم حذف مقطع واحد} other{تم حذف {count} مقاطع}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3281,15 +3142,7 @@
     "nostrSettingsMoveAccountSubtitle": "نزّل أرشيفك وانقل منشوراتك ومقاطع الفيديو الخاصة بك إلى مرحّل أو خادم وسائط آخر.",
     "nostrSettingsRemoveKeys": "إزالة المفاتيح من الجهاز",
     "nostrSettingsRemoveKeysSubtitle": "احذف مفتاحك الخاص من هذا الجهاز فقط. سيبقى محتواك على المحولات، لكنّك ستحتاج إلى نسخة nsec الاحتياطية للوصول إلى حسابك مرّة أخرى.",
-    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.",
-    "nostrSettingsFailedToRemoveKeys": "فشلت إزالة المفاتيح: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة هذا الحساب من هذا الجهاز. حاول مرّة أخرى.",
     "nostrSettingsDeleteAccount": "حذف الحساب والبيانات",
     "nostrSettingsDeleteAccountSubtitle": "يرسل طلبات حذف لمحتواك ويسجّل خروجك من هذا الجهاز. قد تحتفظ المحوّلات والعملاء وفهارس البحث والأجهزة الأخرى المسجّلة الدخول بنسخ.",
     "safetySettingsWhatYouSee": "ما تراه",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "اكتشف القوائم",
     "discoverListsFailedToLoad": "فشل تحميل القوائم",
-    "discoverListsFailedToLoadWithError": "فشل تحميل القوائم: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "جاري اكتشاف القوائم العامة...",
     "discoverListsRelayTimeout": "لم يُرجع الريلاي القوائم في الوقت المناسب. حاول مرة أخرى.",
     "discoverListsServiceUnavailable": "الخدمة غير متاحة.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "حسب القواعد في المكان الذي تعيش فيه، قد تتمكن من العودة وطلب حساب خاص بك. وفي تلك الحالة، إذا كان عمرك بين 13 و15، ستحتاج موافقة أحد الوالدين أو الوصي.",
     "minorAccountReviewParentConsentPauseNote": "هذه وقفة مؤقتة ريثما يراجع فريق دعم Divine الفيديو. إذا تمت الموافقة عليه، سيرشدك الفريق خلال إعداد الحساب الجديد.",
     "minorAccountReviewUnder13WhyTitle": "وإليك السبب",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "الصوت: {soundName} بواسطة {creatorName}. اضغط لعرض التفاصيل.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "فشل تحميل الصوت: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "فشل تحميل الصوت. يرجى المحاولة مرّة أخرى.",
     "soundDetailNotFoundMessage": "تعذّر العثور على هذا الصوت",
     "soundDetailNotFoundTitle": "الصوت غير موجود",
     "videoFeedLoopCountLabel": "🔁 {count} تكرار",

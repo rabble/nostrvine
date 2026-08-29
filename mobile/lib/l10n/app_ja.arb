@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "プロフィールの共有がうまくいかなかった: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "プロフィールの共有がうまくいかなかった。もう一回試してみて。",
     "profileCopyPublicKey": "公開鍵 (npub) をコピー",
     "profileGetEmbedCode": "埋め込みコードを取得",
     "profilePublicKeyCopied": "公開鍵をコピーしたよ",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "保存中...",
     "profileSetupImageUrlTitle": "画像 URL を追加",
     "profileSetupImageSelectionFailed": "画像の選択がうまくいかなかった。代わりに下に画像 URL を貼り付けてね。",
-    "profileSetupCameraAccessFailed": "カメラにアクセスできなかった: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "カメラへのアクセスがオフになってる。設定でオンにすると写真を撮れるよ。",
+    "cameraPickErrorPermissionRestricted": "このデバイスではカメラへのアクセスが許可されてない。",
+    "cameraPickErrorBusy": "ピッカーはもう開いてる。閉じてからもう一回試してみて。",
+    "cameraPickErrorGeneric": "カメラを開けなかった。もう一回試してみて。",
     "profileSetupGotItButton": "了解！",
     "profileSetupUploadFailedGeneric": "画像をアップロードできなかった。あとでもう一度試してみて。",
     "profileSetupUploadNetworkError": "ネットワークエラー: ネット接続を確認してもう一回試してみて。",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "このコレクションを読み込めませんでした。",
     "featuredTabRetry": "もう一度試す",
     "exploreNoVideosAvailable": "動画がないよ",
-    "exploreErrorPrefix": "エラー: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "リストを見つけよう",
     "exploreAboutLists": "リストについて",
     "exploreAboutListsDescription": "リストを使うと、Divine のコンテンツを2つの方法で整理・キュレーションできるよ:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "お気に入りの動画をプレイリストにまとめて、あとで見よう",
     "exploreMyLists": "マイリスト",
     "exploreSubscribedLists": "購読中のリスト",
-    "exploreErrorLoadingLists": "リストの読み込みに失敗: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "リストの読み込みに失敗。もう一回試してみて。",
     "exploreNewVideosCount": "{count, plural, other{{count}本の新着動画}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -787,14 +761,6 @@
     "relaySettingsEventsSent": "送信したイベント",
     "relaySettingsRequestsThisSession": "このセッションのリクエスト",
     "relaySettingsFailedRequests": "失敗したリクエスト",
-    "relaySettingsLastError": "最後のエラー: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "リレー情報を読み込み中...",
     "relaySettingsAboutRelay": "リレーについて",
     "relaySettingsSupportedNips": "対応 NIP",
@@ -951,14 +917,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "クエリがうまくいかなかった: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "クエリがうまくいかなかった。もう一回試してみて。",
     "relayDiagnosticConnectedToRelays": "{count}個のリレーに接続したよ！",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -968,14 +927,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "どのリレーにも接続できなかった",
-    "relayDiagnosticConnectionRetryFailed": "接続の再試行がうまくいかなかった: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "接続の再試行がうまくいかなかった。もう一回試してみて。",
     "relayDiagnosticConnectedAuthenticated": "接続・認証済み",
     "relayDiagnosticConnectedOnly": "接続済み",
     "relayDiagnosticNotConnected": "未接続",
@@ -1430,14 +1382,11 @@
     "shareMenuChangeCover": "カバーを変更",
     "shareMenuVideoUpdated": "動画を更新したよ",
     "shareMenuVideoUpdatedWithInviteFailures": "動画を更新しましたが、{count, plural, =1{1件のコラボレーター招待が送信されませんでした。} other{{count}件のコラボレーター招待が送信されませんでした。}}",
-    "shareMenuFailedToUpdateVideo": "動画の更新がうまくいかなかった: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "もう一度ログインしてから試してみて。",
+    "videoUpdateErrorNoPlayableVideo": "この動画には再生できるソースがないから、編集できない。",
+    "videoUpdateErrorCouldNotSign": "更新に署名できなかった。もう一回試してみて。",
+    "videoUpdateErrorPublishRejected": "リレーが更新を受け付けなかった。少ししてからもう一回試してみて。",
+    "videoUpdateErrorGeneric": "この動画を更新できなかった。もう一回試してみて。",
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteCleanupInProgress": "動画を削除しています…",
     "shareMenuDeleteCleanupConfirmed": "動画を削除しました。",
@@ -1446,22 +1395,6 @@
     "authSessionExpired": "セッションが切れちゃった。もう一回サインインしてね。",
     "authSignInFailed": "サインインがうまくいかなかった。もう一回試してみて。",
     "webAuthNotSupportedSecureMode": "セキュアモードではウェブ認証は対応してないよ。安全な鍵管理にはモバイルアプリを使ってね。",
-    "webAuthIntegrationFailed": "認証連携がうまくいかなかった: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "予期しないエラー: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "bunker URI を入れてね",
     "webAuthConnectTitle": "Divine に接続",
     "webAuthChooseMethod": "Nostr 認証方法を選んでね",
@@ -1657,17 +1590,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName}を開く時にエラー: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "このコンテンツを報告する理由は?",
     "reportPolicyNotice": "Divine はコンテンツの報告に24時間以内に対応して、問題のあるコンテンツを削除し、違反ユーザーを排除するよ。",
     "reportBlockUser": "このユーザーをブロック",
@@ -1685,14 +1607,7 @@
     "reportReasonFalseInfo": "虚偽の情報",
     "reportReasonAiGenerated": "AI 生成コンテンツ",
     "reportReasonOther": "その他のポリシー違反",
-    "reportFailed": "コンテンツの報告がうまくいかなかった: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "コンテンツの報告がうまくいかなかった。もう一回試してみて。",
     "reportNotSent": "報告を送信できなかった。接続を確認してもう一回試してみて。",
     "reportReceivedTitle": "報告を受け付けたよ",
     "reportReceivedThankYou": "Divine を安全に保つために協力してくれてありがとう。",
@@ -1794,7 +1709,7 @@
     "keyManagementKeycastEmailUnverified": "鍵をコピーする前にメールアドレスを確認してください。",
     "keyManagementKeycastDenied": "このアカウントの鍵は Divine が管理しているため、ここではコピーできません。",
     "keyManagementKeycastNoKey": "このアカウントに登録されている鍵はありません。",
-    "keyManagementKeycastGenericFailure": "ログインサービスに接続できませんでした",
+    "keyManagementKeycastGenericFailure": "ログインサービスに接続できなかった。もう一回試してみて。",
     "keyManagementRestrictedTitle": "鍵は Divine が管理しています",
     "keyManagementRestrictedBody": "アカウントを安全に保つため、鍵のバックアップと別の鍵のインポートはここでは利用できません。",
     "keyManagementNeverShare": "nsec は誰にも共有しないで！",
@@ -1804,23 +1719,9 @@
     "keyManagementConfirmImportBody": "現在のアイデンティティがインポートした鍵に置き換わるよ。\n\n先にバックアップしておかないと、現在の鍵がなくなっちゃうよ。",
     "keyManagementImportConfirm": "インポート",
     "keyManagementImportSuccess": "鍵をインポートしたよ！",
-    "keyManagementImportFailed": "鍵のインポートがうまくいかなかった: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "鍵のインポートがうまくいかなかった。もう一回試してみて。",
     "keyManagementExportSuccess": "秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。",
-    "keyManagementExportFailed": "鍵のエクスポートがうまくいかなかった: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "鍵のエクスポートがうまくいかなかった。もう一回試してみて。",
     "saveOriginalSavedToCameraRoll": "カメラロールに保存したよ",
     "saveOriginalShare": "共有",
     "saveOriginalDone": "完了",
@@ -1858,14 +1759,7 @@
         }
     },
     "soundUnableToPreview": "サウンドをプレビューできない - 音声がないよ",
-    "soundPreviewFailed": "プレビューの再生がうまくいかなかった: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "プレビューの再生がうまくいかなかった。もう一回試してみて。",
     "soundViewSource": "元動画を見る",
     "soundCloseTooltip": "閉じる",
     "exploreNotExploreRoute": "探索ルートじゃないよ",
@@ -1886,17 +1780,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName}を開く時にエラー: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2001,14 +1884,7 @@
     "categoryVlog": "ブイログ",
     "categoryVlogging": "ブイログ",
     "categoryWrestling": "プロレス",
-    "blossomFailedToSaveSettings": "設定の保存がうまくいかなかった: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "設定の保存がうまくいかなかった。もう一回試してみて。",
     "blueskyFailedToUpdateCrosspost": "クロスポスト設定の更新がうまくいかなかった",
     "cameraAgeRestriction": "コンテンツを作るには16歳以上である必要があるよ",
     "categoriesCouldNotLoadCategories": "カテゴリを読み込めなかった",
@@ -2017,14 +1893,7 @@
     "commonCancel": "キャンセル",
     "commonDelete": "削除",
     "commonRetry": "もう一回",
-    "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった。もう一回試してみて。",
     "exploreVideoCounter": "動画 {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2159,14 +2028,6 @@
         }
     },
     "invitesTitle": "友達を招待しよう",
-    "keyImportError": "エラー: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, other{{count}件のクリップを削除しました}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3281,15 +3142,7 @@
     "nostrSettingsMoveAccountSubtitle": "アーカイブをダウンロードして、投稿や動画を別のリレーまたはメディアサーバーへ移します。",
     "nostrSettingsRemoveKeys": "このデバイスから鍵を削除",
     "nostrSettingsRemoveKeysSubtitle": "このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。",
-    "nostrSettingsCouldNotRemoveKeys": "このデバイスから鍵を削除できなかった。もう一回試してみて。",
-    "nostrSettingsFailedToRemoveKeys": "鍵の削除に失敗: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "このデバイスからこのアカウントを削除できなかった。もう一回試してみて。",
     "nostrSettingsDeleteAccount": "アカウントとデータを削除",
     "nostrSettingsDeleteAccountSubtitle": "コンテンツの削除リクエストを送信して、このデバイスからサインアウトするよ。リレーやクライアント、検索インデックス、ほかのサインイン中のデバイスにはコピーが残ることがあるよ。",
     "safetySettingsWhatYouSee": "あなたが見るもの",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "リストを見つける",
     "discoverListsFailedToLoad": "リストの読み込みに失敗",
-    "discoverListsFailedToLoadWithError": "リストの読み込みに失敗: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "公開リストを探してるよ...",
     "discoverListsRelayTimeout": "リレーが時間内にリストを返さなかったよ。もう一度試してね。",
     "discoverListsServiceUnavailable": "サービスを利用できません。",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "お住まいの地域のルールによっては、戻ってきて自分のアカウントを申請できるかもしれません。その際、13〜15歳の場合は保護者の同意が必要です。",
     "minorAccountReviewParentConsentPauseNote": "これは Divine サポートチームが動画を確認するあいだの一時停止です。承認されたら、新しいアカウントの設定を案内します。",
     "minorAccountReviewUnder13WhyTitle": "その理由",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "サウンド: {creatorName}の{soundName}。タップすると詳細を見れるよ。",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "サウンドの読み込みに失敗したよ: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "サウンドの読み込みに失敗したよ。もう一回試してみて。",
     "soundDetailNotFoundMessage": "このサウンドは見つからなかったよ",
     "soundDetailNotFoundTitle": "サウンドが見つからないよ",
     "videoFeedLoopCountLabel": "🔁 {count}ループ",

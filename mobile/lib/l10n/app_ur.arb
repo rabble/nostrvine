@@ -204,14 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "پروفائل شیئر نہیں ہو سکا: {error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileShareFailed": "پروفائل شیئر نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "profileCopyPublicKey": "عوامی کلید (npub) کاپی کریں",
   "profileGetEmbedCode": "ایمبیڈ کوڈ حاصل کریں",
   "profilePublicKeyCopied": "عوامی کلید کلپ بورڈ پر کاپی ہو گئی",
@@ -460,14 +453,10 @@
   "profileSetupImageUrlTitle": "تصویر کا URL شامل کریں",
   "profileSetupImageSelectionFailed": "تصویر منتخب نہیں ہو سکی۔ اس کے بجائے نیچے تصویر کا URL پیسٹ کریں۔",
   "profileSetupImagesTypeGroup": "تصاویر",
-  "profileSetupCameraAccessFailed": "کیمرہ تک رسائی ناکام: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "کیمرے تک رسائی بند ہے۔ تصویر لینے کے لیے ترتیبات میں اسے آن کریں۔",
+  "cameraPickErrorPermissionRestricted": "اس ڈیوائس پر کیمرے تک رسائی کی اجازت نہیں ہے۔",
+  "cameraPickErrorBusy": "پکر پہلے سے کھلا ہے۔ اسے بند کر کے دوبارہ کوشش کریں۔",
+  "cameraPickErrorGeneric": "کیمرہ نہیں کھل سکا۔ دوبارہ کوشش کریں۔",
   "profileSetupGotItButton": "سمجھ گیا",
   "profileSetupUploadFailedGeneric": "اپلوڈ ناکام۔ براہ کرم بعد میں دوبارہ کوشش کریں۔",
   "profileSetupUploadNetworkError": "نیٹ ورک خرابی: براہ کرم اپنا انٹرنیٹ کنکشن چیک کر کے دوبارہ کوشش کریں۔",
@@ -573,14 +562,6 @@
   "featuredTabLoadFailed": "یہ مجموعہ لوڈ نہیں ہو سکا۔",
   "featuredTabRetry": "دوبارہ کوشش کریں",
   "exploreNoVideosAvailable": "کوئی ویڈیو دستیاب نہیں",
-  "exploreErrorPrefix": "خرابی: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "فہرستیں دریافت کریں",
   "exploreAboutLists": "فہرستوں کے بارے میں",
   "exploreAboutListsDescription": "فہرستیں Divine مواد کو دو طریقوں سے ترتیب دینے اور منتخب کرنے میں مدد دیتی ہیں:",
@@ -590,14 +571,7 @@
   "exploreVideoListsDescription": "بعد میں دیکھنے کے لیے اپنی پسندیدہ ویڈیوز کی پلے لسٹیں بنائیں",
   "exploreMyLists": "میری فہرستیں",
   "exploreSubscribedLists": "سبسکرائب شدہ فہرستیں",
-  "exploreErrorLoadingLists": "فہرستیں لوڈ کرنے میں خرابی: {error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "فہرستیں لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
   "exploreNewVideosCount": "{count, plural, =1{1 نئی ویڈیو} other{{count} نئی ویڈیوز}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1160,14 +1134,6 @@
   "relaySettingsEventsSent": "بھیجے گئے ایونٹس",
   "relaySettingsRequestsThisSession": "اس سیشن کی درخواستیں",
   "relaySettingsFailedRequests": "ناکام درخواستیں",
-  "relaySettingsLastError": "آخری خرابی: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "ریلے معلومات لوڈ ہو رہی ہیں...",
   "relaySettingsAboutRelay": "ریلے کے بارے میں",
   "relaySettingsSupportedNips": "تعاون یافتہ NIPs",
@@ -1288,14 +1254,6 @@
   "nostrSettingsRemoveKeys": "اس اکاؤنٹ کو اس ڈیوائس سے ہٹائیں",
   "nostrSettingsRemoveKeysSubtitle": "اس ڈیوائس سے اس اکاؤنٹ کا مقامی لاگ اِن ہٹائیں۔ اس اکاؤنٹ کے مقامی مسودے اور کلپس محفوظ رہیں گے۔",
   "nostrSettingsCouldNotRemoveKeys": "اس اکاؤنٹ کو اس ڈیوائس سے نہیں ہٹایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔",
-  "nostrSettingsFailedToRemoveKeys": "یہ اکاؤنٹ نہیں ہٹایا جا سکا: {error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "اکاؤنٹ اور ڈیٹا حذف کریں",
   "nostrSettingsDeleteAccountSubtitle": "آپ کے مواد کے لیے حذف کی درخواستیں بھیجتا ہے اور اس ڈیوائس پر آپ کو سائن آؤٹ کرتا ہے۔ ریلے، کلائنٹس، سرچ انڈیکسز اور دیگر سائن اِن ڈیوائسز کے پاس کاپیاں رہ سکتی ہیں۔",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -1396,14 +1354,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "استفسار ناکام: {error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "استفسار ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
   "relayDiagnosticConnectedToRelays": "{count} ریلے سے منسلک!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1413,14 +1364,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "کسی بھی ریلے سے منسلک نہیں ہو سکا",
-  "relayDiagnosticConnectionRetryFailed": "کنکشن کی دوبارہ کوشش ناکام: {error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "کنکشن کی دوبارہ کوشش ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
   "relayDiagnosticConnectedAuthenticated": "منسلک اور تصدیق شدہ",
   "relayDiagnosticConnectedOnly": "منسلک",
   "relayDiagnosticNotConnected": "منسلک نہیں",
@@ -2095,14 +2039,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "ویڈیو اپڈیٹ نہیں ہو سکی: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "دوبارہ سائن ان کریں، پھر کوشش کریں۔",
+  "videoUpdateErrorNoPlayableVideo": "اس ویڈیو کا کوئی قابلِ چلاؤ ماخذ نہیں، اس لیے اسے ایڈٹ نہیں کیا جا سکتا۔",
+  "videoUpdateErrorCouldNotSign": "اپ ڈیٹ پر دستخط نہیں ہو سکے۔ دوبارہ کوشش کریں۔",
+  "videoUpdateErrorPublishRejected": "ریلے نے اپ ڈیٹ قبول نہیں کی۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+  "videoUpdateErrorGeneric": "اس ویڈیو کو اپ ڈیٹ نہیں کیا جا سکا۔ دوبارہ کوشش کریں۔",
   "shareMenuDeleteVideoQuestion": "ویڈیو حذف کریں؟",
   "shareMenuDeleteCleanupInProgress": "ویڈیو ہٹائی جا رہی ہے…",
   "shareMenuDeleteCleanupConfirmed": "ویڈیو حذف کر دی گئی۔",
@@ -2111,22 +2052,6 @@
   "authSessionExpired": "آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔",
   "authSignInFailed": "سائن ان نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "webAuthNotSupportedSecureMode": "محفوظ موڈ میں ویب تصدیق تعاون یافتہ نہیں ہے۔ محفوظ کلید مینجمنٹ کے لیے براہ کرم موبائل ایپ استعمال کریں۔",
-  "webAuthIntegrationFailed": "تصدیقی انضمام ناکام: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "غیر متوقع خرابی: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "براہ کرم bunker URI درج کریں",
   "webAuthConnectTitle": "Divine سے منسلک ہوں",
   "webAuthChooseMethod": "اپنا پسندیدہ Nostr تصدیقی طریقہ منتخب کریں",
@@ -2429,17 +2354,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "{pageName} کھولنے میں خرابی: {error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "آپ یہ مواد کیوں رپورٹ کر رہے ہیں؟",
   "reportPolicyNotice": "Divine مواد کی رپورٹس پر 24 گھنٹوں کے اندر کارروائی کرے گا: مواد ہٹا کر اور قاعدہ توڑنے والا مواد دینے والے صارف کو نکال کر۔",
   "reportBlockUser": "اس صارف کو بلاک کریں",
@@ -2471,14 +2385,7 @@
   "reportReasonAiGeneratedSubtitle": "مشتبہ AI تیار کردہ مواد",
   "reportReasonOther": "پالیسی کی دیگر خلاف ورزی",
   "reportReasonOtherSubtitle": "اوپر درج نہیں کی گئی خلاف ورزیاں",
-  "reportFailed": "مواد کی رپورٹ ناکام: {error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "مواد کی رپورٹ ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
   "reportNotSent": "آپ کی رپورٹ نہیں بھیجی جا سکی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔",
   "reportReceivedTitle": "رپورٹ موصول ہو گئی",
   "reportReceivedThankYou": "Divine کو محفوظ رکھنے میں مدد کے لیے شکریہ۔",
@@ -2599,7 +2506,7 @@
   "keyManagementKeycastEmailUnverified": "اپنی کلید کاپی کرنے سے پہلے اپنے ای میل ایڈریس کی تصدیق کریں۔",
   "keyManagementKeycastDenied": "Divine اس اکاؤنٹ کی کلیدیں سنبھالتا ہے، اس لیے انہیں یہاں کاپی نہیں کیا جا سکتا۔",
   "keyManagementKeycastNoKey": "اس اکاؤنٹ کے لیے ریکارڈ میں کوئی کلید نہیں ہے۔",
-  "keyManagementKeycastGenericFailure": "لاگ اِن سروس سے رابطہ نہیں ہو سکا",
+  "keyManagementKeycastGenericFailure": "لاگ اِن سروس سے رابطہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
   "keyManagementRestrictedTitle": "آپ کی کلیدیں Divine سنبھالتی ہے",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2614,23 +2521,9 @@
   "keyManagementConfirmImportBody": "یہ آپ کی موجودہ شناخت کی جگہ درآمد شدہ شناخت لے آئے گا۔\n\nاگر آپ نے پہلے بیک اپ نہیں لیا تو آپ کی موجودہ کلید کھو جائے گی۔",
   "keyManagementImportConfirm": "درآمد کریں",
   "keyManagementImportSuccess": "کلید کامیابی سے درآمد ہو گئی!",
-  "keyManagementImportFailed": "کلید درآمد نہیں ہو سکی: {error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "کلید درآمد نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "keyManagementExportSuccess": "نجی کلید کلپ بورڈ پر کاپی ہو گئی!\n\nاسے کسی محفوظ جگہ رکھیں۔",
-  "keyManagementExportFailed": "کلید ایکسپورٹ نہیں ہو سکی: {error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "کلید ایکسپورٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "keyManagementYourPublicKeyLabel": "آپ کی عوامی کلید (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2698,14 +2591,7 @@
     }
   },
   "soundUnableToPreview": "آواز کا پیش منظر نہیں دکھایا جا سکتا — کوئی آڈیو دستیاب نہیں",
-  "soundPreviewFailed": "پیش منظر نہیں چلایا جا سکا: {error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "پیش منظر نہیں چلایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "soundViewSource": "ماخذ دیکھیں",
   "soundCloseTooltip": "بند کریں",
   "exploreNotExploreRoute": "دریافت روٹ نہیں ہے",
@@ -2726,17 +2612,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "{pageName} کھولنے میں خرابی: {error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3311,24 +3186,9 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "سبسکرپشن اپڈیٹ نہیں ہو سکی: {error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "سبسکرپشن اپڈیٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "discoverListsTitle": "فہرستیں دریافت کریں",
   "discoverListsFailedToLoad": "فہرستیں لوڈ نہیں ہو سکیں",
-  "discoverListsFailedToLoadWithError": "فہرستیں لوڈ نہیں ہو سکیں: {error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "عوامی فہرستیں دریافت ہو رہی ہیں...",
   "discoverListsRelayTimeout": "ریلے نے وقت پر فہرستیں واپس نہیں کیں۔ دوبارہ کوشش کریں۔",
   "discoverListsServiceUnavailable": "سروس دستیاب نہیں ہے۔",
@@ -4013,14 +3873,7 @@
       }
     }
   },
-  "soundDetailLoadError": "آواز لوڈ نہیں ہو سکی: {error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "آواز لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "soundDetailNotFoundMessage": "یہ آواز نہیں مل سکی",
   "soundDetailNotFoundTitle": "آواز نہیں ملی",
   "videoFeedLoopCountLabel": "🔁 {count} لوپ",
@@ -4153,14 +4006,7 @@
   "userNotAvailableTitle": "اکاؤنٹ دستیاب نہیں",
   "userNotAvailableBody": "یہ اکاؤنٹ ابھی دستیاب نہیں ہے۔",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "ترتیبات محفوظ نہیں ہو سکیں: {error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "ترتیبات محفوظ نہیں ہو سکیں۔ براہ کرم دوبارہ کوشش کریں۔",
   "blossomValidServerUrl": "براہ کرم درست سرور URL درج کریں (مثلاً https://blossom.band)",
   "blossomSettingsSaved": "Blossom ترتیبات محفوظ ہو گئیں",
   "blossomSaveTooltip": "محفوظ کریں",
@@ -4274,14 +4120,6 @@
   "searchListsSectionHeader": "فہرستیں",
   "searchListsLoadingLabel": "فہرست نتائج لوڈ ہو رہے ہیں",
   "cameraAgeRestriction": "مواد بنانے کے لیے آپ کی عمر 16 سال یا زیادہ ہونی چاہیے",
-  "keyImportError": "خرابی: {error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Bunker ریلے میں wss:// ہونا چاہیے (ws:// صرف localhost کے لیے جائز ہے)",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

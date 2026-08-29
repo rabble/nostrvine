@@ -224,14 +224,7 @@
             }
         }
     },
-    "profileShareFailed": "መገለጫን ማጋራት አልተሳካም፦ {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "መገለጫን ማጋራት አልተሳካም። እባክህ እንደገና ሞክር።",
     "profileCopyPublicKey": "የህዝብ ቁልፍ ቅዳ (npub)",
     "profileGetEmbedCode": "የተከተተ ኮድ ያግኙ",
     "profilePublicKeyCopied": "የህዝብ ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል።",
@@ -429,14 +422,10 @@
     "profileSetupImageUrlTitle": "ምስል ያክሉ URL",
     "profileSetupImageSelectionFailed": "የምስል ምርጫ አልተሳካም። እባክህ በምትኩ ምስል URL ከታች ለጥፍ።",
     "profileSetupImagesTypeGroup": "ምስሎች",
-    "profileSetupCameraAccessFailed": "የካሜራ መዳረሻ አልተሳካም፦ {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "የካሜራ መዳረሻ ጠፍቷል። ፎቶ ለማንሳት ከቅንብሮች አብራው።",
+    "cameraPickErrorPermissionRestricted": "በዚህ መሣሪያ ላይ የካሜራ መዳረሻ አይፈቀድም።",
+    "cameraPickErrorBusy": "መምረጫው አስቀድሞ ተከፍቷል። ዝጋውና እንደገና ሞክር።",
+    "cameraPickErrorGeneric": "ካሜራውን መክፈት አልተቻለም። እንደገና ሞክር።",
     "profileSetupGotItButton": "ገባኝ",
     "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።",
     "profileSetupUploadNetworkError": "የአውታረ መረብ ስህተት፡ እባክህ የበይነመረብ ግንኙነትህን ፈትሽ እና እንደገና ሞክር።",
@@ -545,14 +534,6 @@
             }
         }
     },
-    "exploreErrorPrefix": "ስህተት፡ {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "ዝርዝሮችን ያግኙ",
     "exploreAboutLists": "ስለ ዝርዝሮች",
     "exploreAboutListsDescription": "ዝርዝሮች የDivine ይዘትን በሁለት መንገድ እንዲያደራጁ እና እንዲያዘጋጁ ያግዝዎታል፡",
@@ -562,14 +543,7 @@
     "exploreVideoListsDescription": "በኋላ ለመመልከት የሚወዷቸውን ቪዲዮዎች አጫዋች ዝርዝሮችን ይፍጠሩ",
     "exploreMyLists": "የእኔ ዝርዝሮች",
     "exploreSubscribedLists": "የተመዘገቡ ዝርዝሮች",
-    "exploreErrorLoadingLists": "ዝርዝሮችን መጫን ላይ ስህተት፦ {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "ዝርዝሮችን መጫን ላይ ስህተት። እባክህ እንደገና ሞክር።",
     "exploreNewVideosCount": "{count, plural, =1{{count} አዲስ ቪዲዮ} other{{count} አዳዲስ ቪዲዮዎች}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -928,14 +902,6 @@
     "relaySettingsEventsSent": "ክስተቶች ተልከዋል።",
     "relaySettingsRequestsThisSession": "ይህንን ክፍለ ጊዜ ጠይቋል",
     "relaySettingsFailedRequests": "ያልተሳኩ ጥያቄዎች",
-    "relaySettingsLastError": "የመጨረሻው ስህተት፡ {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "የማስተላለፊያ መረጃን በመጫን ላይ...",
     "relaySettingsAboutRelay": "ስለ ሪሌይ",
     "relaySettingsSupportedNips": "የሚደገፉ NIPዎች",
@@ -1124,15 +1090,7 @@
     "nostrSettingsMoveAccountSubtitle": "ማህደርዎን ያውርዱ እና ልጥፎችዎን እና ቪዲዮዎችዎን ወደ ሌላ relay ወይም የሚዲያ አገልጋይ ያንቀሳቅሱ።",
     "nostrSettingsRemoveKeys": "ቁልፎችን ከመሣሪያው አስወግድ",
     "nostrSettingsRemoveKeysSubtitle": "የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።",
-    "nostrSettingsCouldNotRemoveKeys": "ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
-    "nostrSettingsFailedToRemoveKeys": "ቁልፎችን ማስወገድ አልተሳካም፦ {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "ይህን መለያ ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "nostrSettingsDeleteAccount": "መለያ እና ውሂብ ሰርዝ",
     "nostrSettingsDeleteAccountSubtitle": "የይዘትዎን የመሰረዝ ጥያቄዎች ይልካል እና ከዚህ መሣሪያ ያስወጣዎታል። ቅብብሎሾች፣ ደንበኞች፣ የፍለጋ ማውጫዎች እና ሌሎች የገቡ መሣሪያዎች ቅጂዎችን ሊይዙ ይችላሉ።",
     "relayDiagnosticTitle": "ቅብብል ምርመራዎች",
@@ -1230,14 +1188,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "መጠይቁ አልተሳካም፡ {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "መጠይቁ አልተሳካም፡። እባክህ እንደገና ሞክር።",
     "relayDiagnosticConnectedToRelays": "ከ {count} ሪሌይ(ዎች) ጋር ተገናኝቷል!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -1247,14 +1198,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።",
-    "relayDiagnosticConnectionRetryFailed": "የግንኙነት ድጋሚ መሞከር አልተሳካም፦ {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "የግንኙነት ድጋሚ መሞከር አልተሳካም። እባክህ እንደገና ሞክር።",
     "relayDiagnosticConnectedAuthenticated": "ተገናኝቷል እና የተረጋገጠ",
     "relayDiagnosticConnectedOnly": "ተገናኝቷል።",
     "relayDiagnosticNotConnected": "አልተገናኘም።",
@@ -1817,14 +1761,11 @@
     "shareMenuChangeCover": "ሽፋን ቀይር",
     "shareMenuVideoUpdated": "ቪዲዮው በተሳካ ሁኔታ ተዘምኗል",
     "shareMenuVideoUpdatedWithInviteFailures": "ቪዲዮ ተዘምኗል፣ ግን {count, plural, =1{{count} የተባባሪ ግብዣ አልተላከም።} other{{count} የተባባሪ ግብዣዎች አልተላኩም።}}",
-    "shareMenuFailedToUpdateVideo": "ቪዲዮውን ማዘመን አልተሳካም፦ {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "እንደገና ግባ፣ ከዚያ ደግመህ ሞክር።",
+    "videoUpdateErrorNoPlayableVideo": "ይህ ቪዲዮ ሊጫወት የሚችል ምንጭ የለውም፣ ስለዚህ ሊስተካከል አይችልም።",
+    "videoUpdateErrorCouldNotSign": "ማዘመኛውን መፈረም አልተቻለም። እንደገና ሞክር።",
+    "videoUpdateErrorPublishRejected": "ማስተላለፊያው ማዘመኛውን አልተቀበለም። ትንሽ ቆይተህ እንደገና ሞክር።",
+    "videoUpdateErrorGeneric": "ይህን ቪዲዮ ማዘመን አልተቻለም። እንደገና ሞክር።",
     "shareMenuDeleteVideoQuestion": "ቪዲዮ ይሰረዝ?",
     "shareMenuDeleteCleanupInProgress": "ቪዲዮው እየተወገደ ነው…",
     "shareMenuDeleteCleanupConfirmed": "ቪዲዮው ተሰርዟል።",
@@ -1833,22 +1774,6 @@
     "authSessionExpired": "ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።",
     "authSignInFailed": "መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     "webAuthNotSupportedSecureMode": "የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።",
-    "webAuthIntegrationFailed": "የማረጋገጫ ውህደት አልተሳካም፦ {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "ያልተጠበቀ ስህተት፡ {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "እባክህ ማስቀመጫ አስገባ URI",
     "webAuthConnectTitle": "ከDivine ጋር ተገናኝ",
     "webAuthChooseMethod": "የመረጡትን Nostr የማረጋገጫ ዘዴ ይምረጡ",
@@ -2061,17 +1986,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "{pageName}: {error}ን መክፈት ላይ ስህተት",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "ይህን ይዘት ለምን ሪፖርት ያደርጋሉ?",
     "reportPolicyNotice": "Divine ይዘቱን በማስወገድ እና አጸያፊ ይዘቱን ያቀረበውን ተጠቃሚ በማስወጣት የይዘት ሪፖርቶችን በ24 ሰዓታት ውስጥ ይሰራል።",
     "reportBlockUser": "ይህን ተጠቃሚ አግድ",
@@ -2089,14 +2003,7 @@
     "reportReasonFalseInfo": "የውሸት መረጃ",
     "reportReasonAiGenerated": "በAI የተፈጠረ ይዘት",
     "reportReasonOther": "ሌላ የፖሊሲ ጥሰት",
-    "reportFailed": "ይዘትን ሪፖርት ማድረግ አልተሳካም፦ {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "ይዘትን ሪፖርት ማድረግ አልተሳካም። እባክህ እንደገና ሞክር።",
     "reportNotSent": "ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
     "reportReceivedTitle": "ሪፖርት ደርሷል",
     "reportReceivedThankYou": "Divine ደህንነትን ለመጠበቅ ስለረዱዎት እናመሰግናለን።",
@@ -2207,7 +2114,7 @@
     "keyManagementKeycastEmailUnverified": "ቁልፍዎን ከመቅዳት በፊት የኢሜይል አድራሻዎን ያረጋግጡ።",
     "keyManagementKeycastDenied": "የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።",
     "keyManagementKeycastNoKey": "ለዚህ መለያ የተመዘገበ ቁልፍ የለም።",
-    "keyManagementKeycastGenericFailure": "የመግቢያ አገልግሎቱን ማግኘት አልተቻለም",
+    "keyManagementKeycastGenericFailure": "የመግቢያ አገልግሎቱን ማግኘት አልተቻለም። እንደገና ሞክር።",
     "keyManagementRestrictedTitle": "ቁልፎችህ በDivine ይተዳደራሉ",
     "keyManagementRestrictedBody": "መለያህን ደኅንነቱ የተጠበቀ ለማድረግ፣ የቁልፍ ምትኬና ሌላ ቁልፍ ማስመጣት እዚህ አይገኙም።",
     "keyManagementNeverShare": "የእርስዎን nsec ለማንም አያካፍሉ!",
@@ -2217,23 +2124,9 @@
     "keyManagementConfirmImportBody": "ይህ አሁን ያለዎትን ማንነት ከውጪ በመጣው ይተካዋል።\n\nመጀመሪያ ምትኬ ካላስቀመጥከው በስተቀር የአሁኑ ቁልፍህ ይጠፋል።",
     "keyManagementImportConfirm": "አስመጣ",
     "keyManagementImportSuccess": "ቁልፍ በተሳካ ሁኔታ ገብቷል!",
-    "keyManagementImportFailed": "ቁልፍ ማስመጣት አልተሳካም፦ {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "ቁልፍ ማስመጣት አልተሳካም። እባክህ እንደገና ሞክር።",
     "keyManagementExportSuccess": "የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።",
-    "keyManagementExportFailed": "ቁልፉን ወደ ውጭ መላክ አልተሳካም፦ {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "ቁልፉን ወደ ውጭ መላክ አልተሳካም። እባክህ እንደገና ሞክር።",
     "saveOriginalSavedToCameraRoll": "ወደ ካሜራ ጥቅል ተቀምጧል",
     "saveOriginalShare": "አጋራ",
     "saveOriginalDone": "ተከናውኗል",
@@ -2289,14 +2182,7 @@
         }
     },
     "soundUnableToPreview": "ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።",
-    "soundPreviewFailed": "ቅድመ እይታን ማጫወት አልተሳካም፦ {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "ቅድመ እይታን ማጫወት አልተሳካም። እባክህ እንደገና ሞክር።",
     "soundViewSource": "ምንጭ ይመልከቱ",
     "soundCloseTooltip": "ገጠመ",
     "exploreNotExploreRoute": "የአሰሳ መንገድ አይደለም።",
@@ -2317,17 +2203,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "{pageName}: {error}ን መክፈት ላይ ስህተት",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2582,24 +2457,9 @@
             }
         }
     },
-    "discoverListsFailedToUpdateSubscription": "የደንበኝነት ምዝገባን ማዘመን አልተሳካም፦ {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "የደንበኝነት ምዝገባን ማዘመን አልተሳካም። እባክህ እንደገና ሞክር።",
     "discoverListsTitle": "ዝርዝሮችን ያግኙ",
     "discoverListsFailedToLoad": "ዝርዝሮችን መጫን አልተሳካም",
-    "discoverListsFailedToLoadWithError": "ዝርዝሮችን መጫን አልተሳካም፦ {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "የህዝብ ዝርዝሮችን በመፈለግ ላይ...",
     "discoverListsRelayTimeout": "ሪሌው በጊዜው ዝርዝሮችን አልመለሰም። እንደገና ሞክር።",
     "discoverListsServiceUnavailable": "አገልግሎቱ አይገኝም።",
@@ -2847,14 +2707,7 @@
     "userNotAvailableTitle": "መለያው አይገኝም",
     "userNotAvailableBody": "ይህ መለያ አሁን አይገኝም።",
     "classicVinersTitle": "OG Viners",
-    "blossomFailedToSaveSettings": "ቅንብሮችን ማስቀመጥ አልተሳካም፦ {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "ቅንብሮችን ማስቀመጥ አልተሳካም። እባክህ እንደገና ሞክር።",
     "blossomValidServerUrl": "እባክዎ ትክክለኛ የአገልጋይ URL ያስገቡ (ለምሳሌ፦ https://blossom.band)",
     "blossomSettingsSaved": "የBlossom ቅንብሮች ተቀምጠዋል",
     "blossomSaveTooltip": "አስቀምጥ",
@@ -2947,14 +2800,6 @@
     "searchListsSectionHeader": "ዝርዝሮች",
     "searchListsLoadingLabel": "የዝርዝር ውጤቶችን በመጫን ላይ",
     "cameraAgeRestriction": "ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት",
-    "keyImportError": "ስህተት፡ {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "keyImportInsecureBunkerRelay": "የBunker ሪሌይ wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)",
     "timeNow": "አሁን",
     "@timeNow": {
@@ -4607,8 +4452,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "ድምጽ፡ {soundName} በ{creatorName}። ዝርዝሮችን ለማየት መታ ያድርጉ።",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "ድምጽ መጫን አልተሳካም፦ {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "ድምጽ መጫን አልተሳካም። እባክህ እንደገና ሞክር።",
     "soundDetailNotFoundMessage": "ይህ ድምጽ ሊገኝ አልቻለም",
     "soundDetailNotFoundTitle": "ድምጽ አልተገኘም",
     "videoFeedLoopCountLabel": "🔁 {count} ሉፖች",

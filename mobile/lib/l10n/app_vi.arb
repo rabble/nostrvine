@@ -204,14 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "Không thể chia sẻ hồ sơ: {error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileShareFailed": "Không thể chia sẻ hồ sơ. Vui lòng thử lại.",
   "profileCopyPublicKey": "Sao chép khóa công khai (npub)",
   "profileGetEmbedCode": "Lấy mã nhúng",
   "profilePublicKeyCopied": "Đã sao chép khóa công khai vào khay nhớ tạm",
@@ -460,14 +453,10 @@
   "profileSetupImageUrlTitle": "Thêm URL hình ảnh",
   "profileSetupImageSelectionFailed": "Không chọn được ảnh. Hãy dán URL hình ảnh vào bên dưới nhé.",
   "profileSetupImagesTypeGroup": "hình ảnh",
-  "profileSetupCameraAccessFailed": "Không truy cập được camera: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "Quyền camera đang tắt. Bật trong Cài đặt để chụp ảnh.",
+  "cameraPickErrorPermissionRestricted": "Thiết bị này không cho phép truy cập camera.",
+  "cameraPickErrorBusy": "Bộ chọn đang mở rồi. Đóng lại rồi thử lại.",
+  "cameraPickErrorGeneric": "Không mở được camera. Thử lại nhé.",
   "profileSetupGotItButton": "Đã hiểu",
   "profileSetupUploadFailedGeneric": "Tải lên thất bại. Vui lòng thử lại sau.",
   "profileSetupUploadNetworkError": "Lỗi mạng: Hãy kiểm tra kết nối internet của bạn rồi thử lại.",
@@ -573,14 +562,6 @@
   "featuredTabLoadFailed": "Không tải được bộ sưu tập này.",
   "featuredTabRetry": "Thử lại",
   "exploreNoVideosAvailable": "Không có video nào",
-  "exploreErrorPrefix": "Lỗi: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "Khám phá danh sách",
   "exploreAboutLists": "Về danh sách",
   "exploreAboutListsDescription": "Danh sách giúp bạn sắp xếp và tuyển chọn nội dung Divine theo hai cách:",
@@ -590,14 +571,7 @@
   "exploreVideoListsDescription": "Tạo danh sách phát từ những video yêu thích để xem sau",
   "exploreMyLists": "Danh sách của tôi",
   "exploreSubscribedLists": "Danh sách đã đăng ký",
-  "exploreErrorLoadingLists": "Lỗi khi tải danh sách: {error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "Lỗi khi tải danh sách. Vui lòng thử lại.",
   "exploreNewVideosCount": "{count, plural, =1{1 video mới} other{{count} video mới}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1160,14 +1134,6 @@
   "relaySettingsEventsSent": "Sự kiện đã gửi",
   "relaySettingsRequestsThisSession": "Yêu cầu trong phiên này",
   "relaySettingsFailedRequests": "Yêu cầu thất bại",
-  "relaySettingsLastError": "Lỗi gần nhất: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "Đang tải thông tin relay...",
   "relaySettingsAboutRelay": "Về relay",
   "relaySettingsSupportedNips": "Các NIP được hỗ trợ",
@@ -1288,14 +1254,6 @@
   "nostrSettingsRemoveKeys": "Xóa tài khoản này khỏi thiết bị này",
   "nostrSettingsRemoveKeysSubtitle": "Xóa đăng nhập cục bộ của tài khoản này khỏi thiết bị. Các bản nháp và clip cục bộ của tài khoản này vẫn được giữ.",
   "nostrSettingsCouldNotRemoveKeys": "Không xóa được tài khoản này khỏi thiết bị. Vui lòng thử lại.",
-  "nostrSettingsFailedToRemoveKeys": "Không xóa được tài khoản này: {error}",
-  "@nostrSettingsFailedToRemoveKeys": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "nostrSettingsDeleteAccount": "Xóa tài khoản và dữ liệu",
   "nostrSettingsDeleteAccountSubtitle": "Gửi yêu cầu xóa nội dung của bạn và đăng xuất bạn trên thiết bị này. Các relay, ứng dụng khác, chỉ mục tìm kiếm và thiết bị đã đăng nhập khác có thể vẫn giữ bản sao.",
   "@nostrSettingsDeleteAccountSubtitle": {
@@ -1396,14 +1354,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "Truy vấn thất bại: {error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "Truy vấn thất bại. Vui lòng thử lại.",
   "relayDiagnosticConnectedToRelays": "Đã kết nối tới {count} relay!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1413,14 +1364,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "Không kết nối được với relay nào",
-  "relayDiagnosticConnectionRetryFailed": "Thử kết nối lại thất bại: {error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "Thử kết nối lại thất bại. Vui lòng thử lại.",
   "relayDiagnosticConnectedAuthenticated": "Đã kết nối & xác thực",
   "relayDiagnosticConnectedOnly": "Đã kết nối",
   "relayDiagnosticNotConnected": "Chưa kết nối",
@@ -2095,14 +2039,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "Không cập nhật được video: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "Đăng nhập lại rồi thử lại.",
+  "videoUpdateErrorNoPlayableVideo": "Video này không có nguồn phát được nên không thể chỉnh sửa.",
+  "videoUpdateErrorCouldNotSign": "Không ký được bản cập nhật. Thử lại nhé.",
+  "videoUpdateErrorPublishRejected": "Relay không chấp nhận bản cập nhật. Thử lại sau giây lát.",
+  "videoUpdateErrorGeneric": "Không cập nhật được video này. Thử lại nhé.",
   "shareMenuDeleteVideoQuestion": "Xóa video?",
   "shareMenuDeleteCleanupInProgress": "Đang xóa video…",
   "shareMenuDeleteCleanupConfirmed": "Đã xóa video.",
@@ -2111,22 +2052,6 @@
   "authSessionExpired": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
   "authSignInFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
   "webAuthNotSupportedSecureMode": "Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.",
-  "webAuthIntegrationFailed": "Tích hợp xác thực thất bại: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "Lỗi bất ngờ: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "Vui lòng nhập URI bunker",
   "webAuthConnectTitle": "Kết nối với Divine",
   "webAuthChooseMethod": "Chọn phương thức xác thực Nostr bạn thích",
@@ -2429,17 +2354,6 @@
       }
     }
   },
-  "supportErrorOpeningPage": "Lỗi khi mở {pageName}: {error}",
-  "@supportErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportWhyReporting": "Tại sao bạn báo cáo nội dung này?",
   "reportPolicyNotice": "Divine sẽ xử lý báo cáo nội dung trong vòng 24 giờ bằng cách gỡ nội dung và loại người dùng đăng nội dung vi phạm.",
   "reportBlockUser": "Chặn người dùng này",
@@ -2471,14 +2385,7 @@
   "reportReasonAiGeneratedSubtitle": "Nghi ngờ nội dung do AI tạo ra",
   "reportReasonOther": "Vi phạm chính sách khác",
   "reportReasonOtherSubtitle": "Các vi phạm không có trong danh sách trên",
-  "reportFailed": "Không báo cáo được nội dung: {error}",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "reportFailed": "Không báo cáo được nội dung. Vui lòng thử lại.",
   "reportNotSent": "Không gửi được báo cáo của bạn. Kiểm tra kết nối của bạn rồi thử lại nhé.",
   "reportReceivedTitle": "Đã nhận báo cáo",
   "reportReceivedThankYou": "Cảm ơn bạn đã giúp giữ Divine an toàn.",
@@ -2599,7 +2506,7 @@
   "keyManagementKeycastEmailUnverified": "Hãy xác minh địa chỉ email của bạn trước khi sao chép khóa.",
   "keyManagementKeycastDenied": "Khóa của tài khoản này do Divine quản lý, nên không sao chép được ở đây.",
   "keyManagementKeycastNoKey": "Không có khóa nào được lưu cho tài khoản này.",
-  "keyManagementKeycastGenericFailure": "không kết nối được với dịch vụ đăng nhập",
+  "keyManagementKeycastGenericFailure": "Không kết nối được với dịch vụ đăng nhập. Vui lòng thử lại.",
   "keyManagementRestrictedTitle": "Khóa của bạn do Divine quản lý",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2614,23 +2521,9 @@
   "keyManagementConfirmImportBody": "Việc này sẽ thay thế danh tính hiện tại của bạn bằng danh tính được nhập.\n\nKhóa hiện tại của bạn sẽ mất trừ khi bạn đã sao lưu trước.",
   "keyManagementImportConfirm": "Nhập",
   "keyManagementImportSuccess": "Đã nhập khóa thành công!",
-  "keyManagementImportFailed": "Không nhập được khóa: {error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "Không nhập được khóa. Vui lòng thử lại.",
   "keyManagementExportSuccess": "Đã sao chép khóa riêng tư vào khay nhớ tạm!\n\nHãy cất nó ở nơi an toàn.",
-  "keyManagementExportFailed": "Không xuất được khóa: {error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "Không xuất được khóa. Vui lòng thử lại.",
   "keyManagementYourPublicKeyLabel": "Khóa công khai của bạn (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2698,14 +2591,7 @@
     }
   },
   "soundUnableToPreview": "Không nghe thử được - không có audio",
-  "soundPreviewFailed": "Không phát được bản nghe thử: {error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "Không phát được bản nghe thử. Vui lòng thử lại.",
   "soundViewSource": "Xem nguồn",
   "soundCloseTooltip": "Đóng",
   "exploreNotExploreRoute": "Không phải tuyến khám phá",
@@ -2726,17 +2612,6 @@
     "placeholders": {
       "pageName": {
         "type": "String"
-      }
-    }
-  },
-  "legalErrorOpeningPage": "Lỗi khi mở {pageName}: {error}",
-  "@legalErrorOpeningPage": {
-    "placeholders": {
-      "pageName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "Object"
       }
     }
   },
@@ -3311,24 +3186,9 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "Không cập nhật được đăng ký: {error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "Không cập nhật được đăng ký. Vui lòng thử lại.",
   "discoverListsTitle": "Khám phá danh sách",
   "discoverListsFailedToLoad": "Không tải được danh sách",
-  "discoverListsFailedToLoadWithError": "Không tải được danh sách: {error}",
-  "@discoverListsFailedToLoadWithError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsLoading": "Đang khám phá danh sách công khai...",
   "discoverListsRelayTimeout": "Relay không trả về danh sách kịp lúc. Thử lại nhé.",
   "discoverListsServiceUnavailable": "Dịch vụ không khả dụng.",
@@ -4013,14 +3873,7 @@
       }
     }
   },
-  "soundDetailLoadError": "Không tải được âm thanh: {error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "Không tải được âm thanh. Vui lòng thử lại.",
   "soundDetailNotFoundMessage": "Không tìm thấy âm thanh này",
   "soundDetailNotFoundTitle": "Không tìm thấy âm thanh",
   "videoFeedLoopCountLabel": "🔁 {count} loop",
@@ -4153,14 +4006,7 @@
   "userNotAvailableTitle": "Tài khoản không khả dụng",
   "userNotAvailableBody": "Tài khoản này hiện không khả dụng.",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "Không lưu được cài đặt: {error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "Không lưu được cài đặt. Vui lòng thử lại.",
   "blossomValidServerUrl": "Vui lòng nhập URL máy chủ hợp lệ (VD: https://blossom.band)",
   "blossomSettingsSaved": "Đã lưu cài đặt Blossom",
   "blossomSaveTooltip": "Lưu",
@@ -4274,14 +4120,6 @@
   "searchListsSectionHeader": "Danh sách",
   "searchListsLoadingLabel": "Đang tải kết quả danh sách",
   "cameraAgeRestriction": "Bạn phải đủ 16 tuổi để tạo nội dung",
-  "keyImportError": "Lỗi: {error}",
-  "@keyImportError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "keyImportInsecureBunkerRelay": "Relay bunker phải dùng wss:// (ws:// chỉ được phép cho localhost)",
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."

@@ -199,14 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Gagal membagikan profil: {error}",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileShareFailed": "Gagal membagikan profil. Silakan coba lagi.",
     "profileCopyPublicKey": "Salin kunci publik (npub)",
     "profileGetEmbedCode": "Dapatkan kode sematan",
     "profilePublicKeyCopied": "Kunci publik disalin ke clipboard",
@@ -365,14 +358,10 @@
     "profileSetupSavingButton": "Menyimpan...",
     "profileSetupImageUrlTitle": "Tambah URL gambar",
     "profileSetupImageSelectionFailed": "Pemilihan gambar gagal. Silakan tempel URL gambar di bawah.",
-    "profileSetupCameraAccessFailed": "Akses kamera gagal: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Akses kamera mati. Nyalakan di Pengaturan untuk mengambil foto.",
+    "cameraPickErrorPermissionRestricted": "Akses kamera tidak diizinkan di perangkat ini.",
+    "cameraPickErrorBusy": "Pemilih sudah terbuka. Tutup lalu coba lagi.",
+    "cameraPickErrorGeneric": "Gagal membuka kamera. Coba lagi.",
     "profileSetupGotItButton": "Mengerti",
     "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar. Coba lagi nanti.",
     "profileSetupUploadNetworkError": "Kesalahan jaringan: Silakan cek koneksi internetmu dan coba lagi.",
@@ -460,14 +449,6 @@
     "featuredTabLoadFailed": "Koleksi ini gagal dimuat.",
     "featuredTabRetry": "Coba lagi",
     "exploreNoVideosAvailable": "Tidak ada video tersedia",
-    "exploreErrorPrefix": "Kesalahan: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Temukan Daftar",
     "exploreAboutLists": "Tentang Daftar",
     "exploreAboutListsDescription": "Daftar membantumu mengorganisir dan mengkurasi konten Divine dengan dua cara:",
@@ -477,14 +458,7 @@
     "exploreVideoListsDescription": "Buat playlist video favoritmu untuk ditonton nanti",
     "exploreMyLists": "Daftarku",
     "exploreSubscribedLists": "Daftar yang Dilanggan",
-    "exploreErrorLoadingLists": "Gagal memuat daftar: {error}",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "exploreErrorLoadingLists": "Gagal memuat daftar. Silakan coba lagi.",
     "exploreNewVideosCount": "{count, plural, other{{count} video baru}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -787,14 +761,6 @@
     "relaySettingsEventsSent": "Event Dikirim",
     "relaySettingsRequestsThisSession": "Permintaan Sesi Ini",
     "relaySettingsFailedRequests": "Permintaan Gagal",
-    "relaySettingsLastError": "Kesalahan Terakhir: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Memuat info relay...",
     "relaySettingsAboutRelay": "Tentang Relay",
     "relaySettingsSupportedNips": "NIP yang Didukung",
@@ -951,14 +917,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query gagal: {error}",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticQueryFailed": "Query gagal. Silakan coba lagi.",
     "relayDiagnosticConnectedToRelays": "Terhubung ke {count} relay!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -968,14 +927,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Gagal terhubung ke relay mana pun",
-    "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal: {error}",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal. Silakan coba lagi.",
     "relayDiagnosticConnectedAuthenticated": "Terhubung & Terautentikasi",
     "relayDiagnosticConnectedOnly": "Terhubung",
     "relayDiagnosticNotConnected": "Tidak terhubung",
@@ -1437,14 +1389,11 @@
     "shareMenuChangeCover": "Ubah Sampul",
     "shareMenuVideoUpdated": "Video berhasil diperbarui",
     "shareMenuVideoUpdatedWithInviteFailures": "Video diperbarui, tetapi {count, plural, =1{1 undangan kolaborator tidak terkirim.} other{{count} undangan kolaborator tidak terkirim.}}",
-    "shareMenuFailedToUpdateVideo": "Gagal memperbarui video: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Masuk lagi, lalu coba perbarui.",
+    "videoUpdateErrorNoPlayableVideo": "Video ini tidak punya sumber yang bisa diputar, jadi tidak bisa diedit.",
+    "videoUpdateErrorCouldNotSign": "Gagal menandatangani pembaruan. Coba lagi.",
+    "videoUpdateErrorPublishRejected": "Relay tidak menerima pembaruan. Coba lagi sebentar lagi.",
+    "videoUpdateErrorGeneric": "Gagal memperbarui video ini. Coba lagi.",
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
     "shareMenuDeleteCleanupInProgress": "Menghapus video…",
     "shareMenuDeleteCleanupConfirmed": "Video dihapus.",
@@ -1453,22 +1402,6 @@
     "authSessionExpired": "Sesimu sudah kedaluwarsa. Silakan masuk lagi.",
     "authSignInFailed": "Gagal masuk. Silakan coba lagi.",
     "webAuthNotSupportedSecureMode": "Autentikasi web tidak didukung dalam mode aman. Silakan pakai aplikasi seluler untuk manajemen kunci yang aman.",
-    "webAuthIntegrationFailed": "Integrasi autentikasi gagal: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Kesalahan tak terduga: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Silakan masukkan URI bunker",
     "webAuthConnectTitle": "Hubungkan ke Divine",
     "webAuthChooseMethod": "Pilih metode autentikasi Nostr pilihanmu",
@@ -1664,17 +1597,6 @@
             }
         }
     },
-    "supportErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
-    "@supportErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportWhyReporting": "Kenapa kamu melaporkan konten ini?",
     "reportPolicyNotice": "Divine akan menindak laporan konten dalam 24 jam dengan menghapus konten dan mengeluarkan pengguna yang memberikan konten yang melanggar.",
     "reportBlockUser": "Blokir pengguna ini",
@@ -1692,14 +1614,7 @@
     "reportReasonFalseInfo": "Informasi Salah",
     "reportReasonAiGenerated": "Konten Dihasilkan AI",
     "reportReasonOther": "Pelanggaran Kebijakan Lainnya",
-    "reportFailed": "Gagal melaporkan konten: {error}",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "reportFailed": "Gagal melaporkan konten. Silakan coba lagi.",
     "reportNotSent": "Laporanmu tidak terkirim. Periksa koneksimu dan coba lagi.",
     "reportReceivedTitle": "Laporan Diterima",
     "reportReceivedThankYou": "Terima kasih sudah membantu menjaga Divine tetap aman.",
@@ -1801,7 +1716,7 @@
     "keyManagementKeycastEmailUnverified": "Verifikasi alamat emailmu sebelum menyalin kunci.",
     "keyManagementKeycastDenied": "Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.",
     "keyManagementKeycastNoKey": "Tidak ada kunci yang tercatat untuk akun ini.",
-    "keyManagementKeycastGenericFailure": "layanan login tidak dapat dihubungi",
+    "keyManagementKeycastGenericFailure": "Layanan login tidak dapat dihubungi. Silakan coba lagi.",
     "keyManagementRestrictedTitle": "Kuncimu dikelola oleh Divine",
     "keyManagementRestrictedBody": "Demi keamanan akunmu, pencadangan kunci dan impor kunci lain tidak tersedia di sini.",
     "keyManagementNeverShare": "Jangan pernah bagikan nsec-mu ke siapa pun!",
@@ -1811,23 +1726,9 @@
     "keyManagementConfirmImportBody": "Ini akan mengganti identitasmu saat ini dengan yang diimpor.\n\nKunci saat ini akan hilang kecuali kamu sudah mem-backup-nya.",
     "keyManagementImportConfirm": "Impor",
     "keyManagementImportSuccess": "Kunci berhasil diimpor!",
-    "keyManagementImportFailed": "Gagal mengimpor kunci: {error}",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementImportFailed": "Gagal mengimpor kunci. Silakan coba lagi.",
     "keyManagementExportSuccess": "Kunci privat disalin ke clipboard!\n\nSimpan di tempat yang aman.",
-    "keyManagementExportFailed": "Gagal mengekspor kunci: {error}",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "keyManagementExportFailed": "Gagal mengekspor kunci. Silakan coba lagi.",
     "saveOriginalSavedToCameraRoll": "Disimpan ke Camera Roll",
     "saveOriginalShare": "Bagikan",
     "saveOriginalDone": "Selesai",
@@ -1865,14 +1766,7 @@
         }
     },
     "soundUnableToPreview": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
-    "soundPreviewFailed": "Gagal memutar pratinjau: {error}",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "soundPreviewFailed": "Gagal memutar pratinjau. Silakan coba lagi.",
     "soundViewSource": "Lihat sumber",
     "soundCloseTooltip": "Tutup",
     "exploreNotExploreRoute": "Bukan rute jelajah",
@@ -1893,17 +1787,6 @@
         "placeholders": {
             "pageName": {
                 "type": "String"
-            }
-        }
-    },
-    "legalErrorOpeningPage": "Kesalahan membuka {pageName}: {error}",
-    "@legalErrorOpeningPage": {
-        "placeholders": {
-            "pageName": {
-                "type": "String"
-            },
-            "error": {
-                "type": "Object"
             }
         }
     },
@@ -2008,14 +1891,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Gulat",
-    "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan: {error}",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan. Silakan coba lagi.",
     "blueskyFailedToUpdateCrosspost": "Gagal memperbarui pengaturan crosspost",
     "cameraAgeRestriction": "Kamu harus berusia 16 tahun atau lebih untuk membuat konten",
     "categoriesCouldNotLoadCategories": "Tidak dapat memuat kategori",
@@ -2024,14 +1900,7 @@
     "commonCancel": "Batal",
     "commonDelete": "Hapus",
     "commonRetry": "Coba lagi",
-    "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan: {error}",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan. Silakan coba lagi.",
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -2166,14 +2035,6 @@
         }
     },
     "invitesTitle": "Undang Teman",
-    "keyImportError": "Error: {error}",
-    "@keyImportError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "libraryClipsDeletedCount": "{count, plural, =1{1 klip dihapus} other{{count} klip dihapus}}",
     "@libraryClipsDeletedCount": {
         "placeholders": {
@@ -3288,15 +3149,7 @@
     "nostrSettingsMoveAccountSubtitle": "Unduh arsipmu dan pindahkan postingan serta videomu ke relay atau server media lain.",
     "nostrSettingsRemoveKeys": "Hapus Kunci dari Perangkat",
     "nostrSettingsRemoveKeysSubtitle": "Hapus kunci privatmu hanya dari perangkat ini. Kontenmu tetap di relay, tapi kamu butuh backup nsec untuk masuk lagi.",
-    "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus kunci dari perangkat ini. Coba lagi.",
-    "nostrSettingsFailedToRemoveKeys": "Gagal menghapus kunci: {error}",
-    "@nostrSettingsFailedToRemoveKeys": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus akun ini dari perangkat ini. Coba lagi.",
     "nostrSettingsDeleteAccount": "Hapus Akun dan Data",
     "nostrSettingsDeleteAccountSubtitle": "Mengirim permintaan penghapusan untuk kontenmu dan mengeluarkanmu dari akun di perangkat ini. Relay, klien, indeks pencarian, dan perangkat lain yang masih masuk mungkin menyimpan salinan.",
     "safetySettingsWhatYouSee": "YANG KAMU LIHAT",
@@ -3375,14 +3228,6 @@
     },
     "discoverListsTitle": "Jelajahi Daftar",
     "discoverListsFailedToLoad": "Gagal memuat daftar",
-    "discoverListsFailedToLoadWithError": "Gagal memuat daftar: {error}",
-    "@discoverListsFailedToLoadWithError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsLoading": "Mencari daftar publik...",
     "discoverListsRelayTimeout": "Relay tidak mengembalikan daftar tepat waktu. Coba lagi.",
     "discoverListsServiceUnavailable": "Layanan tidak tersedia.",
@@ -4081,13 +3926,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Tergantung aturan di tempat tinggalmu, kamu mungkin bisa kembali dan mengajukan akun sendiri. Kalau saat itu usiamu 13 sampai 15, kamu butuh izin dari orang tua atau wali.",
     "minorAccountReviewParentConsentPauseNote": "Ini jeda sementara tim dukungan Divine meninjau videonya. Kalau disetujui, mereka akan memandu kamu menyiapkan akun baru.",
     "minorAccountReviewUnder13WhyTitle": "Ini alasannya",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4482,8 +4320,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Suara: {soundName} oleh {creatorName}. Ketuk untuk melihat detail.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Gagal memuat suara: {error}",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
+    "soundDetailLoadError": "Gagal memuat suara. Silakan coba lagi.",
     "soundDetailNotFoundMessage": "Suara ini tidak dapat ditemukan",
     "soundDetailNotFoundTitle": "Suara Tidak Ditemukan",
     "videoFeedLoopCountLabel": "🔁 {count} loop",
