@@ -125,6 +125,13 @@ compiles. **It silently drops both guards above.** That is a behaviour change,
 not a move, and it is disqualified here. Recorded because it is the obvious
 "simplest option" and would otherwise be re-proposed.
 
+The loss is exactly those two, and no more: the NIP-89 `client` tag **is**
+preserved on this route (`_prepareEventForPublish` → `Nip89ClientTag.applyToEvent`,
+`nostr_client.dart:478-484` — kind 10003 is not in `_excludedKinds`, and
+`applyToEvent` preserves `createdAt`). Stated because that tag is load-bearing
+beyond attribution, so a reviewer weighing this option should not reject or
+accept it for the wrong reason.
+
 ### Chosen: a narrow `BookmarkSigner` declared in the package
 
 ```dart
