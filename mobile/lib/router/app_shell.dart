@@ -105,10 +105,20 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       if (!obscured) {
         final overlayVisibility = ref.read(overlayVisibilityProvider.notifier);
         if (clearOverlayOwners) {
-          // Popping the route directly above the shell proves no overlay owner
-          // remains. Force-clear because a `go()`-style back can skip an
-          // overlay route's own completion callback (#6239).
-          overlayVisibility.clearOverlays();
+          // Force-clear the page owners because a `go()`-style back can skip a
+          // pushed route's own completion callback (#6239): go_router completes
+          // an `ImperativeRouteMatch` only on the pop path, so the
+          // `pushWithVideoPause` completer never fires and its token strands.
+          //
+          // Page owners only. A popped route above the shell does *not* prove
+          // no overlay owner remains: a pause-aware sheet with
+          // `useRootNavigator: false` lives on a branch navigator, so the shell
+          // stays the top root route while that sheet is on screen. Clearing
+          // sheet owners here destroyed that live hold and resumed playback
+          // behind the visible sheet. A sheet token is released by its own
+          // route's dismiss callback and cannot strand the way a `go()`-removed
+          // page token does, so it never needed clearing here.
+          overlayVisibility.clearPageOpen();
         } else if (ModalRoute.of(context)?.isCurrent ?? false) {
           // A freshly mounted shell can still sit below a live page owner.
           // Clear only when navigation proves the shell is the top route.
