@@ -1744,7 +1744,7 @@
     "keyManagementKeycastEmailUnverified": "أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.",
     "keyManagementKeycastDenied": "تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.",
     "keyManagementKeycastNoKey": "لا يوجد مفتاح مسجّل لهذا الحساب.",
-    "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول",
+    "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول. حاول مرّة أخرى.",
     "keyManagementRestrictedTitle": "مفاتيحك يديرها Divine",
     "keyManagementRestrictedBody": "للحفاظ على أمان حسابك، النسخ الاحتياطي للمفتاح واستيراد مفتاح آخر غير متاحين هنا.",
     "keyManagementNeverShare": "لا تُشارك nsec مع أي شخص أبدًا!",
@@ -1763,7 +1763,7 @@
         }
     },
     "keyManagementExportSuccess": "تم نسخ المفتاح الخاص إلى الحافظة!\n\nاحفظه في مكان آمن.",
-    "keyManagementExportFailed": "تعذر تصدير المفتاح: {error}",
+    "keyManagementExportFailed": "تعذر تصدير المفتاح. يرجى المحاولة مرّة أخرى.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

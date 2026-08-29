@@ -4960,7 +4960,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'لاگ اِن سروس سے رابطہ نہیں ہو سکا';
+      'لاگ اِن سروس سے رابطہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get keyManagementRestrictedTitle => 'آپ کی کلیدیں Divine سنبھالتی ہے';
@@ -4998,9 +4998,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'نجی کلید کلپ بورڈ پر کاپی ہو گئی!\n\nاسے کسی محفوظ جگہ رکھیں۔';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'کلید ایکسپورٹ نہیں ہو سکی: $error';
-  }
+  String get keyManagementExportFailed =>
+      'کلید ایکسپورٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'آپ کی عوامی کلید (npub)';

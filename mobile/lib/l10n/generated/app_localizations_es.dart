@@ -5004,7 +5004,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'no se pudo conectar con el servicio de inicio de sesión';
+      'No se pudo conectar con el servicio de inicio de sesión. Intentalo de nuevo.';
 
   @override
   String get keyManagementRestrictedTitle => 'Divine gestiona tus claves';
@@ -5042,9 +5042,8 @@ class AppLocalizationsEs extends AppLocalizations {
       '¡Clave privada copiada al portapapeles!\n\nGuardala en un lugar seguro.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'No se pudo exportar la clave: $error';
-  }
+  String get keyManagementExportFailed =>
+      'No se pudo exportar la clave. Intentalo de nuevo.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Tu clave pública (npub)';

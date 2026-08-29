@@ -3069,7 +3069,7 @@
   "@keyManagementKeycastNoKey": {
     "description": "Error shown when the login service answers definitively that it holds no exportable key for this account, so retrying will not help."
   },
-  "keyManagementKeycastGenericFailure": "the login service could not be reached",
+  "keyManagementKeycastGenericFailure": "Couldn't reach the login service. Please try again.",
   "@keyManagementKeycastGenericFailure": {
     "description": "Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence."
   },
@@ -3089,14 +3089,7 @@
   "keyManagementImportSuccess": "Key imported successfully!",
   "keyManagementImportFailed": "Failed to import key. Please try again.",
   "keyManagementExportSuccess": "Private key copied to clipboard!\n\nStore it somewhere safe.",
-  "keyManagementExportFailed": "Failed to export key: {error}",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementExportFailed": "Failed to export key. Please try again.",
   "keyManagementYourPublicKeyLabel": "Your public key (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."

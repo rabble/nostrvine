@@ -4925,7 +4925,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'không kết nối được với dịch vụ đăng nhập';
+      'Không kết nối được với dịch vụ đăng nhập. Vui lòng thử lại.';
 
   @override
   String get keyManagementRestrictedTitle => 'Khóa của bạn do Divine quản lý';
@@ -4963,9 +4963,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đã sao chép khóa riêng tư vào khay nhớ tạm!\n\nHãy cất nó ở nơi an toàn.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Không xuất được khóa: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Không xuất được khóa. Vui lòng thử lại.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Khóa công khai của bạn (npub)';

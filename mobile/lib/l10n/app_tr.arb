@@ -1751,7 +1751,7 @@
     "keyManagementKeycastEmailUnverified": "Anahtarını kopyalamadan önce e-posta adresini doğrula.",
     "keyManagementKeycastDenied": "Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.",
     "keyManagementKeycastNoKey": "Bu hesap için kayıtlı bir anahtar yok.",
-    "keyManagementKeycastGenericFailure": "giriş servisine ulaşılamadı",
+    "keyManagementKeycastGenericFailure": "Giriş servisine ulaşılamadı. Lütfen tekrar dene.",
     "keyManagementRestrictedTitle": "Anahtarların Divine tarafından yönetiliyor",
     "keyManagementRestrictedBody": "Hesabını güvende tutmak için anahtar yedekleme ve farklı bir anahtar içe aktarma burada kullanılamıyor.",
     "keyManagementNeverShare": "nsec'ini asla kimseyle paylaşma!",
@@ -1770,7 +1770,7 @@
         }
     },
     "keyManagementExportSuccess": "Özel anahtar panoya kopyalandı!\n\nGüvenli bir yerde sakla.",
-    "keyManagementExportFailed": "Anahtar dışa aktarılamadı: {error}",
+    "keyManagementExportFailed": "Anahtar dışa aktarılamadı. Lütfen tekrar dene.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

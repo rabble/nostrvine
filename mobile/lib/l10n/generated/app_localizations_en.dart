@@ -5046,7 +5046,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'the login service could not be reached';
+      'Couldn\'t reach the login service. Please try again.';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
@@ -5084,9 +5084,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Private key copied to clipboard!\n\nStore it somewhere safe.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Failed to export key: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Failed to export key. Please try again.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';

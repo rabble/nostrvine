@@ -4912,7 +4912,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'تعذّر الوصول إلى خدمة تسجيل الدخول';
+      'تعذّر الوصول إلى خدمة تسجيل الدخول. حاول مرّة أخرى.';
 
   @override
   String get keyManagementRestrictedTitle => 'مفاتيحك يديرها Divine';
@@ -4950,9 +4950,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم نسخ المفتاح الخاص إلى الحافظة!\n\nاحفظه في مكان آمن.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'تعذر تصدير المفتاح: $error';
-  }
+  String get keyManagementExportFailed =>
+      'تعذر تصدير المفتاح. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'مفتاحك العام (npub)';

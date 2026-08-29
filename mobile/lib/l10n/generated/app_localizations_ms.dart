@@ -4960,7 +4960,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'perkhidmatan log masuk tidak dapat dihubungi';
+      'Perkhidmatan log masuk tidak dapat dihubungi. Sila cuba lagi.';
 
   @override
   String get keyManagementRestrictedTitle => 'Kunci anda diuruskan oleh Divine';
@@ -4998,9 +4998,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Kunci peribadi disalin ke papan klip!\n\nSimpannya di tempat yang selamat.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Gagal mengeksport kunci: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Gagal mengeksport kunci. Sila cuba lagi.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Kunci awam anda (npub)';

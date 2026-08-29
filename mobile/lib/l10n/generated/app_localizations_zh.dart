@@ -4632,7 +4632,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keyManagementKeycastNoKey => '这个账号没有任何密钥记录。';
 
   @override
-  String get keyManagementKeycastGenericFailure => '连不上登录服务';
+  String get keyManagementKeycastGenericFailure => '连不上登录服务，请重试。';
 
   @override
   String get keyManagementRestrictedTitle => '你的密钥由 Divine 托管';
@@ -4666,9 +4666,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keyManagementExportSuccess => '私钥已复制到剪贴板！\n\n请妥善保管。';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return '导出密钥失败：$error';
-  }
+  String get keyManagementExportFailed => '导出密钥失败，请重试。';
 
   @override
   String get keyManagementYourPublicKeyLabel => '你的公钥（npub）';

@@ -1754,7 +1754,7 @@
     "keyManagementKeycastEmailUnverified": "Verifica il tuo indirizzo email prima di copiare la chiave.",
     "keyManagementKeycastDenied": "Divine gestisce le chiavi di questo account, quindi non possono essere copiate qui.",
     "keyManagementKeycastNoKey": "Non c'è nessuna chiave registrata per questo account.",
-    "keyManagementKeycastGenericFailure": "non è stato possibile raggiungere il servizio di accesso",
+    "keyManagementKeycastGenericFailure": "Non è stato possibile raggiungere il servizio di accesso. Riprova.",
     "keyManagementRestrictedTitle": "Le tue chiavi sono gestite da Divine",
     "keyManagementRestrictedBody": "Per tenere al sicuro il tuo account, il backup della chiave e l'importazione di un'altra chiave non sono disponibili qui.",
     "keyManagementNeverShare": "Non condividere mai la tua nsec con nessuno!",
@@ -1773,7 +1773,7 @@
         }
     },
     "keyManagementExportSuccess": "Chiave privata copiata negli appunti!\n\nConservala in un posto sicuro.",
-    "keyManagementExportFailed": "Impossibile esportare la chiave: {error}",
+    "keyManagementExportFailed": "Impossibile esportare la chiave. Riprova.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

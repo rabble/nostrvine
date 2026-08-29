@@ -2541,7 +2541,7 @@
   "keyManagementKeycastEmailUnverified": "复制私钥前请先验证你的邮箱地址。",
   "keyManagementKeycastDenied": "这个账号的密钥由 Divine 托管，所以这里无法复制。",
   "keyManagementKeycastNoKey": "这个账号没有任何密钥记录。",
-  "keyManagementKeycastGenericFailure": "连不上登录服务",
+  "keyManagementKeycastGenericFailure": "连不上登录服务，请重试。",
   "keyManagementRestrictedTitle": "你的密钥由 Divine 托管",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2565,7 +2565,7 @@
     }
   },
   "keyManagementExportSuccess": "私钥已复制到剪贴板！\n\n请妥善保管。",
-  "keyManagementExportFailed": "导出密钥失败：{error}",
+  "keyManagementExportFailed": "导出密钥失败，请重试。",
   "@keyManagementExportFailed": {
     "placeholders": {
       "error": {

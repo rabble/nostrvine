@@ -4976,7 +4976,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'de inlogservice was niet bereikbaar';
+      'De inlogservice was niet bereikbaar. Probeer het opnieuw.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5015,9 +5015,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Privésleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Sleutel exporteren mislukt: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Sleutel exporteren mislukt. Probeer het opnieuw.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Je publieke sleutel (npub)';

@@ -4893,7 +4893,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'giriş servisine ulaşılamadı';
+      'Giriş servisine ulaşılamadı. Lütfen tekrar dene.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -4932,9 +4932,8 @@ class AppLocalizationsTr extends AppLocalizations {
       'Özel anahtar panoya kopyalandı!\n\nGüvenli bir yerde sakla.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Anahtar dışa aktarılamadı: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Anahtar dışa aktarılamadı. Lütfen tekrar dene.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Açık anahtarın (npub)';

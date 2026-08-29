@@ -1754,7 +1754,7 @@
     "keyManagementKeycastEmailUnverified": "Bekräfta din e-postadress innan du kopierar nyckeln.",
     "keyManagementKeycastDenied": "Divine sköter nycklarna för det här kontot, så de kan inte kopieras här.",
     "keyManagementKeycastNoKey": "Det finns ingen nyckel registrerad för det här kontot.",
-    "keyManagementKeycastGenericFailure": "inloggningstjänsten kunde inte nås",
+    "keyManagementKeycastGenericFailure": "Inloggningstjänsten kunde inte nås. Försök igen.",
     "keyManagementRestrictedTitle": "Dina nycklar hanteras av Divine",
     "keyManagementRestrictedBody": "För att hålla ditt konto säkert går det inte att säkerhetskopiera nyckeln eller importera en annan nyckel här.",
     "keyManagementNeverShare": "Dela aldrig din nsec med någon!",
@@ -1773,7 +1773,7 @@
         }
     },
     "keyManagementExportSuccess": "Privat nyckel kopierad till urklipp!\n\nFörvara den på ett säkert ställe.",
-    "keyManagementExportFailed": "Kunde inte exportera nyckeln: {error}",
+    "keyManagementExportFailed": "Kunde inte exportera nyckeln. Försök igen.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

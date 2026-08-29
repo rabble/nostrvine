@@ -8480,7 +8480,7 @@ abstract class AppLocalizations {
   /// Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence.
   ///
   /// In en, this message translates to:
-  /// **'the login service could not be reached'**
+  /// **'Couldn\'t reach the login service. Please try again.'**
   String get keyManagementKeycastGenericFailure;
 
   /// Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody).
@@ -8546,8 +8546,8 @@ abstract class AppLocalizations {
   /// No description provided for @keyManagementExportFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to export key: {error}'**
-  String keyManagementExportFailed(Object error);
+  /// **'Failed to export key. Please try again.'**
+  String get keyManagementExportFailed;
 
   /// Label above the truncated npub display on the key management screen.
   ///

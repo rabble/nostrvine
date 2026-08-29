@@ -1960,7 +1960,7 @@
     "keyManagementKeycastEmailUnverified": "Потвърди имейл адреса си, преди да копираш ключа.",
     "keyManagementKeycastDenied": "Divine управлява ключовете на този профил, така че те не могат да се копират тук.",
     "keyManagementKeycastNoKey": "За този профил няма записан ключ.",
-    "keyManagementKeycastGenericFailure": "услугата за вход е недостъпна",
+    "keyManagementKeycastGenericFailure": "Услугата за вход е недостъпна. Опитай пак.",
     "keyManagementRestrictedTitle": "Ключовете ти се управляват от Divine",
     "keyManagementRestrictedBody": "За да е сигурен профилът ти, резервно копие на ключа и внасяне на друг ключ не са налични тук.",
     "keyManagementNeverShare": "Никога не споделяй своя nsec с никого!",
@@ -1979,7 +1979,7 @@
         }
     },
     "keyManagementExportSuccess": "Частният ключ е копиран в клипборда!\n\nСъхранявайте го на сигурно място.",
-    "keyManagementExportFailed": "Неуспешно експортиране на ключ: {error}",
+    "keyManagementExportFailed": "Неуспешно експортиране на ключ. Опитай пак.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

@@ -1754,7 +1754,7 @@
     "keyManagementKeycastEmailUnverified": "Bestätige deine E-Mail-Adresse, bevor du deinen Schlüssel kopierst.",
     "keyManagementKeycastDenied": "Divine verwaltet die Schlüssel dieses Kontos, daher können sie hier nicht kopiert werden.",
     "keyManagementKeycastNoKey": "Für dieses Konto ist kein Schlüssel hinterlegt.",
-    "keyManagementKeycastGenericFailure": "der Login-Dienst war nicht erreichbar",
+    "keyManagementKeycastGenericFailure": "Der Login-Dienst war nicht erreichbar. Bitte versuch es nochmal.",
     "keyManagementRestrictedTitle": "Deine Schlüssel werden von Divine verwaltet",
     "keyManagementRestrictedBody": "Zur Sicherheit deines Kontos sind Schlüssel-Backup und der Import eines anderen Schlüssels hier nicht verfügbar.",
     "keyManagementNeverShare": "Teile deinen nsec niemals mit jemandem!",
@@ -1773,7 +1773,7 @@
         }
     },
     "keyManagementExportSuccess": "Private Key in die Zwischenablage kopiert!\n\nBewahre ihn sicher auf.",
-    "keyManagementExportFailed": "Schlüssel konnte nicht exportiert werden: {error}",
+    "keyManagementExportFailed": "Schlüssel konnte nicht exportiert werden. Bitte versuch es nochmal.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

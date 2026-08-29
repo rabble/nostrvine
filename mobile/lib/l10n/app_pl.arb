@@ -1754,7 +1754,7 @@
     "keyManagementKeycastEmailUnverified": "Potwierdź swój adres e-mail, zanim skopiujesz klucz.",
     "keyManagementKeycastDenied": "Divine zarządza kluczami tego konta, więc nie można ich tutaj skopiować.",
     "keyManagementKeycastNoKey": "Dla tego konta nie ma zapisanego klucza.",
-    "keyManagementKeycastGenericFailure": "nie udało się połączyć z serwisem logowania",
+    "keyManagementKeycastGenericFailure": "Nie udało się połączyć z serwisem logowania. Spróbuj ponownie.",
     "keyManagementRestrictedTitle": "Twoimi kluczami zarządza Divine",
     "keyManagementRestrictedBody": "Aby zapewnić bezpieczeństwo konta, kopia zapasowa klucza i import innego klucza nie są tutaj dostępne.",
     "keyManagementNeverShare": "Nigdy nie udostępniaj swojego nsec nikomu!",
@@ -1773,7 +1773,7 @@
         }
     },
     "keyManagementExportSuccess": "Klucz prywatny skopiowany do schowka!\n\nPrzechowuj go w bezpiecznym miejscu.",
-    "keyManagementExportFailed": "Nie udało się wyeksportować klucza: {error}",
+    "keyManagementExportFailed": "Nie udało się wyeksportować klucza. Spróbuj ponownie.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

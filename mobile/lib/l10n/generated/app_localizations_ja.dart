@@ -4659,7 +4659,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementKeycastNoKey => 'このアカウントに登録されている鍵はありません。';
 
   @override
-  String get keyManagementKeycastGenericFailure => 'ログインサービスに接続できませんでした';
+  String get keyManagementKeycastGenericFailure =>
+      'ログインサービスに接続できなかった。もう一回試してみて。';
 
   @override
   String get keyManagementRestrictedTitle => '鍵は Divine が管理しています';
@@ -4694,9 +4695,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementExportSuccess => '秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return '鍵のエクスポートがうまくいかなかった: $error';
-  }
+  String get keyManagementExportFailed => '鍵のエクスポートがうまくいかなかった。もう一回試してみて。';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'あなたの公開鍵 (npub)';

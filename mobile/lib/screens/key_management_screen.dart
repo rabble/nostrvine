@@ -350,10 +350,15 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         );
       }
     } catch (e) {
+      Log.error(
+        'Key export failed: $e',
+        name: 'KeyManagementScreen',
+        category: LogCategory.ui,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.keyManagementExportFailed(e),
+            context.l10n.keyManagementExportFailed,
             error: true,
           ),
         );

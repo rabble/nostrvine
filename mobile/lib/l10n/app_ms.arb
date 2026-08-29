@@ -2541,7 +2541,7 @@
   "keyManagementKeycastEmailUnverified": "Sahkan alamat e-mel anda sebelum menyalin kunci anda.",
   "keyManagementKeycastDenied": "Divine menguruskan kunci akaun ini, jadi ia tidak boleh disalin di sini.",
   "keyManagementKeycastNoKey": "Tiada kunci direkodkan untuk akaun ini.",
-  "keyManagementKeycastGenericFailure": "perkhidmatan log masuk tidak dapat dihubungi",
+  "keyManagementKeycastGenericFailure": "Perkhidmatan log masuk tidak dapat dihubungi. Sila cuba lagi.",
   "keyManagementRestrictedTitle": "Kunci anda diuruskan oleh Divine",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2565,7 +2565,7 @@
     }
   },
   "keyManagementExportSuccess": "Kunci peribadi disalin ke papan klip!\n\nSimpannya di tempat yang selamat.",
-  "keyManagementExportFailed": "Gagal mengeksport kunci: {error}",
+  "keyManagementExportFailed": "Gagal mengeksport kunci. Sila cuba lagi.",
   "@keyManagementExportFailed": {
     "placeholders": {
       "error": {

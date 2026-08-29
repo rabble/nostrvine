@@ -5023,7 +5023,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'le service de connexion est injoignable';
+      'Le service de connexion est injoignable. Réessaie.';
 
   @override
   String get keyManagementRestrictedTitle => 'Tes clés sont gérées par Divine';
@@ -5061,9 +5061,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Clé privée copiée dans le presse-papiers !\n\nRange-la dans un endroit sûr.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Échec de l\'exportation de la clé : $error';
-  }
+  String get keyManagementExportFailed =>
+      'Échec de l\'exportation de la clé. Réessaie.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Ta clé publique (npub)';

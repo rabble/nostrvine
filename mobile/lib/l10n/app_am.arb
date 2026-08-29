@@ -2149,7 +2149,7 @@
     "keyManagementKeycastEmailUnverified": "ቁልፍዎን ከመቅዳት በፊት የኢሜይል አድራሻዎን ያረጋግጡ።",
     "keyManagementKeycastDenied": "የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።",
     "keyManagementKeycastNoKey": "ለዚህ መለያ የተመዘገበ ቁልፍ የለም።",
-    "keyManagementKeycastGenericFailure": "የመግቢያ አገልግሎቱን ማግኘት አልተቻለም",
+    "keyManagementKeycastGenericFailure": "የመግቢያ አገልግሎቱን ማግኘት አልተቻለም። እንደገና ሞክር።",
     "keyManagementRestrictedTitle": "ቁልፎችህ በDivine ይተዳደራሉ",
     "keyManagementRestrictedBody": "መለያህን ደኅንነቱ የተጠበቀ ለማድረግ፣ የቁልፍ ምትኬና ሌላ ቁልፍ ማስመጣት እዚህ አይገኙም።",
     "keyManagementNeverShare": "የእርስዎን nsec ለማንም አያካፍሉ!",
@@ -2168,7 +2168,7 @@
         }
     },
     "keyManagementExportSuccess": "የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።",
-    "keyManagementExportFailed": "ቁልፉን ወደ ውጭ መላክ አልተሳካም፦ {error}",
+    "keyManagementExportFailed": "ቁልፉን ወደ ውጭ መላክ አልተሳካም። እባክህ እንደገና ሞክር።",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

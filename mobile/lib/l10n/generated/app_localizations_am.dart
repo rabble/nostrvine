@@ -4830,7 +4830,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementKeycastNoKey => 'ለዚህ መለያ የተመዘገበ ቁልፍ የለም።';
 
   @override
-  String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
+  String get keyManagementKeycastGenericFailure =>
+      'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get keyManagementRestrictedTitle => 'ቁልፎችህ በDivine ይተዳደራሉ';
@@ -4867,9 +4868,8 @@ class AppLocalizationsAm extends AppLocalizations {
       'የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'ቁልፉን ወደ ውጭ መላክ አልተሳካም፦ $error';
-  }
+  String get keyManagementExportFailed =>
+      'ቁልፉን ወደ ውጭ መላክ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'የህዝብ ቁልፍህ (npub)';

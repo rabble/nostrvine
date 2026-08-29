@@ -2541,7 +2541,7 @@
   "keyManagementKeycastEmailUnverified": "اپنی کلید کاپی کرنے سے پہلے اپنے ای میل ایڈریس کی تصدیق کریں۔",
   "keyManagementKeycastDenied": "Divine اس اکاؤنٹ کی کلیدیں سنبھالتا ہے، اس لیے انہیں یہاں کاپی نہیں کیا جا سکتا۔",
   "keyManagementKeycastNoKey": "اس اکاؤنٹ کے لیے ریکارڈ میں کوئی کلید نہیں ہے۔",
-  "keyManagementKeycastGenericFailure": "لاگ اِن سروس سے رابطہ نہیں ہو سکا",
+  "keyManagementKeycastGenericFailure": "لاگ اِن سروس سے رابطہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
   "keyManagementRestrictedTitle": "آپ کی کلیدیں Divine سنبھالتی ہے",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."
@@ -2565,7 +2565,7 @@
     }
   },
   "keyManagementExportSuccess": "نجی کلید کلپ بورڈ پر کاپی ہو گئی!\n\nاسے کسی محفوظ جگہ رکھیں۔",
-  "keyManagementExportFailed": "کلید ایکسپورٹ نہیں ہو سکی: {error}",
+  "keyManagementExportFailed": "کلید ایکسپورٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "@keyManagementExportFailed": {
     "placeholders": {
       "error": {

@@ -4674,7 +4674,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keyManagementKeycastNoKey => '이 계정에 등록된 키가 없어요.';
 
   @override
-  String get keyManagementKeycastGenericFailure => '로그인 서비스에 연결할 수 없습니다';
+  String get keyManagementKeycastGenericFailure =>
+      '로그인 서비스에 연결할 수 없었어요. 다시 시도해보세요.';
 
   @override
   String get keyManagementRestrictedTitle => '키는 Divine이 관리합니다';
@@ -4710,9 +4711,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '개인 키를 클립보드에 복사했어요!\n\n안전한 곳에 보관하세요.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return '키 내보내기에 실패했어요: $error';
-  }
+  String get keyManagementExportFailed => '키 내보내기에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get keyManagementYourPublicKeyLabel => '공개 키 (npub)';

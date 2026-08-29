@@ -1254,7 +1254,7 @@
     "keyManagementKeycastEmailUnverified": "키를 복사하기 전에 이메일 주소를 인증하세요.",
     "keyManagementKeycastDenied": "이 계정의 키는 Divine이 관리하므로 여기에서 복사할 수 없습니다.",
     "keyManagementKeycastNoKey": "이 계정에 등록된 키가 없어요.",
-    "keyManagementKeycastGenericFailure": "로그인 서비스에 연결할 수 없습니다",
+    "keyManagementKeycastGenericFailure": "로그인 서비스에 연결할 수 없었어요. 다시 시도해보세요.",
     "keyManagementRestrictedTitle": "키는 Divine이 관리합니다",
     "keyManagementRestrictedBody": "계정을 안전하게 지키기 위해 키 백업과 다른 키 가져오기는 여기서 제공하지 않아요.",
     "keyManagementNeverShare": "nsec을 절대 다른 사람과 공유하지 마세요!",
@@ -1273,7 +1273,7 @@
         }
     },
     "keyManagementExportSuccess": "개인 키를 클립보드에 복사했어요!\n\n안전한 곳에 보관하세요.",
-    "keyManagementExportFailed": "키 내보내기에 실패했어요: {error}",
+    "keyManagementExportFailed": "키 내보내기에 실패했어요. 다시 시도해보세요.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

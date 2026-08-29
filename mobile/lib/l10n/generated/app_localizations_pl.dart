@@ -5089,7 +5089,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'nie udało się połączyć z serwisem logowania';
+      'Nie udało się połączyć z serwisem logowania. Spróbuj ponownie.';
 
   @override
   String get keyManagementRestrictedTitle => 'Twoimi kluczami zarządza Divine';
@@ -5127,9 +5127,8 @@ class AppLocalizationsPl extends AppLocalizations {
       'Klucz prywatny skopiowany do schowka!\n\nPrzechowuj go w bezpiecznym miejscu.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Nie udało się wyeksportować klucza: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Nie udało się wyeksportować klucza. Spróbuj ponownie.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Twój klucz publiczny (npub)';

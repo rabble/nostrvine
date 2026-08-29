@@ -1758,7 +1758,7 @@
     "keyManagementKeycastEmailUnverified": "Verifica tu dirección de correo electrónico antes de copiar tu clave.",
     "keyManagementKeycastDenied": "Divine gestiona las claves de esta cuenta, así que no se pueden copiar aquí.",
     "keyManagementKeycastNoKey": "No hay ninguna clave registrada para esta cuenta.",
-    "keyManagementKeycastGenericFailure": "no se pudo conectar con el servicio de inicio de sesión",
+    "keyManagementKeycastGenericFailure": "No se pudo conectar con el servicio de inicio de sesión. Intentalo de nuevo.",
     "keyManagementRestrictedTitle": "Divine gestiona tus claves",
     "keyManagementRestrictedBody": "Para mantener tu cuenta segura, aquí no están disponibles la copia de seguridad de la clave ni la importación de otra clave.",
     "keyManagementNeverShare": "¡Nunca compartas tu nsec con nadie!",
@@ -1777,7 +1777,7 @@
         }
     },
     "keyManagementExportSuccess": "¡Clave privada copiada al portapapeles!\n\nGuardala en un lugar seguro.",
-    "keyManagementExportFailed": "No se pudo exportar la clave: {error}",
+    "keyManagementExportFailed": "No se pudo exportar la clave. Intentalo de nuevo.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

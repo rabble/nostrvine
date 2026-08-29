@@ -4951,7 +4951,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'inloggningstjänsten kunde inte nås';
+      'Inloggningstjänsten kunde inte nås. Försök igen.';
 
   @override
   String get keyManagementRestrictedTitle => 'Dina nycklar hanteras av Divine';
@@ -4989,9 +4989,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Privat nyckel kopierad till urklipp!\n\nFörvara den på ett säkert ställe.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Kunde inte exportera nyckeln: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Kunde inte exportera nyckeln. Försök igen.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Din publika nyckel (npub)';

@@ -1754,7 +1754,7 @@
     "keyManagementKeycastEmailUnverified": "Confirmă adresa de e-mail înainte de a copia cheia.",
     "keyManagementKeycastDenied": "Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.",
     "keyManagementKeycastNoKey": "Nu există nicio cheie înregistrată pentru acest cont.",
-    "keyManagementKeycastGenericFailure": "serviciul de autentificare nu a putut fi contactat",
+    "keyManagementKeycastGenericFailure": "Serviciul de autentificare nu a putut fi contactat. Încearcă din nou.",
     "keyManagementRestrictedTitle": "Cheile tale sunt gestionate de Divine",
     "keyManagementRestrictedBody": "Ca să îți păstrăm contul în siguranță, salvarea cheii și importul altei chei nu sunt disponibile aici.",
     "keyManagementNeverShare": "Nu împărți niciodată nsec-ul cu nimeni!",
@@ -1773,7 +1773,7 @@
         }
     },
     "keyManagementExportSuccess": "Cheia privată a fost copiată în clipboard!\n\nȚine-o într-un loc sigur.",
-    "keyManagementExportFailed": "N-am putut exporta cheia: {error}",
+    "keyManagementExportFailed": "N-am putut exporta cheia. Încearcă din nou.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

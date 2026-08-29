@@ -4990,7 +4990,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'não foi possível acessar o serviço de login';
+      'Não foi possível acessar o serviço de login. Tente novamente.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5029,9 +5029,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Chave privada copiada para a área de transferência!\n\nGuarde em um lugar seguro.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Falha ao exportar chave: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Falha ao exportar chave. Por favor, tente novamente.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Sua chave pública (npub)';

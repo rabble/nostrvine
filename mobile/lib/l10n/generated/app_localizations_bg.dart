@@ -5007,7 +5007,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'услугата за вход е недостъпна';
+      'Услугата за вход е недостъпна. Опитай пак.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5046,9 +5046,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Частният ключ е копиран в клипборда!\n\nСъхранявайте го на сигурно място.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Неуспешно експортиране на ключ: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Неуспешно експортиране на ключ. Опитай пак.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Твоят публичен ключ (npub)';

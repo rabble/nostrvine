@@ -1754,7 +1754,7 @@
     "keyManagementKeycastEmailUnverified": "Bevestig je e-mailadres voordat je je sleutel kopieert.",
     "keyManagementKeycastDenied": "Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.",
     "keyManagementKeycastNoKey": "Voor dit account staat geen sleutel geregistreerd.",
-    "keyManagementKeycastGenericFailure": "de inlogservice was niet bereikbaar",
+    "keyManagementKeycastGenericFailure": "De inlogservice was niet bereikbaar. Probeer het opnieuw.",
     "keyManagementRestrictedTitle": "Je sleutels worden beheerd door Divine",
     "keyManagementRestrictedBody": "Om je account veilig te houden zijn sleutelback-up en het importeren van een andere sleutel hier niet beschikbaar.",
     "keyManagementNeverShare": "Deel je nsec nooit met iemand!",
@@ -1773,7 +1773,7 @@
         }
     },
     "keyManagementExportSuccess": "Privésleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.",
-    "keyManagementExportFailed": "Sleutel exporteren mislukt: {error}",
+    "keyManagementExportFailed": "Sleutel exporteren mislukt. Probeer het opnieuw.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

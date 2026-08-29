@@ -5019,7 +5019,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'der Login-Dienst war nicht erreichbar';
+      'Der Login-Dienst war nicht erreichbar. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5058,9 +5058,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Private Key in die Zwischenablage kopiert!\n\nBewahre ihn sicher auf.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Schlüssel konnte nicht exportiert werden: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Schlüssel konnte nicht exportiert werden. Bitte versuch es nochmal.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Dein Public Key (npub)';

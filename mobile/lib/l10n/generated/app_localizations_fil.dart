@@ -4989,7 +4989,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'hindi maabot ang login service';
+      'Hindi maabot ang login service. Subukan ulit.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5028,9 +5028,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nakopya ang private key sa clipboard!\n\nItago ito sa ligtas na lugar.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'Hindi na-export ang key: $error';
-  }
+  String get keyManagementExportFailed =>
+      'Hindi na-export ang key. Subukan ulit.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Ang public key mo (npub)';

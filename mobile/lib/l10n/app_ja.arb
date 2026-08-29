@@ -1744,7 +1744,7 @@
     "keyManagementKeycastEmailUnverified": "鍵をコピーする前にメールアドレスを確認してください。",
     "keyManagementKeycastDenied": "このアカウントの鍵は Divine が管理しているため、ここではコピーできません。",
     "keyManagementKeycastNoKey": "このアカウントに登録されている鍵はありません。",
-    "keyManagementKeycastGenericFailure": "ログインサービスに接続できませんでした",
+    "keyManagementKeycastGenericFailure": "ログインサービスに接続できなかった。もう一回試してみて。",
     "keyManagementRestrictedTitle": "鍵は Divine が管理しています",
     "keyManagementRestrictedBody": "アカウントを安全に保つため、鍵のバックアップと別の鍵のインポートはここでは利用できません。",
     "keyManagementNeverShare": "nsec は誰にも共有しないで！",
@@ -1763,7 +1763,7 @@
         }
     },
     "keyManagementExportSuccess": "秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。",
-    "keyManagementExportFailed": "鍵のエクスポートがうまくいかなかった: {error}",
+    "keyManagementExportFailed": "鍵のエクスポートがうまくいかなかった。もう一回試してみて。",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

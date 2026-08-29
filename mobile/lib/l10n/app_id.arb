@@ -1751,7 +1751,7 @@
     "keyManagementKeycastEmailUnverified": "Verifikasi alamat emailmu sebelum menyalin kunci.",
     "keyManagementKeycastDenied": "Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.",
     "keyManagementKeycastNoKey": "Tidak ada kunci yang tercatat untuk akun ini.",
-    "keyManagementKeycastGenericFailure": "layanan login tidak dapat dihubungi",
+    "keyManagementKeycastGenericFailure": "Layanan login tidak dapat dihubungi. Silakan coba lagi.",
     "keyManagementRestrictedTitle": "Kuncimu dikelola oleh Divine",
     "keyManagementRestrictedBody": "Demi keamanan akunmu, pencadangan kunci dan impor kunci lain tidak tersedia di sini.",
     "keyManagementNeverShare": "Jangan pernah bagikan nsec-mu ke siapa pun!",
@@ -1770,7 +1770,7 @@
         }
     },
     "keyManagementExportSuccess": "Kunci privat disalin ke clipboard!\n\nSimpan di tempat yang aman.",
-    "keyManagementExportFailed": "Gagal mengekspor kunci: {error}",
+    "keyManagementExportFailed": "Gagal mengekspor kunci. Silakan coba lagi.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {

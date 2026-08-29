@@ -5101,7 +5101,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'serviciul de autentificare nu a putut fi contactat';
+      'Serviciul de autentificare nu a putut fi contactat. Încearcă din nou.';
 
   @override
   String get keyManagementRestrictedTitle =>
@@ -5140,9 +5140,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cheia privată a fost copiată în clipboard!\n\nȚine-o într-un loc sigur.';
 
   @override
-  String keyManagementExportFailed(Object error) {
-    return 'N-am putut exporta cheia: $error';
-  }
+  String get keyManagementExportFailed =>
+      'N-am putut exporta cheia. Încearcă din nou.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Cheia ta publică (npub)';
