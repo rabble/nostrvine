@@ -205,10 +205,6 @@ class UploadManager implements BackgroundAwareService {
   bool isUploadWaitingForRetryBackoff(String uploadId) =>
       _retryPolicy.isWaitingForBackoff(uploadId);
 
-  /// Drives a recovery sweep on demand. Visible for testing.
-  @visibleForTesting
-  Future<void> recoverStuckUploadsForTest() => _recoverStuckUploads();
-
   void _registerForBackgroundActivity() {
     if (_isBackgroundRegistered) return;
     _backgroundActivityManager.registerService(this);
@@ -1316,11 +1312,6 @@ class UploadManager implements BackgroundAwareService {
   @visibleForTesting
   bool isRetriableError(dynamic error) => _retryPolicy.isRetriableError(error);
 
-  /// Delegates to [UploadProgressReporter.getNetworkTypeString].
-  @visibleForTesting
-  String getNetworkTypeString(ConnectivityResult connectivity) =>
-      _reporter.getNetworkTypeString(connectivity);
-
   /// Delegates to [UploadProgressReporter.categorizeError].
   @visibleForTesting
   Future<String> categorizeError(dynamic error) =>
@@ -1704,16 +1695,6 @@ class UploadManager implements BackgroundAwareService {
   /// Delegates to [UploadProgressReporter.getPerformanceMetrics].
   Map<String, dynamic> getPerformanceMetrics() =>
       _reporter.getPerformanceMetrics();
-
-  /// Enhanced retry mechanism for manual retry.
-  ///
-  /// Delegates to [UploadRetryPolicy.retryUploadWithBackoff].
-  Future<void> retryUploadWithBackoff(String uploadId) async {
-    await _retryPolicy.retryUploadWithBackoff(
-      uploadId,
-      performUpload: _performUpload,
-    );
-  }
 
   /// Create successful upload with metadata.
   ///
