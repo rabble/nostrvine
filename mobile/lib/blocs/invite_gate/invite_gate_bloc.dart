@@ -190,7 +190,11 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
   ) {
     return switch (reason) {
       InviteActivationFailureReason.alreadyUsed => InviteCodeError.alreadyUsed,
-      _ => null,
+      InviteActivationFailureReason.invalid ||
+      InviteActivationFailureReason.creatorFull ||
+      InviteActivationFailureReason.authFailure ||
+      InviteActivationFailureReason.temporary ||
+      InviteActivationFailureReason.unknown => null,
     };
   }
 

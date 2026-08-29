@@ -136,7 +136,8 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
           if (widget.initialCode?.isNotEmpty ?? false)
             'code': widget.initialCode!,
           // Preserve the error signal if onboarding flips back to invite-only;
-          // the invite gate discards the raw text before rendering it.
+          // the invite gate discards the raw text before rendering it. See
+          // #8305 for removing this parameter from the remaining auth routes.
           if (widget.initialError?.isNotEmpty ?? false)
             'error': widget.initialError!,
           if (widget.initialSourceSlug?.isNotEmpty ?? false)

@@ -54,9 +54,6 @@ class VideoRecorderBlocState extends Equatable {
     ],
     this.isVideoStabilizationSupported = false,
     this.timerDuration = TimerDuration.off,
-    // TODO(#4787): Replace with a status enum + l10n key per
-    // `state_management.md` once the UI migration (PR2/PR3) is in.
-    // Kept as-is for PR1 to preserve verbatim provider behavior.
     this.initializationError,
     this.showLastClipOverlay = false,
     this.showGridLines = false,
