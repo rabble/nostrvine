@@ -137,15 +137,38 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
     });
 
-    test('clearPageOpen resets owner-held page overlays', () {
+    test('clearPageOpen drops every page owner, not just one', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final notifier = container.read(overlayVisibilityProvider.notifier);
 
+      // Two owners, so the test can tell a clear from a single remove.
+      notifier.setPageOpenForOwner(Object(), isOpen: true);
       notifier.setPageOpenForOwner(Object(), isOpen: true);
       notifier.clearPageOpen();
 
       expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
+    });
+
+    test('clearPageOpen leaves bottom sheet owners holding', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final sheetOwner = Object();
+
+      notifier.setPageOpenForOwner(Object(), isOpen: true);
+      notifier.setBottomSheetOpenForOwner(sheetOwner, isOpen: true);
+      notifier.clearPageOpen();
+
+      final state = container.read(overlayVisibilityProvider);
+      expect(state.isPageOpen, isFalse);
+      expect(
+        state.isBottomSheetOpen,
+        isTrue,
+        reason:
+            'AppShell.didPopNext uses this to recover stranded page tokens '
+            'while a branch-navigator sheet is still on screen',
+      );
     });
 
     test('isMounted returns false after container disposal', () {
@@ -202,6 +225,52 @@ void main() {
       );
     });
 
+    test('releasing an unknown owner preserves active bottom sheets', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final owner = Object();
+
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: true);
+      notifier.setBottomSheetOpenForOwner(Object(), isOpen: false);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+        reason: "an unmatched release must not close another owner's sheet",
+      );
+
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: false);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+      );
+    });
+
+    test('duplicate open for the same bottom sheet owner is idempotent', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(overlayVisibilityProvider.notifier);
+      final owner = Object();
+
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: true);
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: true);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
+
+      notifier.setBottomSheetOpenForOwner(owner, isOpen: false);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+        reason: 'one release must undo a repeated open for the same owner',
+      );
+    });
+
     test('provider rebuild preserves owner-held bottom sheet overlays', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -229,7 +298,10 @@ void main() {
       addTearDown(container.dispose);
       final notifier = container.read(overlayVisibilityProvider.notifier);
 
+      // Two owners per set, so the test can tell a clear from a remove.
       notifier.setPageOpenForOwner(Object(), isOpen: true);
+      notifier.setPageOpenForOwner(Object(), isOpen: true);
+      notifier.setBottomSheetOpenForOwner(Object(), isOpen: true);
       notifier.setBottomSheetOpenForOwner(Object(), isOpen: true);
       notifier.clearOverlays();
 
