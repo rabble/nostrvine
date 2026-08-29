@@ -931,6 +931,62 @@ void main() {
         },
       );
 
+      testWidgets(
+        'does not resume imperatively paused playback when the gate stays open',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0]);
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final video = _makeVideo('paused_gate_unchanged');
+
+          bool gate(VideoEvent video) => true;
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: [video],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: gate,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(harness.countCalls('play'), equals(1));
+
+            key.currentState!.pauseCurrentPlayback();
+            await tester.pump();
+
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  key: key,
+                  videos: [video],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: gate,
+                ),
+              ),
+            );
+            await tester.pump();
+
+            expect(harness.countCalls('pause'), equals(1));
+            expect(harness.countCalls('play'), equals(1));
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
       testWidgets('pauses active playback when canAutoPlay gate closes', (
         tester,
       ) async {
