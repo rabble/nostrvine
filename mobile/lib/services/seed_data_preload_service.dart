@@ -96,14 +96,8 @@ class SeedDataPreloadService {
 
   static void _insertEvent(Batch batch, Map<String, dynamic> event) {
     final kind = event['kind'] as int;
-    // `expire_at` is set, not omitted. `deleteExpiredEvents` runs from
-    // `beforeOpen` on every open and deletes `expire_at IS NULL` rows as well
-    // as past-dated ones, so an omitted column meant every seeded event was
-    // destroyed on the second cold start — and never restored, because the
-    // reload above is gated on the database being empty and relay-cached rows
-    // keep the count above zero. The profiles and metrics seeded alongside
-    // them are not swept, so what survived was an orphaned half of the bundle
-    // (#8316).
+    // NULL is treated as expired during startup cleanup; seed rows persist.
+    // See #8316.
     batch.customStatement(
       'INSERT OR IGNORE INTO event '
       '(id, pubkey, created_at, kind, tags, content, sig, sources, d_tag, '
