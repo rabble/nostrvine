@@ -32,6 +32,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/creator_delete_enforcement_repository.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
@@ -39,6 +40,9 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+// Override lives in riverpod's misc barrel; flutter_riverpod does not
+// re-export the type name even though it accepts List<Override>.
+import 'package:riverpod/misc.dart' show Override;
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -52,6 +56,30 @@ class _MockEnforcementRepository extends Mock
     implements CreatorDeleteEnforcementRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+/// Provider overrides every scope in this file needs.
+///
+/// [ComposableVideoGrid] renders `UserName`, which reaches the user-profile
+/// provider chain and transitively requires SharedPreferences. Without the
+/// override the scope throws `UnimplementedError: sharedPreferencesProvider
+/// must be overridden`, which is why this file's tile-rendering tests were
+/// previously disabled with `skip: true`.
+List<Override> _gridOverrides(
+  broken_tracker.BrokenVideoTracker tracker, {
+  MockNostrClient? nostrService,
+  List<Override> extra = const [],
+}) => [
+  sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
+  nostrServiceProvider.overrideWithValue(
+    nostrService ?? createMockNostrService(),
+  ),
+  brokenVideoTrackerProvider.overrideWith((ref) async => tracker),
+  subscribedListVideoCacheProvider.overrideWithValue(null),
+  userProfileReactiveProvider.overrideWith(
+    (ref, pubkey) => Stream.value(null),
+  ),
+  ...extra,
+];
 
 void main() {
   group('ComposableVideoGrid', () {
@@ -110,9 +138,7 @@ void main() {
     testWidgets('renders grid with provided videos', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -131,8 +157,7 @@ void main() {
 
       // Should render 2 video tiles
       expect(find.byType(GestureDetector), findsNWidgets(2));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('filters out broken videos using BrokenVideoTracker', (
       tester,
@@ -142,9 +167,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -162,17 +185,14 @@ void main() {
 
       // Should only render 2 tiles (broken_video filtered out)
       expect(find.byType(GestureDetector), findsNWidgets(2));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('shows empty state when no videos after filtering', (
       tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -199,9 +219,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -240,9 +258,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -279,9 +295,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -307,15 +321,12 @@ void main() {
       expect(tappedIndex, equals(1));
       expect(tappedVideos, isNotNull);
       expect(tappedVideos!.length, equals(2));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('uses correct grid parameters', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -332,22 +343,20 @@ void main() {
 
       await tester.pump();
 
-      // Find GridView and verify delegate
-      final gridView = tester.widget<GridView>(find.byType(GridView));
+      // The grid is built from slivers inside a CustomScrollView, so the
+      // delegate hangs off SliverGrid rather than a GridView.
+      final sliverGrid = tester.widget<SliverGrid>(find.byType(SliverGrid));
       final delegate =
-          gridView.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+          sliverGrid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
 
       expect(delegate.crossAxisCount, equals(3));
       expect(delegate.childAspectRatio, equals(1.0));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
-    testWidgets('displays video metadata correctly', (tester) async {
+    testWidgets('renders the video title over the thumbnail', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -363,12 +372,10 @@ void main() {
 
       await tester.pump();
 
-      // Check for video metadata display
+      // The info overlay carries the author and the title. Engagement counts
+      // and the duration badge are no longer rendered here.
       expect(find.text('Video 1'), findsOneWidget);
-      expect(find.text('10'), findsOneWidget); // likes count
-      expect(find.text('5s'), findsOneWidget); // duration badge
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     group('delete confirmation copy', () {
       testWidgets(
@@ -392,16 +399,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
-              overrides: [
-                brokenVideoTrackerProvider.overrideWith(
-                  (ref) async => mockTracker,
-                ),
-                subscribedListVideoCacheProvider.overrideWithValue(null),
-                nostrServiceProvider.overrideWithValue(mockNostr),
-                userProfileReactiveProvider.overrideWith(
-                  (ref, pubkey) => Stream.value(null),
-                ),
-              ],
+              overrides: _gridOverrides(mockTracker, nostrService: mockNostr),
               child: MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
@@ -466,23 +464,19 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              brokenVideoTrackerProvider.overrideWith(
-                (ref) async => mockTracker,
-              ),
-              subscribedListVideoCacheProvider.overrideWithValue(null),
-              nostrServiceProvider.overrideWithValue(mockNostr),
-              userProfileReactiveProvider.overrideWith(
-                (ref, pubkey) => Stream.value(null),
-              ),
-              contentDeletionServiceProvider.overrideWith(
-                (ref) async => deletionService,
-              ),
-              creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
-                enforcementRepository,
-              ),
-              videoEventServiceProvider.overrideWithValue(videoEventService),
-            ],
+            overrides: _gridOverrides(
+              mockTracker,
+              nostrService: mockNostr,
+              extra: [
+                contentDeletionServiceProvider.overrideWith(
+                  (ref) async => deletionService,
+                ),
+                creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                  enforcementRepository,
+                ),
+                videoEventServiceProvider.overrideWithValue(videoEventService),
+              ],
+            ),
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -570,23 +564,19 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [
-              brokenVideoTrackerProvider.overrideWith(
-                (ref) async => mockTracker,
-              ),
-              subscribedListVideoCacheProvider.overrideWithValue(null),
-              nostrServiceProvider.overrideWithValue(mockNostr),
-              userProfileReactiveProvider.overrideWith(
-                (ref, pubkey) => Stream.value(null),
-              ),
-              contentDeletionServiceProvider.overrideWith(
-                (ref) async => deletionService,
-              ),
-              creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
-                enforcementRepository,
-              ),
-              videoEventServiceProvider.overrideWithValue(videoEventService),
-            ],
+            overrides: _gridOverrides(
+              mockTracker,
+              nostrService: mockNostr,
+              extra: [
+                contentDeletionServiceProvider.overrideWith(
+                  (ref) async => deletionService,
+                ),
+                creatorDeleteEnforcementRepositoryProvider.overrideWithValue(
+                  enforcementRepository,
+                ),
+                videoEventServiceProvider.overrideWithValue(videoEventService),
+              ],
+            ),
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
@@ -659,10 +649,7 @@ void main() {
         Future<void> Function()? onLoadMore,
       }) {
         return ProviderScope(
-          overrides: [
-            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
-            subscribedListVideoCacheProvider.overrideWithValue(null),
-          ],
+          overrides: _gridOverrides(mockTracker),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
