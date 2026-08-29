@@ -1,0 +1,23 @@
+name: bookmarks_repository
+description: >
+  Repository for the user's NIP-51 kind 10003 global bookmark list, including
+  its encrypted private section.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  meta: ^1.17.0
+  nostr_client:
+  nostr_sdk:
+  shared_preferences: ^2.5.3
+  unified_logger:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.2.0

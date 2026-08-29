@@ -30,6 +30,7 @@ workspace:
   - packages/badge_repository
   - packages/blossom_upload_service
   - packages/blurhash_service
+  - packages/bookmarks_repository
   - packages/cache_sync
   - packages/caption_generator
   - packages/categories_repository
@@ -203,6 +204,9 @@ dependencies:
 
   # Blurhash Service - Blurhash generation and decoding for image placeholders
   blurhash_service:
+
+  # Bookmarks Repository - NIP-51 kind 10003 global bookmark list (#6969)
+  bookmarks_repository:
 
   cache_sync:
 
