@@ -995,9 +995,9 @@ class VideoPublishService {
       }
     } catch (_) {
       // Intentional no-op: the host only decorates an error message. Falling
-      // through to null renders the generic copy instead of the server-named
-      // one, which is strictly better than replacing a real publish failure
-      // with a failure to look up its server name.
+      // through to null uses the localized unknown-server fallback, which is
+      // strictly better than replacing a real publish failure with a failure
+      // to look up its server name.
     }
     return null;
   }
