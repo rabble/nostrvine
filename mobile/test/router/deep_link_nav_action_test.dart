@@ -2,7 +2,7 @@
 // ABOUTME: Verifies non-video deep links preserve back stack semantics.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/router/deep_link_coordinator.dart' as app;
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';

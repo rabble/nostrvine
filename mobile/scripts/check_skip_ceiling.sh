@@ -27,7 +27,7 @@
 # a regex that was wrong in both directions: it missed a `skip:` whose reason
 # `dart format` wrapped onto the next line (2 live sites), could not see an
 # `@Skip` annotation at all, matched `skip:` inside comments and strings, and
-# needed main_video_cache_startup_test.dart excluded BY FILENAME because that
+# needed startup/video_cache_startup_test.dart excluded BY FILENAME because that
 # file passes `skip:` to the function under test. The parser attributes that
 # argument to its own callee, so the exclusion is gone. bloc_test's `skip: N`
 # — an assertion offset, not a disabled test — is excluded by callee name.

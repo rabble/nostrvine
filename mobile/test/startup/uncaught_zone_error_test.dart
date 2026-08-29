@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/startup/app_bootstrap.dart' as app;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {

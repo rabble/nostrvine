@@ -18,7 +18,7 @@ void main() {
     });
 
     test('CrashReportingService can be initialized early', () async {
-      // This mimics what happens in _startOpenVineApp
+      // This mimics what happens in startOpenVineApp
       final startTime = DateTime.now();
 
       // Initialize crash reporting first

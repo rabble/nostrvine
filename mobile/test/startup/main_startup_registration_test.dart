@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/startup/app_bootstrap.dart' as bootstrap;
+import 'package:openvine/startup/startup_coordinator_factory.dart' as app;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 
@@ -39,7 +40,7 @@ void main() {
         var updaterCreations = 0;
         var updateCalls = 0;
 
-        app.startShorebirdStartupUpdate(
+        bootstrap.startShorebirdStartupUpdate(
           preferences: preferences,
           updaterFactory: () {
             updaterCreations++;
@@ -68,7 +69,7 @@ void main() {
       ShorebirdUpdater? shared;
       var updaterCreations = 0;
 
-      app.startShorebirdStartupUpdate(
+      bootstrap.startShorebirdStartupUpdate(
         preferences: preferences,
         updaterFactory: () {
           updaterCreations++;
@@ -92,7 +93,7 @@ void main() {
       final preferences = await SharedPreferences.getInstance();
       var reports = 0;
 
-      await app.updateShorebirdFromSubscribedTrack(
+      await bootstrap.updateShorebirdFromSubscribedTrack(
         updater: _FakeUpdater(
           status: UpdateStatus.outdated,
           updateError: const UpdateException(
@@ -113,7 +114,7 @@ void main() {
       Object? reported;
       final error = StateError('broken invariant');
 
-      await app.updateShorebirdFromSubscribedTrack(
+      await bootstrap.updateShorebirdFromSubscribedTrack(
         updater: _FakeUpdater(
           status: UpdateStatus.outdated,
           updateError: error,

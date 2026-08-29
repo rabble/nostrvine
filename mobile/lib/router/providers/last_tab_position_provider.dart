@@ -16,6 +16,16 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
 
       if (ctx.type == RouteType.home) return;
 
+      // Inbox is tab 2's base state. Returning to it must clear any remembered
+      // notification feed, or leaving and restoring the tab reopens stale
+      // notification content instead of the inbox the user last visited.
+      if (ctx.type == RouteType.inbox) {
+        if (state.containsKey(RouteType.notifications)) {
+          state = {...state}..remove(RouteType.notifications);
+        }
+        return;
+      }
+
       // Only track video-based routes
       if (ctx.type == RouteType.videoRecorder ||
           ctx.type == RouteType.videoEditor ||
@@ -23,6 +33,17 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
           ctx.type == RouteType.settings ||
           ctx.type == RouteType.badges ||
           ctx.type == RouteType.categoryGallery) {
+        return;
+      }
+
+      // Landing on the Explore grid has to *erase* the tab's remembered
+      // feed index, not record 0. `getPosition` documents null as grid
+      // mode, and coercing the grid's absent index to 0 left every consumer
+      // resuming a video the user never chose (#8084).
+      if (ctx.type == RouteType.explore && ctx.videoIndex == null) {
+        if (state.containsKey(RouteType.explore)) {
+          state = {...state}..remove(RouteType.explore);
+        }
         return;
       }
 
@@ -52,6 +73,16 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
     // For routes that always have an index (home, notifications, profile), default to 0
     return state[type] ?? 0;
   }
+
+  /// The index actually recorded for [type], with no default substituted.
+  ///
+  /// [getPosition] answers "where should this tab open", so it defaults to 0
+  /// for every route that always carries an index — including
+  /// [RouteType.notifications], which therefore never reads as null. Callers
+  /// that need to distinguish "never visited" from "visited at index 0" have
+  /// to ask for the raw value: tab 2 hosts both /inbox and
+  /// /notifications/:index, and only a genuine visit should resume the feed.
+  int? recordedPosition(RouteType type) => state[type];
 
   /// Records a tab position without forcing a route change.
   ///

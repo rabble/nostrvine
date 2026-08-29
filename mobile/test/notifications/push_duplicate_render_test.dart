@@ -3,7 +3,7 @@
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/notifications/notification_tap_router.dart' as app;
 
 void main() {
   group('shouldRenderLocalPushNotification', () {

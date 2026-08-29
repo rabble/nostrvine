@@ -3,7 +3,7 @@
 // ABOUTME: shares the same routing contract as in-app notification rows.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/main.dart' as app;
+import 'package:openvine/notifications/notification_tap_router.dart' as app;
 import 'package:openvine/notifications/routing/notification_tap_target.dart';
 
 void main() {

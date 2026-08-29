@@ -30,7 +30,6 @@ test/providers/video_events_provider_fresh_test.dart	1 # quarantine: real relay 
 test/providers/video_events_provider_test.dart	1 # rewrite: stubs subscribe(named filters:), now a positional param (#4836)
 test/repositories/profile_cache_sync_test.dart	1 # delete: pure mocktail tautology, asserts only values it stubbed (#4836)
 test/router/all_routes_test.dart	1 # rewrite: bare container, sharedpreferencesprovider must be set (#4836)
-test/router/app_shell_header_test.dart	5 # rewrite: home has no appbar, back icon is svg not icons.arrow_back (#4836)
 test/router/app_shell_integration_test.dart	4 # rewrite: bare container, tags tab gone, index 2 is notifications (#4836)
 test/router/consolidated_routes_test.dart	2 # delete: duplicates all_routes_test /explore and /hashtag mounts (#4836)
 test/router/explore_tab_navigation_test.dart	1 # rewrite: explore tabs renamed, needs appversionprovider override (#4836)
