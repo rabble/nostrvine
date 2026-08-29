@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/local_content_diagnostics_service.dart';
 
@@ -91,7 +92,7 @@ void main() {
 
       expect(diagnostics, {
         'visibleDraftRows': 3,
-        'visibleClipRows': 2,
+        'visibleClipRows': 0,
         'anonymousDraftRows': 1,
         'anonymousClipRows': 1,
         'foreignDraftRows': 1,
@@ -175,5 +176,65 @@ void main() {
         expect(diagnostics['zeroClipDraftRows'], 1);
       },
     );
+
+    test('matches active library clip visibility', () async {
+      Future<void> saveClip({
+        required String id,
+        required String? owner,
+        required String? draftId,
+      }) {
+        return database.clipsDao.upsertClip(
+          id: id,
+          orderIndex: 0,
+          durationMs: 1000,
+          recordedAt: DateTime(2026, 8, 29),
+          data: '{}',
+          filePath: '$id.mp4',
+          thumbnailPath: null,
+          draftId: draftId,
+          ownerPubkey: owner,
+        );
+      }
+
+      await saveClip(id: 'library', owner: _ownerA, draftId: null);
+      await saveClip(
+        id: 'autosave',
+        owner: _ownerA,
+        draftId: VideoEditorConstants.autoSaveId,
+      );
+      await saveClip(id: 'named-draft', owner: _ownerA, draftId: 'draft');
+      await saveClip(id: 'foreign', owner: _ownerB, draftId: null);
+      await saveClip(id: 'trashed', owner: _ownerA, draftId: null);
+      await database.clipsDao.softDeleteClip(
+        id: 'trashed',
+        deletedAt: DateTime(2026, 8, 29),
+      );
+
+      final diagnostics = await LocalContentDiagnosticsService(
+        clipsDao: database.clipsDao,
+        draftsDao: database.draftsDao,
+        ownerPubkey: _ownerA,
+        documentsPath: '/documents',
+        fileExists: (_) async => false,
+      ).collect();
+
+      expect(diagnostics['visibleClipRows'], 2);
+      expect(diagnostics['missingSourceMediaFiles'], 3);
+    });
+
+    test('counts zero-clip drafts for the visible owner only', () async {
+      await saveDraft(id: 'owned-empty', owner: _ownerA);
+      await saveDraft(id: 'foreign-empty', owner: _ownerB);
+
+      final diagnostics = await LocalContentDiagnosticsService(
+        clipsDao: database.clipsDao,
+        draftsDao: database.draftsDao,
+        ownerPubkey: _ownerA,
+        documentsPath: '/documents',
+        fileExists: (_) async => true,
+      ).collect();
+
+      expect(diagnostics['zeroClipDraftRows'], 1);
+    });
   });
 }

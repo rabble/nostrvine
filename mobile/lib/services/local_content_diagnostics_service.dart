@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 
@@ -34,7 +35,13 @@ class LocalContentDiagnosticsService {
     final clips = await _clipsDao.getAllClips(includeTrashed: true);
     final drafts = await _draftsDao.getAllDrafts();
 
-    final visibleClips = clips.where((row) => _isVisible(row.ownerPubkey));
+    final visibleClips = clips.where(
+      (row) =>
+          row.deletedAt == null &&
+          _isVisible(row.ownerPubkey) &&
+          (row.draftId == null ||
+              row.draftId == VideoEditorConstants.autoSaveId),
+    );
     final visibleDrafts = drafts.where((row) => _isVisible(row.ownerPubkey));
     final anonymousClips = clips.where(
       (row) => row.ownerPubkey == DraftStorageService.anonymousOwnerPubkey,
@@ -47,10 +54,14 @@ class LocalContentDiagnosticsService {
 
     final draftIdsWithClips = {
       for (final clip in clips)
-        if (clip.draftId != null && clip.deletedAt == null) clip.draftId!,
+        if (clip.draftId != null &&
+            clip.deletedAt == null &&
+            _isVisible(clip.ownerPubkey))
+          clip.draftId!,
     };
     final sourceFiles = <String>{};
     for (final clip in clips) {
+      if (clip.deletedAt != null || !_isVisible(clip.ownerPubkey)) continue;
       final rawPath = clip.filePath;
       if (rawPath == null || rawPath.isEmpty) continue;
       final path = resolvePath(rawPath, _documentsPath);
@@ -66,7 +77,7 @@ class LocalContentDiagnosticsService {
       'anonymousClipRows': anonymousClips.length,
       'foreignDraftRows': foreignDrafts.length,
       'foreignClipRows': foreignClips.length,
-      'zeroClipDraftRows': drafts
+      'zeroClipDraftRows': visibleDrafts
           .where((draft) => !draftIdsWithClips.contains(draft.id))
           .length,
       'missingSourceMediaFiles': missingSourceFileCount,
