@@ -14,6 +14,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nip04/nip04.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:nostr_sdk/utils/nostr_timestamp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +23,13 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockBookmarkSigner extends Mock implements BookmarkSigner {}
 
 class _FakeEvent extends Fake implements Event {}
+
+/// A signer whose crypto misbehaves, for the private-item failure paths a
+/// real key can never produce.
+class _MockNostrSigner extends Mock implements NostrSigner {}
+
+/// SharedPreferences whose writes can be made to throw.
+class _MockPrefs extends Mock implements SharedPreferences {}
 
 void main() {
   setUpAll(() {
@@ -1937,6 +1945,368 @@ void main() {
           expect(service.hasUnreadablePrivateItems, isFalse);
         });
       });
+    });
+
+    group('error paths', () {
+      /// Syncs a list holding one private item, then swaps in a signer whose
+      /// crypto misbehaves. Removal must be refused rather than publishing a
+      /// private section this client cannot vouch for.
+      Future<BookmarksRepository> serviceWithPrivateItemAnd(
+        NostrSigner broken,
+      ) async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(
+              [],
+              // Two entries, so removing one leaves a non-empty array to
+              // re-encrypt. Emptying it entirely returns '' before the signer
+              // is ever asked, and the failure path would never run.
+              content: await encryptToSelf([
+                ['e', 'held-privately'],
+                ['e', 'also-private'],
+              ]),
+            ),
+          ],
+        );
+        final service = createService();
+        await service.syncGlobalBookmarks();
+        when(() => signer.currentIdentity).thenReturn(broken);
+        return service;
+      }
+
+      test(
+        'an unreadable private section is reported, not guessed at',
+        () async {
+          final broken = _MockNostrSigner();
+          when(
+            () => broken.nip44Decrypt(any(), any()),
+          ).thenAnswer((_) async => null);
+          stubRelay(
+            events: [
+              bookmarkListEvent(
+                [],
+                content: await encryptToSelf([
+                  ['e', 'held-privately'],
+                ]),
+              ),
+            ],
+          );
+          when(() => signer.currentIdentity).thenReturn(broken);
+          final service = createService();
+
+          await service.syncGlobalBookmarks();
+
+          expect(service.hasUnreadablePrivateItems, isTrue);
+        },
+      );
+
+      test('a signer returning no ciphertext blocks the publish', () async {
+        final broken = _MockNostrSigner();
+        when(
+          () => broken.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => '');
+        final service = await serviceWithPrivateItemAnd(broken);
+
+        expect(
+          await service.removeFromGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'held-privately'),
+            alreadyReconciled: true,
+          ),
+          isFalse,
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test('ciphertext that does not read back blocks the publish', () async {
+        final broken = _MockNostrSigner();
+        when(
+          () => broken.nip44Encrypt(any(), any()),
+        ).thenAnswer((_) async => 'looks-like-ciphertext');
+        when(
+          () => broken.nip44Decrypt(any(), any()),
+        ).thenAnswer((_) async => 'something else entirely');
+        final service = await serviceWithPrivateItemAnd(broken);
+
+        expect(
+          await service.removeFromGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'held-privately'),
+            alreadyReconciled: true,
+          ),
+          isFalse,
+          reason: 'publishing it would strand the private items unreadable',
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test('a throwing encrypt blocks the publish', () async {
+        final broken = _MockNostrSigner();
+        when(
+          () => broken.nip44Encrypt(any(), any()),
+        ).thenThrow(StateError('crypto exploded'));
+        final service = await serviceWithPrivateItemAnd(broken);
+
+        expect(
+          await service.removeFromGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'held-privately'),
+            alreadyReconciled: true,
+          ),
+          isFalse,
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test('a failed reconcile is reported and does not throw', () async {
+        when(
+          () => nostrClient.queryEventsDetailed(
+            any(),
+            useCache: any(named: 'useCache'),
+            requireAllRelaysSettled: any(named: 'requireAllRelaysSettled'),
+          ),
+        ).thenThrow(StateError('relay exploded'));
+        final service = createService();
+
+        expect(await service.syncGlobalBookmarks(), isFalse);
+      });
+
+      test(
+        'a throw before the reconcile rejects only that operation, and the '
+        'queue keeps running',
+        () async {
+          stubRelay(events: []);
+          final service = createService();
+          when(() => signer.currentPublicKeyHex).thenThrow(
+            StateError('signer exploded'),
+          );
+
+          await expectLater(
+            service.syncGlobalBookmarks(),
+            throwsA(isA<StateError>()),
+          );
+
+          // The queue future must not have been rejected with it, or every
+          // later operation would be stranded behind this one.
+          when(() => signer.currentPublicKeyHex).thenReturn(pubkey);
+          expect(await service.syncGlobalBookmarks(), isTrue);
+        },
+      );
+
+      test(
+        'adding is refused when the private section is unreadable',
+        () async {
+          final strangerKey = generatePrivateKey();
+          final stranger = LocalNostrSigner(strangerKey);
+          final foreign = await stranger.nip44Encrypt(
+            getPublicKey(strangerKey),
+            jsonEncode([
+              ['e', 'held-privately'],
+            ]),
+          );
+          stubRelay(events: [bookmarkListEvent([], content: foreign!)]);
+          final service = createService();
+          await service.syncGlobalBookmarks();
+
+          expect(
+            await service.addToGlobalBookmarks(
+              const BookmarkItem(type: 'e', id: 'new-one'),
+            ),
+            isFalse,
+          );
+          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+        },
+      );
+
+      test('adding an item already present publishes nothing', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(['already-there']),
+          ],
+        );
+        final service = createService();
+        await service.syncGlobalBookmarks();
+
+        expect(
+          await service.addToGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'already-there'),
+          ),
+          isTrue,
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test(
+        'a throw while adding is swallowed and reported as failure',
+        () async {
+          stubRelay(events: []);
+          final service = createService();
+          when(() => signer.currentPublicKeyHex).thenThrow(
+            StateError('signer exploded'),
+          );
+
+          expect(
+            await service.addToGlobalBookmarks(
+              const BookmarkItem(type: 'e', id: 'anything'),
+            ),
+            isFalse,
+          );
+        },
+      );
+
+      test(
+        'removing is refused when the private section is unreadable',
+        () async {
+          final strangerKey = generatePrivateKey();
+          final stranger = LocalNostrSigner(strangerKey);
+          final foreign = await stranger.nip44Encrypt(
+            getPublicKey(strangerKey),
+            jsonEncode([
+              ['e', 'held-privately'],
+            ]),
+          );
+          stubRelay(
+            events: [
+              bookmarkListEvent(['public-one'], content: foreign!),
+            ],
+          );
+          final service = createService();
+          await service.syncGlobalBookmarks();
+
+          expect(
+            await service.removeFromGlobalBookmarks(
+              const BookmarkItem(type: 'e', id: 'public-one'),
+            ),
+            isFalse,
+          );
+          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+        },
+      );
+
+      test('removing an item that is not there publishes nothing', () async {
+        stubRelay(
+          events: [
+            bookmarkListEvent(['kept']),
+          ],
+        );
+        final service = createService();
+        await service.syncGlobalBookmarks();
+
+        expect(
+          await service.removeFromGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'never-saved'),
+          ),
+          isFalse,
+        );
+        verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+      });
+
+      test(
+        'a throw while removing is swallowed and reported as failure',
+        () async {
+          stubRelay(events: []);
+          final service = createService();
+          when(() => signer.currentPublicKeyHex).thenThrow(
+            StateError('signer exploded'),
+          );
+
+          expect(
+            await service.removeFromGlobalBookmarks(
+              const BookmarkItem(type: 'e', id: 'anything'),
+            ),
+            isFalse,
+          );
+        },
+      );
+
+      test(
+        'publishing is refused when the signer is not authenticated',
+        () async {
+          final service = createService();
+          when(() => signer.isAuthenticated).thenReturn(false);
+
+          expect(
+            await service.addToGlobalBookmarks(
+              const BookmarkItem(type: 'e', id: 'anything'),
+              alreadyReconciled: true,
+            ),
+            isFalse,
+          );
+          verifyNever(() => nostrClient.publishEventAwaitOk(any()));
+        },
+      );
+
+      test('a throw while publishing is reported as failure', () async {
+        final service = createService();
+        when(
+          () => signer.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenThrow(StateError('signing exploded'));
+
+        expect(
+          await service.addToGlobalBookmarks(
+            const BookmarkItem(type: 'e', id: 'anything'),
+            alreadyReconciled: true,
+          ),
+          isFalse,
+        );
+      });
+
+      test('a corrupt cached snapshot loads as an empty list', () async {
+        SharedPreferences.setMockInitialValues({
+          BookmarksRepository.globalBookmarksStorageKey: 'not json at all',
+        });
+        prefs = await SharedPreferences.getInstance();
+
+        final service = createService();
+
+        expect(service.globalBookmarks, isEmpty);
+      });
+
+      test(
+        'a corrupt cached revision is dropped rather than fatal',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            BookmarksRepository.globalBookmarksRevisionStorageKey:
+                '{"createdAt":"not an int"}',
+          });
+          prefs = await SharedPreferences.getInstance();
+          stubRelay(events: []);
+
+          final service = createService();
+
+          expect(await service.syncGlobalBookmarks(), isTrue);
+        },
+      );
+
+      test(
+        'a failing SharedPreferences write does not fail the publish',
+        () async {
+          final failingPrefs = _MockPrefs();
+          when(() => failingPrefs.getString(any())).thenReturn(null);
+          when(
+            () => failingPrefs.setString(any(), any()),
+          ).thenThrow(StateError('disk full'));
+          when(
+            () => failingPrefs.remove(any()),
+          ).thenThrow(StateError('disk full'));
+          final service = BookmarksRepository(
+            nostrClient: nostrClient,
+            signer: signer,
+            prefs: failingPrefs,
+          );
+
+          expect(
+            await service.addToGlobalBookmarks(
+              const BookmarkItem(type: 'e', id: 'anything'),
+              alreadyReconciled: true,
+            ),
+            isTrue,
+            reason: 'the relay accepted it; only the local cache write failed',
+          );
+        },
+      );
     });
   });
 }
