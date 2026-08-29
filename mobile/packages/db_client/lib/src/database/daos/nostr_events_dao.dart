@@ -117,27 +117,37 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     Event event, {
     required int expireAt,
   }) async {
-    // Check if a newer event already exists for this pubkey+kind
-    final existingRows = await customSelect(
-      'SELECT id, created_at FROM event WHERE pubkey = ? AND kind = ? LIMIT 1',
+    // Compare against the newest stored version. MAX over all versions (rather
+    // than an arbitrary first row) keeps the newest even when raw ingestion via
+    // cacheEventsBatch left multiple versions behind — event_router sends
+    // every non-parameterized kind there, so several rows per (pubkey, kind)
+    // is the normal case rather than the exception. An aggregate without
+    // GROUP BY always yields exactly one row (NULL when no version exists).
+    final existingRow = await customSelect(
+      'SELECT MAX(created_at) AS max_created_at FROM event '
+      'WHERE pubkey = ? AND kind = ?',
       variables: [
         Variable.withString(event.pubkey),
         Variable.withInt(event.kind),
       ],
       readsFrom: {nostrEvents},
-    ).get();
+    ).getSingle();
 
-    if (existingRows.isNotEmpty) {
-      final existingCreatedAt = existingRows.first.read<int>('created_at');
-      if (event.createdAt <= existingCreatedAt) {
+    final maxCreatedAt = existingRow.read<int?>('max_created_at');
+    if (maxCreatedAt != null) {
+      if (event.createdAt <= maxCreatedAt) {
         // Existing event is newer or same age, don't replace
         return;
       }
-      // Delete the old event before inserting the new one
-      final existingId = existingRows.first.read<String>('id');
+      // Delete every superseded version before inserting the new one. Deleting
+      // a single arbitrary row left the rest behind, so the count never fell
+      // and the table grew without bound.
       await customUpdate(
-        'DELETE FROM event WHERE id = ?',
-        variables: [Variable.withString(existingId)],
+        'DELETE FROM event WHERE pubkey = ? AND kind = ?',
+        variables: [
+          Variable.withString(event.pubkey),
+          Variable.withInt(event.kind),
+        ],
         updates: {nostrEvents},
         updateKind: UpdateKind.delete,
       );
