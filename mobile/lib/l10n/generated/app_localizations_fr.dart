@@ -5790,6 +5790,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => 'Cette conversation est fermée.';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Cet avis de Divine Moderation ne peut pas être supprimé.';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Nous avons déplacé Divine Moderation vers un nouveau compte. Personne ne lit plus celui-ci.';
 

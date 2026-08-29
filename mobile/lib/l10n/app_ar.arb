@@ -2286,6 +2286,7 @@
     "dmSendBlockedMessage": "يمكنك مراسلة حسابات Divine الرسمية فقط",
     "dmSendBlockedRetiredMessage": "لا أحد يقرأ هذه المحادثة. راسل Divine Moderation بدلاً من ذلك.",
     "dmRetiredThreadClosedTitle": "هذه المحادثة مغلقة.",
+    "messageRequestModerationNoticeCannotBeRemoved": "لا يمكن إزالة إشعار Divine Moderation هذا.",
     "dmRetiredThreadClosedBody": "نقلنا Divine Moderation إلى حساب جديد. لم يعد أحد يقرأ هذا الحساب.",
     "dmRetiredThreadOpenSupport": "راسل Divine Moderation",
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",

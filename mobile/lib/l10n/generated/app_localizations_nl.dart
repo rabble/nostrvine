@@ -5741,6 +5741,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => 'Dit gesprek is gesloten.';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Deze melding van Divine Moderation kan niet worden verwijderd.';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'We hebben Divine Moderation naar een nieuw account verplaatst. Dit account leest niemand meer.';
 

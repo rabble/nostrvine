@@ -7,6 +7,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -16,18 +17,43 @@ const _testConversationId1 =
 const _testConversationId2 =
     'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3';
 
+const _me = '1111111111111111111111111111111111111111111111111111111111111111';
+const _stranger =
+    '2222222222222222222222222222222222222222222222222222222222222222';
+const _moderation =
+    '3333333333333333333333333333333333333333333333333333333333333333';
+
+bool _isModeration(String pubkeyHex) => pubkeyHex == _moderation;
+
+DmConversation _conversation(String id, {required String peer}) =>
+    DmConversation(
+      id: id,
+      participantPubkeys: [_me, peer],
+      isGroup: false,
+      createdAt: 0,
+    );
+
 void main() {
   group(MessageRequestActionsCubit, () {
     late _MockDmRepository mockDmRepository;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
+      when(() => mockDmRepository.userPubkey).thenReturn(_me);
+      when(() => mockDmRepository.getConversation(any())).thenAnswer(
+        (invocation) async => _conversation(
+          invocation.positionalArguments.first as String,
+          peer: _stranger,
+        ),
+      );
     });
 
-    MessageRequestActionsCubit createCubit() =>
-        MessageRequestActionsCubit(dmRepository: mockDmRepository);
+    MessageRequestActionsCubit createCubit() => MessageRequestActionsCubit(
+      dmRepository: mockDmRepository,
+      moderationAccount: _isModeration,
+    );
 
-    test('returns true but does not emit when closed mid-decline', () async {
+    test('reports removed but does not emit when closed mid-decline', () async {
       final completer = Completer<void>();
       when(
         () => mockDmRepository.removeConversation(_testConversationId1),
@@ -39,10 +65,10 @@ void main() {
       await cubit.close();
       completer.complete();
 
-      // The removal completed, so the caller sees `true` even though the
+      // The removal completed, so the caller sees `removed` even though the
       // guarded `success` emit was skipped. A state read would still show
       // `processing` and wrongly report failure (#7881 review, finding 5).
-      expect(await future, isTrue);
+      expect(await future, DeclineRequestOutcome.removed);
       expect(cubit.state.status, MessageRequestActionsStatus.processing);
     });
 
@@ -55,27 +81,33 @@ void main() {
     });
 
     group('declineRequest', () {
-      test('returns true when removeConversation succeeds', () async {
+      test('reports removed when removeConversation succeeds', () async {
         when(
           () => mockDmRepository.removeConversation(_testConversationId1),
         ).thenAnswer((_) async {});
 
         final cubit = createCubit();
-        expect(await cubit.declineRequest(_testConversationId1), isTrue);
+        expect(
+          await cubit.declineRequest(_testConversationId1),
+          DeclineRequestOutcome.removed,
+        );
 
         await cubit.close();
       });
 
-      test('returns false when removeConversation throws', () async {
+      test('reports failed when removeConversation throws', () async {
         when(
           () => mockDmRepository.removeConversation(_testConversationId1),
         ).thenThrow(Exception('db failure'));
 
         final cubit = createCubit();
-        // The false return is what drives the caller's error snackbar; the
+        // The failed outcome is what drives the caller's error snackbar; the
         // widget tests stub the mock, so this is the only coverage of the
-        // real catch-returns-false contract (#7881 review, finding 5).
-        expect(await cubit.declineRequest(_testConversationId1), isFalse);
+        // real catch-returns-failed contract (#7881 review, finding 5).
+        expect(
+          await cubit.declineRequest(_testConversationId1),
+          DeclineRequestOutcome.failed,
+        );
 
         await cubit.close();
       });
@@ -194,8 +226,8 @@ void main() {
         },
         build: createCubit,
         act: (cubit) => cubit.removeAllRequests([
-          _testConversationId1,
-          _testConversationId2,
+          _conversation(_testConversationId1, peer: _stranger),
+          _conversation(_testConversationId2, peer: _stranger),
         ]),
         expect: () => [
           const MessageRequestActionsState(
@@ -216,7 +248,7 @@ void main() {
       );
 
       blocTest<MessageRequestActionsCubit, MessageRequestActionsState>(
-        'does not emit when conversationIds is empty',
+        'does not emit when the conversation list is empty',
         build: createCubit,
         act: (cubit) => cubit.removeAllRequests([]),
         expect: () => const <MessageRequestActionsState>[],
@@ -230,7 +262,9 @@ void main() {
           ).thenThrow(Exception('db failure'));
         },
         build: createCubit,
-        act: (cubit) => cubit.removeAllRequests([_testConversationId1]),
+        act: (cubit) => cubit.removeAllRequests([
+          _conversation(_testConversationId1, peer: _stranger),
+        ]),
         errors: () => [isA<Exception>()],
         expect: () => [
           const MessageRequestActionsState(
@@ -240,6 +274,129 @@ void main() {
             status: MessageRequestActionsStatus.error,
           ),
         ],
+      );
+    });
+
+    group('moderation protection', () {
+      test('refuses to decline a Divine moderation request', () async {
+        when(
+          () => mockDmRepository.getConversation(_testConversationId1),
+        ).thenAnswer(
+          (_) async => _conversation(_testConversationId1, peer: _moderation),
+        );
+
+        final cubit = createCubit();
+
+        expect(
+          await cubit.declineRequest(_testConversationId1),
+          DeclineRequestOutcome.refused,
+        );
+        // The assertion that matters: an enforcement notice is the user's only
+        // copy of why they were actioned, and removal is permanent (#6971).
+        verifyNever(() => mockDmRepository.removeConversation(any()));
+
+        await cubit.close();
+      });
+
+      test('refuses when any group participant is moderation', () async {
+        when(
+          () => mockDmRepository.getConversation(_testConversationId1),
+        ).thenAnswer(
+          (_) async => DmConversation(
+            id: _testConversationId1,
+            participantPubkeys: const [_me, _stranger, _moderation],
+            isGroup: true,
+            createdAt: 0,
+          ),
+        );
+
+        final cubit = createCubit();
+
+        expect(
+          await cubit.declineRequest(_testConversationId1),
+          DeclineRequestOutcome.refused,
+        );
+        verifyNever(() => mockDmRepository.removeConversation(any()));
+
+        await cubit.close();
+      });
+
+      test('still declines when the signed-in user IS moderation', () async {
+        when(() => mockDmRepository.userPubkey).thenReturn(_moderation);
+        when(
+          () => mockDmRepository.getConversation(_testConversationId1),
+        ).thenAnswer(
+          (_) async => DmConversation(
+            id: _testConversationId1,
+            participantPubkeys: const [_moderation, _stranger],
+            isGroup: false,
+            createdAt: 0,
+          ),
+        );
+        when(
+          () => mockDmRepository.removeConversation(_testConversationId1),
+        ).thenAnswer((_) async {});
+
+        final cubit = createCubit();
+
+        // Self is excluded from the predicate, so the moderation account can
+        // still clear its own request list.
+        expect(
+          await cubit.declineRequest(_testConversationId1),
+          DeclineRequestOutcome.removed,
+        );
+
+        await cubit.close();
+      });
+
+      test('fails open when the conversation row is gone', () async {
+        when(
+          () => mockDmRepository.getConversation(_testConversationId1),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDmRepository.removeConversation(_testConversationId1),
+        ).thenAnswer((_) async {});
+
+        final cubit = createCubit();
+
+        // A stale id must not become an undeletable request.
+        expect(
+          await cubit.declineRequest(_testConversationId1),
+          DeclineRequestOutcome.removed,
+        );
+
+        await cubit.close();
+      });
+
+      blocTest<MessageRequestActionsCubit, MessageRequestActionsState>(
+        'removeAllRequests sweeps only the unprotected conversations',
+        setUp: () {
+          when(
+            () => mockDmRepository.removeConversations(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: createCubit,
+        act: (cubit) => cubit.removeAllRequests([
+          _conversation(_testConversationId1, peer: _stranger),
+          _conversation(_testConversationId2, peer: _moderation),
+        ]),
+        verify: (_) {
+          verify(
+            () => mockDmRepository.removeConversations([_testConversationId1]),
+          ).called(1);
+        },
+      );
+
+      blocTest<MessageRequestActionsCubit, MessageRequestActionsState>(
+        'removeAllRequests does not emit when every row is protected',
+        build: createCubit,
+        act: (cubit) => cubit.removeAllRequests([
+          _conversation(_testConversationId1, peer: _moderation),
+        ]),
+        expect: () => const <MessageRequestActionsState>[],
+        verify: (_) {
+          verifyNever(() => mockDmRepository.removeConversations(any()));
+        },
       );
     });
 

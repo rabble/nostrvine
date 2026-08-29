@@ -2293,6 +2293,7 @@
     "dmSendBlockedMessage": "Yalnızca resmi Divine hesaplarına mesaj gönderebilirsin",
     "dmSendBlockedRetiredMessage": "Bu sohbeti kimse okumuyor. Bunun yerine Divine Moderation'a yazın.",
     "dmRetiredThreadClosedTitle": "Bu sohbet kapatıldı.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Bu Divine Moderation bildirimi kaldırılamaz.",
     "dmRetiredThreadClosedBody": "Divine Moderation'ı yeni bir hesaba taşıdık. Bu hesabı artık kimse okumuyor.",
     "dmRetiredThreadOpenSupport": "Divine Moderation'a mesaj gönder",
     "dmSendFailedMessage": "Mesaj gönderilemedi",

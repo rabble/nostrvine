@@ -5589,6 +5589,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => 'ይህ ውይይት ተዘግቷል።';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'ይህ የDivine Moderation ማሳወቂያ ሊወገድ አይችልም።';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Divine Moderation ወደ አዲስ መለያ አዛውረናል። ይህን መለያ የሚያነበው የለም።';
 

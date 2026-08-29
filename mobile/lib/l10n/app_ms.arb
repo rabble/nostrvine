@@ -3063,6 +3063,7 @@
   },
   "dmSendBlockedRetiredMessage": "Tiada sesiapa membaca perbualan ini. Hantar mesej kepada Divine Moderation sebaliknya.",
   "dmRetiredThreadClosedTitle": "Perbualan ini telah ditutup.",
+  "messageRequestModerationNoticeCannotBeRemoved": "Notis Divine Moderation ini tidak boleh dialih keluar.",
   "dmRetiredThreadClosedBody": "Kami telah memindahkan Divine Moderation ke akaun baharu. Akaun ini tidak dibaca lagi.",
   "dmRetiredThreadOpenSupport": "Hantar mesej kepada Divine Moderation",
   "dmSendFailedMessage": "Mesej tidak dapat dihantar",

@@ -2296,6 +2296,7 @@
     "dmSendBlockedMessage": "Je kunt alleen officiële Divine-accounts een bericht sturen",
     "dmSendBlockedRetiredMessage": "Niemand leest dit gesprek. Stuur in plaats daarvan een bericht naar Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Dit gesprek is gesloten.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Deze melding van Divine Moderation kan niet worden verwijderd.",
     "dmRetiredThreadClosedBody": "We hebben Divine Moderation naar een nieuw account verplaatst. Dit account leest niemand meer.",
     "dmRetiredThreadOpenSupport": "Bericht sturen naar Divine Moderation",
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",

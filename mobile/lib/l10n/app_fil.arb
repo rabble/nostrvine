@@ -1429,6 +1429,7 @@
     "dmSendBlockedMessage": "Opisyal na Divine accounts lang ang pwede mong ma-message",
     "dmSendBlockedRetiredMessage": "Walang nagbabasa ng usapang ito. Mag-message na lang sa Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Sarado na ang usapang ito.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Hindi maaalis ang abisong ito mula sa Divine Moderation.",
     "dmRetiredThreadClosedBody": "Inilipat namin ang Divine Moderation sa bagong account. Wala nang nagbabasa nito.",
     "dmRetiredThreadOpenSupport": "I-message ang Divine Moderation",
     "dmSendFailedMessage": "Hindi naipadala ang message",

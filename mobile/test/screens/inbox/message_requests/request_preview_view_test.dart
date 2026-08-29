@@ -253,6 +253,71 @@ void main() {
         );
         expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
       });
+
+      // #6971. Removal here is permanent — it writes a tombstone that
+      // suppresses relay replay for the account's lifetime — and the notice is
+      // the user's only copy of why they were actioned.
+      testWidgets('a retired moderation notice offers no removal', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildModerationSubject(kLegacyModerationPubkeys.first),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n.messageRequestViewMessagesButton),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the current moderation key offers no removal either', (
+        tester,
+      ) async {
+        // The pin lifts a current-key thread out of Requests today, so this is
+        // insurance for the next rotation rather than a live path.
+        await tester.pumpWidget(buildModerationSubject(kModerationPubkeyHex));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+      });
+
+      testWidgets('a group with a moderation participant offers no removal', (
+        tester,
+      ) async {
+        when(() => mockPreviewCubit.state).thenReturn(
+          RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+            participantPubkeys: [otherPubkey, kLegacyModerationPubkeys.first],
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+      });
+
+      testWidgets('an ordinary request still offers removal', (tester) async {
+        await tester.pumpWidget(buildModerationSubject(otherPubkey));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsOneWidget,
+        );
+      });
     });
 
     // #8185. The same screen links straight through to the profile, which
@@ -563,7 +628,7 @@ void main() {
         (tester) async {
           when(
             () => mockActionsCubit.declineRequest(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async => DeclineRequestOutcome.removed);
 
           when(mockGoRouter.canPop).thenReturn(true);
           when(() => mockGoRouter.pop()).thenAnswer((_) async {});
@@ -604,7 +669,7 @@ void main() {
       ) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
         when(mockGoRouter.canPop).thenReturn(false);
 
         await tester.pumpWidget(buildSubject());
@@ -639,7 +704,7 @@ void main() {
       testWidgets('confirms with a snackbar after declining', (tester) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
         when(mockGoRouter.canPop).thenReturn(true);
         when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
@@ -660,7 +725,7 @@ void main() {
       ) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async => false);
+        ).thenAnswer((_) async => DeclineRequestOutcome.failed);
         when(mockGoRouter.canPop).thenReturn(true);
         when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
@@ -813,7 +878,7 @@ void main() {
         ) async {
           when(
             () => mockActionsCubit.declineRequest(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async => DeclineRequestOutcome.removed);
           when(mockGoRouter.canPop).thenReturn(true);
           when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
@@ -838,7 +903,7 @@ void main() {
       ) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
         when(mockGoRouter.canPop).thenReturn(false);
 
         await pumpTwice(
@@ -863,7 +928,7 @@ void main() {
       ) async {
         when(
           () => mockActionsCubit.declineRequest(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => DeclineRequestOutcome.removed);
         when(mockGoRouter.canPop).thenReturn(true);
         when(() => mockGoRouter.pop()).thenAnswer((_) async {});
 
@@ -879,6 +944,32 @@ void main() {
 
         verify(() => mockActionsCubit.declineRequest(conversationId)).called(1);
         expect(find.text(l10n.inboxRemovedConversation), findsOneWidget);
+      });
+
+      testWidgets('protected unresolved request is kept with an explanation', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async => DeclineRequestOutcome.refused);
+        when(mockGoRouter.canPop).thenReturn(true);
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsOneWidget,
+        );
+        verifyNever(() => mockGoRouter.pop());
+        verifyNever(() => mockGoRouter.go(any()));
       });
 
       testWidgets('error does not name the sender or count its messages', (

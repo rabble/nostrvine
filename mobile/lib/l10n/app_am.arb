@@ -2544,6 +2544,7 @@
     "dmSendBlockedMessage": "መልእክት መላክ የምትችለው ለኦፊሴላዊ የDivine መለያዎች ብቻ ነው",
     "dmSendBlockedRetiredMessage": "ይህን ውይይት የሚያነበው የለም። በምትኩ Divine Moderation ላይ መልእክት ይላኩ።",
     "dmRetiredThreadClosedTitle": "ይህ ውይይት ተዘግቷል።",
+    "messageRequestModerationNoticeCannotBeRemoved": "ይህ የDivine Moderation ማሳወቂያ ሊወገድ አይችልም።",
     "dmRetiredThreadClosedBody": "Divine Moderation ወደ አዲስ መለያ አዛውረናል። ይህን መለያ የሚያነበው የለም።",
     "dmRetiredThreadOpenSupport": "Divine Moderation ላይ መልእክት ይላኩ",
     "dmSendFailedMessage": "መልዕክቱ መላክ አልተሳካም",

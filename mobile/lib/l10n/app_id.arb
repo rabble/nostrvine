@@ -2293,6 +2293,7 @@
     "dmSendBlockedMessage": "Kamu hanya bisa mengirim pesan ke akun resmi Divine",
     "dmSendBlockedRetiredMessage": "Tidak ada yang membaca percakapan ini. Kirim pesan ke Divine Moderation saja.",
     "dmRetiredThreadClosedTitle": "Percakapan ini sudah ditutup.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Pemberitahuan Divine Moderation ini tidak dapat dihapus.",
     "dmRetiredThreadClosedBody": "Kami memindahkan Divine Moderation ke akun baru. Akun ini tidak dibaca lagi.",
     "dmRetiredThreadOpenSupport": "Kirim pesan ke Divine Moderation",
     "dmSendFailedMessage": "Pesan gagal dikirim",

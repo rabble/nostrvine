@@ -71,7 +71,11 @@ class MessageRequestsView extends ConsumerWidget {
       case RequestBulkAction.markAllRead:
         await actionsCubit.markAllRequestsAsRead(ids);
       case RequestBulkAction.removeAll:
-        await actionsCubit.removeAllRequests(ids);
+        // Whole list, not ids: the cubit decides what "all requests" excludes,
+        // so a Divine moderation notice cannot be swept away by a gesture
+        // aimed at spam (#6971). Keeping the filter there rather than here
+        // means a future caller inherits it.
+        await actionsCubit.removeAllRequests(requests);
         if (context.mounted) context.pop();
     }
   }

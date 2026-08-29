@@ -14,6 +14,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:openvine/blocs/dm/dm_peer_account_predicate.dart';
 import 'package:openvine/blocs/dm/dm_peer_name.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -21,10 +22,6 @@ import 'package:rxdart/rxdart.dart';
 
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
-
-typedef DmPeerAccountPredicate = bool Function(String pubkeyHex);
-
-bool _neverDmPeerAccount(String _) => false;
 
 class ConversationListBloc
     extends Bloc<ConversationListEvent, ConversationListState> {
@@ -36,8 +33,8 @@ class ConversationListBloc
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
     String? supportRowPubkey,
-    DmPeerAccountPredicate moderationAccount = _neverDmPeerAccount,
-    DmPeerAccountPredicate retiredModerationAccount = _neverDmPeerAccount,
+    DmPeerAccountPredicate moderationAccount = neverDmPeerAccount,
+    DmPeerAccountPredicate retiredModerationAccount = neverDmPeerAccount,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,

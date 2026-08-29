@@ -182,9 +182,11 @@ class _PreviewBackdrop extends StatelessWidget {
 /// conversation route, and the whole point of this branch is that there isn't
 /// one. Decline stays, because `declineRequest` keys off the conversation ID
 /// alone: a preview read that fails is no reason to make an unwanted request
-/// undismissable, leaving the inbox-wide "Remove all requests" as the only way
-/// out. The app bar falls back to the section title, since the loaded header's
-/// name would be a generated placeholder here.
+/// undismissable. Unlike the loaded state, this branch cannot check whether
+/// the peer is a Divine moderation identity — there is no counterparty to
+/// test, and the id is a hash of the participants — so the cubit answers that
+/// for it and refuses (#6971). The app bar falls back to the section title,
+/// since the loaded header's name would be a generated placeholder here.
 class _UnresolvedRequestScaffold extends StatelessWidget {
   const _UnresolvedRequestScaffold({required this.child});
 
@@ -487,7 +489,12 @@ class _ActionButtons extends StatelessWidget {
             );
           },
         ),
-        _DeclineAndRemoveButton(displayName: displayName),
+        // An enforcement notice is not a request to decline. Removing it is
+        // permanent and it is the user's only copy of why they were actioned,
+        // so the action is not offered (#6971). The cubit refuses it too, for
+        // the unresolved states below that cannot name the peer.
+        if (!participantPubkeys.any(isModerationAccount))
+          _DeclineAndRemoveButton(displayName: displayName),
       ],
     );
   }
@@ -495,6 +502,10 @@ class _ActionButtons extends StatelessWidget {
 
 /// The one action that survives an unresolved counterparty: `declineRequest`
 /// takes the conversation ID, not the participants.
+///
+/// Not rendered at all once the peer resolves to a Divine moderation identity
+/// — see [_ActionButtons]. It stays here because this branch has no peer to
+/// test, so the refusal comes back from the cubit instead.
 ///
 /// [displayName] is null on the unresolved-counterparty states, where there is
 /// no name to put in the confirmation snackbar; the decline still runs.
@@ -523,12 +534,25 @@ class _DeclineAndRemoveButton extends StatelessWidget {
         final successText = name == null
             ? context.l10n.inboxRemovedConversation
             : context.l10n.messageRequestDeclinedSnackbar(name);
-        final removed = await cubit.declineRequest(conversationId);
-        if (!removed) {
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(errorText, error: true),
-          );
-          return;
+        // Not an error: the row is a Divine moderation notice the cubit
+        // protects. Only the unresolved states can reach it, since the action
+        // bar drops this button once the peer resolves (#6971).
+        final refusedText =
+            context.l10n.messageRequestModerationNoticeCannotBeRemoved;
+        final outcome = await cubit.declineRequest(conversationId);
+        switch (outcome) {
+          case DeclineRequestOutcome.failed:
+            messenger.showSnackBar(
+              DivineSnackbarContainer.snackBar(errorText, error: true),
+            );
+            return;
+          case DeclineRequestOutcome.refused:
+            messenger.showSnackBar(
+              DivineSnackbarContainer.snackBar(refusedText),
+            );
+            return;
+          case DeclineRequestOutcome.removed:
+            break;
         }
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).

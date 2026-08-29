@@ -5756,6 +5756,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => 'Sarado na ang usapang ito.';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Hindi maaalis ang abisong ito mula sa Divine Moderation.';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Inilipat namin ang Divine Moderation sa bagong account. Wala nang nagbabasa nito.';
 
