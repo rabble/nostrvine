@@ -10,9 +10,10 @@ import 'package:flutter/foundation.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_config.dart';
+import 'package:openvine/services/upload/upload_metrics.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
-import 'package:openvine/services/upload_manager.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Get platform name for logging (web-safe).

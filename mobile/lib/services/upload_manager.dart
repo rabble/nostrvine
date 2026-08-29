@@ -21,6 +21,8 @@ import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/temp_render_janitor.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_config.dart';
+import 'package:openvine/services/upload/upload_metrics.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload/upload_retry_policy.dart';
@@ -35,73 +37,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Exception thrown when a [BlossomUploadResult] indicates failure.
-///
-/// Carries the HTTP [statusCode] and the typed [failureReason] so that
-/// [categorizeError] and [isRetriableError] can branch on them directly
-/// instead of parsing error-message strings. The [failureReason]
-/// distinguishes a transient inability to *produce* a signed auth header
-/// ([BlossomUploadFailureReason.authUnavailable]) from a permanent
-/// server-side auth rejection ([BlossomUploadFailureReason.auth]) — a
-/// distinction the bare error string cannot carry.
-class BlossomUploadFailureException implements Exception {
-  const BlossomUploadFailureException(
-    this.message, {
-    this.statusCode,
-    this.failureReason,
-  });
-
-  final String message;
-  final int? statusCode;
-  final BlossomUploadFailureReason? failureReason;
-
-  @override
-  String toString() => message;
-}
-
-/// Upload retry configuration
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class UploadRetryConfig {
-  const UploadRetryConfig({
-    this.maxRetries = 5,
-    this.initialDelay = const Duration(seconds: 2),
-    this.maxDelay = const Duration(minutes: 5),
-    this.backoffMultiplier = 2.0,
-    this.networkTimeout = const Duration(minutes: 10),
-  });
-  final int maxRetries;
-  final Duration initialDelay;
-  final Duration maxDelay;
-  final double backoffMultiplier;
-  final Duration networkTimeout;
-}
-
-/// Upload performance metrics
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class UploadMetrics {
-  const UploadMetrics({
-    required this.uploadId,
-    required this.startTime,
-    required this.retryCount,
-    required this.fileSizeMB,
-    required this.wasSuccessful,
-    this.endTime,
-    this.uploadDuration,
-    this.throughputMBps,
-    this.errorCategory,
-  });
-  final String uploadId;
-  final DateTime startTime;
-  final DateTime? endTime;
-  final Duration? uploadDuration;
-  final int retryCount;
-  final double fileSizeMB;
-  final double? throughputMBps;
-  final String? errorCategory;
-  final bool wasSuccessful;
-}
-
-/// Upload target options
+export 'package:openvine/services/upload/upload_config.dart'
+    show UploadRetryConfig, videoProgressShare;
+export 'package:openvine/services/upload/upload_metrics.dart'
+    show UploadMetrics;
+export 'package:openvine/services/upload/upload_session_errors.dart'
+    show BlossomUploadFailureException;
 
 /// App-layer adapter forwarding the upload pipeline's [UploadCrashReporter]
 /// port to the Firebase-backed [CrashReportingService].
@@ -140,7 +81,6 @@ typedef ThumbnailExtractor =
     });
 
 /// Manages video uploads and their persistent state with enhanced reliability
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class UploadManager implements BackgroundAwareService {
   UploadManager({
     required BlossomUploadService blossomService,
@@ -176,16 +116,6 @@ class UploadManager implements BackgroundAwareService {
       crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
     );
   }
-
-  /// Share of the progress bar driven by the video transfer.
-  ///
-  /// The remainder covers joining the thumbnail leg, which runs in parallel and
-  /// is virtually always finished first — so the bar reaches this mark and then
-  /// completes, rather than sitting at 100% while the publish is still working.
-  ///
-  /// [UploadRetryPolicy] persists its resumable checkpoint on the same scale,
-  /// so the two writers of `uploadProgress` cannot disagree on the ceiling.
-  static const double videoProgressShare = 0.95;
 
   /// Attempts the OS background uploader
   /// ([BlossomUploadService.uploadVideoInBackground]) *first* for a fresh

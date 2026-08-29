@@ -7,8 +7,8 @@ import 'dart:math' as math;
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_config.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
-import 'package:openvine/services/upload_manager.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Owns the retry and session-persistence concerns extracted from [UploadManager].
@@ -460,9 +460,10 @@ class UploadRetryPolicy {
     // stored value — otherwise it drags the publish bar backwards mid-upload.
     final checkpoint = fileSizeBytes <= 0
         ? upload.uploadProgress
-        : ((session.nextOffset / fileSizeBytes) *
-                  UploadManager.videoProgressShare)
-              .clamp(0.0, UploadManager.videoProgressShare);
+        : ((session.nextOffset / fileSizeBytes) * videoProgressShare).clamp(
+            0.0,
+            videoProgressShare,
+          );
     final persistedProgress = checkpoint == null
         ? upload.uploadProgress
         : math.max(checkpoint, upload.uploadProgress ?? 0.0);
