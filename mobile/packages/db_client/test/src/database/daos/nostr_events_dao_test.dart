@@ -1501,6 +1501,22 @@ void main() {
       );
 
       test(
+        'concurrent standard-replaceable upserts keep only the newest event',
+        () async {
+          final v1 = createEvent(kind: 0, content: 'v1', createdAt: 1000);
+          await dao.upsertEvent(v1);
+
+          final v3 = createEvent(kind: 0, content: 'v3', createdAt: 3000);
+          final v2 = createEvent(kind: 0, content: 'v2', createdAt: 2000);
+          await Future.wait([dao.upsertEvent(v3), dao.upsertEvent(v2)]);
+
+          final results = await dao.getEventsByFilter(Filter(kinds: [0]));
+          expect(results, hasLength(1));
+          expect(results.single.id, v3.id);
+        },
+      );
+
+      test(
         'kind 30023 without d-tag: newer replaces older via empty-string '
         'identifier (NIP-01 default)',
         () async {
@@ -1598,6 +1614,41 @@ void main() {
 
           expect(await dao.getEventById(v2.id), isNull);
           expect(await dao.getEventById(v3.id), isNotNull);
+        },
+      );
+
+      test(
+        'concurrent parameterized-replaceable upserts keep only the newest '
+        'event',
+        () async {
+          final tags = [
+            ['d', 'my-article'],
+          ];
+          final v1 = createEvent(
+            kind: 30023,
+            tags: tags,
+            content: 'v1',
+            createdAt: 1000,
+          );
+          await dao.upsertEvent(v1);
+
+          final v3 = createEvent(
+            kind: 30023,
+            tags: tags,
+            content: 'v3',
+            createdAt: 3000,
+          );
+          final v2 = createEvent(
+            kind: 30023,
+            tags: tags,
+            content: 'v2',
+            createdAt: 2000,
+          );
+          await Future.wait([dao.upsertEvent(v3), dao.upsertEvent(v2)]);
+
+          final results = await dao.getEventsByFilter(Filter(kinds: [30023]));
+          expect(results, hasLength(1));
+          expect(results.single.id, v3.id);
         },
       );
 

@@ -50,15 +50,19 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
 
     // Handle replaceable events (kind 0, 3, 10000-19999)
     if (EventKind.isReplaceable(event.kind)) {
-      await _upsertReplaceableEvent(event, expireAt: effectiveExpireAt);
+      await transaction(
+        () => _upsertReplaceableEvent(event, expireAt: effectiveExpireAt),
+      );
       return;
     }
 
     // Handle parameterized replaceable events (kind 30000-39999)
     if (EventKind.isParameterizedReplaceable(event.kind)) {
-      await _upsertParameterizedReplaceableEvent(
-        event,
-        expireAt: effectiveExpireAt,
+      await transaction(
+        () => _upsertParameterizedReplaceableEvent(
+          event,
+          expireAt: effectiveExpireAt,
+        ),
       );
       return;
     }
