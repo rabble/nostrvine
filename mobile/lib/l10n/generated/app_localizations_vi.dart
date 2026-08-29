@@ -3492,6 +3492,32 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hiện không nhập mã được. Hãy bấm liên kết trong email, hoặc gửi lại để lấy mã mới.';
 
   @override
+  String get authInviteCodeErrorMalformed => 'Nhập mã mời dạng ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'Mã mời đó có vẻ không hợp lệ.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Mã mời đó đã được dùng hoặc đã bị thu hồi.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Nhà sáng tạo này đã hết lời mời';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Mã mời đó không khả dụng. Hãy tham gia danh sách chờ, chúng tôi sẽ gửi lời mời khi còn chỗ.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Chúng tôi không kiểm tra được mã đó. Hãy thử lại.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Đã xảy ra lỗi. Hãy thử lại mã mời của bạn.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Mã mời đó không còn khả dụng. Quay lại mã mời của bạn, tham gia danh sách chờ, hoặc liên hệ hỗ trợ.';
 

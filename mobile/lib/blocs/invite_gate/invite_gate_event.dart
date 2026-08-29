@@ -2,6 +2,7 @@
 // ABOUTME: Drives invite validation and invite access state
 
 import 'package:equatable/equatable.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
 
 sealed class InviteGateEvent extends Equatable {
@@ -20,10 +21,15 @@ class InviteGateCodeSubmitted extends InviteGateEvent {
   List<Object?> get props => [rawCode];
 }
 
+/// Seeds (or clears) the block-level failure shown on the gate.
+///
+/// Takes a reason code, never text. The one caller is an inbound deep link
+/// carrying `?error=`; see [InviteGateError.unknown] for why its payload is
+/// discarded rather than displayed.
 class InviteGateGeneralErrorSet extends InviteGateEvent {
   const InviteGateGeneralErrorSet(this.error);
 
-  final String? error;
+  final InviteGateError? error;
 
   @override
   List<Object?> get props => [error];

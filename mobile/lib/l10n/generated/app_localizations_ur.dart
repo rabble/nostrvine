@@ -3520,6 +3520,33 @@ class AppLocalizationsUr extends AppLocalizations {
       'کوڈ درج کرنا فی الحال دستیاب نہیں۔ اپنی ای میل میں دیا گیا لنک کھولیں، یا تازہ کوڈ کے لیے دوبارہ بھیجیں۔';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'ABCD-EFGH جیسا دعوتی کوڈ درج کریں۔';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'یہ دعوتی کوڈ درست نہیں لگتا۔';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'یہ دعوتی کوڈ پہلے ہی استعمال ہو چکا ہے یا منسوخ کر دیا گیا ہے۔';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'اس تخلیق کار کی دعوتیں ختم ہو چکی ہیں';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'یہ دعوتی کوڈ دستیاب نہیں ہے۔ ویٹ لسٹ میں شامل ہوں، جگہ بنتے ہی ہم دعوت بھیج دیں گے۔';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'ہم اس کوڈ کی تصدیق نہیں کر سکے۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'کچھ غلط ہو گیا۔ اپنا دعوتی کوڈ دوبارہ آزمائیں۔';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'وہ دعوتی کوڈ اب دستیاب نہیں رہا۔ اپنے دعوتی کوڈ پر واپس جائیں، ویٹ لسٹ میں شامل ہوں، یا سپورٹ سے رابطہ کریں۔';
 

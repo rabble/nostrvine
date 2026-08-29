@@ -3589,6 +3589,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Enter an invite code like ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'That invite code does not look valid.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'That invite code has already been used or revoked.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'This creator\'s invites are full';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'That invite code is unavailable. Join the waitlist and we\'ll send an invite when there\'s room.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'We couldn\'t check that code. Try again.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Something went wrong. Try your invite code again.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'That invite code is no longer available. Go back to your invite code, join the waitlist, or contact support.';
 

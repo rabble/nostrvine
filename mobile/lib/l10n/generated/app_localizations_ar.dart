@@ -3486,6 +3486,31 @@ class AppLocalizationsAr extends AppLocalizations {
       'إدخال الرمز غير متاح حاليًا. اضغط على الرابط في بريدك الإلكتروني، أو أعد الإرسال للحصول على رمز جديد.';
 
   @override
+  String get authInviteCodeErrorMalformed => 'أدخل رمز دعوة مثل ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'رمز الدعوة هذا لا يبدو صالحًا.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'تم استخدام رمز الدعوة هذا أو إلغاؤه.';
+
+  @override
+  String get authInviteGateErrorCreatorFull => 'نفدت دعوات هذا المنشئ';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'رمز الدعوة هذا غير متاح. انضم إلى قائمة الانتظار وسنرسل دعوة عند توفر مكان.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'تعذّر التحقق من هذا الرمز. حاول مرة أخرى.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'حدث خطأ ما. حاول إدخال رمز الدعوة مرة أخرى.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'رمز الدعوة هذا لم يعد متاحًا. عد إلى رمز دعوتك، انضم لقائمة الانتظار، أو تواصل مع الدعم.';
 

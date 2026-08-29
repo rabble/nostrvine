@@ -3609,6 +3609,34 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wpisywanie kodu jest teraz niedostępne. Dotknij linku w e-mailu albo wyślij ponownie, aby otrzymać nowy.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Wpisz kod zaproszenia w formacie ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Ten kod zaproszenia nie wygląda na prawidłowy.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Ten kod zaproszenia został już użyty lub unieważniony.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Zaproszenia tego twórcy się skończyły';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Ten kod zaproszenia jest niedostępny. Zapisz się na listę oczekujących, a wyślemy zaproszenie, gdy zwolni się miejsce.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Nie udało się sprawdzić tego kodu. Spróbuj ponownie.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Coś poszło nie tak. Spróbuj ponownie ze swoim kodem zaproszenia.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Ten kod zaproszenia nie jest już dostępny. Wróć do kodu zaproszenia, dołącz do listy oczekujących lub skontaktuj się z pomocą.';
 

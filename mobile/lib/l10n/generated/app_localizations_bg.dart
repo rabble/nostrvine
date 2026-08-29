@@ -3569,6 +3569,34 @@ class AppLocalizationsBg extends AppLocalizations {
       'Въвеждането на код не е налично в момента. Натисни връзката в имейла си или изпрати отново, за да получиш нова.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Въведи код за покана като ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Този код за покана не изглежда валиден.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Този код за покана вече е използван или е отменен.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Поканите на този създател свършиха';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Този код за покана не е наличен. Запиши се в списъка на чакащите и ще ти изпратим покана, щом се освободи място.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Не успяхме да проверим този код. Опитай пак.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Нещо се обърка. Опитай пак с кода си за покана.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Този код за покана вече не е наличен. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.';
 

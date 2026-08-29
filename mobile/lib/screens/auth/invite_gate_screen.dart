@@ -13,6 +13,7 @@ import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/constants/semantic_ids.dart';
+import 'package:openvine/l10n/invite_gate_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_availability.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -56,7 +57,12 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     final inviteGateBloc = context.read<InviteGateBloc>();
     inviteGateBloc.add(const InviteGateTransientCleared());
     if (widget.initialError != null && widget.initialError!.isNotEmpty) {
-      inviteGateBloc.add(InviteGateGeneralErrorSet(widget.initialError));
+      // Only the FACT of an upstream error survives the link; its text does
+      // not. See InviteGateError.unknown — this query parameter used to be
+      // rendered verbatim inside the auth error box.
+      inviteGateBloc.add(
+        const InviteGateGeneralErrorSet(InviteGateError.unknown),
+      );
     }
   }
 
@@ -124,6 +130,13 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
         final queryParameters = <String, String>{
           if (widget.initialCode?.isNotEmpty ?? false)
             'code': widget.initialCode!,
+          // Forwarded verbatim on purpose: create-account reads `?error=` from
+          // its OWN url too (auth_routes.dart), so dropping it here would
+          // change this redirect's documented parameter preservation without
+          // closing that screen's ingress. Its state still stores the raw
+          // string; migrating it is tracked separately.
+          // TODO(#8305): drop this once DivineAuthFormState carries a reason
+          // code instead of a message.
           if (widget.initialError?.isNotEmpty ?? false)
             'error': widget.initialError!,
           if (widget.initialSourceSlug?.isNotEmpty ?? false)
@@ -301,13 +314,21 @@ class _InviteCodeEntryPage extends StatelessWidget {
                               _InviteCodeInput(
                                 controller: controller,
                                 enabled: !state.isValidatingCode,
-                                errorText: state.inviteCodeError,
+                                errorText: switch (state.inviteCodeError) {
+                                  null => null,
+                                  final error =>
+                                    context.l10n.inviteCodeErrorMessage(error),
+                                },
                                 onChanged: onChanged,
                                 onSubmitted: onSubmit,
                               ),
                               if (state.generalError != null) ...[
                                 const SizedBox(height: 16),
-                                AuthErrorBox(message: state.generalError!),
+                                AuthErrorBox(
+                                  message: context.l10n.inviteGateErrorMessage(
+                                    state.generalError!,
+                                  ),
+                                ),
                               ],
 
                               const Spacer(),

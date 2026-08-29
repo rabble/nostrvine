@@ -3446,6 +3446,31 @@ class AppLocalizationsAm extends AppLocalizations {
       'የኮድ ማስገቢያ አሁን አይገኝም። በኢሜይልዎ ውስጥ ያለውን አገናኝ ይንኩ፣ ወይም አዲስ ለማግኘት እንደገና ይላኩ።';
 
   @override
+  String get authInviteCodeErrorMalformed => 'እንደ ABCD-EFGH ያለ የግብዣ ኮድ ያስገቡ።';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'ያ የግብዣ ኮድ ትክክል አይመስልም።';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'ያ የግብዣ ኮድ ቀደም ሲል ጥቅም ላይ ውሏል ወይም ተሰርዟል።';
+
+  @override
+  String get authInviteGateErrorCreatorFull => 'የዚህ ፈጣሪ ግብዣዎች አልቀዋል';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'ያ የግብዣ ኮድ አይገኝም። በተጠባባቂ ዝርዝሩ ይመዝገቡ፣ ቦታ ሲኖር ግብዣ እንልክልዎታለን።';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'ያንን ኮድ ማረጋገጥ አልቻልንም። እንደገና ይሞክሩ።';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'የሆነ ችግር ተፈጥሯል። የግብዣ ኮድዎን እንደገና ይሞክሩ።';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'ያ የግብዣ ኮድ ከአሁን በኋላ አይገኝም። ወደ የግብዣ ኮድዎ ይመለሱ፣ የተጠባባቂ ዝርዝሩን ይቀላቀሉ ወይም ድጋፍ ሰጪን ያግኙ።';
 

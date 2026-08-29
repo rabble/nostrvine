@@ -3461,6 +3461,33 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kod girişi şu anda kullanılamıyor. E-postandaki bağlantıya dokun ya da yenisini almak için tekrar gönder.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'ABCD-EFGH gibi bir davet kodu gir.';
+
+  @override
+  String get authInviteCodeErrorNotFound => 'Bu davet kodu geçerli görünmüyor.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Bu davet kodu zaten kullanılmış ya da iptal edilmiş.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Bu içerik üreticisinin davetleri tükendi';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Bu davet kodu kullanılamıyor. Bekleme listesine katıl, yer açılınca sana davet göndereceğiz.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Bu kodu kontrol edemedik. Tekrar dene.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Bir şeyler ters gitti. Davet kodunu tekrar dene.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Bu davet kodu artık kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.';
 

@@ -3574,6 +3574,34 @@ class AppLocalizationsFr extends AppLocalizations {
       'La saisie du code n\'est pas disponible pour l\'instant. Appuie sur le lien dans ton e-mail, ou renvoie pour en recevoir un nouveau.';
 
   @override
+  String get authInviteCodeErrorMalformed =>
+      'Saisis un code d\'invitation comme ABCD-EFGH.';
+
+  @override
+  String get authInviteCodeErrorNotFound =>
+      'Ce code d\'invitation ne semble pas valide.';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed =>
+      'Ce code d\'invitation a déjà été utilisé ou révoqué.';
+
+  @override
+  String get authInviteGateErrorCreatorFull =>
+      'Les invitations de ce créateur sont épuisées';
+
+  @override
+  String get authInviteGateErrorUnavailable =>
+      'Ce code d\'invitation n\'est pas disponible. Inscris-toi sur la liste d\'attente et on t\'enverra une invitation dès qu\'il y aura de la place.';
+
+  @override
+  String get authInviteGateErrorCheckFailed =>
+      'Impossible de vérifier ce code. Réessaie.';
+
+  @override
+  String get authInviteGateErrorUnknown =>
+      'Un problème est survenu. Réessaie avec ton code d\'invitation.';
+
+  @override
   String get authInviteErrorAlreadyUsed =>
       'Ce code d\'invitation n\'est plus disponible. Retourne à ton code d\'invitation, rejoins la liste d\'attente, ou contacte le support.';
 

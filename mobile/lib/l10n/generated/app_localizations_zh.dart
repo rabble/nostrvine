@@ -3300,6 +3300,27 @@ class AppLocalizationsZh extends AppLocalizations {
       '暂时无法输入验证码。请点击邮件中的链接，或重新发送获取新码。';
 
   @override
+  String get authInviteCodeErrorMalformed => '请输入 ABCD-EFGH 格式的邀请码。';
+
+  @override
+  String get authInviteCodeErrorNotFound => '这个邀请码看起来无效。';
+
+  @override
+  String get authInviteCodeErrorAlreadyUsed => '这个邀请码已被使用或已撤销。';
+
+  @override
+  String get authInviteGateErrorCreatorFull => '这位创作者的邀请名额已满';
+
+  @override
+  String get authInviteGateErrorUnavailable => '这个邀请码不可用。加入候补名单，有名额时我们会给你发送邀请。';
+
+  @override
+  String get authInviteGateErrorCheckFailed => '无法验证这个邀请码。请重试。';
+
+  @override
+  String get authInviteGateErrorUnknown => '出了点问题。请重新输入你的邀请码。';
+
+  @override
   String get authInviteErrorAlreadyUsed => '该邀请码已不可用。返回你的邀请码页面、加入等候名单，或联系客服。';
 
   @override

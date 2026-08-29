@@ -6029,6 +6029,48 @@ abstract class AppLocalizations {
   /// **'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.'**
   String get authVerificationErrorPinUnavailable;
 
+  /// Inline error on the invite-code field when the typed text is not shaped like an invite code.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an invite code like ABCD-EFGH.'**
+  String get authInviteCodeErrorMalformed;
+
+  /// Inline error on the invite-code field when the server does not recognise the code.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code does not look valid.'**
+  String get authInviteCodeErrorNotFound;
+
+  /// Inline error on the invite-code field when the code was already claimed or revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code has already been used or revoked.'**
+  String get authInviteCodeErrorAlreadyUsed;
+
+  /// Block error on the invite gate when the creator has no invites left.
+  ///
+  /// In en, this message translates to:
+  /// **'This creator\'s invites are full'**
+  String get authInviteGateErrorCreatorFull;
+
+  /// Block error on the invite gate when the code is real but no longer usable.
+  ///
+  /// In en, this message translates to:
+  /// **'That invite code is unavailable. Join the waitlist and we\'ll send an invite when there\'s room.'**
+  String get authInviteGateErrorUnavailable;
+
+  /// Block error on the invite gate when the invite service could not give a verdict. Retryable.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t check that code. Try again.'**
+  String get authInviteGateErrorCheckFailed;
+
+  /// Block error on the invite gate when an inbound link reported an unclassifiable problem.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try your invite code again.'**
+  String get authInviteGateErrorUnknown;
+
   /// No description provided for @authInviteErrorAlreadyUsed.
   ///
   /// In en, this message translates to:

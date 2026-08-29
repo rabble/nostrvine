@@ -28,7 +28,7 @@ void main() {
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('abc')),
       expect: () => [
         const InviteGateState(
-          inviteCodeError: 'Enter an invite code like ABCD-EFGH.',
+          inviteCodeError: InviteCodeError.malformed,
         ),
       ],
     );
@@ -125,7 +125,7 @@ void main() {
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(
-          inviteCodeError: 'That invite code has already been used or revoked.',
+          inviteCodeError: InviteCodeError.alreadyUsed,
         ),
       ],
     );
@@ -149,7 +149,7 @@ void main() {
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('lele-pons')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
-        const InviteGateState(generalError: "This creator's invites are full"),
+        const InviteGateState(generalError: InviteGateError.creatorFull),
       ],
     );
 
@@ -171,7 +171,7 @@ void main() {
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(
-          inviteCodeError: 'That invite code does not look valid.',
+          inviteCodeError: InviteCodeError.notFound,
         ),
       ],
     );
@@ -187,8 +187,11 @@ void main() {
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('ab12ef34')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
-        const InviteGateState(generalError: 'Invite service unavailable'),
+        // The exception's `message` can be arbitrary text lifted from the
+        // server's response body, so it is classified rather than shown.
+        const InviteGateState(generalError: InviteGateError.checkFailed),
       ],
+      errors: () => [isA<InviteApiException>()],
     );
 
     test(
