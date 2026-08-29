@@ -1424,14 +1424,11 @@
     "shareMenuChangeCover": "Zmień okładkę",
     "shareMenuVideoUpdated": "Film zaktualizowany pomyślnie",
     "shareMenuVideoUpdatedWithInviteFailures": "Film zaktualizowany, ale {count, plural, =1{1 zaproszenie współpracownika nie zostało wysłane.} other{{count} zaproszeń współpracowników nie zostało wysłanych.}}",
-    "shareMenuFailedToUpdateVideo": "Nie udało się zaktualizować filmu: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Zaloguj się ponownie i spróbuj jeszcze raz.",
+    "videoUpdateErrorNoPlayableVideo": "Ten film nie ma odtwarzalnego źródła, więc nie można go edytować.",
+    "videoUpdateErrorCouldNotSign": "Nie udało się podpisać zmiany. Spróbuj ponownie.",
+    "videoUpdateErrorPublishRejected": "Przekaźnik nie przyjął zmiany. Spróbuj za chwilę.",
+    "videoUpdateErrorGeneric": "Nie udało się zaktualizować tego filmu. Spróbuj ponownie.",
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
     "shareMenuDeleteCleanupInProgress": "Usuwanie filmu…",
     "shareMenuDeleteCleanupConfirmed": "Film usunięty.",

@@ -2459,14 +2459,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "Failed to update video: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "Sign in again, then try updating.",
+  "videoUpdateErrorNoPlayableVideo": "This video has no playable source, so it can't be updated.",
+  "videoUpdateErrorCouldNotSign": "Couldn't sign the update. Try again.",
+  "videoUpdateErrorPublishRejected": "The relay wouldn't accept the update. Try again in a moment.",
+  "videoUpdateErrorGeneric": "Couldn't update this video. Try again.",
   "shareMenuOriginalVideoUnavailable": "Couldn't load the original video. Try again in a moment.",
   "@shareMenuOriginalVideoUnavailable": {
     "description": "Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely."

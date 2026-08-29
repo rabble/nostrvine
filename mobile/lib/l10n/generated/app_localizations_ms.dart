@@ -3954,9 +3954,24 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Gagal mengemas kini video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Log masuk semula, kemudian cuba kemas kini.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Video ini tiada sumber yang boleh dimainkan, jadi ia tidak boleh diedit.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Gagal menandatangani kemas kini. Cuba lagi.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay tidak menerima kemas kini. Cuba lagi sebentar lagi.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Gagal mengemas kini video ini. Cuba lagi.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

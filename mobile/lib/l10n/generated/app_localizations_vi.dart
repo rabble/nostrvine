@@ -3927,9 +3927,23 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Không cập nhật được video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'Đăng nhập lại rồi thử lại.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Video này không có nguồn phát được nên không thể chỉnh sửa.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Không ký được bản cập nhật. Thử lại nhé.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay không chấp nhận bản cập nhật. Thử lại sau giây lát.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Không cập nhật được video này. Thử lại nhé.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

@@ -1613,14 +1613,11 @@
     "shareMenuChangeCover": "Смяна на корицата",
     "shareMenuVideoUpdated": "Видеото е обновено",
     "shareMenuVideoUpdatedWithInviteFailures": "Видеото е актуализирано, но {count, plural, =1{1 покана за сътрудник не беше изпратена.} other{{count} покани за сътрудници не бяха изпратени.}}",
-    "shareMenuFailedToUpdateVideo": "Не успяхме да обновим видеото: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Влез отново и опитай пак.",
+    "videoUpdateErrorNoPlayableVideo": "Това видео няма възпроизводим източник, затова не може да се редактира.",
+    "videoUpdateErrorCouldNotSign": "Промяната не можа да бъде подписана. Опитай пак.",
+    "videoUpdateErrorPublishRejected": "Релето не прие промяната. Опитай пак след малко.",
+    "videoUpdateErrorGeneric": "Това видео не можа да бъде обновено. Опитай пак.",
     "shareMenuDeleteVideoQuestion": "Да изтрием видеото?",
     "shareMenuDeleteCleanupInProgress": "Премахване на видеото…",
     "shareMenuDeleteCleanupConfirmed": "Видеото е изтрито.",

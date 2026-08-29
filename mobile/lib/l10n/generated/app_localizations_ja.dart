@@ -3709,9 +3709,20 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return '動画の更新がうまくいかなかった: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'もう一度ログインしてから試してみて。';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo => 'この動画には再生できるソースがないから、編集できない。';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => '更新に署名できなかった。もう一回試してみて。';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'リレーが更新を受け付けなかった。少ししてからもう一回試してみて。';
+
+  @override
+  String get videoUpdateErrorGeneric => 'この動画を更新できなかった。もう一回試してみて。';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

@@ -3700,9 +3700,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return '更新视频失败：$error';
-  }
+  String get videoUpdateErrorNotAuthenticated => '请重新登录后再试。';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo => '这个视频没有可播放的源，无法编辑。';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => '更新签名失败，请重试。';
+
+  @override
+  String get videoUpdateErrorPublishRejected => '中继未接受此次更新，请稍后重试。';
+
+  @override
+  String get videoUpdateErrorGeneric => '无法更新这个视频，请重试。';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

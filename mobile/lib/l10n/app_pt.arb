@@ -1424,14 +1424,11 @@
     "shareMenuChangeCover": "Alterar capa",
     "shareMenuVideoUpdated": "Vídeo atualizado com sucesso",
     "shareMenuVideoUpdatedWithInviteFailures": "Vídeo atualizado, mas {count, plural, =1{{count} convite de colaborador não foi enviado.} other{{count} convites de colaboradores não foram enviados.}}",
-    "shareMenuFailedToUpdateVideo": "Falha ao atualizar vídeo: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Entre novamente e tente de novo.",
+    "videoUpdateErrorNoPlayableVideo": "Este vídeo não tem uma fonte reproduzível, então não pode ser editado.",
+    "videoUpdateErrorCouldNotSign": "Não foi possível assinar a atualização. Tente novamente.",
+    "videoUpdateErrorPublishRejected": "O relay não aceitou a atualização. Tente de novo em instantes.",
+    "videoUpdateErrorGeneric": "Não foi possível atualizar este vídeo. Tente novamente.",
     "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
     "shareMenuDeleteCleanupInProgress": "Removendo vídeo…",
     "shareMenuDeleteCleanupConfirmed": "Vídeo excluído.",

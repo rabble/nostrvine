@@ -2071,14 +2071,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "Không cập nhật được video: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "Đăng nhập lại rồi thử lại.",
+  "videoUpdateErrorNoPlayableVideo": "Video này không có nguồn phát được nên không thể chỉnh sửa.",
+  "videoUpdateErrorCouldNotSign": "Không ký được bản cập nhật. Thử lại nhé.",
+  "videoUpdateErrorPublishRejected": "Relay không chấp nhận bản cập nhật. Thử lại sau giây lát.",
+  "videoUpdateErrorGeneric": "Không cập nhật được video này. Thử lại nhé.",
   "shareMenuDeleteVideoQuestion": "Xóa video?",
   "shareMenuDeleteCleanupInProgress": "Đang xóa video…",
   "shareMenuDeleteCleanupConfirmed": "Đã xóa video.",

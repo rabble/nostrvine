@@ -9,9 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/video_metadata_update_error_l10n.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/video_metadata_update_error.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart';
 
@@ -97,8 +99,8 @@ void main() {
             newThumbnailFile: any(named: 'newThumbnailFile'),
           ),
         ).thenAnswer(
-          (_) async => VideoUpdateFailure(
-            Exception('Failed to publish updated event'),
+          (_) async => const VideoUpdateFailure(
+            VideoMetadataUpdateError.publishRejected,
           ),
         );
 
@@ -111,17 +113,20 @@ void main() {
         // Generic failure snackbar should appear.
         expect(find.byType(SnackBar), findsOneWidget);
 
-        // The snackbar text must contain the localized failure prefix.
-        // shareMenuFailedToUpdateVideo takes an error arg; matching on the
-        // prefix ensures the localized key is used rather than a raw string.
-        const publishFailureMessage = 'Failed to publish updated event';
+        // #3589: the reason code is localized; the exception that produced it
+        // never reaches the user.
         expect(
-          find.textContaining(
-            l10n.shareMenuFailedToUpdateVideo(
-              'Exception: $publishFailureMessage',
+          find.text(
+            l10n.videoMetadataUpdateErrorMessage(
+              VideoMetadataUpdateError.publishRejected,
             ),
           ),
           findsOneWidget,
+        );
+        expect(find.textContaining('Exception'), findsNothing);
+        expect(
+          find.textContaining('Failed to publish updated event'),
+          findsNothing,
         );
 
         // Raw branch detail must NOT leak into user-visible text.
@@ -143,8 +148,8 @@ void main() {
             newThumbnailFile: any(named: 'newThumbnailFile'),
           ),
         ).thenAnswer(
-          (_) async => VideoUpdateFailure(
-            Exception('Failed to publish updated event'),
+          (_) async => const VideoUpdateFailure(
+            VideoMetadataUpdateError.publishRejected,
           ),
         );
 
@@ -157,14 +162,20 @@ void main() {
         // Generic failure snackbar should appear.
         expect(find.byType(SnackBar), findsOneWidget);
 
-        const publishFailureMessage = 'Failed to publish updated event';
+        // #3589: the reason code is localized; the exception that produced it
+        // never reaches the user.
         expect(
-          find.textContaining(
-            l10n.shareMenuFailedToUpdateVideo(
-              'Exception: $publishFailureMessage',
+          find.text(
+            l10n.videoMetadataUpdateErrorMessage(
+              VideoMetadataUpdateError.publishRejected,
             ),
           ),
           findsOneWidget,
+        );
+        expect(find.textContaining('Exception'), findsNothing);
+        expect(
+          find.textContaining('Failed to publish updated event'),
+          findsNothing,
         );
 
         // Raw branch detail must NOT leak into user-visible text.

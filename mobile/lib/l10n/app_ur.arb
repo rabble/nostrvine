@@ -2071,14 +2071,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "ویڈیو اپڈیٹ نہیں ہو سکی: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "دوبارہ سائن ان کریں، پھر کوشش کریں۔",
+  "videoUpdateErrorNoPlayableVideo": "اس ویڈیو کا کوئی قابلِ چلاؤ ماخذ نہیں، اس لیے اسے ایڈٹ نہیں کیا جا سکتا۔",
+  "videoUpdateErrorCouldNotSign": "اپ ڈیٹ پر دستخط نہیں ہو سکے۔ دوبارہ کوشش کریں۔",
+  "videoUpdateErrorPublishRejected": "ریلے نے اپ ڈیٹ قبول نہیں کی۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+  "videoUpdateErrorGeneric": "اس ویڈیو کو اپ ڈیٹ نہیں کیا جا سکا۔ دوبارہ کوشش کریں۔",
   "shareMenuDeleteVideoQuestion": "ویڈیو حذف کریں؟",
   "shareMenuDeleteCleanupInProgress": "ویڈیو ہٹائی جا رہی ہے…",
   "shareMenuDeleteCleanupConfirmed": "ویڈیو حذف کر دی گئی۔",

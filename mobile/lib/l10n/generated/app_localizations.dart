@@ -6779,11 +6779,35 @@ abstract class AppLocalizations {
   /// **'Video updated, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}'**
   String shareMenuVideoUpdatedWithInviteFailures(int count);
 
-  /// No description provided for @shareMenuFailedToUpdateVideo.
+  /// No description provided for @videoUpdateErrorNotAuthenticated.
   ///
   /// In en, this message translates to:
-  /// **'Failed to update video: {error}'**
-  String shareMenuFailedToUpdateVideo(String error);
+  /// **'Sign in again, then try updating.'**
+  String get videoUpdateErrorNotAuthenticated;
+
+  /// No description provided for @videoUpdateErrorNoPlayableVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'This video has no playable source, so it can\'t be updated.'**
+  String get videoUpdateErrorNoPlayableVideo;
+
+  /// No description provided for @videoUpdateErrorCouldNotSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign the update. Try again.'**
+  String get videoUpdateErrorCouldNotSign;
+
+  /// No description provided for @videoUpdateErrorPublishRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The relay wouldn\'t accept the update. Try again in a moment.'**
+  String get videoUpdateErrorPublishRejected;
+
+  /// No description provided for @videoUpdateErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this video. Try again.'**
+  String get videoUpdateErrorGeneric;
 
   /// Snackbar shown when an edit is stopped because the original video's complete metadata could not be loaded safely.
   ///

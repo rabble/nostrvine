@@ -3889,9 +3889,24 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Gagal memperbarui video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Masuk lagi, lalu coba perbarui.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Video ini tidak punya sumber yang bisa diputar, jadi tidak bisa diedit.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Gagal menandatangani pembaruan. Coba lagi.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay tidak menerima pembaruan. Coba lagi sebentar lagi.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Gagal memperbarui video ini. Coba lagi.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

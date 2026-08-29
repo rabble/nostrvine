@@ -4081,9 +4081,24 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'N-am putut actualiza videoclipul: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Conectează-te din nou, apoi încearcă iar.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Acest videoclip nu are o sursă redabilă, așa că nu poate fi editat.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'N-am putut semna modificarea. Încearcă din nou.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Releul nu a acceptat modificarea. Încearcă din nou în scurt timp.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'N-am putut actualiza acest videoclip. Încearcă din nou.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

@@ -1424,14 +1424,11 @@
     "shareMenuChangeCover": "Schimbă coperta",
     "shareMenuVideoUpdated": "Videoclip actualizat cu succes",
     "shareMenuVideoUpdatedWithInviteFailures": "Videoclip actualizat, dar {count, plural, =1{1 invitație pentru colaborator nu a fost trimisă.} other{{count} invitații pentru colaboratori nu au fost trimise.}}",
-    "shareMenuFailedToUpdateVideo": "N-am putut actualiza videoclipul: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Conectează-te din nou, apoi încearcă iar.",
+    "videoUpdateErrorNoPlayableVideo": "Acest videoclip nu are o sursă redabilă, așa că nu poate fi editat.",
+    "videoUpdateErrorCouldNotSign": "N-am putut semna modificarea. Încearcă din nou.",
+    "videoUpdateErrorPublishRejected": "Releul nu a acceptat modificarea. Încearcă din nou în scurt timp.",
+    "videoUpdateErrorGeneric": "N-am putut actualiza acest videoclip. Încearcă din nou.",
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuDeleteCleanupInProgress": "Se elimină videoclipul…",
     "shareMenuDeleteCleanupConfirmed": "Videoclip șters.",

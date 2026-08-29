@@ -2071,14 +2071,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "更新视频失败：{error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "请重新登录后再试。",
+  "videoUpdateErrorNoPlayableVideo": "这个视频没有可播放的源，无法编辑。",
+  "videoUpdateErrorCouldNotSign": "更新签名失败，请重试。",
+  "videoUpdateErrorPublishRejected": "中继未接受此次更新，请稍后重试。",
+  "videoUpdateErrorGeneric": "无法更新这个视频，请重试。",
   "shareMenuDeleteVideoQuestion": "删除视频？",
   "shareMenuDeleteCleanupInProgress": "正在移除视频…",
   "shareMenuDeleteCleanupConfirmed": "视频已删除。",

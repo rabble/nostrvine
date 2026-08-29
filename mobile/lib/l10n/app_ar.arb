@@ -1414,14 +1414,11 @@
     "shareMenuChangeCover": "تغيير الغلاف",
     "shareMenuVideoUpdated": "تم تحديث الفيديو بنجاح",
     "shareMenuVideoUpdatedWithInviteFailures": "تم تحديث الفيديو، لكن {count, plural, =1{لم يتم إرسال دعوة متعاون واحدة.} other{لم يتم إرسال {count} دعوات متعاونين.}}",
-    "shareMenuFailedToUpdateVideo": "فشل تحديث الفيديو: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "سجّل الدخول من جديد ثم حاول مرّة أخرى.",
+    "videoUpdateErrorNoPlayableVideo": "هذا الفيديو ليس له مصدر قابل للتشغيل، لذا لا يمكن تعديله.",
+    "videoUpdateErrorCouldNotSign": "تعذّر توقيع التحديث. حاول مرّة أخرى.",
+    "videoUpdateErrorPublishRejected": "لم يقبل الريلاي التحديث. حاول مرّة أخرى بعد قليل.",
+    "videoUpdateErrorGeneric": "تعذّر تحديث هذا الفيديو. حاول مرّة أخرى.",
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
     "shareMenuDeleteCleanupInProgress": "جارٍ إزالة الفيديو…",
     "shareMenuDeleteCleanupConfirmed": "تم حذف الفيديو.",

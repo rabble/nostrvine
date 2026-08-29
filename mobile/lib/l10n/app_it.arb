@@ -1424,14 +1424,11 @@
     "shareMenuChangeCover": "Cambia copertina",
     "shareMenuVideoUpdated": "Video aggiornato con successo",
     "shareMenuVideoUpdatedWithInviteFailures": "Video aggiornato, ma {count, plural, =1{1 invito ai collaboratori non è stato inviato.} other{{count} inviti ai collaboratori non sono stati inviati.}}",
-    "shareMenuFailedToUpdateVideo": "Impossibile aggiornare il video: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Accedi di nuovo, poi riprova.",
+    "videoUpdateErrorNoPlayableVideo": "Questo video non ha una sorgente riproducibile, quindi non può essere modificato.",
+    "videoUpdateErrorCouldNotSign": "Impossibile firmare la modifica. Riprova.",
+    "videoUpdateErrorPublishRejected": "Il relay non ha accettato la modifica. Riprova tra poco.",
+    "videoUpdateErrorGeneric": "Impossibile aggiornare questo video. Riprova.",
     "shareMenuDeleteVideoQuestion": "Eliminare il video?",
     "shareMenuDeleteCleanupInProgress": "Rimozione del video…",
     "shareMenuDeleteCleanupConfirmed": "Video eliminato.",

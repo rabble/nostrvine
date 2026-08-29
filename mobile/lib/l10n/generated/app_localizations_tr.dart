@@ -3897,9 +3897,23 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Video güncellenemedi: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Tekrar giriş yap, sonra yeniden dene.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Bu videonun oynatılabilir bir kaynağı yok, bu yüzden düzenlenemiyor.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Değişiklik imzalanamadı. Tekrar dene.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Relay değişikliği kabul etmedi. Birazdan tekrar dene.';
+
+  @override
+  String get videoUpdateErrorGeneric => 'Bu video güncellenemedi. Tekrar dene.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

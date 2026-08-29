@@ -1424,14 +1424,11 @@
     "shareMenuChangeCover": "Byt omslag",
     "shareMenuVideoUpdated": "Videon uppdaterades",
     "shareMenuVideoUpdatedWithInviteFailures": "Videon uppdaterades, men {count, plural, =1{1 inbjudan till medarbetare skickades inte.} other{{count} inbjudningar till medarbetare skickades inte.}}",
-    "shareMenuFailedToUpdateVideo": "Kunde inte uppdatera videon: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Logga in igen och försök sedan på nytt.",
+    "videoUpdateErrorNoPlayableVideo": "Den här videon har ingen spelbar källa och kan inte redigeras.",
+    "videoUpdateErrorCouldNotSign": "Kunde inte signera ändringen. Försök igen.",
+    "videoUpdateErrorPublishRejected": "Relät accepterade inte ändringen. Försök igen om en stund.",
+    "videoUpdateErrorGeneric": "Kunde inte uppdatera videon. Försök igen.",
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
     "shareMenuDeleteCleanupInProgress": "Tar bort videon…",
     "shareMenuDeleteCleanupConfirmed": "Videon har raderats.",

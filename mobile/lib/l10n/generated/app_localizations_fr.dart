@@ -4018,9 +4018,24 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Échec de la mise à jour de la vidéo : $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Reconnecte-toi, puis réessaie.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Cette vidéo n\'a pas de source lisible, elle ne peut pas être modifiée.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Impossible de signer la modification. Réessaie.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Le relais n\'a pas accepté la modification. Réessaie dans un instant.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Impossible de mettre à jour cette vidéo. Réessaie.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

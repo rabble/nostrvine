@@ -1421,14 +1421,11 @@
     "shareMenuChangeCover": "Ubah Sampul",
     "shareMenuVideoUpdated": "Video berhasil diperbarui",
     "shareMenuVideoUpdatedWithInviteFailures": "Video diperbarui, tetapi {count, plural, =1{1 undangan kolaborator tidak terkirim.} other{{count} undangan kolaborator tidak terkirim.}}",
-    "shareMenuFailedToUpdateVideo": "Gagal memperbarui video: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Masuk lagi, lalu coba perbarui.",
+    "videoUpdateErrorNoPlayableVideo": "Video ini tidak punya sumber yang bisa diputar, jadi tidak bisa diedit.",
+    "videoUpdateErrorCouldNotSign": "Gagal menandatangani pembaruan. Coba lagi.",
+    "videoUpdateErrorPublishRejected": "Relay tidak menerima pembaruan. Coba lagi sebentar lagi.",
+    "videoUpdateErrorGeneric": "Gagal memperbarui video ini. Coba lagi.",
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
     "shareMenuDeleteCleanupInProgress": "Menghapus video…",
     "shareMenuDeleteCleanupConfirmed": "Video dihapus.",

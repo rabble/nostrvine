@@ -2071,14 +2071,11 @@
       }
     }
   },
-  "shareMenuFailedToUpdateVideo": "Gagal mengemas kini video: {error}",
-  "@shareMenuFailedToUpdateVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "videoUpdateErrorNotAuthenticated": "Log masuk semula, kemudian cuba kemas kini.",
+  "videoUpdateErrorNoPlayableVideo": "Video ini tiada sumber yang boleh dimainkan, jadi ia tidak boleh diedit.",
+  "videoUpdateErrorCouldNotSign": "Gagal menandatangani kemas kini. Cuba lagi.",
+  "videoUpdateErrorPublishRejected": "Relay tidak menerima kemas kini. Cuba lagi sebentar lagi.",
+  "videoUpdateErrorGeneric": "Gagal mengemas kini video ini. Cuba lagi.",
   "shareMenuDeleteVideoQuestion": "Padam Video?",
   "shareMenuDeleteCleanupInProgress": "Mengalih keluar video…",
   "shareMenuDeleteCleanupConfirmed": "Video dipadamkan.",

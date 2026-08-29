@@ -3960,9 +3960,24 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'ویڈیو اپڈیٹ نہیں ہو سکی: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'دوبارہ سائن ان کریں، پھر کوشش کریں۔';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'اس ویڈیو کا کوئی قابلِ چلاؤ ماخذ نہیں، اس لیے اسے ایڈٹ نہیں کیا جا سکتا۔';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'اپ ڈیٹ پر دستخط نہیں ہو سکے۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'ریلے نے اپ ڈیٹ قبول نہیں کی۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'اس ویڈیو کو اپ ڈیٹ نہیں کیا جا سکا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

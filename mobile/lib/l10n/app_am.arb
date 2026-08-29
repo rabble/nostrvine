@@ -1793,14 +1793,11 @@
     "shareMenuChangeCover": "ሽፋን ቀይር",
     "shareMenuVideoUpdated": "ቪዲዮው በተሳካ ሁኔታ ተዘምኗል",
     "shareMenuVideoUpdatedWithInviteFailures": "ቪዲዮ ተዘምኗል፣ ግን {count, plural, =1{{count} የተባባሪ ግብዣ አልተላከም።} other{{count} የተባባሪ ግብዣዎች አልተላኩም።}}",
-    "shareMenuFailedToUpdateVideo": "ቪዲዮውን ማዘመን አልተሳካም፦ {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "እንደገና ግባ፣ ከዚያ ደግመህ ሞክር።",
+    "videoUpdateErrorNoPlayableVideo": "ይህ ቪዲዮ ሊጫወት የሚችል ምንጭ የለውም፣ ስለዚህ ሊስተካከል አይችልም።",
+    "videoUpdateErrorCouldNotSign": "ማዘመኛውን መፈረም አልተቻለም። እንደገና ሞክር።",
+    "videoUpdateErrorPublishRejected": "ማስተላለፊያው ማዘመኛውን አልተቀበለም። ትንሽ ቆይተህ እንደገና ሞክር።",
+    "videoUpdateErrorGeneric": "ይህን ቪዲዮ ማዘመን አልተቻለም። እንደገና ሞክር።",
     "shareMenuDeleteVideoQuestion": "ቪዲዮ ይሰረዝ?",
     "shareMenuDeleteCleanupInProgress": "ቪዲዮው እየተወገደ ነው…",
     "shareMenuDeleteCleanupConfirmed": "ቪዲዮው ተሰርዟል።",

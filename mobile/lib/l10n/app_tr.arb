@@ -1421,14 +1421,11 @@
     "shareMenuChangeCover": "Kapağı Değiştir",
     "shareMenuVideoUpdated": "Video başarıyla güncellendi",
     "shareMenuVideoUpdatedWithInviteFailures": "Video güncellendi, ancak {count, plural, =1{1 katılımcı daveti gönderilmedi.} other{{count} katılımcı daveti gönderilmedi.}}",
-    "shareMenuFailedToUpdateVideo": "Video güncellenemedi: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Tekrar giriş yap, sonra yeniden dene.",
+    "videoUpdateErrorNoPlayableVideo": "Bu videonun oynatılabilir bir kaynağı yok, bu yüzden düzenlenemiyor.",
+    "videoUpdateErrorCouldNotSign": "Değişiklik imzalanamadı. Tekrar dene.",
+    "videoUpdateErrorPublishRejected": "Relay değişikliği kabul etmedi. Birazdan tekrar dene.",
+    "videoUpdateErrorGeneric": "Bu video güncellenemedi. Tekrar dene.",
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
     "shareMenuDeleteCleanupInProgress": "Video kaldırılıyor…",
     "shareMenuDeleteCleanupConfirmed": "Video silindi.",

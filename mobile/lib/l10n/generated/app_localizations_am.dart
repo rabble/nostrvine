@@ -3867,9 +3867,21 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'ቪዲዮውን ማዘመን አልተሳካም፦ $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => 'እንደገና ግባ፣ ከዚያ ደግመህ ሞክር።';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'ይህ ቪዲዮ ሊጫወት የሚችል ምንጭ የለውም፣ ስለዚህ ሊስተካከል አይችልም።';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => 'ማዘመኛውን መፈረም አልተቻለም። እንደገና ሞክር።';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'ማስተላለፊያው ማዘመኛውን አልተቀበለም። ትንሽ ቆይተህ እንደገና ሞክር።';
+
+  @override
+  String get videoUpdateErrorGeneric => 'ይህን ቪዲዮ ማዘመን አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

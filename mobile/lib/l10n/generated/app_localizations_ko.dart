@@ -3723,9 +3723,21 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return '영상 업데이트에 실패했어요: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated => '다시 로그인한 다음 시도해보세요.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      '이 영상에는 재생 가능한 소스가 없어서 수정할 수 없어요.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign => '업데이트에 서명하지 못했어요. 다시 시도해보세요.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      '릴레이가 업데이트를 받지 않았어요. 잠시 후 다시 시도해보세요.';
+
+  @override
+  String get videoUpdateErrorGeneric => '이 영상을 업데이트하지 못했어요. 다시 시도해보세요.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

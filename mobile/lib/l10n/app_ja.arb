@@ -1414,14 +1414,11 @@
     "shareMenuChangeCover": "カバーを変更",
     "shareMenuVideoUpdated": "動画を更新したよ",
     "shareMenuVideoUpdatedWithInviteFailures": "動画を更新しましたが、{count, plural, =1{1件のコラボレーター招待が送信されませんでした。} other{{count}件のコラボレーター招待が送信されませんでした。}}",
-    "shareMenuFailedToUpdateVideo": "動画の更新がうまくいかなかった: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "もう一度ログインしてから試してみて。",
+    "videoUpdateErrorNoPlayableVideo": "この動画には再生できるソースがないから、編集できない。",
+    "videoUpdateErrorCouldNotSign": "更新に署名できなかった。もう一回試してみて。",
+    "videoUpdateErrorPublishRejected": "リレーが更新を受け付けなかった。少ししてからもう一回試してみて。",
+    "videoUpdateErrorGeneric": "この動画を更新できなかった。もう一回試してみて。",
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteCleanupInProgress": "動画を削除しています…",
     "shareMenuDeleteCleanupConfirmed": "動画を削除しました。",

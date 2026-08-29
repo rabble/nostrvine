@@ -3983,9 +3983,24 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String shareMenuFailedToUpdateVideo(String error) {
-    return 'Hindi na-update ang video: $error';
-  }
+  String get videoUpdateErrorNotAuthenticated =>
+      'Mag-sign in ulit, tapos subukan ulit.';
+
+  @override
+  String get videoUpdateErrorNoPlayableVideo =>
+      'Walang mapa-play na source ang video na ito, kaya hindi ito ma-edit.';
+
+  @override
+  String get videoUpdateErrorCouldNotSign =>
+      'Hindi na-sign ang update. Subukan ulit.';
+
+  @override
+  String get videoUpdateErrorPublishRejected =>
+      'Hindi tinanggap ng relay ang update. Subukan ulit maya-maya.';
+
+  @override
+  String get videoUpdateErrorGeneric =>
+      'Hindi na-update ang video na ito. Subukan ulit.';
 
   @override
   String get shareMenuOriginalVideoUnavailable =>

@@ -1424,14 +1424,11 @@
     "shareMenuChangeCover": "Cover wijzigen",
     "shareMenuVideoUpdated": "Video succesvol bijgewerkt",
     "shareMenuVideoUpdatedWithInviteFailures": "Video bijgewerkt, maar {count, plural, =1{1 uitnodiging voor medewerker is niet verzonden.} other{{count} uitnodigingen voor medewerkers zijn niet verzonden.}}",
-    "shareMenuFailedToUpdateVideo": "Video bijwerken mislukt: {error}",
-    "@shareMenuFailedToUpdateVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "videoUpdateErrorNotAuthenticated": "Log opnieuw in en probeer het dan nog eens.",
+    "videoUpdateErrorNoPlayableVideo": "Deze video heeft geen afspeelbare bron en kan niet worden bewerkt.",
+    "videoUpdateErrorCouldNotSign": "De wijziging kon niet ondertekend worden. Probeer het opnieuw.",
+    "videoUpdateErrorPublishRejected": "De relay accepteerde de wijziging niet. Probeer het zo nog eens.",
+    "videoUpdateErrorGeneric": "Deze video kon niet bijgewerkt worden. Probeer het opnieuw.",
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteCleanupInProgress": "Video verwijderen…",
     "shareMenuDeleteCleanupConfirmed": "Video verwijderd.",
