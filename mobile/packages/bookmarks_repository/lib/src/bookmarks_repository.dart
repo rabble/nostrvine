@@ -14,6 +14,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Represents a bookmarked item
 @immutable
 class BookmarkItem {
+  /// Creates a bookmark item.
   const BookmarkItem({
     required this.type,
     required this.id,
@@ -21,19 +22,9 @@ class BookmarkItem {
     this.petname,
   });
 
-  final String
-  type; // 'e' (event), 'a' (parameterized replaceable), 't' (hashtag), 'r' (URL)
-  final String id; // Event ID, article ID, hashtag, or URL
-  final String? relay; // Optional relay hint
-  final String? petname; // Optional petname/label
-
-  List<String> toTag() {
-    final tag = [type, id];
-    if (relay != null) tag.add(relay!);
-    if (petname != null) tag.add(petname!);
-    return tag;
-  }
-
+  /// Rebuilds an item from a NIP-51 tag.
+  ///
+  /// Positions past [petname] are dropped, which is #7137.
   factory BookmarkItem.fromTag(List<String> tag) {
     return BookmarkItem(
       type: tag[0],
@@ -43,19 +34,42 @@ class BookmarkItem {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'type': type,
-    'id': id,
-    'relay': relay,
-    'petname': petname,
-  };
-
+  /// Rebuilds an item from its [toJson] form.
   factory BookmarkItem.fromJson(Map<String, dynamic> json) => BookmarkItem(
     type: json['type'] as String,
     id: json['id'] as String,
     relay: json['relay'] as String?,
     petname: json['petname'] as String?,
   );
+
+  /// NIP-51 tag name: `e` (event), `a` (parameterized replaceable),
+  /// `t` (hashtag) or `r` (URL).
+  final String type;
+
+  /// Event id, article coordinate, hashtag, or URL, depending on [type].
+  final String id;
+
+  /// Optional relay hint.
+  final String? relay;
+
+  /// Optional petname/label.
+  final String? petname;
+
+  /// Renders this item as a NIP-51 tag.
+  List<String> toTag() {
+    final tag = [type, id];
+    if (relay != null) tag.add(relay!);
+    if (petname != null) tag.add(petname!);
+    return tag;
+  }
+
+  /// Serializes this item for the SharedPreferences snapshot.
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'id': id,
+    'relay': relay,
+    'petname': petname,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -71,6 +85,7 @@ class BookmarkItem {
 /// render "Saved" / "Removed" from what actually happened rather than from a
 /// local read that predates the sync.
 class BookmarkToggleResult {
+  /// Creates a toggle outcome.
   const BookmarkToggleResult({
     required this.succeeded,
     required this.wasBookmarked,
@@ -154,6 +169,8 @@ class _PrivateItemsRead {
 
 /// Service for the user's NIP-51 global bookmark list (kind 10003).
 class BookmarkService {
+  /// Creates the repository and loads the cached snapshot synchronously,
+  /// so [globalBookmarks] is readable before any relay round trip.
   BookmarkService({
     required NostrClient nostrService,
     required BookmarkSigner authService,
@@ -171,6 +188,10 @@ class BookmarkService {
   final SharedPreferences _prefs;
   final DateTime Function() _now;
 
+  /// Storage key for the cached public-item snapshot.
+  ///
+  /// `UserDataCleanupService` clears this key by literal on identity change
+  /// with no compile-time link back to it (#8314), so the value is frozen.
   static const String globalBookmarksStorageKey = 'global_bookmarks';
 
   /// Storage key for [_revision].
@@ -255,7 +276,7 @@ class BookmarkService {
   /// and pays nothing for it.
   static const absenceConfirmationTtl = Duration(minutes: 5);
 
-  /// How long a confirmed-empty answer is allowed to lag behind a local publish.
+  /// How long a confirmed-empty answer may lag behind a local publish.
   ///
   /// Relay `OK` means the event was accepted, not that every later query can
   /// read it back. During that indexing window, an empty answer is not evidence
@@ -570,7 +591,7 @@ class BookmarkService {
         category: LogCategory.system,
       );
       return null;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to sync global bookmarks from relay: $e',
         name: 'BookmarkService',
@@ -776,7 +797,7 @@ class BookmarkService {
       );
 
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to add to global bookmarks: $e',
         name: 'BookmarkService',
@@ -880,7 +901,7 @@ class BookmarkService {
       );
 
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to remove from global bookmarks: $e',
         name: 'BookmarkService',
@@ -998,7 +1019,7 @@ class BookmarkService {
         category: LogCategory.system,
       );
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to publish global bookmarks to Nostr: $e',
         name: 'BookmarkService',
@@ -1046,7 +1067,7 @@ class BookmarkService {
         return null;
       }
       return ciphertext;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to encrypt private bookmark items: $e',
         name: 'BookmarkService',
@@ -1144,7 +1165,7 @@ class BookmarkService {
         category: LogCategory.system,
       );
       return _PrivateItemsRead(state: _PrivateItemsState.readable, tags: tags);
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to read private bookmark items: $e',
         name: 'BookmarkService',
@@ -1173,7 +1194,7 @@ class BookmarkService {
         tags.add([for (final value in entry) value as String]);
       }
       return tags;
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }
@@ -1187,18 +1208,19 @@ class BookmarkService {
     if (globalBookmarksJson != null) {
       try {
         final bookmarksData = jsonDecode(globalBookmarksJson) as List<dynamic>;
-        _globalBookmarks.clear();
-        _globalBookmarks.addAll(
-          bookmarksData.map(
-            (json) => BookmarkItem.fromJson(json as Map<String, dynamic>),
-          ),
-        );
+        _globalBookmarks
+          ..clear()
+          ..addAll(
+            bookmarksData.map(
+              (json) => BookmarkItem.fromJson(json as Map<String, dynamic>),
+            ),
+          );
         Log.debug(
           'Loaded ${_globalBookmarks.length} global bookmarks from storage',
           name: 'BookmarkService',
           category: LogCategory.system,
         );
-      } catch (e) {
+      } on Object catch (e) {
         Log.error(
           'Failed to load global bookmarks: $e',
           name: 'BookmarkService',
@@ -1215,7 +1237,7 @@ class BookmarkService {
           createdAt: revision['createdAt'] as int,
           id: revision['id'] as String,
         );
-      } catch (e) {
+      } on Object catch (e) {
         // A corrupt watermark only costs the staleness guard, so drop it and
         // let the next read establish one rather than failing the load.
         Log.error(
@@ -1250,7 +1272,7 @@ class BookmarkService {
           jsonEncode({'createdAt': revision.createdAt, 'id': revision.id}),
         );
       }
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to save bookmarks to SharedPreferences: $e',
         name: 'BookmarkService',

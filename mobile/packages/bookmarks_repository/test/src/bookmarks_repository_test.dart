@@ -473,7 +473,8 @@ void main() {
           // Contemporaneous with the injected clock: left at the SDK's
           // real-wall-clock default the event sits months ahead of it, a skew
           // no relay would serve and one that would force the publish stamp to
-          // cap instead of exercising the ordinary carried-content path (#7629).
+          // cap instead of exercising the ordinary carried-content path
+          // (#7629).
           final theirRevisionAt = clock.millisecondsSinceEpoch ~/ 1000;
           final service = createService(now: () => clock);
 
