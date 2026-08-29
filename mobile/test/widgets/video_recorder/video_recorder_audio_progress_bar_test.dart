@@ -189,7 +189,7 @@ void main() {
           buildWidget(
             recordingState: VideoRecorderState.recording,
             selectedSound: _createTestAudioEvent(),
-            waveformState: const SoundWaveformError('Test error'),
+            waveformState: const SoundWaveformError(),
           ),
         );
         await tester.pumpAndSettle();
