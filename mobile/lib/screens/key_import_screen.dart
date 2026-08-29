@@ -297,9 +297,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              result.errorMessage ?? context.l10n.keyImportFailedToImport,
-            ),
+            content: Text(context.l10n.keyImportFailedToImport),
             backgroundColor: VineTheme.error,
           ),
         );
