@@ -28,6 +28,7 @@ class InviteGateScreen extends StatefulWidget {
     super.key,
     this.initialCode,
     this.initialError,
+    this.initialErrorReason,
     this.initialSourceSlug,
   });
 
@@ -36,6 +37,7 @@ class InviteGateScreen extends StatefulWidget {
 
   final String? initialCode;
   final String? initialError;
+  final InviteGateError? initialErrorReason;
   final String? initialSourceSlug;
 
   @override
@@ -56,10 +58,13 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     );
     final inviteGateBloc = context.read<InviteGateBloc>();
     inviteGateBloc.add(const InviteGateTransientCleared());
-    if (widget.initialError != null && widget.initialError!.isNotEmpty) {
+    final initialErrorReason = widget.initialErrorReason;
+    if (initialErrorReason != null) {
+      inviteGateBloc.add(InviteGateGeneralErrorSet(initialErrorReason));
+    } else if (widget.initialError != null && widget.initialError!.isNotEmpty) {
       // Only the FACT of an upstream error survives the link; its text does
-      // not. See InviteGateError.unknown — this query parameter used to be
-      // rendered verbatim inside the auth error box.
+      // not. Trusted in-app recovery links use the allowlisted errorReason
+      // parameter instead.
       inviteGateBloc.add(
         const InviteGateGeneralErrorSet(InviteGateError.unknown),
       );

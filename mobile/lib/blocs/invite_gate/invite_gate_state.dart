@@ -40,10 +40,28 @@ enum InviteGateError {
   /// This is deliberately the ONLY thing an inbound `?error=` query parameter
   /// can produce. Before #3591 that parameter's text was rendered verbatim in
   /// the auth error box, so any link could put arbitrary words inside Divine's
-  /// own trusted red error surface, on a pre-auth screen. Nothing anywhere in
-  /// the product generates such a link, so there is no contract to preserve —
-  /// only the signal that something went wrong upstream is kept.
-  unknown,
+  /// own trusted red error surface, on a pre-auth screen. Trusted in-app
+  /// recovery links use [queryValue]; untrusted text keeps only the signal that
+  /// something went wrong upstream.
+  unknown;
+
+  static const _queryValues = <InviteGateError, String>{
+    InviteGateError.creatorFull: 'creator_full',
+    InviteGateError.inviteUnavailable: 'invite_unavailable',
+    InviteGateError.checkFailed: 'check_failed',
+    InviteGateError.unknown: 'unknown',
+  };
+
+  /// Stable value used by trusted in-app recovery links.
+  String get queryValue => _queryValues[this]!;
+
+  /// Parses an allowlisted in-app recovery reason from a URL.
+  static InviteGateError? fromQuery(String? value) {
+    for (final entry in _queryValues.entries) {
+      if (entry.value == value) return entry.key;
+    }
+    return null;
+  }
 }
 
 class InviteGateState extends Equatable {

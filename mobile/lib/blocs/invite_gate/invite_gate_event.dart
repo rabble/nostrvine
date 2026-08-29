@@ -23,9 +23,9 @@ class InviteGateCodeSubmitted extends InviteGateEvent {
 
 /// Seeds (or clears) the block-level failure shown on the gate.
 ///
-/// Takes a reason code, never text. The one caller is an inbound deep link
-/// carrying `?error=`; see [InviteGateError.unknown] for why its payload is
-/// discarded rather than displayed.
+/// Takes a reason code, never text. Raw inbound `?error=` values become
+/// [InviteGateError.unknown]; in-app recovery links may carry an allowlisted
+/// reason code.
 class InviteGateGeneralErrorSet extends InviteGateEvent {
   const InviteGateGeneralErrorSet(this.error);
 

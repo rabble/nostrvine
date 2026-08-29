@@ -11,6 +11,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_availability/invite_availability_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/invite_availability.dart';
@@ -84,6 +85,9 @@ void main() {
                     builder: (context, state) => InviteGateScreen(
                       initialCode: state.uri.queryParameters['code'],
                       initialError: state.uri.queryParameters['error'],
+                      initialErrorReason: InviteGateError.fromQuery(
+                        state.uri.queryParameters['errorReason'],
+                      ),
                       initialSourceSlug:
                           state.uri.queryParameters['sourceSlug'],
                     ),
@@ -310,15 +314,13 @@ void main() {
 
     // #3591: this used to assert `find.text('Invite problem')` — i.e. that the
     // ?error= query parameter rendered VERBATIM inside the auth error box, on
-    // a pre-auth screen, in whatever words the link chose. Nothing in the
-    // product generates such a link, so there is no contract to keep. The
-    // signal survives; the attacker-controlled payload does not.
+    // a pre-auth screen, in whatever words the link chose. The trusted in-app
+    // recovery flow uses a separate allowlisted reason
+    // parameter. The signal survives; attacker-controlled payload does not.
     testWidgets(
       'renders a generic error for an inbound ?error= link, never the '
       'text the link chose',
-      (
-        tester,
-      ) async {
+      (tester) async {
         when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
           (_) async => const InviteClientConfig(
             mode: OnboardingMode.inviteCodeRequired,
@@ -383,6 +385,25 @@ void main() {
         expect(find.byType(TextField), findsOneWidget);
       },
     );
+
+    testWidgets('preserves a trusted in-app recovery reason', (tester) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.inviteCodeRequired,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+
+      final location = WelcomeScreen.inviteGatePathWithCode(
+        'AB12-EF34',
+        errorReason: InviteGateError.inviteUnavailable,
+      );
+      await tester.pumpWidget(createTestWidget(initialLocation: location));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.authInviteGateErrorUnavailable), findsOneWidget);
+      expect(find.text(l10n.authInviteGateErrorUnknown), findsNothing);
+    });
 
     testWidgets('preserves creator source slug when joining waitlist', (
       tester,
