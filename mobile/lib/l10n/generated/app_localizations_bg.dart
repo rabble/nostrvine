@@ -4057,16 +4057,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Уеб удостоверяването не се поддържа в защитен режим. Използвай мобилното приложение, за да управляваш ключовете си сигурно.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Неуспешно интегриране на удостоверяването: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Неочаквана грешка: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Въведи Bunker URI';
 
   @override

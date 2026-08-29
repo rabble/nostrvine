@@ -1440,22 +1440,6 @@
     "authSessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie.",
     "authSignInFailed": "Nie udało się zalogować. Spróbuj ponownie.",
     "webAuthNotSupportedSecureMode": "Uwierzytelnianie przez WWW nie jest obsługiwane w trybie bezpiecznym. Użyj aplikacji mobilnej do bezpiecznego zarządzania kluczami.",
-    "webAuthIntegrationFailed": "Integracja uwierzytelnienia nieudana: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Nieoczekiwany błąd: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Wprowadź URI bunker",
     "webAuthConnectTitle": "Połącz z Divine",
     "webAuthChooseMethod": "Wybierz preferowaną metodę uwierzytelnienia Nostr",

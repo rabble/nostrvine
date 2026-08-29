@@ -3940,16 +3940,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Autentikasi web tidak didukung dalam mode aman. Silakan pakai aplikasi seluler untuk manajemen kunci yang aman.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrasi autentikasi gagal: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Kesalahan tak terduga: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Silakan masukkan URI bunker';
 
   @override

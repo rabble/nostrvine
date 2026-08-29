@@ -4022,16 +4022,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Webauthenticatie wordt niet ondersteund in veilige modus. Gebruik de mobiele app voor veilig sleutelbeheer.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Authenticatie-integratie mislukt: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Onverwachte fout: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Voer een bunker-URI in';
 
   @override

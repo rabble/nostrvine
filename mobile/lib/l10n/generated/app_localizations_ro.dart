@@ -4131,16 +4131,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrarea de autentificare a eșuat: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Eroare neașteptată: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Introdu un URI bunker';
 
   @override

@@ -1440,22 +1440,6 @@
     "authSessionExpired": "Sua sessão expirou. Entre novamente.",
     "authSignInFailed": "Falha ao entrar. Tente novamente.",
     "webAuthNotSupportedSecureMode": "Autenticação web não suportada no modo seguro. Use o app para celular para gerenciamento seguro de chaves.",
-    "webAuthIntegrationFailed": "Falha na integração de autenticação: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Erro inesperado: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Digite uma URI bunker",
     "webAuthConnectTitle": "Conectar ao Divine",
     "webAuthChooseMethod": "Escolha seu método preferido de autenticação Nostr",

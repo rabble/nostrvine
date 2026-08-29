@@ -2095,22 +2095,6 @@
   "authSessionExpired": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
   "authSignInFailed": "Đăng nhập thất bại. Vui lòng thử lại.",
   "webAuthNotSupportedSecureMode": "Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.",
-  "webAuthIntegrationFailed": "Tích hợp xác thực thất bại: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "Lỗi bất ngờ: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "Vui lòng nhập URI bunker",
   "webAuthConnectTitle": "Kết nối với Divine",
   "webAuthChooseMethod": "Chọn phương thức xác thực Nostr bạn thích",

@@ -926,8 +926,6 @@
     "authSessionExpired": "세션이 만료됐어요. 다시 로그인해주세요.",
     "authSignInFailed": "로그인에 실패했어요. 다시 시도해주세요.",
     "webAuthNotSupportedSecureMode": "보안 모드에서는 웹 인증을 지원하지 않아요. 안전한 키 관리를 위해 모바일 앱을 이용해주세요.",
-    "webAuthIntegrationFailed": "인증 연동에 실패했어요: {error}",
-    "webAuthUnexpectedError": "예상치 못한 오류가 발생했어요: {error}",
     "webAuthEnterBunkerUri": "Bunker URI를 입력해주세요",
     "webAuthConnectTitle": "Divine에 연결",
     "webAuthChooseMethod": "원하는 Nostr 인증 방법을 고르세요",

@@ -3776,16 +3776,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '보안 모드에서는 웹 인증을 지원하지 않아요. 안전한 키 관리를 위해 모바일 앱을 이용해주세요.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return '인증 연동에 실패했어요: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return '예상치 못한 오류가 발생했어요: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Bunker URI를 입력해주세요';
 
   @override

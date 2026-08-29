@@ -4035,16 +4035,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi suportado ang web authentication sa secure mode. Gamitin ang mobile app para sa secure key management.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Hindi nag-integrate ang authentication: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Hindi inaasahang error: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Maglagay ng bunker URI';
 
   @override

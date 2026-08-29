@@ -1440,22 +1440,6 @@
     "authSessionExpired": "La tua sessione è scaduta. Accedi di nuovo.",
     "authSignInFailed": "Accesso fallito. Riprova.",
     "webAuthNotSupportedSecureMode": "Autenticazione web non supportata in modalità sicura. Usa l'app mobile per una gestione sicura delle chiavi.",
-    "webAuthIntegrationFailed": "Integrazione di autenticazione fallita: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Errore imprevisto: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Inserisci un URI bunker",
     "webAuthConnectTitle": "Connettiti a Divine",
     "webAuthChooseMethod": "Scegli il tuo metodo di autenticazione Nostr preferito",

@@ -4056,16 +4056,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Autenticazione web non supportata in modalità sicura. Usa l\'app mobile per una gestione sicura delle chiavi.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrazione di autenticazione fallita: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Errore imprevisto: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Inserisci un URI bunker';
 
   @override

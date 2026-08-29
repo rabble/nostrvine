@@ -2095,22 +2095,6 @@
   "authSessionExpired": "آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔",
   "authSignInFailed": "سائن ان نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "webAuthNotSupportedSecureMode": "محفوظ موڈ میں ویب تصدیق تعاون یافتہ نہیں ہے۔ محفوظ کلید مینجمنٹ کے لیے براہ کرم موبائل ایپ استعمال کریں۔",
-  "webAuthIntegrationFailed": "تصدیقی انضمام ناکام: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "غیر متوقع خرابی: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "براہ کرم bunker URI درج کریں",
   "webAuthConnectTitle": "Divine سے منسلک ہوں",
   "webAuthChooseMethod": "اپنا پسندیدہ Nostr تصدیقی طریقہ منتخب کریں",

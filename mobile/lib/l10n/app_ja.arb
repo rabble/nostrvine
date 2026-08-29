@@ -1430,22 +1430,6 @@
     "authSessionExpired": "セッションが切れちゃった。もう一回サインインしてね。",
     "authSignInFailed": "サインインがうまくいかなかった。もう一回試してみて。",
     "webAuthNotSupportedSecureMode": "セキュアモードではウェブ認証は対応してないよ。安全な鍵管理にはモバイルアプリを使ってね。",
-    "webAuthIntegrationFailed": "認証連携がうまくいかなかった: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "予期しないエラー: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "bunker URI を入れてね",
     "webAuthConnectTitle": "Divine に接続",
     "webAuthChooseMethod": "Nostr 認証方法を選んでね",

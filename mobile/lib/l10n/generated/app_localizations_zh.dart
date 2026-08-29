@@ -3750,16 +3750,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get webAuthNotSupportedSecureMode => '安全模式下不支持网页认证。请使用移动应用进行安全的密钥管理。';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return '认证集成失败：$error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return '意外错误：$error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => '请输入 bunker URI';
 
   @override

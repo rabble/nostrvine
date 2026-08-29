@@ -1440,22 +1440,6 @@
     "authSessionExpired": "Je sessie is verlopen. Log opnieuw in.",
     "authSignInFailed": "Inloggen mislukt. Probeer het opnieuw.",
     "webAuthNotSupportedSecureMode": "Webauthenticatie wordt niet ondersteund in veilige modus. Gebruik de mobiele app voor veilig sleutelbeheer.",
-    "webAuthIntegrationFailed": "Authenticatie-integratie mislukt: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Onverwachte fout: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Voer een bunker-URI in",
     "webAuthConnectTitle": "Verbinden met Divine",
     "webAuthChooseMethod": "Kies je voorkeursmethode voor Nostr-authenticatie",

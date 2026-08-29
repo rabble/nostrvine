@@ -3919,16 +3919,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'የማረጋገጫ ውህደት አልተሳካም፦ $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'ያልተጠበቀ ስህተት፡ $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'እባክህ ማስቀመጫ አስገባ URI';
 
   @override

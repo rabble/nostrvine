@@ -3972,16 +3972,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'مصادقة الويب غير مدعومة في الوضع الآمن. يرجى استخدام تطبيق الجوال لإدارة المفاتيح بأمان.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'فشل تكامل المصادقة: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'خطأ غير متوقّع: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'يرجى إدخال رابط bunker';
 
   @override

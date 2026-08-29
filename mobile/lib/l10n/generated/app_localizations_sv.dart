@@ -4006,16 +4006,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Webbautentisering stöds inte i säkert läge. Använd mobilappen för säker nyckelhantering.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Autentiseringsintegrering misslyckades: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Oväntat fel: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Ange en bunker-URI';
 
   @override

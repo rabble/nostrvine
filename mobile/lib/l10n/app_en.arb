@@ -2519,22 +2519,6 @@
   },
   "authSignInFailed": "Failed to sign in. Please try again.",
   "webAuthNotSupportedSecureMode": "Web authentication not supported in secure mode. Please use mobile app for secure key management.",
-  "webAuthIntegrationFailed": "Authentication integration failed: {error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "Unexpected error: {error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "Please enter a bunker URI",
   "webAuthConnectTitle": "Connect to Divine",
   "webAuthChooseMethod": "Choose your preferred Nostr authentication method",

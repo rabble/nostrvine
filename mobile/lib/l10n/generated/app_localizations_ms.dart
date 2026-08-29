@@ -4006,16 +4006,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Pengesahan web tidak disokong dalam mod selamat. Sila guna apl mudah alih untuk pengurusan kunci selamat.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integrasi pengesahan gagal: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Ralat tidak dijangka: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Sila masukkan URI bunker';
 
   @override

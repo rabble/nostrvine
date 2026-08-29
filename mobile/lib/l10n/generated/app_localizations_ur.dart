@@ -4011,16 +4011,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'محفوظ موڈ میں ویب تصدیق تعاون یافتہ نہیں ہے۔ محفوظ کلید مینجمنٹ کے لیے براہ کرم موبائل ایپ استعمال کریں۔';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'تصدیقی انضمام ناکام: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'غیر متوقع خرابی: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'براہ کرم bunker URI درج کریں';
 
   @override

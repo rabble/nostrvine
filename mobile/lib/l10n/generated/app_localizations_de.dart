@@ -4059,16 +4059,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Web-Authentifizierung wird im sicheren Modus nicht unterstützt. Bitte nutze die mobile App für sichere Schlüsselverwaltung.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Authentifizierungs-Integration fehlgeschlagen: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Unerwarteter Fehler: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Bitte gib eine Bunker-URI ein';
 
   @override

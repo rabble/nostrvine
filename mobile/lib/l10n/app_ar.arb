@@ -1430,22 +1430,6 @@
     "authSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرّة أخرى.",
     "authSignInFailed": "فشل تسجيل الدخول. حاول مرّة أخرى.",
     "webAuthNotSupportedSecureMode": "مصادقة الويب غير مدعومة في الوضع الآمن. يرجى استخدام تطبيق الجوال لإدارة المفاتيح بأمان.",
-    "webAuthIntegrationFailed": "فشل تكامل المصادقة: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "خطأ غير متوقّع: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "يرجى إدخال رابط bunker",
     "webAuthConnectTitle": "الاتصال بـ Divine",
     "webAuthChooseMethod": "اختر طريقة مصادقة Nostr المفضّلة لديك",

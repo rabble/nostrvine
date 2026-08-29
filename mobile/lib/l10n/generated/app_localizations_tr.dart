@@ -3948,16 +3948,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Web kimlik doğrulaması güvenli modda desteklenmiyor. Güvenli anahtar yönetimi için lütfen mobil uygulamayı kullan.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Kimlik doğrulama entegrasyonu başarısız: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Beklenmeyen hata: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Lütfen bir bunker URI\'si gir';
 
   @override

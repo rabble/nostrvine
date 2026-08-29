@@ -4115,16 +4115,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Uwierzytelnianie przez WWW nie jest obsługiwane w trybie bezpiecznym. Użyj aplikacji mobilnej do bezpiecznego zarządzania kluczami.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Integracja uwierzytelnienia nieudana: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Nieoczekiwany błąd: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Wprowadź URI bunker';
 
   @override

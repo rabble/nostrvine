@@ -2095,22 +2095,6 @@
   "authSessionExpired": "你的登录已过期，请重新登录。",
   "authSignInFailed": "登录失败，请重试。",
   "webAuthNotSupportedSecureMode": "安全模式下不支持网页认证。请使用移动应用进行安全的密钥管理。",
-  "webAuthIntegrationFailed": "认证集成失败：{error}",
-  "@webAuthIntegrationFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "webAuthUnexpectedError": "意外错误：{error}",
-  "@webAuthUnexpectedError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "webAuthEnterBunkerUri": "请输入 bunker URI",
   "webAuthConnectTitle": "连接到 Divine",
   "webAuthChooseMethod": "选择你偏好的 Nostr 认证方式",

@@ -6851,18 +6851,6 @@ abstract class AppLocalizations {
   /// **'Web authentication not supported in secure mode. Please use mobile app for secure key management.'**
   String get webAuthNotSupportedSecureMode;
 
-  /// No description provided for @webAuthIntegrationFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication integration failed: {error}'**
-  String webAuthIntegrationFailed(String error);
-
-  /// No description provided for @webAuthUnexpectedError.
-  ///
-  /// In en, this message translates to:
-  /// **'Unexpected error: {error}'**
-  String webAuthUnexpectedError(String error);
-
   /// No description provided for @webAuthEnterBunkerUri.
   ///
   /// In en, this message translates to:

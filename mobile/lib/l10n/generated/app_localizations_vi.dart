@@ -3978,16 +3978,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không hỗ trợ xác thực web ở chế độ bảo mật. Hãy dùng ứng dụng di động để quản lý khóa an toàn.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Tích hợp xác thực thất bại: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Lỗi bất ngờ: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Vui lòng nhập URI bunker';
 
   @override

@@ -1817,22 +1817,6 @@
     "authSessionExpired": "ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።",
     "authSignInFailed": "መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     "webAuthNotSupportedSecureMode": "የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።",
-    "webAuthIntegrationFailed": "የማረጋገጫ ውህደት አልተሳካም፦ {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "ያልተጠበቀ ስህተት፡ {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "እባክህ ማስቀመጫ አስገባ URI",
     "webAuthConnectTitle": "ከDivine ጋር ተገናኝ",
     "webAuthChooseMethod": "የመረጡትን Nostr የማረጋገጫ ዘዴ ይምረጡ",

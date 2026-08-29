@@ -3760,16 +3760,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'セキュアモードではウェブ認証は対応してないよ。安全な鍵管理にはモバイルアプリを使ってね。';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return '認証連携がうまくいかなかった: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return '予期しないエラー: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'bunker URI を入れてね';
 
   @override

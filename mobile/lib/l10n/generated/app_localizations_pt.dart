@@ -4035,16 +4035,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Autenticação web não suportada no modo seguro. Use o app para celular para gerenciamento seguro de chaves.';
 
   @override
-  String webAuthIntegrationFailed(String error) {
-    return 'Falha na integração de autenticação: $error';
-  }
-
-  @override
-  String webAuthUnexpectedError(String error) {
-    return 'Erro inesperado: $error';
-  }
-
-  @override
   String get webAuthEnterBunkerUri => 'Digite uma URI bunker';
 
   @override

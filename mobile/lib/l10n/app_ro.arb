@@ -1440,22 +1440,6 @@
     "authSessionExpired": "Sesiunea ta a expirat. Autentifică-te din nou.",
     "authSignInFailed": "N-am putut autentifica. Încearcă din nou.",
     "webAuthNotSupportedSecureMode": "Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.",
-    "webAuthIntegrationFailed": "Integrarea de autentificare a eșuat: {error}",
-    "@webAuthIntegrationFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "webAuthUnexpectedError": "Eroare neașteptată: {error}",
-    "@webAuthUnexpectedError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "webAuthEnterBunkerUri": "Introdu un URI bunker",
     "webAuthConnectTitle": "Conectează-te la Divine",
     "webAuthChooseMethod": "Alege metoda ta preferată de autentificare Nostr",
