@@ -490,12 +490,12 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
       Log.info('Retrying relay connections...', name: 'RelayDiagnostic');
 
+      // Resolves only once every relay's connect attempt has settled — the
+      // await chain runs down to `channel.ready` — and _updateRelayStatus has
+      // already written the statuses connectedRelayCount reads. Nothing here
+      // needs an extra wall-clock wait.
       await nostrService.retryDisconnectedRelays();
 
-      // Wait a bit for connections to establish
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Refresh diagnostics
       await _refreshDiagnostics();
 
       // Check if any relays connected

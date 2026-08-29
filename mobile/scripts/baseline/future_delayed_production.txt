@@ -5,7 +5,6 @@
 # test-scoped #4337 WS-2 ratchet).
 lib/providers/video_publish_provider.dart
 lib/screens/discover_lists_screen.dart
-lib/screens/relay_diagnostic_screen.dart
 lib/screens/video_metadata/video_metadata_preview_screen.dart
 lib/services/connection_status_service.dart
 lib/services/upload_initialization_helper.dart
