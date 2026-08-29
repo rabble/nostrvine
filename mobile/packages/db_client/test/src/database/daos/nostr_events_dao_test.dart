@@ -229,6 +229,23 @@ void main() {
         }
       });
 
+      test('serializes concurrent replaceable-event batches', () async {
+        await dao.upsertEventsBatch([
+          createEvent(kind: 0, content: 'v1', createdAt: 1000),
+        ]);
+        final newest = createEvent(kind: 0, content: 'v3', createdAt: 3000);
+        final middle = createEvent(kind: 0, content: 'v2', createdAt: 2000);
+
+        await Future.wait([
+          dao.upsertEventsBatch([newest]),
+          dao.upsertEventsBatch([middle]),
+        ]);
+
+        final results = await dao.getEventsByFilter(Filter(kinds: [0]));
+        expect(results, hasLength(1));
+        expect(results.single.id, newest.id);
+      });
+
       test('handles an empty batch without error', () async {
         await expectLater(dao.upsertEventsBatch([]), completes);
       });
