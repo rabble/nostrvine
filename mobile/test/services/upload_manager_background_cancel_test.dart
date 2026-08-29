@@ -1,4 +1,4 @@
-// ABOUTME: Regression tests for the pause/cancel race on OS background uploads.
+// ABOUTME: Regression test for the cancel race on OS background uploads.
 // ABOUTME: A user-initiated stop must not be reported as a failure.
 
 import 'dart:async';
@@ -31,7 +31,7 @@ void main() {
 
   setUp(() async {
     testDir = await Directory.systemTemp.createTemp(
-      'upload_manager_bg_pause_test_',
+      'upload_manager_bg_cancel_test_',
     );
     Hive.init(testDir.path);
     if (!Hive.isAdapterRegistered(1)) {
@@ -115,138 +115,53 @@ void main() {
     return transfer;
   }
 
-  Future<PendingUpload> seedPausedUpload() async {
+  Future<File> newVideoFile() async {
     final videoFile = File(
       '${testDir.path}/${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
     await videoFile.writeAsString('fake video content');
-    final upload = PendingUpload.create(
-      localVideoPath: videoFile.path,
-      nostrPubkey: 'pk',
-      title: 'T',
-    );
-    final box = Hive.box<PendingUpload>('pending_uploads');
-    await box.put(upload.id, upload.copyWith(status: UploadStatus.paused));
-    return upload;
+    return videoFile;
   }
 
-  group('UploadManager background pause/cancel race', () {
+  group('UploadManager background cancel race', () {
     test(
-      'pausing an in-flight background upload leaves it paused, not failed',
+      'cancelling an in-flight background upload marks it failed without a '
+      'crash report',
       () async {
-        final upload = await seedPausedUpload();
+        final videoFile = await newVideoFile();
         stubCancellableTransfer();
 
-        // resumeUpload() drives a fresh _performUpload run; it stays in flight
-        // on the transfer future until the pause cancels it.
-        final runFuture = uploadManager.resumeUpload(upload.id);
+        // startUpload drives _performUpload; it stays in flight on the
+        // transfer future until the cancel resolves it.
+        final runFuture = uploadManager.startUpload(
+          videoFile: videoFile,
+          nostrPubkey: 'pk',
+          title: 'T',
+        );
         await _pumpUntil(
-          () =>
-              uploadManager.getUpload(upload.id)?.status ==
-              UploadStatus.uploading,
-        );
-
-        await uploadManager.pauseUpload(upload.id);
-        await runFuture;
-
-        final result = uploadManager.getUpload(upload.id);
-        expect(result?.status, equals(UploadStatus.paused));
-        expect(result?.errorMessage, isNull);
-        verify(
-          () => mockBlossomService.cancelBackgroundUpload(upload.id),
-        ).called(1);
-        // The user-initiated pause is not a crash.
-        verifyNever(
-          () => mockCrashReporter.recordError(
-            any(),
-            any(),
-            reason: any(named: 'reason'),
+          () => uploadManager.pendingUploads.any(
+            (upload) => upload.status == UploadStatus.uploading,
           ),
         );
-      },
-    );
+        final uploadId = uploadManager.pendingUploads
+            .firstWhere((upload) => upload.status == UploadStatus.uploading)
+            .id;
 
-    test(
-      'pausing during in-process fallback ignores a later successful result',
-      () async {
-        final upload = await seedPausedUpload();
-        final transfer = Completer<BlossomUploadResult>();
-        when(
-          () => mockBlossomService.uploadVideoWithResume(
-            videoFile: any(named: 'videoFile'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            taskId: any(named: 'taskId'),
-            title: any(named: 'title'),
-            description: any(named: 'description'),
-            hashtags: any(named: 'hashtags'),
-            proofManifestJson: any(named: 'proofManifestJson'),
-            useBackgroundFirst: any(named: 'useBackgroundFirst'),
-            resumableTimeout: any(named: 'resumableTimeout'),
-            resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer((_) => transfer.future);
-        when(
-          () => mockBlossomService.cancelBackgroundUpload(any()),
-        ).thenAnswer((_) async {});
-
-        final runFuture = uploadManager.resumeUpload(upload.id);
-        await _pumpUntil(
-          () =>
-              uploadManager.getUpload(upload.id)?.status ==
-              UploadStatus.uploading,
-        );
-
-        await uploadManager.pauseUpload(upload.id);
-        transfer.complete(
-          const BlossomUploadResult(
-            success: true,
-            videoId: 'video-after-pause',
-            url: 'https://media.divine.video/video-after-pause',
-            fallbackUrl: 'https://media.divine.video/video-after-pause',
-            thumbnailUrl:
-                'https://media.divine.video/video-after-pause-thumb.jpg',
+        await uploadManager.cancelUpload(uploadId);
+        // startUpload surfaces the cancellation to its caller rather than
+        // swallowing it; the persisted row is still the authoritative record.
+        await expectLater(
+          runFuture,
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'toString',
+              contains('Upload cancelled by user'),
+            ),
           ),
         );
-        await runFuture;
 
-        final result = uploadManager.getUpload(upload.id);
-        expect(result?.status, equals(UploadStatus.paused));
-        expect(result?.videoId, isNull);
-        expect(result?.cdnUrl, isNull);
-        expect(result?.thumbnailPath, isNull);
-        expect(result?.errorMessage, isNull);
-        verify(
-          () => mockBlossomService.cancelBackgroundUpload(upload.id),
-        ).called(1);
-        verifyNever(
-          () => mockCrashReporter.recordError(
-            any(),
-            any(),
-            reason: any(named: 'reason'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'cancelling an in-flight background upload marks it failed without a crash report',
-      () async {
-        final upload = await seedPausedUpload();
-        stubCancellableTransfer();
-
-        final runFuture = uploadManager.resumeUpload(upload.id);
-        await _pumpUntil(
-          () =>
-              uploadManager.getUpload(upload.id)?.status ==
-              UploadStatus.uploading,
-        );
-
-        await uploadManager.cancelUpload(upload.id);
-        await runFuture;
-
-        final result = uploadManager.getUpload(upload.id);
+        final result = uploadManager.getUpload(uploadId);
         expect(result?.status, equals(UploadStatus.failed));
         expect(result?.errorMessage, equals('Upload cancelled by user'));
         // A deliberate cancel must not be reported to Crashlytics as a failure.

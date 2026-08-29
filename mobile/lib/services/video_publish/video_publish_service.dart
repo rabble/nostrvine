@@ -833,11 +833,16 @@ class VideoPublishService {
         return true;
       case .failed:
         return false;
+      // Terminal, not a poll state. `paused` is a tombstone enum value that no
+      // shipped code path writes (#6935). Polling it would loop here forever:
+      // this method recurses with no timeout or iteration cap, and none of its
+      // call sites wrap it in a timeout.
+      case .paused:
+        return false;
       case .uploading:
       case .processing:
       case .pending:
       case .retrying:
-      case .paused:
         await Future<void>.delayed(const Duration(milliseconds: 50));
     }
     return _pollUploadProgress(draftId, uploadId);

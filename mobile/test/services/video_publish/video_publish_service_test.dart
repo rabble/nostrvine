@@ -1625,6 +1625,45 @@ void main() {
       });
     });
 
+    group('paused upload polling', () {
+      test(
+        'terminates instead of polling a paused upload forever',
+        () async {
+          // UploadStatus.paused is a tombstone (#6935) — no shipped code path
+          // writes it. _pollUploadProgress used to treat it as a poll state and
+          // recurse with no timeout or iteration cap, so a paused row hung the
+          // publish flow at 20 Hz forever. This test times out if that returns.
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+
+          final pausedUpload = _createPendingUpload(
+            status: UploadStatus.paused,
+          );
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => pausedUpload);
+          when(
+            () => mockUploadManager.getUpload(any()),
+          ).thenReturn(pausedUpload);
+
+          final result = await service.publishVideo(draft: _createTestDraft());
+
+          expect(result, isA<PublishError>());
+        },
+        timeout: const Timeout(Duration(seconds: 15)),
+      );
+    });
+
     group('upload reuse', () {
       test('reuses readyToPublish upload matching video path', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
