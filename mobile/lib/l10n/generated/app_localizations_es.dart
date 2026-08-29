@@ -474,7 +474,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileShareFailed =>
-      'No se pudo compartir el perfil. Intentalo de nuevo.';
+      'No se pudo compartir el perfil. Probá de nuevo.';
 
   @override
   String get profileCopyPublicKey => 'Copiar clave pública (npub)';
@@ -1330,7 +1330,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get exploreErrorLoadingLists =>
-      'Error al cargar las listas. Intentalo de nuevo.';
+      'Error al cargar las listas. Probá de nuevo.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2610,8 +2610,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get relayDiagnosticQueryFailed =>
-      'Falló la consulta. Intentalo de nuevo.';
+  String get relayDiagnosticQueryFailed => 'Falló la consulta. Probá de nuevo.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2624,7 +2623,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relayDiagnosticConnectionRetryFailed =>
-      'Falló el reintento de conexión. Intentalo de nuevo.';
+      'Falló el reintento de conexión. Probá de nuevo.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Conectado y autenticado';
@@ -4750,7 +4749,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportFailed =>
-      'No se pudo reportar el contenido. Intentalo de nuevo.';
+      'No se pudo reportar el contenido. Probá de nuevo.';
 
   @override
   String get reportNotSent =>
@@ -5003,7 +5002,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyManagementKeycastGenericFailure =>
-      'No se pudo conectar con el servicio de inicio de sesión. Intentalo de nuevo.';
+      'No se pudo conectar con el servicio de inicio de sesión. Probá de nuevo.';
 
   @override
   String get keyManagementRestrictedTitle => 'Divine gestiona tus claves';
@@ -5034,7 +5033,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyManagementImportFailed =>
-      'No se pudo importar la clave. Intentalo de nuevo.';
+      'No se pudo importar la clave. Probá de nuevo.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5042,7 +5041,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyManagementExportFailed =>
-      'No se pudo exportar la clave. Intentalo de nuevo.';
+      'No se pudo exportar la clave. Probá de nuevo.';
 
   @override
   String get keyManagementYourPublicKeyLabel => 'Tu clave pública (npub)';
@@ -5167,7 +5166,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get soundPreviewFailed =>
-      'No se pudo reproducir la previsualización. Intentalo de nuevo.';
+      'No se pudo reproducir la previsualización. Probá de nuevo.';
 
   @override
   String get soundViewSource => 'Ver origen';
@@ -5929,7 +5928,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get discoverListsFailedToUpdateSubscription =>
-      'No se pudo actualizar la suscripción. Intentalo de nuevo.';
+      'No se pudo actualizar la suscripción. Probá de nuevo.';
 
   @override
   String get discoverListsTitle => 'Descubrir listas';
@@ -7270,7 +7269,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get soundDetailLoadError =>
-      'Error al cargar el sonido. Intentalo de nuevo.';
+      'Error al cargar el sonido. Probá de nuevo.';
 
   @override
   String get soundDetailNotFoundMessage => 'No se pudo encontrar este sonido';
@@ -7535,7 +7534,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get blossomFailedToSaveSettings =>
-      'No se pudieron guardar los ajustes. Intentalo de nuevo.';
+      'No se pudieron guardar los ajustes. Probá de nuevo.';
 
   @override
   String get blossomValidServerUrl =>

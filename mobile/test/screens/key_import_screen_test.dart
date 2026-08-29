@@ -208,6 +208,43 @@ void main() {
         ).called(1);
       });
 
+      testWidgets('shows a localized error for an incorrect password', (
+        tester,
+      ) async {
+        when(
+          () => mockAuthService.importFromNcryptsec(any(), any()),
+        ).thenAnswer(
+          (_) async => AuthResult.failure(
+            'Incorrect password',
+            reason: AuthFailureReason.incorrectPassword,
+          ),
+        );
+        when(() => mockAuthService.clearError()).thenReturn(null);
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(DivineAuthTextField, 'Private key or bunker URL'),
+          ncryptsecKey,
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.widgetWithText(DivineAuthTextField, 'Password'),
+          'wrong password',
+        );
+        await tester.tap(find.text('Import Nostr key'));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.keyManagementKeycastWrongPassword),
+          findsOneWidget,
+        );
+        expect(find.text('Incorrect password'), findsNothing);
+        expect(find.text(l10n.keyImportFailedToImport), findsNothing);
+      });
+
       testWidgets('does not call importFromNcryptsec for regular nsec', (
         tester,
       ) async {

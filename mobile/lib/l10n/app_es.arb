@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "No se pudo compartir el perfil. Intentalo de nuevo.",
+    "profileShareFailed": "No se pudo compartir el perfil. Probá de nuevo.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -465,7 +465,7 @@
     "exploreVideoListsDescription": "Armá playlists de tus videos favoritos para verlos después",
     "exploreMyLists": "Mis listas",
     "exploreSubscribedLists": "Listas suscritas",
-    "exploreErrorLoadingLists": "Error al cargar las listas. Intentalo de nuevo.",
+    "exploreErrorLoadingLists": "Error al cargar las listas. Probá de nuevo.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Falló la consulta. Intentalo de nuevo.",
+    "relayDiagnosticQueryFailed": "Falló la consulta. Probá de nuevo.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "No se pudo conectar a ningún relay",
-    "relayDiagnosticConnectionRetryFailed": "Falló el reintento de conexión. Intentalo de nuevo.",
+    "relayDiagnosticConnectionRetryFailed": "Falló el reintento de conexión. Probá de nuevo.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1649,7 +1649,7 @@
     "reportReasonFalseInfo": "Información falsa",
     "reportReasonAiGenerated": "Contenido generado por IA",
     "reportReasonOther": "Otra violación de políticas",
-    "reportFailed": "No se pudo reportar el contenido. Intentalo de nuevo.",
+    "reportFailed": "No se pudo reportar el contenido. Probá de nuevo.",
     "@reportFailed": {
         "placeholders": {
             "error": {
@@ -1758,7 +1758,7 @@
     "keyManagementKeycastEmailUnverified": "Verifica tu dirección de correo electrónico antes de copiar tu clave.",
     "keyManagementKeycastDenied": "Divine gestiona las claves de esta cuenta, así que no se pueden copiar aquí.",
     "keyManagementKeycastNoKey": "No hay ninguna clave registrada para esta cuenta.",
-    "keyManagementKeycastGenericFailure": "No se pudo conectar con el servicio de inicio de sesión. Intentalo de nuevo.",
+    "keyManagementKeycastGenericFailure": "No se pudo conectar con el servicio de inicio de sesión. Probá de nuevo.",
     "keyManagementRestrictedTitle": "Divine gestiona tus claves",
     "keyManagementRestrictedBody": "Para mantener tu cuenta segura, aquí no están disponibles la copia de seguridad de la clave ni la importación de otra clave.",
     "keyManagementNeverShare": "¡Nunca compartas tu nsec con nadie!",
@@ -1768,7 +1768,7 @@
     "keyManagementConfirmImportBody": "Esto va a reemplazar tu identidad actual con la importada.\n\nTu clave actual se va a perder salvo que la hayas respaldado antes.",
     "keyManagementImportConfirm": "Importar",
     "keyManagementImportSuccess": "¡Clave importada con éxito!",
-    "keyManagementImportFailed": "No se pudo importar la clave. Intentalo de nuevo.",
+    "keyManagementImportFailed": "No se pudo importar la clave. Probá de nuevo.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1777,7 +1777,7 @@
         }
     },
     "keyManagementExportSuccess": "¡Clave privada copiada al portapapeles!\n\nGuardala en un lugar seguro.",
-    "keyManagementExportFailed": "No se pudo exportar la clave. Intentalo de nuevo.",
+    "keyManagementExportFailed": "No se pudo exportar la clave. Probá de nuevo.",
     "@keyManagementExportFailed": {
         "placeholders": {
             "error": {
@@ -1822,7 +1822,7 @@
         }
     },
     "soundUnableToPreview": "No se puede previsualizar el sonido: no hay audio disponible",
-    "soundPreviewFailed": "No se pudo reproducir la previsualización. Intentalo de nuevo.",
+    "soundPreviewFailed": "No se pudo reproducir la previsualización. Probá de nuevo.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1954,7 +1954,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Lucha libre",
-    "blossomFailedToSaveSettings": "No se pudieron guardar los ajustes. Intentalo de nuevo.",
+    "blossomFailedToSaveSettings": "No se pudieron guardar los ajustes. Probá de nuevo.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {
@@ -1970,7 +1970,7 @@
     "commonCancel": "Cancelar",
     "commonDelete": "Eliminar",
     "commonRetry": "Reintentar",
-    "discoverListsFailedToUpdateSubscription": "No se pudo actualizar la suscripción. Intentalo de nuevo.",
+    "discoverListsFailedToUpdateSubscription": "No se pudo actualizar la suscripción. Probá de nuevo.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4396,7 +4396,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Sonido: {soundName} de {creatorName}. Tocá para ver los detalles.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Error al cargar el sonido. Intentalo de nuevo.",
+    "soundDetailLoadError": "Error al cargar el sonido. Probá de nuevo.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "No se pudo encontrar este sonido",
     "soundDetailNotFoundTitle": "Sonido no encontrado",
