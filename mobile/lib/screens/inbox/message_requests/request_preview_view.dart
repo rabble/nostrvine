@@ -148,7 +148,6 @@ class RequestPreviewView extends ConsumerWidget {
             _ActionButtons(
               participantPubkeys: participantPubkeys,
               displayName: displayName,
-              otherPubkey: otherPubkey,
             ),
           ],
         ),
@@ -469,12 +468,10 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.participantPubkeys,
     required this.displayName,
-    required this.otherPubkey,
   });
 
   final List<String> participantPubkeys;
   final String displayName;
-  final String otherPubkey;
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +493,7 @@ class _ActionButtons extends StatelessWidget {
         // permanent and it is the user's only copy of why they were actioned,
         // so the action is not offered (#6971). The cubit refuses it too, for
         // the unresolved states below that cannot name the peer.
-        if (!isModerationAccount(otherPubkey))
+        if (!participantPubkeys.any(isModerationAccount))
           _DeclineAndRemoveButton(displayName: displayName),
       ],
     );

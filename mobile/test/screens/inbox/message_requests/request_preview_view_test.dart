@@ -289,6 +289,26 @@ void main() {
         );
       });
 
+      testWidgets('a group with a moderation participant offers no removal', (
+        tester,
+      ) async {
+        when(() => mockPreviewCubit.state).thenReturn(
+          RequestPreviewState(
+            status: RequestPreviewStatus.loaded,
+            messageCount: 1,
+            participantPubkeys: [otherPubkey, kLegacyModerationPubkeys.first],
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestDeclineAndRemoveButton),
+          findsNothing,
+        );
+      });
+
       testWidgets('an ordinary request still offers removal', (tester) async {
         await tester.pumpWidget(buildModerationSubject(otherPubkey));
         await tester.pumpAndSettle();
