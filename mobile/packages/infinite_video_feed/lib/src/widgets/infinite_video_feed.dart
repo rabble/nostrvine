@@ -372,6 +372,16 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   final _loadedFromCache = <int>{};
   int _currentIndex = 0;
 
+  /// The autoplay-gate answer this widget last acted on for [_currentIndex].
+  ///
+  /// Captured rather than re-derived from `oldWidget`, because the caller's
+  /// [InfiniteVideoFeed.canAutoPlay] is typically a tear-off that reads live
+  /// external state. Evaluating it against the old and the new widget in the
+  /// same frame therefore returns the same answer, and an externally driven
+  /// gate change is invisible (#6899). `null` means no decision has been
+  /// applied yet, so there is no transition to react to.
+  bool? _lastAppliedGate;
+
   // Current playback volume applied to the active controller and all
   // controllers that become active. Seeded from widget.initialVolume.
   late double _volume;
@@ -551,7 +561,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     } else if (!widget.isActive) {
       _reconcileInactiveReleasePolicy(oldWidget);
     }
-    _syncCurrentAutoPlayGate(oldWidget);
+    _syncCurrentAutoPlayGate();
     if (widget.videos == oldWidget.videos) return;
 
     // How many leading items are unchanged — same id AND same resolved
@@ -592,6 +602,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _teardownAllControllers();
 
     _currentIndex = _clampIndex(widget.initialIndex);
+    _lastAppliedGate = null;
     _pagePosition.value = _currentIndex.toDouble();
 
     _rebuild();
@@ -807,21 +818,30 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   /// Whether [InfiniteVideoFeed.canAutoPlay] allows the video at [index]
   /// to start playing. Defaults to `true` when no gate is provided.
   bool _canAutoPlayAt(int index) {
-    return _canAutoPlayAtFor(widget, index);
-  }
-
-  bool _canAutoPlayAtFor(InfiniteVideoFeed source, int index) {
-    final gate = source.canAutoPlay;
+    final gate = widget.canAutoPlay;
     if (gate == null) return true;
-    if (index < 0 || index >= source.videos.length) return true;
-    return gate(source.videos[index]);
+    if (index < 0 || index >= widget.videos.length) return true;
+    return gate(widget.videos[index]);
   }
 
-  void _syncCurrentAutoPlayGate(InfiniteVideoFeed oldWidget) {
+  /// Starts or stops the current video when its autoplay gate has flipped
+  /// since the last decision this widget applied.
+  ///
+  /// Compares against [_lastAppliedGate] rather than re-evaluating the gate
+  /// against `oldWidget`: both widgets share the caller's live-reading
+  /// predicate, so that comparison always collapses and cannot see an
+  /// external change (#6899).
+  ///
+  /// Deliberately acts only on a transition. The caller may pause the active
+  /// controller directly — a tap-to-pause never reaches this widget — so
+  /// reconciling against actual playback state on every rebuild would resume
+  /// a video the viewer deliberately paused.
+  void _syncCurrentAutoPlayGate() {
     if (!_isActive) return;
-    final wasAllowed = _canAutoPlayAtFor(oldWidget, _currentIndex);
+    final wasAllowed = _lastAppliedGate;
     final isAllowed = _canAutoPlayAt(_currentIndex);
-    if (wasAllowed == isAllowed) return;
+    _lastAppliedGate = isAllowed;
+    if (wasAllowed == null || wasAllowed == isAllowed) return;
     if (isAllowed) {
       _resumeCurrentPlaybackIfReady();
     } else {
@@ -847,7 +867,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         identical(_controllers[index], controller);
 
     if (!stillOwnsController() || !controller.isInitialized) return;
-    if (!_canAutoPlayAt(index)) return;
+    final allowed = _canAutoPlayAt(index);
+    if (index == _currentIndex) _lastAppliedGate = allowed;
+    if (!allowed) return;
     await controller.setVolume(_volume);
     if (!stillOwnsController()) return;
     await controller.play();
@@ -1801,6 +1823,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     final previousIndex = _currentIndex;
     _log('Page changed: $previousIndex → $index');
     _currentIndex = index;
+    _lastAppliedGate = null;
 
     _watchdog.stop(previousIndex);
     _staleDetector.stop();

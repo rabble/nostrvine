@@ -1024,6 +1024,117 @@ void main() {
         }
       });
 
+      // Production passes a tear-off that reads live external state
+      // (feed_videos.dart's `_canAutoPlayVideo` consults a content-label
+      // service and a feature flag), so the SAME function object returns a
+      // different answer across rebuilds. The two closure-swap tests above
+      // cannot reach that: they change the predicate's identity, which is the
+      // one thing production never does. #6899.
+      testWidgets(
+        'pauses active playback when a stable gate predicate starts '
+        'returning false',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0]);
+          final video = _makeVideo('live_gate_closes');
+
+          var allowed = true;
+          bool gate(VideoEvent video) => allowed;
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  videos: [video],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: gate,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(harness.countCalls('play'), equals(1));
+
+            allowed = false;
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  videos: [video],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: gate,
+                ),
+              ),
+            );
+            await tester.pump();
+
+            expect(harness.countCalls('pause'), equals(1));
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
+      testWidgets(
+        'resumes active playback when a stable gate predicate starts '
+        'returning true',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final harness = _NativePlayerHarness(tester);
+          await harness.install(playerIds: const <int>[0]);
+          final video = _makeVideo('live_gate_reopens');
+
+          var allowed = false;
+          bool gate(VideoEvent video) => allowed;
+
+          try {
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  videos: [video],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: gate,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(harness.countCalls('play'), equals(0));
+
+            allowed = true;
+            await tester.pumpWidget(
+              _wrapFeed(
+                InfiniteVideoFeed(
+                  videos: [video],
+                  cache: cache,
+                  prefetchCount: 0,
+                  preloadGracePeriod: Duration.zero,
+                  canAutoPlay: gate,
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump();
+
+            expect(harness.countCalls('play'), equals(1));
+          } finally {
+            await tester.pumpWidget(const SizedBox.shrink());
+            await tester.pump();
+            await harness.dispose();
+          }
+        },
+      );
+
       testWidgets('does not autoplay after becoming inactive mid-init', (
         tester,
       ) async {
