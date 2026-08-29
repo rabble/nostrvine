@@ -84,8 +84,15 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
       // is classified here instead of shown.
       addError(error, stackTrace);
       final reason = InviteErrorUtils.activationFailureReason(error);
-      final inviteCodeError = _inviteCodeErrorForFailureReason(reason);
-      final generalError = _generalErrorForFailureReason(reason);
+      final isInvalidCode =
+          error.code == InviteApiErrorCode.inviteNotFound ||
+          error.code == InviteApiErrorCode.inviteInvalidFormat;
+      final inviteCodeError = isInvalidCode
+          ? InviteCodeError.notFound
+          : _inviteCodeErrorForFailureReason(reason);
+      final generalError = isInvalidCode
+          ? null
+          : _generalErrorForFailureReason(reason);
       emit(
         state.copyWith(
           isValidatingCode: false,

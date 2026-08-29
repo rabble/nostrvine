@@ -215,6 +215,29 @@ void main() {
       errors: () => [isA<InviteApiException>()],
     );
 
+    for (final errorCode in [
+      InviteApiErrorCode.inviteNotFound,
+      InviteApiErrorCode.inviteInvalidFormat,
+    ]) {
+      blocTest<InviteGateBloc, InviteGateState>(
+        'maps thrown $errorCode failures to the invite code field',
+        setUp: () {
+          when(
+            () => mockInviteApiClient.validateCode('NOPE-0003'),
+          ).thenThrow(
+            InviteApiException('Invite unavailable', code: errorCode),
+          );
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const InviteGateCodeSubmitted('nope0003')),
+        expect: () => [
+          const InviteGateState(isValidatingCode: true),
+          const InviteGateState(inviteCodeError: InviteCodeError.notFound),
+        ],
+        errors: () => [isA<InviteApiException>()],
+      );
+    }
+
     test(
       'ignores duplicate validation submissions while request is in flight',
       () async {
