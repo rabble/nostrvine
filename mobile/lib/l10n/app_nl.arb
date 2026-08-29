@@ -2253,6 +2253,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Opslaan bij {destination} mislukt",
     "libraryGalleryPermissionDenied": "Toestemming geweigerd voor {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

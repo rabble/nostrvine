@@ -3449,6 +3449,7 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "{destination} میں محفوظ نہیں ہو سکا",
   "libraryGalleryPermissionDenied": "{destination} کی اجازت نہیں ملی",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {

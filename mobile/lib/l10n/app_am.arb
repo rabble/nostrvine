@@ -2667,6 +2667,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "ወደ {destination} ማስቀመጥ አልተቻለም",
     "libraryGalleryPermissionDenied": "{destination} ፍቃድ ተከልክሏል።",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

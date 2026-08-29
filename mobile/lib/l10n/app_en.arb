@@ -4068,6 +4068,15 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "Couldn't save to {destination}",
+  "@libraryClipsSaveFailed": {
+    "description": "Snackbar shown when saving selected clips to the device gallery fails unexpectedly. {destination} is the platform gallery name (e.g. \"Camera Roll\").",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
   "libraryGalleryPermissionDenied": "{destination} permission denied",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {

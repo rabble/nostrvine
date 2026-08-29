@@ -6175,6 +6175,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Opslaan bij $destination mislukt';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Toestemming geweigerd voor $destination';
   }

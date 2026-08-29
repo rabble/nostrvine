@@ -2250,6 +2250,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "{destination} konumuna kaydedilemedi",
     "libraryGalleryPermissionDenied": "{destination} izni reddedildi",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

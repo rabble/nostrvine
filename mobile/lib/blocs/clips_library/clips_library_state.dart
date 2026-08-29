@@ -296,15 +296,13 @@ final class GallerySaveResultPermissionDenied extends GallerySaveResult {
   const GallerySaveResultPermissionDenied();
 }
 
-/// Gallery save failed with an error.
+/// Gallery save failed for an unexpected reason.
+///
+/// Carries no message: `state_management.md` forbids error strings in state,
+/// and the UI renders localized copy for this case. The underlying exception
+/// reaches diagnostics through `addError` in the bloc.
 final class GallerySaveResultError extends GallerySaveResult {
-  const GallerySaveResultError(this.message);
-
-  /// Error message.
-  final String message;
-
-  @override
-  List<Object?> get props => [message];
+  const GallerySaveResultError();
 }
 
 /// State for the clips library.

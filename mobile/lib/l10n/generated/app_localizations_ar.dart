@@ -6105,6 +6105,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'تعذّر الحفظ في $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'تم رفض إذن $destination';
   }

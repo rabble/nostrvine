@@ -3449,6 +3449,7 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "Không lưu được vào {destination}",
   "libraryGalleryPermissionDenied": "Quyền truy cập {destination} bị từ chối",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {

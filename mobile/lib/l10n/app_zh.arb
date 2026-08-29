@@ -3449,6 +3449,7 @@
       }
     }
   },
+  "libraryClipsSaveFailed": "保存到{destination}失败",
   "libraryGalleryPermissionDenied": "{destination}权限被拒绝",
   "@libraryGalleryPermissionDenied": {
     "placeholders": {

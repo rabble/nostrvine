@@ -6153,6 +6153,11 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '$destination میں محفوظ نہیں ہو سکا';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination کی اجازت نہیں ملی';
   }

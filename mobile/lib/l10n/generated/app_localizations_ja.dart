@@ -5838,6 +5838,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '$destinationに保存できませんでした';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destinationの権限が拒否されました';
   }

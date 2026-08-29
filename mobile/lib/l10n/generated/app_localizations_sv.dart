@@ -6142,6 +6142,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Det gick inte att spara till $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Behörighet nekad för $destination';
   }

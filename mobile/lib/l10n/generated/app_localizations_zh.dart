@@ -5812,6 +5812,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '保存到$destination失败';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination权限被拒绝';
   }

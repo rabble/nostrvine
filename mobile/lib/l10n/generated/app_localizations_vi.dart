@@ -6119,6 +6119,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Không lưu được vào $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Quyền truy cập $destination bị từ chối';
   }

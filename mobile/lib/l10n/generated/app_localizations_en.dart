@@ -6248,6 +6248,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Couldn\'t save to $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination permission denied';
   }

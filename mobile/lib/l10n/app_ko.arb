@@ -1711,6 +1711,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "{destination}에 저장할 수 없어요",
     "libraryGalleryPermissionDenied": "{destination} 권한이 거부되었어요",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

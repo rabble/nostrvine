@@ -2243,6 +2243,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "تعذّر الحفظ في {destination}",
     "libraryGalleryPermissionDenied": "تم رفض إذن {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

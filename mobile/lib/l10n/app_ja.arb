@@ -2243,6 +2243,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "{destination}に保存できませんでした",
     "libraryGalleryPermissionDenied": "{destination}の権限が拒否されました",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

@@ -2253,6 +2253,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Det gick inte att spara till {destination}",
     "libraryGalleryPermissionDenied": "Behörighet nekad för {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

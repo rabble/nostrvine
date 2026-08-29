@@ -1524,6 +1524,7 @@
     "libraryCreateVideo": "Gumawa ng Video ({count})",
     "libraryClipsSavedToDestination": "{count, plural, =1{{count} clip} other{{count} clip}} na-save sa {destination}",
     "libraryClipsSavePartialResult": "{successCount} na-save, {failureCount} ang nabigo",
+    "libraryClipsSaveFailed": "Hindi na-save sa {destination}",
     "libraryGalleryPermissionDenied": "Tinanggihan ang permission para sa {destination}",
     "libraryClipsDeletedCount": "{count, plural, =1{{count} clip ang nabura} other{{count} clip ang nabura}}",
     "libraryCouldNotLoadDrafts": "Hindi na-load ang mga draft",

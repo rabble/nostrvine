@@ -6192,6 +6192,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Hindi na-save sa $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Tinanggihan ang permission para sa $destination';
   }

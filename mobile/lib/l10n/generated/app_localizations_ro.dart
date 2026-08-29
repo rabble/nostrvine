@@ -6310,6 +6310,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Nu s-a putut salva în $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Permisiune refuzată pentru $destination';
   }

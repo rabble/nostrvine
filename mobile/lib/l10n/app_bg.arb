@@ -2426,6 +2426,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Не успяхме да запазим в {destination}",
     "libraryGalleryPermissionDenied": "Разрешението за {destination} е отказано",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

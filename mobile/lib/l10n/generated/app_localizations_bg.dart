@@ -6209,6 +6209,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Не успяхме да запазим в $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Разрешението за $destination е отказано';
   }

@@ -6158,6 +6158,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Tidak dapat menyimpan ke $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Kebenaran $destination ditolak';
   }

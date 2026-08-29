@@ -6227,6 +6227,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Impossible d\'enregistrer dans $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Permission refusée pour $destination';
   }

@@ -6083,6 +6083,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '$destination konumuna kaydedilemedi';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination izni reddedildi';
   }

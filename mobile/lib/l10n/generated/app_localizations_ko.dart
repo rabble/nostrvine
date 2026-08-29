@@ -5859,6 +5859,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return '$destination에 저장할 수 없어요';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination 권한이 거부되었어요';
   }

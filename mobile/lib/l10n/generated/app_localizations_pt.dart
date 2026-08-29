@@ -6187,6 +6187,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Não foi possível salvar em $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Permissão negada para $destination';
   }

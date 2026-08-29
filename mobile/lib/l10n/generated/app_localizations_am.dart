@@ -6015,6 +6015,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'ወደ $destination ማስቀመጥ አልተቻለም';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination ፍቃድ ተከልክሏል።';
   }

@@ -6079,6 +6079,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Tidak bisa menyimpan ke $destination';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return 'Izin ditolak untuk $destination';
   }

@@ -2250,6 +2250,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Tidak bisa menyimpan ke {destination}",
     "libraryGalleryPermissionDenied": "Izin ditolak untuk {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

@@ -2253,6 +2253,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Impossibile salvare in {destination}",
     "libraryGalleryPermissionDenied": "Permesso negato per {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

@@ -10595,6 +10595,12 @@ abstract class AppLocalizations {
   /// **'{successCount} saved, {failureCount} failed'**
   String libraryClipsSavePartialResult(int successCount, int failureCount);
 
+  /// Snackbar shown when saving selected clips to the device gallery fails unexpectedly. {destination} is the platform gallery name (e.g. "Camera Roll").
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save to {destination}'**
+  String libraryClipsSaveFailed(String destination);
+
   /// No description provided for @libraryGalleryPermissionDenied.
   ///
   /// In en, this message translates to:

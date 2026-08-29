@@ -2253,6 +2253,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Nu s-a putut salva în {destination}",
     "libraryGalleryPermissionDenied": "Permisiune refuzată pentru {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {

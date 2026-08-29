@@ -6224,6 +6224,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String libraryClipsSaveFailed(String destination) {
+    return 'Speichern in $destination fehlgeschlagen';
+  }
+
+  @override
   String libraryGalleryPermissionDenied(String destination) {
     return '$destination: Berechtigung verweigert';
   }

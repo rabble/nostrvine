@@ -2253,6 +2253,7 @@
             }
         }
     },
+    "libraryClipsSaveFailed": "Nie udało się zapisać do {destination}",
     "libraryGalleryPermissionDenied": "Odmowa uprawnień: {destination}",
     "@libraryGalleryPermissionDenied": {
         "placeholders": {
