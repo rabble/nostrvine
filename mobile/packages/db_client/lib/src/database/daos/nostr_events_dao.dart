@@ -46,29 +46,50 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
   /// For video events (kind 34236 or 16), also upserts video metrics to the
   /// video_metrics table for fast sorted queries.
   Future<void> upsertEvent(Event event, {int? expireAt}) async {
-    final effectiveExpireAt = expireAt ?? _defaultExpireAt();
+    await _upsertEvent(
+      event,
+      expireAt: expireAt ?? _defaultExpireAt(),
+      transactionActive: false,
+    );
+  }
 
+  Future<void> _upsertEvent(
+    Event event, {
+    required int expireAt,
+    required bool transactionActive,
+  }) async {
     // Handle replaceable events (kind 0, 3, 10000-19999)
     if (EventKind.isReplaceable(event.kind)) {
-      await transaction(
-        () => _upsertReplaceableEvent(event, expireAt: effectiveExpireAt),
-      );
+      if (transactionActive) {
+        await _upsertReplaceableEvent(event, expireAt: expireAt);
+      } else {
+        await transaction(
+          () => _upsertReplaceableEvent(event, expireAt: expireAt),
+        );
+      }
       return;
     }
 
     // Handle parameterized replaceable events (kind 30000-39999)
     if (EventKind.isParameterizedReplaceable(event.kind)) {
-      await transaction(
-        () => _upsertParameterizedReplaceableEvent(
+      if (transactionActive) {
+        await _upsertParameterizedReplaceableEvent(
           event,
-          expireAt: effectiveExpireAt,
-        ),
-      );
+          expireAt: expireAt,
+        );
+      } else {
+        await transaction(
+          () => _upsertParameterizedReplaceableEvent(
+            event,
+            expireAt: expireAt,
+          ),
+        );
+      }
       return;
     }
 
     // Regular event: simple insert or replace by ID
-    await _insertEvent(event, expireAt: effectiveExpireAt);
+    await _insertEvent(event, expireAt: expireAt);
 
     // Also upsert video metrics for video events (kind 34236 only)
     // Note: Kind 16 reposts reference videos but don't contain video metadata
@@ -234,7 +255,11 @@ class NostrEventsDao extends DatabaseAccessor<AppDatabase>
     await transaction(() async {
       // Batch upsert all events with replaceable logic
       for (final event in eventsSnapshot) {
-        await upsertEvent(event, expireAt: effectiveExpireAt);
+        await _upsertEvent(
+          event,
+          expireAt: effectiveExpireAt,
+          transactionActive: true,
+        );
       }
     });
   }
