@@ -14,7 +14,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
-import 'package:openvine/extensions/modal_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
@@ -22,10 +21,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
-import 'package:openvine/utils/delete_result_localization.dart';
-import 'package:openvine/utils/owner_video_cleanup_feedback.dart';
 import 'package:openvine/utils/video_identity.dart';
-import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
+import 'package:openvine/widgets/owner_video_actions_sheet.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -192,83 +189,23 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     context.read<ProfileFeedCubit>().add(const ProfileFeedLoadMoreRequested());
   }
 
-  Future<void> _showOwnVideoActions(VideoEvent video) async {
-    await VineBottomSheet.show<void>(
-      context: context,
-      scrollable: false,
-      expanded: false,
-      title: Text(
-        context.l10n.videoGridOptionsTitle,
-        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
-      ),
-      body: Builder(
-        builder: (sheetContext) => BlocProvider.value(
-          value: _ownerVideoActionsCubit,
-          child: BlocBuilder<OwnerVideoActionsCubit, OwnerVideoActionsState>(
-            builder: (context, state) {
-              final operation = state.forVideo(video.id);
-              return _OwnVideoActionsSheetBody(
-                onEditVideo: () => _editVideo(video, sheetContext),
-                onDeleteVideo: () => _confirmDeleteVideo(video, sheetContext),
-                isDeleting:
-                    operation.deleteStatus == OwnerVideoDeleteStatus.deleting ||
-                    operation.cleanupStatus ==
-                        OwnerVideoCleanupStatus.inProgress,
-              );
-            },
-          ),
+  Future<void> _showOwnVideoActions(VideoEvent video) =>
+      showOwnerVideoActionsSheet(
+        context: context,
+        video: video,
+        cubit: _ownerVideoActionsCubit,
+        onEditRequested: () => context.push(
+          VideoMetadataEditScreen.pathFor(video.id),
+          extra: video,
         ),
-      ),
-    );
-  }
-
-  void _editVideo(VideoEvent video, BuildContext sheetContext) {
-    if (_ownerVideoActionsCubit.isDeleteInProgress(video.id)) return;
-    if (!sheetContext.popModalIfMounted()) return;
-    context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
-  }
-
-  Future<void> _confirmDeleteVideo(
-    VideoEvent video,
-    BuildContext sheetContext,
-  ) async {
-    final confirmed = await showOwnerVideoDeleteConfirmationDialog(context);
-    if (!confirmed || !mounted) return;
-
-    final cubit = _ownerVideoActionsCubit;
-    final start = await cubit.deleteVideo(video);
-    if (start == OwnerVideoDeleteStart.busy) return;
-
-    if (!mounted) return;
-
-    final operation = cubit.state.forVideo(video.id);
-    final messenger = ScaffoldMessenger.of(context);
-    if (operation.deleteStatus == OwnerVideoDeleteStatus.success) {
-      showOwnerVideoCleanupCompletion(context, cubit, video.id);
-      // The service marks the video locally deleted; a refresh drops the
-      // tile from the grid without waiting for relay propagation.
-      context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
-      if (sheetContext.mounted) {
-        sheetContext.popModalIfMounted();
-      }
-      if (!mounted) return;
-      messenger.showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          localizedOwnerVideoDeleteSuccessMessage(context, operation),
-          error: operation.cleanupStatus == OwnerVideoCleanupStatus.failed,
-        ),
+        onDeleted: () async {
+          // The service marks the video locally deleted; a refresh drops the
+          // tile from the grid without waiting for relay propagation.
+          context.read<ProfileFeedCubit>().add(
+            const ProfileFeedRefreshRequested(),
+          );
+        },
       );
-    } else {
-      messenger.showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          operation.deleteResult == null
-              ? context.l10n.shareMenuDeleteFailedGeneric
-              : localizedDeleteFailureMessage(context, operation.deleteResult!),
-          error: true,
-        ),
-      );
-    }
-  }
 
   void _onVideoTapped(
     VideoEvent tappedVideo, {
@@ -560,107 +497,6 @@ class _VideoGridTile extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// Edit/Delete actions shown when long-pressing an own video tile.
-class _OwnVideoActionsSheetBody extends StatelessWidget {
-  const _OwnVideoActionsSheetBody({
-    required this.onEditVideo,
-    required this.onDeleteVideo,
-    required this.isDeleting,
-  });
-
-  final VoidCallback onEditVideo;
-  final VoidCallback onDeleteVideo;
-  final bool isDeleting;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _OwnVideoActionTile(
-          icon: DivineIconName.pencilSimple,
-          iconColor: context.vineColors.accentPositive,
-          title: context.l10n.videoGridEditVideo,
-          subtitle: context.l10n.videoGridEditVideoSubtitle,
-          onTap: onEditVideo,
-          isDisabled: isDeleting,
-        ),
-        _OwnVideoActionTile(
-          icon: DivineIconName.trash,
-          iconColor: VineTheme.error,
-          title: context.l10n.videoGridDeleteVideo,
-          subtitle: context.l10n.videoGridDeleteVideoSubtitle,
-          onTap: onDeleteVideo,
-          isBusy: isDeleting,
-        ),
-        SizedBox(height: MediaQuery.viewPaddingOf(context).bottom + 16),
-      ],
-    );
-  }
-}
-
-class _OwnVideoActionTile extends StatelessWidget {
-  const _OwnVideoActionTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.isBusy = false,
-    this.isDisabled = false,
-  });
-
-  final DivineIconName icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool isBusy;
-  final bool isDisabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final actionColor = isDisabled
-        ? context.vineColors.secondaryText
-        : iconColor;
-    // The sheet paints its own background; a transparent Material keeps
-    // ListTile's ink effects visible without double-painting a surface.
-    return Material(
-      type: MaterialType.transparency,
-      child: ListTile(
-        enabled: !isBusy && !isDisabled,
-        leading: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: context.vineColors.card,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: isBusy
-              ? const CircularProgressIndicator(strokeWidth: 2)
-              : DivineIcon(icon: icon, color: actionColor, size: 20),
-        ),
-        title: Text(
-          title,
-          style: VineTheme.titleMediumFont(
-            color: isDisabled
-                ? context.vineColors.secondaryText
-                : context.vineColors.primaryText,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: VineTheme.bodySmallFont(
-            color: context.vineColors.secondaryText,
-          ),
-        ),
-        onTap: isBusy || isDisabled ? null : onTap,
-      ),
-    );
-  }
 }
 
 class _PendingCollaboratorInviteBanner extends ConsumerWidget {
