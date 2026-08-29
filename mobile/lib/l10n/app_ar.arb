@@ -1815,7 +1815,7 @@
         }
     },
     "soundUnableToPreview": "تعذر معاينة الصوت - لا يوجد صوت متاح",
-    "soundPreviewFailed": "تعذر تشغيل المعاينة: {error}",
+    "soundPreviewFailed": "تعذر تشغيل المعاينة. يرجى المحاولة مرّة أخرى.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1947,7 +1947,7 @@
     "categoryVlog": "مدونة فيديو",
     "categoryVlogging": "تدوين فيديو",
     "categoryWrestling": "مصارعة",
-    "blossomFailedToSaveSettings": "فشل حفظ الإعدادات: {error}",
+    "blossomFailedToSaveSettings": "فشل حفظ الإعدادات. يرجى المحاولة مرّة أخرى.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

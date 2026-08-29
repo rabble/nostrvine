@@ -1825,7 +1825,7 @@
         }
     },
     "soundUnableToPreview": "Não é possível pré-visualizar o som - sem áudio disponível",
-    "soundPreviewFailed": "Falha ao reproduzir pré-visualização: {error}",
+    "soundPreviewFailed": "Falha ao reproduzir pré-visualização. Tente novamente.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1957,7 +1957,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Luta livre",
-    "blossomFailedToSaveSettings": "Falha ao salvar configurações: {error}",
+    "blossomFailedToSaveSettings": "Falha ao salvar configurações. Tente novamente.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

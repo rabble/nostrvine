@@ -5239,9 +5239,8 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie można odtworzyć podglądu dźwięku - brak dostępnego audio';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Nie udało się odtworzyć podglądu: $error';
-  }
+  String get soundPreviewFailed =>
+      'Nie udało się odtworzyć podglądu. Spróbuj ponownie.';
 
   @override
   String get soundViewSource => 'Zobacz źródło';
@@ -7613,9 +7612,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Nie udało się zapisać ustawień: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Nie udało się zapisać ustawień. Spróbuj ponownie.';
 
   @override
   String get blossomValidServerUrl =>

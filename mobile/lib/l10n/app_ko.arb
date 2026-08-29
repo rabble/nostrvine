@@ -1311,7 +1311,7 @@
         }
     },
     "soundUnableToPreview": "사운드를 미리 들을 수 없어요 - 오디오가 없어요",
-    "soundPreviewFailed": "미리 듣기를 재생하지 못했어요: {error}",
+    "soundPreviewFailed": "미리 듣기를 재생하지 못했어요. 다시 시도해보세요.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1443,7 +1443,7 @@
     "categoryVlog": "브이로그",
     "categoryVlogging": "브이로깅",
     "categoryWrestling": "레슬링",
-    "blossomFailedToSaveSettings": "설정 저장에 실패했어요: {error}",
+    "blossomFailedToSaveSettings": "설정 저장에 실패했어요. 다시 시도해보세요.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

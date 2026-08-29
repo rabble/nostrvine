@@ -2647,7 +2647,7 @@
     }
   },
   "soundUnableToPreview": "آواز کا پیش منظر نہیں دکھایا جا سکتا — کوئی آڈیو دستیاب نہیں",
-  "soundPreviewFailed": "پیش منظر نہیں چلایا جا سکا: {error}",
+  "soundPreviewFailed": "پیش منظر نہیں چلایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "@soundPreviewFailed": {
     "placeholders": {
       "error": {
@@ -4082,7 +4082,7 @@
   "userNotAvailableTitle": "اکاؤنٹ دستیاب نہیں",
   "userNotAvailableBody": "یہ اکاؤنٹ ابھی دستیاب نہیں ہے۔",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "ترتیبات محفوظ نہیں ہو سکیں: {error}",
+  "blossomFailedToSaveSettings": "ترتیبات محفوظ نہیں ہو سکیں۔ براہ کرم دوبارہ کوشش کریں۔",
   "@blossomFailedToSaveSettings": {
     "placeholders": {
       "error": {

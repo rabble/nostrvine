@@ -5069,9 +5069,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundUnableToPreview => 'Không nghe thử được - không có audio';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Không phát được bản nghe thử: $error';
-  }
+  String get soundPreviewFailed =>
+      'Không phát được bản nghe thử. Vui lòng thử lại.';
 
   @override
   String get soundViewSource => 'Xem nguồn';
@@ -7417,9 +7416,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Không lưu được cài đặt: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Không lưu được cài đặt. Vui lòng thử lại.';
 
   @override
   String get blossomValidServerUrl =>

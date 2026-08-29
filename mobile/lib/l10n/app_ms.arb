@@ -2647,7 +2647,7 @@
     }
   },
   "soundUnableToPreview": "Tidak dapat pratonton bunyi - tiada audio tersedia",
-  "soundPreviewFailed": "Gagal memainkan pratonton: {error}",
+  "soundPreviewFailed": "Gagal memainkan pratonton. Sila cuba lagi.",
   "@soundPreviewFailed": {
     "placeholders": {
       "error": {
@@ -4082,7 +4082,7 @@
   "userNotAvailableTitle": "Akaun tidak tersedia",
   "userNotAvailableBody": "Akaun ini tidak tersedia sekarang.",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "Gagal menyimpan tetapan: {error}",
+  "blossomFailedToSaveSettings": "Gagal menyimpan tetapan. Sila cuba lagi.",
   "@blossomFailedToSaveSettings": {
     "placeholders": {
       "error": {

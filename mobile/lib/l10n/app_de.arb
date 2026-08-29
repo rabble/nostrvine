@@ -1825,7 +1825,7 @@
         }
     },
     "soundUnableToPreview": "Vorschau nicht möglich — kein Audio verfügbar",
-    "soundPreviewFailed": "Vorschau-Wiedergabe fehlgeschlagen: {error}",
+    "soundPreviewFailed": "Vorschau-Wiedergabe fehlgeschlagen. Bitte versuch es nochmal.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1957,7 +1957,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Einstellungen konnten nicht gespeichert werden: {error}",
+    "blossomFailedToSaveSettings": "Einstellungen konnten nicht gespeichert werden. Bitte versuch es nochmal.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

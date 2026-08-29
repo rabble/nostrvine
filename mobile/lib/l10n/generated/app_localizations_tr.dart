@@ -5039,9 +5039,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundUnableToPreview => 'Ses önizlenemiyor - ses mevcut değil';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Önizleme oynatılamadı: $error';
-  }
+  String get soundPreviewFailed => 'Önizleme oynatılamadı. Lütfen tekrar dene.';
 
   @override
   String get soundViewSource => 'Kaynağı gör';
@@ -7374,9 +7372,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Ayarlar kaydedilemedi: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Ayarlar kaydedilemedi. Lütfen tekrar dene.';
 
   @override
   String get blossomValidServerUrl =>

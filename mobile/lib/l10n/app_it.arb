@@ -1825,7 +1825,7 @@
         }
     },
     "soundUnableToPreview": "Impossibile ascoltare l'anteprima - nessun audio disponibile",
-    "soundPreviewFailed": "Impossibile riprodurre l'anteprima: {error}",
+    "soundPreviewFailed": "Impossibile riprodurre l'anteprima. Riprova.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1957,7 +1957,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Impossibile salvare le impostazioni: {error}",
+    "blossomFailedToSaveSettings": "Impossibile salvare le impostazioni. Riprova.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

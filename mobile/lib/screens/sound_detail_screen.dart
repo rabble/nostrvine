@@ -219,7 +219,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.soundPreviewFailed(context.l10n.profilePleaseTryAgain),
+            context.l10n.soundPreviewFailed,
             error: true,
             duration: _snackBarDuration,
           ),

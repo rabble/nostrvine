@@ -5119,9 +5119,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geluid voorbeluisteren lukt niet — geen audio beschikbaar';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Voorbeluistering afspelen mislukt: $error';
-  }
+  String get soundPreviewFailed =>
+      'Voorbeluistering afspelen mislukt. Probeer het opnieuw.';
 
   @override
   String get soundViewSource => 'Bron bekijken';
@@ -7479,9 +7478,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Instellingen opslaan mislukt: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Instellingen opslaan mislukt. Probeer het opnieuw.';
 
   @override
   String get blossomValidServerUrl =>

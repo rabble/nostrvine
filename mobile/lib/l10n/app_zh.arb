@@ -2647,7 +2647,7 @@
     }
   },
   "soundUnableToPreview": "无法预览声音——没有可用音频",
-  "soundPreviewFailed": "预览播放失败：{error}",
+  "soundPreviewFailed": "预览播放失败，请重试。",
   "@soundPreviewFailed": {
     "placeholders": {
       "error": {
@@ -4082,7 +4082,7 @@
   "userNotAvailableTitle": "账号不可用",
   "userNotAvailableBody": "该账号暂时不可用。",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "设置保存失败：{error}",
+  "blossomFailedToSaveSettings": "设置保存失败，请重试。",
   "@blossomFailedToSaveSettings": {
     "placeholders": {
       "error": {

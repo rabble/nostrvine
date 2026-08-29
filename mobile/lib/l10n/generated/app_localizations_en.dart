@@ -5198,9 +5198,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unable to preview sound - no audio available';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Failed to play preview: $error';
-  }
+  String get soundPreviewFailed => 'Failed to play preview. Please try again.';
 
   @override
   String get soundViewSource => 'View source';
@@ -7557,9 +7555,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Failed to save settings: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Failed to save settings. Please try again.';
 
   @override
   String get blossomValidServerUrl =>

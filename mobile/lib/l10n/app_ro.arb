@@ -1825,7 +1825,7 @@
         }
     },
     "soundUnableToPreview": "Nu pot previzualiza sunetul - niciun audio disponibil",
-    "soundPreviewFailed": "N-am putut reda previzualizarea: {error}",
+    "soundPreviewFailed": "N-am putut reda previzualizarea. Încearcă din nou.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1957,7 +1957,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Nu s-au putut salva setările: {error}",
+    "blossomFailedToSaveSettings": "Nu s-au putut salva setările. Încearcă din nou.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

@@ -3206,14 +3206,7 @@
     }
   },
   "soundUnableToPreview": "Unable to preview sound - no audio available",
-  "soundPreviewFailed": "Failed to play preview: {error}",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "soundPreviewFailed": "Failed to play preview. Please try again.",
   "soundViewSource": "View source",
   "soundCloseTooltip": "Close",
   "exploreNotExploreRoute": "Not an explore route",
@@ -4848,14 +4841,7 @@
   "userNotAvailableTitle": "Account not available",
   "userNotAvailableBody": "This account isn't available right now.",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "Failed to save settings: {error}",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "blossomFailedToSaveSettings": "Failed to save settings. Please try again.",
   "blossomValidServerUrl": "Please enter a valid server URL (e.g., https://blossom.band)",
   "blossomSettingsSaved": "Blossom settings saved",
   "blossomSaveTooltip": "Save",

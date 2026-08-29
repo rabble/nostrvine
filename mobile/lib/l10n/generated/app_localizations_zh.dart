@@ -4781,9 +4781,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundUnableToPreview => '无法预览声音——没有可用音频';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return '预览播放失败：$error';
-  }
+  String get soundPreviewFailed => '预览播放失败，请重试。';
 
   @override
   String get soundViewSource => '查看来源';
@@ -7014,9 +7012,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return '设置保存失败：$error';
-  }
+  String get blossomFailedToSaveSettings => '设置保存失败，请重试。';
 
   @override
   String get blossomValidServerUrl => '请输入有效的服务器 URL（如 https://blossom.band）';

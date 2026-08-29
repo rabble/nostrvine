@@ -8732,8 +8732,8 @@ abstract class AppLocalizations {
   /// No description provided for @soundPreviewFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to play preview: {error}'**
-  String soundPreviewFailed(Object error);
+  /// **'Failed to play preview. Please try again.'**
+  String get soundPreviewFailed;
 
   /// No description provided for @soundViewSource.
   ///
@@ -12731,8 +12731,8 @@ abstract class AppLocalizations {
   /// No description provided for @blossomFailedToSaveSettings.
   ///
   /// In en, this message translates to:
-  /// **'Failed to save settings: {error}'**
-  String blossomFailedToSaveSettings(String error);
+  /// **'Failed to save settings. Please try again.'**
+  String get blossomFailedToSaveSettings;
 
   /// No description provided for @blossomValidServerUrl.
   ///

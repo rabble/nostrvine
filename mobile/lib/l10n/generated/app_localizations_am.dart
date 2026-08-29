@@ -4978,9 +4978,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundUnableToPreview => 'ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'ቅድመ እይታን ማጫወት አልተሳካም፦ $error';
-  }
+  String get soundPreviewFailed => 'ቅድመ እይታን ማጫወት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get soundViewSource => 'ምንጭ ይመልከቱ';
@@ -7279,9 +7277,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'ቅንብሮችን ማስቀመጥ አልተሳካም፦ $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'ቅንብሮችን ማስቀመጥ አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get blossomValidServerUrl =>

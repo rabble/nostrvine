@@ -5253,9 +5253,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu pot previzualiza sunetul - niciun audio disponibil';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'N-am putut reda previzualizarea: $error';
-  }
+  String get soundPreviewFailed =>
+      'N-am putut reda previzualizarea. Încearcă din nou.';
 
   @override
   String get soundViewSource => 'Vezi sursa';
@@ -7622,9 +7621,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Nu s-au putut salva setările: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Nu s-au putut salva setările. Încearcă din nou.';
 
   @override
   String get blossomValidServerUrl =>

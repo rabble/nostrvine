@@ -2031,7 +2031,7 @@
         }
     },
     "soundUnableToPreview": "Не може да се визуализира звук - няма наличен звук",
-    "soundPreviewFailed": "Неуспешно пускане на визуализация: {error}",
+    "soundPreviewFailed": "Неуспешно пускане на визуализация. Опитай пак.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -2455,7 +2455,7 @@
     "followingFailedToLoadList": "Неуспешно зареждане на следния списък",
     "followersFailedToLoadList": "Неуспешно зареждане на списъка с последователи",
     "classicVinersTitle": "OG Viners",
-    "blossomFailedToSaveSettings": "Неуспешно запазване на настройките: {error}",
+    "blossomFailedToSaveSettings": "Неуспешно запазване на настройките. Опитай пак.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

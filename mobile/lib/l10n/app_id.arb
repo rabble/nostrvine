@@ -1822,7 +1822,7 @@
         }
     },
     "soundUnableToPreview": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
-    "soundPreviewFailed": "Gagal memutar pratinjau: {error}",
+    "soundPreviewFailed": "Gagal memutar pratinjau. Silakan coba lagi.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1954,7 +1954,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Gulat",
-    "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan: {error}",
+    "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan. Silakan coba lagi.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

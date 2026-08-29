@@ -5104,9 +5104,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'آواز کا پیش منظر نہیں دکھایا جا سکتا — کوئی آڈیو دستیاب نہیں';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'پیش منظر نہیں چلایا جا سکا: $error';
-  }
+  String get soundPreviewFailed =>
+      'پیش منظر نہیں چلایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get soundViewSource => 'ماخذ دیکھیں';
@@ -7447,9 +7446,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'ترتیبات محفوظ نہیں ہو سکیں: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'ترتیبات محفوظ نہیں ہو سکیں۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get blossomValidServerUrl =>

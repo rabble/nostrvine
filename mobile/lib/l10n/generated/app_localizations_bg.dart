@@ -5153,9 +5153,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не може да се визуализира звук - няма наличен звук';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Неуспешно пускане на визуализация: $error';
-  }
+  String get soundPreviewFailed =>
+      'Неуспешно пускане на визуализация. Опитай пак.';
 
   @override
   String get soundViewSource => 'Виж източника';
@@ -7520,9 +7519,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Неуспешно запазване на настройките: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Неуспешно запазване на настройките. Опитай пак.';
 
   @override
   String get blossomValidServerUrl =>

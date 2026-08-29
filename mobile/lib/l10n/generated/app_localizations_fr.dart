@@ -5170,9 +5170,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'écouter l\'aperçu - aucun audio disponible';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Échec de la lecture de l\'aperçu : $error';
-  }
+  String get soundPreviewFailed =>
+      'Échec de la lecture de l\'aperçu. Réessaie.';
 
   @override
   String get soundViewSource => 'Voir la source';
@@ -7548,9 +7547,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Impossible de sauvegarder les paramètres : $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Impossible de sauvegarder les paramètres. Réessaie.';
 
   @override
   String get blossomValidServerUrl =>

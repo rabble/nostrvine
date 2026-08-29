@@ -1822,7 +1822,7 @@
         }
     },
     "soundUnableToPreview": "Ses önizlenemiyor - ses mevcut değil",
-    "soundPreviewFailed": "Önizleme oynatılamadı: {error}",
+    "soundPreviewFailed": "Önizleme oynatılamadı. Lütfen tekrar dene.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1954,7 +1954,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlog",
     "categoryWrestling": "Güreş",
-    "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi: {error}",
+    "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi. Lütfen tekrar dene.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

@@ -2647,7 +2647,7 @@
     }
   },
   "soundUnableToPreview": "Không nghe thử được - không có audio",
-  "soundPreviewFailed": "Không phát được bản nghe thử: {error}",
+  "soundPreviewFailed": "Không phát được bản nghe thử. Vui lòng thử lại.",
   "@soundPreviewFailed": {
     "placeholders": {
       "error": {
@@ -4082,7 +4082,7 @@
   "userNotAvailableTitle": "Tài khoản không khả dụng",
   "userNotAvailableBody": "Tài khoản này hiện không khả dụng.",
   "classicVinersTitle": "OG Viners",
-  "blossomFailedToSaveSettings": "Không lưu được cài đặt: {error}",
+  "blossomFailedToSaveSettings": "Không lưu được cài đặt. Vui lòng thử lại.",
   "@blossomFailedToSaveSettings": {
     "placeholders": {
       "error": {

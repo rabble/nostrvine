@@ -1825,7 +1825,7 @@
         }
     },
     "soundUnableToPreview": "Nie można odtworzyć podglądu dźwięku - brak dostępnego audio",
-    "soundPreviewFailed": "Nie udało się odtworzyć podglądu: {error}",
+    "soundPreviewFailed": "Nie udało się odtworzyć podglądu. Spróbuj ponownie.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1957,7 +1957,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogowanie",
     "categoryWrestling": "Wrestling",
-    "blossomFailedToSaveSettings": "Nie udało się zapisać ustawień: {error}",
+    "blossomFailedToSaveSettings": "Nie udało się zapisać ustawień. Spróbuj ponownie.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

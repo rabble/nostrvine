@@ -5136,9 +5136,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi ma-preview ang sound - walang available na audio';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Hindi na-play ang preview: $error';
-  }
+  String get soundPreviewFailed => 'Hindi na-play ang preview. Subukan ulit.';
 
   @override
   String get soundViewSource => 'Tingnan ang source';
@@ -7504,9 +7502,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Hindi na-save ang settings: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Hindi na-save ang settings. Subukan ulit.';
 
   @override
   String get blossomValidServerUrl =>

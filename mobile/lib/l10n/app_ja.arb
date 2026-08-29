@@ -1815,7 +1815,7 @@
         }
     },
     "soundUnableToPreview": "サウンドをプレビューできない - 音声がないよ",
-    "soundPreviewFailed": "プレビューの再生がうまくいかなかった: {error}",
+    "soundPreviewFailed": "プレビューの再生がうまくいかなかった。もう一回試してみて。",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1947,7 +1947,7 @@
     "categoryVlog": "ブイログ",
     "categoryVlogging": "ブイログ",
     "categoryWrestling": "プロレス",
-    "blossomFailedToSaveSettings": "設定の保存がうまくいかなかった: {error}",
+    "blossomFailedToSaveSettings": "設定の保存がうまくいかなかった。もう一回試してみて。",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

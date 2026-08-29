@@ -4823,9 +4823,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundUnableToPreview => '사운드를 미리 들을 수 없어요 - 오디오가 없어요';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return '미리 듣기를 재생하지 못했어요: $error';
-  }
+  String get soundPreviewFailed => '미리 듣기를 재생하지 못했어요. 다시 시도해보세요.';
 
   @override
   String get soundViewSource => '원본 보기';
@@ -7090,9 +7088,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return '설정 저장에 실패했어요: $error';
-  }
+  String get blossomFailedToSaveSettings => '설정 저장에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get blossomValidServerUrl =>

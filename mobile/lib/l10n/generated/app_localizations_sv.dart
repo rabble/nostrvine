@@ -5095,9 +5095,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kan inte förhandsvisa ljud – inget ljud tillgängligt';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Kunde inte spela förhandsvisning: $error';
-  }
+  String get soundPreviewFailed =>
+      'Kunde inte spela förhandsvisning. Försök igen.';
 
   @override
   String get soundViewSource => 'Visa källa';
@@ -7441,9 +7440,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Kunde inte spara inställningarna: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Kunde inte spara inställningarna. Försök igen.';
 
   @override
   String get blossomValidServerUrl =>

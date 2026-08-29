@@ -5032,9 +5032,8 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak bisa pratinjau suara - tidak ada audio tersedia';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Gagal memutar pratinjau: $error';
-  }
+  String get soundPreviewFailed =>
+      'Gagal memutar pratinjau. Silakan coba lagi.';
 
   @override
   String get soundViewSource => 'Lihat sumber';
@@ -7372,9 +7371,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Gagal menyimpan pengaturan: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Gagal menyimpan pengaturan. Silakan coba lagi.';
 
   @override
   String get blossomValidServerUrl =>

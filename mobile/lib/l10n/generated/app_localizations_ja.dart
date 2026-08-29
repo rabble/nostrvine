@@ -4805,9 +4805,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundUnableToPreview => 'サウンドをプレビューできない - 音声がないよ';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'プレビューの再生がうまくいかなかった: $error';
-  }
+  String get soundPreviewFailed => 'プレビューの再生がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get soundViewSource => '元動画を見る';
@@ -7073,9 +7071,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get classicVinersTitle => 'OG Viners';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return '設定の保存がうまくいかなかった: $error';
-  }
+  String get blossomFailedToSaveSettings => '設定の保存がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get blossomValidServerUrl =>

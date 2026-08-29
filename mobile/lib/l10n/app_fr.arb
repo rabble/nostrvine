@@ -1825,7 +1825,7 @@
         }
     },
     "soundUnableToPreview": "Impossible d'écouter l'aperçu - aucun audio disponible",
-    "soundPreviewFailed": "Échec de la lecture de l'aperçu : {error}",
+    "soundPreviewFailed": "Échec de la lecture de l'aperçu. Réessaie.",
     "@soundPreviewFailed": {
         "placeholders": {
             "error": {
@@ -1957,7 +1957,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Catch",
-    "blossomFailedToSaveSettings": "Impossible de sauvegarder les paramètres : {error}",
+    "blossomFailedToSaveSettings": "Impossible de sauvegarder les paramètres. Réessaie.",
     "@blossomFailedToSaveSettings": {
         "placeholders": {
             "error": {

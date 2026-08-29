@@ -5165,9 +5165,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Vorschau nicht möglich — kein Audio verfügbar';
 
   @override
-  String soundPreviewFailed(Object error) {
-    return 'Vorschau-Wiedergabe fehlgeschlagen: $error';
-  }
+  String get soundPreviewFailed =>
+      'Vorschau-Wiedergabe fehlgeschlagen. Bitte versuch es nochmal.';
 
   @override
   String get soundViewSource => 'Quelle ansehen';
@@ -7540,9 +7539,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get classicVinersTitle => 'OG Viner';
 
   @override
-  String blossomFailedToSaveSettings(String error) {
-    return 'Einstellungen konnten nicht gespeichert werden: $error';
-  }
+  String get blossomFailedToSaveSettings =>
+      'Einstellungen konnten nicht gespeichert werden. Bitte versuch es nochmal.';
 
   @override
   String get blossomValidServerUrl =>
