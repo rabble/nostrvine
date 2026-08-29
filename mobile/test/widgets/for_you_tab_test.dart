@@ -7,10 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/for_you_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/for_you_tab.dart';
+
+import '../helpers/test_provider_overrides.dart';
 
 class _AvailableFunnelcake extends FunnelcakeAvailable {
   @override
@@ -27,6 +32,11 @@ Widget _host({double textScale = 1}) => ProviderScope(
   overrides: [
     funnelcakeAvailableProvider.overrideWith(_AvailableFunnelcake.new),
     forYouFeedProvider.overrideWith(_EmptyForYouFeed.new),
+    // ForYouTab hosts a ComposableVideoGrid, which resolves the viewer's
+    // pubkey through the auth service to decide per-video ownership.
+    sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
+    authServiceProvider.overrideWithValue(createMockAuthService()),
+    nostrServiceProvider.overrideWithValue(createMockNostrService()),
   ],
   child: MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,

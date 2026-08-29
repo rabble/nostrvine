@@ -123,10 +123,32 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     super.dispose();
   }
 
+  /// Pubkey of the signed-in viewer, or `null` when signed out.
+  ///
+  /// `NostrClient.publicKey` is a plain cache read that starts empty and is not
+  /// re-refreshed on a miss (#6813), so it cannot be the only source: an owner
+  /// would silently lose the edit/delete affordance whenever the cache is cold.
+  /// [AuthService.currentPublicKeyHex] resolves from the identity, key
+  /// container or profile and is populated far earlier, so it leads and the
+  /// client cache is the fallback — matching `video_providers.dart` and
+  /// `ProfileVideosGrid`.
+  String? _resolveViewerPubkey() {
+    // Identity gating for UI, so the auth state is the right rebuild trigger:
+    // signing readiness (`nostrSessionProvider`) is a different question.
+    ref.watch(currentAuthStateProvider);
+    final fromAuthService = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (fromAuthService != null && fromAuthService.isNotEmpty) {
+      return fromAuthService;
+    }
+    final cached = ref.read(nostrServiceProvider).publicKey;
+    return cached.isEmpty ? null : cached;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch broken video tracker asynchronously
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
+    final viewerPubkey = _resolveViewerPubkey();
 
     return brokenTrackerAsync.when(
       loading: () => Center(
@@ -136,7 +158,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       ),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
-        return _buildGrid(context, widget.videos);
+        return _buildGrid(context, widget.videos, viewerPubkey);
       },
       data: (tracker) {
         // Filter out broken videos
@@ -144,12 +166,16 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
             .where((video) => !tracker.isVideoBroken(video.id))
             .toList();
 
-        return _buildGrid(context, filteredVideos);
+        return _buildGrid(context, filteredVideos, viewerPubkey);
       },
     );
   }
 
-  Widget _buildGrid(BuildContext context, List<VideoEvent> videosToShow) {
+  Widget _buildGrid(
+    BuildContext context,
+    List<VideoEvent> videosToShow,
+    String? viewerPubkey,
+  ) {
     if (videosToShow.isEmpty && widget.emptyBuilder != null) {
       return _buildEmptyState(context);
     }
@@ -175,13 +201,17 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       final listIds = subscribedListCache?.getListsForVideo(video.id);
       final isInSubscribedList = listIds != null && listIds.isNotEmpty;
 
+      final isOwnVideo = viewerPubkey != null && viewerPubkey == video.pubkey;
+
       return _VideoItem(
         video: video,
         aspectRatio: widget.thumbnailAspectRatio,
         onVideoTap: widget.onVideoTap,
         index: index,
         displayedVideos: videosToShow,
-        onLongPress: () => _showVideoContextMenu(context, video),
+        onLongPress: isOwnVideo
+            ? () => _showVideoContextMenu(context, video)
+            : null,
         isInSubscribedList: isInSubscribedList,
       );
     }
@@ -256,18 +286,11 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     );
   }
 
-  /// Show context menu for long press on video tiles
+  /// Show the owner action sheet for a long-pressed video tile.
+  ///
+  /// Ownership is decided in [_buildGrid] so a non-owned tile never wires the
+  /// gesture — and therefore never advertises the action to assistive tech.
   void _showVideoContextMenu(BuildContext context, VideoEvent video) {
-    // Check if user owns this video
-    final nostrService = ref.read(nostrServiceProvider);
-    final userPubkey = nostrService.publicKey;
-    final isOwnVideo = userPubkey == video.pubkey;
-
-    // Only show context menu for own videos
-    if (!isOwnVideo) {
-      return;
-    }
-
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: context.vineColors.background,
@@ -515,16 +538,19 @@ class _VideoItem extends StatelessWidget {
     required this.video,
     required this.aspectRatio,
     required this.onVideoTap,
-    required this.onLongPress,
     required this.index,
     required this.displayedVideos,
+    this.onLongPress,
     this.isInSubscribedList = false,
   });
 
   final VideoEvent video;
   final double aspectRatio;
   final Function(List<VideoEvent> videos, int index) onVideoTap;
-  final VoidCallback onLongPress;
+
+  /// Opens the own-video actions sheet; `null` for videos the viewer does not
+  /// own, so neither the gesture nor the semantics action is offered.
+  final VoidCallback? onLongPress;
   final int index;
   final List<VideoEvent> displayedVideos;
   final bool isInSubscribedList;
@@ -535,6 +561,10 @@ class _VideoItem extends StatelessWidget {
       identifier: 'video_thumbnail_$index',
       label: context.l10n.profileVideoThumbnailLabel(index + 1),
       button: true,
+      onLongPress: onLongPress,
+      onLongPressHint: onLongPress == null
+          ? null
+          : context.l10n.videoGridOptionsTitle,
       child: GestureDetector(
         onTap: () => onVideoTap(displayedVideos, index),
         onLongPress: onLongPress,

@@ -9,11 +9,15 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:videos_repository/videos_repository.dart';
+
+import '../helpers/test_provider_overrides.dart';
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
@@ -81,6 +85,13 @@ void main() {
         contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
         videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         subscribedListVideoCacheProvider.overrideWithValue(null),
+        // The screen hosts a ComposableVideoGrid, which resolves the viewer's
+        // pubkey through the auth service to decide per-video ownership.
+        sharedPreferencesProvider.overrideWithValue(
+          createMockSharedPreferences(),
+        ),
+        authServiceProvider.overrideWithValue(createMockAuthService()),
+        nostrServiceProvider.overrideWithValue(createMockNostrService()),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

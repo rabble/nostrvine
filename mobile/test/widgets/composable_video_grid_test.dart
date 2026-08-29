@@ -24,6 +24,7 @@ import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -67,9 +68,13 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 List<Override> _gridOverrides(
   broken_tracker.BrokenVideoTracker tracker, {
   MockNostrClient? nostrService,
+  MockAuthService? authService,
   List<Override> extra = const [],
 }) => [
   sharedPreferencesProvider.overrideWithValue(createMockSharedPreferences()),
+  authServiceProvider.overrideWithValue(
+    authService ?? createMockAuthService(),
+  ),
   nostrServiceProvider.overrideWithValue(
     nostrService ?? createMockNostrService(),
   ),
@@ -725,6 +730,171 @@ void main() {
         await tester.pump();
 
         expect(find.byType(BrandedLoadingIndicator), findsNothing);
+      });
+    });
+
+    group('owner action affordance', () {
+      const otherPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+      VideoEvent videoBy(String pubkey) => VideoEvent(
+        id: 'video-by-$pubkey',
+        pubkey: pubkey,
+        content: 'A video',
+        title: 'A video',
+        authorName: 'Creator',
+        videoUrl: 'https://example.com/v.mp4',
+        thumbnailUrl: 'https://example.com/v.jpg',
+        duration: 5,
+        createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+        timestamp: DateTime(2026),
+      );
+
+      Future<void> pumpGridFor(
+        WidgetTester tester, {
+        required VideoEvent video,
+        required String nostrClientPubkey,
+        String? authServicePubkey,
+      }) async {
+        final mockNostr = createMockNostrService();
+        when(() => mockNostr.publicKey).thenReturn(nostrClientPubkey);
+        final mockAuth = createMockAuthService();
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(authServicePubkey);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _gridOverrides(
+              mockTracker,
+              nostrService: mockNostr,
+              authService: mockAuth,
+            ),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ComposableVideoGrid(
+                  videos: [video],
+                  onVideoTap: (videos, index) {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      SemanticsNode tileNode(WidgetTester tester) {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        return tester.getSemantics(
+          find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+        );
+      }
+
+      testWidgets(
+        'does not advertise a long-press action on a video the viewer '
+        'does not own',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+
+          await pumpGridFor(
+            tester,
+            video: videoBy(otherPubkey),
+            nostrClientPubkey: _ownPubkey,
+            authServicePubkey: _ownPubkey,
+          );
+
+          expect(
+            tileNode(tester).getSemanticsData().hasAction(
+              SemanticsAction.longPress,
+            ),
+            isFalse,
+            reason:
+                'Advertising a long-press on a video the viewer does not own '
+                'invites assistive-tech users to perform an action that '
+                'silently does nothing.',
+          );
+          handle.dispose();
+        },
+      );
+
+      testWidgets('labels the owner long-press action with the options hint', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await pumpGridFor(
+          tester,
+          video: videoBy(_ownPubkey),
+          nostrClientPubkey: _ownPubkey,
+          authServicePubkey: _ownPubkey,
+        );
+
+        expect(
+          tileNode(tester).getSemanticsData().hasAction(
+            SemanticsAction.longPress,
+          ),
+          isTrue,
+        );
+        expect(
+          tileNode(tester),
+          isSemantics(onLongPressHint: l10n.videoGridOptionsTitle),
+          reason:
+              'Without a hint, assistive tech announces that a long-press '
+              'exists but cannot say what it does.',
+        );
+        handle.dispose();
+      });
+
+      testWidgets(
+        'opens the owner sheet when the Nostr client public-key cache is '
+        'still empty but the auth service knows the owner',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+
+          // NostrClient.publicKey is a plain cache read that starts empty and
+          // is not re-refreshed on a miss (#6813), so ownership must not
+          // depend on it alone.
+          await pumpGridFor(
+            tester,
+            video: videoBy(_ownPubkey),
+            nostrClientPubkey: '',
+            authServicePubkey: _ownPubkey,
+          );
+
+          await tester.longPress(
+            find.bySemanticsLabel(l10n.profileVideoThumbnailLabel(1)),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.videoGridDeleteVideo),
+            findsOneWidget,
+            reason:
+                'The signed-in owner must keep the edit/delete affordance even '
+                'while the Nostr client key cache is empty.',
+          );
+        },
+      );
+
+      testWidgets('advertises no long-press action when signed out', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+
+        await pumpGridFor(
+          tester,
+          video: videoBy(_ownPubkey),
+          nostrClientPubkey: '',
+        );
+
+        expect(
+          tileNode(tester).getSemanticsData().hasAction(
+            SemanticsAction.longPress,
+          ),
+          isFalse,
+        );
+        handle.dispose();
       });
     });
   });
