@@ -545,14 +545,6 @@
             }
         }
     },
-    "exploreErrorPrefix": "ስህተት፡ {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "ዝርዝሮችን ያግኙ",
     "exploreAboutLists": "ስለ ዝርዝሮች",
     "exploreAboutListsDescription": "ዝርዝሮች የDivine ይዘትን በሁለት መንገድ እንዲያደራጁ እና እንዲያዘጋጁ ያግዝዎታል፡",
@@ -928,14 +920,6 @@
     "relaySettingsEventsSent": "ክስተቶች ተልከዋል።",
     "relaySettingsRequestsThisSession": "ይህንን ክፍለ ጊዜ ጠይቋል",
     "relaySettingsFailedRequests": "ያልተሳኩ ጥያቄዎች",
-    "relaySettingsLastError": "የመጨረሻው ስህተት፡ {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "የማስተላለፊያ መረጃን በመጫን ላይ...",
     "relaySettingsAboutRelay": "ስለ ሪሌይ",
     "relaySettingsSupportedNips": "የሚደገፉ NIPዎች",

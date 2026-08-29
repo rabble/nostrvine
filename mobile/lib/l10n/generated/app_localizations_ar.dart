@@ -1255,11 +1255,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get exploreNoVideosAvailable => 'لا توجد فيديوهات متاحة';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'خطأ: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'اكتشف القوائم';
 
   @override
@@ -2199,11 +2194,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'الطلبات الفاشلة';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'آخر خطأ: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'جاري تحميل معلومات المحول...';

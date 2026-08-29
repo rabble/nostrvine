@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "Nu am putut încărca această colecție.",
     "featuredTabRetry": "Încearcă din nou",
     "exploreNoVideosAvailable": "Niciun videoclip disponibil",
-    "exploreErrorPrefix": "Eroare: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Descoperă liste",
     "exploreAboutLists": "Despre liste",
     "exploreAboutListsDescription": "Listele te ajută să organizezi și să curaâezi conținutul Divine în două feluri:",
@@ -790,14 +782,6 @@
     "relaySettingsEventsSent": "Evenimente trimise",
     "relaySettingsRequestsThisSession": "Cereri în această sesiune",
     "relaySettingsFailedRequests": "Cereri eșuate",
-    "relaySettingsLastError": "Ultima eroare: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Se încarcă informațiile despre relay...",
     "relaySettingsAboutRelay": "Despre relay",
     "relaySettingsSupportedNips": "NIP-uri suportate",

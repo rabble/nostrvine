@@ -1263,11 +1263,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Walang available na video';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Error: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Tuklasin ang mga List';
 
   @override
@@ -2222,11 +2217,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Mga Bigong Request';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Huling Error: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo =>

@@ -1251,11 +1251,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreNoVideosAvailable => 'ምንም ቪዲዮዎች የሉም';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'ስህተት፡ $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'ዝርዝሮችን ያግኙ';
 
   @override
@@ -2171,11 +2166,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'ያልተሳኩ ጥያቄዎች';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'የመጨረሻው ስህተት፡ $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'የማስተላለፊያ መረጃን በመጫን ላይ...';

@@ -29,8 +29,6 @@ class RelayStatistics {
   // Request tracking
   int requestsThisSession = 0;
   int failedRequests = 0;
-  String? lastError;
-  DateTime? lastErrorTime;
 
   /// Duration of current session (if connected)
   Duration? get sessionDuration {
@@ -169,15 +167,6 @@ class RelayStatisticsService extends ChangeNotifier {
   void recordRequest(String relayUrl) {
     final stats = _getOrCreate(relayUrl);
     stats.requestsThisSession++;
-    notifyListeners();
-  }
-
-  /// Record that a request failed
-  void recordRequestFailure(String relayUrl, String error) {
-    final stats = _getOrCreate(relayUrl);
-    stats.failedRequests++;
-    stats.lastError = error;
-    stats.lastErrorTime = DateTime.now();
     notifyListeners();
   }
 

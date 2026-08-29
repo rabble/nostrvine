@@ -1316,11 +1316,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Niciun videoclip disponibil';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Eroare: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Descoperă liste';
 
   @override
@@ -2268,11 +2263,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Cereri eșuate';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Ultima eroare: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo =>

@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "Koleksi ini gagal dimuat.",
     "featuredTabRetry": "Coba lagi",
     "exploreNoVideosAvailable": "Tidak ada video tersedia",
-    "exploreErrorPrefix": "Kesalahan: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Temukan Daftar",
     "exploreAboutLists": "Tentang Daftar",
     "exploreAboutListsDescription": "Daftar membantumu mengorganisir dan mengkurasi konten Divine dengan dua cara:",
@@ -787,14 +779,6 @@
     "relaySettingsEventsSent": "Event Dikirim",
     "relaySettingsRequestsThisSession": "Permintaan Sesi Ini",
     "relaySettingsFailedRequests": "Permintaan Gagal",
-    "relaySettingsLastError": "Kesalahan Terakhir: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Memuat info relay...",
     "relaySettingsAboutRelay": "Tentang Relay",
     "relaySettingsSupportedNips": "NIP yang Didukung",

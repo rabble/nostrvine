@@ -498,14 +498,6 @@
     "featuredTabLoadFailed": "Тази колекция не можа да се зареди.",
     "featuredTabRetry": "Опитай пак",
     "exploreNoVideosAvailable": "Няма налични видеа",
-    "exploreErrorPrefix": "Грешка: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Открий списъци",
     "exploreAboutLists": "Относно списъците",
     "exploreAboutListsDescription": "Списъците ти помагат да организираш и управляваш Divine съдържание по два начина:",
@@ -873,14 +865,6 @@
     "relaySettingsEventsSent": "Изпратени събития",
     "relaySettingsRequestsThisSession": "Иска тази сесия",
     "relaySettingsFailedRequests": "Неуспешни заявки",
-    "relaySettingsLastError": "Последна грешка: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Информацията за релето се зарежда...",
     "relaySettingsAboutRelay": "Относно релето",
     "relaySettingsSupportedNips": "Поддържани NIP",

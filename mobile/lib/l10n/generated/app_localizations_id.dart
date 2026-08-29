@@ -1218,11 +1218,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Tidak ada video tersedia';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Kesalahan: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Temukan Daftar';
 
   @override
@@ -2147,11 +2142,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Permintaan Gagal';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Kesalahan Terakhir: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Memuat info relay...';

@@ -1279,11 +1279,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreNoVideosAvailable => 'کوئی ویڈیو دستیاب نہیں';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'خرابی: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'فہرستیں دریافت کریں';
 
   @override
@@ -2219,11 +2214,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'ناکام درخواستیں';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'آخری خرابی: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'ریلے معلومات لوڈ ہو رہی ہیں...';

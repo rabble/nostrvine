@@ -399,10 +399,10 @@ class _ExploreViewState extends ConsumerState<ExploreView>
             );
           },
           loading: () => const Center(child: BrandedLoadingIndicator()),
-          error: (e, s) => Center(
+          error: (_, _) => Center(
             child: Text(
-              context.l10n.exploreErrorPrefix(e),
-              style: const TextStyle(color: VineTheme.likeRed),
+              context.l10n.commonSomethingWentWrong,
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
             ),
           ),
         );

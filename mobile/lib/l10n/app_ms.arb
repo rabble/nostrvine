@@ -573,14 +573,6 @@
   "featuredTabLoadFailed": "Koleksi ini tidak dapat dimuatkan.",
   "featuredTabRetry": "Cuba lagi",
   "exploreNoVideosAvailable": "Tiada video tersedia",
-  "exploreErrorPrefix": "Ralat: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "Terokai Senarai",
   "exploreAboutLists": "Perihal Senarai",
   "exploreAboutListsDescription": "Senarai membantu anda menyusun dan mengurus kandungan Divine dalam dua cara:",
@@ -1160,14 +1152,6 @@
   "relaySettingsEventsSent": "Acara Dihantar",
   "relaySettingsRequestsThisSession": "Permintaan Sesi Ini",
   "relaySettingsFailedRequests": "Permintaan Gagal",
-  "relaySettingsLastError": "Ralat Terakhir: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "Memuatkan maklumat relay...",
   "relaySettingsAboutRelay": "Perihal Relay",
   "relaySettingsSupportedNips": "NIP Disokong",

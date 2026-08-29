@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "Kunde inte läsa in den här samlingen.",
     "featuredTabRetry": "Försök igen",
     "exploreNoVideosAvailable": "Inga videor tillgängliga",
-    "exploreErrorPrefix": "Fel: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Upptäck listor",
     "exploreAboutLists": "Om listor",
     "exploreAboutListsDescription": "Listor hjälper dig organisera och kuratera Divine-innehåll på två sätt:",
@@ -790,14 +782,6 @@
     "relaySettingsEventsSent": "Skickade händelser",
     "relaySettingsRequestsThisSession": "Förfrågningar i den här sessionen",
     "relaySettingsFailedRequests": "Misslyckade förfrågningar",
-    "relaySettingsLastError": "Senaste fel: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Läser in relinfo...",
     "relaySettingsAboutRelay": "Om relen",
     "relaySettingsSupportedNips": "NIP:er som stöds",

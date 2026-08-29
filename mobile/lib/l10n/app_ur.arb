@@ -573,14 +573,6 @@
   "featuredTabLoadFailed": "یہ مجموعہ لوڈ نہیں ہو سکا۔",
   "featuredTabRetry": "دوبارہ کوشش کریں",
   "exploreNoVideosAvailable": "کوئی ویڈیو دستیاب نہیں",
-  "exploreErrorPrefix": "خرابی: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "فہرستیں دریافت کریں",
   "exploreAboutLists": "فہرستوں کے بارے میں",
   "exploreAboutListsDescription": "فہرستیں Divine مواد کو دو طریقوں سے ترتیب دینے اور منتخب کرنے میں مدد دیتی ہیں:",
@@ -1160,14 +1152,6 @@
   "relaySettingsEventsSent": "بھیجے گئے ایونٹس",
   "relaySettingsRequestsThisSession": "اس سیشن کی درخواستیں",
   "relaySettingsFailedRequests": "ناکام درخواستیں",
-  "relaySettingsLastError": "آخری خرابی: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "ریلے معلومات لوڈ ہو رہی ہیں...",
   "relaySettingsAboutRelay": "ریلے کے بارے میں",
   "relaySettingsSupportedNips": "تعاون یافتہ NIPs",

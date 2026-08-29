@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "Diese Sammlung konnte nicht geladen werden.",
     "featuredTabRetry": "Erneut versuchen",
     "exploreNoVideosAvailable": "Keine Videos verfügbar",
-    "exploreErrorPrefix": "Fehler: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Listen entdecken",
     "exploreAboutLists": "Über Listen",
     "exploreAboutListsDescription": "Listen helfen dir, Divine-Inhalte auf zwei Arten zu organisieren und zu kuratieren:",
@@ -790,14 +782,6 @@
     "relaySettingsEventsSent": "Gesendete Events",
     "relaySettingsRequestsThisSession": "Anfragen in dieser Sitzung",
     "relaySettingsFailedRequests": "Fehlgeschlagene Anfragen",
-    "relaySettingsLastError": "Letzter Fehler: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Relay-Infos werden geladen...",
     "relaySettingsAboutRelay": "Über Relay",
     "relaySettingsSupportedNips": "Unterstützte NIPs",

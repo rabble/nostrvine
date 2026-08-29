@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "Deze collectie kon niet worden geladen.",
     "featuredTabRetry": "Probeer opnieuw",
     "exploreNoVideosAvailable": "Geen video's beschikbaar",
-    "exploreErrorPrefix": "Fout: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Lijsten ontdekken",
     "exploreAboutLists": "Over lijsten",
     "exploreAboutListsDescription": "Met lijsten kun je Divine-inhoud op twee manieren organiseren en samenstellen:",
@@ -790,14 +782,6 @@
     "relaySettingsEventsSent": "Verzonden events",
     "relaySettingsRequestsThisSession": "Verzoeken deze sessie",
     "relaySettingsFailedRequests": "Mislukte verzoeken",
-    "relaySettingsLastError": "Laatste fout: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Relay-info laden...",
     "relaySettingsAboutRelay": "Over relay",
     "relaySettingsSupportedNips": "Ondersteunde NIPs",

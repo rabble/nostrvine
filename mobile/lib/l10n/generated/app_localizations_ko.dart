@@ -1167,11 +1167,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreNoVideosAvailable => '이용 가능한 영상이 없어요';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return '오류: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => '리스트 둘러보기';
 
   @override
@@ -2069,11 +2064,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => '실패한 요청';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return '마지막 오류: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => '릴레이 정보 불러오는 중...';

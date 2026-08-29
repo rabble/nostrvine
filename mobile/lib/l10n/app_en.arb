@@ -808,14 +808,6 @@
     "description": "Retry button on the featured Explore tab's failure state."
   },
   "exploreNoVideosAvailable": "No videos available",
-  "exploreErrorPrefix": "Error: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "Discover Lists",
   "exploreAboutLists": "About Lists",
   "exploreAboutListsDescription": "Lists help you organize and curate Divine content in two ways:",
@@ -1494,14 +1486,6 @@
   "relaySettingsEventsSent": "Events Sent",
   "relaySettingsRequestsThisSession": "Requests This Session",
   "relaySettingsFailedRequests": "Failed Requests",
-  "relaySettingsLastError": "Last Error: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "Loading relay info...",
   "relaySettingsAboutRelay": "About Relay",
   "relaySettingsSupportedNips": "Supported NIPs",

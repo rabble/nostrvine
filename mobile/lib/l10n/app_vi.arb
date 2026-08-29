@@ -573,14 +573,6 @@
   "featuredTabLoadFailed": "Không tải được bộ sưu tập này.",
   "featuredTabRetry": "Thử lại",
   "exploreNoVideosAvailable": "Không có video nào",
-  "exploreErrorPrefix": "Lỗi: {error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "Khám phá danh sách",
   "exploreAboutLists": "Về danh sách",
   "exploreAboutListsDescription": "Danh sách giúp bạn sắp xếp và tuyển chọn nội dung Divine theo hai cách:",
@@ -1160,14 +1152,6 @@
   "relaySettingsEventsSent": "Sự kiện đã gửi",
   "relaySettingsRequestsThisSession": "Yêu cầu trong phiên này",
   "relaySettingsFailedRequests": "Yêu cầu thất bại",
-  "relaySettingsLastError": "Lỗi gần nhất: {error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "Đang tải thông tin relay...",
   "relaySettingsAboutRelay": "Về relay",
   "relaySettingsSupportedNips": "Các NIP được hỗ trợ",

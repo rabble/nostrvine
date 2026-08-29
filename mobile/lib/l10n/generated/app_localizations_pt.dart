@@ -1288,11 +1288,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Nenhum vídeo disponível';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Erro: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Descobrir listas';
 
   @override
@@ -2234,11 +2229,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Solicitações falhas';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Último erro: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo =>

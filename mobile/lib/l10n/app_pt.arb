@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "Não foi possível carregar esta coleção.",
     "featuredTabRetry": "Tentar de novo",
     "exploreNoVideosAvailable": "Nenhum vídeo disponível",
-    "exploreErrorPrefix": "Erro: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "Descobrir listas",
     "exploreAboutLists": "Sobre listas",
     "exploreAboutListsDescription": "Listas te ajudam a organizar e curar conteúdo do Divine de duas formas:",
@@ -790,14 +782,6 @@
     "relaySettingsEventsSent": "Eventos enviados",
     "relaySettingsRequestsThisSession": "Solicitações nesta sessão",
     "relaySettingsFailedRequests": "Solicitações falhas",
-    "relaySettingsLastError": "Último erro: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "Carregando informações do relay...",
     "relaySettingsAboutRelay": "Sobre o relay",
     "relaySettingsSupportedNips": "NIPs suportados",

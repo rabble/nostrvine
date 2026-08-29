@@ -573,14 +573,6 @@
   "featuredTabLoadFailed": "无法加载此合集。",
   "featuredTabRetry": "重试",
   "exploreNoVideosAvailable": "暂无视频",
-  "exploreErrorPrefix": "错误：{error}",
-  "@exploreErrorPrefix": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreDiscoverLists": "发现列表",
   "exploreAboutLists": "关于列表",
   "exploreAboutListsDescription": "列表帮你用两种方式整理和策划 Divine 内容：",
@@ -1160,14 +1152,6 @@
   "relaySettingsEventsSent": "已发送事件",
   "relaySettingsRequestsThisSession": "本次会话请求数",
   "relaySettingsFailedRequests": "失败请求",
-  "relaySettingsLastError": "最近错误：{error}",
-  "@relaySettingsLastError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relaySettingsLoadingRelayInfo": "正在加载中继信息...",
   "relaySettingsAboutRelay": "关于中继",
   "relaySettingsSupportedNips": "支持的 NIP",

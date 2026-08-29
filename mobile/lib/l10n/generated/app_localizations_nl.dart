@@ -1281,11 +1281,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Geen video\'s beschikbaar';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Fout: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Lijsten ontdekken';
 
   @override
@@ -2227,11 +2222,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Mislukte verzoeken';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Laatste fout: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Relay-info laden...';

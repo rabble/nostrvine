@@ -1218,11 +1218,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Hiç video yok';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Hata: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Listeleri Keşfet';
 
   @override
@@ -2155,11 +2150,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Başarısız İstekler';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Son Hata: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Röle bilgisi yükleniyor...';

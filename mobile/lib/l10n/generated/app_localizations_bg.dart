@@ -1289,11 +1289,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Няма налични видеа';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Грешка: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Открий списъци';
 
   @override
@@ -2254,11 +2249,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Неуспешни заявки';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Последна грешка: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo =>

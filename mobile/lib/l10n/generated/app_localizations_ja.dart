@@ -1163,11 +1163,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exploreNoVideosAvailable => '動画がないよ';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'エラー: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'リストを見つけよう';
 
   @override
@@ -2059,11 +2054,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => '失敗したリクエスト';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return '最後のエラー: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'リレー情報を読み込み中...';

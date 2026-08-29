@@ -1248,11 +1248,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Không có video nào';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Lỗi: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Khám phá danh sách';
 
   @override
@@ -2191,11 +2186,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Yêu cầu thất bại';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Lỗi gần nhất: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Đang tải thông tin relay...';

@@ -1266,11 +1266,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get exploreNoVideosAvailable => 'Inga videor tillgängliga';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return 'Fel: $error';
-  }
-
-  @override
   String get exploreDiscoverLists => 'Upptäck listor';
 
   @override
@@ -2215,11 +2210,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => 'Misslyckade förfrågningar';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return 'Senaste fel: $error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => 'Läser in relinfo...';

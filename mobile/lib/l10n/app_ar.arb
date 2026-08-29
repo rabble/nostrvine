@@ -460,14 +460,6 @@
     "featuredTabLoadFailed": "تعذّر تحميل هذه المجموعة.",
     "featuredTabRetry": "حاول مرة أخرى",
     "exploreNoVideosAvailable": "لا توجد فيديوهات متاحة",
-    "exploreErrorPrefix": "خطأ: {error}",
-    "@exploreErrorPrefix": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreDiscoverLists": "اكتشف القوائم",
     "exploreAboutLists": "عن القوائم",
     "exploreAboutListsDescription": "القوائم تساعدك في تنظيم محتوى Divine بطريقتين:",
@@ -787,14 +779,6 @@
     "relaySettingsEventsSent": "الأحداث المرسلة",
     "relaySettingsRequestsThisSession": "الطلبات في هذه الجلسة",
     "relaySettingsFailedRequests": "الطلبات الفاشلة",
-    "relaySettingsLastError": "آخر خطأ: {error}",
-    "@relaySettingsLastError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relaySettingsLoadingRelayInfo": "جاري تحميل معلومات المحول...",
     "relaySettingsAboutRelay": "عن المحول",
     "relaySettingsSupportedNips": "NIPs المدعومة",

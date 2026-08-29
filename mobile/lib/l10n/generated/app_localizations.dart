@@ -2208,12 +2208,6 @@ abstract class AppLocalizations {
   /// **'No videos available'**
   String get exploreNoVideosAvailable;
 
-  /// No description provided for @exploreErrorPrefix.
-  ///
-  /// In en, this message translates to:
-  /// **'Error: {error}'**
-  String exploreErrorPrefix(Object error);
-
   /// No description provided for @exploreDiscoverLists.
   ///
   /// In en, this message translates to:
@@ -3804,12 +3798,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed Requests'**
   String get relaySettingsFailedRequests;
-
-  /// No description provided for @relaySettingsLastError.
-  ///
-  /// In en, this message translates to:
-  /// **'Last Error: {error}'**
-  String relaySettingsLastError(String error);
 
   /// No description provided for @relaySettingsLoadingRelayInfo.
   ///

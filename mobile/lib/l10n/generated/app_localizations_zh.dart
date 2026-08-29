@@ -1176,11 +1176,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreNoVideosAvailable => '暂无视频';
 
   @override
-  String exploreErrorPrefix(Object error) {
-    return '错误：$error';
-  }
-
-  @override
   String get exploreDiscoverLists => '发现列表';
 
   @override
@@ -2078,11 +2073,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get relaySettingsFailedRequests => '失败请求';
-
-  @override
-  String relaySettingsLastError(String error) {
-    return '最近错误：$error';
-  }
 
   @override
   String get relaySettingsLoadingRelayInfo => '正在加载中继信息...';
