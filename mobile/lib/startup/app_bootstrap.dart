@@ -37,6 +37,7 @@ import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/database_corruption_service.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
+import 'package:openvine/services/database_recovery_store.dart';
 import 'package:openvine/services/install_source_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/pro_video_editor_log_forwarder.dart';
@@ -470,6 +471,9 @@ Future<void> startOpenVineApp({
       reason: 'Runtime database corruption',
     ),
   );
+  final databaseRecoveryStore = DatabaseRecoveryStore(
+    preferences: sharedPreferences,
+  );
 
   // Resets preserve a backup by default because encrypted backups stay readable
   // under the retained cipher key. The db-unreadable diagnosis is different:
@@ -484,6 +488,8 @@ Future<void> startOpenVineApp({
         // instead of skipping it as "already complete" (which had left
         // recovered chats stranded under "Message requests"). See #5304.
         onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
+        recoveryOutcome: DatabaseRecoveryOutcome.recreatedAfterBootstrapFailure,
+        persistRecoveryOutcome: databaseRecoveryStore.record,
       );
 
   // The fail-closed screen below renders before the app's own MaterialApp
@@ -512,6 +518,7 @@ Future<void> startOpenVineApp({
         // recover-every-launch loop in Crashlytics.
         recordRecovery: (error, stack) => CrashReportingService.instance
             .recordError(error, stack, reason: 'DB startup recovery'),
+        persistRecoveryOutcome: databaseRecoveryStore.record,
         // A previous session's runtime corruption report forces the salvage.
         // The probe below is reactive and already missed this corruption once,
         // so re-running it would just clear the DB for another broken session.
@@ -545,6 +552,7 @@ Future<void> startOpenVineApp({
           await resetUnreadablePlaintextDatabaseCache(
             secureStorage: dbCipherSecureStorage,
             onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
+            persistRecoveryOutcome: databaseRecoveryStore.record,
           );
         } else {
           await resetLocalDatabaseCache(deleteCipherKey: false);

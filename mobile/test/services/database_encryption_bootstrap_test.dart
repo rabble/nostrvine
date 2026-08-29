@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
+import 'package:openvine/services/database_recovery_store.dart';
 
 class _MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
@@ -54,6 +55,7 @@ void main() {
       bool Function(String rawKeyHex)? salvageDatabase,
       bool Function(String rawKeyHex)? encryptedKeyMatches,
       void Function(Object error)? onRecordRecovery,
+      void Function(DatabaseRecoveryOutcome outcome)? onPersistRecovery,
       bool hasPendingCorruptionRecovery = false,
       void Function()? onClearPendingCorruptionRecovery,
     }) {
@@ -82,6 +84,9 @@ void main() {
         recordRecovery: onRecordRecovery == null
             ? null
             : (error, _) async => onRecordRecovery(error),
+        persistRecoveryOutcome: onPersistRecovery == null
+            ? null
+            : (outcome) async => onPersistRecovery(outcome),
       );
     }
 
@@ -417,6 +422,83 @@ void main() {
         expect(store[dbCipherKeyStorageKey], equals(key));
         expect(deleted, isTrue);
         expect(reset, isTrue);
+      },
+    );
+
+    test('persists each completed automatic recovery outcome', () async {
+      const existing =
+          '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+      Future<DatabaseRecoveryOutcome> run({
+        required bool keyExists,
+        required bool salvageSucceeds,
+        required bool keyMatches,
+      }) async {
+        store.clear();
+        if (keyExists) store[dbCipherKeyStorageKey] = existing;
+        final outcomes = <DatabaseRecoveryOutcome>[];
+        await buildBootstrap(
+          outcome: CipherMigrationOutcome.alreadyEncrypted,
+          onDelete: () {},
+          canOpenEncryptedDatabase: (_) => false,
+          salvageDatabase: (_) => salvageSucceeds,
+          encryptedKeyMatches: (_) => keyMatches,
+          onPersistRecovery: outcomes.add,
+        ).resolveCipherKey();
+        return outcomes.single;
+      }
+
+      expect(
+        await run(
+          keyExists: false,
+          salvageSucceeds: false,
+          keyMatches: false,
+        ),
+        DatabaseRecoveryOutcome.recreatedMissingKey,
+      );
+      expect(
+        await run(
+          keyExists: true,
+          salvageSucceeds: true,
+          keyMatches: true,
+        ),
+        DatabaseRecoveryOutcome.salvaged,
+      );
+      expect(
+        await run(
+          keyExists: true,
+          salvageSucceeds: false,
+          keyMatches: true,
+        ),
+        DatabaseRecoveryOutcome.recreatedCorrupt,
+      );
+      expect(
+        await run(
+          keyExists: true,
+          salvageSucceeds: false,
+          keyMatches: false,
+        ),
+        DatabaseRecoveryOutcome.recreatedKeyLoss,
+      );
+    });
+
+    test(
+      'a failed recovery breadcrumb never fails successful salvage',
+      () async {
+        const existing =
+            '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+        store[dbCipherKeyStorageKey] = existing;
+        final bootstrap = DatabaseEncryptionBootstrap(
+          secureStorage: storage,
+          ensureRuntime: () async {},
+          isCipherAvailable: () => true,
+          migrate: (_) async => CipherMigrationOutcome.alreadyEncrypted,
+          canOpenEncryptedDatabase: (_) async => false,
+          salvageDatabase: (_) async => true,
+          persistRecoveryOutcome: (_) async => throw StateError('disk full'),
+        );
+
+        expect(await bootstrap.resolveCipherKey(), existing);
       },
     );
 
@@ -767,6 +849,28 @@ void main() {
         verifyNever(() => storage.delete(key: any(named: 'key')));
       },
     );
+
+    test('records completed explicit reset outcomes', () async {
+      final outcomes = <DatabaseRecoveryOutcome>[];
+
+      await resetEncryptedDatabaseCache(
+        secureStorage: storage,
+        deleteCipherKey: false,
+        deleteDatabase: () async {},
+        recoveryOutcome: DatabaseRecoveryOutcome.recreatedAfterBootstrapFailure,
+        persistRecoveryOutcome: (outcome) async => outcomes.add(outcome),
+      );
+      await resetUnreadablePlaintextDatabaseCache(
+        secureStorage: storage,
+        deleteDatabase: () async {},
+        persistRecoveryOutcome: (outcome) async => outcomes.add(outcome),
+      );
+
+      expect(outcomes, [
+        DatabaseRecoveryOutcome.recreatedAfterBootstrapFailure,
+        DatabaseRecoveryOutcome.recreatedUnreadable,
+      ]);
+    });
   });
 
   group('resolveStartupDatabaseCipherKey', () {
