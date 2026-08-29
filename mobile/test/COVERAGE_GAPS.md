@@ -28,7 +28,6 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 - **E2E test exists**: Yes (`test/integration/upload_publish_e2e_comprehensive_test.dart`)
 - **Service unit tests**:
   - ✅ `blossom_upload_service.dart` - Has integration tests
-  - ⚠️ `video_processing_service.dart` - Coverage unknown (not in report)
   - ❌ `personal_event_cache_service.dart` - **0% coverage**
   - ❌ `content_moderation_service.dart` - **0.5% coverage**
 - **Coverage**: ~15-25% (based on related services)
