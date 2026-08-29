@@ -238,6 +238,29 @@ void main() {
       );
     }
 
+    blocTest<InviteGateBloc, InviteGateState>(
+      'keeps thrown revoked failures in the general error block',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('NOPE-0003'),
+        ).thenThrow(
+          const InviteApiException(
+            'Invite unavailable',
+            code: InviteApiErrorCode.inviteRevoked,
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('nope0003')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        const InviteGateState(
+          generalError: InviteGateError.inviteUnavailable,
+        ),
+      ],
+      errors: () => [isA<InviteApiException>()],
+    );
+
     test(
       'ignores duplicate validation submissions while request is in flight',
       () async {
