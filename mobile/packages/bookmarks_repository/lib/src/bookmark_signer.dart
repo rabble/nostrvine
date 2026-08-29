@@ -1,13 +1,14 @@
 // ABOUTME: Minimal signer contract for publishing the NIP-51 kind-10003 list.
-// ABOUTME: Implemented at the app layer by AuthService.
+// ABOUTME: Implemented at the app layer by BookmarkSignerAdapter.
 
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 /// Minimal signer contract for reading and publishing the user's NIP-51
 /// kind-10003 bookmark list without depending on the app's auth stack.
 ///
-/// Implemented at the app layer by `AuthService`, which already implements the
-/// sibling `BlockListSigner` in `nostr_client` for the kind-10000 mute list.
+/// Implemented at the app layer by `BookmarkSignerAdapter`, which delegates to
+/// `AuthService`. That service already implements the sibling `BlockListSigner`
+/// in `nostr_client` for the kind-10000 mute list.
 /// Kept deliberately narrow: it needs only [Event] and [NostrSigner] from
 /// `nostr_sdk`, so neither this contract nor the repository that consumes it
 /// depends on the app.
