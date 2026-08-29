@@ -11798,18 +11798,6 @@ abstract class AppLocalizations {
   /// **'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.'**
   String get deleteAccountAccountChanged;
 
-  /// Error shown when the opt-in @divine.video username burn fails during account deletion; the account is not deleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.'**
-  String get deleteAccountBurnUsernameFailed;
-
-  /// Opt-in checkbox in the delete-account dialog to permanently burn the user's @divine.video handle. {username} is the handle like @alice.divine.video.
-  ///
-  /// In en, this message translates to:
-  /// **'Also permanently give up {username}'**
-  String deleteAccountBurnUsernameToggle(String username);
-
   /// Prompt above the confirmation field when the account has no username; the user types the word DELETE.
   ///
   /// In en, this message translates to:
@@ -11935,6 +11923,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t finish deleting your account. Try again.'**
   String get deleteAccountDeletionIncomplete;
+
+  /// Error shown when account deletion could not be started — an unexpected preparation error, or the account's Divine name ownership could not be confirmed. Nothing was deleted; the user can retry.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t start deleting your account. Nothing was deleted. Try again.'**
+  String get deleteAccountDeletionNotStarted;
 
   /// No description provided for @deleteAccountFinalConfirmationTitle.
   ///

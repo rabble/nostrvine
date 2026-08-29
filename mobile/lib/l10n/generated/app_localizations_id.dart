@@ -6790,15 +6790,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Kamu beralih akun, jadi tidak ada yang dihapus. Buka lagi penghapusan untuk akun yang ingin kamu hapus.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Tidak bisa melepaskan username-mu. Akunmu tidak jadi dihapus. Coba lagi, atau hapus centang pada opsinya.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Lepaskan juga $username secara permanen';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Untuk konfirmasi, ketik:';
 
   @override
@@ -6874,6 +6865,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'Kami tidak bisa menyelesaikan penghapusan akunmu. Coba lagi.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Konfirmasi Terakhir';

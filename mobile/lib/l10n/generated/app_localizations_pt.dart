@@ -6915,15 +6915,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você trocou de conta, então nada foi excluído. Abra a exclusão de novo para a conta que você quer remover.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Não foi possível liberar seu nome de usuário. Sua conta não foi excluída. Tente novamente ou desmarque a opção.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Também abrir mão de $username permanentemente';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Para confirmar, digite:';
 
   @override
@@ -7000,6 +6991,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'Não conseguimos concluir a exclusão da sua conta. Tente novamente.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmação final';

@@ -6858,15 +6858,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du bytte konto, så ingenting raderades. Öppna raderingen igen för kontot du vill ta bort.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Kunde inte frigöra ditt användarnamn. Ditt konto raderades inte. Försök igen eller avmarkera alternativet.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Ge även permanent upp $username';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Bekräfta genom att skriva:';
 
   @override
@@ -6942,6 +6933,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'Vi kunde inte slutföra raderingen av ditt konto. Försök igen.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Slutgiltig bekräftelse';

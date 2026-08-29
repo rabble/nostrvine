@@ -1745,6 +1745,7 @@ class ProfileRepository implements ProfileReader {
   /// valid 200 response with `found:false`. Network, timeout, non-200, and
   /// wrong-shaped responses return [DivineUsernameUnknown] so callers do not
   /// confuse "could not check" with "no name exists."
+  @override
   Future<DivineUsernameLookup> lookupUsernameByPubkey({
     required String pubkeyHex,
   }) async {
@@ -1769,23 +1770,6 @@ class ProfileRepository implements ProfileReader {
       );
       return const DivineUsernameUnknown();
     }
-  }
-
-  /// Returns the active `@divine.video` name owned by [pubkeyHex] as a
-  /// `(name, canonical)` record — `name` is the display form (for UI labels),
-  /// `canonical` is the round-trip-safe key to send back to `/release` — or
-  /// `null` if the pubkey owns none or the lookup could not be determined.
-  Future<({String name, String canonical})?> getUsernameByPubkey({
-    required String pubkeyHex,
-  }) async {
-    final lookup = await lookupUsernameByPubkey(pubkeyHex: pubkeyHex);
-    return switch (lookup) {
-      DivineUsernameFound(:final name, :final canonical) => (
-        name: name,
-        canonical: canonical,
-      ),
-      DivineUsernameNotFound() || DivineUsernameUnknown() => null,
-    };
   }
 
   /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine

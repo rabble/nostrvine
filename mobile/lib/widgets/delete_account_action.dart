@@ -21,8 +21,8 @@ const Duration _profileResolveTimeout = Duration(seconds: 3);
 /// show the type-to-confirm gate, then run the deletion.
 ///
 /// Every entry point calls this rather than rebuilding the sequence, so the
-/// confirmation gate, the opt-in username burn and the step ordering cannot
-/// drift between screens. [screenName] only labels the logs.
+/// confirmation gate, the mandatory username release and the step ordering
+/// cannot drift between screens. [screenName] only labels the logs.
 ///
 /// Returns without doing anything when no account is signed in.
 Future<void> startAccountDeletionFlow({
@@ -38,10 +38,11 @@ Future<void> startAccountDeletionFlow({
   final pubkey = authService.currentPublicKeyHex;
   if (pubkey == null || pubkey.isEmpty) return;
 
-  // Kick off the burnable-handle lookup but do not await it: the dialog opens
-  // immediately and reveals the opt-in burn toggle once this resolves, so a
-  // slow name-server call never blocks the tap.
-  final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
+  // Kick off the owned-name lookup but do not await it here: the dialog opens
+  // immediately and the future is resolved at the deletion boundary, where an
+  // undetermined result fails the deletion closed. A slow name-server call
+  // never blocks the tap.
+  final ownedUsernameLookup = ref.read(ownedDivineUsernameProvider.future);
 
   final overlay = ModalProgressOverlay.show(context);
   UserProfile? profile;
@@ -57,10 +58,10 @@ Future<void> startAccountDeletionFlow({
   if (!context.mounted) return;
 
   // The gate anchors on the shown profile identity (displayNip05) to confirm
-  // *which account* is being erased — deliberately distinct from the burn
-  // target (the owned @divine.video handle, which the burn toggle names for
-  // itself). The two can differ for an external-NIP-05 user who also owns a
-  // divine username; that divergence is intended, not a mismatch to reconcile.
+  // *which account* is being erased — deliberately distinct from the release
+  // target (the owned @divine.video handle). The two can differ for an
+  // external-NIP-05 user who also owns a divine username; that divergence is
+  // intended, not a mismatch to reconcile.
   final confirmation = DeleteAccountConfirmation(
     pubkeyHex: pubkey,
     displayName:
@@ -72,23 +73,17 @@ Future<void> startAccountDeletionFlow({
   await showDeleteAllContentWarningSheet(
     context: context,
     confirmation: confirmation,
-    ownedUsernameFuture: ownedUsernameFuture,
-    onConfirm:
-        ({
-          required bool burnUsername,
-          ({String name, String canonical})? ownedUsername,
-        }) async {
-          await executeAccountDeletion(
-            context: context,
-            deletionService: deletionService,
-            authService: authService,
-            deletionRecoveryRepository: deletionRecoveryRepository,
-            burnUsername: burnUsername,
-            ownedUsername: ownedUsername,
-            confirmedPubkey: pubkey,
-            screenName: screenName,
-          );
-          ref.invalidate(currentAccountDeletionAttemptProvider);
-        },
+    onConfirm: () async {
+      await executeAccountDeletion(
+        context: context,
+        deletionService: deletionService,
+        authService: authService,
+        deletionRecoveryRepository: deletionRecoveryRepository,
+        ownedUsernameLookup: ownedUsernameLookup,
+        confirmedPubkey: pubkey,
+        screenName: screenName,
+      );
+      ref.invalidate(currentAccountDeletionAttemptProvider);
+    },
   );
 }

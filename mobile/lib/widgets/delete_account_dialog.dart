@@ -20,6 +20,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/widgets/delete_account_confirmation.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Ask whether to remove this account's keys from the device only.
@@ -45,24 +46,17 @@ Future<bool> showRemoveKeysWarningSheet(BuildContext context) async {
 /// DELETE).
 ///
 /// This sheet ensures they understand the dangerous/irreversible nature of
-/// account deletion. It opens immediately; [ownedUsernameFuture] is
-/// resolved in the background and the opt-in "burn my username" toggle is
-/// revealed only once it completes with a non-null handle — so a slow
-/// name-server lookup never blocks the tap or lets a second tap stack a
-/// duplicate sheet. [onConfirm] receives the handle the sheet actually
-/// displayed, so a burn only ever targets the name the user consented to.
+/// account deletion. It opens immediately and never blocks on a name-server
+/// lookup: name ownership is resolved at the deletion boundary (in
+/// [executeAccountDeletion]) once [onConfirm] runs, so a slow or failed lookup
+/// fails the deletion closed rather than silently skipping the release.
 ///
 /// Dismissing the sheet cancels: nothing is deleted until the token is typed
 /// and the destructive button is tapped.
 Future<void> showDeleteAllContentWarningSheet({
   required BuildContext context,
   required DeleteAccountConfirmation confirmation,
-  required void Function({
-    required bool burnUsername,
-    ({String name, String canonical})? ownedUsername,
-  })
-  onConfirm,
-  required Future<({String name, String canonical})?> ownedUsernameFuture,
+  required VoidCallback onConfirm,
 }) async {
   // The form and the pinned footer are sibling slots of the sheet rather than
   // one subtree, so the footer learns about the typed token through this
@@ -95,7 +89,6 @@ Future<void> showDeleteAllContentWarningSheet({
     buildScrollBody: (scrollController) => _DeleteAllContentForm(
       key: formKey,
       confirmation: confirmation,
-      ownedUsernameFuture: ownedUsernameFuture,
       onConfirm: onConfirm,
       canConfirm: canConfirm,
       scrollController: scrollController,
@@ -154,7 +147,6 @@ class _DeleteAllContentActions extends StatelessWidget {
 class _DeleteAllContentForm extends StatefulWidget {
   const _DeleteAllContentForm({
     required this.confirmation,
-    required this.ownedUsernameFuture,
     required this.onConfirm,
     required this.canConfirm,
     required this.scrollController,
@@ -162,12 +154,7 @@ class _DeleteAllContentForm extends StatefulWidget {
   });
 
   final DeleteAccountConfirmation confirmation;
-  final Future<({String name, String canonical})?> ownedUsernameFuture;
-  final void Function({
-    required bool burnUsername,
-    ({String name, String canonical})? ownedUsername,
-  })
-  onConfirm;
+  final void Function() onConfirm;
 
   /// Mirrors "the typed token matches" out to the pinned footer.
   final ValueNotifier<bool> canConfirm;
@@ -179,24 +166,6 @@ class _DeleteAllContentForm extends StatefulWidget {
 
 class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
   final _confirmationController = TextEditingController();
-  var _burnUsername = false;
-  ({String name, String canonical})? _ownedUsername;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(
-      widget.ownedUsernameFuture
-          .then<void>((owned) {
-            if (!mounted || owned == null) return;
-            setState(() => _ownedUsername = owned);
-          })
-          .catchError((Object _) {
-            // Lookup failed: treat as "no handle" and leave the toggle hidden,
-            // matching getUsernameByPubkey's unknown-means-no-name contract.
-          }),
-    );
-  }
 
   @override
   void dispose() {
@@ -204,7 +173,8 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
     super.dispose();
   }
 
-  /// Closes the sheet and hands the consented values to the caller.
+  /// Closes the sheet and runs the deletion; name ownership is resolved at the
+  /// deletion boundary, not here.
   ///
   /// Called by the footer through the form's key, since the two are sibling
   /// slots of the sheet.
@@ -213,16 +183,12 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
     // notifier, which only gates the button's enabled state.
     if (!widget.confirmation.matches(_confirmationController.text)) return;
     context.pop();
-    widget.onConfirm(
-      burnUsername: _burnUsername,
-      ownedUsername: _ownedUsername,
-    );
+    widget.onConfirm();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final owned = _ownedUsername;
     final c = widget.confirmation;
 
     return SingleChildScrollView(
@@ -273,24 +239,6 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
                 : TextCapitalization.characters,
             onChanged: (value) => widget.canConfirm.value = c.matches(value),
           ),
-          // Row rather than the ListTile-based DivineCheckboxTile: the sheet
-          // paints its surface with a ColoredBox, which a ListTile's ink and
-          // background cannot draw through.
-          if (owned != null)
-            DivineRowCheckbox(
-              state: _burnUsername
-                  ? DivineCheckboxState.selected
-                  : DivineCheckboxState.unselected,
-              onChanged: (value) => setState(() => _burnUsername = value),
-              label: Text(
-                l10n.deleteAccountBurnUsernameToggle(
-                  '@${owned.name}.divine.video',
-                ),
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.primaryText,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -415,8 +363,10 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 
 /// Execute the full account deletion flow:
 /// 1. Show loading indicator with progress
-/// 2. If [burnUsername], prepare a recoverable @divine.video release (needs a
-///    working signer); on failure, abort with nothing deleted (hard-block)
+/// 2. Resolve [ownedUsernameLookup]. When it finds a name, prepare a
+///    recoverable @divine.video release (needs a working signer); on failure,
+///    abort with nothing deleted (hard-block). Release is mandatory whenever
+///    the user owns a name.
 /// 3. Send NIP-62 deletion request (requires working signer)
 /// 4. Submit the deletion to the coordinator, which finalizes the username and
 ///    Keycast account; without a username, delete Keycast directly
@@ -426,14 +376,14 @@ class _DeletionProgressSheetContent extends StatelessWidget {
 /// If a later step fails after preparation, the user can restore the username.
 /// The server keeps that recovery state across app restarts and reinstalls.
 ///
-/// Aborts before any step (including the burn) when [confirmedPubkey] is set and
-/// no longer matches the signed-in account.
+/// Aborts before any step (including the release) when [confirmedPubkey] is set
+/// and no longer matches the signed-in account.
 ///
 /// [context] - BuildContext for showing sheets
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
-/// [burnUsername] - Whether the user opted in to permanently burn their handle
-/// [ownedUsername] - The active handle (display name + canonical) to burn
+/// [ownedUsernameLookup] - The eventual found / confirmed-not-found / unknown
+///   ownership result. Unknown and lookup failures abort before deletion.
 /// [confirmedPubkey] - When set, aborts before any step if the signed-in
 ///   account no longer matches, binding deletion to the confirmed account
 /// [screenName] - Name of the calling screen for logging
@@ -442,8 +392,7 @@ Future<void> executeAccountDeletion({
   required AccountDeletionService deletionService,
   required AuthService authService,
   required AccountDeletionRecoveryRepository deletionRecoveryRepository,
-  bool burnUsername = false,
-  ({String name, String canonical})? ownedUsername,
+  required Future<DivineUsernameLookup> ownedUsernameLookup,
   String? confirmedPubkey,
   String screenName = 'AccountDeletion',
 }) async {
@@ -539,13 +488,12 @@ Future<void> executeAccountDeletion({
   final localDataDeletionFailedText =
       context.l10n.deleteAccountLocalDataDeletionFailed;
   final accountChangedText = context.l10n.deleteAccountAccountChanged;
-  final burnUsernameFailedText = context.l10n.deleteAccountBurnUsernameFailed;
   final deletionUnavailableText = context.l10n.deleteAccountDeletionUnavailable;
   final reportBugText = context.l10n.supportReportBug;
   final deletionIncompleteText = context.l10n.deleteAccountDeletionIncomplete;
-  final handleLabel = ownedUsername != null
-      ? '@${ownedUsername.name}.divine.video'
-      : null;
+  final deletionNotStartedText = context.l10n.deleteAccountDeletionNotStarted;
+  // Assigned at the deletion boundary once name ownership is resolved.
+  String? handleLabel;
   final recoveryBodyText = context.l10n.accountDeletionRecoveryBody;
   final cancelAttemptBodyText = context.l10n.accountDeletionCancelAttemptBody;
   final restoreUsernameText = context.l10n.accountDeletionRestoreUsername;
@@ -673,7 +621,7 @@ Future<void> executeAccountDeletion({
 
   try {
     // Bind to the confirmed account: if the signed-in account changed since the
-    // user confirmed, abort before burning or deleting anything.
+    // user confirmed, abort before releasing the name or deleting anything.
     if (confirmedPubkey != null &&
         authService.currentPublicKeyHex != confirmedPubkey) {
       Log.warning(
@@ -720,22 +668,42 @@ Future<void> executeAccountDeletion({
     }
     if (!context.mounted) return;
 
-    // Create the durable coordinator attempt for every deletion. When the user
-    // opted to burn a username, the repository also performs the owner-auth
-    // Name Server prepare and the coordinator's verified handshake.
+    // Resolve name ownership at the deletion boundary, under the progress sheet
+    // and before any destructive step. Release is mandatory, so an undetermined
+    // lookup fails closed: deleting without releasing a name the user may own is
+    // not acceptable. A confirmed absence proceeds with no release.
+    final DivineUsernameLookup lookup;
+    try {
+      lookup = await ownedUsernameLookup;
+    } on Object catch (error) {
+      if (!context.mounted) return;
+      abortPreparation(error, deletionNotStartedText);
+      return;
+    }
+    if (!context.mounted) return;
+    final String? releaseCanonical;
+    switch (lookup) {
+      case DivineUsernameFound(:final name, :final canonical):
+        releaseCanonical = canonical;
+        handleLabel = '@$name.divine.video';
+      case DivineUsernameNotFound():
+        releaseCanonical = null;
+      case DivineUsernameUnknown():
+        abortPreparation(
+          StateError('Divine username ownership could not be determined'),
+          deletionNotStartedText,
+        );
+        return;
+    }
+
+    // Create the durable coordinator attempt for every deletion. Whenever the
+    // user owns a @divine.video name the repository also performs the owner-auth
+    // Name Server prepare and the coordinator's verified handshake — release is
+    // mandatory, so it always runs for a name-holder.
     {
-      // Opted in to burn. A missing handle means we cannot honor it, so we must
-      // NOT proceed — treated the same as a failed release (hard-block,
-      // symmetric in both directions).
       try {
-        if (burnUsername && ownedUsername == null) {
-          throw const AccountDeletionRecoveryException(
-            'Username release is unavailable',
-            stage: AccountDeletionRecoveryStage.usernamePreparation,
-          );
-        }
         final prepared = await deletionRecoveryRepository.prepare(
-          username: burnUsername ? ownedUsername!.canonical : null,
+          username: releaseCanonical,
         );
         if (prepared.status != AccountDeletionAttemptStatus.recoverable) {
           throw AccountDeletionRecoveryException(
@@ -751,29 +719,35 @@ Future<void> executeAccountDeletion({
           category: LogCategory.auth,
         );
       } on AccountDeletionRecoveryException catch (error) {
-        final message = switch (error.stage) {
-          // Ordered ahead of the unavailable arm on purpose: this is also a
-          // 503, but it is the one coordinator answer the user can act on.
-          AccountDeletionRecoveryStage.coordinatorAttempt
-              when burnUsername && error.indicatesUsernameRecoveryUnsupported =>
-            burnUsernameFailedText,
-          AccountDeletionRecoveryStage.coordinatorAttempt
-              when error.indicatesMissingCoordinatorRoute =>
-            deletionUnavailableText,
-          AccountDeletionRecoveryStage.usernamePreparation =>
-            burnUsernameFailedText,
-          _ => deletionIncompleteText,
-        };
+        // Release is mandatory, so a name-release failure fails the whole
+        // deletion closed (nothing deleted). The unavailable 503 and the
+        // missing-coordinator route both mean deletion is unavailable right now
+        // — not something a retry fixes — so both take the unavailable copy and
+        // offer the bug-report action. Once the Name Server request starts, its
+        // outcome can be ambiguous and the durable attempt may need recovery,
+        // so those stages must keep neutral guidance rather than claiming that
+        // nothing happened. The remaining pre-name-server failures can say the
+        // deletion did not start.
+        final isUnavailable =
+            error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
+            (error.indicatesUsernameRecoveryUnsupported ||
+                error.indicatesMissingCoordinatorRoute);
+        final needsNeutralRecoveryGuidance =
+            error.stage == AccountDeletionRecoveryStage.usernamePreparation ||
+            error.stage ==
+                AccountDeletionRecoveryStage.coordinatorUsernameConfirmation;
         abortPreparation(
           error,
-          message,
-          offerSupport:
-              error.stage == AccountDeletionRecoveryStage.coordinatorAttempt &&
-              error.indicatesMissingCoordinatorRoute,
+          isUnavailable
+              ? deletionUnavailableText
+              : needsNeutralRecoveryGuidance
+              ? deletionIncompleteText
+              : deletionNotStartedText,
+          offerSupport: isUnavailable,
         );
         return;
       } on Object catch (error) {
-        abortPreparation(error, deletionIncompleteText);
+        abortPreparation(error, deletionNotStartedText);
         return;
       }
     }
@@ -781,7 +755,7 @@ Future<void> executeAccountDeletion({
     final finalReadiness = await authService.checkAccountDeletionReadiness();
     if (finalReadiness == AccountDeletionReadiness.requiresReauthentication) {
       Log.warning(
-        'Deletion blocked after username burn step: session cannot authorize '
+        'Deletion blocked after username release step: session cannot authorize '
         'server-side account deletion',
         name: screenName,
         category: LogCategory.auth,

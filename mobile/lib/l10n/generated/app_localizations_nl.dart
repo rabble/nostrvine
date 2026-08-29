@@ -6893,15 +6893,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je bent van account gewisseld, dus er is niets verwijderd. Open de verwijdering opnieuw voor het account dat je wilt verwijderen.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Je gebruikersnaam kon niet worden vrijgegeven. Je account is niet verwijderd. Probeer het opnieuw of vink de optie uit.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return 'Geef $username ook definitief op';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Typ ter bevestiging:';
 
   @override
@@ -6979,6 +6970,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Laatste bevestiging';

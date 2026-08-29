@@ -6862,15 +6862,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ نے اکاؤنٹ تبدیل کر لیا، اس لیے کچھ حذف نہیں ہوا۔ جس اکاؤنٹ کو ہٹانا چاہتے ہیں اس کے لیے حذف کا آپشن دوبارہ کھولیں۔';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'آپ کا صارف نام نہیں چھوڑا جا سکا۔ آپ کا اکاؤنٹ حذف نہیں ہوا۔ دوبارہ کوشش کریں، یا آپشن ان چیک کریں۔';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '$username بھی مستقل طور پر چھوڑ دیں';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'تصدیق کے لیے لکھیں:';
 
   @override
@@ -6946,6 +6937,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'ہم آپ کا اکاؤنٹ مکمل حذف نہیں کر سکے۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ آخری تصدیق';

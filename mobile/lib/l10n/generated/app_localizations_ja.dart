@@ -6505,15 +6505,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'アカウントが切り替わったから、何も削除されていないよ。削除したいアカウントで削除画面を開き直してね。';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'ユーザー名を解放できなかったよ。アカウントは削除されていないよ。もう一回試すか、オプションのチェックを外してね。';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '$username も完全に手放す';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => '確認のため、次を入力してね:';
 
   @override
@@ -6587,6 +6578,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete => 'アカウントの削除を完了できなかったよ。もう一回試してね。';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 最終確認';

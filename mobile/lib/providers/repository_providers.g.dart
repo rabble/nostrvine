@@ -404,9 +404,9 @@ String _$profileRepositoryHash() => r'92a8519f8d195b5c33727803820aa82e94a8b0b2';
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
 /// Everything reachable through [ProfileReader] is signer-free: it either
-/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// reads Drift directly or performs a network read without signing. Fresh
+/// profile reads may fall back to relays, but none requires relay readiness.
+/// Gating these reads behind `nostrReady` left
 /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
 /// window at cold start (#5863), and what replaced the signed-in user's own
 /// name and avatar with a generated placeholder for that same window (#6423).
@@ -418,8 +418,8 @@ String _$profileRepositoryHash() => r'92a8519f8d195b5c33727803820aa82e94a8b0b2';
 /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
 /// this provider cannot publish by accident. Everything that signs must keep
 /// using [profileRepository] — today that is
-/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-/// action and `profileSaveRetryService`.
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+/// `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
 /// relay-backed [profileRepository].
@@ -431,9 +431,9 @@ final profileReadRepositoryProvider = ProfileReadRepositoryProvider._();
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
 /// Everything reachable through [ProfileReader] is signer-free: it either
-/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// reads Drift directly or performs a network read without signing. Fresh
+/// profile reads may fall back to relays, but none requires relay readiness.
+/// Gating these reads behind `nostrReady` left
 /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
 /// window at cold start (#5863), and what replaced the signed-in user's own
 /// name and avatar with a generated placeholder for that same window (#6423).
@@ -445,8 +445,8 @@ final profileReadRepositoryProvider = ProfileReadRepositoryProvider._();
 /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
 /// this provider cannot publish by accident. Everything that signs must keep
 /// using [profileRepository] — today that is
-/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-/// action and `profileSaveRetryService`.
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+/// `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
 /// relay-backed [profileRepository].
@@ -458,9 +458,9 @@ final class ProfileReadRepositoryProvider
   /// available) rather than the full `nostrReady` relay-connect settle.
   ///
   /// Everything reachable through [ProfileReader] is signer-free: it either
-  /// reads Drift directly or falls back to a PUBLIC funnelcake REST call
-  /// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
-  /// relay-ready client, so gating these reads behind `nostrReady` is what left
+  /// reads Drift directly or performs a network read without signing. Fresh
+  /// profile reads may fall back to relays, but none requires relay readiness.
+  /// Gating these reads behind `nostrReady` left
   /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
   /// window at cold start (#5863), and what replaced the signed-in user's own
   /// name and avatar with a generated placeholder for that same window (#6423).
@@ -472,8 +472,8 @@ final class ProfileReadRepositoryProvider
   /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
   /// this provider cannot publish by accident. Everything that signs must keep
   /// using [profileRepository] — today that is
-  /// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
-  /// action and `profileSaveRetryService`.
+  /// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, and
+  /// `profileSaveRetryService`.
   ///
   /// It does NOT warm the Kind-0 cache — that side effect belongs to the
   /// relay-backed [profileRepository].

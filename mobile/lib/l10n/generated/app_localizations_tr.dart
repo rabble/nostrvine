@@ -6788,15 +6788,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesap değiştirdin, bu yüzden hiçbir şey silinmedi. Kaldırmak istediğin hesap için silme ekranını yeniden aç.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Kullanıcı adın serbest bırakılamadı. Hesabın silinmedi. Tekrar dene ya da seçeneğin işaretini kaldır.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '$username adından da kalıcı olarak vazgeç';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt => 'Onaylamak için yaz:';
 
   @override
@@ -6872,6 +6863,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';

@@ -6951,15 +6951,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du hast das Konto gewechselt, also wurde nichts gelöscht. Öffne das Löschen erneut für das Konto, das du entfernen willst.';
 
   @override
-  String get deleteAccountBurnUsernameFailed =>
-      'Dein Benutzername konnte nicht freigegeben werden. Dein Konto wurde nicht gelöscht. Versuch es erneut oder deaktiviere die Option.';
-
-  @override
-  String deleteAccountBurnUsernameToggle(String username) {
-    return '$username auch endgültig aufgeben';
-  }
-
-  @override
   String get deleteAccountConfirmDeletePrompt =>
       'Gib zur Bestätigung Folgendes ein:';
 
@@ -7036,6 +7027,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteAccountDeletionIncomplete =>
       'Wir konnten das Löschen deines Kontos nicht abschließen. Versuch es erneut.';
+
+  @override
+  String get deleteAccountDeletionNotStarted =>
+      'We couldn\'t start deleting your account. Nothing was deleted. Try again.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Letzte Bestätigung';
