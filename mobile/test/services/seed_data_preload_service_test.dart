@@ -343,11 +343,10 @@ void main() {
     });
 
     test(
-      'a seeded event is not restored once relay rows keep the count non-zero',
+      'seeded events survive while relay rows keep the count non-zero',
       () async {
-        // The reload is gated on an empty database, so a destroyed seed can
-        // never come back on a device that has fetched anything at all. This
-        // is what made the original loss permanent rather than self-healing.
+        // Reloading is gated on an empty database, so an unexpired relay row
+        // prevents a destroyed seed from being restored on an active install.
         _mockSeedAsset(
           _encodeBundle(events: [seedEvent('2'.padLeft(64, '0'))]),
         );
