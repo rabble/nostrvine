@@ -1146,13 +1146,6 @@
     "reportReasonAiGenerated": "AI 생성 콘텐츠",
     "reportReasonOther": "기타 정책 위반",
     "reportFailed": "콘텐츠 신고에 실패했어요. 다시 시도해보세요.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "신고를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해보세요.",
     "reportReceivedTitle": "신고 접수 완료",
     "reportReceivedThankYou": "Divine을 안전하게 지키는 데 도움을 주셔서 감사해요.",
@@ -1265,22 +1258,8 @@
     "keyManagementImportConfirm": "가져오기",
     "keyManagementImportSuccess": "키를 성공적으로 가져왔어요!",
     "keyManagementImportFailed": "키 가져오기에 실패했어요. 다시 시도해보세요.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "개인 키를 클립보드에 복사했어요!\n\n안전한 곳에 보관하세요.",
     "keyManagementExportFailed": "키 내보내기에 실패했어요. 다시 시도해보세요.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "카메라 롤에 저장했어요",
     "saveOriginalShare": "공유",
     "saveOriginalDone": "완료",
@@ -1319,13 +1298,6 @@
     },
     "soundUnableToPreview": "사운드를 미리 들을 수 없어요 - 오디오가 없어요",
     "soundPreviewFailed": "미리 듣기를 재생하지 못했어요. 다시 시도해보세요.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "원본 보기",
     "soundCloseTooltip": "닫기",
     "exploreNotExploreRoute": "둘러보기 경로가 아니에요",
@@ -1451,13 +1423,6 @@
     "categoryVlogging": "브이로깅",
     "categoryWrestling": "레슬링",
     "blossomFailedToSaveSettings": "설정 저장에 실패했어요. 다시 시도해보세요.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "크로스포스트 설정 업데이트에 실패했어요",
     "cameraAgeRestriction": "콘텐츠를 만들려면 16세 이상이어야 해요",
     "categoriesCouldNotLoadCategories": "카테고리를 불러올 수 없었어요",
@@ -1467,13 +1432,6 @@
     "commonDelete": "삭제",
     "commonRetry": "다시 시도",
     "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요. 다시 시도해보세요.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "동영상 {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3900,7 +3858,6 @@
     "metadataSoundsSharedSoundSemantics": "사운드: {creatorName}님의 {soundName}. 탭하면 세부 정보를 볼 수 있어요.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "사운드를 불러오지 못했어요. 다시 시도해보세요.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "이 사운드를 찾을 수 없어요",
     "soundDetailNotFoundTitle": "사운드를 찾을 수 없어요",
     "videoFeedLoopCountLabel": "🔁 루프 {count}회",

@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Impossibile condividere il profilo. Riprova.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Copia chiave pubblica (npub)",
     "profileGetEmbedCode": "Ottieni codice embed",
     "profilePublicKeyCopied": "Chiave pubblica copiata negli appunti",
@@ -466,13 +459,6 @@
     "exploreMyLists": "Le mie liste",
     "exploreSubscribedLists": "Liste iscritte",
     "exploreErrorLoadingLists": "Errore nel caricamento delle liste. Riprova.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, one{1 nuovo video} other{{count} nuovi video}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -935,13 +921,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Query fallita. Riprova.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "Connesso a {count} relay!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -952,13 +931,6 @@
     },
     "relayDiagnosticFailedToConnect": "Impossibile connettersi ad alcun relay",
     "relayDiagnosticConnectionRetryFailed": "Nuovo tentativo di connessione fallito. Riprova.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Connesso e autenticato",
     "relayDiagnosticConnectedOnly": "Connesso",
     "relayDiagnosticNotConnected": "Non connesso",
@@ -1646,13 +1618,6 @@
     "reportReasonAiGenerated": "Contenuto generato da IA",
     "reportReasonOther": "Altra violazione delle policy",
     "reportFailed": "Impossibile segnalare il contenuto. Riprova.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Impossibile inviare la segnalazione. Controlla la connessione e riprova.",
     "reportReceivedTitle": "Segnalazione ricevuta",
     "reportReceivedThankYou": "Grazie per aiutarci a mantenere Divine sicuro.",
@@ -1765,22 +1730,8 @@
     "keyManagementImportConfirm": "Importa",
     "keyManagementImportSuccess": "Chiave importata con successo!",
     "keyManagementImportFailed": "Impossibile importare la chiave. Riprova.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Chiave privata copiata negli appunti!\n\nConservala in un posto sicuro.",
     "keyManagementExportFailed": "Impossibile esportare la chiave. Riprova.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Salvato nel rullino",
     "saveOriginalShare": "Condividi",
     "saveOriginalDone": "Fatto",
@@ -1819,13 +1770,6 @@
     },
     "soundUnableToPreview": "Impossibile ascoltare l'anteprima - nessun audio disponibile",
     "soundPreviewFailed": "Impossibile riprodurre l'anteprima. Riprova.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Vedi sorgente",
     "soundCloseTooltip": "Chiudi",
     "exploreNotExploreRoute": "Non è un percorso di esplorazione",
@@ -1951,13 +1895,6 @@
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
     "blossomFailedToSaveSettings": "Impossibile salvare le impostazioni. Riprova.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Impossibile aggiornare l'impostazione di crosspost",
     "cameraAgeRestriction": "Devi avere almeno 16 anni per creare contenuti",
     "categoriesCouldNotLoadCategories": "Impossibile caricare le categorie",
@@ -1967,13 +1904,6 @@
     "commonDelete": "Elimina",
     "commonRetry": "Riprova",
     "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento. Riprova.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "A seconda delle regole di dove vivi, potresti tornare e chiedere un account tuo. In quel caso, se hai tra i 13 e i 15 anni, servirà il consenso di un genitore o tutore.",
     "minorAccountReviewParentConsentPauseNote": "È una pausa mentre il team di assistenza Divine esamina il video. Se viene approvato, ti guideranno nella configurazione del nuovo account.",
     "minorAccountReviewUnder13WhyTitle": "Ecco perché",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "Audio: {soundName} di {creatorName}. Tocca per vedere i dettagli.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Impossibile caricare l'audio. Riprova.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Impossibile trovare questo audio",
     "soundDetailNotFoundTitle": "Audio non trovato",
     "videoFeedLoopCountLabel": "🔁 {count} loop",

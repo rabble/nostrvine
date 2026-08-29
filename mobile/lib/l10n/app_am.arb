@@ -225,13 +225,6 @@
         }
     },
     "profileShareFailed": "መገለጫን ማጋራት አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "የህዝብ ቁልፍ ቅዳ (npub)",
     "profileGetEmbedCode": "የተከተተ ኮድ ያግኙ",
     "profilePublicKeyCopied": "የህዝብ ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል።",
@@ -551,13 +544,6 @@
     "exploreMyLists": "የእኔ ዝርዝሮች",
     "exploreSubscribedLists": "የተመዘገቡ ዝርዝሮች",
     "exploreErrorLoadingLists": "ዝርዝሮችን መጫን ላይ ስህተት። እባክህ እንደገና ሞክር።",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, =1{{count} አዲስ ቪዲዮ} other{{count} አዳዲስ ቪዲዮዎች}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -1203,13 +1189,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "መጠይቁ አልተሳካም፡። እባክህ እንደገና ሞክር።",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "ከ {count} ሪሌይ(ዎች) ጋር ተገናኝቷል!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -1220,13 +1199,6 @@
     },
     "relayDiagnosticFailedToConnect": "ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።",
     "relayDiagnosticConnectionRetryFailed": "የግንኙነት ድጋሚ መሞከር አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "ተገናኝቷል እና የተረጋገጠ",
     "relayDiagnosticConnectedOnly": "ተገናኝቷል።",
     "relayDiagnosticNotConnected": "አልተገናኘም።",
@@ -2032,13 +2004,6 @@
     "reportReasonAiGenerated": "በAI የተፈጠረ ይዘት",
     "reportReasonOther": "ሌላ የፖሊሲ ጥሰት",
     "reportFailed": "ይዘትን ሪፖርት ማድረግ አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
     "reportReceivedTitle": "ሪፖርት ደርሷል",
     "reportReceivedThankYou": "Divine ደህንነትን ለመጠበቅ ስለረዱዎት እናመሰግናለን።",
@@ -2160,22 +2125,8 @@
     "keyManagementImportConfirm": "አስመጣ",
     "keyManagementImportSuccess": "ቁልፍ በተሳካ ሁኔታ ገብቷል!",
     "keyManagementImportFailed": "ቁልፍ ማስመጣት አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።",
     "keyManagementExportFailed": "ቁልፉን ወደ ውጭ መላክ አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "ወደ ካሜራ ጥቅል ተቀምጧል",
     "saveOriginalShare": "አጋራ",
     "saveOriginalDone": "ተከናውኗል",
@@ -2232,13 +2183,6 @@
     },
     "soundUnableToPreview": "ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።",
     "soundPreviewFailed": "ቅድመ እይታን ማጫወት አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "ምንጭ ይመልከቱ",
     "soundCloseTooltip": "ገጠመ",
     "exploreNotExploreRoute": "የአሰሳ መንገድ አይደለም።",
@@ -2513,13 +2457,6 @@
         }
     },
     "discoverListsFailedToUpdateSubscription": "የደንበኝነት ምዝገባን ማዘመን አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "discoverListsTitle": "ዝርዝሮችን ያግኙ",
     "discoverListsFailedToLoad": "ዝርዝሮችን መጫን አልተሳካም",
     "discoverListsLoading": "የህዝብ ዝርዝሮችን በመፈለግ ላይ...",
@@ -2770,13 +2707,6 @@
     "userNotAvailableBody": "ይህ መለያ አሁን አይገኝም።",
     "classicVinersTitle": "OG Viners",
     "blossomFailedToSaveSettings": "ቅንብሮችን ማስቀመጥ አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blossomValidServerUrl": "እባክዎ ትክክለኛ የአገልጋይ URL ያስገቡ (ለምሳሌ፦ https://blossom.band)",
     "blossomSettingsSaved": "የBlossom ቅንብሮች ተቀምጠዋል",
     "blossomSaveTooltip": "አስቀምጥ",
@@ -4522,7 +4452,6 @@
     "metadataSoundsSharedSoundSemantics": "ድምጽ፡ {soundName} በ{creatorName}። ዝርዝሮችን ለማየት መታ ያድርጉ።",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "ድምጽ መጫን አልተሳካም። እባክህ እንደገና ሞክር።",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "ይህ ድምጽ ሊገኝ አልቻለም",
     "soundDetailNotFoundTitle": "ድምጽ አልተገኘም",
     "videoFeedLoopCountLabel": "🔁 {count} ሉፖች",

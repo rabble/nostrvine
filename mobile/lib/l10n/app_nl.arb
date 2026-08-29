@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Profiel delen mislukt. Probeer het opnieuw.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Publieke sleutel kopiëren (npub)",
     "profileGetEmbedCode": "Embedcode ophalen",
     "profilePublicKeyCopied": "Publieke sleutel gekopieerd naar klembord",
@@ -466,13 +459,6 @@
     "exploreMyLists": "Mijn lijsten",
     "exploreSubscribedLists": "Gevolgde lijsten",
     "exploreErrorLoadingLists": "Fout bij laden van lijsten. Probeer het opnieuw.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, one{1 nieuwe video} other{{count} nieuwe video''s}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -935,13 +921,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Query mislukt. Probeer het opnieuw.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "Verbonden met {count} relay(s)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -952,13 +931,6 @@
     },
     "relayDiagnosticFailedToConnect": "Verbinden met relays mislukt",
     "relayDiagnosticConnectionRetryFailed": "Verbinding opnieuw proberen mislukt. Probeer het opnieuw.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Verbonden & geauthenticeerd",
     "relayDiagnosticConnectedOnly": "Verbonden",
     "relayDiagnosticNotConnected": "Niet verbonden",
@@ -1646,13 +1618,6 @@
     "reportReasonAiGenerated": "AI-gegenereerde inhoud",
     "reportReasonOther": "Andere beleidsschending",
     "reportFailed": "Inhoud melden mislukt. Probeer het opnieuw.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Kan je melding niet versturen. Controleer je verbinding en probeer het opnieuw.",
     "reportReceivedTitle": "Melding ontvangen",
     "reportReceivedThankYou": "Bedankt dat je helpt Divine veilig te houden.",
@@ -1765,22 +1730,8 @@
     "keyManagementImportConfirm": "Importeren",
     "keyManagementImportSuccess": "Sleutel succesvol geïmporteerd!",
     "keyManagementImportFailed": "Sleutel importeren mislukt. Probeer het opnieuw.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Privésleutel gekopieerd naar klembord!\n\nBewaar hem ergens veilig.",
     "keyManagementExportFailed": "Sleutel exporteren mislukt. Probeer het opnieuw.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Opgeslagen in camerarol",
     "saveOriginalShare": "Delen",
     "saveOriginalDone": "Klaar",
@@ -1819,13 +1770,6 @@
     },
     "soundUnableToPreview": "Geluid voorbeluisteren lukt niet — geen audio beschikbaar",
     "soundPreviewFailed": "Voorbeluistering afspelen mislukt. Probeer het opnieuw.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Bron bekijken",
     "soundCloseTooltip": "Sluiten",
     "exploreNotExploreRoute": "Geen explore-route",
@@ -1951,13 +1895,6 @@
     "categoryVlogging": "Vloggen",
     "categoryWrestling": "Worstelen",
     "blossomFailedToSaveSettings": "Instellingen opslaan mislukt. Probeer het opnieuw.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Crosspost-instelling bijwerken mislukt",
     "cameraAgeRestriction": "Je moet 16 jaar of ouder zijn om content te maken",
     "categoriesCouldNotLoadCategories": "Categorieën konden niet worden geladen",
@@ -1967,13 +1904,6 @@
     "commonDelete": "Verwijderen",
     "commonRetry": "Opnieuw proberen",
     "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt. Probeer het opnieuw.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Afhankelijk van de regels waar je woont kun je dan misschien terugkomen en een eigen account aanvragen. Ben je dan tussen de 13 en 15, dan heb je toestemming van een ouder of voogd nodig.",
     "minorAccountReviewParentConsentPauseNote": "Dit is een pauze terwijl het Divine-supportteam de video bekijkt. Als hij wordt goedgekeurd, helpen ze je met het opzetten van het nieuwe account.",
     "minorAccountReviewUnder13WhyTitle": "Dit is waarom",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "Geluid: {soundName} van {creatorName}. Tik om details te bekijken.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Geluid laden mislukt. Probeer het opnieuw.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Dit geluid kon niet worden gevonden",
     "soundDetailNotFoundTitle": "Geluid niet gevonden",
     "videoFeedLoopCountLabel": "🔁 {count} loops",

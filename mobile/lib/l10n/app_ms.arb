@@ -205,13 +205,6 @@
     }
   },
   "profileShareFailed": "Gagal berkongsi profil. Sila cuba lagi.",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "profileCopyPublicKey": "Salin kunci awam (npub)",
   "profileGetEmbedCode": "Dapatkan kod terbenam",
   "profilePublicKeyCopied": "Kunci awam disalin ke papan klip",
@@ -579,13 +572,6 @@
   "exploreMyLists": "Senarai Saya",
   "exploreSubscribedLists": "Senarai Langganan",
   "exploreErrorLoadingLists": "Ralat memuatkan senarai. Sila cuba lagi.",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreNewVideosCount": "{count, plural, =1{1 video baharu} other{{count} video baharu}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1369,13 +1355,6 @@
     }
   },
   "relayDiagnosticQueryFailed": "Pertanyaan gagal. Sila cuba lagi.",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relayDiagnosticConnectedToRelays": "Bersambung ke {count} relay!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1386,13 +1365,6 @@
   },
   "relayDiagnosticFailedToConnect": "Gagal bersambung ke mana-mana relay",
   "relayDiagnosticConnectionRetryFailed": "Cubaan semula sambungan gagal. Sila cuba lagi.",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relayDiagnosticConnectedAuthenticated": "Bersambung & Disahkan",
   "relayDiagnosticConnectedOnly": "Bersambung",
   "relayDiagnosticNotConnected": "Tidak bersambung",
@@ -2414,13 +2386,6 @@
   "reportReasonOther": "Pelanggaran Dasar Lain",
   "reportReasonOtherSubtitle": "Pelanggaran yang tidak disenaraikan di atas",
   "reportFailed": "Gagal melaporkan kandungan. Sila cuba lagi.",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportNotSent": "Laporan anda tidak dapat dihantar. Semak sambungan anda dan cuba lagi.",
   "reportReceivedTitle": "Laporan Diterima",
   "reportReceivedThankYou": "Terima kasih kerana membantu memastikan Divine selamat.",
@@ -2557,22 +2522,8 @@
   "keyManagementImportConfirm": "Import",
   "keyManagementImportSuccess": "Kunci berjaya diimport!",
   "keyManagementImportFailed": "Gagal mengimport kunci. Sila cuba lagi.",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "keyManagementExportSuccess": "Kunci peribadi disalin ke papan klip!\n\nSimpannya di tempat yang selamat.",
   "keyManagementExportFailed": "Gagal mengeksport kunci. Sila cuba lagi.",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "keyManagementYourPublicKeyLabel": "Kunci awam anda (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2641,13 +2592,6 @@
   },
   "soundUnableToPreview": "Tidak dapat pratonton bunyi - tiada audio tersedia",
   "soundPreviewFailed": "Gagal memainkan pratonton. Sila cuba lagi.",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "soundViewSource": "Lihat sumber",
   "soundCloseTooltip": "Tutup",
   "exploreNotExploreRoute": "Bukan laluan terokai",
@@ -3242,13 +3186,6 @@
     }
   },
   "discoverListsFailedToUpdateSubscription": "Gagal mengemas kini langganan. Sila cuba lagi.",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsTitle": "Terokai Senarai",
   "discoverListsFailedToLoad": "Gagal memuatkan senarai",
   "discoverListsLoading": "Menemui senarai awam...",
@@ -3936,13 +3873,6 @@
     }
   },
   "soundDetailLoadError": "Gagal memuatkan bunyi. Sila cuba lagi.",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "soundDetailNotFoundMessage": "Bunyi ini tidak dapat ditemui",
   "soundDetailNotFoundTitle": "Bunyi Tidak Ditemui",
   "videoFeedLoopCountLabel": "🔁 {count} loop",
@@ -4076,13 +4006,6 @@
   "userNotAvailableBody": "Akaun ini tidak tersedia sekarang.",
   "classicVinersTitle": "OG Viners",
   "blossomFailedToSaveSettings": "Gagal menyimpan tetapan. Sila cuba lagi.",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "blossomValidServerUrl": "Sila masukkan URL pelayan yang sah (cth. https://blossom.band)",
   "blossomSettingsSaved": "Tetapan Blossom disimpan",
   "blossomSaveTooltip": "Simpan",

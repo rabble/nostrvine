@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Gagal membagikan profil. Silakan coba lagi.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Salin kunci publik (npub)",
     "profileGetEmbedCode": "Dapatkan kode sematan",
     "profilePublicKeyCopied": "Kunci publik disalin ke clipboard",
@@ -466,13 +459,6 @@
     "exploreMyLists": "Daftarku",
     "exploreSubscribedLists": "Daftar yang Dilanggan",
     "exploreErrorLoadingLists": "Gagal memuat daftar. Silakan coba lagi.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, other{{count} video baru}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -932,13 +918,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Query gagal. Silakan coba lagi.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "Terhubung ke {count} relay!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -949,13 +928,6 @@
     },
     "relayDiagnosticFailedToConnect": "Gagal terhubung ke relay mana pun",
     "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal. Silakan coba lagi.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Terhubung & Terautentikasi",
     "relayDiagnosticConnectedOnly": "Terhubung",
     "relayDiagnosticNotConnected": "Tidak terhubung",
@@ -1643,13 +1615,6 @@
     "reportReasonAiGenerated": "Konten Dihasilkan AI",
     "reportReasonOther": "Pelanggaran Kebijakan Lainnya",
     "reportFailed": "Gagal melaporkan konten. Silakan coba lagi.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Laporanmu tidak terkirim. Periksa koneksimu dan coba lagi.",
     "reportReceivedTitle": "Laporan Diterima",
     "reportReceivedThankYou": "Terima kasih sudah membantu menjaga Divine tetap aman.",
@@ -1762,22 +1727,8 @@
     "keyManagementImportConfirm": "Impor",
     "keyManagementImportSuccess": "Kunci berhasil diimpor!",
     "keyManagementImportFailed": "Gagal mengimpor kunci. Silakan coba lagi.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Kunci privat disalin ke clipboard!\n\nSimpan di tempat yang aman.",
     "keyManagementExportFailed": "Gagal mengekspor kunci. Silakan coba lagi.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Disimpan ke Camera Roll",
     "saveOriginalShare": "Bagikan",
     "saveOriginalDone": "Selesai",
@@ -1816,13 +1767,6 @@
     },
     "soundUnableToPreview": "Tidak bisa pratinjau suara - tidak ada audio tersedia",
     "soundPreviewFailed": "Gagal memutar pratinjau. Silakan coba lagi.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Lihat sumber",
     "soundCloseTooltip": "Tutup",
     "exploreNotExploreRoute": "Bukan rute jelajah",
@@ -1948,13 +1892,6 @@
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Gulat",
     "blossomFailedToSaveSettings": "Gagal menyimpan pengaturan. Silakan coba lagi.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Gagal memperbarui pengaturan crosspost",
     "cameraAgeRestriction": "Kamu harus berusia 16 tahun atau lebih untuk membuat konten",
     "categoriesCouldNotLoadCategories": "Tidak dapat memuat kategori",
@@ -1964,13 +1901,6 @@
     "commonDelete": "Hapus",
     "commonRetry": "Coba lagi",
     "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan. Silakan coba lagi.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Tergantung aturan di tempat tinggalmu, kamu mungkin bisa kembali dan mengajukan akun sendiri. Kalau saat itu usiamu 13 sampai 15, kamu butuh izin dari orang tua atau wali.",
     "minorAccountReviewParentConsentPauseNote": "Ini jeda sementara tim dukungan Divine meninjau videonya. Kalau disetujui, mereka akan memandu kamu menyiapkan akun baru.",
     "minorAccountReviewUnder13WhyTitle": "Ini alasannya",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "Suara: {soundName} oleh {creatorName}. Ketuk untuk melihat detail.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Gagal memuat suara. Silakan coba lagi.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Suara ini tidak dapat ditemukan",
     "soundDetailNotFoundTitle": "Suara Tidak Ditemukan",
     "videoFeedLoopCountLabel": "🔁 {count} loop",

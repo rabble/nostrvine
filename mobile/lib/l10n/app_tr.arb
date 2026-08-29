@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Profil paylaşılamadı. Lütfen tekrar dene.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Açık anahtarı (npub) kopyala",
     "profileGetEmbedCode": "Gömme kodunu al",
     "profilePublicKeyCopied": "Açık anahtar panoya kopyalandı",
@@ -466,13 +459,6 @@
     "exploreMyLists": "Listelerim",
     "exploreSubscribedLists": "Abone Olunan Listeler",
     "exploreErrorLoadingLists": "Listeler yüklenirken hata. Lütfen tekrar dene.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, one{1 yeni video} other{{count} yeni video}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -932,13 +918,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Sorgu başarısız. Lütfen tekrar dene.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "{count} röleye bağlandı!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -949,13 +928,6 @@
     },
     "relayDiagnosticFailedToConnect": "Hiçbir röleye bağlanılamadı",
     "relayDiagnosticConnectionRetryFailed": "Bağlantı yeniden denemesi başarısız. Lütfen tekrar dene.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Bağlı ve Kimlik Doğrulandı",
     "relayDiagnosticConnectedOnly": "Bağlı",
     "relayDiagnosticNotConnected": "Bağlı değil",
@@ -1643,13 +1615,6 @@
     "reportReasonAiGenerated": "Yapay Zeka Üretimi İçerik",
     "reportReasonOther": "Diğer Politika İhlali",
     "reportFailed": "İçerik bildirilemedi. Lütfen tekrar dene.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Bildirimin gönderilemedi. Bağlantını kontrol et ve tekrar dene.",
     "reportReceivedTitle": "Bildirim Alındı",
     "reportReceivedThankYou": "Divine'ı güvenli tutmaya yardımcı olduğun için teşekkürler.",
@@ -1762,22 +1727,8 @@
     "keyManagementImportConfirm": "İçe Aktar",
     "keyManagementImportSuccess": "Anahtar başarıyla içe aktarıldı!",
     "keyManagementImportFailed": "Anahtar içe aktarılamadı. Lütfen tekrar dene.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Özel anahtar panoya kopyalandı!\n\nGüvenli bir yerde sakla.",
     "keyManagementExportFailed": "Anahtar dışa aktarılamadı. Lütfen tekrar dene.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Kamera Rulosuna Kaydedildi",
     "saveOriginalShare": "Paylaş",
     "saveOriginalDone": "Bitti",
@@ -1816,13 +1767,6 @@
     },
     "soundUnableToPreview": "Ses önizlenemiyor - ses mevcut değil",
     "soundPreviewFailed": "Önizleme oynatılamadı. Lütfen tekrar dene.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Kaynağı gör",
     "soundCloseTooltip": "Kapat",
     "exploreNotExploreRoute": "Keşif rotası değil",
@@ -1948,13 +1892,6 @@
     "categoryVlogging": "Vlog",
     "categoryWrestling": "Güreş",
     "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi. Lütfen tekrar dene.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Çapraz gönderi ayarı güncellenemedi",
     "cameraAgeRestriction": "İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın",
     "categoriesCouldNotLoadCategories": "Kategoriler yüklenemedi",
@@ -1964,13 +1901,6 @@
     "commonDelete": "Sil",
     "commonRetry": "Tekrar dene",
     "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi. Lütfen tekrar dene.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Yaşadığın yerdeki kurallara bağlı olarak geri gelip kendi hesabın için başvurabilirsin. O durumda 13-15 yaş arasındaysan bir ebeveyn veya vasinin onayı gerekir.",
     "minorAccountReviewParentConsentPauseNote": "Bu, Divine destek ekibi videoyu incelerken verilen bir mola. Onaylanırsa, yeni hesabı kurma sürecinde sana yol gösterecekler.",
     "minorAccountReviewUnder13WhyTitle": "Nedeni şu",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "Ses: {creatorName} tarafından {soundName}. Ayrıntıları görmek için dokun.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Ses yüklenemedi. Lütfen tekrar dene.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Bu ses bulunamadı",
     "soundDetailNotFoundTitle": "Ses Bulunamadı",
     "videoFeedLoopCountLabel": "🔁 {count} döngü",

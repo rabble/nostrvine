@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Kunde inte dela profil. Försök igen.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Kopiera publik nyckel (npub)",
     "profileGetEmbedCode": "Hämta inbäddningskod",
     "profilePublicKeyCopied": "Publik nyckel kopierad till urklipp",
@@ -466,13 +459,6 @@
     "exploreMyLists": "Mina listor",
     "exploreSubscribedLists": "Prenumererade listor",
     "exploreErrorLoadingLists": "Fel vid inläsning av listor. Försök igen.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, one{1 ny video} other{{count} nya videor}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -935,13 +921,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Förfrågan misslyckades. Försök igen.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "Ansluten till {count} rel(er)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -952,13 +931,6 @@
     },
     "relayDiagnosticFailedToConnect": "Kunde inte ansluta till några reler",
     "relayDiagnosticConnectionRetryFailed": "Förnyat anslutningsförsök misslyckades. Försök igen.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Ansluten och autentiserad",
     "relayDiagnosticConnectedOnly": "Ansluten",
     "relayDiagnosticNotConnected": "Inte ansluten",
@@ -1646,13 +1618,6 @@
     "reportReasonAiGenerated": "AI-genererat innehåll",
     "reportReasonOther": "Annat policybrott",
     "reportFailed": "Kunde inte rapportera innehåll. Försök igen.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Kunde inte skicka din anmälan. Kontrollera din anslutning och försök igen.",
     "reportReceivedTitle": "Rapport mottagen",
     "reportReceivedThankYou": "Tack för att du hjälper till att hålla Divine säkert.",
@@ -1765,22 +1730,8 @@
     "keyManagementImportConfirm": "Importera",
     "keyManagementImportSuccess": "Nyckeln importerades!",
     "keyManagementImportFailed": "Kunde inte importera nyckeln. Försök igen.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Privat nyckel kopierad till urklipp!\n\nFörvara den på ett säkert ställe.",
     "keyManagementExportFailed": "Kunde inte exportera nyckeln. Försök igen.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Sparad i kamerarullen",
     "saveOriginalShare": "Dela",
     "saveOriginalDone": "Klar",
@@ -1819,13 +1770,6 @@
     },
     "soundUnableToPreview": "Kan inte förhandsvisa ljud – inget ljud tillgängligt",
     "soundPreviewFailed": "Kunde inte spela förhandsvisning. Försök igen.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Visa källa",
     "soundCloseTooltip": "Stäng",
     "exploreNotExploreRoute": "Inte en upptäcktsrutt",
@@ -1951,13 +1895,6 @@
     "categoryVlogging": "Vloggning",
     "categoryWrestling": "Brottning",
     "blossomFailedToSaveSettings": "Kunde inte spara inställningarna. Försök igen.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Kunde inte uppdatera crosspost-inställningen",
     "cameraAgeRestriction": "Du måste vara 16 år eller äldre för att skapa innehåll",
     "categoriesCouldNotLoadCategories": "Kunde inte ladda kategorier",
@@ -1967,13 +1904,6 @@
     "commonDelete": "Radera",
     "commonRetry": "Försök igen",
     "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen. Försök igen.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "Video {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Beroende på reglerna där du bor kan du kanske komma tillbaka och ansöka om ett eget konto. Är du då mellan 13 och 15 behöver du samtycke från en förälder eller vårdnadshavare.",
     "minorAccountReviewParentConsentPauseNote": "Det här är en paus medan Divines supportteam granskar videon. Om den godkänns guidar de dig genom att sätta upp det nya kontot.",
     "minorAccountReviewUnder13WhyTitle": "Här är varför",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "Ljud: {soundName} av {creatorName}. Tryck för att se detaljer.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Kunde inte läsa in ljud. Försök igen.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Det här ljudet kunde inte hittas",
     "soundDetailNotFoundTitle": "Ljudet hittades inte",
     "videoFeedLoopCountLabel": "🔁 {count} loopar",

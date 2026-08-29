@@ -205,13 +205,6 @@
     }
   },
   "profileShareFailed": "پروفائل شیئر نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "profileCopyPublicKey": "عوامی کلید (npub) کاپی کریں",
   "profileGetEmbedCode": "ایمبیڈ کوڈ حاصل کریں",
   "profilePublicKeyCopied": "عوامی کلید کلپ بورڈ پر کاپی ہو گئی",
@@ -579,13 +572,6 @@
   "exploreMyLists": "میری فہرستیں",
   "exploreSubscribedLists": "سبسکرائب شدہ فہرستیں",
   "exploreErrorLoadingLists": "فہرستیں لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreNewVideosCount": "{count, plural, =1{1 نئی ویڈیو} other{{count} نئی ویڈیوز}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1369,13 +1355,6 @@
     }
   },
   "relayDiagnosticQueryFailed": "استفسار ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relayDiagnosticConnectedToRelays": "{count} ریلے سے منسلک!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1386,13 +1365,6 @@
   },
   "relayDiagnosticFailedToConnect": "کسی بھی ریلے سے منسلک نہیں ہو سکا",
   "relayDiagnosticConnectionRetryFailed": "کنکشن کی دوبارہ کوشش ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relayDiagnosticConnectedAuthenticated": "منسلک اور تصدیق شدہ",
   "relayDiagnosticConnectedOnly": "منسلک",
   "relayDiagnosticNotConnected": "منسلک نہیں",
@@ -2414,13 +2386,6 @@
   "reportReasonOther": "پالیسی کی دیگر خلاف ورزی",
   "reportReasonOtherSubtitle": "اوپر درج نہیں کی گئی خلاف ورزیاں",
   "reportFailed": "مواد کی رپورٹ ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportNotSent": "آپ کی رپورٹ نہیں بھیجی جا سکی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔",
   "reportReceivedTitle": "رپورٹ موصول ہو گئی",
   "reportReceivedThankYou": "Divine کو محفوظ رکھنے میں مدد کے لیے شکریہ۔",
@@ -2557,22 +2522,8 @@
   "keyManagementImportConfirm": "درآمد کریں",
   "keyManagementImportSuccess": "کلید کامیابی سے درآمد ہو گئی!",
   "keyManagementImportFailed": "کلید درآمد نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "keyManagementExportSuccess": "نجی کلید کلپ بورڈ پر کاپی ہو گئی!\n\nاسے کسی محفوظ جگہ رکھیں۔",
   "keyManagementExportFailed": "کلید ایکسپورٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "keyManagementYourPublicKeyLabel": "آپ کی عوامی کلید (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2641,13 +2592,6 @@
   },
   "soundUnableToPreview": "آواز کا پیش منظر نہیں دکھایا جا سکتا — کوئی آڈیو دستیاب نہیں",
   "soundPreviewFailed": "پیش منظر نہیں چلایا جا سکا۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "soundViewSource": "ماخذ دیکھیں",
   "soundCloseTooltip": "بند کریں",
   "exploreNotExploreRoute": "دریافت روٹ نہیں ہے",
@@ -3242,13 +3186,6 @@
     }
   },
   "discoverListsFailedToUpdateSubscription": "سبسکرپشن اپڈیٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsTitle": "فہرستیں دریافت کریں",
   "discoverListsFailedToLoad": "فہرستیں لوڈ نہیں ہو سکیں",
   "discoverListsLoading": "عوامی فہرستیں دریافت ہو رہی ہیں...",
@@ -3936,13 +3873,6 @@
     }
   },
   "soundDetailLoadError": "آواز لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "soundDetailNotFoundMessage": "یہ آواز نہیں مل سکی",
   "soundDetailNotFoundTitle": "آواز نہیں ملی",
   "videoFeedLoopCountLabel": "🔁 {count} لوپ",
@@ -4076,13 +4006,6 @@
   "userNotAvailableBody": "یہ اکاؤنٹ ابھی دستیاب نہیں ہے۔",
   "classicVinersTitle": "OG Viners",
   "blossomFailedToSaveSettings": "ترتیبات محفوظ نہیں ہو سکیں۔ براہ کرم دوبارہ کوشش کریں۔",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "blossomValidServerUrl": "براہ کرم درست سرور URL درج کریں (مثلاً https://blossom.band)",
   "blossomSettingsSaved": "Blossom ترتیبات محفوظ ہو گئیں",
   "blossomSaveTooltip": "محفوظ کریں",

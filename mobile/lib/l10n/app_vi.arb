@@ -205,13 +205,6 @@
     }
   },
   "profileShareFailed": "Không thể chia sẻ hồ sơ. Vui lòng thử lại.",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "profileCopyPublicKey": "Sao chép khóa công khai (npub)",
   "profileGetEmbedCode": "Lấy mã nhúng",
   "profilePublicKeyCopied": "Đã sao chép khóa công khai vào khay nhớ tạm",
@@ -579,13 +572,6 @@
   "exploreMyLists": "Danh sách của tôi",
   "exploreSubscribedLists": "Danh sách đã đăng ký",
   "exploreErrorLoadingLists": "Lỗi khi tải danh sách. Vui lòng thử lại.",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreNewVideosCount": "{count, plural, =1{1 video mới} other{{count} video mới}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1369,13 +1355,6 @@
     }
   },
   "relayDiagnosticQueryFailed": "Truy vấn thất bại. Vui lòng thử lại.",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relayDiagnosticConnectedToRelays": "Đã kết nối tới {count} relay!",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1386,13 +1365,6 @@
   },
   "relayDiagnosticFailedToConnect": "Không kết nối được với relay nào",
   "relayDiagnosticConnectionRetryFailed": "Thử kết nối lại thất bại. Vui lòng thử lại.",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "relayDiagnosticConnectedAuthenticated": "Đã kết nối & xác thực",
   "relayDiagnosticConnectedOnly": "Đã kết nối",
   "relayDiagnosticNotConnected": "Chưa kết nối",
@@ -2414,13 +2386,6 @@
   "reportReasonOther": "Vi phạm chính sách khác",
   "reportReasonOtherSubtitle": "Các vi phạm không có trong danh sách trên",
   "reportFailed": "Không báo cáo được nội dung. Vui lòng thử lại.",
-  "@reportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "reportNotSent": "Không gửi được báo cáo của bạn. Kiểm tra kết nối của bạn rồi thử lại nhé.",
   "reportReceivedTitle": "Đã nhận báo cáo",
   "reportReceivedThankYou": "Cảm ơn bạn đã giúp giữ Divine an toàn.",
@@ -2557,22 +2522,8 @@
   "keyManagementImportConfirm": "Nhập",
   "keyManagementImportSuccess": "Đã nhập khóa thành công!",
   "keyManagementImportFailed": "Không nhập được khóa. Vui lòng thử lại.",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "keyManagementExportSuccess": "Đã sao chép khóa riêng tư vào khay nhớ tạm!\n\nHãy cất nó ở nơi an toàn.",
   "keyManagementExportFailed": "Không xuất được khóa. Vui lòng thử lại.",
-  "@keyManagementExportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "keyManagementYourPublicKeyLabel": "Khóa công khai của bạn (npub)",
   "@keyManagementYourPublicKeyLabel": {
     "description": "Label above the truncated npub display on the key management screen."
@@ -2641,13 +2592,6 @@
   },
   "soundUnableToPreview": "Không nghe thử được - không có audio",
   "soundPreviewFailed": "Không phát được bản nghe thử. Vui lòng thử lại.",
-  "@soundPreviewFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "soundViewSource": "Xem nguồn",
   "soundCloseTooltip": "Đóng",
   "exploreNotExploreRoute": "Không phải tuyến khám phá",
@@ -3242,13 +3186,6 @@
     }
   },
   "discoverListsFailedToUpdateSubscription": "Không cập nhật được đăng ký. Vui lòng thử lại.",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "discoverListsTitle": "Khám phá danh sách",
   "discoverListsFailedToLoad": "Không tải được danh sách",
   "discoverListsLoading": "Đang khám phá danh sách công khai...",
@@ -3936,13 +3873,6 @@
     }
   },
   "soundDetailLoadError": "Không tải được âm thanh. Vui lòng thử lại.",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "soundDetailNotFoundMessage": "Không tìm thấy âm thanh này",
   "soundDetailNotFoundTitle": "Không tìm thấy âm thanh",
   "videoFeedLoopCountLabel": "🔁 {count} loop",
@@ -4076,13 +4006,6 @@
   "userNotAvailableBody": "Tài khoản này hiện không khả dụng.",
   "classicVinersTitle": "OG Viners",
   "blossomFailedToSaveSettings": "Không lưu được cài đặt. Vui lòng thử lại.",
-  "@blossomFailedToSaveSettings": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "blossomValidServerUrl": "Vui lòng nhập URL máy chủ hợp lệ (VD: https://blossom.band)",
   "blossomSettingsSaved": "Đã lưu cài đặt Blossom",
   "blossomSaveTooltip": "Lưu",

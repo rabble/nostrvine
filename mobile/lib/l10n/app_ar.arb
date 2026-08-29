@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "تعذّرت مشاركة الملف الشخصي. يرجى المحاولة مرّة أخرى.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "نسخ المفتاح العام (npub)",
     "profileGetEmbedCode": "الحصول على كود التضمين",
     "profilePublicKeyCopied": "تم نسخ المفتاح العام إلى الحافظة",
@@ -466,13 +459,6 @@
     "exploreMyLists": "قوائمي",
     "exploreSubscribedLists": "القوائم المشترك بها",
     "exploreErrorLoadingLists": "خطأ في تحميل القوائم. يرجى المحاولة مرّة أخرى.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, zero{لا توجد فيديوهات جديدة} one{فيديو جديد واحد} two{فيديوان جديدان} few{{count} فيديوهات جديدة} many{{count} فيديو جديد} other{{count} فيديو جديد}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -932,13 +918,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "فشل الاستعلام. يرجى المحاولة مرّة أخرى.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "تم الاتصال بـ {count} محول!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -949,13 +928,6 @@
     },
     "relayDiagnosticFailedToConnect": "فشل الاتصال بأي محول",
     "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال. يرجى المحاولة مرّة أخرى.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "متصل ومُصادَق عليه",
     "relayDiagnosticConnectedOnly": "متصل",
     "relayDiagnosticNotConnected": "غير متصل",
@@ -1636,13 +1608,6 @@
     "reportReasonAiGenerated": "محتوى مُولَّد بالذكاء الاصطناعي",
     "reportReasonOther": "انتهاك آخر للسياسة",
     "reportFailed": "تعذر الإبلاغ عن المحتوى. يرجى المحاولة مرّة أخرى.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "تعذّر إرسال بلاغك. تحقق من اتصالك وحاول مرة أخرى.",
     "reportReceivedTitle": "تم استلام البلاغ",
     "reportReceivedThankYou": "شكرًا لمساعدتك في الحفاظ على سلامة Divine.",
@@ -1755,22 +1720,8 @@
     "keyManagementImportConfirm": "استيراد",
     "keyManagementImportSuccess": "تم استيراد المفتاح بنجاح!",
     "keyManagementImportFailed": "تعذر استيراد المفتاح. يرجى المحاولة مرّة أخرى.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "تم نسخ المفتاح الخاص إلى الحافظة!\n\nاحفظه في مكان آمن.",
     "keyManagementExportFailed": "تعذر تصدير المفتاح. يرجى المحاولة مرّة أخرى.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "تم الحفظ في ألبوم الكاميرا",
     "saveOriginalShare": "مشاركة",
     "saveOriginalDone": "تم",
@@ -1809,13 +1760,6 @@
     },
     "soundUnableToPreview": "تعذر معاينة الصوت - لا يوجد صوت متاح",
     "soundPreviewFailed": "تعذر تشغيل المعاينة. يرجى المحاولة مرّة أخرى.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "عرض المصدر",
     "soundCloseTooltip": "إغلاق",
     "exploreNotExploreRoute": "ليس مسار استكشاف",
@@ -1941,13 +1885,6 @@
     "categoryVlogging": "تدوين فيديو",
     "categoryWrestling": "مصارعة",
     "blossomFailedToSaveSettings": "فشل حفظ الإعدادات. يرجى المحاولة مرّة أخرى.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "فشل تحديث إعداد النشر المتقاطع",
     "cameraAgeRestriction": "يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى",
     "categoriesCouldNotLoadCategories": "تعذّر تحميل الفئات",
@@ -1957,13 +1894,6 @@
     "commonDelete": "حذف",
     "commonRetry": "إعادة المحاولة",
     "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك. يرجى المحاولة مرّة أخرى.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "فيديو {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "حسب القواعد في المكان الذي تعيش فيه، قد تتمكن من العودة وطلب حساب خاص بك. وفي تلك الحالة، إذا كان عمرك بين 13 و15، ستحتاج موافقة أحد الوالدين أو الوصي.",
     "minorAccountReviewParentConsentPauseNote": "هذه وقفة مؤقتة ريثما يراجع فريق دعم Divine الفيديو. إذا تمت الموافقة عليه، سيرشدك الفريق خلال إعداد الحساب الجديد.",
     "minorAccountReviewUnder13WhyTitle": "وإليك السبب",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "الصوت: {soundName} بواسطة {creatorName}. اضغط لعرض التفاصيل.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "فشل تحميل الصوت. يرجى المحاولة مرّة أخرى.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "تعذّر العثور على هذا الصوت",
     "soundDetailNotFoundTitle": "الصوت غير موجود",
     "videoFeedLoopCountLabel": "🔁 {count} تكرار",

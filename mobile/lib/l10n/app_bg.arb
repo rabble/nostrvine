@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Не успяхме да споделим профила. Опитай пак.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Копирай публичния ключ (npub)",
     "profileGetEmbedCode": "Вземи код за вграждане",
     "profilePublicKeyCopied": "Публичният ключ е копиран",
@@ -504,13 +497,6 @@
     "exploreMyLists": "Моите списъци",
     "exploreSubscribedLists": "Абонирани списъци",
     "exploreErrorLoadingLists": "Грешка при зареждане на списъците. Опитай пак.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, =1{1 ново видео} other{{count} нови видеа}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -1018,13 +1004,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Неуспешна заявка. Опитай пак.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "Свързани сме с {count} реле(та)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -1035,13 +1014,6 @@
     },
     "relayDiagnosticFailedToConnect": "Не успяхме да се свържем с нито едно реле",
     "relayDiagnosticConnectionRetryFailed": "Неуспешен повторен опит за свързване. Опитай пак.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Свързан и удостоверен",
     "relayDiagnosticConnectedOnly": "Свързан",
     "relayDiagnosticNotConnected": "Не е свързан",
@@ -1852,13 +1824,6 @@
     "reportReasonAiGenerated": "AI-генерирано съдържание",
     "reportReasonOther": "Друго нарушение на правилата",
     "reportFailed": "Неуспешно докладване на съдържание. Опитай пак.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Не успяхме да изпратим сигнала ти. Провери връзката си и опитай пак.",
     "reportReceivedTitle": "Докладът е получен",
     "reportReceivedThankYou": "Благодарим, че помагаш да запазим Divine безопасен.",
@@ -1971,22 +1936,8 @@
     "keyManagementImportConfirm": "Импортиране",
     "keyManagementImportSuccess": "Ключът е импортиран успешно!",
     "keyManagementImportFailed": "Неуспешно импортиране на ключ. Опитай пак.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Частният ключ е копиран в клипборда!\n\nСъхранявайте го на сигурно място.",
     "keyManagementExportFailed": "Неуспешно експортиране на ключ. Опитай пак.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Запазено в галерията",
     "saveOriginalShare": "Сподели",
     "saveOriginalDone": "Готово",
@@ -2025,13 +1976,6 @@
     },
     "soundUnableToPreview": "Не може да се визуализира звук - няма наличен звук",
     "soundPreviewFailed": "Неуспешно пускане на визуализация. Опитай пак.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Виж източника",
     "soundCloseTooltip": "Затвори",
     "exploreNotExploreRoute": "Не е маршрут за изследване",
@@ -2306,13 +2250,6 @@
         }
     },
     "discoverListsFailedToUpdateSubscription": "Неуспешно актуализиране на абонамента. Опитай пак.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "commonRetry": "Опитай пак",
     "commonDelete": "Изтрий",
     "commonCancel": "Отказ",
@@ -2449,13 +2386,6 @@
     "followersFailedToLoadList": "Неуспешно зареждане на списъка с последователи",
     "classicVinersTitle": "OG Viners",
     "blossomFailedToSaveSettings": "Неуспешно запазване на настройките. Опитай пак.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Неуспешно актуализиране на настройката за кръстосана публикация",
     "invitesTitle": "Покани приятели",
     "invitesGenerateCardTitle": "{count, plural, =1{1 покана е готова за генериране} other{{count} покани са готови за генериране}}",
@@ -4528,7 +4458,6 @@
     "metadataSoundsSharedSoundSemantics": "Звук: {soundName} от {creatorName}. Докосни, за да видиш подробности.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Неуспешно зареждане на звука. Опитай пак.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Този звук не можа да бъде намерен",
     "soundDetailNotFoundTitle": "Звукът не е намерен",
     "videoFeedLoopCountLabel": "🔁 {count} лупа",

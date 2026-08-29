@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "Falha ao compartilhar perfil. Por favor, tente novamente.",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "Copiar chave pública (npub)",
     "profileGetEmbedCode": "Obter código de incorporação",
     "profilePublicKeyCopied": "Chave pública copiada para a área de transferência",
@@ -466,13 +459,6 @@
     "exploreMyLists": "Minhas listas",
     "exploreSubscribedLists": "Listas inscritas",
     "exploreErrorLoadingLists": "Erro ao carregar listas. Por favor, tente novamente.",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, one{{count} vídeo novo} other{{count} vídeos novos}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -935,13 +921,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "Consulta falhou. Por favor, tente novamente.",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "Conectado a {count} relay(s)!",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -952,13 +931,6 @@
     },
     "relayDiagnosticFailedToConnect": "Falha ao conectar a qualquer relay",
     "relayDiagnosticConnectionRetryFailed": "Tentativa de reconexão falhou. Por favor, tente novamente.",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "Conectado e autenticado",
     "relayDiagnosticConnectedOnly": "Conectado",
     "relayDiagnosticNotConnected": "Não conectado",
@@ -1646,13 +1618,6 @@
     "reportReasonAiGenerated": "Conteúdo gerado por IA",
     "reportReasonOther": "Outra violação de política",
     "reportFailed": "Falha ao denunciar conteúdo. Por favor, tente novamente.",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "Não foi possível enviar sua denúncia. Verifique sua conexão e tente novamente.",
     "reportReceivedTitle": "Denúncia recebida",
     "reportReceivedThankYou": "Obrigado por ajudar a manter o Divine seguro.",
@@ -1765,22 +1730,8 @@
     "keyManagementImportConfirm": "Importar",
     "keyManagementImportSuccess": "Chave importada com sucesso!",
     "keyManagementImportFailed": "Falha ao importar chave. Por favor, tente novamente.",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "Chave privada copiada para a área de transferência!\n\nGuarde em um lugar seguro.",
     "keyManagementExportFailed": "Falha ao exportar chave. Por favor, tente novamente.",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "Salvo no rolo da câmera",
     "saveOriginalShare": "Compartilhar",
     "saveOriginalDone": "Concluído",
@@ -1819,13 +1770,6 @@
     },
     "soundUnableToPreview": "Não é possível pré-visualizar o som - sem áudio disponível",
     "soundPreviewFailed": "Falha ao reproduzir pré-visualização. Tente novamente.",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "Ver origem",
     "soundCloseTooltip": "Fechar",
     "exploreNotExploreRoute": "Não é uma rota de explorar",
@@ -1951,13 +1895,6 @@
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Luta livre",
     "blossomFailedToSaveSettings": "Falha ao salvar configurações. Tente novamente.",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "Falha ao atualizar configuração de crosspost",
     "cameraAgeRestriction": "Você precisa ter 16 anos ou mais para criar conteúdo",
     "categoriesCouldNotLoadCategories": "Não foi possível carregar as categorias",
@@ -1967,13 +1904,6 @@
     "commonDelete": "Excluir",
     "commonRetry": "Tentar novamente",
     "discoverListsFailedToUpdateSubscription": "Falha ao atualizar assinatura. Por favor, tente novamente.",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "Vídeo {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "Dependendo das regras de onde você mora, talvez dê para voltar e pedir sua própria conta. Nesse caso, se você tiver entre 13 e 15 anos, vai precisar do consentimento de um pai, mãe ou responsável.",
     "minorAccountReviewParentConsentPauseNote": "É uma pausa enquanto a equipe de suporte da Divine analisa o vídeo. Se for aprovado, eles vão te orientar na configuração da nova conta.",
     "minorAccountReviewUnder13WhyTitle": "É por isso",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "Som: {soundName} de {creatorName}. Toque para ver os detalhes.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Falha ao carregar o som. Por favor, tente novamente.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Não foi possível encontrar este som",
     "soundDetailNotFoundTitle": "Som não encontrado",
     "videoFeedLoopCountLabel": "🔁 {count} loops",

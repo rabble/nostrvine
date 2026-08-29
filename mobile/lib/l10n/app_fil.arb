@@ -3276,7 +3276,6 @@
     "metadataSoundsSharedSoundSemantics": "Tunog: {soundName} ni {creatorName}. I-tap para tingnan ang mga detalye.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "Hindi ma-load ang tunog. Subukan ulit.",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Hindi mahanap ang tunog na ito",
     "soundDetailNotFoundTitle": "Hindi Nakita ang Tunog",
     "videoFeedLoopCountLabel": "🔁 {count} loops",

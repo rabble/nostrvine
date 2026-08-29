@@ -200,13 +200,6 @@
         }
     },
     "profileShareFailed": "プロフィールの共有がうまくいかなかった。もう一回試してみて。",
-    "@profileShareFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "profileCopyPublicKey": "公開鍵 (npub) をコピー",
     "profileGetEmbedCode": "埋め込みコードを取得",
     "profilePublicKeyCopied": "公開鍵をコピーしたよ",
@@ -466,13 +459,6 @@
     "exploreMyLists": "マイリスト",
     "exploreSubscribedLists": "購読中のリスト",
     "exploreErrorLoadingLists": "リストの読み込みに失敗。もう一回試してみて。",
-    "@exploreErrorLoadingLists": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreNewVideosCount": "{count, plural, other{{count}本の新着動画}}",
     "@exploreNewVideosCount": {
         "placeholders": {
@@ -932,13 +918,6 @@
         }
     },
     "relayDiagnosticQueryFailed": "クエリがうまくいかなかった。もう一回試してみて。",
-    "@relayDiagnosticQueryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedToRelays": "{count}個のリレーに接続したよ！",
     "@relayDiagnosticConnectedToRelays": {
         "placeholders": {
@@ -949,13 +928,6 @@
     },
     "relayDiagnosticFailedToConnect": "どのリレーにも接続できなかった",
     "relayDiagnosticConnectionRetryFailed": "接続の再試行がうまくいかなかった。もう一回試してみて。",
-    "@relayDiagnosticConnectionRetryFailed": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "relayDiagnosticConnectedAuthenticated": "接続・認証済み",
     "relayDiagnosticConnectedOnly": "接続済み",
     "relayDiagnosticNotConnected": "未接続",
@@ -1636,13 +1608,6 @@
     "reportReasonAiGenerated": "AI 生成コンテンツ",
     "reportReasonOther": "その他のポリシー違反",
     "reportFailed": "コンテンツの報告がうまくいかなかった。もう一回試してみて。",
-    "@reportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "reportNotSent": "報告を送信できなかった。接続を確認してもう一回試してみて。",
     "reportReceivedTitle": "報告を受け付けたよ",
     "reportReceivedThankYou": "Divine を安全に保つために協力してくれてありがとう。",
@@ -1755,22 +1720,8 @@
     "keyManagementImportConfirm": "インポート",
     "keyManagementImportSuccess": "鍵をインポートしたよ！",
     "keyManagementImportFailed": "鍵のインポートがうまくいかなかった。もう一回試してみて。",
-    "@keyManagementImportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "keyManagementExportSuccess": "秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。",
     "keyManagementExportFailed": "鍵のエクスポートがうまくいかなかった。もう一回試してみて。",
-    "@keyManagementExportFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "saveOriginalSavedToCameraRoll": "カメラロールに保存したよ",
     "saveOriginalShare": "共有",
     "saveOriginalDone": "完了",
@@ -1809,13 +1760,6 @@
     },
     "soundUnableToPreview": "サウンドをプレビューできない - 音声がないよ",
     "soundPreviewFailed": "プレビューの再生がうまくいかなかった。もう一回試してみて。",
-    "@soundPreviewFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "soundViewSource": "元動画を見る",
     "soundCloseTooltip": "閉じる",
     "exploreNotExploreRoute": "探索ルートじゃないよ",
@@ -1941,13 +1885,6 @@
     "categoryVlogging": "ブイログ",
     "categoryWrestling": "プロレス",
     "blossomFailedToSaveSettings": "設定の保存がうまくいかなかった。もう一回試してみて。",
-    "@blossomFailedToSaveSettings": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "blueskyFailedToUpdateCrosspost": "クロスポスト設定の更新がうまくいかなかった",
     "cameraAgeRestriction": "コンテンツを作るには16歳以上である必要があるよ",
     "categoriesCouldNotLoadCategories": "カテゴリを読み込めなかった",
@@ -1957,13 +1894,6 @@
     "commonDelete": "削除",
     "commonRetry": "もう一回",
     "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった。もう一回試してみて。",
-    "@discoverListsFailedToUpdateSubscription": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "exploreVideoCounter": "動画 {current}/{total}",
     "@exploreVideoCounter": {
         "placeholders": {
@@ -3995,13 +3925,6 @@
     "minorAccountReviewUnder13ComeBackBody": "お住まいの地域のルールによっては、戻ってきて自分のアカウントを申請できるかもしれません。その際、13〜15歳の場合は保護者の同意が必要です。",
     "minorAccountReviewParentConsentPauseNote": "これは Divine サポートチームが動画を確認するあいだの一時停止です。承認されたら、新しいアカウントの設定を案内します。",
     "minorAccountReviewUnder13WhyTitle": "その理由",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "@profileWebsiteSemanticLabel": {
         "placeholders": {
             "url": {
@@ -4397,7 +4320,6 @@
     "metadataSoundsSharedSoundSemantics": "サウンド: {creatorName}の{soundName}。タップすると詳細を見れるよ。",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
     "soundDetailLoadError": "サウンドの読み込みに失敗したよ。もう一回試してみて。",
-    "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "このサウンドは見つからなかったよ",
     "soundDetailNotFoundTitle": "サウンドが見つからないよ",
     "videoFeedLoopCountLabel": "🔁 {count}ループ",
