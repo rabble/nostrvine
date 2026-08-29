@@ -2,6 +2,7 @@
 // ABOUTME: Opens unified share sheet: tap a contact to select it (never an
 // ABOUTME: instant send), compose an optional message, send explicitly.
 
+import 'package:bookmarks_repository/bookmarks_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_clip_import_provider.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/delete_result_localization.dart';
@@ -161,7 +161,9 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             videoSharingService: widget.videoSharingService,
             profileRepository: widget.profileRepository,
             followRepository: ref.read(followRepositoryProvider),
-            bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+            bookmarksRepositoryFuture: ref.read(
+              bookmarksRepositoryProvider.future,
+            ),
             cacheManager: openVineImageCache,
             videoClipImportService: ref.read(videoClipImportServiceProvider),
           )

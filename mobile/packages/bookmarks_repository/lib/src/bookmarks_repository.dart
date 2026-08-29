@@ -4,17 +4,17 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bookmarks_repository/src/bookmark_signer.dart';
 import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a bookmarked item
 @immutable
 class BookmarkItem {
+  /// Creates a bookmark item.
   const BookmarkItem({
     required this.type,
     required this.id,
@@ -22,19 +22,9 @@ class BookmarkItem {
     this.petname,
   });
 
-  final String
-  type; // 'e' (event), 'a' (parameterized replaceable), 't' (hashtag), 'r' (URL)
-  final String id; // Event ID, article ID, hashtag, or URL
-  final String? relay; // Optional relay hint
-  final String? petname; // Optional petname/label
-
-  List<String> toTag() {
-    final tag = [type, id];
-    if (relay != null) tag.add(relay!);
-    if (petname != null) tag.add(petname!);
-    return tag;
-  }
-
+  /// Rebuilds an item from a NIP-51 tag.
+  ///
+  /// Positions past [petname] are dropped, which is #7137.
   factory BookmarkItem.fromTag(List<String> tag) {
     return BookmarkItem(
       type: tag[0],
@@ -44,19 +34,42 @@ class BookmarkItem {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'type': type,
-    'id': id,
-    'relay': relay,
-    'petname': petname,
-  };
-
+  /// Rebuilds an item from its [toJson] form.
   factory BookmarkItem.fromJson(Map<String, dynamic> json) => BookmarkItem(
     type: json['type'] as String,
     id: json['id'] as String,
     relay: json['relay'] as String?,
     petname: json['petname'] as String?,
   );
+
+  /// NIP-51 tag name: `e` (event), `a` (parameterized replaceable),
+  /// `t` (hashtag) or `r` (URL).
+  final String type;
+
+  /// Event id, article coordinate, hashtag, or URL, depending on [type].
+  final String id;
+
+  /// Optional relay hint.
+  final String? relay;
+
+  /// Optional petname/label.
+  final String? petname;
+
+  /// Renders this item as a NIP-51 tag.
+  List<String> toTag() {
+    final tag = [type, id];
+    if (relay != null) tag.add(relay!);
+    if (petname != null) tag.add(petname!);
+    return tag;
+  }
+
+  /// Serializes this item for the SharedPreferences snapshot.
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'id': id,
+    'relay': relay,
+    'petname': petname,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -66,12 +79,13 @@ class BookmarkItem {
   int get hashCode => Object.hash(type, id);
 }
 
-/// Outcome of [BookmarkService.toggleVideoInGlobalBookmarks].
+/// Outcome of [BookmarksRepository.toggleVideoInGlobalBookmarks].
 ///
 /// Carries the state observed *after* reconciling with the relay, so callers
 /// render "Saved" / "Removed" from what actually happened rather than from a
 /// local read that predates the sync.
 class BookmarkToggleResult {
+  /// Creates a toggle outcome.
   const BookmarkToggleResult({
     required this.succeeded,
     required this.wasBookmarked,
@@ -154,32 +168,38 @@ class _PrivateItemsRead {
 }
 
 /// Service for the user's NIP-51 global bookmark list (kind 10003).
-class BookmarkService {
-  BookmarkService({
-    required NostrClient nostrService,
-    required AuthService authService,
+class BookmarksRepository {
+  /// Creates the repository and loads the cached snapshot synchronously,
+  /// so [globalBookmarks] is readable before any relay round trip.
+  BookmarksRepository({
+    required NostrClient nostrClient,
+    required BookmarkSigner signer,
     required SharedPreferences prefs,
     DateTime Function() now = DateTime.now,
-  }) : _nostrService = nostrService,
-       _authService = authService,
+  }) : _nostrClient = nostrClient,
+       _signer = signer,
        _prefs = prefs,
        _now = now {
     _loadBookmarksFromSharedPreferences();
   }
 
-  final NostrClient _nostrService;
-  final AuthService _authService;
+  final NostrClient _nostrClient;
+  final BookmarkSigner _signer;
   final SharedPreferences _prefs;
   final DateTime Function() _now;
 
+  /// Storage key for the cached public-item snapshot.
+  ///
+  /// `UserDataCleanupService` clears this key by literal on identity change
+  /// with no compile-time link back to it (#8314), so the value is frozen.
   static const String globalBookmarksStorageKey = 'global_bookmarks';
 
   /// Storage key for [_revision].
   ///
   /// Persisted next to the snapshot because the writing surface builds a new
-  /// [BookmarkService] per sheet (#7596): an in-memory-only watermark is blank
-  /// again by the next save, which is the ordinary save/close/save loss in
-  /// #7163. Cleared with the snapshot on identity change — see
+  /// [BookmarksRepository] per sheet (#7596): an in-memory-only watermark is
+  /// blank again by the next save, which is the ordinary save/close/save loss
+  /// in #7163. Cleared with the snapshot on identity change — see
   /// `UserDataCleanupService.userSpecificKeys`.
   static const String globalBookmarksRevisionStorageKey =
       'global_bookmarks_revision';
@@ -256,7 +276,7 @@ class BookmarkService {
   /// and pays nothing for it.
   static const absenceConfirmationTtl = Duration(minutes: 5);
 
-  /// How long a confirmed-empty answer is allowed to lag behind a local publish.
+  /// How long a confirmed-empty answer may lag behind a local publish.
   ///
   /// Relay `OK` means the event was accepted, not that every later query can
   /// read it back. During that indexing window, an empty answer is not evidence
@@ -369,7 +389,7 @@ class BookmarkService {
     Log.warning(
       'Cannot stamp past kind 10003 revision ${revision.createdAt}; '
       'publishing at $ceiling, which the relay merge may discard',
-      name: 'BookmarkService',
+      name: 'BookmarksRepository',
       category: LogCategory.system,
     );
     return ceiling;
@@ -461,11 +481,11 @@ class BookmarkService {
   Future<BookmarkToggleFailure?> _syncGlobalBookmarks({
     required bool requireAuthoritative,
   }) async {
-    final pubkey = _authService.currentPublicKeyHex;
-    if (!_authService.isAuthenticated || pubkey == null) {
+    final pubkey = _signer.currentPublicKeyHex;
+    if (!_signer.isAuthenticated || pubkey == null) {
       Log.warning(
         'Skipping bookmark sync - user not authenticated',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return BookmarkToggleFailure.notAuthenticated;
@@ -500,7 +520,7 @@ class BookmarkService {
           Log.warning(
             'Empty bookmark answer not confirmed by every relay - keeping '
             'the ${globalBookmarks.length} bookmarks this device has',
-            name: 'BookmarkService',
+            name: 'BookmarksRepository',
             category: LogCategory.system,
           );
           return confirmation.failure ?? BookmarkToggleFailure.unknown;
@@ -513,7 +533,7 @@ class BookmarkService {
           Log.info(
             'Ignoring empty kind 10003 answer inside local publish grace '
             'period, keeping ${globalBookmarks.length} bookmarks',
-            name: 'BookmarkService',
+            name: 'BookmarksRepository',
             category: LogCategory.system,
           );
           return null;
@@ -553,7 +573,7 @@ class BookmarkService {
           Log.info(
             'Ignoring kind 10003 ${newest.id} - older than the revision this '
             'device holds, keeping ${globalBookmarks.length} bookmarks',
-            name: 'BookmarkService',
+            name: 'BookmarksRepository',
             category: LogCategory.system,
           );
           return null;
@@ -567,14 +587,14 @@ class BookmarkService {
       Log.info(
         'Synced ${globalBookmarks.length} global bookmarks from relay '
         '(${_privateBookmarks.length} private)',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return null;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to sync global bookmarks from relay: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return BookmarkToggleFailure.unknown;
@@ -595,7 +615,7 @@ class BookmarkService {
     String pubkey, {
     required bool requireAuthoritative,
   }) async {
-    final result = await _nostrService.queryEventsDetailed(
+    final result = await _nostrClient.queryEventsDetailed(
       [
         Filter(kinds: [globalBookmarksKind], authors: [pubkey], limit: 1),
       ],
@@ -609,7 +629,7 @@ class BookmarkService {
         'noRelays=${result.noRelays}, '
         'requireAuthoritative=$requireAuthoritative) - '
         'remote list left unchanged',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       // A device with no reachable relay sets *both* flags, so noRelays has to
@@ -737,7 +757,7 @@ class BookmarkService {
           await _syncGlobalBookmarks(requireAuthoritative: true) != null) {
         Log.warning(
           'Not adding to global bookmarks: could not reconcile with relay',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -747,7 +767,7 @@ class BookmarkService {
         Log.warning(
           'Not adding to global bookmarks: the list has private items this '
           'client could not read, so a public tag could disclose one',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -758,7 +778,7 @@ class BookmarkService {
       if (_globalBookmarks.contains(item) || _privateBookmarks.contains(item)) {
         Log.debug(
           'Item already in global bookmarks: ${item.id}',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return true;
@@ -772,15 +792,15 @@ class BookmarkService {
 
       Log.info(
         'Added item to global bookmarks: ${item.id}',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
 
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to add to global bookmarks: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return false;
@@ -816,7 +836,7 @@ class BookmarkService {
           await _syncGlobalBookmarks(requireAuthoritative: true) != null) {
         Log.warning(
           'Not removing from global bookmarks: could not reconcile with relay',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -826,7 +846,7 @@ class BookmarkService {
         Log.warning(
           'Not removing from global bookmarks: the list has private items this '
           'client could not read, so the result could not be reported honestly',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -851,7 +871,7 @@ class BookmarkService {
 
         Log.info(
           'Removed private item from global bookmarks: ${item.id}',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return true;
@@ -865,7 +885,7 @@ class BookmarkService {
       if (candidate.length == _globalBookmarks.length) {
         Log.warning(
           'Item not found in global bookmarks: ${item.id}',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -876,15 +896,15 @@ class BookmarkService {
 
       Log.info(
         'Removed item from global bookmarks: ${item.id}',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
 
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to remove from global bookmarks: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return false;
@@ -929,10 +949,10 @@ class BookmarkService {
     List<List<String>>? privateCandidate,
   }) async {
     try {
-      if (!_authService.isAuthenticated) {
+      if (!_signer.isAuthenticated) {
         Log.warning(
           'Cannot publish bookmarks - user not authenticated',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -949,7 +969,7 @@ class BookmarkService {
         content = encrypted;
       }
 
-      final event = await _authService.createAndSignEvent(
+      final event = await _signer.createAndSignEvent(
         kind: globalBookmarksKind,
         content: content,
         tags: [for (final item in candidate) item.toTag()],
@@ -958,12 +978,12 @@ class BookmarkService {
 
       if (event == null) return false;
 
-      final outcome = await _nostrService.publishEventAwaitOk(event);
+      final outcome = await _nostrClient.publishEventAwaitOk(event);
       if (!outcome.acceptedByAny) {
         Log.warning(
           'Relay did not accept global bookmarks: ${event.id} '
           '(${outcome.summary})',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return false;
@@ -995,14 +1015,14 @@ class BookmarkService {
       Log.debug(
         'Published global bookmarks to Nostr: ${event.id} '
         '(${outcome.summary})',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to publish global bookmarks to Nostr: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return false;
@@ -1021,8 +1041,8 @@ class BookmarkService {
     // the ciphertext of an empty array.
     if (items.isEmpty) return '';
 
-    final pubkey = _authService.currentPublicKeyHex;
-    final identity = _authService.currentIdentity;
+    final pubkey = _signer.currentPublicKeyHex;
+    final identity = _signer.currentIdentity;
     if (pubkey == null || identity == null) return null;
 
     final plaintext = jsonEncode(items);
@@ -1031,7 +1051,7 @@ class BookmarkService {
       if (ciphertext == null || ciphertext.isEmpty) {
         Log.warning(
           'Signer returned no ciphertext for the private bookmark items',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return null;
@@ -1041,16 +1061,16 @@ class BookmarkService {
         Log.error(
           'Re-encrypted private bookmark items did not read back - '
           'refusing to publish',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return null;
       }
       return ciphertext;
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to encrypt private bookmark items: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return null;
@@ -1117,8 +1137,8 @@ class BookmarkService {
       return const _PrivateItemsRead(state: _PrivateItemsState.none, tags: []);
     }
 
-    final pubkey = _authService.currentPublicKeyHex;
-    final identity = _authService.currentIdentity;
+    final pubkey = _signer.currentPublicKeyHex;
+    final identity = _signer.currentIdentity;
     if (pubkey == null || identity == null) return unreadable;
 
     try {
@@ -1130,7 +1150,7 @@ class BookmarkService {
       if (plaintext == null) {
         Log.warning(
           'Signer could not decrypt the private bookmark items',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
         return unreadable;
@@ -1141,14 +1161,14 @@ class BookmarkService {
 
       Log.debug(
         'Read ${_itemsFromTags(tags).length} private bookmark items',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return _PrivateItemsRead(state: _PrivateItemsState.readable, tags: tags);
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to read private bookmark items: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
       return unreadable;
@@ -1174,7 +1194,7 @@ class BookmarkService {
         tags.add([for (final value in entry) value as String]);
       }
       return tags;
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }
@@ -1188,21 +1208,22 @@ class BookmarkService {
     if (globalBookmarksJson != null) {
       try {
         final bookmarksData = jsonDecode(globalBookmarksJson) as List<dynamic>;
-        _globalBookmarks.clear();
-        _globalBookmarks.addAll(
-          bookmarksData.map(
-            (json) => BookmarkItem.fromJson(json as Map<String, dynamic>),
-          ),
-        );
+        _globalBookmarks
+          ..clear()
+          ..addAll(
+            bookmarksData.map(
+              (json) => BookmarkItem.fromJson(json as Map<String, dynamic>),
+            ),
+          );
         Log.debug(
           'Loaded ${_globalBookmarks.length} global bookmarks from storage',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
-      } catch (e) {
+      } on Object catch (e) {
         Log.error(
           'Failed to load global bookmarks: $e',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
       }
@@ -1216,12 +1237,12 @@ class BookmarkService {
           createdAt: revision['createdAt'] as int,
           id: revision['id'] as String,
         );
-      } catch (e) {
+      } on Object catch (e) {
         // A corrupt watermark only costs the staleness guard, so drop it and
         // let the next read establish one rather than failing the load.
         Log.error(
           'Failed to load the global bookmark revision: $e',
-          name: 'BookmarkService',
+          name: 'BookmarksRepository',
           category: LogCategory.system,
         );
       }
@@ -1251,10 +1272,10 @@ class BookmarkService {
           jsonEncode({'createdAt': revision.createdAt, 'id': revision.id}),
         );
       }
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to save bookmarks to SharedPreferences: $e',
-        name: 'BookmarkService',
+        name: 'BookmarksRepository',
         category: LogCategory.system,
       );
     }

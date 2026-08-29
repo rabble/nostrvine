@@ -8,7 +8,7 @@ enum ProfileSavedVideosStatus {
   /// Initial state, no data loaded yet.
   initial,
 
-  /// Currently loading bookmark IDs from [BookmarkService].
+  /// Currently loading bookmark IDs from [BookmarksRepository].
   syncing,
 
   /// Currently loading video data for bookmark IDs.
@@ -44,7 +44,7 @@ final class ProfileSavedVideosState extends Equatable {
   /// The current loading status.
   final ProfileSavedVideosStatus status;
 
-  /// The list of saved videos, ordered as returned by [BookmarkService]
+  /// The list of saved videos, ordered as returned by [BookmarksRepository]
   /// (most recently saved first).
   final List<VideoEvent> videos;
 

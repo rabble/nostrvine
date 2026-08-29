@@ -765,49 +765,73 @@ final class NotifySubscriptionsRepositoryProvider
 String _$notifySubscriptionsRepositoryHash() =>
     r'54ed8c30c8819f524052ba4abaccb01dfaeaacce';
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 
-@ProviderFor(bookmarkService)
-final bookmarkServiceProvider = BookmarkServiceProvider._();
+@ProviderFor(bookmarksRepository)
+final bookmarksRepositoryProvider = BookmarksRepositoryProvider._();
 
-/// Bookmark service for NIP-51 bookmarks
+/// Bookmark service for NIP-51 bookmarks.
+///
+/// Deliberately left as an autoDispose `Future` provider by the #6969
+/// package extraction, so that move stayed behaviour-preserving. Both
+/// consumers read it with `ref.read(...future)`, which leaves no listener, so
+/// every read tears the element down and builds a fresh instance — dropping
+/// its in-memory snapshot and its serialization queue. That is #7596, and it
+/// is fixed next, not here.
 
-final class BookmarkServiceProvider
+final class BookmarksRepositoryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<BookmarkService>,
-          BookmarkService,
-          FutureOr<BookmarkService>
+          AsyncValue<BookmarksRepository>,
+          BookmarksRepository,
+          FutureOr<BookmarksRepository>
         >
-    with $FutureModifier<BookmarkService>, $FutureProvider<BookmarkService> {
-  /// Bookmark service for NIP-51 bookmarks
-  BookmarkServiceProvider._()
+    with
+        $FutureModifier<BookmarksRepository>,
+        $FutureProvider<BookmarksRepository> {
+  /// Bookmark service for NIP-51 bookmarks.
+  ///
+  /// Deliberately left as an autoDispose `Future` provider by the #6969
+  /// package extraction, so that move stayed behaviour-preserving. Both
+  /// consumers read it with `ref.read(...future)`, which leaves no listener, so
+  /// every read tears the element down and builds a fresh instance — dropping
+  /// its in-memory snapshot and its serialization queue. That is #7596, and it
+  /// is fixed next, not here.
+  BookmarksRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'bookmarkServiceProvider',
+        name: r'bookmarksRepositoryProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$bookmarkServiceHash();
+  String debugGetCreateSourceHash() => _$bookmarksRepositoryHash();
 
   @$internal
   @override
-  $FutureProviderElement<BookmarkService> $createElement(
+  $FutureProviderElement<BookmarksRepository> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<BookmarkService> create(Ref ref) {
-    return bookmarkService(ref);
+  FutureOr<BookmarksRepository> create(Ref ref) {
+    return bookmarksRepository(ref);
   }
 }
 
-String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
+String _$bookmarksRepositoryHash() =>
+    r'99bea35c4a70f1f2bfdfe51e10c1af14b702b71c';
 
 /// Provider for NIP-17 DM repository.
 ///

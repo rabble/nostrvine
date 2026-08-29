@@ -16,7 +16,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/notification_helpers.dart'
     show localNotificationTapPayload;
 import 'package:openvine/services/notification_service.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Describes whether a push-token registration should be retried.

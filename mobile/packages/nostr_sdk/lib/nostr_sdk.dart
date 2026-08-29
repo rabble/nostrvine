@@ -73,6 +73,7 @@ export 'upload/nip96_uploader.dart';
 export 'upload/upload_util.dart';
 export 'utils/date_format_util.dart';
 export 'utils/loopback_host.dart';
+export 'utils/nostr_timestamp.dart';
 export 'utils/redact_http_headers_for_logs.dart';
 export 'utils/relay_url_policy.dart';
 export 'utils/string_util.dart';
