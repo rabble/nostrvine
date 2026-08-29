@@ -148,6 +148,7 @@ class RequestPreviewView extends ConsumerWidget {
             _ActionButtons(
               participantPubkeys: participantPubkeys,
               displayName: displayName,
+              otherPubkey: otherPubkey,
             ),
           ],
         ),
@@ -466,10 +467,12 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.participantPubkeys,
     required this.displayName,
+    required this.otherPubkey,
   });
 
   final List<String> participantPubkeys;
   final String displayName;
+  final String otherPubkey;
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +490,12 @@ class _ActionButtons extends StatelessWidget {
             );
           },
         ),
-        _DeclineAndRemoveButton(displayName: displayName),
+        // An enforcement notice is not a request to decline. Removing it is
+        // permanent and it is the user's only copy of why they were actioned,
+        // so the action is not offered (#6971). The cubit refuses it too, for
+        // the unresolved states below that cannot name the peer.
+        if (!isModerationAccount(otherPubkey))
+          _DeclineAndRemoveButton(displayName: displayName),
       ],
     );
   }
@@ -523,12 +531,24 @@ class _DeclineAndRemoveButton extends StatelessWidget {
         final successText = name == null
             ? context.l10n.inboxRemovedConversation
             : context.l10n.messageRequestDeclinedSnackbar(name);
-        final removed = await cubit.declineRequest(conversationId);
-        if (!removed) {
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(errorText, error: true),
-          );
-          return;
+        // Not an error: the row is a Divine moderation notice the cubit
+        // protects. Only the unresolved states can reach it, since the action
+        // bar drops this button once the peer resolves (#6971).
+        final refusedText = context.l10n.dmRetiredThreadClosedTitle;
+        final outcome = await cubit.declineRequest(conversationId);
+        switch (outcome) {
+          case DeclineRequestOutcome.failed:
+            messenger.showSnackBar(
+              DivineSnackbarContainer.snackBar(errorText, error: true),
+            );
+            return;
+          case DeclineRequestOutcome.refused:
+            messenger.showSnackBar(
+              DivineSnackbarContainer.snackBar(refusedText),
+            );
+            return;
+          case DeclineRequestOutcome.removed:
+            break;
         }
         // safePop for the same reason as the app-bar back button above: this
         // route is deep-linkable, and a cold entry has nothing to pop (#6112).
