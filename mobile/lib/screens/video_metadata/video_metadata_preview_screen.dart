@@ -57,6 +57,10 @@ class _VideoMetadataPreviewScreenState
   /// to play.
   final _isPreviewReady = ValueNotifier<bool>(false);
 
+  /// The enclosing route's entrance animation, tracked so its status listener
+  /// can be detached in [dispose].
+  Animation<double>? _routeAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -71,12 +75,31 @@ class _VideoMetadataPreviewScreenState
         }
       },
     );
+  }
 
-    // Wait for hero animation to finish before showing overlay
-    // Before displaying the overlay, we wait for the hero animation to finish.
-    Future.delayed(const Duration(milliseconds: 350), () {
-      if (mounted) _isPreviewReady.value = true;
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The overlay waits for the entrance transition so it does not appear
+    // mid-hero. ModalRoute is unavailable in initState, and this callback can
+    // run again for unrelated inherited-widget changes, so the listener is
+    // attached exactly once per route.
+    final animation = ModalRoute.of(context)?.animation;
+    if (identical(animation, _routeAnimation)) return;
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
+    _routeAnimation = animation;
+
+    // No enclosing route means no transition to wait for.
+    if (animation == null || animation.status == AnimationStatus.completed) {
+      _isPreviewReady.value = true;
+      return;
+    }
+    animation.addStatusListener(_onRouteAnimationStatus);
+  }
+
+  void _onRouteAnimationStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _isPreviewReady.value = true;
   }
 
   /// Initializes the video player and starts playback.
@@ -133,6 +156,7 @@ class _VideoMetadataPreviewScreenState
 
   @override
   void dispose() {
+    _routeAnimation?.removeStatusListener(_onRouteAnimationStatus);
     unawaited(_controller?.dispose());
     _isPreviewReady.dispose();
     super.dispose();

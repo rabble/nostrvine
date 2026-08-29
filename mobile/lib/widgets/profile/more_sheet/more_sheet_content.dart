@@ -87,6 +87,11 @@ class _MoreSheetContentState extends State<MoreSheetContent>
   late Animation<double> _fadeOutAnimation;
   late Animation<double> _fadeInAnimation;
 
+  /// End of the fade-out phase as a fraction of [_controller]'s duration.
+  /// Shared with the [Interval] below so the content swap and the fade can
+  /// never drift apart if the duration changes.
+  static const _fadeOutEnd = 0.333;
+
   @override
   void initState() {
     super.initState();
@@ -101,7 +106,7 @@ class _MoreSheetContentState extends State<MoreSheetContent>
     _fadeOutAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.333, curve: Curves.easeOut),
+        curve: const Interval(0.0, _fadeOutEnd, curve: Curves.easeOut),
       ),
     );
 
@@ -112,6 +117,20 @@ class _MoreSheetContentState extends State<MoreSheetContent>
         curve: const Interval(0.667, 1.0, curve: Curves.easeIn),
       ),
     );
+
+    _controller.addListener(_swapDisplayedModeAfterFadeOut);
+  }
+
+  /// Shows the target content once the fade-out phase has finished.
+  ///
+  /// A [CurvedAnimation] over an [Interval] reports its *parent's* status, not
+  /// the interval's, so an [AnimationStatus] listener on [_fadeOutAnimation]
+  /// would not fire until the whole transition ended. The controller's own
+  /// value is the signal.
+  void _swapDisplayedModeAfterFadeOut() {
+    if (_displayedMode == _targetMode) return;
+    if (_controller.value < _fadeOutEnd) return;
+    setState(() => _displayedMode = _targetMode);
   }
 
   @override
@@ -123,13 +142,6 @@ class _MoreSheetContentState extends State<MoreSheetContent>
   void _transitionTo(MoreSheetMode mode) {
     setState(() => _targetMode = mode);
     _controller.forward();
-
-    // Switch displayed content at 200ms (after fade out, before resize)
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) {
-        setState(() => _displayedMode = mode);
-      }
-    });
   }
 
   @override
