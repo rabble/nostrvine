@@ -26,7 +26,7 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _MockBookmarkService extends Mock implements BookmarkService {}
+class _MockBookmarksRepository extends Mock implements BookmarksRepository {}
 
 class _MockVideoClipImportService extends Mock
     implements VideoClipImportService {}
@@ -82,7 +82,7 @@ void main() {
     late _MockVideoSharingService mockSharingService;
     late _MockProfileRepository mockProfileRepository;
     late _MockFollowRepository mockFollowRepository;
-    late _MockBookmarkService mockBookmarkService;
+    late _MockBookmarksRepository mockBookmarksRepository;
     late VideoEvent testVideo;
 
     const testRecipient = ShareableUser(
@@ -96,7 +96,7 @@ void main() {
       mockSharingService = _MockVideoSharingService();
       mockProfileRepository = _MockProfileRepository();
       mockFollowRepository = _MockFollowRepository();
-      mockBookmarkService = _MockBookmarkService();
+      mockBookmarksRepository = _MockBookmarksRepository();
 
       testVideo = VideoEvent(
         id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -111,10 +111,10 @@ void main() {
 
       // Default stubs
       when(
-        () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+        () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
       ).thenReturn(false);
       when(
-        () => mockBookmarkService.hasUnreadablePrivateItems,
+        () => mockBookmarksRepository.hasUnreadablePrivateItems,
       ).thenReturn(false);
       when(() => mockSharingService.recentlySharedWith).thenReturn([]);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
@@ -132,7 +132,7 @@ void main() {
 
     ShareSheetBloc createBloc({
       FollowRepository? followRepository,
-      Future<BookmarkService?>? bookmarkServiceFuture,
+      Future<BookmarksRepository?>? bookmarksRepositoryFuture,
       String relayUrl = 'wss://relay.test.example',
       BaseCacheManager? cacheManager,
       VideoClipImportService? videoClipImportService,
@@ -142,8 +142,8 @@ void main() {
       videoSharingService: mockSharingService,
       profileRepository: mockProfileRepository,
       followRepository: followRepository ?? mockFollowRepository,
-      bookmarkServiceFuture:
-          bookmarkServiceFuture ?? Future.value(mockBookmarkService),
+      bookmarksRepositoryFuture:
+          bookmarksRepositoryFuture ?? Future.value(mockBookmarksRepository),
       cacheManager: cacheManager,
       videoClipImportService: videoClipImportService,
     );
@@ -1201,7 +1201,7 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=true, removed=false when adding bookmark',
         setUp: () {
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: true,
@@ -1235,7 +1235,7 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=true, removed=true when removing bookmark',
         setUp: () {
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: true,
@@ -1269,7 +1269,7 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=false when bookmark fails',
         setUp: () {
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: false,
@@ -1304,7 +1304,7 @@ void main() {
         'bookmark fails',
         setUp: () {
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: false,
@@ -1338,7 +1338,7 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=false when bookmark throws',
         setUp: () {
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenThrow(Exception('offline'));
         },
         build: createBloc,
@@ -1368,10 +1368,10 @@ void main() {
         'throws while bookmarked',
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(true);
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenThrow(Exception('offline'));
         },
         build: createBloc,
@@ -1398,8 +1398,9 @@ void main() {
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits $ShareSheetSaveResult with succeeded=false when no bookmark service',
-        build: () =>
-            createBloc(bookmarkServiceFuture: Future<BookmarkService?>.value()),
+        build: () => createBloc(
+          bookmarksRepositoryFuture: Future<BookmarksRepository?>.value(),
+        ),
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
           savePending,
@@ -1425,7 +1426,7 @@ void main() {
         setUp: () {
           var inGlobalBookmarks = false;
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) async {
             final wasBookmarked = inGlobalBookmarks;
             inGlobalBookmarks = !inGlobalBookmarks;
@@ -1479,7 +1480,7 @@ void main() {
         setUp: () {
           saveGate = Completer<BookmarkToggleResult>();
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) => saveGate.future);
         },
         build: createBloc,
@@ -1514,7 +1515,7 @@ void main() {
               ),
         ],
         verify: (_) => verify(
-          () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
         ).called(1),
       );
 
@@ -1523,7 +1524,7 @@ void main() {
         setUp: () {
           saveGate = Completer<BookmarkToggleResult>();
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) => saveGate.future);
         },
         build: createBloc,
@@ -1984,10 +1985,10 @@ void main() {
         'resolves saved when the reconciled list contains the video',
         setUp: () {
           when(
-            () => mockBookmarkService.syncGlobalBookmarks(),
+            () => mockBookmarksRepository.syncGlobalBookmarks(),
           ).thenAnswer((_) async => true);
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(true);
         },
         build: createBloc,
@@ -2005,10 +2006,10 @@ void main() {
         'resolves notSaved when the reconciled list omits the video',
         setUp: () {
           when(
-            () => mockBookmarkService.syncGlobalBookmarks(),
+            () => mockBookmarksRepository.syncGlobalBookmarks(),
           ).thenAnswer((_) async => true);
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(false);
         },
         build: createBloc,
@@ -2026,16 +2027,16 @@ void main() {
         'stays unknown when the list has private items it could not read',
         setUp: () {
           when(
-            () => mockBookmarkService.syncGlobalBookmarks(),
+            () => mockBookmarksRepository.syncGlobalBookmarks(),
           ).thenAnswer((_) async => true);
           when(
-            () => mockBookmarkService.hasUnreadablePrivateItems,
+            () => mockBookmarksRepository.hasUnreadablePrivateItems,
           ).thenReturn(true);
           // The public half says "not bookmarked", but the encrypted half is
           // exactly where the video might be — claiming notSaved here is the
           // mislabel that precedes the disclosure (#7136).
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(false);
         },
         build: createBloc,
@@ -2050,13 +2051,13 @@ void main() {
         setUp: () {
           bookmarkStatusSyncCompleter = Completer<bool>();
           when(
-            () => mockBookmarkService.syncGlobalBookmarks(),
+            () => mockBookmarksRepository.syncGlobalBookmarks(),
           ).thenAnswer((_) => bookmarkStatusSyncCompleter.future);
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(false);
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: true,
@@ -2112,7 +2113,7 @@ void main() {
         'the stale local cache',
         setUp: () {
           when(
-            () => mockBookmarkService.syncGlobalBookmarks(),
+            () => mockBookmarksRepository.syncGlobalBookmarks(),
           ).thenAnswer((_) async => false);
         },
         build: createBloc,
@@ -2120,15 +2121,16 @@ void main() {
         expect: () => <ShareSheetState>[],
         verify: (_) {
           verifyNever(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           );
         },
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'stays unknown when the bookmark service is unavailable',
-        build: () =>
-            createBloc(bookmarkServiceFuture: Future<BookmarkService?>.value()),
+        build: () => createBloc(
+          bookmarksRepositoryFuture: Future<BookmarksRepository?>.value(),
+        ),
         act: (bloc) => bloc.add(const ShareSheetBookmarkStatusRequested()),
         expect: () => <ShareSheetState>[],
       );
@@ -2137,10 +2139,10 @@ void main() {
         'a successful remove flips the status to notSaved',
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(true);
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: true,
@@ -2177,10 +2179,10 @@ void main() {
         ),
         setUp: () {
           when(
-            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+            () => mockBookmarksRepository.isVideoBookmarkedGlobally(any()),
           ).thenReturn(false);
           when(
-            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+            () => mockBookmarksRepository.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer(
             (_) async => const BookmarkToggleResult(
               succeeded: false,

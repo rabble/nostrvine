@@ -774,8 +774,8 @@ String _$notifySubscriptionsRepositoryHash() =>
 /// its in-memory snapshot and its serialization queue. That is #7596, and it
 /// is fixed next, not here.
 
-@ProviderFor(bookmarkService)
-final bookmarkServiceProvider = BookmarkServiceProvider._();
+@ProviderFor(bookmarksRepository)
+final bookmarksRepositoryProvider = BookmarksRepositoryProvider._();
 
 /// Bookmark service for NIP-51 bookmarks.
 ///
@@ -786,14 +786,16 @@ final bookmarkServiceProvider = BookmarkServiceProvider._();
 /// its in-memory snapshot and its serialization queue. That is #7596, and it
 /// is fixed next, not here.
 
-final class BookmarkServiceProvider
+final class BookmarksRepositoryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<BookmarkService>,
-          BookmarkService,
-          FutureOr<BookmarkService>
+          AsyncValue<BookmarksRepository>,
+          BookmarksRepository,
+          FutureOr<BookmarksRepository>
         >
-    with $FutureModifier<BookmarkService>, $FutureProvider<BookmarkService> {
+    with
+        $FutureModifier<BookmarksRepository>,
+        $FutureProvider<BookmarksRepository> {
   /// Bookmark service for NIP-51 bookmarks.
   ///
   /// Deliberately left as an autoDispose `Future` provider by the #6969
@@ -802,33 +804,34 @@ final class BookmarkServiceProvider
   /// every read tears the element down and builds a fresh instance — dropping
   /// its in-memory snapshot and its serialization queue. That is #7596, and it
   /// is fixed next, not here.
-  BookmarkServiceProvider._()
+  BookmarksRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'bookmarkServiceProvider',
+        name: r'bookmarksRepositoryProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$bookmarkServiceHash();
+  String debugGetCreateSourceHash() => _$bookmarksRepositoryHash();
 
   @$internal
   @override
-  $FutureProviderElement<BookmarkService> $createElement(
+  $FutureProviderElement<BookmarksRepository> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<BookmarkService> create(Ref ref) {
-    return bookmarkService(ref);
+  FutureOr<BookmarksRepository> create(Ref ref) {
+    return bookmarksRepository(ref);
   }
 }
 
-String _$bookmarkServiceHash() => r'2430aa71f0c433b0c192fb434b3777877eb41a49';
+String _$bookmarksRepositoryHash() =>
+    r'333e645c4b2c89e0b173453be6b1a59337655e7e';
 
 /// Provider for NIP-17 DM repository.
 ///

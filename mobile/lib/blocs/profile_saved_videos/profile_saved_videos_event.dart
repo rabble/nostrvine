@@ -8,7 +8,7 @@ sealed class ProfileSavedVideosEvent {
   const ProfileSavedVideosEvent();
 }
 
-/// Request to load saved bookmark IDs from [BookmarkService] and fetch the
+/// Request to load saved bookmark IDs from [BookmarksRepository] and fetch the
 /// first page of videos.
 final class ProfileSavedVideosSyncRequested extends ProfileSavedVideosEvent {
   const ProfileSavedVideosSyncRequested({this.completer});

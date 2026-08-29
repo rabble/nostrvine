@@ -161,7 +161,9 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             videoSharingService: widget.videoSharingService,
             profileRepository: widget.profileRepository,
             followRepository: ref.read(followRepositoryProvider),
-            bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
+            bookmarksRepositoryFuture: ref.read(
+              bookmarksRepositoryProvider.future,
+            ),
             cacheManager: openVineImageCache,
             videoClipImportService: ref.read(videoClipImportServiceProvider),
           )

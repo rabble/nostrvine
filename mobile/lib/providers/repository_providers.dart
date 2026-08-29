@@ -576,14 +576,14 @@ NotifySubscriptionsRepository notifySubscriptionsRepository(Ref ref) {
 /// its in-memory snapshot and its serialization queue. That is #7596, and it
 /// is fixed next, not here.
 @riverpod
-Future<BookmarkService> bookmarkService(Ref ref) async {
+Future<BookmarksRepository> bookmarksRepository(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
 
-  return BookmarkService(
-    nostrService: nostrService,
-    authService: authService,
+  return BookmarksRepository(
+    nostrClient: nostrService,
+    signer: authService,
     prefs: prefs,
   );
 }

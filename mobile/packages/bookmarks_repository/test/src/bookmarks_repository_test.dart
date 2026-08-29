@@ -1,4 +1,4 @@
-// ABOUTME: Tests BookmarkService's NIP-51 kind 10003 read-modify-write contract
+// ABOUTME: Tests the NIP-51 kind 10003 read-modify-write contract
 // ABOUTME: Pins that an unreconciled publish can never truncate the relay list
 
 import 'dart:async';
@@ -29,9 +29,9 @@ void main() {
     registerFallbackValue(<Filter>[]);
   });
 
-  group(BookmarkService, () {
+  group(BookmarksRepository, () {
     late _MockNostrClient nostrClient;
-    late _MockBookmarkSigner authService;
+    late _MockBookmarkSigner signer;
     late SharedPreferences prefs;
     late String pubkey;
 
@@ -103,7 +103,7 @@ void main() {
     /// construction — the state a device has before it reconciles.
     Future<void> seedCachedBookmarks(List<String> eventIds) async {
       SharedPreferences.setMockInitialValues({
-        BookmarkService.globalBookmarksStorageKey: jsonEncode([
+        BookmarksRepository.globalBookmarksStorageKey: jsonEncode([
           for (final id in eventIds)
             {'type': 'e', 'id': id, 'relay': null, 'petname': null},
         ]),
@@ -123,10 +123,10 @@ void main() {
       );
     }
 
-    BookmarkService createService({DateTime Function()? now}) =>
-        BookmarkService(
-          nostrService: nostrClient,
-          authService: authService,
+    BookmarksRepository createService({DateTime Function()? now}) =>
+        BookmarksRepository(
+          nostrClient: nostrClient,
+          signer: signer,
           prefs: prefs,
           now: now ?? DateTime.now,
         );
@@ -169,7 +169,7 @@ void main() {
       pubkey = getPublicKey(privateKeyHex);
       identity = LocalNostrSigner(privateKeyHex);
       nostrClient = _MockNostrClient();
-      authService = _MockBookmarkSigner();
+      signer = _MockBookmarkSigner();
       signedTags = null;
       signedContent = null;
       signedCreatedAt = null;
@@ -177,13 +177,13 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
-      when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentPublicKeyHex).thenReturn(pubkey);
-      when(() => authService.currentIdentity).thenReturn(identity);
+      when(() => signer.isAuthenticated).thenReturn(true);
+      when(() => signer.currentPublicKeyHex).thenReturn(pubkey);
+      when(() => signer.currentIdentity).thenReturn(identity);
 
       // Capture what the service asks to sign, and hand back a real event.
       when(
-        () => authService.createAndSignEvent(
+        () => signer.createAndSignEvent(
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
@@ -270,7 +270,7 @@ void main() {
         'reports failure and keeps the cache when the query times out',
         () async {
           SharedPreferences.setMockInitialValues({
-            BookmarkService.globalBookmarksStorageKey: jsonEncode([
+            BookmarksRepository.globalBookmarksStorageKey: jsonEncode([
               {'type': 'e', 'id': 'cached', 'relay': null, 'petname': null},
             ]),
           });
@@ -351,7 +351,7 @@ void main() {
           );
           expect(
             jsonDecode(
-              prefs.getString(BookmarkService.globalBookmarksStorageKey)!,
+              prefs.getString(BookmarksRepository.globalBookmarksStorageKey)!,
             ),
             hasLength(1),
             reason: 'and it must not overwrite the offline snapshot either',
@@ -561,7 +561,8 @@ void main() {
 
           await service.syncGlobalBookmarks();
           clock = clock.add(
-            BookmarkService.absenceConfirmationTtl + const Duration(seconds: 1),
+            BookmarksRepository.absenceConfirmationTtl +
+                const Duration(seconds: 1),
           );
           await service.syncGlobalBookmarks();
 
@@ -602,8 +603,8 @@ void main() {
       );
 
       test('reports failure when signed out, without throwing', () async {
-        when(() => authService.isAuthenticated).thenReturn(false);
-        when(() => authService.currentPublicKeyHex).thenReturn(null);
+        when(() => signer.isAuthenticated).thenReturn(false);
+        when(() => signer.currentPublicKeyHex).thenReturn(null);
         final service = createService();
 
         expect(await service.syncGlobalBookmarks(), isFalse);
@@ -788,7 +789,7 @@ void main() {
               'saved until some later sync happens to wipe it',
         );
         expect(
-          prefs.getString(BookmarkService.globalBookmarksStorageKey) ?? '',
+          prefs.getString(BookmarksRepository.globalBookmarksStorageKey) ?? '',
           isNot(contains('new-one')),
           reason: 'an unconfirmed item must not survive a restart either',
         );
@@ -812,7 +813,7 @@ void main() {
           equals(['relay-a', 'new-one']),
         );
         expect(
-          prefs.getString(BookmarkService.globalBookmarksStorageKey) ?? '',
+          prefs.getString(BookmarksRepository.globalBookmarksStorageKey) ?? '',
           contains('new-one'),
         );
       });
@@ -1101,7 +1102,7 @@ void main() {
         ]);
         expect(
           jsonDecode(
-            prefs.getString(BookmarkService.globalBookmarksStorageKey)!,
+            prefs.getString(BookmarksRepository.globalBookmarksStorageKey)!,
           ),
           [
             {'type': 'e', 'id': 'video-a', 'relay': null, 'petname': null},
@@ -1114,7 +1115,7 @@ void main() {
         'a service built after the save still refuses the revision it '
         'replaced',
         () async {
-          // The writing surface builds a fresh BookmarkService per sheet
+          // The writing surface builds a fresh BookmarksRepository per sheet
           // (#7596), so an in-memory-only watermark is blank again by the
           // next save. That makes the ordinary save / close / save loop
           // reproduce #7163 with no concurrency involved at all.
@@ -1230,7 +1231,7 @@ void main() {
           expect(result.succeeded, isTrue);
 
           clock = clock.add(
-            BookmarkService.localPublishAbsenceGracePeriod +
+            BookmarksRepository.localPublishAbsenceGracePeriod +
                 const Duration(seconds: 1),
           );
           expect(
@@ -1323,7 +1324,7 @@ void main() {
       final clock = DateTime.utc(2026);
       final nowSeconds = clock.millisecondsSinceEpoch ~/ 1000;
       final drift = NostrTimestamp.getDriftToleranceForKind(
-        BookmarkService.globalBookmarksKind,
+        BookmarksRepository.globalBookmarksKind,
       );
 
       test(
@@ -1372,7 +1373,7 @@ void main() {
         // publish should use the step-past value, not the backdated default.
         final theirs = bookmarkListEvent(
           ['video-a'],
-          createdAt: nowSeconds + BookmarkService.maxPublishFutureSkew - 1,
+          createdAt: nowSeconds + BookmarksRepository.maxPublishFutureSkew - 1,
         );
         stubRelay(events: [theirs]);
         final service = createService(now: () => clock);
@@ -1384,7 +1385,7 @@ void main() {
 
         expect(
           signedCreatedAt,
-          nowSeconds + BookmarkService.maxPublishFutureSkew,
+          nowSeconds + BookmarksRepository.maxPublishFutureSkew,
         );
       });
 
@@ -1410,7 +1411,7 @@ void main() {
           expect(result.succeeded, isTrue);
           expect(
             signedCreatedAt,
-            nowSeconds + BookmarkService.maxPublishFutureSkew,
+            nowSeconds + BookmarksRepository.maxPublishFutureSkew,
           );
         },
       );
@@ -1761,7 +1762,7 @@ void main() {
         await service.syncGlobalBookmarks();
 
         expect(
-          prefs.getString(BookmarkService.globalBookmarksStorageKey),
+          prefs.getString(BookmarksRepository.globalBookmarksStorageKey),
           allOf(contains('public-one'), isNot(contains(privateVideo))),
           reason:
               'SharedPreferences is unencrypted, so caching private items '
