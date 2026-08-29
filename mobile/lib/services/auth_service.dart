@@ -5,8 +5,6 @@
 
 import 'dart:async';
 
-import 'package:bookmarks_repository/bookmarks_repository.dart'
-    show BookmarkSigner;
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -110,8 +108,7 @@ const _kBeforeSessionTeardownTimeout = Duration(seconds: 5);
 /// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
-class AuthService
-    implements BackgroundAwareService, BlockListSigner, BookmarkSigner {
+class AuthService implements BackgroundAwareService, BlockListSigner {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
     SecureKeyStorage? keyStorage,
@@ -293,7 +290,6 @@ class AuthService
   ///
   /// Use [requireIdentity] in code that runs only when authenticated
   /// (post-router-gate) to get a guaranteed non-null value.
-  @override
   NostrIdentity? get currentIdentity => _currentIdentity;
 
   /// The current user's signing identity, guaranteed non-null.
@@ -349,7 +345,6 @@ class AuthService
   /// Reads from [currentIdentity] when available (post-authentication),
   /// falls back to [_currentKeyContainer] or [_currentProfile] during the
   /// auth-screen lifecycle.
-  @override
   String? get currentPublicKeyHex =>
       _currentIdentity?.pubkey ??
       _currentKeyContainer?.publicKeyHex ??

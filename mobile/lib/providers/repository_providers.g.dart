@@ -831,7 +831,7 @@ final class BookmarksRepositoryProvider
 }
 
 String _$bookmarksRepositoryHash() =>
-    r'333e645c4b2c89e0b173453be6b1a59337655e7e';
+    r'99bea35c4a70f1f2bfdfe51e10c1af14b702b71c';
 
 /// Provider for NIP-17 DM repository.
 ///

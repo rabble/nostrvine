@@ -27,6 +27,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/bookmark_signer_adapter.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -583,7 +584,7 @@ Future<BookmarksRepository> bookmarksRepository(Ref ref) async {
 
   return BookmarksRepository(
     nostrClient: nostrService,
-    signer: authService,
+    signer: BookmarkSignerAdapter(authService),
     prefs: prefs,
   );
 }
