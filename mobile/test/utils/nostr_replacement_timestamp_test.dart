@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/utils/nostr_timestamp.dart';
 import 'package:openvine/utils/nostr_replacement_timestamp.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
 
 void main() {
   group(nextReplacementCreatedAt, () {

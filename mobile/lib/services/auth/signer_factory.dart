@@ -13,7 +13,6 @@ import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nip07_service.dart';
 import 'package:openvine/services/nip07_signer_adapter.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Crash-reporting port for the signer core.

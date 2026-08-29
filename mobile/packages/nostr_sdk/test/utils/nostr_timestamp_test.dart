@@ -2,8 +2,7 @@
 // ABOUTME: Verifies NostrTimestamp generates acceptable timestamps for relays
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/nostr_timestamp.dart';
-import 'package:unified_logger/unified_logger.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 void main() {
   group('NostrTimestamp', () {
@@ -44,14 +43,6 @@ void main() {
       final timestamp = NostrTimestamp.now(driftTolerance: tolerance);
       final currentTime = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
 
-      Log.info(
-        'Current time: $currentTime (${NostrTimestamp.format(currentTime)})',
-      );
-      Log.info(
-        'Kind 0 timestamp: $timestamp (${NostrTimestamp.format(timestamp)})',
-      );
-      Log.info('Difference: ${currentTime - timestamp} seconds');
-
       // Should be exactly 5 minutes (300 seconds) behind
       expect(timestamp, equals(currentTime - 300));
       expect(currentTime - timestamp, equals(300));
@@ -64,11 +55,6 @@ void main() {
 
     test('debug info should show timezone details', () {
       final debugInfo = NostrTimestamp.debugInfo();
-
-      Log.info('Debug info:');
-      debugInfo.forEach((key, value) {
-        Log.info('  $key: $value');
-      });
 
       expect(debugInfo, contains('local_time'));
       expect(debugInfo, contains('utc_time'));
