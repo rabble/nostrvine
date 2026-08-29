@@ -3576,7 +3576,7 @@
   },
   "dmDeleteRefusedMessage": "Couldn't delete for everyone. Your message is still there — tap Delete again to retry.",
   "@dmDeleteRefusedMessage": {
-    "description": "SnackBar text shown when a \"Delete for everyone\" was refused by send policy and will not be retried automatically (#8201). The message is returned to the thread rather than left hidden, because it was never retracted \u2014 so the copy says it is still there and points at the same Delete action, which re-drives it. There is no separate retry button."
+    "description": "SnackBar text shown when a \"Delete for everyone\" was refused for every recipient and will not be retried automatically (#8201). Only a wholly refused retraction reaches this \u2014 a mixed outcome, where some recipients accepted, stays hidden \u2014 so \"still there\" is accurate, and it points at the same Delete action, which re-drives it. There is no separate retry button."
   },
   "dmRetiredThreadClosedTitle": "This conversation is closed.",
   "@dmRetiredThreadClosedTitle": {
