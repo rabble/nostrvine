@@ -5660,6 +5660,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => 'Cuộc trò chuyện này đã đóng.';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Không thể xóa thông báo Divine Moderation này.';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Chúng tôi đã chuyển Divine Moderation sang một tài khoản mới. Không còn ai đọc tài khoản này nữa.';
 

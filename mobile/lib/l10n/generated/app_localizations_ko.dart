@@ -5411,6 +5411,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => '이 대화는 종료되었습니다.';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      '이 Divine Moderation 알림은 삭제할 수 없습니다.';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Divine Moderation을 새 계정으로 옮겼습니다. 이 계정은 더 이상 아무도 읽지 않습니다.';
 

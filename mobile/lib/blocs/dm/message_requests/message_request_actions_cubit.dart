@@ -145,7 +145,7 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
   /// list — the decision about what "all requests" excludes lives here, not in
   /// the view, and a new caller cannot forget it.
   ///
-  /// Protected conversations are skipped silently and stay on screen.
+  /// Protected conversations are skipped and remain in the request list.
   Future<void> removeAllRequests(List<DmConversation> conversations) async {
     final removable = [
       for (final conversation in conversations)

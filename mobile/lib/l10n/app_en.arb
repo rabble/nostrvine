@@ -3627,6 +3627,10 @@
   "@dmRetiredThreadClosedTitle": {
     "description": "Heading of the notice that replaces the message composer in a DM thread keyed on a retired Divine Moderation account (#6416)."
   },
+  "messageRequestModerationNoticeCannotBeRemoved": "This Divine Moderation notice can't be removed.",
+  "@messageRequestModerationNoticeCannotBeRemoved": {
+    "description": "SnackBar shown when a user tries to decline and remove a message request that resolves to a protected Divine Moderation notice (#6971)."
+  },
   "dmRetiredThreadClosedBody": "We moved Divine Moderation to a new account. Nobody reads this one anymore.",
   "@dmRetiredThreadClosedBody": {
     "description": "Body of the closed-thread notice in a retired Divine Moderation DM thread (#6416), below `dmRetiredThreadClosedTitle`. Deliberately promises no reply: the current support inbox is ingested but only lightly staffed, so copy implying someone is waiting would overstate it. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale."

@@ -3056,6 +3056,7 @@
   },
   "dmSendBlockedRetiredMessage": "没有人会看到这个对话。请改为给 Divine Moderation 发私信。",
   "dmRetiredThreadClosedTitle": "此对话已关闭。",
+  "messageRequestModerationNoticeCannotBeRemoved": "无法移除此 Divine Moderation 通知。",
   "dmRetiredThreadClosedBody": "我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。",
   "dmRetiredThreadOpenSupport": "给 Divine Moderation 发私信",
   "dmSendFailedMessage": "消息发送失败",

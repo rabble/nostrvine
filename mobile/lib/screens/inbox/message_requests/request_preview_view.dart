@@ -537,7 +537,8 @@ class _DeclineAndRemoveButton extends StatelessWidget {
         // Not an error: the row is a Divine moderation notice the cubit
         // protects. Only the unresolved states can reach it, since the action
         // bar drops this button once the peer resolves (#6971).
-        final refusedText = context.l10n.dmRetiredThreadClosedTitle;
+        final refusedText =
+            context.l10n.messageRequestModerationNoticeCannotBeRemoved;
         final outcome = await cubit.declineRequest(conversationId);
         switch (outcome) {
           case DeclineRequestOutcome.failed:

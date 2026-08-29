@@ -5367,6 +5367,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => '此对话已关闭。';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      '无法移除此 Divine Moderation 通知。';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       '我们已把 Divine Moderation 迁移到新账号。这个账号已经没人看了。';
 

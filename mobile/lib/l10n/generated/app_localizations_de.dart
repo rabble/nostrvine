@@ -5763,6 +5763,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Unterhaltung ist geschlossen.';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'Dieser Hinweis von Divine Moderation kann nicht entfernt werden.';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Wir haben Divine Moderation auf ein neues Konto umgezogen. Dieses hier liest niemand mehr.';
 

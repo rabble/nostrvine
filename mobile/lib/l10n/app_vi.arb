@@ -3056,6 +3056,7 @@
   },
   "dmSendBlockedRetiredMessage": "Không ai đọc cuộc trò chuyện này. Hãy nhắn cho Divine Moderation.",
   "dmRetiredThreadClosedTitle": "Cuộc trò chuyện này đã đóng.",
+  "messageRequestModerationNoticeCannotBeRemoved": "Không thể xóa thông báo Divine Moderation này.",
   "dmRetiredThreadClosedBody": "Chúng tôi đã chuyển Divine Moderation sang một tài khoản mới. Không còn ai đọc tài khoản này nữa.",
   "dmRetiredThreadOpenSupport": "Nhắn tin cho Divine Moderation",
   "dmSendFailedMessage": "Tin nhắn không gửi được",

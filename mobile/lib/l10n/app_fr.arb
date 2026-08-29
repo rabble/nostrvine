@@ -2288,6 +2288,7 @@
     "dmSendBlockedMessage": "Tu ne peux écrire qu'aux comptes officiels Divine",
     "dmSendBlockedRetiredMessage": "Personne ne lit cette conversation. Écris plutôt à Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Cette conversation est fermée.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Cet avis de Divine Moderation ne peut pas être supprimé.",
     "dmRetiredThreadClosedBody": "Nous avons déplacé Divine Moderation vers un nouveau compte. Personne ne lit plus celui-ci.",
     "dmRetiredThreadOpenSupport": "Écrire à Divine Moderation",
     "dmSendFailedMessage": "Impossible d'envoyer le message",

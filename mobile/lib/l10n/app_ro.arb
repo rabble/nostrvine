@@ -2288,6 +2288,7 @@
     "dmSendBlockedMessage": "Poți trimite mesaje doar conturilor oficiale Divine",
     "dmSendBlockedRetiredMessage": "Nimeni nu citește această conversație. Scrie către Divine Moderation.",
     "dmRetiredThreadClosedTitle": "Această conversație este închisă.",
+    "messageRequestModerationNoticeCannotBeRemoved": "Această notificare de la Divine Moderation nu poate fi eliminată.",
     "dmRetiredThreadClosedBody": "Am mutat Divine Moderation pe un cont nou. Acesta nu mai este citit de nimeni.",
     "dmRetiredThreadOpenSupport": "Scrie către Divine Moderation",
     "dmSendFailedMessage": "Mesajul nu a putut fi trimis",

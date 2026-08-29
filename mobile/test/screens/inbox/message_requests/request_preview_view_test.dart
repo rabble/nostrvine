@@ -946,6 +946,32 @@ void main() {
         expect(find.text(l10n.inboxRemovedConversation), findsOneWidget);
       });
 
+      testWidgets('protected unresolved request is kept with an explanation', (
+        tester,
+      ) async {
+        when(
+          () => mockActionsCubit.declineRequest(any()),
+        ).thenAnswer((_) async => DeclineRequestOutcome.refused);
+        when(mockGoRouter.canPop).thenReturn(true);
+
+        await pumpTwice(
+          tester,
+          buildStatusSubject(
+            const RequestPreviewState(status: RequestPreviewStatus.error),
+          ),
+        );
+
+        await tester.tap(find.text(l10n.messageRequestDeclineAndRemoveButton));
+        await tester.pump();
+
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsOneWidget,
+        );
+        verifyNever(() => mockGoRouter.pop());
+        verifyNever(() => mockGoRouter.go(any()));
+      });
+
       testWidgets('error does not name the sender or count its messages', (
         tester,
       ) async {

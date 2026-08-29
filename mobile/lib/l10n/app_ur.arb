@@ -3056,6 +3056,7 @@
   },
   "dmSendBlockedRetiredMessage": "یہ گفتگو کوئی نہیں پڑھ رہا۔ اس کے بجائے Divine Moderation کو پیغام بھیجیں۔",
   "dmRetiredThreadClosedTitle": "یہ گفتگو بند ہو چکی ہے۔",
+  "messageRequestModerationNoticeCannotBeRemoved": "Divine Moderation کا یہ نوٹس ہٹایا نہیں جا سکتا۔",
   "dmRetiredThreadClosedBody": "ہم نے Divine Moderation کو نئے اکاؤنٹ پر منتقل کر دیا ہے۔ اسے اب کوئی نہیں پڑھتا۔",
   "dmRetiredThreadOpenSupport": "Divine Moderation کو پیغام بھیجیں",
   "dmSendFailedMessage": "پیغام نہیں بھیجا جا سکا",

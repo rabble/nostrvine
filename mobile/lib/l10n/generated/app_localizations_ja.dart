@@ -5391,6 +5391,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmRetiredThreadClosedTitle => 'このスレッドは終了しました。';
 
   @override
+  String get messageRequestModerationNoticeCannotBeRemoved =>
+      'このDivine Moderationのお知らせは削除できません。';
+
+  @override
   String get dmRetiredThreadClosedBody =>
       'Divine Moderation は新しいアカウントに移りました。こちらはもう誰も読んでいません。';
 

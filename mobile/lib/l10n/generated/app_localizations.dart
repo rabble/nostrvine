@@ -9803,6 +9803,12 @@ abstract class AppLocalizations {
   /// **'This conversation is closed.'**
   String get dmRetiredThreadClosedTitle;
 
+  /// SnackBar shown when a user tries to decline and remove a message request that resolves to a protected Divine Moderation notice (#6971).
+  ///
+  /// In en, this message translates to:
+  /// **'This Divine Moderation notice can\'t be removed.'**
+  String get messageRequestModerationNoticeCannotBeRemoved;
+
   /// Body of the closed-thread notice in a retired Divine Moderation DM thread (#6416), below `dmRetiredThreadClosedTitle`. Deliberately promises no reply: the current support inbox is ingested but only lightly staffed, so copy implying someone is waiting would overstate it. 'Divine Moderation' is the account name — keep it as shown in `inboxSupportRowTitle` for this locale.
   ///
   /// In en, this message translates to:
