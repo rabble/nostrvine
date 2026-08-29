@@ -289,7 +289,6 @@ class VideoRecorderBlocState extends Equatable {
     bool? isVideoStabilizationSupported,
     TimerDuration? timerDuration,
     CameraInitializationError? initializationError,
-    bool clearInitializationError = false,
     bool? showLastClipOverlay,
     bool? showGridLines,
     bool? isStartingRecording,
@@ -334,9 +333,7 @@ class VideoRecorderBlocState extends Equatable {
       isVideoStabilizationSupported:
           isVideoStabilizationSupported ?? this.isVideoStabilizationSupported,
       timerDuration: timerDuration ?? this.timerDuration,
-      initializationError: clearInitializationError
-          ? null
-          : (initializationError ?? this.initializationError),
+      initializationError: initializationError ?? this.initializationError,
       showLastClipOverlay: showLastClipOverlay ?? this.showLastClipOverlay,
       showGridLines: showGridLines ?? this.showGridLines,
       isStartingRecording: isStartingRecording ?? this.isStartingRecording,

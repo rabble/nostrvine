@@ -56,6 +56,9 @@ abstract class CameraService {
   /// speech-tuned noise suppression, so instruments survive at their real
   /// level (default: false). iOS and Android — see
   /// `MusicModePreferenceService`.
+  ///
+  /// Mobile implementations rethrow platform initialization failures after
+  /// updating [initializationError]. Callers must handle those exceptions.
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
