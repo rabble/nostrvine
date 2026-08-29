@@ -183,9 +183,11 @@ class _PreviewBackdrop extends StatelessWidget {
 /// conversation route, and the whole point of this branch is that there isn't
 /// one. Decline stays, because `declineRequest` keys off the conversation ID
 /// alone: a preview read that fails is no reason to make an unwanted request
-/// undismissable, leaving the inbox-wide "Remove all requests" as the only way
-/// out. The app bar falls back to the section title, since the loaded header's
-/// name would be a generated placeholder here.
+/// undismissable. Unlike the loaded state, this branch cannot check whether
+/// the peer is a Divine moderation identity — there is no counterparty to
+/// test, and the id is a hash of the participants — so the cubit answers that
+/// for it and refuses (#6971). The app bar falls back to the section title,
+/// since the loaded header's name would be a generated placeholder here.
 class _UnresolvedRequestScaffold extends StatelessWidget {
   const _UnresolvedRequestScaffold({required this.child});
 
@@ -503,6 +505,10 @@ class _ActionButtons extends StatelessWidget {
 
 /// The one action that survives an unresolved counterparty: `declineRequest`
 /// takes the conversation ID, not the participants.
+///
+/// Not rendered at all once the peer resolves to a Divine moderation identity
+/// — see [_ActionButtons]. It stays here because this branch has no peer to
+/// test, so the refusal comes back from the cubit instead.
 ///
 /// [displayName] is null on the unresolved-counterparty states, where there is
 /// no name to put in the confirmation snackbar; the decline still runs.
