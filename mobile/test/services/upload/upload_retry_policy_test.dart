@@ -631,7 +631,7 @@ void main() {
       final updated = captured.first as PendingUpload;
       expect(
         updated.uploadProgress,
-        lessThanOrEqualTo(UploadManager.videoProgressShare),
+        lessThanOrEqualTo(videoProgressShare),
       );
     });
 

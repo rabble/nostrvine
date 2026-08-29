@@ -1,5 +1,5 @@
-// ABOUTME: Test for new startUploadFromDraft() unified upload flow
-// ABOUTME: Verifies ProofMode data flows correctly from draft to upload
+// ABOUTME: Tests the draft -> upload path: DraftUploadMaterializer composed
+// ABOUTME: with UploadManager.startUpload, exactly as VideoPublishService does.
 
 import 'dart:io';
 
@@ -9,15 +9,16 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
-import 'package:openvine/models/pending_upload.dart' show UploadStatus;
+import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
+import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-import '../helpers/test_helpers.dart';
-import '../mocks/mock_path_provider_platform.dart';
+import '../../helpers/test_helpers.dart';
+import '../../mocks/mock_path_provider_platform.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -27,8 +28,41 @@ void main() {
     registerFallbackValue(File(''));
   });
 
-  group('UploadManager.startUploadFromDraft', () {
+  group('draft -> upload path', () {
     late UploadManager uploadManager;
+
+    // Composes DraftUploadMaterializer + UploadManager.startUpload exactly as
+    // VideoPublishService._startNewUpload does, so these keep covering the
+    // draft -> upload path after #6935 split it into two units.
+    Future<PendingUpload> startUploadFromDraft({
+      required DivineVideoDraft draft,
+      required String nostrPubkey,
+      Duration? videoDuration,
+    }) async {
+      final materialized = await const DraftUploadMaterializer().materialize(
+        draft: draft,
+        pendingUploads: uploadManager.pendingUploads,
+        videoDuration: videoDuration,
+      );
+      final upload = await uploadManager.startUpload(
+        videoFile: materialized.videoFile,
+        nostrPubkey: nostrPubkey,
+        title: draft.title,
+        description: draft.description,
+        hashtags: draft.hashtags.toList(),
+        videoWidth: materialized.videoWidth,
+        videoHeight: materialized.videoHeight,
+        videoDuration: materialized.videoDuration,
+        proofManifestJson: draft.proofManifestJson,
+        thumbnailTimestamp: draft.thumbnailTimestamp,
+      );
+      uploadManager.registerTransientRenderPaths(
+        upload.id,
+        materialized.transientRenderPaths,
+      );
+      return upload;
+    }
+
     late _MockBlossomUploadService mockBlossomService;
     late Directory tempDir;
     late File sourceVideoFile;
@@ -125,7 +159,7 @@ void main() {
       expect(draft.hasProofMode, isTrue);
       expect(draft.proofManifestJson, equals(proofJson));
 
-      final upload = await uploadManager.startUploadFromDraft(
+      final upload = await startUploadFromDraft(
         draft: draft,
         nostrPubkey: 'test-pubkey',
         videoDuration: const Duration(seconds: 5),
@@ -172,7 +206,7 @@ void main() {
       expect(updatedDraft.proofManifestJson, equals(proofJson));
       expect(updatedDraft.hasProofMode, isTrue);
 
-      final upload = await uploadManager.startUploadFromDraft(
+      final upload = await startUploadFromDraft(
         draft: updatedDraft,
         nostrPubkey: 'test-pubkey',
         videoDuration: const Duration(seconds: 5),
@@ -244,7 +278,7 @@ void main() {
         ),
       );
 
-      final upload = await uploadManager.startUploadFromDraft(
+      final upload = await startUploadFromDraft(
         draft: draft,
         nostrPubkey: 'test-pubkey',
         videoDuration: const Duration(seconds: 6),
@@ -274,7 +308,7 @@ void main() {
       expect(draft.hasProofMode, isFalse);
       expect(draft.proofManifestJson, isNull);
 
-      final upload = await uploadManager.startUploadFromDraft(
+      final upload = await startUploadFromDraft(
         draft: draft,
         nostrPubkey: 'test-pubkey',
         videoDuration: const Duration(seconds: 5),
@@ -332,7 +366,7 @@ void main() {
           selectedApproach: 'native',
         );
 
-        final upload = await uploadManager.startUploadFromDraft(
+        final upload = await startUploadFromDraft(
           draft: draft,
           nostrPubkey: 'test-pubkey',
         );
@@ -416,7 +450,7 @@ void main() {
       );
 
       await expectLater(
-        () => uploadManager.startUploadFromDraft(
+        () => startUploadFromDraft(
           draft: draft,
           nostrPubkey: 'test-pubkey',
         ),
@@ -496,7 +530,7 @@ void main() {
         );
 
         await expectLater(
-          () => uploadManager.startUploadFromDraft(
+          () => startUploadFromDraft(
             draft: draft,
             nostrPubkey: 'test-pubkey',
             videoDuration: const Duration(seconds: 4),

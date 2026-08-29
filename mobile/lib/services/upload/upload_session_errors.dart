@@ -1,5 +1,6 @@
-// ABOUTME: Shared predicate for detecting expired resumable-upload sessions,
-// ABOUTME: used by UploadRetryPolicy, UploadProgressReporter, and UploadManager.
+// ABOUTME: Shared upload failure types and the expired-resumable-session
+// ABOUTME: predicate, used by UploadRetryPolicy, UploadProgressReporter and
+// ABOUTME: UploadManager.
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 
@@ -21,4 +22,28 @@ bool isExpiredResumableSessionError(dynamic error) {
   final errorMessage = error.toString().toLowerCase();
   return errorMessage.contains('session expired') ||
       errorMessage.contains('session is no longer available');
+}
+
+/// Exception thrown when a [BlossomUploadResult] indicates failure.
+///
+/// Carries the HTTP [statusCode] and the typed [failureReason] so that
+/// [categorizeError] and [isRetriableError] can branch on them directly
+/// instead of parsing error-message strings. The [failureReason]
+/// distinguishes a transient inability to *produce* a signed auth header
+/// ([BlossomUploadFailureReason.authUnavailable]) from a permanent
+/// server-side auth rejection ([BlossomUploadFailureReason.auth]) — a
+/// distinction the bare error string cannot carry.
+class BlossomUploadFailureException implements Exception {
+  const BlossomUploadFailureException(
+    this.message, {
+    this.statusCode,
+    this.failureReason,
+  });
+
+  final String message;
+  final int? statusCode;
+  final BlossomUploadFailureReason? failureReason;
+
+  @override
+  String toString() => message;
 }

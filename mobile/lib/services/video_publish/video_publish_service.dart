@@ -26,6 +26,7 @@ import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -179,8 +180,10 @@ class VideoPublishService {
     this.languagePreferenceService,
     this.mentionResolutionService,
     PerformanceTraceMonitor? performanceMonitor,
+    DraftUploadMaterializer draftMaterializer = const DraftUploadMaterializer(),
     Duration subtitlePublishTimeout = _defaultSubtitlePublishTimeout,
-  }) : _performanceMonitor =
+  }) : _draftMaterializer = draftMaterializer,
+       _performanceMonitor =
            performanceMonitor ?? const NoOpPerformanceTraceMonitor(),
        _subtitlePublishTimeout = subtitlePublishTimeout;
 
@@ -214,6 +217,7 @@ class VideoPublishService {
   /// Reports the publish phase breakdown to Firebase Performance. Optional so
   /// unit tests get the no-op monitor and never reach Firebase.
   final PerformanceTraceMonitor _performanceMonitor;
+  final DraftUploadMaterializer _draftMaterializer;
 
   /// Deadline for each optional caption-asset network step. Captions are
   /// best-effort, so a stalled upload / relay publish must never hold up the
@@ -727,13 +731,12 @@ class VideoPublishService {
     return _startNewUpload(pubkey, draft);
   }
 
-  /// Resolves the video file path from a draft, mirroring the logic
-  /// in [UploadManager.startUploadFromDraft].
+  /// Resolves the video file path from a draft, mirroring the materializer.
   ///
   /// Note: when `finalRenderedClip` is absent and the draft has multiple
   /// clips, this returns the first source clip path. However,
-  /// [UploadManager.startUploadFromDraft] merges multiple clips into a
-  /// temp file at a different path, so [findReusableUpload] will not
+  /// [DraftUploadMaterializer] merges multiple clips into a temp file at a
+  /// different path, so [findReusableUpload] will not
   /// match in that case. The caller falls through to a new upload, which
   /// is the correct behavior since the merged file is ephemeral.
   Future<String?> _resolveVideoPath(DivineVideoDraft draft) async {
@@ -833,11 +836,16 @@ class VideoPublishService {
         return true;
       case .failed:
         return false;
+      // Terminal, not a poll state. `paused` is a tombstone enum value that no
+      // shipped code path writes (#6935). Polling it would loop here forever:
+      // this method recurses with no timeout or iteration cap, and none of its
+      // call sites wrap it in a timeout.
+      case .paused:
+        return false;
       case .uploading:
       case .processing:
       case .pending:
       case .retrying:
-      case .paused:
         await Future<void>.delayed(const Duration(milliseconds: 50));
     }
     return _pollUploadProgress(draftId, uploadId);
@@ -858,10 +866,27 @@ class VideoPublishService {
     Log.info('📝 Starting upload to Blossom...', category: .video);
     _logProofModeStatus(draft);
 
-    final pendingUpload = await uploadManager.startUploadFromDraft(
+    final materialized = await _draftMaterializer.materialize(
       draft: draft,
+      pendingUploads: uploadManager.pendingUploads,
+    );
+
+    final pendingUpload = await uploadManager.startUpload(
+      videoFile: materialized.videoFile,
       nostrPubkey: pubkey,
+      title: draft.title,
+      description: draft.description,
+      hashtags: draft.hashtags.toList(),
+      videoWidth: materialized.videoWidth,
+      videoHeight: materialized.videoHeight,
+      videoDuration: materialized.videoDuration,
+      proofManifestJson: draft.proofManifestJson,
+      thumbnailTimestamp: draft.thumbnailTimestamp,
       onProgress: (value) => _reportUploadProgress(draft.id, value),
+    );
+    uploadManager.registerTransientRenderPaths(
+      pendingUpload.id,
+      materialized.transientRenderPaths,
     );
     _backgroundUploadId = pendingUpload.id;
 

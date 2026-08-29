@@ -36,9 +36,12 @@ enum UploadStatus {
 
   @HiveField(6)
   failed, // Upload or processing failed
-
+  // Tombstone: no shipped code path writes this. The user-facing pause
+  // feature was removed in #6935 (it never had a production caller). The
+  // case is retained because it is a persisted Hive field value, so
+  // dropping it is a separate storage-migration decision.
   @HiveField(7)
-  paused, // Upload paused by user
+  paused,
 }
 
 /// Represents a video upload in progress or completed
@@ -303,53 +306,6 @@ class PendingUpload {
 
   /// Check if the upload can be retried
   bool get canRetry => status == UploadStatus.failed && (retryCount ?? 0) < 3;
-
-  /// Get display-friendly status text
-  String get statusText {
-    switch (status) {
-      case UploadStatus.pending:
-        return 'Waiting to upload...';
-      case UploadStatus.uploading:
-        if (uploadProgress != null) {
-          return 'Uploading ${(uploadProgress! * 100).toInt()}%...';
-        }
-        return 'Uploading...';
-      case UploadStatus.retrying:
-        return 'Retrying upload...';
-      case UploadStatus.processing:
-        return 'Processing video...';
-      case UploadStatus.readyToPublish:
-        return 'Ready to publish';
-      case UploadStatus.published:
-        return 'Published';
-      case UploadStatus.failed:
-        return 'Failed: ${errorMessage ?? 'Unknown error'}';
-      case UploadStatus.paused:
-        return 'Upload paused';
-    }
-  }
-
-  /// Get progress value for UI (0.0 to 1.0)
-  double get progressValue {
-    switch (status) {
-      case UploadStatus.pending:
-        return 0;
-      case UploadStatus.uploading:
-        return uploadProgress ?? 0.0;
-      case UploadStatus.retrying:
-        return uploadProgress ?? 0.0;
-      case UploadStatus.processing:
-        return 0.8; // Show 80% when processing
-      case UploadStatus.readyToPublish:
-        return 0.9; // Show 90% when ready
-      case UploadStatus.published:
-        return 1;
-      case UploadStatus.failed:
-        return 0;
-      case UploadStatus.paused:
-        return uploadProgress ?? 0.0; // Preserve current progress
-    }
-  }
 
   @override
   String toString() =>

@@ -572,8 +572,10 @@ void main() {
         expect(persisted.resumableSession?.nextOffset, equals(chunkSize * 5));
 
         final expectedProgress =
-            ((chunkSize * 5) / fileSize * UploadManager.videoProgressShare)
-                .clamp(0.0, UploadManager.videoProgressShare);
+            ((chunkSize * 5) / fileSize * videoProgressShare).clamp(
+              0.0,
+              videoProgressShare,
+            );
         expect(persisted.uploadProgress, closeTo(expectedProgress, 0.001));
 
         // Complete the upload future and await the full startUpload so

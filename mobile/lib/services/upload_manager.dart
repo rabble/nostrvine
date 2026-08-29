@@ -13,95 +13,28 @@ import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/services/temp_render_janitor.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
+import 'package:openvine/services/upload/upload_config.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload/upload_retry_policy.dart';
 import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Exception thrown when a [BlossomUploadResult] indicates failure.
-///
-/// Carries the HTTP [statusCode] and the typed [failureReason] so that
-/// [categorizeError] and [isRetriableError] can branch on them directly
-/// instead of parsing error-message strings. The [failureReason]
-/// distinguishes a transient inability to *produce* a signed auth header
-/// ([BlossomUploadFailureReason.authUnavailable]) from a permanent
-/// server-side auth rejection ([BlossomUploadFailureReason.auth]) — a
-/// distinction the bare error string cannot carry.
-class BlossomUploadFailureException implements Exception {
-  const BlossomUploadFailureException(
-    this.message, {
-    this.statusCode,
-    this.failureReason,
-  });
-
-  final String message;
-  final int? statusCode;
-  final BlossomUploadFailureReason? failureReason;
-
-  @override
-  String toString() => message;
-}
-
-/// Upload retry configuration
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class UploadRetryConfig {
-  const UploadRetryConfig({
-    this.maxRetries = 5,
-    this.initialDelay = const Duration(seconds: 2),
-    this.maxDelay = const Duration(minutes: 5),
-    this.backoffMultiplier = 2.0,
-    this.networkTimeout = const Duration(minutes: 10),
-  });
-  final int maxRetries;
-  final Duration initialDelay;
-  final Duration maxDelay;
-  final double backoffMultiplier;
-  final Duration networkTimeout;
-}
-
-/// Upload performance metrics
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class UploadMetrics {
-  const UploadMetrics({
-    required this.uploadId,
-    required this.startTime,
-    required this.retryCount,
-    required this.fileSizeMB,
-    required this.wasSuccessful,
-    this.endTime,
-    this.uploadDuration,
-    this.throughputMBps,
-    this.errorCategory,
-  });
-  final String uploadId;
-  final DateTime startTime;
-  final DateTime? endTime;
-  final Duration? uploadDuration;
-  final int retryCount;
-  final double fileSizeMB;
-  final double? throughputMBps;
-  final String? errorCategory;
-  final bool wasSuccessful;
-}
-
-/// Upload target options
+export 'package:openvine/services/upload/upload_config.dart'
+    show UploadRetryConfig, videoProgressShare;
+export 'package:openvine/services/upload/upload_progress_reporter.dart'
+    show UploadMetrics;
+export 'package:openvine/services/upload/upload_session_errors.dart'
+    show BlossomUploadFailureException;
 
 /// App-layer adapter forwarding the upload pipeline's [UploadCrashReporter]
 /// port to the Firebase-backed [CrashReportingService].
@@ -139,8 +72,24 @@ typedef ThumbnailExtractor =
       required int quality,
     });
 
+/// App-layer adapter forwarding the upload pipeline's [TransientRenderCleaner]
+/// port to [StopMotionRenderService].
+///
+/// Keeps the upload pipeline free of a video-editor import so it can move into
+/// a pure-Dart package; the manager injects this adapter by default.
+class StopMotionTransientRenderCleaner implements TransientRenderCleaner {
+  const StopMotionTransientRenderCleaner();
+
+  @override
+  bool isMaterializedOutputPath(String filePath) =>
+      StopMotionRenderService.isMaterializedOutputPath(filePath);
+
+  @override
+  Future<void> cleanupMaterializedOutputPath(String filePath) =>
+      StopMotionRenderService.cleanupMaterializedOutputPath(filePath);
+}
+
 /// Manages video uploads and their persistent state with enhanced reliability
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class UploadManager implements BackgroundAwareService {
   UploadManager({
     required BlossomUploadService blossomService,
@@ -153,8 +102,11 @@ class UploadManager implements BackgroundAwareService {
     this.useBackgroundUpload = false,
     BackgroundActivityManager? backgroundActivityManager,
     ThumbnailExtractor? thumbnailExtractor,
+    TransientRenderCleaner? transientRenderCleaner,
   }) : _blossomService = blossomService,
        _extractThumbnail = thumbnailExtractor ?? _defaultThumbnailExtractor,
+       _transientRenderCleaner =
+           transientRenderCleaner ?? const StopMotionTransientRenderCleaner(),
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
@@ -176,16 +128,6 @@ class UploadManager implements BackgroundAwareService {
       crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
     );
   }
-
-  /// Share of the progress bar driven by the video transfer.
-  ///
-  /// The remainder covers joining the thumbnail leg, which runs in parallel and
-  /// is virtually always finished first — so the bar reaches this mark and then
-  /// completes, rather than sitting at 100% while the publish is still working.
-  ///
-  /// [UploadRetryPolicy] persists its resumable checkpoint on the same scale,
-  /// so the two writers of `uploadProgress` cannot disagree on the ceiling.
-  static const double videoProgressShare = 0.95;
 
   /// Attempts the OS background uploader
   /// ([BlossomUploadService.uploadVideoInBackground]) *first* for a fresh
@@ -231,13 +173,14 @@ class UploadManager implements BackgroundAwareService {
   late final UploadRetryPolicy _retryPolicy;
   late final UploadProgressReporter _reporter;
   final Map<String, Set<String>> _transientRenderPathsByUploadId = {};
+  final TransientRenderCleaner _transientRenderCleaner;
 
   // Processing-completion polls keyed by upload id, so dispose() can
   // cancel them — an untracked periodic timer would keep firing against
   // a disposed manager for up to 5 minutes.
   final Map<String, Timer> _processingPollTimers = {};
 
-  // Uploads the user paused or cancelled while their transfer was still in
+  // Uploads the user cancelled while their transfer was still in
   // flight. Cancelling an OS background transfer emits a `cancelled` terminal
   // event that resolves the in-flight [_performUpload] future as a failure; a
   // marker here lets that path recognise a user-initiated stop and skip
@@ -274,10 +217,6 @@ class UploadManager implements BackgroundAwareService {
   @visibleForTesting
   bool isUploadWaitingForRetryBackoff(String uploadId) =>
       _retryPolicy.isWaitingForBackoff(uploadId);
-
-  /// Drives a recovery sweep on demand. Visible for testing.
-  @visibleForTesting
-  Future<void> recoverStuckUploadsForTest() => _recoverStuckUploads();
 
   void _registerForBackgroundActivity() {
     if (_isBackgroundRegistered) return;
@@ -421,169 +360,7 @@ class UploadManager implements BackgroundAwareService {
   PendingUpload? findReusableUpload(String filePath) =>
       _store.findReusableUpload(filePath);
 
-  /// Start upload from VineDraft (preferred method - single source of truth)
-  Future<PendingUpload> startUploadFromDraft({
-    required DivineVideoDraft draft,
-    required String nostrPubkey,
-    Duration? videoDuration,
-    ValueChanged<double>? onProgress,
-  }) async {
-    Log.info(
-      '🚀 === STARTING UPLOAD FROM DRAFT ===',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-    Log.info(
-      '📜 Draft ID: ${draft.id}, hasProofMode: ${draft.hasProofMode}',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    if (draft.hasProofMode) {
-      Log.info(
-        '📜 Native ProofMode JSON length: ${draft.proofManifestJson?.length ?? 0} characters',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-
-    // A stop-motion clip's source of truth is its stills, not an mp4, so
-    // requireVideo throws on one. Publish normally materializes it up front and
-    // hands the upload the rendered clip; this fallback path only runs when
-    // that render has gone missing, so it has to re-render rather than
-    // dereference a video that was never there.
-    //
-    // Each fallback render is a transient mp4 in the app documents dir.
-    // Track the pairs so they can be reaped once the upload has consumed them.
-    final transientRenders =
-        <({DivineVideoClip source, DivineVideoClip materialized})>[];
-    Future<DivineVideoClip> materializedSource(DivineVideoClip clip) async {
-      if (!clip.isStopMotion) return clip;
-      final DivineVideoClip? materialized;
-      try {
-        materialized = await StopMotionRenderService.materialize(clip);
-      } on RenderCanceledException {
-        throw StateError(
-          'Stop-motion assembly cancelled for clip ${clip.id} — nothing to upload',
-        );
-      }
-      if (materialized == null) {
-        throw StateError(
-          'Stop-motion assembly failed for clip ${clip.id} — nothing to upload',
-        );
-      }
-      transientRenders.add((source: clip, materialized: materialized));
-      return materialized;
-    }
-
-    Future<String> prepareUploadFromSourceClips() async {
-      if (draft.clips.length == 1) {
-        final source = await materializedSource(draft.clips.first);
-        return source.requireVideo.safeFilePath();
-      }
-
-      final tempDir = await getTemporaryDirectory();
-      TempRenderJanitor.deleteStaleMergedUploadRenders(tempDir, pendingUploads);
-      final mergedPath = path.join(
-        tempDir.path,
-        'merged_${DateTime.now().microsecondsSinceEpoch}.mp4',
-      );
-      Log.info(
-        '🎬 Merging ${draft.clips.length} clips into single video '
-        '(unexpected: clips should be pre-merged at this point)...',
-        name: 'UploadManager',
-        category: .video,
-      );
-      final videoSegments = <VideoSegment>[
-        for (final clip in draft.clips)
-          VideoSegment(video: (await materializedSource(clip)).requireVideo),
-      ];
-      await VideoEditorRenderService.renderNativeVideoToFile(
-        mergedPath,
-        VideoRenderData(
-          videoSegments: videoSegments,
-          endTime: VideoEditorConstants.maxDuration,
-          shouldOptimizeForNetworkUse: true,
-        ),
-      );
-      Log.info(
-        '✅ Video merge completed: $mergedPath',
-        name: 'UploadManager',
-        category: .video,
-      );
-      return mergedPath;
-    }
-
-    // Prefer the persisted final render when available. It preserves editor
-    // overlays and gives retries/background uploads a stable file path.
-    var resolvedDuration = videoDuration;
-    String videoFilePath;
-    final renderedClip = draft.finalRenderedClip;
-    if (renderedClip != null) {
-      final renderedPath = await renderedClip.requireVideo.safeFilePath();
-      if (File(renderedPath).existsSync()) {
-        videoFilePath = renderedPath;
-        resolvedDuration ??= renderedClip.duration;
-        Log.info(
-          '🎬 Using final rendered clip for upload: $videoFilePath',
-          name: 'UploadManager',
-          category: .video,
-        );
-      } else {
-        Log.warning(
-          '⚠️ Final rendered clip missing at $renderedPath - falling back to source clips',
-          name: 'UploadManager',
-          category: .video,
-        );
-        videoFilePath = await prepareUploadFromSourceClips();
-      }
-    } else {
-      videoFilePath = await prepareUploadFromSourceClips();
-    }
-
-    int? videoWidth;
-    int? videoHeight;
-
-    try {
-      final meta = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(videoFilePath),
-      );
-      resolvedDuration ??= meta.duration;
-      videoWidth = meta.resolution.width.round();
-      videoHeight = meta.resolution.height.round();
-    } catch (e) {
-      Log.warning(
-        '⚠️ Could not extract video metadata: $e',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-    }
-
-    final upload = await _startUploadInternal(
-      videoFile: File(videoFilePath),
-      nostrPubkey: nostrPubkey,
-      title: draft.title,
-      description: draft.description,
-      hashtags: draft.hashtags.toList(),
-      videoWidth: videoWidth,
-      videoHeight: videoHeight,
-      videoDuration: resolvedDuration,
-      proofManifestJson: draft.proofManifestJson,
-      onProgress: onProgress,
-      thumbnailTimestamp: draft.thumbnailTimestamp,
-    );
-
-    if (transientRenders.isNotEmpty) {
-      _transientRenderPathsByUploadId[upload.id] = {
-        for (final render in transientRenders)
-          if (render.source.video == null && render.source.isStopMotion)
-            ?render.materialized.video?.file?.path,
-      };
-    }
-    return upload;
-  }
-
-  /// Start a new video upload (legacy method - prefer startUploadFromDraft)
+  /// Start a new video upload.
   Future<PendingUpload> startUpload({
     required File videoFile,
     required String nostrPubkey,
@@ -597,18 +374,14 @@ class UploadManager implements BackgroundAwareService {
     int? videoHeight,
     Duration? videoDuration,
     NativeProofData? nativeProof,
+    String? proofManifestJson,
   }) async {
-    Log.warning(
-      '⚠️ Using legacy startUpload() - prefer startUploadFromDraft()',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    // Convert NativeProofData to JSON if present
-    String? proofManifestJson;
-    if (nativeProof != null) {
+    // Convert NativeProofData to JSON if present. An explicit
+    // [proofManifestJson] (as carried by a draft) wins.
+    var resolvedProofManifestJson = proofManifestJson;
+    if (resolvedProofManifestJson == null && nativeProof != null) {
       try {
-        proofManifestJson = jsonEncode(nativeProof.toJson());
+        resolvedProofManifestJson = jsonEncode(nativeProof.toJson());
         Log.info(
           '📜 Native ProofMode data attached to upload',
           name: 'UploadManager',
@@ -632,7 +405,7 @@ class UploadManager implements BackgroundAwareService {
       videoWidth: videoWidth,
       videoHeight: videoHeight,
       videoDuration: videoDuration,
-      proofManifestJson: proofManifestJson,
+      proofManifestJson: resolvedProofManifestJson,
       onProgress: onProgress,
       thumbnailTimestamp: thumbnailTimestamp,
     );
@@ -962,8 +735,8 @@ class UploadManager implements BackgroundAwareService {
       );
       await _performUploadWithRetry(upload, videoFile, onProgress);
     } catch (e, stackTrace) {
-      // A user-initiated pause/cancel tears down the in-flight transfer, which
-      // surfaces here as a failure. pauseUpload/cancelUpload already wrote the
+      // A user-initiated cancel tears down the in-flight transfer, which
+      // surfaces here as a failure. cancelUpload already wrote the
       // authoritative status, so don't overwrite it or report the stop as a
       // crash — see [_userStoppedUploadIds].
       if (_userStoppedUploadIds.contains(upload.id)) {
@@ -1386,11 +1159,6 @@ class UploadManager implements BackgroundAwareService {
   @visibleForTesting
   bool isRetriableError(dynamic error) => _retryPolicy.isRetriableError(error);
 
-  /// Delegates to [UploadProgressReporter.getNetworkTypeString].
-  @visibleForTesting
-  String getNetworkTypeString(ConnectivityResult connectivity) =>
-      _reporter.getNetworkTypeString(connectivity);
-
   /// Delegates to [UploadProgressReporter.categorizeError].
   @visibleForTesting
   Future<String> categorizeError(dynamic error) =>
@@ -1402,115 +1170,6 @@ class UploadManager implements BackgroundAwareService {
     String category,
     ConnectivityResult connectivity,
   ) => _reporter.getUserFriendlyErrorMessage(category, connectivity);
-
-  /// Pause an active upload
-  Future<void> pauseUpload(String uploadId) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) {
-      Log.error(
-        'Upload not found for pause: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    if (upload.status != UploadStatus.uploading) {
-      Log.error(
-        'Upload is not currently uploading: ${upload.status}',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    Log.debug(
-      'Pausing upload: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    // Mark before tearing down the transfer: cancelling the OS transfer emits
-    // a terminal `cancelled` event that resolves the in-flight upload as a
-    // (terminal, non-retriable) failure, which would otherwise reach
-    // [_handleUploadFailure] and overwrite the paused status below. The marker
-    // lets [_performUpload] recognise the user-initiated stop and skip it.
-    _userStoppedUploadIds.add(uploadId);
-
-    // Stop the OS-owned background transfer while paused so it doesn't keep
-    // uploading in the background. With OS-first uploads the transfer may have
-    // already fallen through to the in-process resumable leg; that leg is torn
-    // down by its request timeout, and this cancel is then a harmless no-op on
-    // the already-finished OS task. If the OS leg was still the active one it
-    // has no resumable checkpoint, so resuming re-enqueues it from byte 0.
-    if (useBackgroundUpload) {
-      await _blossomService.cancelBackgroundUpload(uploadId);
-    }
-
-    // Update status to paused instead of failed
-    final pausedUpload = upload.copyWith(
-      status: UploadStatus.paused,
-      // Keep current progress and don't set error message
-    );
-
-    await _store.update(pausedUpload);
-
-    // Cancel progress subscription
-    _reporter.cancelAndRemoveSubscription(uploadId);
-
-    Log.info(
-      'Upload paused: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-  }
-
-  /// Resume a paused upload
-  Future<void> resumeUpload(String uploadId) async {
-    final upload = getUpload(uploadId);
-    if (upload == null) {
-      Log.error(
-        'Upload not found for resume: $uploadId',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    if (upload.status != UploadStatus.paused) {
-      Log.error(
-        'Upload is not paused: ${upload.status}',
-        name: 'UploadManager',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    Log.debug(
-      '▶️ Resuming upload: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-
-    // Reset to pending to restart upload from beginning
-    final resumedUpload = upload.copyWith(
-      status: UploadStatus.pending,
-      uploadProgress: upload.resumableSession == null
-          ? 0
-          : upload.uploadProgress,
-    );
-
-    await _store.update(resumedUpload);
-
-    // Start upload process again and wait for completion
-    await _performUpload(resumedUpload);
-
-    Log.info(
-      'Upload resumed: $uploadId',
-      name: 'UploadManager',
-      category: LogCategory.video,
-    );
-  }
 
   /// Retry a failed upload. Delegates to [UploadRetryPolicy.retryUpload].
   Future<void> retryUpload(String uploadId) async {
@@ -1730,22 +1389,32 @@ class UploadManager implements BackgroundAwareService {
     );
   }
 
+  /// Records transient editor renders produced for [uploadId] so they are
+  /// reaped once the upload is published or discarded.
+  ///
+  /// Produced by `DraftUploadMaterializer`; the upload pipeline owns only the
+  /// bookkeeping, not the cleanup policy (see [TransientRenderCleaner]).
+  void registerTransientRenderPaths(String uploadId, Set<String> paths) {
+    if (paths.isEmpty) return;
+    _transientRenderPathsByUploadId[uploadId] = paths;
+  }
+
   Future<void> _cleanupTransientRendersForUpload(String uploadId) async {
     final paths = _transientRenderPathsByUploadId.remove(uploadId);
     if (paths == null) {
       final upload = getUpload(uploadId);
       if (upload != null &&
-          StopMotionRenderService.isMaterializedOutputPath(
+          _transientRenderCleaner.isMaterializedOutputPath(
             upload.localVideoPath,
           )) {
-        await StopMotionRenderService.cleanupMaterializedOutputPath(
+        await _transientRenderCleaner.cleanupMaterializedOutputPath(
           upload.localVideoPath,
         );
       }
       return;
     }
     for (final path in paths) {
-      await StopMotionRenderService.cleanupMaterializedOutputPath(path);
+      await _transientRenderCleaner.cleanupMaterializedOutputPath(path);
     }
   }
 
@@ -1753,12 +1422,12 @@ class UploadManager implements BackgroundAwareService {
     for (final upload in pendingUploads) {
       if (upload.status != UploadStatus.failed ||
           upload.resumableSession != null ||
-          !StopMotionRenderService.isMaterializedOutputPath(
+          !_transientRenderCleaner.isMaterializedOutputPath(
             upload.localVideoPath,
           )) {
         continue;
       }
-      await StopMotionRenderService.cleanupMaterializedOutputPath(
+      await _transientRenderCleaner.cleanupMaterializedOutputPath(
         upload.localVideoPath,
       );
     }
@@ -1774,16 +1443,6 @@ class UploadManager implements BackgroundAwareService {
   /// Delegates to [UploadProgressReporter.getPerformanceMetrics].
   Map<String, dynamic> getPerformanceMetrics() =>
       _reporter.getPerformanceMetrics();
-
-  /// Enhanced retry mechanism for manual retry.
-  ///
-  /// Delegates to [UploadRetryPolicy.retryUploadWithBackoff].
-  Future<void> retryUploadWithBackoff(String uploadId) async {
-    await _retryPolicy.retryUploadWithBackoff(
-      uploadId,
-      performUpload: _performUpload,
-    );
-  }
 
   /// Create successful upload with metadata.
   ///
