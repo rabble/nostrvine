@@ -21,6 +21,7 @@ BugReportService bugReportService(Ref ref) {
   final database = ref.watch(databaseProvider);
   final preferences = ref.watch(sharedPreferencesProvider);
   final clipLibrary = ref.watch(clipLibraryServiceProvider);
+  final documentsPath = ref.watch(documentsPathProvider);
   return BugReportService(
     errorTracker: ref.watch(errorAnalyticsTrackerProvider),
     storageManagementService: ref.watch(storageManagementServiceProvider),
@@ -30,7 +31,7 @@ BugReportService bugReportService(Ref ref) {
         clipsDao: database.clipsDao,
         draftsDao: database.draftsDao,
         ownerPubkey: clipLibrary.ownerPubkey,
-        documentsPath: ref.read(documentsPathProvider),
+        documentsPath: documentsPath,
       ).collect();
       return {
         if (recovery != null) 'databaseRecovery': recovery.toDiagnostics(),
