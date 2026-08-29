@@ -925,9 +925,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'hình ảnh';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Không truy cập được camera: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Quyền camera đang tắt. Bật trong Cài đặt để chụp ảnh.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Thiết bị này không cho phép truy cập camera.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Bộ chọn đang mở rồi. Đóng lại rồi thử lại.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Không mở được camera. Thử lại nhé.';
 
   @override
   String get profileSetupGotItButton => 'Đã hiểu';

@@ -957,9 +957,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'afbeeldingen';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Cameratoegang mislukt: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Cameratoegang staat uit. Zet het aan in Instellingen om een foto te maken.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Cameratoegang is niet toegestaan op dit apparaat.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'De kiezer is al open. Sluit hem en probeer het opnieuw.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'De camera kon niet geopend worden. Probeer het opnieuw.';
 
   @override
   String get profileSetupGotItButton => 'Begrepen';

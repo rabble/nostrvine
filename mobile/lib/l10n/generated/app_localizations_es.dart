@@ -962,9 +962,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'imágenes';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Falló el acceso a la cámara: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'El acceso a la cámara está desactivado. Activalo en Ajustes para sacar una foto.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'El acceso a la cámara no está permitido en este dispositivo.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'El selector ya está abierto. Cerralo y probá de nuevo.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'No se pudo abrir la cámara. Probá de nuevo.';
 
   @override
   String get profileSetupGotItButton => 'Entendido';

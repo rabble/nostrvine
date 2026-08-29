@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Salvataggio...",
     "profileSetupImageUrlTitle": "Aggiungi URL immagine",
     "profileSetupImageSelectionFailed": "Selezione immagine fallita. Incolla qui sotto l'URL di un'immagine.",
-    "profileSetupCameraAccessFailed": "Accesso alla fotocamera fallito: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "L'accesso alla fotocamera è disattivato. Attivalo nelle Impostazioni per scattare una foto.",
+    "cameraPickErrorPermissionRestricted": "L'accesso alla fotocamera non è consentito su questo dispositivo.",
+    "cameraPickErrorBusy": "Il selettore è già aperto. Chiudilo e riprova.",
+    "cameraPickErrorGeneric": "Impossibile aprire la fotocamera. Riprova.",
     "profileSetupGotItButton": "Capito",
     "profileSetupUploadFailedGeneric": "Impossibile caricare l'immagine. Riprova più tardi.",
     "profileSetupUploadNetworkError": "Errore di rete: controlla la connessione a internet e riprova.",

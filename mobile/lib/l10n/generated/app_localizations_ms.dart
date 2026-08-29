@@ -925,9 +925,19 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'imej';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Akses kamera gagal: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Akses kamera dimatikan. Hidupkan dalam Tetapan untuk mengambil gambar.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Akses kamera tidak dibenarkan pada peranti ini.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Pemilih sudah dibuka. Tutup dan cuba lagi.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Gagal membuka kamera. Cuba lagi.';
 
   @override
   String get profileSetupGotItButton => 'Faham';

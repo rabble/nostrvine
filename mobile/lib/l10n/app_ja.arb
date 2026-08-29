@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "保存中...",
     "profileSetupImageUrlTitle": "画像 URL を追加",
     "profileSetupImageSelectionFailed": "画像の選択がうまくいかなかった。代わりに下に画像 URL を貼り付けてね。",
-    "profileSetupCameraAccessFailed": "カメラにアクセスできなかった: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "カメラへのアクセスがオフになってる。設定でオンにすると写真を撮れるよ。",
+    "cameraPickErrorPermissionRestricted": "このデバイスではカメラへのアクセスが許可されてない。",
+    "cameraPickErrorBusy": "ピッカーはもう開いてる。閉じてからもう一回試してみて。",
+    "cameraPickErrorGeneric": "カメラを開けなかった。もう一回試してみて。",
     "profileSetupGotItButton": "了解！",
     "profileSetupUploadFailedGeneric": "画像をアップロードできなかった。あとでもう一度試してみて。",
     "profileSetupUploadNetworkError": "ネットワークエラー: ネット接続を確認してもう一回試してみて。",

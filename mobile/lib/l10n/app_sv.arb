@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Sparar...",
     "profileSetupImageUrlTitle": "Lägg till bild-URL",
     "profileSetupImageSelectionFailed": "Bildval misslyckades. Klistra in en bild-URL nedan istället.",
-    "profileSetupCameraAccessFailed": "Kameraåtkomst misslyckades: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Kameraåtkomst är av. Slå på den i Inställningar för att ta ett foto.",
+    "cameraPickErrorPermissionRestricted": "Kameraåtkomst är inte tillåten på den här enheten.",
+    "cameraPickErrorBusy": "Väljaren är redan öppen. Stäng den och försök igen.",
+    "cameraPickErrorGeneric": "Kunde inte öppna kameran. Försök igen.",
     "profileSetupGotItButton": "Jag fattar",
     "profileSetupUploadFailedGeneric": "Det gick inte att ladda upp bilden. Försök igen senare.",
     "profileSetupUploadNetworkError": "Nätverksfel: Kolla din internetanslutning och försök igen.",

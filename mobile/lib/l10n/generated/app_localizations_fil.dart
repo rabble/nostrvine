@@ -935,9 +935,20 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'mga larawan';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Nabigo ang camera access: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Naka-off ang camera access. I-on ito sa Settings para makakuha ng litrato.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Hindi pinapayagan ang camera access sa device na ito.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Bukas na ang picker. Isara mo muna at subukan ulit.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'Hindi nabuksan ang camera. Subukan ulit.';
 
   @override
   String get profileSetupGotItButton => 'Sige';

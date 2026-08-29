@@ -892,9 +892,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'görseller';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Kamera erişimi başarısız: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Kamera erişimi kapalı. Fotoğraf çekmek için Ayarlar\'dan aç.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Bu cihazda kamera erişimine izin verilmiyor.';
+
+  @override
+  String get cameraPickErrorBusy => 'Seçici zaten açık. Kapat ve tekrar dene.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Kamera açılamadı. Tekrar dene.';
 
   @override
   String get profileSetupGotItButton => 'Anlaşıldı';

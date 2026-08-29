@@ -938,9 +938,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'bilder';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Kameraåtkomst misslyckades: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Kameraåtkomst är av. Slå på den i Inställningar för att ta ett foto.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Kameraåtkomst är inte tillåten på den här enheten.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Väljaren är redan öppen. Stäng den och försök igen.';
+
+  @override
+  String get cameraPickErrorGeneric => 'Kunde inte öppna kameran. Försök igen.';
 
   @override
   String get profileSetupGotItButton => 'Jag fattar';

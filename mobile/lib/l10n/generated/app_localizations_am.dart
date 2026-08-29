@@ -933,9 +933,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'ምስሎች';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'የካሜራ መዳረሻ አልተሳካም፦ $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'የካሜራ መዳረሻ ጠፍቷል። ፎቶ ለማንሳት ከቅንብሮች አብራው።';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'በዚህ መሣሪያ ላይ የካሜራ መዳረሻ አይፈቀድም።';
+
+  @override
+  String get cameraPickErrorBusy => 'መምረጫው አስቀድሞ ተከፍቷል። ዝጋውና እንደገና ሞክር።';
+
+  @override
+  String get cameraPickErrorGeneric => 'ካሜራውን መክፈት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get profileSetupGotItButton => 'ገባኝ';

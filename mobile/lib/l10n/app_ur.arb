@@ -460,14 +460,10 @@
   "profileSetupImageUrlTitle": "تصویر کا URL شامل کریں",
   "profileSetupImageSelectionFailed": "تصویر منتخب نہیں ہو سکی۔ اس کے بجائے نیچے تصویر کا URL پیسٹ کریں۔",
   "profileSetupImagesTypeGroup": "تصاویر",
-  "profileSetupCameraAccessFailed": "کیمرہ تک رسائی ناکام: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "کیمرے تک رسائی بند ہے۔ تصویر لینے کے لیے ترتیبات میں اسے آن کریں۔",
+  "cameraPickErrorPermissionRestricted": "اس ڈیوائس پر کیمرے تک رسائی کی اجازت نہیں ہے۔",
+  "cameraPickErrorBusy": "پکر پہلے سے کھلا ہے۔ اسے بند کر کے دوبارہ کوشش کریں۔",
+  "cameraPickErrorGeneric": "کیمرہ نہیں کھل سکا۔ دوبارہ کوشش کریں۔",
   "profileSetupGotItButton": "سمجھ گیا",
   "profileSetupUploadFailedGeneric": "اپلوڈ ناکام۔ براہ کرم بعد میں دوبارہ کوشش کریں۔",
   "profileSetupUploadNetworkError": "نیٹ ورک خرابی: براہ کرم اپنا انٹرنیٹ کنکشن چیک کر کے دوبارہ کوشش کریں۔",

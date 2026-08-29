@@ -854,9 +854,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupImagesTypeGroup => '이미지';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return '카메라 접근 실패: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      '카메라 접근이 꺼져 있어요. 설정에서 켜면 사진을 찍을 수 있어요.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted => '이 기기에서는 카메라 접근이 허용되지 않아요.';
+
+  @override
+  String get cameraPickErrorBusy => '선택기가 이미 열려 있어요. 닫고 다시 시도해보세요.';
+
+  @override
+  String get cameraPickErrorGeneric => '카메라를 열지 못했어요. 다시 시도해보세요.';
 
   @override
   String get profileSetupGotItButton => '알겠어요';

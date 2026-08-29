@@ -460,14 +460,10 @@
   "profileSetupImageUrlTitle": "Tambah URL imej",
   "profileSetupImageSelectionFailed": "Pemilihan imej gagal. Sila tampal URL imej di bawah.",
   "profileSetupImagesTypeGroup": "imej",
-  "profileSetupCameraAccessFailed": "Akses kamera gagal: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "Akses kamera dimatikan. Hidupkan dalam Tetapan untuk mengambil gambar.",
+  "cameraPickErrorPermissionRestricted": "Akses kamera tidak dibenarkan pada peranti ini.",
+  "cameraPickErrorBusy": "Pemilih sudah dibuka. Tutup dan cuba lagi.",
+  "cameraPickErrorGeneric": "Gagal membuka kamera. Cuba lagi.",
   "profileSetupGotItButton": "Faham",
   "profileSetupUploadFailedGeneric": "Muat naik gagal. Sila cuba lagi nanti.",
   "profileSetupUploadNetworkError": "Ralat rangkaian: Sila semak sambungan internet anda dan cuba lagi.",

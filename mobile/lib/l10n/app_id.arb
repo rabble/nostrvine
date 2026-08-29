@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Menyimpan...",
     "profileSetupImageUrlTitle": "Tambah URL gambar",
     "profileSetupImageSelectionFailed": "Pemilihan gambar gagal. Silakan tempel URL gambar di bawah.",
-    "profileSetupCameraAccessFailed": "Akses kamera gagal: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Akses kamera mati. Nyalakan di Pengaturan untuk mengambil foto.",
+    "cameraPickErrorPermissionRestricted": "Akses kamera tidak diizinkan di perangkat ini.",
+    "cameraPickErrorBusy": "Pemilih sudah terbuka. Tutup lalu coba lagi.",
+    "cameraPickErrorGeneric": "Gagal membuka kamera. Coba lagi.",
     "profileSetupGotItButton": "Mengerti",
     "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar. Coba lagi nanti.",
     "profileSetupUploadNetworkError": "Kesalahan jaringan: Silakan cek koneksi internetmu dan coba lagi.",

@@ -608,14 +608,10 @@
   "profileSetupImageUrlTitle": "Add image URL",
   "profileSetupImageSelectionFailed": "Image selection failed. Please paste an image URL below instead.",
   "profileSetupImagesTypeGroup": "images",
-  "profileSetupCameraAccessFailed": "Camera access failed: {error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "Camera access is off. Turn it on in Settings to take a photo.",
+  "cameraPickErrorPermissionRestricted": "Camera access isn't allowed on this device.",
+  "cameraPickErrorBusy": "The picker is already open. Close it and try again.",
+  "cameraPickErrorGeneric": "Couldn't open the camera. Try again.",
   "profileSetupGotItButton": "Got it",
   "profileSetupUploadFailedGeneric": "Upload failed. Please try again later.",
   "profileSetupUploadNetworkError": "Network error: Please check your internet connection and try again.",

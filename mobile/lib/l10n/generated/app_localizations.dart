@@ -1638,11 +1638,29 @@ abstract class AppLocalizations {
   /// **'images'**
   String get profileSetupImagesTypeGroup;
 
-  /// No description provided for @profileSetupCameraAccessFailed.
+  /// No description provided for @cameraPickErrorPermissionDenied.
   ///
   /// In en, this message translates to:
-  /// **'Camera access failed: {error}'**
-  String profileSetupCameraAccessFailed(Object error);
+  /// **'Camera access is off. Turn it on in Settings to take a photo.'**
+  String get cameraPickErrorPermissionDenied;
+
+  /// No description provided for @cameraPickErrorPermissionRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera access isn\'t allowed on this device.'**
+  String get cameraPickErrorPermissionRestricted;
+
+  /// No description provided for @cameraPickErrorBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The picker is already open. Close it and try again.'**
+  String get cameraPickErrorBusy;
+
+  /// No description provided for @cameraPickErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the camera. Try again.'**
+  String get cameraPickErrorGeneric;
 
   /// No description provided for @profileSetupGotItButton.
   ///

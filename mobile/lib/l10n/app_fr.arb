@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Enregistrement...",
     "profileSetupImageUrlTitle": "Ajouter une URL d'image",
     "profileSetupImageSelectionFailed": "Échec de la sélection d'image. Colle plutôt une URL d'image ci-dessous.",
-    "profileSetupCameraAccessFailed": "Accès caméra échoué : {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "L'accès à la caméra est désactivé. Active-le dans les Réglages pour prendre une photo.",
+    "cameraPickErrorPermissionRestricted": "L'accès à la caméra n'est pas autorisé sur cet appareil.",
+    "cameraPickErrorBusy": "Le sélecteur est déjà ouvert. Ferme-le et réessaie.",
+    "cameraPickErrorGeneric": "Impossible d'ouvrir la caméra. Réessaie.",
     "profileSetupGotItButton": "Compris",
     "profileSetupUploadFailedGeneric": "L'envoi de l'image a échoué. Réessaie plus tard.",
     "profileSetupUploadNetworkError": "Erreur réseau : vérifie ta connexion internet et réessaie.",

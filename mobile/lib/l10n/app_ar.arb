@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "جاري الحفظ...",
     "profileSetupImageUrlTitle": "إضافة رابط صورة",
     "profileSetupImageSelectionFailed": "فشل اختيار الصورة. يرجى لصق رابط الصورة أدناه بدلاً من ذلك.",
-    "profileSetupCameraAccessFailed": "فشل الوصول إلى الكاميرا: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "الوصول إلى الكاميرا مغلق. فعّله من الإعدادات لالتقاط صورة.",
+    "cameraPickErrorPermissionRestricted": "الوصول إلى الكاميرا غير مسموح على هذا الجهاز.",
+    "cameraPickErrorBusy": "المُنتقي مفتوح بالفعل. أغلقه وحاول مرّة أخرى.",
+    "cameraPickErrorGeneric": "تعذّر فتح الكاميرا. حاول مرّة أخرى.",
     "profileSetupGotItButton": "فهمت",
     "profileSetupUploadFailedGeneric": "فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.",
     "profileSetupUploadNetworkError": "خطأ في الشبكة: يرجى التحقق من اتصالك والمحاولة مرّة أخرى.",

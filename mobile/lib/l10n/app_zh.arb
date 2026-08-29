@@ -460,14 +460,10 @@
   "profileSetupImageUrlTitle": "添加图片链接",
   "profileSetupImageSelectionFailed": "选择图片失败，请在下方粘贴图片链接。",
   "profileSetupImagesTypeGroup": "图片",
-  "profileSetupCameraAccessFailed": "相机访问失败：{error}",
-  "@profileSetupCameraAccessFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "cameraPickErrorPermissionDenied": "相机权限已关闭，请在设置中开启后拍照。",
+  "cameraPickErrorPermissionRestricted": "此设备不允许访问相机。",
+  "cameraPickErrorBusy": "选择器已经打开，请关闭后重试。",
+  "cameraPickErrorGeneric": "无法打开相机，请重试。",
   "profileSetupGotItButton": "知道了",
   "profileSetupUploadFailedGeneric": "上传失败，请稍后重试。",
   "profileSetupUploadNetworkError": "网络错误：请检查网络连接后重试。",

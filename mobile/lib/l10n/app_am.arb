@@ -429,14 +429,10 @@
     "profileSetupImageUrlTitle": "ምስል ያክሉ URL",
     "profileSetupImageSelectionFailed": "የምስል ምርጫ አልተሳካም። እባክህ በምትኩ ምስል URL ከታች ለጥፍ።",
     "profileSetupImagesTypeGroup": "ምስሎች",
-    "profileSetupCameraAccessFailed": "የካሜራ መዳረሻ አልተሳካም፦ {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "የካሜራ መዳረሻ ጠፍቷል። ፎቶ ለማንሳት ከቅንብሮች አብራው።",
+    "cameraPickErrorPermissionRestricted": "በዚህ መሣሪያ ላይ የካሜራ መዳረሻ አይፈቀድም።",
+    "cameraPickErrorBusy": "መምረጫው አስቀድሞ ተከፍቷል። ዝጋውና እንደገና ሞክር።",
+    "cameraPickErrorGeneric": "ካሜራውን መክፈት አልተቻለም። እንደገና ሞክር።",
     "profileSetupGotItButton": "ገባኝ",
     "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።",
     "profileSetupUploadNetworkError": "የአውታረ መረብ ስህተት፡ እባክህ የበይነመረብ ግንኙነትህን ፈትሽ እና እንደገና ሞክር።",

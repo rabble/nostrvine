@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/l10n/camera_pick_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/camera_pick_error.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/image_crop_launcher_provider.dart';
 import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
@@ -294,7 +296,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
           DivineSnackbarContainer.snackBar(
             source == ImageSource.gallery
                 ? context.l10n.profileSetupImageSelectionFailed
-                : context.l10n.profileSetupCameraAccessFailed('$e'),
+                : context.l10n.cameraPickErrorMessage(cameraPickErrorFrom(e)),
             error: true,
             duration: const Duration(seconds: 5),
             actionLabel: context.l10n.profileSetupGotItButton,

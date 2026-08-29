@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Se salvează...",
     "profileSetupImageUrlTitle": "Adaugă URL de imagine",
     "profileSetupImageSelectionFailed": "Selectarea imaginii a eșuat. Lipește mai jos un URL de imagine.",
-    "profileSetupCameraAccessFailed": "Accesul la cameră a eșuat: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Accesul la cameră este dezactivat. Activează-l din Setări ca să faci o poză.",
+    "cameraPickErrorPermissionRestricted": "Accesul la cameră nu este permis pe acest dispozitiv.",
+    "cameraPickErrorBusy": "Selectorul este deja deschis. Închide-l și încearcă din nou.",
+    "cameraPickErrorGeneric": "N-am putut deschide camera. Încearcă din nou.",
     "profileSetupGotItButton": "Am înțeles",
     "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.",
     "profileSetupUploadNetworkError": "Eroare de rețea: verifică conexiunea la internet și încearcă din nou.",

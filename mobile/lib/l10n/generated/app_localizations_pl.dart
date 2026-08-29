@@ -978,9 +978,20 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'obrazy';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Dostęp do aparatu nieudany: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Dostęp do aparatu jest wyłączony. Włącz go w Ustawieniach, żeby zrobić zdjęcie.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Dostęp do aparatu nie jest dozwolony na tym urządzeniu.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Selektor jest już otwarty. Zamknij go i spróbuj ponownie.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'Nie udało się otworzyć aparatu. Spróbuj ponownie.';
 
   @override
   String get profileSetupGotItButton => 'Rozumiem';

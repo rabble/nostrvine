@@ -936,9 +936,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'صور';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'فشل الوصول إلى الكاميرا: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'الوصول إلى الكاميرا مغلق. فعّله من الإعدادات لالتقاط صورة.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'الوصول إلى الكاميرا غير مسموح على هذا الجهاز.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'المُنتقي مفتوح بالفعل. أغلقه وحاول مرّة أخرى.';
+
+  @override
+  String get cameraPickErrorGeneric => 'تعذّر فتح الكاميرا. حاول مرّة أخرى.';
 
   @override
   String get profileSetupGotItButton => 'فهمت';

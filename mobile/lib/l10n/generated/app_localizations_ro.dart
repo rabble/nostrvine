@@ -992,9 +992,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupImagesTypeGroup => 'imagini';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return 'Accesul la cameră a eșuat: $error';
-  }
+  String get cameraPickErrorPermissionDenied =>
+      'Accesul la cameră este dezactivat. Activează-l din Setări ca să faci o poză.';
+
+  @override
+  String get cameraPickErrorPermissionRestricted =>
+      'Accesul la cameră nu este permis pe acest dispozitiv.';
+
+  @override
+  String get cameraPickErrorBusy =>
+      'Selectorul este deja deschis. Închide-l și încearcă din nou.';
+
+  @override
+  String get cameraPickErrorGeneric =>
+      'N-am putut deschide camera. Încearcă din nou.';
 
   @override
   String get profileSetupGotItButton => 'Am înțeles';

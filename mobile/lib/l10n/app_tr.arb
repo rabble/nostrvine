@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Kaydediliyor...",
     "profileSetupImageUrlTitle": "Görsel URL'si ekle",
     "profileSetupImageSelectionFailed": "Görsel seçimi başarısız oldu. Lütfen aşağıya bir görsel URL'si yapıştır.",
-    "profileSetupCameraAccessFailed": "Kamera erişimi başarısız: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Kamera erişimi kapalı. Fotoğraf çekmek için Ayarlar'dan aç.",
+    "cameraPickErrorPermissionRestricted": "Bu cihazda kamera erişimine izin verilmiyor.",
+    "cameraPickErrorBusy": "Seçici zaten açık. Kapat ve tekrar dene.",
+    "cameraPickErrorGeneric": "Kamera açılamadı. Tekrar dene.",
     "profileSetupGotItButton": "Anlaşıldı",
     "profileSetupUploadFailedGeneric": "Görsel yüklenemedi. Lütfen daha sonra tekrar dene.",
     "profileSetupUploadNetworkError": "Ağ hatası: Lütfen internet bağlantını kontrol et ve tekrar dene.",

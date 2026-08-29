@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Opslaan...",
     "profileSetupImageUrlTitle": "Afbeeldings-URL toevoegen",
     "profileSetupImageSelectionFailed": "Afbeelding kiezen mislukt. Plak hieronder een afbeeldings-URL.",
-    "profileSetupCameraAccessFailed": "Cameratoegang mislukt: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Cameratoegang staat uit. Zet het aan in Instellingen om een foto te maken.",
+    "cameraPickErrorPermissionRestricted": "Cameratoegang is niet toegestaan op dit apparaat.",
+    "cameraPickErrorBusy": "De kiezer is al open. Sluit hem en probeer het opnieuw.",
+    "cameraPickErrorGeneric": "De camera kon niet geopend worden. Probeer het opnieuw.",
     "profileSetupGotItButton": "Begrepen",
     "profileSetupUploadFailedGeneric": "Uploaden van afbeelding mislukt. Probeer het later opnieuw.",
     "profileSetupUploadNetworkError": "Netwerkfout: check je internetverbinding en probeer opnieuw.",

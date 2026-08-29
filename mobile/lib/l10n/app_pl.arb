@@ -365,14 +365,10 @@
     "profileSetupSavingButton": "Zapisywanie...",
     "profileSetupImageUrlTitle": "Dodaj URL obrazu",
     "profileSetupImageSelectionFailed": "Wybór obrazu nieudany. Wklej URL obrazu poniżej.",
-    "profileSetupCameraAccessFailed": "Dostęp do aparatu nieudany: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Dostęp do aparatu jest wyłączony. Włącz go w Ustawieniach, żeby zrobić zdjęcie.",
+    "cameraPickErrorPermissionRestricted": "Dostęp do aparatu nie jest dozwolony na tym urządzeniu.",
+    "cameraPickErrorBusy": "Selektor jest już otwarty. Zamknij go i spróbuj ponownie.",
+    "cameraPickErrorGeneric": "Nie udało się otworzyć aparatu. Spróbuj ponownie.",
     "profileSetupGotItButton": "Rozumiem",
     "profileSetupUploadFailedGeneric": "Nie udało się przesłać obrazu. Spróbuj ponownie później.",
     "profileSetupUploadNetworkError": "Błąd sieci: Sprawdź połączenie z internetem i spróbuj ponownie.",

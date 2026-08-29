@@ -872,9 +872,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupImagesTypeGroup => '图片';
 
   @override
-  String profileSetupCameraAccessFailed(Object error) {
-    return '相机访问失败：$error';
-  }
+  String get cameraPickErrorPermissionDenied => '相机权限已关闭，请在设置中开启后拍照。';
+
+  @override
+  String get cameraPickErrorPermissionRestricted => '此设备不允许访问相机。';
+
+  @override
+  String get cameraPickErrorBusy => '选择器已经打开，请关闭后重试。';
+
+  @override
+  String get cameraPickErrorGeneric => '无法打开相机，请重试。';
 
   @override
   String get profileSetupGotItButton => '知道了';

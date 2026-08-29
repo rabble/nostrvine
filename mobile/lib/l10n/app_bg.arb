@@ -403,14 +403,10 @@
     "profileSetupSavingButton": "Запазва се...",
     "profileSetupImageUrlTitle": "Добави URL адрес на изображението",
     "profileSetupImageSelectionFailed": "Не успяхме да изберем изображение. Постави URL на изображение по-долу.",
-    "profileSetupCameraAccessFailed": "Неуспешен достъп до камерата: {error}",
-    "@profileSetupCameraAccessFailed": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "cameraPickErrorPermissionDenied": "Достъпът до камерата е изключен. Включи го от Настройки, за да снимаш.",
+    "cameraPickErrorPermissionRestricted": "Достъпът до камерата не е разрешен на това устройство.",
+    "cameraPickErrorBusy": "Селекторът вече е отворен. Затвори го и опитай пак.",
+    "cameraPickErrorGeneric": "Камерата не можа да се отвори. Опитай пак.",
     "profileSetupGotItButton": "Разбрах",
     "profileSetupUploadFailedGeneric": "Качването на изображението се провали. Опитай отново след малко.",
     "profileSetupUploadNetworkError": "Мрежова грешка: провери интернет връзката си и опитай пак.",
