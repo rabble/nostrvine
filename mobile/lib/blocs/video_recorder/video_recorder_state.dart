@@ -261,11 +261,6 @@ class VideoRecorderBlocState extends Equatable {
   /// Whether in error state.
   bool get isError => recordingState == VideoRecorderState.error;
 
-  /// Error message if in error state or initialization failed.
-  String? get errorMessage =>
-      initializationErrorMessage ??
-      (isError ? 'Recording error occurred' : null);
-
   /// Creates a copy of this state with updated values.
   VideoRecorderBlocState copyWith({
     VideoRecorderMode? recorderMode,
