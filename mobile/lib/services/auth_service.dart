@@ -2385,10 +2385,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       return importFromHex(privateKeyHex);
     } on Nip49Exception {
       _setAuthState(AuthState.unauthenticated);
-      return AuthResult.failure(
-        'Incorrect password',
-        reason: AuthFailureReason.incorrectPassword,
-      );
+      return AuthResult.incorrectPassword();
     }
   }
 

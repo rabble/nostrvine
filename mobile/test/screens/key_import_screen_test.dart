@@ -213,12 +213,7 @@ void main() {
       ) async {
         when(
           () => mockAuthService.importFromNcryptsec(any(), any()),
-        ).thenAnswer(
-          (_) async => AuthResult.failure(
-            'Incorrect password',
-            reason: AuthFailureReason.incorrectPassword,
-          ),
-        );
+        ).thenAnswer((_) async => AuthResult.incorrectPassword());
         when(() => mockAuthService.clearError()).thenReturn(null);
 
         await tester.pumpWidget(createTestWidget());

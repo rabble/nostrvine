@@ -23,13 +23,13 @@ class AuthResult {
   factory AuthResult.success(SecureKeyContainer keyContainer) =>
       AuthResult(success: true, keyContainer: keyContainer);
 
-  factory AuthResult.failure(
-    String errorMessage, {
-    AuthFailureReason? reason,
-  }) => AuthResult(
+  factory AuthResult.failure(String errorMessage) =>
+      AuthResult(success: false, errorMessage: errorMessage);
+
+  factory AuthResult.incorrectPassword() => const AuthResult(
     success: false,
-    errorMessage: errorMessage,
-    failureReason: reason,
+    errorMessage: 'Incorrect password',
+    failureReason: AuthFailureReason.incorrectPassword,
   );
 
   /// Failure result for the nostrconnect:// flow, carrying a localizable
