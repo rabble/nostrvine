@@ -97,6 +97,7 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
+    TargetPlatform? platform,
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) {
@@ -123,7 +124,7 @@ void main() {
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            theme: VineTheme.theme,
+            theme: VineTheme.theme.copyWith(platform: platform),
             routerConfig: GoRouter(
               initialLocation: '/verify-email',
               routes: [
@@ -179,10 +180,12 @@ void main() {
     String? email,
     String? token,
     bool restored = false,
+    TargetPlatform? platform,
+    Size surfaceSize = const Size(800, 1200),
     EmailVerificationState initialState = const EmailVerificationState(),
     Stream<EmailVerificationState>? stateStream,
   }) async {
-    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    await tester.binding.setSurfaceSize(surfaceSize);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       createTestWidget(
@@ -191,6 +194,7 @@ void main() {
         email: email,
         token: token,
         restored: restored,
+        platform: platform,
         initialState: initialState,
         stateStream: stateStream,
       ),
@@ -877,6 +881,16 @@ void main() {
 
         await tester.enterText(find.byType(TextFormField), '123456');
         await tester.pump();
+
+        expect(
+          tester
+              .widget<EditableText>(find.byType(EditableText))
+              .focusNode
+              .hasFocus,
+          isTrue,
+          reason:
+              'the button tap must be exercised while the PIN field is focused',
+        );
         await tester.tap(
           find.widgetWithText(DivineButton, l10n.authVerificationPinSubmit),
         );
@@ -1748,6 +1762,63 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(CustomScrollView), findsOneWidget);
+    });
+  });
+
+  group('keyboard dismissal', () {
+    const pollingState = EmailVerificationState(
+      status: EmailVerificationStatus.polling,
+      pendingEmail: 'user@example.com',
+    );
+
+    testWidgets('unfocuses the PIN field when tapping the content outside it', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'test-device-code',
+        verifier: 'test-verifier',
+        email: 'user@example.com',
+        initialState: pollingState,
+      );
+      await tester.pump();
+
+      final editable = find.byType(EditableText);
+      await tester.tap(editable);
+      await tester.pump();
+      expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isTrue);
+
+      await tester.tap(find.text(l10n.authVerificationPinPrompt));
+      await tester.pump();
+
+      expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isFalse);
+    });
+
+    testWidgets('unfocuses the PIN field when dragging the screen', (
+      tester,
+    ) async {
+      await pumpVerificationScreen(
+        tester,
+        deviceCode: 'test-device-code',
+        verifier: 'test-verifier',
+        email: 'user@example.com',
+        platform: TargetPlatform.iOS,
+        surfaceSize: const Size(1200, 2600),
+        initialState: pollingState,
+      );
+      await tester.pump();
+
+      final editable = find.byType(EditableText);
+      await tester.tap(editable);
+      await tester.pump();
+      expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isTrue);
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -80));
+      await tester.pump();
+
+      expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isFalse);
     });
   });
 
