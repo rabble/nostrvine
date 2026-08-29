@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -24,10 +25,17 @@ import 'package:unified_logger/unified_logger.dart';
 /// not yet follow. Once the viewer follows the author, the button hides for
 /// good.
 class VideoFollowButton extends ConsumerStatefulWidget {
-  const VideoFollowButton({required this.pubkey, super.key});
+  const VideoFollowButton({
+    required this.pubkey,
+    required this.videoId,
+    super.key,
+  });
 
   /// The public key of the video author to follow.
   final String pubkey;
+
+  /// Video whose author overlay supplied this follow action.
+  final String videoId;
 
   @override
   ConsumerState<VideoFollowButton> createState() => _VideoFollowButtonState();
@@ -59,6 +67,7 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       _bloc = MyFollowingBloc(
         followRepository: followRepository,
         contentBlocklistRepository: blocklistRepository,
+        consumptionAnalytics: ref.read(consumptionAnalyticsTrackerProvider),
       )..add(const MyFollowingListLoadRequested());
     }
 
@@ -88,7 +97,10 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
 
     return BlocProvider.value(
       value: _bloc!,
-      child: VideoFollowButtonView(pubkey: widget.pubkey),
+      child: VideoFollowButtonView(
+        pubkey: widget.pubkey,
+        videoId: widget.videoId,
+      ),
     );
   }
 }
@@ -97,9 +109,14 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
 /// button. Hides itself entirely once the viewer is following the author.
 class VideoFollowButtonView extends StatelessWidget {
   @visibleForTesting
-  const VideoFollowButtonView({required this.pubkey, super.key});
+  const VideoFollowButtonView({
+    required this.pubkey,
+    required this.videoId,
+    super.key,
+  });
 
   final String pubkey;
+  final String videoId;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +155,7 @@ class VideoFollowButtonView extends StatelessWidget {
                 category: LogCategory.ui,
               );
               context.read<MyFollowingBloc>().add(
-                MyFollowingToggleRequested(pubkey),
+                MyFollowingToggleRequested(pubkey, targetVideoId: videoId),
               );
             },
             child: Container(

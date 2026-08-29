@@ -82,7 +82,8 @@ class AnalyticsService implements BackgroundAwareService {
   /// Testing flag to disable Nostr publishing in unit tests.
   final bool _disableNostrPublishing;
 
-  static const String _analyticsEnabledKey = 'analytics_enabled';
+  /// SharedPreferences key for the user's analytics consent choice.
+  static const String analyticsEnabledPreferenceKey = 'analytics_enabled';
 
   bool _analyticsEnabled = true; // Default to enabled
   bool _isInitialized = false;
@@ -114,7 +115,7 @@ class AnalyticsService implements BackgroundAwareService {
     try {
       // Load analytics preference from storage
       final prefs = await SharedPreferences.getInstance();
-      _analyticsEnabled = prefs.getBool(_analyticsEnabledKey) ?? true;
+      _analyticsEnabled = prefs.getBool(analyticsEnabledPreferenceKey) ?? true;
       _isInitialized = true;
       if (!_analyticsEnabled) {
         // Stored opt-out: rows persisted before the preference loaded (or by
@@ -208,7 +209,7 @@ class AnalyticsService implements BackgroundAwareService {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_analyticsEnabledKey, enabled);
+      await prefs.setBool(analyticsEnabledPreferenceKey, enabled);
 
       Log.info(
         'Analytics ${enabled ? 'enabled' : 'disabled'} by user',

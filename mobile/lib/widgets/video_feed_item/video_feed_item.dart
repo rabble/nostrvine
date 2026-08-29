@@ -368,6 +368,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                   top: 31,
                                   child: VideoFollowButton(
                                     pubkey: authorPubkey,
+                                    videoId: video.id,
                                   ),
                                 ),
                             ],

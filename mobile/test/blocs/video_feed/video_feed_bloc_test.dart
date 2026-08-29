@@ -1539,7 +1539,8 @@ void main() {
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.hasMore, 'hasMore', false)
-              .having((s) => s.videos.length, 'videos count', 2),
+              .having((s) => s.videos.length, 'videos count', 2)
+              .having((s) => s.feedSessionRevision, 'feed session', 1),
         ],
         verify: (_) {
           verify(
@@ -2696,7 +2697,8 @@ void main() {
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.hasMore, 'hasMore', true),
+              .having((s) => s.hasMore, 'hasMore', true)
+              .having((s) => s.feedSessionRevision, 'feed session', 1),
         ],
         verify: (_) {
           // Verify called without 'until' parameter (fresh fetch)
@@ -3070,6 +3072,7 @@ void main() {
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(3),
+          feedSessionRevision: 4,
         ),
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
@@ -3078,7 +3081,8 @@ void main() {
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.following),
+              .having((s) => s.mode, 'mode', FeedMode.following)
+              .having((s) => s.feedSessionRevision, 'feed session', 4),
         ],
       );
 
@@ -3270,7 +3274,8 @@ void main() {
           followingController.add(['author', 'new-author']);
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
-        // No state changes — same videos returned, Equatable deduplicates
+        // The identical silent refresh stays in the current session, so there
+        // is no distinct state to emit.
         expect: () => <VideoFeedBlocState>[],
         verify: (_) {
           // Called 2 times: initial + runtime (replay is skipped)

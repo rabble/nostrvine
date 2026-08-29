@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_composer/mention_search.dart';
+import 'package:openvine/features/consumption_analytics/consumption_analytics_tracker.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -22,6 +23,9 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockMentionResolutionService extends Mock
     implements MentionResolutionService {}
+
+class _MockConsumptionAnalytics extends Mock
+    implements ConsumptionAnalyticsTracker {}
 
 bool _dupYes({
   required String content,
@@ -41,6 +45,7 @@ void main() {
     late _MockAuthService mockAuthService;
     late _MockProfileRepository mockProfileRepository;
     late _MockMentionResolutionService mockMentionResolutionService;
+    late _MockConsumptionAnalytics mockConsumptionAnalytics;
 
     String validId(String suffix) {
       final hexSuffix = suffix.codeUnits
@@ -54,6 +59,7 @@ void main() {
       mockAuthService = _MockAuthService();
       mockProfileRepository = _MockProfileRepository();
       mockMentionResolutionService = _MockMentionResolutionService();
+      mockConsumptionAnalytics = _MockConsumptionAnalytics();
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
@@ -89,6 +95,12 @@ void main() {
           hasVideos: any(named: 'hasVideos'),
         ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockConsumptionAnalytics.commentSent(
+          targetVideoId: any(named: 'targetVideoId'),
+          targetPubkey: any(named: 'targetPubkey'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
     CommentComposerBloc createBloc({
@@ -101,6 +113,7 @@ void main() {
       rootEventId: validId('root'),
       rootEventKind: 34236,
       rootAuthorPubkey: validId('author'),
+      consumptionAnalytics: mockConsumptionAnalytics,
       rootAddressableId: rootAddressableId,
       profileRepository: mockProfileRepository,
       mentionResolutionService: mockMentionResolutionService,
@@ -246,6 +259,14 @@ void main() {
             isA<ComposerOutboxConfirmPlaceholder>(),
           ),
         ],
+        verify: (_) {
+          verify(
+            () => mockConsumptionAnalytics.commentSent(
+              targetVideoId: validId('root'),
+              targetPubkey: validId('author'),
+            ),
+          ).called(1);
+        },
       );
 
       // #5854: a re-sent identical reply (the poster couldn't see the first
@@ -424,6 +445,12 @@ void main() {
           expect(b.state.outbox, isA<ComposerOutboxRollbackPlaceholder>());
           expect(b.state.error, ComposerError.postCommentFailed);
           expect(b.state.mainInputText, 'hi');
+          verifyNever(
+            () => mockConsumptionAnalytics.commentSent(
+              targetVideoId: any(named: 'targetVideoId'),
+              targetPubkey: any(named: 'targetPubkey'),
+            ),
+          );
         },
       );
 
