@@ -12,8 +12,8 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
+import 'package:openvine/services/video_publish/draft_upload_materializer.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 

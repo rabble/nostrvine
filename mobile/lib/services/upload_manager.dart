@@ -19,7 +19,6 @@ import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/upload/pending_upload_store.dart';
 import 'package:openvine/services/upload/upload_config.dart';
-import 'package:openvine/services/upload/upload_metrics.dart';
 import 'package:openvine/services/upload/upload_ports.dart';
 import 'package:openvine/services/upload/upload_progress_reporter.dart';
 import 'package:openvine/services/upload/upload_retry_policy.dart';
@@ -32,7 +31,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 export 'package:openvine/services/upload/upload_config.dart'
     show UploadRetryConfig, videoProgressShare;
-export 'package:openvine/services/upload/upload_metrics.dart'
+export 'package:openvine/services/upload/upload_progress_reporter.dart'
     show UploadMetrics;
 export 'package:openvine/services/upload/upload_session_errors.dart'
     show BlossomUploadFailureException;
@@ -379,9 +378,10 @@ class UploadManager implements BackgroundAwareService {
   }) async {
     // Convert NativeProofData to JSON if present. An explicit
     // [proofManifestJson] (as carried by a draft) wins.
-    if (proofManifestJson == null && nativeProof != null) {
+    var resolvedProofManifestJson = proofManifestJson;
+    if (resolvedProofManifestJson == null && nativeProof != null) {
       try {
-        proofManifestJson = jsonEncode(nativeProof.toJson());
+        resolvedProofManifestJson = jsonEncode(nativeProof.toJson());
         Log.info(
           '📜 Native ProofMode data attached to upload',
           name: 'UploadManager',
@@ -405,7 +405,7 @@ class UploadManager implements BackgroundAwareService {
       videoWidth: videoWidth,
       videoHeight: videoHeight,
       videoDuration: videoDuration,
-      proofManifestJson: proofManifestJson,
+      proofManifestJson: resolvedProofManifestJson,
       onProgress: onProgress,
       thumbnailTimestamp: thumbnailTimestamp,
     );
