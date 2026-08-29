@@ -78,13 +78,14 @@ enum DmDeliveryStatus {
   failed,
 }
 
-/// Outcome of the most recent "Delete for everyone" the send policy refused
+/// Outcome of the most recent "Delete for everyone" that came back refused
 /// (#8201).
 ///
-/// The durable signal is the message itself: a refused retraction returns to
-/// the thread, because it was never retracted. This transient status is what
-/// lets the view say so at the moment it happens, rather than leaving a bubble
-/// to silently reappear.
+/// The durable signal is the message itself: a wholly refused retraction
+/// returns to the thread, because nothing was retracted. This transient status
+/// is what lets the view say so at the moment it happens, rather than leaving
+/// a bubble to silently reappear. A mixed outcome never gets here — it stays
+/// hidden pending a partial-retraction UX.
 enum RetractionStatus { idle, blocked }
 
 /// Snapshot of the rumor ids whose recipient publish landed but whose
@@ -113,6 +114,7 @@ class ConversationState extends Equatable {
     this.sendStatus = SendStatus.idle,
     this.retractionStatus = RetractionStatus.idle,
     this.awaitingRetraction = const <String>{},
+    this.retractionWentHidden = const <String>{},
     this.lastPartialSend,
     this.pendingOutgoing = const <OutgoingDm>[],
   });
@@ -128,15 +130,29 @@ class ConversationState extends Equatable {
   /// Whether a retraction was refused since the last tick (#8201).
   final RetractionStatus retractionStatus;
 
-  /// Rumor ids this screen asked to retract and has not yet heard back on.
+  /// Rumor ids this screen asked to retract, minus the ones that came back
+  /// refused. An id whose retraction lands stays here for the life of the
+  /// bloc; nothing prunes it, and nothing needs to, because the set is
+  /// per-open and only ever read through [retractionWentHidden].
   ///
   /// The outcome cannot be read off consecutive ticks: `markMessageDeletion-
-  /// Pending` soft-deletes the message, so the thread ticks EMPTY between the
-  /// tap and the refusal, and the message that comes back looks new rather
-  /// than changed. Remembering what we asked for spans that gap — and keeps a
-  /// refusal recorded in an earlier session quiet, since this set starts
-  /// empty on every open.
+  /// Pending` soft-deletes the message, so the row leaves the thread between
+  /// the tap and the refusal, and the message that comes back looks new
+  /// rather than changed. Remembering what we asked for spans that gap — and
+  /// keeps a refusal recorded in an earlier session quiet, since this set
+  /// starts empty on every open.
   final Set<String> awaitingRetraction;
+
+  /// The subset of [awaitingRetraction] actually observed leaving the thread.
+  ///
+  /// Arming happens at tap time, before the repository hides anything, so for
+  /// a moment the row we just asked to retract is still on screen — and on a
+  /// RETRY it is still carrying `retractionBlocked` from the previous refusal.
+  /// Any tick in that window would otherwise match it and fire the toast for
+  /// an attempt that has not been made yet, consuming the id so the real
+  /// outcome passes in silence. Requiring the disappearance first makes the
+  /// signal the pending -> restored transition rather than mere presence.
+  final Set<String> retractionWentHidden;
 
   /// The last send attempt that delivered to recipients but failed to
   /// publish the sender self-addressed gift wrap, paired with the rumor
@@ -355,6 +371,7 @@ class ConversationState extends Equatable {
     SendStatus? sendStatus,
     RetractionStatus? retractionStatus,
     Set<String>? awaitingRetraction,
+    Set<String>? retractionWentHidden,
     PartialSend? lastPartialSend,
     List<OutgoingDm>? pendingOutgoing,
     bool clearLastPartialSend = false,
@@ -365,6 +382,7 @@ class ConversationState extends Equatable {
       sendStatus: sendStatus ?? this.sendStatus,
       retractionStatus: retractionStatus ?? this.retractionStatus,
       awaitingRetraction: awaitingRetraction ?? this.awaitingRetraction,
+      retractionWentHidden: retractionWentHidden ?? this.retractionWentHidden,
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
@@ -379,6 +397,7 @@ class ConversationState extends Equatable {
     sendStatus,
     retractionStatus,
     awaitingRetraction,
+    retractionWentHidden,
     lastPartialSend,
     pendingOutgoing,
   ];

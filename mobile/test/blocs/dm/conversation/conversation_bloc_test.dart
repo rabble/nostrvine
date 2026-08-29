@@ -313,6 +313,103 @@ void main() {
         },
       );
 
+      // Retrying a refused delete: the bubble is ALREADY on screen carrying
+      // `retractionBlocked` from the previous attempt, and arming happens at
+      // tap time, before the repository hides anything. Without requiring the
+      // disappearance first, any tick in that window matches the stale
+      // refusal, fires the toast for an attempt that has not been made, and
+      // consumes the id — so the real outcome then passes in silence.
+      blocTest<ConversationBloc, ConversationState>(
+        'stays quiet until a retried refusal actually comes back',
+        setUp: () {
+          _hiddenGapController = StreamController<List<DmMessage>>();
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => _hiddenGapController.stream);
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+          when(
+            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {});
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const ConversationStarted());
+          await Future<void>.delayed(Duration.zero);
+          // Opening on an already-refused bubble, as after a first refusal.
+          _hiddenGapController.add([_blocked(testMessage)]);
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await untilCalled(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          );
+          await Future<void>.delayed(Duration.zero);
+          // A tick arrives while the row is still visible and still stale-
+          // blocked — this is the window the bug fired in.
+          _hiddenGapController.add([_blocked(testMessage)]);
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.retractionStatus, RetractionStatus.idle);
+          expect(bloc.state.awaitingRetraction, contains(messageId));
+        },
+      );
+
+      // ...and once the retry genuinely resolves, the toast still fires.
+      blocTest<ConversationBloc, ConversationState>(
+        'reports the retried refusal once the row has actually cycled',
+        setUp: () {
+          _hiddenGapController = StreamController<List<DmMessage>>();
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => _hiddenGapController.stream);
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+          when(
+            () => mockDmRepository.cancelOutgoingBatch(rumorId: messageId),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenAnswer((_) async {});
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const ConversationStarted());
+          await Future<void>.delayed(Duration.zero);
+          _hiddenGapController.add([_blocked(testMessage)]);
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(const ConversationMessageDeleted(rumorId: messageId));
+          await untilCalled(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          );
+          await Future<void>.delayed(Duration.zero);
+          _hiddenGapController.add([_blocked(testMessage)]);
+          await Future<void>.delayed(Duration.zero);
+          // The retry hides the row, then the second refusal restores it.
+          _hiddenGapController.add(const []);
+          await Future<void>.delayed(Duration.zero);
+          _hiddenGapController.add([_blocked(testMessage)]);
+          await Future<void>.delayed(Duration.zero);
+          await _hiddenGapController.close();
+        },
+        verify: (bloc) {
+          expect(bloc.state.retractionStatus, RetractionStatus.blocked);
+        },
+      );
+
       // A refusal from an earlier session is already on the row when the
       // thread opens. Announcing it then would toast on every cold open of
       // any thread that ever had one.
@@ -2198,6 +2295,7 @@ void main() {
           <DmMessage>[],
           SendStatus.idle,
           RetractionStatus.idle,
+          <String>{},
           <String>{},
           null,
           <OutgoingDm>[],

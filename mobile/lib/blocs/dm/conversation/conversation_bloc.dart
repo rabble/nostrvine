@@ -143,7 +143,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (!_sameMessages(tick.messages, state.messages)) {
           unawaited(_dmRepository.markConversationAsRead(_conversationId));
         }
-        final refused = _refusedRetractions(tick.messages);
+        // Arm on disappearance first, so the row we asked to retract cannot
+        // answer for an attempt that has not happened yet (see
+        // `ConversationState.retractionWentHidden`).
+        final present = {for (final message in tick.messages) message.id};
+        final wentHidden = {
+          ...state.retractionWentHidden,
+          ...state.awaitingRetraction.where((id) => !present.contains(id)),
+        };
+        final refused = _refusedRetractions(tick.messages, wentHidden);
         return state.copyWith(
           status: ConversationStatus.loaded,
           messages: tick.messages,
@@ -154,6 +162,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           awaitingRetraction: refused.isEmpty
               ? state.awaitingRetraction
               : state.awaitingRetraction.difference(refused),
+          retractionWentHidden: refused.isEmpty
+              ? wentHidden
+              : wentHidden.difference(refused),
         );
       },
       onError: (error, stackTrace) {
@@ -181,16 +192,22 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ///
   /// Matched against what we asked for rather than against the previous tick,
   /// because the message is HIDDEN in between: `markMessageDeletionPending`
-  /// soft-deletes it, so the thread ticks empty and the refused message that
-  /// reappears looks new rather than changed. Comparing consecutive ticks
+  /// soft-deletes it, so the row leaves the thread and the refused message
+  /// that reappears looks new rather than changed. Comparing consecutive ticks
   /// therefore never sees the transition and the toast never fires — measured
   /// on device, which is what this shape exists to fix.
-  Set<String> _refusedRetractions(List<DmMessage> next) {
-    if (state.awaitingRetraction.isEmpty) return const {};
+  ///
+  /// [wentHidden] is the half that keeps this honest on a RETRY, where the
+  /// bubble is already on screen carrying the previous refusal: an id counts
+  /// only once it has been seen leaving the thread.
+  Set<String> _refusedRetractions(
+    List<DmMessage> next,
+    Set<String> wentHidden,
+  ) {
+    if (wentHidden.isEmpty) return const {};
     return {
       for (final message in next)
-        if (message.retractionBlocked &&
-            state.awaitingRetraction.contains(message.id))
+        if (message.retractionBlocked && wentHidden.contains(message.id))
           message.id,
     };
   }
