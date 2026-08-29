@@ -222,23 +222,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     _feedKey.currentState?.resumeCurrentPlayback();
   }
 
-  /// Pauses the current video if a community warning has newly gated it.
-  ///
-  /// Called when the community-label service notifies (a prefetch crossed the
-  /// threshold). The imperative resume in [_revealContentWarning] has no
-  /// symmetric pause in the package's gate-sync: `_syncCurrentAutoPlayGate`
-  /// early-returns because both its old/new predicates read the same live
-  /// service, so an already-playing item keeps playing behind the overlay
-  /// (#5720 M1). Pausing when the gate is closed is idempotent.
-  void _pauseCurrentIfCommunityWarned() {
-    final feedState = _feedKey.currentState;
-    if (feedState == null) return;
-    final index = feedState.currentIndex;
-    if (index < 0 || index >= widget.videos.length) return;
-    if (_canAutoPlayVideo(widget.videos[index])) return;
-    feedState.pauseCurrentPlayback();
-  }
-
   /// Animates the underlying feed to [index].
   ///
   /// Used by parent screens that hold a [GlobalKey<FeedVideosState>] to
@@ -344,21 +327,13 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
     final appForeground = ref.watch(appForegroundProvider);
     final isFeedActive =
         widget.isActive && _routeAllowsPlayback && appForeground;
-    // Rebuild when a community-label prefetch resolves so InfiniteVideoFeed
-    // re-syncs the autoplay gate (didUpdateWidget) and pauses a video whose
-    // community warning just crossed the threshold. The service only
-    // notifies for non-empty results, so this fires rarely.
+    // Rebuild when a community-label prefetch resolves, and when the
+    // kill-switch flips, so InfiniteVideoFeed re-syncs the autoplay gate from
+    // didUpdateWidget. The package captures the gate answer per rebuild
+    // (#6899), so both directions follow from these watches: a newly crossed
+    // warning pauses the current video, and a warning that lapses resumes it.
     ref.watch(communityContentLabelServiceProvider);
-    // Watch the kill-switch too: flipping it re-evaluates the autoplay gate
-    // (via InfiniteVideoFeed.didUpdateWidget) so cached community warnings
-    // stop/start gating without a restart.
     ref.watch(isFeatureEnabledProvider(FeatureFlag.communityContentWarnings));
-    // Pause an already-playing current video whose community warning just
-    // crossed the threshold. The package's gate-sync can't catch this because
-    // both its old/new predicates read the same live service (#5720 M1).
-    ref.listen(communityContentLabelServiceProvider, (_, _) {
-      _pauseCurrentIfCommunityWarned();
-    });
     // While a codec-heavy surface (camera, video editor, exporter) is open, a
     // backgrounded feed must release even its warm current player so the editor
     // can claim the device's scarce hardware decoders/encoder. Selected so the

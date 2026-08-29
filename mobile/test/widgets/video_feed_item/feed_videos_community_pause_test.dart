@@ -1,11 +1,11 @@
 // ABOUTME: Feed-level test that a community warning crossing the threshold
-// ABOUTME: imperatively pauses the already-playing current video (#5720 M1).
+// ABOUTME: pauses the already-playing current video (#5720 M1, #6899).
 
 // Installs native MethodChannel handlers for the pooled video player, so this
 // file runs isolated from the merged VGV suite.
 // Permanent: needs a real pooled-video-player harness (non-shared native
-// MethodChannels) to observe the imperative pause; that harness cannot
-// isolate inside the merged VGV optimizer bundle.
+// MethodChannels) to observe the pause; that harness cannot isolate inside
+// the merged VGV optimizer bundle.
 @Tags(['skip_very_good_optimization'])
 library;
 
@@ -372,7 +372,7 @@ void main() {
           harness.countCalls('pause'),
           greaterThan(pausesBeforeCrossing),
           reason:
-              'a newly-crossed community warning must imperatively pause the '
+              'a newly-crossed community warning must pause the '
               'already-playing controller, not just close the autoplay gate',
         );
 
