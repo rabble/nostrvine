@@ -9,12 +9,12 @@ import 'package:models/models.dart'
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_event_tag_source.dart';
-import 'package:openvine/services/video_metadata_update_error.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:openvine/utils/nostr_replacement_timestamp.dart';

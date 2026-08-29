@@ -11,9 +11,9 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/video_metadata_update_error_l10n.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/video_metadata_update_error.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart';
 

@@ -16,10 +16,10 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/video_metadata_update_error.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 

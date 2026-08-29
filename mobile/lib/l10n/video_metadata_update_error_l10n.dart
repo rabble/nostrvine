@@ -2,7 +2,7 @@
 // ABOUTME: The service stores the code; the UI layer localizes for display.
 
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/video_metadata_update_error.dart';
+import 'package:openvine/models/video_metadata_update_error.dart';
 
 /// Maps a [VideoMetadataUpdateError] to a localized, user-facing message.
 ///
