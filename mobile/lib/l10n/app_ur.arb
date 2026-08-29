@@ -204,7 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "پروفائل شیئر نہیں ہو سکا: {error}",
+  "profileShareFailed": "پروفائل شیئر نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "@profileShareFailed": {
     "placeholders": {
       "error": {
@@ -582,7 +582,7 @@
   "exploreVideoListsDescription": "بعد میں دیکھنے کے لیے اپنی پسندیدہ ویڈیوز کی پلے لسٹیں بنائیں",
   "exploreMyLists": "میری فہرستیں",
   "exploreSubscribedLists": "سبسکرائب شدہ فہرستیں",
-  "exploreErrorLoadingLists": "فہرستیں لوڈ کرنے میں خرابی: {error}",
+  "exploreErrorLoadingLists": "فہرستیں لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
   "@exploreErrorLoadingLists": {
     "placeholders": {
       "error": {
@@ -1372,7 +1372,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "استفسار ناکام: {error}",
+  "relayDiagnosticQueryFailed": "استفسار ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
       "error": {
@@ -1389,7 +1389,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "کسی بھی ریلے سے منسلک نہیں ہو سکا",
-  "relayDiagnosticConnectionRetryFailed": "کنکشن کی دوبارہ کوشش ناکام: {error}",
+  "relayDiagnosticConnectionRetryFailed": "کنکشن کی دوبارہ کوشش ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
       "error": {
@@ -2563,7 +2563,7 @@
   "keyManagementConfirmImportBody": "یہ آپ کی موجودہ شناخت کی جگہ درآمد شدہ شناخت لے آئے گا۔\n\nاگر آپ نے پہلے بیک اپ نہیں لیا تو آپ کی موجودہ کلید کھو جائے گی۔",
   "keyManagementImportConfirm": "درآمد کریں",
   "keyManagementImportSuccess": "کلید کامیابی سے درآمد ہو گئی!",
-  "keyManagementImportFailed": "کلید درآمد نہیں ہو سکی: {error}",
+  "keyManagementImportFailed": "کلید درآمد نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "@keyManagementImportFailed": {
     "placeholders": {
       "error": {
@@ -3248,7 +3248,7 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "سبسکرپشن اپڈیٹ نہیں ہو سکی: {error}",
+  "discoverListsFailedToUpdateSubscription": "سبسکرپشن اپڈیٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {
       "error": {
@@ -3942,7 +3942,7 @@
       }
     }
   },
-  "soundDetailLoadError": "آواز لوڈ نہیں ہو سکی: {error}",
+  "soundDetailLoadError": "آواز لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
   "@soundDetailLoadError": {
     "placeholders": {
       "error": {

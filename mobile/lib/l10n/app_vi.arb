@@ -204,7 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "Không thể chia sẻ hồ sơ: {error}",
+  "profileShareFailed": "Không thể chia sẻ hồ sơ. Vui lòng thử lại.",
   "@profileShareFailed": {
     "placeholders": {
       "error": {
@@ -582,7 +582,7 @@
   "exploreVideoListsDescription": "Tạo danh sách phát từ những video yêu thích để xem sau",
   "exploreMyLists": "Danh sách của tôi",
   "exploreSubscribedLists": "Danh sách đã đăng ký",
-  "exploreErrorLoadingLists": "Lỗi khi tải danh sách: {error}",
+  "exploreErrorLoadingLists": "Lỗi khi tải danh sách. Vui lòng thử lại.",
   "@exploreErrorLoadingLists": {
     "placeholders": {
       "error": {
@@ -1372,7 +1372,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "Truy vấn thất bại: {error}",
+  "relayDiagnosticQueryFailed": "Truy vấn thất bại. Vui lòng thử lại.",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
       "error": {
@@ -1389,7 +1389,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "Không kết nối được với relay nào",
-  "relayDiagnosticConnectionRetryFailed": "Thử kết nối lại thất bại: {error}",
+  "relayDiagnosticConnectionRetryFailed": "Thử kết nối lại thất bại. Vui lòng thử lại.",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
       "error": {
@@ -2563,7 +2563,7 @@
   "keyManagementConfirmImportBody": "Việc này sẽ thay thế danh tính hiện tại của bạn bằng danh tính được nhập.\n\nKhóa hiện tại của bạn sẽ mất trừ khi bạn đã sao lưu trước.",
   "keyManagementImportConfirm": "Nhập",
   "keyManagementImportSuccess": "Đã nhập khóa thành công!",
-  "keyManagementImportFailed": "Không nhập được khóa: {error}",
+  "keyManagementImportFailed": "Không nhập được khóa. Vui lòng thử lại.",
   "@keyManagementImportFailed": {
     "placeholders": {
       "error": {
@@ -3248,7 +3248,7 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "Không cập nhật được đăng ký: {error}",
+  "discoverListsFailedToUpdateSubscription": "Không cập nhật được đăng ký. Vui lòng thử lại.",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {
       "error": {
@@ -3942,7 +3942,7 @@
       }
     }
   },
-  "soundDetailLoadError": "Không tải được âm thanh: {error}",
+  "soundDetailLoadError": "Không tải được âm thanh. Vui lòng thử lại.",
   "@soundDetailLoadError": {
     "placeholders": {
       "error": {

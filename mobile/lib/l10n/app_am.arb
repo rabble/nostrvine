@@ -224,7 +224,7 @@
             }
         }
     },
-    "profileShareFailed": "መገለጫን ማጋራት አልተሳካም፦ {error}",
+    "profileShareFailed": "መገለጫን ማጋራት አልተሳካም። እባክህ እንደገና ሞክር።",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -554,7 +554,7 @@
     "exploreVideoListsDescription": "በኋላ ለመመልከት የሚወዷቸውን ቪዲዮዎች አጫዋች ዝርዝሮችን ይፍጠሩ",
     "exploreMyLists": "የእኔ ዝርዝሮች",
     "exploreSubscribedLists": "የተመዘገቡ ዝርዝሮች",
-    "exploreErrorLoadingLists": "ዝርዝሮችን መጫን ላይ ስህተት፦ {error}",
+    "exploreErrorLoadingLists": "ዝርዝሮችን መጫን ላይ ስህተት። እባክህ እንደገና ሞክር።",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -1206,7 +1206,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "መጠይቁ አልተሳካም፡ {error}",
+    "relayDiagnosticQueryFailed": "መጠይቁ አልተሳካም፡። እባክህ እንደገና ሞክር።",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -1223,7 +1223,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።",
-    "relayDiagnosticConnectionRetryFailed": "የግንኙነት ድጋሚ መሞከር አልተሳካም፦ {error}",
+    "relayDiagnosticConnectionRetryFailed": "የግንኙነት ድጋሚ መሞከር አልተሳካም። እባክህ እንደገና ሞክር።",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -2166,7 +2166,7 @@
     "keyManagementConfirmImportBody": "ይህ አሁን ያለዎትን ማንነት ከውጪ በመጣው ይተካዋል።\n\nመጀመሪያ ምትኬ ካላስቀመጥከው በስተቀር የአሁኑ ቁልፍህ ይጠፋል።",
     "keyManagementImportConfirm": "አስመጣ",
     "keyManagementImportSuccess": "ቁልፍ በተሳካ ሁኔታ ገብቷል!",
-    "keyManagementImportFailed": "ቁልፍ ማስመጣት አልተሳካም፦ {error}",
+    "keyManagementImportFailed": "ቁልፍ ማስመጣት አልተሳካም። እባክህ እንደገና ሞክር።",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -2519,7 +2519,7 @@
             }
         }
     },
-    "discoverListsFailedToUpdateSubscription": "የደንበኝነት ምዝገባን ማዘመን አልተሳካም፦ {error}",
+    "discoverListsFailedToUpdateSubscription": "የደንበኝነት ምዝገባን ማዘመን አልተሳካም። እባክህ እንደገና ሞክር።",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4528,7 +4528,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "ድምጽ፡ {soundName} በ{creatorName}። ዝርዝሮችን ለማየት መታ ያድርጉ።",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "ድምጽ መጫን አልተሳካም፦ {error}",
+    "soundDetailLoadError": "ድምጽ መጫን አልተሳካም። እባክህ እንደገና ሞክር።",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "ይህ ድምጽ ሊገኝ አልቻለም",
     "soundDetailNotFoundTitle": "ድምጽ አልተገኘም",

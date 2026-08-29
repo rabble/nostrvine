@@ -452,9 +452,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'تعذّرت مشاركة الملف الشخصي: $error';
-  }
+  String get profileShareFailed =>
+      'تعذّرت مشاركة الملف الشخصي. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get profileCopyPublicKey => 'نسخ المفتاح العام (npub)';
@@ -1285,9 +1284,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get exploreSubscribedLists => 'القوائم المشترك بها';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'خطأ في تحميل القوائم: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'خطأ في تحميل القوائم. يرجى المحاولة مرّة أخرى.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2553,9 +2551,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'فشل الاستعلام: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'فشل الاستعلام. يرجى المحاولة مرّة أخرى.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2566,9 +2563,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'فشل الاتصال بأي محول';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'فشلت إعادة محاولة الاتصال: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'فشلت إعادة محاولة الاتصال. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'متصل ومُصادَق عليه';
@@ -4921,9 +4917,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get keyManagementImportSuccess => 'تم استيراد المفتاح بنجاح!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'تعذر استيراد المفتاح: $error';
-  }
+  String get keyManagementImportFailed =>
+      'تعذر استيراد المفتاح. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5808,9 +5803,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'فشل تحديث الاشتراك: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'فشل تحديث الاشتراك. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get discoverListsTitle => 'اكتشف القوائم';
@@ -7128,9 +7122,8 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'فشل تحميل الصوت: $error';
-  }
+  String get soundDetailLoadError =>
+      'فشل تحميل الصوت. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get soundDetailNotFoundMessage => 'تعذّر العثور على هذا الصوت';

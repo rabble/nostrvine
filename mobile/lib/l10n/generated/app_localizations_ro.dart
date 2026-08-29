@@ -491,9 +491,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Nu am putut partaja profilul: $error';
-  }
+  String get profileShareFailed =>
+      'Nu am putut partaja profilul. Încearcă din nou.';
 
   @override
   String get profileCopyPublicKey => 'Copiază cheia publică (npub)';
@@ -1346,9 +1345,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreSubscribedLists => 'Liste la care ești abonat';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Eroare la încărcarea listelor: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Eroare la încărcarea listelor. Încearcă din nou.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2661,9 +2659,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Interogarea a eșuat: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Interogarea a eșuat. Încearcă din nou.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2682,9 +2679,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'N-am putut conecta la niciun relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Reîncercarea conexiunii a eșuat: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Reîncercarea conexiunii a eșuat. Încearcă din nou.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -5110,9 +5106,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keyManagementImportSuccess => 'Cheie importată cu succes!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'N-am putut importa cheia: $error';
-  }
+  String get keyManagementImportFailed =>
+      'N-am putut importa cheia. Încearcă din nou.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -6015,9 +6010,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Nu s-a putut actualiza abonamentul: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Nu s-a putut actualiza abonamentul. Încearcă din nou.';
 
   @override
   String get discoverListsTitle => 'Descoperă liste';
@@ -7355,9 +7349,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Nu am putut încărca sunetul: $error';
-  }
+  String get soundDetailLoadError =>
+      'Nu am putut încărca sunetul. Încearcă din nou.';
 
   @override
   String get soundDetailNotFoundMessage => 'Acest sunet nu a putut fi găsit';

@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Profil konnte nicht geteilt werden: {error}",
+    "profileShareFailed": "Profil konnte nicht geteilt werden. Bitte versuch es nochmal.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Erstelle Playlists deiner Lieblingsvideos, um sie später anzusehen",
     "exploreMyLists": "Meine Listen",
     "exploreSubscribedLists": "Abonnierte Listen",
-    "exploreErrorLoadingLists": "Fehler beim Laden der Listen: {error}",
+    "exploreErrorLoadingLists": "Fehler beim Laden der Listen. Bitte versuch es nochmal.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Abfrage fehlgeschlagen: {error}",
+    "relayDiagnosticQueryFailed": "Abfrage fehlgeschlagen. Bitte versuch es nochmal.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Verbindung zu Relays fehlgeschlagen",
-    "relayDiagnosticConnectionRetryFailed": "Verbindungsversuch fehlgeschlagen: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Verbindungsversuch fehlgeschlagen. Bitte versuch es nochmal.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Damit wird deine aktuelle Identität durch die importierte ersetzt.\n\nDein aktueller Schlüssel geht verloren, wenn du ihn nicht vorher gesichert hast.",
     "keyManagementImportConfirm": "Importieren",
     "keyManagementImportSuccess": "Schlüssel erfolgreich importiert!",
-    "keyManagementImportFailed": "Schlüssel konnte nicht importiert werden: {error}",
+    "keyManagementImportFailed": "Schlüssel konnte nicht importiert werden. Bitte versuch es nochmal.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Abbrechen",
     "commonDelete": "Löschen",
     "commonRetry": "Erneut versuchen",
-    "discoverListsFailedToUpdateSubscription": "Abo konnte nicht aktualisiert werden: {error}",
+    "discoverListsFailedToUpdateSubscription": "Abo konnte nicht aktualisiert werden. Bitte versuch es nochmal.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Sound: {soundName} von {creatorName}. Tippen, um Details anzusehen.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Sound konnte nicht geladen werden: {error}",
+    "soundDetailLoadError": "Sound konnte nicht geladen werden. Bitte versuch es nochmal.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Dieser Sound konnte nicht gefunden werden",
     "soundDetailNotFoundTitle": "Sound nicht gefunden",

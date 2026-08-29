@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Не успяхме да споделим профила: {error}",
+    "profileShareFailed": "Не успяхме да споделим профила. Опитай пак.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -507,7 +507,7 @@
     "exploreVideoListsDescription": "Създай плейлисти с любимите си видеа, за да ги гледаш по-късно",
     "exploreMyLists": "Моите списъци",
     "exploreSubscribedLists": "Абонирани списъци",
-    "exploreErrorLoadingLists": "Грешка при зареждане на списъците: {error}",
+    "exploreErrorLoadingLists": "Грешка при зареждане на списъците. Опитай пак.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -1021,7 +1021,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Неуспешна заявка: {error}",
+    "relayDiagnosticQueryFailed": "Неуспешна заявка. Опитай пак.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -1038,7 +1038,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Не успяхме да се свържем с нито едно реле",
-    "relayDiagnosticConnectionRetryFailed": "Неуспешен повторен опит за свързване: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Неуспешен повторен опит за свързване. Опитай пак.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1977,7 +1977,7 @@
     "keyManagementConfirmImportBody": "Това ще замени текущата ти самоличност с импортираната.\n\nТекущият ти ключ ще бъде загубен, освен ако първо не си го архивирал.",
     "keyManagementImportConfirm": "Импортиране",
     "keyManagementImportSuccess": "Ключът е импортиран успешно!",
-    "keyManagementImportFailed": "Неуспешно импортиране на ключ: {error}",
+    "keyManagementImportFailed": "Неуспешно импортиране на ключ. Опитай пак.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -2312,7 +2312,7 @@
             }
         }
     },
-    "discoverListsFailedToUpdateSubscription": "Неуспешно актуализиране на абонамента: {error}",
+    "discoverListsFailedToUpdateSubscription": "Неуспешно актуализиране на абонамента. Опитай пак.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4534,7 +4534,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Звук: {soundName} от {creatorName}. Докосни, за да видиш подробности.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Неуспешно зареждане на звука: {error}",
+    "soundDetailLoadError": "Неуспешно зареждане на звука. Опитай пак.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Този звук не можа да бъде намерен",
     "soundDetailNotFoundTitle": "Звукът не е намерен",

@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "プロフィールの共有がうまくいかなかった: {error}",
+    "profileShareFailed": "プロフィールの共有がうまくいかなかった。もう一回試してみて。",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "お気に入りの動画をプレイリストにまとめて、あとで見よう",
     "exploreMyLists": "マイリスト",
     "exploreSubscribedLists": "購読中のリスト",
-    "exploreErrorLoadingLists": "リストの読み込みに失敗: {error}",
+    "exploreErrorLoadingLists": "リストの読み込みに失敗。もう一回試してみて。",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -935,7 +935,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "クエリがうまくいかなかった: {error}",
+    "relayDiagnosticQueryFailed": "クエリがうまくいかなかった。もう一回試してみて。",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -952,7 +952,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "どのリレーにも接続できなかった",
-    "relayDiagnosticConnectionRetryFailed": "接続の再試行がうまくいかなかった: {error}",
+    "relayDiagnosticConnectionRetryFailed": "接続の再試行がうまくいかなかった。もう一回試してみて。",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1761,7 +1761,7 @@
     "keyManagementConfirmImportBody": "現在のアイデンティティがインポートした鍵に置き換わるよ。\n\n先にバックアップしておかないと、現在の鍵がなくなっちゃうよ。",
     "keyManagementImportConfirm": "インポート",
     "keyManagementImportSuccess": "鍵をインポートしたよ！",
-    "keyManagementImportFailed": "鍵のインポートがうまくいかなかった: {error}",
+    "keyManagementImportFailed": "鍵のインポートがうまくいかなかった。もう一回試してみて。",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1963,7 +1963,7 @@
     "commonCancel": "キャンセル",
     "commonDelete": "削除",
     "commonRetry": "もう一回",
-    "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった: {error}",
+    "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった。もう一回試してみて。",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "サウンド: {creatorName}の{soundName}。タップすると詳細を見れるよ。",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "サウンドの読み込みに失敗したよ: {error}",
+    "soundDetailLoadError": "サウンドの読み込みに失敗したよ。もう一回試してみて。",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "このサウンドは見つからなかったよ",
     "soundDetailNotFoundTitle": "サウンドが見つからないよ",

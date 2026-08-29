@@ -440,9 +440,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Không thể chia sẻ hồ sơ: $error';
-  }
+  String get profileShareFailed => 'Không thể chia sẻ hồ sơ. Vui lòng thử lại.';
 
   @override
   String get profileCopyPublicKey => 'Sao chép khóa công khai (npub)';
@@ -1278,9 +1276,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exploreSubscribedLists => 'Danh sách đã đăng ký';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Lỗi khi tải danh sách: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Lỗi khi tải danh sách. Vui lòng thử lại.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2546,9 +2543,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Truy vấn thất bại: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Truy vấn thất bại. Vui lòng thử lại.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2560,9 +2556,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không kết nối được với relay nào';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Thử kết nối lại thất bại: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Thử kết nối lại thất bại. Vui lòng thử lại.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Đã kết nối & xác thực';
@@ -4936,9 +4931,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get keyManagementImportSuccess => 'Đã nhập khóa thành công!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Không nhập được khóa: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Không nhập được khóa. Vui lòng thử lại.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5827,9 +5821,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Không cập nhật được đăng ký: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Không cập nhật được đăng ký. Vui lòng thử lại.';
 
   @override
   String get discoverListsTitle => 'Khám phá danh sách';
@@ -7153,9 +7146,8 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Không tải được âm thanh: $error';
-  }
+  String get soundDetailLoadError =>
+      'Không tải được âm thanh. Vui lòng thử lại.';
 
   @override
   String get soundDetailNotFoundMessage => 'Không tìm thấy âm thanh này';

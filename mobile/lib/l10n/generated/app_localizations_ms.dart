@@ -437,9 +437,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Gagal berkongsi profil: $error';
-  }
+  String get profileShareFailed => 'Gagal berkongsi profil. Sila cuba lagi.';
 
   @override
   String get profileCopyPublicKey => 'Salin kunci awam (npub)';
@@ -1280,9 +1278,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get exploreSubscribedLists => 'Senarai Langganan';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Ralat memuatkan senarai: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Ralat memuatkan senarai. Sila cuba lagi.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2559,9 +2556,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Pertanyaan gagal: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Pertanyaan gagal. Sila cuba lagi.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2573,9 +2568,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Gagal bersambung ke mana-mana relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Cubaan semula sambungan gagal: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Cubaan semula sambungan gagal. Sila cuba lagi.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Bersambung & Disahkan';
@@ -4971,9 +4965,8 @@ class AppLocalizationsMs extends AppLocalizations {
   String get keyManagementImportSuccess => 'Kunci berjaya diimport!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Gagal mengimport kunci: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Gagal mengimport kunci. Sila cuba lagi.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5867,9 +5860,8 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Gagal mengemas kini langganan: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Gagal mengemas kini langganan. Sila cuba lagi.';
 
   @override
   String get discoverListsTitle => 'Terokai Senarai';
@@ -7194,9 +7186,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Gagal memuatkan bunyi: $error';
-  }
+  String get soundDetailLoadError => 'Gagal memuatkan bunyi. Sila cuba lagi.';
 
   @override
   String get soundDetailNotFoundMessage => 'Bunyi ini tidak dapat ditemui';

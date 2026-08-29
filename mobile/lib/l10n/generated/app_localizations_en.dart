@@ -474,9 +474,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Failed to share profile: $error';
-  }
+  String get profileShareFailed => 'Failed to share profile. Please try again.';
 
   @override
   String get profileCopyPublicKey => 'Copy public key (npub)';
@@ -1317,9 +1315,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreSubscribedLists => 'Subscribed Lists';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Error loading lists: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Error loading lists. Please try again.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2615,9 +2612,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Query failed: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Query failed. Please try again.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2635,9 +2630,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to connect to any relays';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Connection retry failed: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Connection retry failed. Please try again.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -5057,9 +5051,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keyManagementImportSuccess => 'Key imported successfully!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Failed to import key: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Failed to import key. Please try again.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5958,9 +5951,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Failed to update subscription: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Failed to update subscription. Please try again.';
 
   @override
   String get discoverListsTitle => 'Discover Lists';
@@ -7287,9 +7279,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Failed to load sound: $error';
-  }
+  String get soundDetailLoadError => 'Failed to load sound. Please try again.';
 
   @override
   String get soundDetailNotFoundMessage => 'This sound could not be found';

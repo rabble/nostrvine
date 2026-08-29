@@ -477,9 +477,8 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Nie udało się udostępnić profilu: $error';
-  }
+  String get profileShareFailed =>
+      'Nie udało się udostępnić profilu. Spróbuj ponownie.';
 
   @override
   String get profileCopyPublicKey => 'Skopiuj klucz publiczny (npub)';
@@ -1333,9 +1332,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get exploreSubscribedLists => 'Subskrybowane listy';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Błąd wczytywania list: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Błąd wczytywania list. Spróbuj ponownie.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2649,9 +2647,8 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Zapytanie nieudane: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Zapytanie nieudane. Spróbuj ponownie.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2671,9 +2668,8 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się połączyć z żadnym przekaźnikiem';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Ponowne połączenie nieudane: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Ponowne połączenie nieudane. Spróbuj ponownie.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -5097,9 +5093,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get keyManagementImportSuccess => 'Klucz zaimportowany pomyślnie!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Nie udało się zaimportować klucza: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Nie udało się zaimportować klucza. Spróbuj ponownie.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -6003,9 +5998,8 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Nie udało się zaktualizować subskrypcji: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Nie udało się zaktualizować subskrypcji. Spróbuj ponownie.';
 
   @override
   String get discoverListsTitle => 'Odkrywaj listy';
@@ -7346,9 +7340,8 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Nie udało się wczytać dźwięku: $error';
-  }
+  String get soundDetailLoadError =>
+      'Nie udało się wczytać dźwięku. Spróbuj ponownie.';
 
   @override
   String get soundDetailNotFoundMessage => 'Nie udało się znaleźć tego dźwięku';

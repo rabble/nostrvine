@@ -392,9 +392,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return '프로필을 공유하지 못했어요: $error';
-  }
+  String get profileShareFailed => '프로필을 공유하지 못했어요. 다시 시도해보세요.';
 
   @override
   String get profileCopyPublicKey => '공개 키 복사 (npub)';
@@ -1196,9 +1194,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreSubscribedLists => '구독 리스트';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return '리스트를 불러오지 못했어요: $error';
-  }
+  String get exploreErrorLoadingLists => '리스트를 불러오지 못했어요. 다시 시도해보세요.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2415,9 +2411,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return '쿼리 실패: $error';
-  }
+  String get relayDiagnosticQueryFailed => '쿼리 실패. 다시 시도해보세요.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2428,9 +2422,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => '릴레이 연결에 실패했어요';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return '연결 재시도 실패: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed => '연결 재시도 실패. 다시 시도해보세요.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => '연결 및 인증됨';
@@ -4691,9 +4683,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keyManagementImportSuccess => '키를 성공적으로 가져왔어요!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return '키 가져오기에 실패했어요: $error';
-  }
+  String get keyManagementImportFailed => '키 가져오기에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5569,9 +5559,8 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return '구독 업데이트에 실패했어요: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      '구독 업데이트에 실패했어요. 다시 시도해보세요.';
 
   @override
   String get discoverListsTitle => '리스트 둘러보기';
@@ -6837,9 +6826,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return '사운드를 불러오지 못했어요: $error';
-  }
+  String get soundDetailLoadError => '사운드를 불러오지 못했어요. 다시 시도해보세요.';
 
   @override
   String get soundDetailNotFoundMessage => '이 사운드를 찾을 수 없어요';

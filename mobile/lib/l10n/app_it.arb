@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Impossibile condividere il profilo: {error}",
+    "profileShareFailed": "Impossibile condividere il profilo. Riprova.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Crea playlist dei tuoi video preferiti da guardare dopo",
     "exploreMyLists": "Le mie liste",
     "exploreSubscribedLists": "Liste iscritte",
-    "exploreErrorLoadingLists": "Errore nel caricamento delle liste: {error}",
+    "exploreErrorLoadingLists": "Errore nel caricamento delle liste. Riprova.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query fallita: {error}",
+    "relayDiagnosticQueryFailed": "Query fallita. Riprova.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Impossibile connettersi ad alcun relay",
-    "relayDiagnosticConnectionRetryFailed": "Nuovo tentativo di connessione fallito: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Nuovo tentativo di connessione fallito. Riprova.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Questo sostituirà la tua identità attuale con quella importata.\n\nLa tua chiave attuale andrà persa a meno che tu non ne abbia fatto prima il backup.",
     "keyManagementImportConfirm": "Importa",
     "keyManagementImportSuccess": "Chiave importata con successo!",
-    "keyManagementImportFailed": "Impossibile importare la chiave: {error}",
+    "keyManagementImportFailed": "Impossibile importare la chiave. Riprova.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Annulla",
     "commonDelete": "Elimina",
     "commonRetry": "Riprova",
-    "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento: {error}",
+    "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento. Riprova.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Audio: {soundName} di {creatorName}. Tocca per vedere i dettagli.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Impossibile caricare l'audio: {error}",
+    "soundDetailLoadError": "Impossibile caricare l'audio. Riprova.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Impossibile trovare questo audio",
     "soundDetailNotFoundTitle": "Audio non trovato",

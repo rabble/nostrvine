@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "تعذّرت مشاركة الملف الشخصي: {error}",
+    "profileShareFailed": "تعذّرت مشاركة الملف الشخصي. يرجى المحاولة مرّة أخرى.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "أنشئ قوائم تشغيل لفيديوهاتك المفضلة لمشاهدتها لاحقًا",
     "exploreMyLists": "قوائمي",
     "exploreSubscribedLists": "القوائم المشترك بها",
-    "exploreErrorLoadingLists": "خطأ في تحميل القوائم: {error}",
+    "exploreErrorLoadingLists": "خطأ في تحميل القوائم. يرجى المحاولة مرّة أخرى.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -935,7 +935,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "فشل الاستعلام: {error}",
+    "relayDiagnosticQueryFailed": "فشل الاستعلام. يرجى المحاولة مرّة أخرى.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -952,7 +952,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "فشل الاتصال بأي محول",
-    "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال: {error}",
+    "relayDiagnosticConnectionRetryFailed": "فشلت إعادة محاولة الاتصال. يرجى المحاولة مرّة أخرى.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1761,7 +1761,7 @@
     "keyManagementConfirmImportBody": "سيحل هذا محل هويتك الحالية بالهوية المستوردة.\n\nسيُفقد مفتاحك الحالي ما لم تقم بعمل نسخة احتياطية منه أولًا.",
     "keyManagementImportConfirm": "استيراد",
     "keyManagementImportSuccess": "تم استيراد المفتاح بنجاح!",
-    "keyManagementImportFailed": "تعذر استيراد المفتاح: {error}",
+    "keyManagementImportFailed": "تعذر استيراد المفتاح. يرجى المحاولة مرّة أخرى.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1963,7 +1963,7 @@
     "commonCancel": "إلغاء",
     "commonDelete": "حذف",
     "commonRetry": "إعادة المحاولة",
-    "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك: {error}",
+    "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك. يرجى المحاولة مرّة أخرى.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "الصوت: {soundName} بواسطة {creatorName}. اضغط لعرض التفاصيل.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "فشل تحميل الصوت: {error}",
+    "soundDetailLoadError": "فشل تحميل الصوت. يرجى المحاولة مرّة أخرى.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "تعذّر العثور على هذا الصوت",
     "soundDetailNotFoundTitle": "الصوت غير موجود",

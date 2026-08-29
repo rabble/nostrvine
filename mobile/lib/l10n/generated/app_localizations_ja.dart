@@ -391,9 +391,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'プロフィールの共有がうまくいかなかった: $error';
-  }
+  String get profileShareFailed => 'プロフィールの共有がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get profileCopyPublicKey => '公開鍵 (npub) をコピー';
@@ -1192,9 +1190,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exploreSubscribedLists => '購読中のリスト';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'リストの読み込みに失敗: $error';
-  }
+  String get exploreErrorLoadingLists => 'リストの読み込みに失敗。もう一回試してみて。';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2404,9 +2400,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'クエリがうまくいかなかった: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'クエリがうまくいかなかった。もう一回試してみて。';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2417,9 +2411,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'どのリレーにも接続できなかった';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return '接続の再試行がうまくいかなかった: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      '接続の再試行がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => '接続・認証済み';
@@ -4675,9 +4668,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementImportSuccess => '鍵をインポートしたよ！';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return '鍵のインポートがうまくいかなかった: $error';
-  }
+  String get keyManagementImportFailed => '鍵のインポートがうまくいかなかった。もう一回試してみて。';
 
   @override
   String get keyManagementExportSuccess => '秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。';
@@ -5550,9 +5541,8 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'サブスクリプションの更新がうまくいかなかった: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'サブスクリプションの更新がうまくいかなかった。もう一回試してみて。';
 
   @override
   String get discoverListsTitle => 'リストを見つける';
@@ -6821,9 +6811,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'サウンドの読み込みに失敗したよ: $error';
-  }
+  String get soundDetailLoadError => 'サウンドの読み込みに失敗したよ。もう一回試してみて。';
 
   @override
   String get soundDetailNotFoundMessage => 'このサウンドは見つからなかったよ';

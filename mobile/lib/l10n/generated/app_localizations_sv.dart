@@ -457,9 +457,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Kunde inte dela profil: $error';
-  }
+  String get profileShareFailed => 'Kunde inte dela profil. Försök igen.';
 
   @override
   String get profileCopyPublicKey => 'Kopiera publik nyckel (npub)';
@@ -1296,9 +1294,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get exploreSubscribedLists => 'Prenumererade listor';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Fel vid inläsning av listor: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Fel vid inläsning av listor. Försök igen.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2569,9 +2566,8 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Förfrågan misslyckades: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Förfrågan misslyckades. Försök igen.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2583,9 +2579,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte ansluta till några reler';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Förnyat anslutningsförsök misslyckades: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Förnyat anslutningsförsök misslyckades. Försök igen.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -4961,9 +4956,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get keyManagementImportSuccess => 'Nyckeln importerades!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Kunde inte importera nyckeln: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Kunde inte importera nyckeln. Försök igen.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5854,9 +5848,8 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Kunde inte uppdatera prenumerationen: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Kunde inte uppdatera prenumerationen. Försök igen.';
 
   @override
   String get discoverListsTitle => 'Upptäck listor';
@@ -7177,9 +7170,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Kunde inte läsa in ljud: $error';
-  }
+  String get soundDetailLoadError => 'Kunde inte läsa in ljud. Försök igen.';
 
   @override
   String get soundDetailNotFoundMessage => 'Det här ljudet kunde inte hittas';

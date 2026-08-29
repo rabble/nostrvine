@@ -469,9 +469,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Profiel delen mislukt: $error';
-  }
+  String get profileShareFailed =>
+      'Profiel delen mislukt. Probeer het opnieuw.';
 
   @override
   String get profileCopyPublicKey => 'Publieke sleutel kopiëren (npub)';
@@ -1311,9 +1310,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreSubscribedLists => 'Gevolgde lijsten';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Fout bij laden van lijsten: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Fout bij laden van lijsten. Probeer het opnieuw.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2583,9 +2581,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Query mislukt: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Query mislukt. Probeer het opnieuw.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2596,9 +2593,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'Verbinden met relays mislukt';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Verbinding opnieuw proberen mislukt: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Verbinding opnieuw proberen mislukt. Probeer het opnieuw.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -4985,9 +4981,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get keyManagementImportSuccess => 'Sleutel succesvol geïmporteerd!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Sleutel importeren mislukt: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Sleutel importeren mislukt. Probeer het opnieuw.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5883,9 +5878,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Abonnement bijwerken mislukt: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Abonnement bijwerken mislukt. Probeer het opnieuw.';
 
   @override
   String get discoverListsTitle => 'Lijsten ontdekken';
@@ -7213,9 +7207,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Geluid laden mislukt: $error';
-  }
+  String get soundDetailLoadError =>
+      'Geluid laden mislukt. Probeer het opnieuw.';
 
   @override
   String get soundDetailNotFoundMessage =>

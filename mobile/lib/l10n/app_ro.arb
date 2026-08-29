@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Nu am putut partaja profilul: {error}",
+    "profileShareFailed": "Nu am putut partaja profilul. Încearcă din nou.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Creează playlisturi cu videoclipurile preferate ca să le vezi mai târziu",
     "exploreMyLists": "Listele mele",
     "exploreSubscribedLists": "Liste la care ești abonat",
-    "exploreErrorLoadingLists": "Eroare la încărcarea listelor: {error}",
+    "exploreErrorLoadingLists": "Eroare la încărcarea listelor. Încearcă din nou.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Interogarea a eșuat: {error}",
+    "relayDiagnosticQueryFailed": "Interogarea a eșuat. Încearcă din nou.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "N-am putut conecta la niciun relay",
-    "relayDiagnosticConnectionRetryFailed": "Reîncercarea conexiunii a eșuat: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Reîncercarea conexiunii a eșuat. Încearcă din nou.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Asta âți va înlocui identitatea curentă cu cea importată.\n\nCheia ta curentă va fi pierdută dacă n-ai făcut backup mai întâi.",
     "keyManagementImportConfirm": "Importă",
     "keyManagementImportSuccess": "Cheie importată cu succes!",
-    "keyManagementImportFailed": "N-am putut importa cheia: {error}",
+    "keyManagementImportFailed": "N-am putut importa cheia. Încearcă din nou.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Anulează",
     "commonDelete": "Șterge",
     "commonRetry": "Reîncearcă",
-    "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
+    "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul. Încearcă din nou.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Sunet: {soundName} de {creatorName}. Atinge ca să vezi detaliile.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Nu am putut încărca sunetul: {error}",
+    "soundDetailLoadError": "Nu am putut încărca sunetul. Încearcă din nou.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Acest sunet nu a putut fi găsit",
     "soundDetailNotFoundTitle": "Sunet negăsit",

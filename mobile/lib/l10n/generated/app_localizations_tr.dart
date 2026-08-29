@@ -407,9 +407,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Profil paylaşılamadı: $error';
-  }
+  String get profileShareFailed => 'Profil paylaşılamadı. Lütfen tekrar dene.';
 
   @override
   String get profileCopyPublicKey => 'Açık anahtarı (npub) kopyala';
@@ -1248,9 +1246,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get exploreSubscribedLists => 'Abone Olunan Listeler';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Listeler yüklenirken hata: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Listeler yüklenirken hata. Lütfen tekrar dene.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2511,9 +2508,8 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Sorgu başarısız: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Sorgu başarısız. Lütfen tekrar dene.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2524,9 +2520,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => 'Hiçbir röleye bağlanılamadı';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Bağlantı yeniden denemesi başarısız: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Bağlantı yeniden denemesi başarısız. Lütfen tekrar dene.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -4906,9 +4901,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keyManagementImportSuccess => 'Anahtar başarıyla içe aktarıldı!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Anahtar içe aktarılamadı: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Anahtar içe aktarılamadı. Lütfen tekrar dene.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5793,9 +5787,8 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Abonelik güncellenemedi: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Abonelik güncellenemedi. Lütfen tekrar dene.';
 
   @override
   String get discoverListsTitle => 'Listeleri Keşfet';
@@ -7110,9 +7103,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Ses yüklenemedi: $error';
-  }
+  String get soundDetailLoadError => 'Ses yüklenemedi. Lütfen tekrar dene.';
 
   @override
   String get soundDetailNotFoundMessage => 'Bu ses bulunamadı';

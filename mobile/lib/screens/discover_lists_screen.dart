@@ -373,7 +373,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.discoverListsFailedToUpdateSubscription('$e'),
+              context.l10n.discoverListsFailedToUpdateSubscription,
             ),
             backgroundColor: VineTheme.likeRed,
           ),

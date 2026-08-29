@@ -831,8 +831,8 @@ abstract class AppLocalizations {
   /// No description provided for @profileShareFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to share profile: {error}'**
-  String profileShareFailed(Object error);
+  /// **'Failed to share profile. Please try again.'**
+  String get profileShareFailed;
 
   /// No description provided for @profileCopyPublicKey.
   ///
@@ -2265,8 +2265,8 @@ abstract class AppLocalizations {
   /// No description provided for @exploreErrorLoadingLists.
   ///
   /// In en, this message translates to:
-  /// **'Error loading lists: {error}'**
-  String exploreErrorLoadingLists(Object error);
+  /// **'Error loading lists. Please try again.'**
+  String get exploreErrorLoadingLists;
 
   /// No description provided for @exploreNewVideosCount.
   ///
@@ -4406,8 +4406,8 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticQueryFailed.
   ///
   /// In en, this message translates to:
-  /// **'Query failed: {error}'**
-  String relayDiagnosticQueryFailed(String error);
+  /// **'Query failed. Please try again.'**
+  String get relayDiagnosticQueryFailed;
 
   /// No description provided for @relayDiagnosticConnectedToRelays.
   ///
@@ -4424,8 +4424,8 @@ abstract class AppLocalizations {
   /// No description provided for @relayDiagnosticConnectionRetryFailed.
   ///
   /// In en, this message translates to:
-  /// **'Connection retry failed: {error}'**
-  String relayDiagnosticConnectionRetryFailed(String error);
+  /// **'Connection retry failed. Please try again.'**
+  String get relayDiagnosticConnectionRetryFailed;
 
   /// No description provided for @relayDiagnosticConnectedAuthenticated.
   ///
@@ -8492,8 +8492,8 @@ abstract class AppLocalizations {
   /// No description provided for @keyManagementImportFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to import key: {error}'**
-  String keyManagementImportFailed(Object error);
+  /// **'Failed to import key. Please try again.'**
+  String get keyManagementImportFailed;
 
   /// No description provided for @keyManagementExportSuccess.
   ///
@@ -10106,8 +10106,8 @@ abstract class AppLocalizations {
   /// No description provided for @discoverListsFailedToUpdateSubscription.
   ///
   /// In en, this message translates to:
-  /// **'Failed to update subscription: {error}'**
-  String discoverListsFailedToUpdateSubscription(String error);
+  /// **'Failed to update subscription. Please try again.'**
+  String get discoverListsFailedToUpdateSubscription;
 
   /// No description provided for @discoverListsTitle.
   ///
@@ -12284,8 +12284,8 @@ abstract class AppLocalizations {
   /// No description provided for @soundDetailLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load sound: {error}'**
-  String soundDetailLoadError(String error);
+  /// **'Failed to load sound. Please try again.'**
+  String get soundDetailLoadError;
 
   /// No description provided for @soundDetailNotFoundMessage.
   ///

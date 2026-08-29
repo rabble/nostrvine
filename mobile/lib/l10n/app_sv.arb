@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Kunde inte dela profil: {error}",
+    "profileShareFailed": "Kunde inte dela profil. Försök igen.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Skapa spellistor med dina favoritvideor för att titta på senare",
     "exploreMyLists": "Mina listor",
     "exploreSubscribedLists": "Prenumererade listor",
-    "exploreErrorLoadingLists": "Fel vid inläsning av listor: {error}",
+    "exploreErrorLoadingLists": "Fel vid inläsning av listor. Försök igen.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Förfrågan misslyckades: {error}",
+    "relayDiagnosticQueryFailed": "Förfrågan misslyckades. Försök igen.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Kunde inte ansluta till några reler",
-    "relayDiagnosticConnectionRetryFailed": "Förnyat anslutningsförsök misslyckades: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Förnyat anslutningsförsök misslyckades. Försök igen.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Detta ersätter din nuvarande identitet med den importerade.\n\nDin nuvarande nyckel går förlorad om du inte säkerhetskopierade den först.",
     "keyManagementImportConfirm": "Importera",
     "keyManagementImportSuccess": "Nyckeln importerades!",
-    "keyManagementImportFailed": "Kunde inte importera nyckeln: {error}",
+    "keyManagementImportFailed": "Kunde inte importera nyckeln. Försök igen.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Avbryt",
     "commonDelete": "Radera",
     "commonRetry": "Försök igen",
-    "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
+    "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen. Försök igen.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Ljud: {soundName} av {creatorName}. Tryck för att se detaljer.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Kunde inte läsa in ljud: {error}",
+    "soundDetailLoadError": "Kunde inte läsa in ljud. Försök igen.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Det här ljudet kunde inte hittas",
     "soundDetailNotFoundTitle": "Ljudet hittades inte",

@@ -204,7 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "分享主页失败：{error}",
+  "profileShareFailed": "分享主页失败，请重试。",
   "@profileShareFailed": {
     "placeholders": {
       "error": {
@@ -582,7 +582,7 @@
   "exploreVideoListsDescription": "把喜欢的视频做成播放列表，稍后观看",
   "exploreMyLists": "我的列表",
   "exploreSubscribedLists": "订阅的列表",
-  "exploreErrorLoadingLists": "加载列表出错：{error}",
+  "exploreErrorLoadingLists": "加载列表出错，请重试。",
   "@exploreErrorLoadingLists": {
     "placeholders": {
       "error": {
@@ -1372,7 +1372,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "查询失败：{error}",
+  "relayDiagnosticQueryFailed": "查询失败，请重试。",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
       "error": {
@@ -1389,7 +1389,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "无法连接到任何中继",
-  "relayDiagnosticConnectionRetryFailed": "连接重试失败：{error}",
+  "relayDiagnosticConnectionRetryFailed": "连接重试失败，请重试。",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
       "error": {
@@ -2563,7 +2563,7 @@
   "keyManagementConfirmImportBody": "这会用导入的身份替换你当前的身份。\n\n如果事先没有备份，你当前的密钥将会丢失。",
   "keyManagementImportConfirm": "导入",
   "keyManagementImportSuccess": "密钥导入成功！",
-  "keyManagementImportFailed": "导入密钥失败：{error}",
+  "keyManagementImportFailed": "导入密钥失败，请重试。",
   "@keyManagementImportFailed": {
     "placeholders": {
       "error": {
@@ -3248,7 +3248,7 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "更新订阅失败：{error}",
+  "discoverListsFailedToUpdateSubscription": "更新订阅失败，请重试。",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {
       "error": {
@@ -3942,7 +3942,7 @@
       }
     }
   },
-  "soundDetailLoadError": "声音加载失败：{error}",
+  "soundDetailLoadError": "声音加载失败，请重试。",
   "@soundDetailLoadError": {
     "placeholders": {
       "error": {

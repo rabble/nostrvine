@@ -320,14 +320,7 @@
       }
     }
   },
-  "profileShareFailed": "Failed to share profile: {error}",
-  "@profileShareFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileShareFailed": "Failed to share profile. Please try again.",
   "profileCopyPublicKey": "Copy public key (npub)",
   "profileGetEmbedCode": "Get embed code",
   "profilePublicKeyCopied": "Public key copied to clipboard",
@@ -817,14 +810,7 @@
   "exploreVideoListsDescription": "Create playlists of your favorite videos to watch later",
   "exploreMyLists": "My Lists",
   "exploreSubscribedLists": "Subscribed Lists",
-  "exploreErrorLoadingLists": "Error loading lists: {error}",
-  "@exploreErrorLoadingLists": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "exploreErrorLoadingLists": "Error loading lists. Please try again.",
   "exploreNewVideosCount": "{count, plural, =1{1 new video} other{{count} new videos}}",
   "@exploreNewVideosCount": {
     "placeholders": {
@@ -1725,14 +1711,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "Query failed: {error}",
-  "@relayDiagnosticQueryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticQueryFailed": "Query failed. Please try again.",
   "relayDiagnosticConnectedToRelays": "{count, plural, =1{Connected to {count} relay!} other{Connected to {count} relays!}}",
   "@relayDiagnosticConnectedToRelays": {
     "placeholders": {
@@ -1742,14 +1721,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "Failed to connect to any relays",
-  "relayDiagnosticConnectionRetryFailed": "Connection retry failed: {error}",
-  "@relayDiagnosticConnectionRetryFailed": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "relayDiagnosticConnectionRetryFailed": "Connection retry failed. Please try again.",
   "relayDiagnosticConnectedAuthenticated": "Connected & Authenticated",
   "relayDiagnosticConnectedOnly": "Connected",
   "relayDiagnosticNotConnected": "Not connected",
@@ -3122,14 +3094,7 @@
   "keyManagementConfirmImportBody": "This will replace your current identity with the imported one.\n\nYour current key will be lost unless you backed it up first.",
   "keyManagementImportConfirm": "Import",
   "keyManagementImportSuccess": "Key imported successfully!",
-  "keyManagementImportFailed": "Failed to import key: {error}",
-  "@keyManagementImportFailed": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "keyManagementImportFailed": "Failed to import key. Please try again.",
   "keyManagementExportSuccess": "Private key copied to clipboard!\n\nStore it somewhere safe.",
   "keyManagementExportFailed": "Failed to export key: {error}",
   "@keyManagementExportFailed": {
@@ -3845,14 +3810,7 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "Failed to update subscription: {error}",
-  "@discoverListsFailedToUpdateSubscription": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "discoverListsFailedToUpdateSubscription": "Failed to update subscription. Please try again.",
   "discoverListsTitle": "Discover Lists",
   "discoverListsFailedToLoad": "Failed to load lists",
   "discoverListsLoading": "Discovering public lists...",
@@ -4658,14 +4616,7 @@
       }
     }
   },
-  "soundDetailLoadError": "Failed to load sound: {error}",
-  "@soundDetailLoadError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "soundDetailLoadError": "Failed to load sound. Please try again.",
   "soundDetailNotFoundMessage": "This sound could not be found",
   "soundDetailNotFoundTitle": "Sound Not Found",
   "videoFeedLoopCountLabel": "{count, plural, =1{🔁 {count} loop} other{🔁 {count} loops}}",

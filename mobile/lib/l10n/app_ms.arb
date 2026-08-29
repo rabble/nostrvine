@@ -204,7 +204,7 @@
       }
     }
   },
-  "profileShareFailed": "Gagal berkongsi profil: {error}",
+  "profileShareFailed": "Gagal berkongsi profil. Sila cuba lagi.",
   "@profileShareFailed": {
     "placeholders": {
       "error": {
@@ -582,7 +582,7 @@
   "exploreVideoListsDescription": "Cipta senarai main video kegemaran anda untuk ditonton nanti",
   "exploreMyLists": "Senarai Saya",
   "exploreSubscribedLists": "Senarai Langganan",
-  "exploreErrorLoadingLists": "Ralat memuatkan senarai: {error}",
+  "exploreErrorLoadingLists": "Ralat memuatkan senarai. Sila cuba lagi.",
   "@exploreErrorLoadingLists": {
     "placeholders": {
       "error": {
@@ -1372,7 +1372,7 @@
       }
     }
   },
-  "relayDiagnosticQueryFailed": "Pertanyaan gagal: {error}",
+  "relayDiagnosticQueryFailed": "Pertanyaan gagal. Sila cuba lagi.",
   "@relayDiagnosticQueryFailed": {
     "placeholders": {
       "error": {
@@ -1389,7 +1389,7 @@
     }
   },
   "relayDiagnosticFailedToConnect": "Gagal bersambung ke mana-mana relay",
-  "relayDiagnosticConnectionRetryFailed": "Cubaan semula sambungan gagal: {error}",
+  "relayDiagnosticConnectionRetryFailed": "Cubaan semula sambungan gagal. Sila cuba lagi.",
   "@relayDiagnosticConnectionRetryFailed": {
     "placeholders": {
       "error": {
@@ -2563,7 +2563,7 @@
   "keyManagementConfirmImportBody": "Ini akan menggantikan identiti semasa anda dengan yang diimport.\n\nKunci semasa anda akan hilang kecuali anda telah menyandarnya dahulu.",
   "keyManagementImportConfirm": "Import",
   "keyManagementImportSuccess": "Kunci berjaya diimport!",
-  "keyManagementImportFailed": "Gagal mengimport kunci: {error}",
+  "keyManagementImportFailed": "Gagal mengimport kunci. Sila cuba lagi.",
   "@keyManagementImportFailed": {
     "placeholders": {
       "error": {
@@ -3248,7 +3248,7 @@
       }
     }
   },
-  "discoverListsFailedToUpdateSubscription": "Gagal mengemas kini langganan: {error}",
+  "discoverListsFailedToUpdateSubscription": "Gagal mengemas kini langganan. Sila cuba lagi.",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {
       "error": {
@@ -3942,7 +3942,7 @@
       }
     }
   },
-  "soundDetailLoadError": "Gagal memuatkan bunyi: {error}",
+  "soundDetailLoadError": "Gagal memuatkan bunyi. Sila cuba lagi.",
   "@soundDetailLoadError": {
     "placeholders": {
       "error": {

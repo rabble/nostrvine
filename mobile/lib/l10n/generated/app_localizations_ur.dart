@@ -469,9 +469,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'پروفائل شیئر نہیں ہو سکا: $error';
-  }
+  String get profileShareFailed =>
+      'پروفائل شیئر نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get profileCopyPublicKey => 'عوامی کلید (npub) کاپی کریں';
@@ -1309,9 +1308,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get exploreSubscribedLists => 'سبسکرائب شدہ فہرستیں';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'فہرستیں لوڈ کرنے میں خرابی: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'فہرستیں لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2573,9 +2571,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'استفسار ناکام: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'استفسار ناکام۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2587,9 +2584,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'کسی بھی ریلے سے منسلک نہیں ہو سکا';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'کنکشن کی دوبارہ کوشش ناکام: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'کنکشن کی دوبارہ کوشش ناکام۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'منسلک اور تصدیق شدہ';
@@ -4969,9 +4965,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get keyManagementImportSuccess => 'کلید کامیابی سے درآمد ہو گئی!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'کلید درآمد نہیں ہو سکی: $error';
-  }
+  String get keyManagementImportFailed =>
+      'کلید درآمد نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5861,9 +5856,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'سبسکرپشن اپڈیٹ نہیں ہو سکی: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'سبسکرپشن اپڈیٹ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get discoverListsTitle => 'فہرستیں دریافت کریں';
@@ -7184,9 +7178,8 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'آواز لوڈ نہیں ہو سکی: $error';
-  }
+  String get soundDetailLoadError =>
+      'آواز لوڈ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔';
 
   @override
   String get soundDetailNotFoundMessage => 'یہ آواز نہیں مل سکی';

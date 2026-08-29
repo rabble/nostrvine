@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Nie udało się udostępnić profilu: {error}",
+    "profileShareFailed": "Nie udało się udostępnić profilu. Spróbuj ponownie.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Twórz playlisty ulubionych filmów do oglądania później",
     "exploreMyLists": "Moje listy",
     "exploreSubscribedLists": "Subskrybowane listy",
-    "exploreErrorLoadingLists": "Błąd wczytywania list: {error}",
+    "exploreErrorLoadingLists": "Błąd wczytywania list. Spróbuj ponownie.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Zapytanie nieudane: {error}",
+    "relayDiagnosticQueryFailed": "Zapytanie nieudane. Spróbuj ponownie.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Nie udało się połączyć z żadnym przekaźnikiem",
-    "relayDiagnosticConnectionRetryFailed": "Ponowne połączenie nieudane: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Ponowne połączenie nieudane. Spróbuj ponownie.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "To zastąpi twoją aktualną tożsamość importowaną.\n\nTwój aktualny klucz zostanie utracony, chyba że zrobiłeś najpierw kopię zapasową.",
     "keyManagementImportConfirm": "Importuj",
     "keyManagementImportSuccess": "Klucz zaimportowany pomyślnie!",
-    "keyManagementImportFailed": "Nie udało się zaimportować klucza: {error}",
+    "keyManagementImportFailed": "Nie udało się zaimportować klucza. Spróbuj ponownie.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Anuluj",
     "commonDelete": "Usuń",
     "commonRetry": "Ponów",
-    "discoverListsFailedToUpdateSubscription": "Nie udało się zaktualizować subskrypcji: {error}",
+    "discoverListsFailedToUpdateSubscription": "Nie udało się zaktualizować subskrypcji. Spróbuj ponownie.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Dźwięk: {soundName} od {creatorName}. Dotknij, aby zobaczyć szczegóły.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Nie udało się wczytać dźwięku: {error}",
+    "soundDetailLoadError": "Nie udało się wczytać dźwięku. Spróbuj ponownie.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Nie udało się znaleźć tego dźwięku",
     "soundDetailNotFoundTitle": "Nie znaleziono dźwięku",

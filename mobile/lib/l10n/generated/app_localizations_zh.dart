@@ -417,9 +417,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return '分享主页失败：$error';
-  }
+  String get profileShareFailed => '分享主页失败，请重试。';
 
   @override
   String get profileCopyPublicKey => '复制公钥（npub）';
@@ -1203,9 +1201,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exploreSubscribedLists => '订阅的列表';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return '加载列表出错：$error';
-  }
+  String get exploreErrorLoadingLists => '加载列表出错，请重试。';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2419,9 +2415,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return '查询失败：$error';
-  }
+  String get relayDiagnosticQueryFailed => '查询失败，请重试。';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2432,9 +2426,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get relayDiagnosticFailedToConnect => '无法连接到任何中继';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return '连接重试失败：$error';
-  }
+  String get relayDiagnosticConnectionRetryFailed => '连接重试失败，请重试。';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => '已连接并完成认证';
@@ -4651,9 +4643,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keyManagementImportSuccess => '密钥导入成功！';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return '导入密钥失败：$error';
-  }
+  String get keyManagementImportFailed => '导入密钥失败，请重试。';
 
   @override
   String get keyManagementExportSuccess => '私钥已复制到剪贴板！\n\n请妥善保管。';
@@ -5524,9 +5514,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return '更新订阅失败：$error';
-  }
+  String get discoverListsFailedToUpdateSubscription => '更新订阅失败，请重试。';
 
   @override
   String get discoverListsTitle => '发现列表';
@@ -6763,9 +6751,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return '声音加载失败：$error';
-  }
+  String get soundDetailLoadError => '声音加载失败，请重试。';
 
   @override
   String get soundDetailNotFoundMessage => '找不到这个声音';

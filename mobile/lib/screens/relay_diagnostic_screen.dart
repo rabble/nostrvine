@@ -472,7 +472,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.relayDiagnosticQueryFailed('$e'),
+            context.l10n.relayDiagnosticQueryFailed,
             error: true,
           ),
         );
@@ -524,7 +524,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            context.l10n.relayDiagnosticConnectionRetryFailed('$e'),
+            context.l10n.relayDiagnosticConnectionRetryFailed,
             error: true,
           ),
         );

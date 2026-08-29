@@ -474,9 +474,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Falha ao compartilhar perfil: $error';
-  }
+  String get profileShareFailed =>
+      'Falha ao compartilhar perfil. Por favor, tente novamente.';
 
   @override
   String get profileCopyPublicKey => 'Copiar chave pública (npub)';
@@ -1318,9 +1317,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreSubscribedLists => 'Listas inscritas';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Erro ao carregar listas: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Erro ao carregar listas. Por favor, tente novamente.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2592,9 +2590,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Consulta falhou: $error';
-  }
+  String get relayDiagnosticQueryFailed =>
+      'Consulta falhou. Por favor, tente novamente.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2606,9 +2603,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Falha ao conectar a qualquer relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Tentativa de reconexão falhou: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Tentativa de reconexão falhou. Por favor, tente novamente.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Conectado e autenticado';
@@ -4999,9 +4995,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get keyManagementImportSuccess => 'Chave importada com sucesso!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Falha ao importar chave: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Falha ao importar chave. Por favor, tente novamente.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5896,9 +5891,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Falha ao atualizar assinatura: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Falha ao atualizar assinatura. Por favor, tente novamente.';
 
   @override
   String get discoverListsTitle => 'Descobrir listas';
@@ -7233,9 +7227,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Falha ao carregar o som: $error';
-  }
+  String get soundDetailLoadError =>
+      'Falha ao carregar o som. Por favor, tente novamente.';
 
   @override
   String get soundDetailNotFoundMessage =>

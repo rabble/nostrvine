@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Falha ao compartilhar perfil: {error}",
+    "profileShareFailed": "Falha ao compartilhar perfil. Por favor, tente novamente.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Crie playlists dos seus vídeos favoritos para assistir depois",
     "exploreMyLists": "Minhas listas",
     "exploreSubscribedLists": "Listas inscritas",
-    "exploreErrorLoadingLists": "Erro ao carregar listas: {error}",
+    "exploreErrorLoadingLists": "Erro ao carregar listas. Por favor, tente novamente.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Consulta falhou: {error}",
+    "relayDiagnosticQueryFailed": "Consulta falhou. Por favor, tente novamente.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Falha ao conectar a qualquer relay",
-    "relayDiagnosticConnectionRetryFailed": "Tentativa de reconexão falhou: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Tentativa de reconexão falhou. Por favor, tente novamente.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Isso vai substituir sua identidade atual pela importada.\n\nSua chave atual será perdida a menos que você tenha feito backup antes.",
     "keyManagementImportConfirm": "Importar",
     "keyManagementImportSuccess": "Chave importada com sucesso!",
-    "keyManagementImportFailed": "Falha ao importar chave: {error}",
+    "keyManagementImportFailed": "Falha ao importar chave. Por favor, tente novamente.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Cancelar",
     "commonDelete": "Excluir",
     "commonRetry": "Tentar novamente",
-    "discoverListsFailedToUpdateSubscription": "Falha ao atualizar assinatura: {error}",
+    "discoverListsFailedToUpdateSubscription": "Falha ao atualizar assinatura. Por favor, tente novamente.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Som: {soundName} de {creatorName}. Toque para ver os detalhes.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Falha ao carregar o som: {error}",
+    "soundDetailLoadError": "Falha ao carregar o som. Por favor, tente novamente.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Não foi possível encontrar este som",
     "soundDetailNotFoundTitle": "Som não encontrado",

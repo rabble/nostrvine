@@ -123,7 +123,7 @@
     "profileInvalidId": "잘못된 프로필 ID",
     "profileShareText": "Divine에서 {displayName}님을 확인해보세요!\n\nhttps://divine.video/profile/{npub}",
     "profileShareSubject": "Divine의 {displayName}",
-    "profileShareFailed": "프로필을 공유하지 못했어요: {error}",
+    "profileShareFailed": "프로필을 공유하지 못했어요. 다시 시도해보세요.",
     "profileCopyPublicKey": "공개 키 복사 (npub)",
     "profileGetEmbedCode": "임베드 코드 가져오기",
     "profilePublicKeyCopied": "공개 키를 클립보드에 복사했어요",
@@ -316,7 +316,7 @@
     "exploreVideoListsDescription": "좋아하는 영상의 플레이리스트를 만들어서 나중에 다시 보세요",
     "exploreMyLists": "내 리스트",
     "exploreSubscribedLists": "구독 리스트",
-    "exploreErrorLoadingLists": "리스트를 불러오지 못했어요: {error}",
+    "exploreErrorLoadingLists": "리스트를 불러오지 못했어요. 다시 시도해보세요.",
     "exploreNewVideosCount": "{count, plural, other{새 영상 {count}개}}",
     "exploreLoadNewVideosLabel": "{count, plural, other{새 영상 {count}개 불러오기}}",
     "videoPlayerPlayVideo": "영상 재생",
@@ -594,10 +594,10 @@
     "relayDiagnosticAllEndpointsHealthy": "모든 REST 엔드포인트가 정상이에요!",
     "relayDiagnosticSomeEndpointsFailed": "일부 REST 엔드포인트가 실패했어요 - 위 세부 정보를 확인해주세요",
     "relayDiagnosticFoundVideoEvents": "데이터베이스에서 영상 이벤트 {count}개를 찾았어요",
-    "relayDiagnosticQueryFailed": "쿼리 실패: {error}",
+    "relayDiagnosticQueryFailed": "쿼리 실패. 다시 시도해보세요.",
     "relayDiagnosticConnectedToRelays": "릴레이 {count}개에 연결됐어요!",
     "relayDiagnosticFailedToConnect": "릴레이 연결에 실패했어요",
-    "relayDiagnosticConnectionRetryFailed": "연결 재시도 실패: {error}",
+    "relayDiagnosticConnectionRetryFailed": "연결 재시도 실패. 다시 시도해보세요.",
     "relayDiagnosticConnectedAuthenticated": "연결 및 인증됨",
     "relayDiagnosticConnectedOnly": "연결됨",
     "relayDiagnosticNotConnected": "연결되지 않음",
@@ -1257,7 +1257,7 @@
     "keyManagementConfirmImportBody": "현재 신원이 가져온 신원으로 대체돼요.\n\n먼저 백업하지 않으면 현재 키를 잃을 수 있어요.",
     "keyManagementImportConfirm": "가져오기",
     "keyManagementImportSuccess": "키를 성공적으로 가져왔어요!",
-    "keyManagementImportFailed": "키 가져오기에 실패했어요: {error}",
+    "keyManagementImportFailed": "키 가져오기에 실패했어요. 다시 시도해보세요.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1459,7 +1459,7 @@
     "commonCancel": "취소",
     "commonDelete": "삭제",
     "commonRetry": "다시 시도",
-    "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요: {error}",
+    "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요. 다시 시도해보세요.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -3892,7 +3892,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "사운드: {creatorName}님의 {soundName}. 탭하면 세부 정보를 볼 수 있어요.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "사운드를 불러오지 못했어요: {error}",
+    "soundDetailLoadError": "사운드를 불러오지 못했어요. 다시 시도해보세요.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "이 사운드를 찾을 수 없어요",
     "soundDetailNotFoundTitle": "사운드를 찾을 수 없어요",

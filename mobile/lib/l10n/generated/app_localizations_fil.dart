@@ -440,9 +440,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Hindi na-share ang profile: $error';
-  }
+  String get profileShareFailed => 'Hindi na-share ang profile. Subukan ulit.';
 
   @override
   String get profileCopyPublicKey => 'Kopyahin ang public key (npub)';
@@ -1293,9 +1291,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get exploreSubscribedLists => 'Mga Subscribed List';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'May error sa pag-load ng mga list: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'May error sa pag-load ng mga list. Subukan ulit.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2580,9 +2577,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Nabigo ang query: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Nabigo ang query. Subukan ulit.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2594,9 +2589,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nakakonekta sa kahit anong relay';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Nabigo ang muling pagkonekta: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Nabigo ang muling pagkonekta. Subukan ulit.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated =>
@@ -5000,9 +4994,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get keyManagementImportSuccess => 'Matagumpay na na-import ang key!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Hindi na-import ang key: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Hindi na-import ang key. Subukan ulit.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5898,9 +5891,8 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Hindi na-update ang subscription: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Hindi na-update ang subscription. Subukan ulit.';
 
   @override
   String get discoverListsTitle => 'Tuklasin ang mga Listahan';
@@ -7236,9 +7228,7 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Hindi ma-load ang tunog: $error';
-  }
+  String get soundDetailLoadError => 'Hindi ma-load ang tunog. Subukan ulit.';
 
   @override
   String get soundDetailNotFoundMessage => 'Hindi mahanap ang tunog na ito';

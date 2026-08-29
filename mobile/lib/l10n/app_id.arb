@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Gagal membagikan profil: {error}",
+    "profileShareFailed": "Gagal membagikan profil. Silakan coba lagi.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Buat playlist video favoritmu untuk ditonton nanti",
     "exploreMyLists": "Daftarku",
     "exploreSubscribedLists": "Daftar yang Dilanggan",
-    "exploreErrorLoadingLists": "Gagal memuat daftar: {error}",
+    "exploreErrorLoadingLists": "Gagal memuat daftar. Silakan coba lagi.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -935,7 +935,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query gagal: {error}",
+    "relayDiagnosticQueryFailed": "Query gagal. Silakan coba lagi.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -952,7 +952,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Gagal terhubung ke relay mana pun",
-    "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Percobaan koneksi ulang gagal. Silakan coba lagi.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1768,7 +1768,7 @@
     "keyManagementConfirmImportBody": "Ini akan mengganti identitasmu saat ini dengan yang diimpor.\n\nKunci saat ini akan hilang kecuali kamu sudah mem-backup-nya.",
     "keyManagementImportConfirm": "Impor",
     "keyManagementImportSuccess": "Kunci berhasil diimpor!",
-    "keyManagementImportFailed": "Gagal mengimpor kunci: {error}",
+    "keyManagementImportFailed": "Gagal mengimpor kunci. Silakan coba lagi.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1970,7 +1970,7 @@
     "commonCancel": "Batal",
     "commonDelete": "Hapus",
     "commonRetry": "Coba lagi",
-    "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan: {error}",
+    "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan. Silakan coba lagi.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Suara: {soundName} oleh {creatorName}. Ketuk untuk melihat detail.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Gagal memuat suara: {error}",
+    "soundDetailLoadError": "Gagal memuat suara. Silakan coba lagi.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Suara ini tidak dapat ditemukan",
     "soundDetailNotFoundTitle": "Suara Tidak Ditemukan",

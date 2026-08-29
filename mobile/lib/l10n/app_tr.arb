@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Profil paylaşılamadı: {error}",
+    "profileShareFailed": "Profil paylaşılamadı. Lütfen tekrar dene.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Sonra izlemek için favori videolarından oynatma listeleri oluştur",
     "exploreMyLists": "Listelerim",
     "exploreSubscribedLists": "Abone Olunan Listeler",
-    "exploreErrorLoadingLists": "Listeler yüklenirken hata: {error}",
+    "exploreErrorLoadingLists": "Listeler yüklenirken hata. Lütfen tekrar dene.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -935,7 +935,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Sorgu başarısız: {error}",
+    "relayDiagnosticQueryFailed": "Sorgu başarısız. Lütfen tekrar dene.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -952,7 +952,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Hiçbir röleye bağlanılamadı",
-    "relayDiagnosticConnectionRetryFailed": "Bağlantı yeniden denemesi başarısız: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Bağlantı yeniden denemesi başarısız. Lütfen tekrar dene.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1768,7 +1768,7 @@
     "keyManagementConfirmImportBody": "Bu mevcut kimliğini içe aktarılan kimlikle değiştirecek.\n\nÖnce yedeklemediysen mevcut anahtarın kaybolacak.",
     "keyManagementImportConfirm": "İçe Aktar",
     "keyManagementImportSuccess": "Anahtar başarıyla içe aktarıldı!",
-    "keyManagementImportFailed": "Anahtar içe aktarılamadı: {error}",
+    "keyManagementImportFailed": "Anahtar içe aktarılamadı. Lütfen tekrar dene.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1970,7 +1970,7 @@
     "commonCancel": "İptal",
     "commonDelete": "Sil",
     "commonRetry": "Tekrar dene",
-    "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi: {error}",
+    "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi. Lütfen tekrar dene.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Ses: {creatorName} tarafından {soundName}. Ayrıntıları görmek için dokun.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Ses yüklenemedi: {error}",
+    "soundDetailLoadError": "Ses yüklenemedi. Lütfen tekrar dene.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Bu ses bulunamadı",
     "soundDetailNotFoundTitle": "Ses Bulunamadı",

@@ -481,9 +481,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Échec du partage du profil : $error';
-  }
+  String get profileShareFailed => 'Échec du partage du profil. Réessaie.';
 
   @override
   String get profileCopyPublicKey => 'Copier la clé publique (npub)';
@@ -1333,9 +1331,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exploreSubscribedLists => 'Listes abonnées';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Erreur de chargement des listes : $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Erreur de chargement des listes. Réessaie.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2614,9 +2611,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Requête échouée : $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Requête échouée. Réessaie.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2628,9 +2623,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de la connexion aux relays';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Nouvelle tentative de connexion échouée : $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Nouvelle tentative de connexion échouée. Réessaie.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Connecté et authentifié';
@@ -5033,9 +5027,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keyManagementImportSuccess => 'Clé importée avec succès !';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Échec de l\'importation de la clé : $error';
-  }
+  String get keyManagementImportFailed =>
+      'Échec de l\'importation de la clé. Réessaie.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5932,9 +5925,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Impossible de mettre à jour l\'abonnement : $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Impossible de mettre à jour l\'abonnement. Réessaie.';
 
   @override
   String get discoverListsTitle => 'Découvrir des listes';
@@ -7278,9 +7270,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Échec du chargement du son : $error';
-  }
+  String get soundDetailLoadError => 'Échec du chargement du son. Réessaie.';
 
   @override
   String get soundDetailNotFoundMessage => 'Ce son est introuvable';

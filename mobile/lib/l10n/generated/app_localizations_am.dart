@@ -465,9 +465,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'መገለጫን ማጋራት አልተሳካም፦ $error';
-  }
+  String get profileShareFailed => 'መገለጫን ማጋራት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get profileCopyPublicKey => 'የህዝብ ቁልፍ ቅዳ (npub)';
@@ -1281,9 +1279,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreSubscribedLists => 'የተመዘገቡ ዝርዝሮች';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'ዝርዝሮችን መጫን ላይ ስህተት፦ $error';
-  }
+  String get exploreErrorLoadingLists => 'ዝርዝሮችን መጫን ላይ ስህተት። እባክህ እንደገና ሞክር።';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2523,9 +2519,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'መጠይቁ አልተሳካም፡ $error';
-  }
+  String get relayDiagnosticQueryFailed => 'መጠይቁ አልተሳካም፡። እባክህ እንደገና ሞክር።';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2537,9 +2531,8 @@ class AppLocalizationsAm extends AppLocalizations {
       'ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'የግንኙነት ድጋሚ መሞከር አልተሳካም፦ $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'የግንኙነት ድጋሚ መሞከር አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'ተገናኝቷል እና የተረጋገጠ';
@@ -4846,9 +4839,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementImportSuccess => 'ቁልፍ በተሳካ ሁኔታ ገብቷል!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'ቁልፍ ማስመጣት አልተሳካም፦ $error';
-  }
+  String get keyManagementImportFailed => 'ቁልፍ ማስመጣት አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5725,9 +5716,8 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'የደንበኝነት ምዝገባን ማዘመን አልተሳካም፦ $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'የደንበኝነት ምዝገባን ማዘመን አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get discoverListsTitle => 'ዝርዝሮችን ያግኙ';
@@ -7021,9 +7011,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'ድምጽ መጫን አልተሳካም፦ $error';
-  }
+  String get soundDetailLoadError => 'ድምጽ መጫን አልተሳካም። እባክህ እንደገና ሞክር።';
 
   @override
   String get soundDetailNotFoundMessage => 'ይህ ድምጽ ሊገኝ አልቻለም';

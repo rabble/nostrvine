@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Échec du partage du profil : {error}",
+    "profileShareFailed": "Échec du partage du profil. Réessaie.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Crée des playlists de tes vidéos préférées à regarder plus tard",
     "exploreMyLists": "Mes listes",
     "exploreSubscribedLists": "Listes abonnées",
-    "exploreErrorLoadingLists": "Erreur de chargement des listes : {error}",
+    "exploreErrorLoadingLists": "Erreur de chargement des listes. Réessaie.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Requête échouée : {error}",
+    "relayDiagnosticQueryFailed": "Requête échouée. Réessaie.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Échec de la connexion aux relays",
-    "relayDiagnosticConnectionRetryFailed": "Nouvelle tentative de connexion échouée : {error}",
+    "relayDiagnosticConnectionRetryFailed": "Nouvelle tentative de connexion échouée. Réessaie.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Ça va remplacer ton identité actuelle par celle importée.\n\nTa clé actuelle sera perdue si tu ne l'as pas sauvegardée avant.",
     "keyManagementImportConfirm": "Importer",
     "keyManagementImportSuccess": "Clé importée avec succès !",
-    "keyManagementImportFailed": "Échec de l'importation de la clé : {error}",
+    "keyManagementImportFailed": "Échec de l'importation de la clé. Réessaie.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Annuler",
     "commonDelete": "Supprimer",
     "commonRetry": "Réessayer",
-    "discoverListsFailedToUpdateSubscription": "Impossible de mettre à jour l'abonnement : {error}",
+    "discoverListsFailedToUpdateSubscription": "Impossible de mettre à jour l'abonnement. Réessaie.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Son : {soundName} par {creatorName}. Touche pour voir les détails.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Échec du chargement du son : {error}",
+    "soundDetailLoadError": "Échec du chargement du son. Réessaie.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Ce son est introuvable",
     "soundDetailNotFoundTitle": "Son introuvable",

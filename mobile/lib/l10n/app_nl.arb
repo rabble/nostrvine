@@ -199,7 +199,7 @@
             }
         }
     },
-    "profileShareFailed": "Profiel delen mislukt: {error}",
+    "profileShareFailed": "Profiel delen mislukt. Probeer het opnieuw.",
     "@profileShareFailed": {
         "placeholders": {
             "error": {
@@ -469,7 +469,7 @@
     "exploreVideoListsDescription": "Maak afspeellijsten van je favoriete video's om later te bekijken",
     "exploreMyLists": "Mijn lijsten",
     "exploreSubscribedLists": "Gevolgde lijsten",
-    "exploreErrorLoadingLists": "Fout bij laden van lijsten: {error}",
+    "exploreErrorLoadingLists": "Fout bij laden van lijsten. Probeer het opnieuw.",
     "@exploreErrorLoadingLists": {
         "placeholders": {
             "error": {
@@ -938,7 +938,7 @@
             }
         }
     },
-    "relayDiagnosticQueryFailed": "Query mislukt: {error}",
+    "relayDiagnosticQueryFailed": "Query mislukt. Probeer het opnieuw.",
     "@relayDiagnosticQueryFailed": {
         "placeholders": {
             "error": {
@@ -955,7 +955,7 @@
         }
     },
     "relayDiagnosticFailedToConnect": "Verbinden met relays mislukt",
-    "relayDiagnosticConnectionRetryFailed": "Verbinding opnieuw proberen mislukt: {error}",
+    "relayDiagnosticConnectionRetryFailed": "Verbinding opnieuw proberen mislukt. Probeer het opnieuw.",
     "@relayDiagnosticConnectionRetryFailed": {
         "placeholders": {
             "error": {
@@ -1771,7 +1771,7 @@
     "keyManagementConfirmImportBody": "Dit vervangt je huidige identiteit door de geïmporteerde.\n\nJe huidige sleutel is weg tenzij je eerst een back-up hebt gemaakt.",
     "keyManagementImportConfirm": "Importeren",
     "keyManagementImportSuccess": "Sleutel succesvol geïmporteerd!",
-    "keyManagementImportFailed": "Sleutel importeren mislukt: {error}",
+    "keyManagementImportFailed": "Sleutel importeren mislukt. Probeer het opnieuw.",
     "@keyManagementImportFailed": {
         "placeholders": {
             "error": {
@@ -1973,7 +1973,7 @@
     "commonCancel": "Annuleren",
     "commonDelete": "Verwijderen",
     "commonRetry": "Opnieuw proberen",
-    "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt: {error}",
+    "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt. Probeer het opnieuw.",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
             "error": {
@@ -4403,7 +4403,7 @@
     "@metadataSoundsOriginalSoundSemantics": {"placeholders": {"creatorName": {"type": "String"}}},
     "metadataSoundsSharedSoundSemantics": "Geluid: {soundName} van {creatorName}. Tik om details te bekijken.",
     "@metadataSoundsSharedSoundSemantics": {"placeholders": {"soundName": {"type": "String"}, "creatorName": {"type": "String"}}},
-    "soundDetailLoadError": "Geluid laden mislukt: {error}",
+    "soundDetailLoadError": "Geluid laden mislukt. Probeer het opnieuw.",
     "@soundDetailLoadError": {"placeholders": {"error": {"type": "String"}}},
     "soundDetailNotFoundMessage": "Dit geluid kon niet worden gevonden",
     "soundDetailNotFoundTitle": "Geluid niet gevonden",

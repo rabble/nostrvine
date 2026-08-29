@@ -473,9 +473,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String profileShareFailed(Object error) {
-    return 'Не успяхме да споделим профила: $error';
-  }
+  String get profileShareFailed =>
+      'Не успяхме да споделим профила. Опитай пак.';
 
   @override
   String get profileCopyPublicKey => 'Копирай публичния ключ (npub)';
@@ -1319,9 +1318,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreSubscribedLists => 'Абонирани списъци';
 
   @override
-  String exploreErrorLoadingLists(Object error) {
-    return 'Грешка при зареждане на списъците: $error';
-  }
+  String get exploreErrorLoadingLists =>
+      'Грешка при зареждане на списъците. Опитай пак.';
 
   @override
   String exploreNewVideosCount(int count) {
@@ -2614,9 +2612,7 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String relayDiagnosticQueryFailed(String error) {
-    return 'Неуспешна заявка: $error';
-  }
+  String get relayDiagnosticQueryFailed => 'Неуспешна заявка. Опитай пак.';
 
   @override
   String relayDiagnosticConnectedToRelays(int count) {
@@ -2628,9 +2624,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да се свържем с нито едно реле';
 
   @override
-  String relayDiagnosticConnectionRetryFailed(String error) {
-    return 'Неуспешен повторен опит за свързване: $error';
-  }
+  String get relayDiagnosticConnectionRetryFailed =>
+      'Неуспешен повторен опит за свързване. Опитай пак.';
 
   @override
   String get relayDiagnosticConnectedAuthenticated => 'Свързан и удостоверен';
@@ -5018,9 +5013,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get keyManagementImportSuccess => 'Ключът е импортиран успешно!';
 
   @override
-  String keyManagementImportFailed(Object error) {
-    return 'Неуспешно импортиране на ключ: $error';
-  }
+  String get keyManagementImportFailed =>
+      'Неуспешно импортиране на ключ. Опитай пак.';
 
   @override
   String get keyManagementExportSuccess =>
@@ -5914,9 +5908,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String discoverListsFailedToUpdateSubscription(String error) {
-    return 'Неуспешно актуализиране на абонамента: $error';
-  }
+  String get discoverListsFailedToUpdateSubscription =>
+      'Неуспешно актуализиране на абонамента. Опитай пак.';
 
   @override
   String get discoverListsTitle => 'Открий списъци';
@@ -7254,9 +7247,8 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String soundDetailLoadError(String error) {
-    return 'Неуспешно зареждане на звука: $error';
-  }
+  String get soundDetailLoadError =>
+      'Неуспешно зареждане на звука. Опитай пак.';
 
   @override
   String get soundDetailNotFoundMessage => 'Този звук не можа да бъде намерен';
