@@ -1,8 +1,3 @@
-// Permanent: mutates MethodChannel handlers, SharedPreferences, PathProvider,
-// and Hive's process-wide box registry for the upload recovery sweep.
-@Tags(['skip_very_good_optimization'])
-library;
-
 import 'dart:async';
 import 'dart:io';
 
@@ -32,6 +27,12 @@ void _mockConnectivity(String result) {
         if (call.method == 'check') return [result];
         return null;
       });
+  // Test-local channel, so it is not covered by the shared-channel
+  // heal-and-blame tearDown; clear what we installed.
+  addTearDown(
+    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null),
+  );
 }
 
 /// A successful Blossom result stub used across the recovery tests.
@@ -96,6 +97,9 @@ void main() {
 
     tearDown(() async {
       uploadManager.dispose();
+      // dispose() nulls the store's reference without closing the box, so
+      // close and delete it before the directory underneath it goes away.
+      await TestHelpers.cleanupHiveBox('pending_uploads');
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
@@ -421,6 +425,7 @@ void main() {
 
       addTearDown(() async {
         manager.dispose();
+        await TestHelpers.cleanupHiveBox('pending_uploads');
         PathProviderPlatform.instance = originalPathProvider;
         if (tempDir.existsSync()) {
           await tempDir.delete(recursive: true);
