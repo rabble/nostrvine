@@ -81,6 +81,17 @@ class _MockAuthService extends MockAuthService {
 }
 
 void main() {
+  setUpAll(
+    () => registerFallbackValue(
+      DmConversation(
+        id: 'fallback',
+        participantPubkeys: const [],
+        isGroup: false,
+        createdAt: 0,
+      ),
+    ),
+  );
+
   const currentPubkey =
       'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
   const otherPubkey =
@@ -168,6 +179,9 @@ void main() {
         () => mockActionsCubit.state,
       ).thenReturn(const ConversationActionsState());
       when(() => mockActionsCubit.isBlocked(any())).thenReturn(false);
+      when(
+        () => mockActionsCubit.isRemovalProtected(any()),
+      ).thenReturn(false);
       whenListen(
         mockActionsCubit,
         const Stream<ConversationActionsState>.empty(),
@@ -2512,7 +2526,7 @@ void main() {
 
           // The pin replaced an ordinary row that had these actions; losing
           // them on adoption is the regression this guards (#6388 review).
-          expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+          // Remove is the deliberate exception — see the sibling test below.
           expect(
             find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
             findsOneWidget,
@@ -2529,6 +2543,94 @@ void main() {
           );
         },
       );
+
+      // #8391: the arc #6971 -> #8302 made an enforcement notice unremovable
+      // in Message Requests, but the CURRENT-key notice never goes there — it
+      // is lifted into the pinned row, whose long-press offered "Remove
+      // conversation" through a cubit with no policy at all. Withdrawing the
+      // action is the deliberate reversal of the #6388-review expectation
+      // above: Mute / Report / Block still survive adoption, Remove does not,
+      // because removal is permanent and the notice is the user's only copy
+      // of why they were actioned.
+      testWidgets(
+        'withdraws Remove from the sheet for a protected moderation thread',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final actionsCubit = _MockConversationActionsCubit();
+
+          await tester.pumpWidget(
+            buildSubject(
+              actionsCubit: actionsCubit,
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => actionsCubit.isRemovalProtected(any()),
+          ).thenReturn(true);
+          await openMessages(tester);
+
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.inboxActionRemove), findsNothing);
+          // The safety actions the pin inherited are untouched.
+          expect(
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.inboxActionReport(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+        },
+      );
+
+      // Defence in depth: if the action is reached anyway, the repository
+      // still refuses, and a refusal must read as an explanation rather than
+      // as an error or a false success.
+      testWidgets('explains a refusal instead of reporting success', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final actionsCubit = _MockConversationActionsCubit();
+
+        await tester.pumpWidget(
+          buildSubject(
+            actionsCubit: actionsCubit,
+            wrapInScaffold: true,
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(
+                isPersisted: true,
+                lastMessageContent: 'We looked into your report',
+              ),
+            ),
+          ),
+        );
+        when(
+          () => actionsCubit.removeConversation(any()),
+        ).thenAnswer((_) async => RemoveConversationOutcome.refused);
+        await openMessages(tester);
+
+        await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxActionRemove));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.inboxRemoveConfirmConfirm));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.messageRequestModerationNoticeCannotBeRemoved),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.inboxRemovedConversation), findsNothing);
+      });
 
       testWidgets(
         'keeps moderation safety actions named when the vanish lookup fails',

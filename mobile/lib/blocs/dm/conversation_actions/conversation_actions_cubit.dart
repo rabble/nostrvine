@@ -5,11 +5,28 @@ import 'package:bloc/bloc.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:models/models.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 
 enum ConversationActionsStatus { idle, processing, success, failure }
+
+/// What [ConversationActionsCubit.removeConversation] actually did.
+///
+/// Three-valued rather than a `bool` for the reason given on
+/// `DeclineRequestOutcome`: a refusal is not a failure, and the caller must
+/// not report an error for a conversation the policy protects (#8391).
+enum RemoveConversationOutcome {
+  /// The conversation was removed.
+  removed,
+
+  /// The repository's removal policy protects it. Nothing was deleted.
+  refused,
+
+  /// The removal threw.
+  failed,
+}
 
 class ConversationActionsState extends Equatable {
   const ConversationActionsState({
@@ -126,17 +143,36 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
     }
   }
 
+  /// Whether [conversation] is one the repository refuses to remove.
+  ///
+  /// Synchronous, so the caller can withdraw the destructive action before
+  /// offering it rather than letting the user meet a refusal. Symmetric with
+  /// [isBlocked], which the same action sheet already consults.
+  bool isRemovalProtected(DmConversation conversation) =>
+      _dmRepository.isRemovalProtected(conversation);
+
   /// Remove a conversation locally.
   ///
-  /// Returns `true` if the conversation was removed successfully.
-  Future<bool> removeConversation(String conversationId) async {
+  /// Three-valued for the same reason `declineRequest` is: a refusal is not a
+  /// failure, so reporting `commonSomethingWentWrong` for a conversation the
+  /// policy deliberately protects would be wrong (#8391). The repository owns
+  /// the policy; this only translates its answer.
+  Future<RemoveConversationOutcome> removeConversation(
+    String conversationId,
+  ) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      await _dmRepository.removeConversation(conversationId);
+      final outcome = await _dmRepository.removeConversation(conversationId);
+      if (outcome == ConversationRemovalOutcome.refused) {
+        if (!isClosed) {
+          emit(state.copyWith(status: ConversationActionsStatus.idle));
+        }
+        return RemoveConversationOutcome.refused;
+      }
       if (!isClosed) {
         emit(state.copyWith(status: ConversationActionsStatus.success));
       }
-      return true;
+      return RemoveConversationOutcome.removed;
     } catch (e, stackTrace) {
       // Drift write failures are expected. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
@@ -144,7 +180,7 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       if (!isClosed) {
         emit(state.copyWith(status: ConversationActionsStatus.failure));
       }
-      return false;
+      return RemoveConversationOutcome.failed;
     }
   }
 }

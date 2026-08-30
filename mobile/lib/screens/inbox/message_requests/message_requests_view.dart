@@ -75,10 +75,10 @@ class MessageRequestsView extends ConsumerWidget {
         final withheldText =
             context.l10n.messageRequestModerationNoticeCannotBeRemoved;
         final errorText = context.l10n.commonSomethingWentWrong;
-        // Whole list, not ids: the cubit decides what "all requests" excludes,
-        // so a Divine moderation notice cannot be swept away by a gesture
-        // aimed at spam (#6971). Keeping the filter there rather than here
-        // means a future caller inherits it.
+        // Whole list, not ids: the repository decides what "all requests"
+        // excludes, so a Divine moderation notice cannot be swept away by a
+        // gesture aimed at spam (#6971). Keeping the policy there means every
+        // removal caller inherits it.
         final outcome = await actionsCubit.removeAllRequests(requests);
         if (context.mounted) context.pop();
         // Silence reads as a broken button: a list holding nothing but a

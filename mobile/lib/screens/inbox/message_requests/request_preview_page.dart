@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
-import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
@@ -66,7 +65,6 @@ class RequestPreviewPage extends ConsumerWidget {
           key: ValueKey(dmRepository),
           create: (_) => MessageRequestActionsCubit(
             dmRepository: dmRepository,
-            moderationAccount: isModerationAccount,
           ),
         ),
         BlocProvider(

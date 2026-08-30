@@ -9023,6 +9023,18 @@ void main() {
     // -----------------------------------------------------------------
 
     group('removeConversation', () {
+      // The removal policy resolves each conversation before deleting it
+      // (#8391). These pure-mock tests care about the delete ordering, so the
+      // lookup returns null — absent rows fail open and removal proceeds.
+      setUp(() {
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+      });
+
       test(
         'deletes messages then conversation in a transaction',
         () async {
@@ -9131,6 +9143,18 @@ void main() {
     });
 
     group('removeConversations', () {
+      // The removal policy resolves each conversation before deleting it
+      // (#8391). These pure-mock tests care about the delete ordering, so the
+      // lookup returns null — absent rows fail open and removal proceeds.
+      setUp(() {
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+      });
+
       const convIdA =
           'aabb00112233445566778899aabbccddeeff0011223344556677889900aabb00';
       const convIdB =

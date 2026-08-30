@@ -9845,7 +9845,7 @@ abstract class AppLocalizations {
   /// **'This conversation is closed.'**
   String get dmRetiredThreadClosedTitle;
 
-  /// SnackBar shown when a user tries to decline and remove a message request that resolves to a protected Divine Moderation notice (#6971).
+  /// SnackBar shown when a user tries to remove a conversation that resolves to a protected Divine Moderation notice. Used on the request-preview decline, the Message Requests bulk sweep, and the inbox long-press remove (#6971, #8347, #8391).
   ///
   /// In en, this message translates to:
   /// **'This Divine Moderation notice can\'t be removed.'**

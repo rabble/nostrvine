@@ -5,7 +5,6 @@ import 'package:bloc/bloc.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
-import 'package:openvine/blocs/dm/dm_peer_account_predicate.dart';
 
 enum MessageRequestActionsStatus { idle, processing, success, error }
 
@@ -42,39 +41,11 @@ class MessageRequestActionsState extends Equatable {
 }
 
 class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
-  MessageRequestActionsCubit({
-    required DmRepository dmRepository,
-    DmPeerAccountPredicate moderationAccount = neverDmPeerAccount,
-  }) : _dmRepository = dmRepository,
-       _moderationAccount = moderationAccount,
-       super(const MessageRequestActionsState());
+  MessageRequestActionsCubit({required DmRepository dmRepository})
+    : _dmRepository = dmRepository,
+      super(const MessageRequestActionsState());
 
   final DmRepository _dmRepository;
-
-  /// Whether a peer is a Divine moderation identity, current or retired.
-  ///
-  /// Injected so this cubit never learns Divine's own pubkeys — same seam as
-  /// `ConversationListBloc`'s. Defaults permissive, so a fixture that injects
-  /// nothing keeps the pre-policy behaviour.
-  final DmPeerAccountPredicate _moderationAccount;
-
-  /// Whether [conversation] is one this cubit refuses to remove.
-  ///
-  /// An enforcement notice is the user's only copy of why they were actioned:
-  /// there is no reason field on the account-status API and no appeals
-  /// workflow behind it, while removal here is permanent — `removeConversation`
-  /// writes a tombstone that suppresses relay replay for the account's
-  /// lifetime. So the row stays (#6971).
-  ///
-  /// Self is excluded, so a signed-in moderation account can still clear its
-  /// own request list. Any *other* moderation participant is enough, which
-  /// covers a group that happens to include one.
-  bool _isProtected(DmConversation conversation) {
-    final me = _dmRepository.userPubkey;
-    return conversation.participantPubkeys.any(
-      (pubkey) => pubkey != me && _moderationAccount(pubkey),
-    );
-  }
 
   /// Decline and remove a single message request.
   ///
@@ -86,24 +57,21 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
   /// `success` emit even though the removal succeeded, so a state read would
   /// report a false failure.
   ///
-  /// The guard is here rather than only in the widget because the request
+  /// The refusal itself comes from the repository, which owns the policy for
+  /// every removal path (#8391). This cubit only translates it: the request
   /// preview renders its decline button in states where the counterparty is
-  /// not resolved yet — a conversation id is a hash of the participants, so
-  /// the widget cannot always answer the question this cubit can.
+  /// not resolved yet, so the widget could not answer the question anyway.
   Future<DeclineRequestOutcome> declineRequest(String conversationId) async {
     emit(state.copyWith(status: MessageRequestActionsStatus.processing));
     try {
-      // A missing row fails OPEN: a stale id must not become an undeletable
-      // request.
-      final conversation = await _dmRepository.getConversation(conversationId);
-      if (conversation != null && _isProtected(conversation)) {
+      final outcome = await _dmRepository.removeConversation(conversationId);
+      if (outcome == ConversationRemovalOutcome.refused) {
         if (!isClosed) {
           emit(state.copyWith(status: MessageRequestActionsStatus.idle));
         }
         return DeclineRequestOutcome.refused;
       }
 
-      await _dmRepository.removeConversation(conversationId);
       if (!isClosed) {
         emit(state.copyWith(status: MessageRequestActionsStatus.success));
       }
@@ -140,10 +108,10 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
 
   /// Remove every removable conversation in [conversations].
   ///
-  /// Takes conversations rather than ids so the filter can read participants
-  /// without a lookup per row, and so the caller can keep passing its whole
-  /// list — the decision about what "all requests" excludes lives here, not in
-  /// the view, and a new caller cannot forget it.
+  /// Takes conversations rather than ids so the caller can keep passing its
+  /// whole list. The decision about what "all requests" excludes lives in the
+  /// repository (#8391), so every removal path inherits it rather than each
+  /// cubit re-implementing it.
   ///
   /// Protected conversations are skipped and remain in the request list.
   ///
@@ -163,15 +131,14 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
   Future<({bool withheld, bool failed})> removeAllRequests(
     List<DmConversation> conversations,
   ) async {
-    final removable = [
-      for (final conversation in conversations)
-        if (!_isProtected(conversation)) conversation.id,
-    ];
-    final withheld = removable.length != conversations.length;
-    if (removable.isEmpty) return (withheld: withheld, failed: false);
+    if (conversations.isEmpty) return (withheld: false, failed: false);
     emit(state.copyWith(status: MessageRequestActionsStatus.processing));
+    var withheld = false;
     try {
-      await _dmRepository.removeConversations(removable);
+      final outcome = await _dmRepository.removeConversations([
+        for (final conversation in conversations) conversation.id,
+      ]);
+      withheld = outcome.refused > 0;
       if (!isClosed) {
         emit(state.copyWith(status: MessageRequestActionsStatus.success));
       }
