@@ -2615,6 +2615,9 @@ void main() {
         expect(syncState.recorded, hasLength(1));
         expect(syncState.recorded.single.pubkey, _validPubkeyA);
         expect(syncState.recorded.single.createdAt, nip04CreatedAt);
+        expect(syncState.recordedWire, hasLength(1));
+        expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+        expect(syncState.recordedWire.single.createdAt, nip04CreatedAt);
 
         await controller.close();
         await repository.stopListening();
@@ -11000,7 +11003,7 @@ void main() {
         await repository.stopListening();
       });
 
-      test('skips duplicate NIP-04 events', () async {
+      test('duplicate NIP-04 events still advance the wire boundary', () async {
         final nip04Event = createNip04Event();
 
         when(
@@ -11015,8 +11018,10 @@ void main() {
           ),
         ).thenAnswer((_) => controller.stream);
 
+        final syncState = _FakeDmSyncState();
         final repository = createRepository(
           nip04Decryptor: (_, _) async => 'should not reach',
+          syncState: syncState,
         );
 
         await repository.startListening();
@@ -11049,6 +11054,10 @@ void main() {
             sendBatchId: any(named: 'sendBatchId'),
           ),
         );
+        expect(syncState.recordedWire, hasLength(1));
+        expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+        expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+        expect(syncState.recorded, isEmpty);
 
         await controller.close();
         await repository.stopListening();
