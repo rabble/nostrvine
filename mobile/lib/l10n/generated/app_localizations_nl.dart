@@ -5622,6 +5622,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Hiermee verwijder je het groepsgesprek uit je inbox. Als iemand weer een bericht naar de groep stuurt, begint er een nieuw gesprek.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Verwijderen';
 
   @override
@@ -5876,6 +5880,17 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Ongelezen, Gesprek met $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count anderen',
+      one: '$count ander',
+    );
+    return '$name en $_temp0';
   }
 
   @override

@@ -5464,6 +5464,10 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'ይህ የቡድን ውይይቱን ከመልእክት ሳጥንዎ ያስወግዳል። ማንኛውም ሰው እንደገና ለቡድኑ መልእክት ከላከ አዲስ ውይይት ይጀምራል።';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'አስወግድ';
 
   @override
@@ -5710,6 +5714,17 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'ያልተነበበ፣ የ$displayName ውይይት';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ሌሎች',
+      one: '$count ሌላ',
+    );
+    return '$name እና $_temp0';
   }
 
   @override

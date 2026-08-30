@@ -78,7 +78,7 @@ class ConversationTile extends ConsumerWidget {
         .watch(profileVanishedProvider(otherPubkey))
         .maybeWhen(data: (vanished) => vanished, orElse: () => false);
 
-    final displayName = dmPeerDisplayName(
+    final peerName = dmPeerDisplayName(
       context,
       pubkeyHex: otherPubkey,
       isVanished: isDeleted,
@@ -93,6 +93,18 @@ class ConversationTile extends ConsumerWidget {
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
         : displayName;
+
+    // A group is named for the room, not for whichever peer happens to sort
+    // first: `otherPubkey` above is an arbitrary member, and naming the row
+    // after them hides that anyone else is in it.
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: conversation.participantPubkeys,
+      currentUserPubkey: currentUserPubkey,
+      isGroup: conversation.isGroup,
+      peerName: peerName,
+      subject: conversation.subject,
+    );
 
     final imageUrl = isDeleted
         ? null

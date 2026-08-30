@@ -2004,6 +2004,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "يؤدي هذا إلى إزالة محادثة المجموعة من صندوق الوارد. إذا راسل أي شخص المجموعة مرة أخرى، تبدأ محادثة جديدة.",
     "inboxRemoveConfirmConfirm": "إزالة",
     "inboxRemoveConfirmTitle": "إزالة المحادثة؟",
     "inboxRemovedConversation": "تمت إزالة المحادثة",
@@ -4090,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "غير مقروءة، محادثة {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} و{count, plural, =1{شخص آخر} =2{شخصان آخران} few{{count} أشخاص آخرين} other{{count} شخصًا آخر}}",
     "inboxConversationTileLongPressHint": "عرض إجراءات المحادثة",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "إجراءات القائمة",

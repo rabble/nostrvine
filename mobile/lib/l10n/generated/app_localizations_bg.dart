@@ -5654,6 +5654,10 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Това премахва груповия разговор от входящата ти кутия. Ако някой пише отново в групата, започва нов разговор.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Премахни';
 
   @override
@@ -5904,6 +5908,17 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Непрочетен, разговор с $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count души',
+      one: '$count човек',
+    );
+    return '$name и още $_temp0';
   }
 
   @override

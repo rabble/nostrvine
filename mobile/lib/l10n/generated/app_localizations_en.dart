@@ -5694,6 +5694,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'This removes the group conversation from your inbox. If anyone messages the group again, a new conversation starts.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Remove';
 
   @override
@@ -5942,6 +5946,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Unread, $displayName conversation';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count others',
+      one: '$count other',
+    );
+    return '$name and $_temp0';
   }
 
   @override

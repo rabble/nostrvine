@@ -2014,6 +2014,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "To usuwa rozmowę grupową z Twojej skrzynki odbiorczej. Jeśli ktoś znów napisze w grupie, rozpocznie się nowa rozmowa.",
     "inboxRemoveConfirmConfirm": "Usuń",
     "inboxRemoveConfirmTitle": "Usunąć rozmowę?",
     "inboxRemovedConversation": "Usunięto rozmowę",
@@ -4090,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "Nieprzeczytana, rozmowa z {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} i {count, plural, =1{{count} inna osoba} few{{count} inne osoby} many{{count} innych osób} other{{count} innych osób}}",
     "inboxConversationTileLongPressHint": "Pokaż akcje rozmowy",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "Akcje listy",

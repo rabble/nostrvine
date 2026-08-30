@@ -2385,6 +2385,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "ይህ የቡድን ውይይቱን ከመልእክት ሳጥንዎ ያስወግዳል። ማንኛውም ሰው እንደገና ለቡድኑ መልእክት ከላከ አዲስ ውይይት ይጀምራል።",
     "inboxRemoveConfirmConfirm": "አስወግድ",
     "inboxConversationMuted": "ውይይት ድምጸ-ከል ተደርጓል",
     "inboxConversationUnmuted": "ውይይቱ ድምጸ-ከል ተነስቷል።",
@@ -4222,6 +4223,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "ያልተነበበ፣ የ{displayName} ውይይት",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} እና {count, plural, =1{{count} ሌላ} other{{count} ሌሎች}}",
     "inboxConversationTileLongPressHint": "የውይይት እርምጃዎችን አሳይ",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "የዝርዝር እርምጃዎች",

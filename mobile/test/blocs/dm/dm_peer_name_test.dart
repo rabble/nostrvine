@@ -134,6 +134,134 @@ void main() {
     });
   });
 
+  group(dmConversationTitle, () {
+    const me =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const alice =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const bob =
+        'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+    const carol =
+        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
+    test('a 1:1 is named for its peer, subject or not', () {
+      expect(
+        dmConversationTitle(
+          isGroup: false,
+          peerName: 'Alice',
+          groupFallbackName: 'unused',
+          subject: 'Weekend trip',
+        ),
+        equals('Alice'),
+      );
+    });
+
+    test('a titled group renders its NIP-17 subject, not a participant', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: 'Alice',
+          groupFallbackName: 'Alice and 2 others',
+          subject: 'Weekend trip',
+        ),
+        equals('Weekend trip'),
+      );
+    });
+
+    test('an untitled group falls back to the participant label', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: 'Alice',
+          groupFallbackName: 'Alice and 2 others',
+        ),
+        equals('Alice and 2 others'),
+      );
+    });
+
+    // A peer sets the subject to any string they like. A room titled with
+    // blanks would otherwise render an empty row with nothing to identify it.
+    test('a whitespace-only subject is treated as absent', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: 'Alice',
+          groupFallbackName: 'Alice and 2 others',
+          subject: '   ',
+        ),
+        equals('Alice and 2 others'),
+      );
+    });
+
+    test('an empty subject is treated as absent', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: 'Alice',
+          groupFallbackName: 'Alice and 2 others',
+          subject: '',
+        ),
+        equals('Alice and 2 others'),
+      );
+    });
+
+    test('a surrounding-space subject keeps its trimmed text', () {
+      expect(
+        dmConversationTitle(
+          isGroup: true,
+          peerName: 'Alice',
+          groupFallbackName: 'Alice and 2 others',
+          subject: '  Weekend trip  ',
+        ),
+        equals('Weekend trip'),
+      );
+    });
+
+    group(dmGroupOtherCount, () {
+      test('excludes the viewer, so a 3-person room counts 2 peers', () {
+        expect(
+          dmGroupOtherCount(
+            participantPubkeys: const [me, alice, bob],
+            currentUserPubkey: me,
+          ),
+          equals(1),
+        );
+      });
+
+      test('counts every peer beyond the one the label names', () {
+        expect(
+          dmGroupOtherCount(
+            participantPubkeys: const [me, alice, bob, carol],
+            currentUserPubkey: me,
+          ),
+          equals(2),
+        );
+      });
+
+      // Guards the plural against a negative: a degenerate row with only the
+      // viewer on it would otherwise render "and -1 others".
+      test('never returns a negative for a row with no peer', () {
+        expect(
+          dmGroupOtherCount(
+            participantPubkeys: const [me],
+            currentUserPubkey: me,
+          ),
+          isZero,
+        );
+      });
+
+      test('is zero for a single peer, so a 1:1 row cannot say "and 0"', () {
+        expect(
+          dmGroupOtherCount(
+            participantPubkeys: const [me, alice],
+            currentUserPubkey: me,
+          ),
+          isZero,
+        );
+      });
+    });
+  });
+
   group(DmPeerLabels, () {
     test('compares by value, so a redelivery of the same copy is a no-op', () {
       expect(

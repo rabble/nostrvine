@@ -5636,6 +5636,10 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Aalisin nito sa iyong inbox ang group chat. Kung may magme-message ulit sa group, magsisimula ng bagong usapan.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Alisin';
 
   @override
@@ -5888,6 +5892,16 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Hindi pa nababasa, Usapan kay $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pa',
+    );
+    return '$name at $_temp0';
   }
 
   @override

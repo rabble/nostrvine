@@ -5259,6 +5259,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      '这会从你的收件箱中移除这个群聊会话。如果有人再次在群里发消息，会开始一个新会话。';
+
+  @override
   String get inboxRemoveConfirmConfirm => '删除';
 
   @override
@@ -5502,6 +5506,16 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return '未读，与 $displayName 的会话';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 人',
+    );
+    return '$name 和其他 $_temp0';
   }
 
   @override

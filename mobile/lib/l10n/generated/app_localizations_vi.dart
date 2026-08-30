@@ -5566,6 +5566,10 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Thao tác này xóa cuộc trò chuyện nhóm khỏi hộp thư đến. Nếu có ai nhắn tin vào nhóm lần nữa, một cuộc trò chuyện mới sẽ bắt đầu.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Xóa';
 
   @override
@@ -5816,6 +5820,16 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Chưa đọc, cuộc trò chuyện với $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count người khác',
+    );
+    return '$name và $_temp0';
   }
 
   @override

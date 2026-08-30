@@ -32,6 +32,7 @@ class ConversationActionsSheet {
     required bool isMuted,
     required bool isBlocked,
     bool canRemove = true,
+    bool isGroup = false,
   }) {
     // A vanished peer can publish again under the same key, and their DMs
     // remain in the recipient's history. Keep Report and Block available for
@@ -57,22 +58,29 @@ class ConversationActionsSheet {
           mainAxisSize: MainAxisSize.min,
           children: [
             _MuteActionTile(isMuted: isMuted),
-            _ActionTile(
-              icon: DivineIconName.flag,
-              label: isVanished
-                  ? context.l10n.inboxActionReportVanishedAccount
-                  : context.l10n.inboxActionReport(displayName),
-              result: ConversationAction.report,
-            ),
-            _ActionTile(
-              icon: DivineIconName.eyeSlash,
-              label: blockLabel,
-              isDestructive: !isBlocked,
-              // Block becomes the last row when Remove is withdrawn, so it
-              // owns the missing divider rather than leaving a trailing rule.
-              showDivider: canRemove,
-              result: ConversationAction.block,
-            ),
+            // Report and Block act on ONE account, and a group sheet has no
+            // way to say which — it would act on the arbitrary peer the row
+            // names while reading as though it dealt with the thread. Mute and
+            // Remove are conversation-scoped and mean what they say. An
+            // individual is still blockable from their profile in the thread.
+            if (!isGroup) ...[
+              _ActionTile(
+                icon: DivineIconName.flag,
+                label: isVanished
+                    ? context.l10n.inboxActionReportVanishedAccount
+                    : context.l10n.inboxActionReport(displayName),
+                result: ConversationAction.report,
+              ),
+              _ActionTile(
+                icon: DivineIconName.eyeSlash,
+                label: blockLabel,
+                isDestructive: !isBlocked,
+                // Block becomes the last row when Remove is withdrawn, so it
+                // owns the missing divider rather than leaving a trailing rule.
+                showDivider: canRemove,
+                result: ConversationAction.block,
+              ),
+            ],
             // Withdrawn for a Divine Moderation thread: removal is permanent
             // and the notice is the user's only copy of why they were actioned
             // (#8391). The repository refuses it either way; not offering it

@@ -1040,7 +1040,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     }
     if (!context.mounted) return;
 
-    final String displayName;
+    final String peerName;
     final knownName = dmPeerNameWithoutProfile(
       context,
       pubkeyHex: otherPubkey,
@@ -1048,7 +1048,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
       displayNameOverride: displayNameOverride,
     );
     if (knownName != null) {
-      displayName = knownName;
+      peerName = knownName;
     } else {
       UserProfile? profile;
       try {
@@ -1065,7 +1065,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         );
       }
       if (!context.mounted) return;
-      displayName = dmPeerDisplayName(
+      peerName = dmPeerDisplayName(
         context,
         pubkeyHex: otherPubkey,
         isVanished: isVanished,
@@ -1075,6 +1075,18 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     }
 
     if (!context.mounted) return;
+
+    // The sheet has to name what the row names. `otherPubkey` is an arbitrary
+    // member of a group, so a group resolves to the room's own title instead.
+    final isGroup = conversation.isGroup;
+    final displayName = dmConversationDisplayTitle(
+      context,
+      participantPubkeys: conversation.participantPubkeys,
+      currentUserPubkey: widget.currentUserPubkey,
+      isGroup: isGroup,
+      peerName: peerName,
+      subject: conversation.subject,
+    );
 
     final muteCubit = context.read<ConversationMuteCubit>();
     final isMuted = muteCubit.state.isMuted(conversation.id);
@@ -1098,6 +1110,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         // Covers the pinned support row AND an ordinary row, which is the
         // same moderation thread whenever a filter or search drops the pin.
         canRemove: !actionsCubit.isRemovalProtected(conversation),
+        isGroup: isGroup,
       );
 
       if (action == null || !context.mounted) return;
@@ -1155,6 +1168,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
             context,
             displayName,
             isVanished: isVanished,
+            isGroup: isGroup,
           );
           if (confirmed && context.mounted) {
             final messenger = ScaffoldMessenger.of(context);
@@ -1192,6 +1206,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     BuildContext context,
     String displayName, {
     required bool isVanished,
+    required bool isGroup,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -1204,9 +1219,15 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
           ),
         ),
         content: Text(
-          isVanished
-              ? context.l10n.inboxRemoveConfirmBodyVanishedAccount
-              : context.l10n.inboxRemoveConfirmBody(displayName),
+          // The 1:1 body says "your conversation with {displayName}". A group
+          // title is the room's name, not a person, so that template would
+          // read as a conversation with the room — name nobody instead, the
+          // way the vanished body already does.
+          switch ((isGroup, isVanished)) {
+            (true, _) => context.l10n.inboxRemoveConfirmBodyGroup,
+            (false, true) => context.l10n.inboxRemoveConfirmBodyVanishedAccount,
+            (false, false) => context.l10n.inboxRemoveConfirmBody(displayName),
+          },
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
           ),

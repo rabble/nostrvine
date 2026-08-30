@@ -5289,6 +5289,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'このグループの会話が受信トレイから削除されます。誰かがまたグループにメッセージを送ると、新しい会話が始まります。';
+
+  @override
   String get inboxRemoveConfirmConfirm => '削除';
 
   @override
@@ -5533,6 +5537,16 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return '未読、$displayNameとの会話';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count人',
+    );
+    return '$nameさん他$_temp0';
   }
 
   @override

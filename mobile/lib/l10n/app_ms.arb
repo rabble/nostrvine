@@ -2830,6 +2830,7 @@
       }
     }
   },
+  "inboxRemoveConfirmBodyGroup": "Ini mengalih keluar perbualan kumpulan daripada peti masuk anda. Jika sesiapa menghantar mesej lagi dalam kumpulan itu, perbualan baharu akan bermula.",
   "inboxRemoveConfirmConfirm": "Alih Keluar",
   "inboxConversationMuted": "Perbualan disenyapkan",
   "inboxConversationUnmuted": "Perbualan dinyahsenyap",
@@ -3146,6 +3147,7 @@
       }
     }
   },
+  "inboxGroupConversationTitle": "{name} dan {count, plural, other{{count} orang lain}}",
   "inboxConversationTileLongPressHint": "Tunjuk tindakan perbualan",
   "@inboxConversationTileLongPressHint": {
     "description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."

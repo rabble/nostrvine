@@ -2178,6 +2178,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "Това премахва груповия разговор от входящата ти кутия. Ако някой пише отново в групата, започва нов разговор.",
     "inboxRemoveConfirmConfirm": "Премахни",
     "inboxConversationMuted": "Разговорът е заглушен",
     "inboxConversationUnmuted": "Разговорът е включен",
@@ -4228,6 +4229,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "Непрочетен, разговор с {displayName}",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name} и още {count, plural, =1{{count} човек} other{{count} души}}",
     "inboxConversationTileLongPressHint": "Покажи действията за разговора",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "Действия за списъка",

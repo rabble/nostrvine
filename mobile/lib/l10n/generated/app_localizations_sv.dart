@@ -5593,6 +5593,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get inboxRemoveConfirmBodyGroup =>
+      'Det här tar bort gruppkonversationen från din inkorg. Om någon skriver i gruppen igen startar en ny konversation.';
+
+  @override
   String get inboxRemoveConfirmConfirm => 'Ta bort';
 
   @override
@@ -5845,6 +5849,16 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String inboxConversationTileLabelUnread(String displayName) {
     return 'Oläst, konversation med $displayName';
+  }
+
+  @override
+  String inboxGroupConversationTitle(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count till',
+    );
+    return '$name och $_temp0';
   }
 
   @override

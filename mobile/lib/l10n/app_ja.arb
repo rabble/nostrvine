@@ -2004,6 +2004,7 @@
             }
         }
     },
+    "inboxRemoveConfirmBodyGroup": "このグループの会話が受信トレイから削除されます。誰かがまたグループにメッセージを送ると、新しい会話が始まります。",
     "inboxRemoveConfirmConfirm": "削除",
     "inboxRemoveConfirmTitle": "会話を削除する？",
     "inboxRemovedConversation": "会話を削除したよ",
@@ -4090,6 +4091,7 @@
     "@inboxConversationTileLabel": {"description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
     "inboxConversationTileLabelUnread": "未読、{displayName}との会話",
     "@inboxConversationTileLabelUnread": {"description": "Accessibility label for an UNREAD conversation row in the inbox list, read by screen readers when the row receives focus. Prefixes the unread status before the display name so assistive-technology users get the same unread signal sighted users get from the dot and emphasized preview.", "placeholders": {"displayName": {"type": "String", "example": "Alice"}}},
+    "inboxGroupConversationTitle": "{name}さん他{count, plural, other{{count}人}}",
     "inboxConversationTileLongPressHint": "会話の操作を表示",
     "@inboxConversationTileLongPressHint": {"description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."},
     "curatedListActionsTooltip": "リストの操作",

@@ -109,12 +109,14 @@ DmConversation _createConversation({
   List<String>? participantPubkeys,
   String lastMessageContent = 'Hello',
   int lastMessageTimestamp = 1700000100,
+  String? subject,
 }) {
   return DmConversation(
     id: id,
     participantPubkeys:
         participantPubkeys ?? const [_testPubkey1, _testPubkey2],
     isGroup: isGroup,
+    subject: subject,
     createdAt: 1700000000,
     lastMessageContent: lastMessageContent,
     lastMessageTimestamp: lastMessageTimestamp,
@@ -2415,6 +2417,104 @@ void main() {
       bloc.add(ConversationListSearchQueryChanged(query));
       return bloc.stream.firstWhere((s) => s.searchQuery == query);
     }
+
+    // The row for a titled group renders its NIP-17 subject and no
+    // participant's name at all, so the index has to match on the subject or a
+    // search finds a row by a string that is not on it (#8204's own rule).
+    group('a group conversation', () {
+      setUp(() => stubVanished(const {}));
+
+      test('is found by the NIP-17 subject its row renders', () async {
+        _stubStreams(
+          mockDmRepository,
+          accepted: [
+            _createConversation(
+              id: 'titled-group',
+              isGroup: true,
+              subject: 'Weekend trip',
+              participantPubkeys: const [
+                _testPubkey1,
+                _testPubkey2,
+                _testPubkey3,
+              ],
+            ),
+          ],
+        );
+        final bloc = createBloc(withLabels: labels);
+        addTearDown(bloc.close);
+
+        final state = await search(bloc, 'weekend');
+
+        expect(
+          state.visibleConversations.map((c) => c.id).toList(),
+          equals(['titled-group']),
+        );
+      });
+
+      test(
+        'is not found by a participant the titled row never shows',
+        () async {
+          _stubStreams(
+            mockDmRepository,
+            accepted: [
+              _createConversation(
+                id: 'titled-group',
+                isGroup: true,
+                subject: 'Weekend trip',
+                participantPubkeys: const [
+                  _testPubkey1,
+                  _testPubkey2,
+                  _testPubkey3,
+                ],
+              ),
+            ],
+          );
+          final bloc = createBloc(withLabels: labels);
+          addTearDown(bloc.close);
+
+          final state = await search(
+            bloc,
+            UserProfile.defaultDisplayNameFor(_testPubkey2),
+          );
+
+          expect(state.visibleConversations, isEmpty);
+        },
+      );
+
+      // Without a subject the row DOES render a participant's name, inside
+      // "<peer> and N others" — so that name must still match.
+      test(
+        'an untitled room is still found by the peer its row names',
+        () async {
+          _stubStreams(
+            mockDmRepository,
+            accepted: [
+              _createConversation(
+                id: 'untitled-group',
+                isGroup: true,
+                participantPubkeys: const [
+                  _testPubkey1,
+                  _testPubkey2,
+                  _testPubkey3,
+                ],
+              ),
+            ],
+          );
+          final bloc = createBloc(withLabels: labels);
+          addTearDown(bloc.close);
+
+          final state = await search(
+            bloc,
+            UserProfile.defaultDisplayNameFor(_testPubkey2),
+          );
+
+          expect(
+            state.visibleConversations.map((c) => c.id).toList(),
+            equals(['untitled-group']),
+          );
+        },
+      );
+    });
 
     group('a vanished counterparty', () {
       setUp(() => stubVanished({_testPubkey2}));

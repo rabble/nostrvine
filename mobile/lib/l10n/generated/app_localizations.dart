@@ -9689,6 +9689,12 @@ abstract class AppLocalizations {
   /// **'This removes your conversation with {displayName} from your inbox. If they message you again, a new conversation starts.'**
   String inboxRemoveConfirmBody(String displayName);
 
+  /// Body of the remove-conversation confirmation for a GROUP thread. Names nobody, because a group has no single counterparty — the 1:1 wording `inboxRemoveConfirmBody` says 'your conversation with {displayName}', which would read as a conversation with the room's title. Mirrors `inboxRemoveConfirmBodyVanishedAccount`, which is name-free for the same reason.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the group conversation from your inbox. If anyone messages the group again, a new conversation starts.'**
+  String get inboxRemoveConfirmBodyGroup;
+
   /// No description provided for @inboxRemoveConfirmConfirm.
   ///
   /// In en, this message translates to:
@@ -10114,6 +10120,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unread, {displayName} conversation'**
   String inboxConversationTileLabelUnread(String displayName);
+
+  /// Names a group DM thread that carries no NIP-17 `subject` tag, from the first other participant plus how many participants remain beyond them. Example: 'Alice and 2 others'. A room that DOES carry a subject renders that instead, untranslated, because a participant chose it.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} and {count, plural, =1{{count} other} other{{count} others}}'**
+  String inboxGroupConversationTitle(String name, int count);
 
   /// Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove).
   ///
