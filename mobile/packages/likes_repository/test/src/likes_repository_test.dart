@@ -3046,17 +3046,15 @@ void main() {
         },
       );
 
-      test('counts a reaction spanning two chunks once', () async {
+      test('deduplicates a reaction returned from two chunks', () async {
         // Each chunk is its own queryEvents call with its own dedup box, so a
-        // reaction that e-tags a target in chunk 0 and one in chunk 1 comes
-        // back from both. The count loop adds per e-tag occurrence, so
-        // without a dedup across chunks both targets score 2.
+        // reaction targeting an event in chunk 1 can come back from both.
+        // _queryChunked must deduplicate it before counting.
         final eventIds = [for (var i = 0; i < 600; i++) 'event_id_$i'];
         final reaction = createMockReaction(
           id: 'reaction_spanning_chunks',
           targetEventId: 'event_id_0',
           tags: [
-            ['e', 'event_id_0'],
             ['e', 'event_id_500'],
           ],
         );
@@ -3067,8 +3065,30 @@ void main() {
         repository = createRepository();
         final counts = await repository.getLikeCounts(eventIds);
 
-        expect(counts['event_id_0'], 1);
+        expect(counts['event_id_0'], 0);
         expect(counts['event_id_500'], 1);
+      });
+
+      test('counts a reaction only for its last e tag', () async {
+        const threadRoot = 'thread_root_event_1234567890abcdef';
+        const reactedTo = 'reacted_to_event_abcdef1234567890';
+        final reaction = createMockReaction(
+          id: 'reaction_with_thread_context',
+          targetEventId: threadRoot,
+          tags: [
+            ['e', threadRoot],
+            ['e', reactedTo],
+          ],
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [reaction]);
+
+        repository = createRepository();
+        final counts = await repository.getLikeCounts([threadRoot, reactedTo]);
+
+        expect(counts, {threadRoot: 0, reactedTo: 1});
       });
 
       test('handles events with non-list or empty tags', () async {
@@ -4028,6 +4048,28 @@ void main() {
 
         expect(likers, hasLength(2));
         expect(likers, [likerB, likerA]);
+      });
+
+      test('attributes a multi-e reaction only to its last e tag', () async {
+        const threadRoot = 'thread_root_event_1234567890abcdef';
+        final reaction = createReaction(
+          id: 'reaction_with_thread_context',
+          authorPubkey: likerA,
+          tags: [
+            ['e', threadRoot],
+            ['e', targetEventId],
+          ],
+        );
+
+        mockQueryEventsSequence([
+          [reaction],
+          <Event>[],
+        ]);
+
+        repository = createRepository();
+        expect(await repository.fetchEventLikers(eventId: targetEventId), [
+          likerA,
+        ]);
       });
 
       test(

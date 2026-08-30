@@ -1436,13 +1436,9 @@ class LikesRepository {
     }
 
     for (final event in eventsByE) {
-      for (final tag in event.tags) {
-        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          final targetId = tag[1];
-          if (uncachedIdSet.contains(targetId)) {
-            counts[targetId] = (counts[targetId] ?? 0) + 1;
-          }
-        }
+      final targetId = _extractTargetEventId(event);
+      if (targetId != null && uncachedIdSet.contains(targetId)) {
+        counts[targetId] = (counts[targetId] ?? 0) + 1;
       }
     }
 
@@ -2397,14 +2393,17 @@ class LikesRepository {
     required Set<String> eventIdSet,
     required Map<String, String> aTagToEventId,
   }) {
+    final targetEventId = _extractTargetEventId(event);
+    if (targetEventId != null && eventIdSet.contains(targetEventId)) {
+      return {targetEventId};
+    }
+
     final targetIds = <String>{};
     for (final tag in event.tags) {
       if (tag.length <= 1) continue;
       final marker = tag[0];
       final value = tag[1];
-      if (marker == 'e' && eventIdSet.contains(value)) {
-        targetIds.add(value);
-      } else if (marker == 'a') {
+      if (marker == 'a') {
         final eventId = aTagToEventId[value];
         if (eventId != null) targetIds.add(eventId);
       }
@@ -2773,8 +2772,9 @@ class LikesRepository {
   /// Scans the `e` tags last-first: NIP-25 says that when a reaction carries
   /// more than one, "the target event `id` should be last of the `e` tags".
   /// Reading forwards credits a copied ancestor tag instead of the real
-  /// target — Divine's own writer emits a single `e` tag, so this only
-  /// affects reactions from other clients, which [fetchUserLikes] parses.
+  /// target. Divine's own writer emits a single `e` tag, so the ordering
+  /// matters when ingesting reactions from clients that include extras,
+  /// including another client using the same account key.
   String? _extractTargetEventId(Event event) {
     for (final tag in event.tags.reversed) {
       if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
