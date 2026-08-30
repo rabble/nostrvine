@@ -15,7 +15,7 @@ Read this before adding an entry.
 
 | Pubkey | Retired | Rotated by |
 |---|---|---|
-| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-15 | `divinevideo/divine-moderation-service#31` (`8dd56cbc9`), which unified signing on `NOSTR_PRIVATE_KEY` |
+| `121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72` | 2026-03-15 | An operational secret change, carrying no PR of its own — see below |
 
 ### `121b915b…`
 
@@ -25,13 +25,22 @@ moderation key is not one revocation:
 
 | Role | Revoked |
 |---|---|
-| Moderation DM + label signing identity | 2026-03-15, `divinevideo/divine-moderation-service#31` |
+| Moderation DM + label signing identity | 2026-03-15, the secret rotation itself |
 | Funnelcake `ADMIN_PUBKEYS`, in the relay and API overlays | 2026-03-17, `divinevideo/divine-iac-coreconfig#280`, across the poc, test, staging, and production overlays |
 | NIP-32 labeler this app subscribed to | 2026-03-20, `divinevideo/divine-mobile#2321` — plus `ModerationLabelService._migrateLegacyPubkey`, which unsubscribes it on every init |
 
 `divinevideo/divine-mobile#2321` is frequently cited as the retirement. It is
 not — it is the client catching up five days later. The key stopped being the
 moderation account on 2026-03-15.
+
+Neither is `divinevideo/divine-moderation-service#31` the retirement, and it is
+the easier mistake to make because it lands on the right date. The rotation was
+an operational secret change with no PR of its own. #31 (`8dd56cbc9`, merged
+the same day) is the cleanup *after* it: it removed the superseded
+`MODERATOR_NSEC` path and fixed the label publishing that the rotation had just
+broken. Its own summary dates the rotation to "today" and describes the
+breakage as running "since the key rotation". Cite #31 to date the rotation,
+never as the act that performed it.
 
 Do not read that middle row as the relay admin key. `divine-iac-coreconfig#280`
 uses "relay admin pubkey" for a *different* identity —

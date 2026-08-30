@@ -143,12 +143,13 @@ const Set<String> kDivineTeamPubkeys = {
 /// what each key was, the roles it held, and what a rotation has to do is
 /// `mobile/docs/RETIRED_MODERATION_KEYS.md` — read it before adding one.
 const List<String> kLegacyModerationPubkeys = [
-  // Retired 2026-03-15 by divinevideo/divine-moderation-service#31
-  // (8dd56cbc9), which unified the service onto one signing key after it and
-  // the clients drifted apart — a mismatch, not a compromise. Also held relay
-  // admin and the NIP-32 labeler role that `ModerationLabelService` migrates
-  // away. divinevideo/divine-mobile#2321 (2026-03-20) was the client catching
-  // up, not the retirement itself.
+  // Retired 2026-03-15 by an operational secret rotation, after the service
+  // and the clients drifted onto different keys — a mismatch, not a
+  // compromise. Also held Funnelcake's ADMIN_PUBKEYS and the NIP-32 labeler
+  // role that `ModerationLabelService` migrates away. Neither
+  // divinevideo/divine-moderation-service#31 (8dd56cbc9, the same-day
+  // cleanup) nor divinevideo/divine-mobile#2321 (2026-03-20, the client
+  // catching up) is the retirement itself.
   '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72',
 ];
 
