@@ -588,16 +588,6 @@ void main() {
         () => mockDirectMessagesDao.giftWrapIdsPresent(any()),
       ).thenAnswer((_) async => const <String>{});
 
-      // Default for the history drain's paged reads, which still go through
-      // queryEvents.
-      when(
-        () => mockNostrClient.queryEvents(
-          any(),
-          subscriptionId: any(named: 'subscriptionId'),
-          useCache: any(named: 'useCache'),
-        ),
-      ).thenAnswer((_) async => <Event>[]);
-
       // Default for every queryEventsDetailed read — the kind-10050 lookups
       // (resolveDmInboxRelays() on the send path, the memoized own-inbox
       // resolve, the RC3 publish check) and the history drain's paged reads.
