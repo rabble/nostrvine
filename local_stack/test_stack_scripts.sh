@@ -77,6 +77,19 @@ assert_stderr_lacks() {
     fi
 }
 
+assert_file_matches() {
+    local pattern="$1" file="$2" message="$3"
+
+    if ! grep -qE -- "$pattern" "$file"; then
+        fail "$message" "missing from ${file}: ${pattern}"
+    fi
+}
+
+# The full interpolation is the behavior: amd64 by default, with a native
+# platform override for locally built images.
+assert_file_matches '^[[:space:]]+platform: \$\{INVITE_PLATFORM:-linux/amd64\}$' "$COMPOSE_FILE" \
+    "the invite image platform default and override should remain configured"
+
 # --- Sandbox ----------------------------------------------------------------
 
 # Only what these scripts and the stubs actually shell out to. `ss` and `lsof`
