@@ -605,8 +605,9 @@ Future<BookmarksRepository> bookmarksRepository(Ref ref) async {
 ///
 /// Cold-start cost is bounded by two existing mechanisms that landed with
 /// the original lazy-inbox work (#2766):
-/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-///   limits the relay backlog to recent events on every open after the first.
+/// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+///   [DmRepository.startListening] limits the relay backlog to recent events
+///   on every open after the first.
 /// - Decryption is offloaded to a background isolate via
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
@@ -750,7 +751,8 @@ DmRepository dmRepository(Ref ref) {
         messageService: messageService,
       );
       // Open the gift-wrap subscription for the whole authenticated
-      // session. Bounded by `since: newestSyncedAt - 2d` and isolate
+      // session. Bounded by
+      // `since: (newestWireSyncedAt ?? newestSyncedAt) - 2d` and isolate
       // decrypt so cold start stays cheap regardless of lifetime DM count.
       unawaited(repository.startListening());
       // Self-advertise the user's NIP-17 kind-10050 DM inbox relay list once

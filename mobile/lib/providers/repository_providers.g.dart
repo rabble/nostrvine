@@ -845,8 +845,9 @@ String _$bookmarksRepositoryHash() =>
 ///
 /// Cold-start cost is bounded by two existing mechanisms that landed with
 /// the original lazy-inbox work (#2766):
-/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-///   limits the relay backlog to recent events on every open after the first.
+/// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+///   [DmRepository.startListening] limits the relay backlog to recent events
+///   on every open after the first.
 /// - Decryption is offloaded to a background isolate via
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
@@ -872,8 +873,9 @@ final dmReactionsRepositoryProvider = DmReactionsRepositoryProvider._();
 ///
 /// Cold-start cost is bounded by two existing mechanisms that landed with
 /// the original lazy-inbox work (#2766):
-/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-///   limits the relay backlog to recent events on every open after the first.
+/// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+///   [DmRepository.startListening] limits the relay backlog to recent events
+///   on every open after the first.
 /// - Decryption is offloaded to a background isolate via
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
@@ -904,8 +906,9 @@ final class DmReactionsRepositoryProvider
   ///
   /// Cold-start cost is bounded by two existing mechanisms that landed with
   /// the original lazy-inbox work (#2766):
-  /// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
-  ///   limits the relay backlog to recent events on every open after the first.
+  /// - The `(newestWireSyncedAt ?? newestSyncedAt) - 2d` filter in
+  ///   [DmRepository.startListening] limits the relay backlog to recent events
+  ///   on every open after the first.
   /// - Decryption is offloaded to a background isolate via
   ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
   ///

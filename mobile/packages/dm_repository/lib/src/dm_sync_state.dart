@@ -2,8 +2,10 @@
 // ABOUTME: opens can fetch only new events via a `since:` filter.
 //
 // Stores per user pubkey in SharedPreferences:
-//   - newestSyncedAt: highest `created_at` successfully processed
-//   - oldestSyncedAt: lowest `created_at` successfully processed
+//   - newestSyncedAt: highest rumor `created_at` successfully processed
+//   - newestWireSyncedAt: highest ON-THE-WIRE `created_at` processed, which
+//     is the stamp relays actually filter `since:` against
+//   - oldestSyncedAt: lowest rumor `created_at` successfully processed
 //   - historyDrainComplete: whether the one-time full-history drain is done
 //   - historyDrainCursor: the drain's resumable pagination boundary
 //
@@ -21,6 +23,7 @@ class DmSyncState {
   final SharedPreferences _prefs;
 
   static const _newestPrefix = 'dm.newestSyncedAt.';
+  static const _newestWirePrefix = 'dm.newestWireSyncedAt.';
   static const _oldestPrefix = 'dm.oldestSyncedAt.';
   static const _drainCompletePrefix = 'dm.historyDrainComplete.';
   static const _drainCursorPrefix = 'dm.historyDrainCursor.';
@@ -94,6 +97,45 @@ class DmSyncState {
   /// processed yet.
   int? oldestSyncedAt(String pubkey) => _prefs.getInt('$_oldestPrefix$pubkey');
 
+  /// Returns the newest on-the-wire `created_at` we have processed for
+  /// [pubkey], or `null` if nothing has been processed under this key yet.
+  ///
+  /// "On the wire" means the `created_at` of the event the relay actually
+  /// stored and indexes: the outer kind-1059 gift wrap for NIP-17, and the
+  /// event's own stamp for an unwrapped NIP-04 kind 4. That is the only clock
+  /// a `since:` filter is evaluated in, which is why the live subscription
+  /// derives its boundary from this and not from [newestSyncedAt].
+  ///
+  /// [newestSyncedAt] tracks the inner NIP-59 rumor instead, because that is
+  /// the honest send time the UI orders by. The two clocks are not
+  /// interchangeable: NIP-17 derives the outer wrap stamp from publication
+  /// time with a random 0..2 day backdate, independently of the rumor stamp.
+  /// Deriving `since:` from the rumor clock can therefore spend part of the
+  /// intended 2-day overlap before the window even opens, and any wrap whose
+  /// backdate exceeds what is left is dropped by the relay and never requested
+  /// again. See #8209.
+  int? newestWireSyncedAt(String pubkey) =>
+      _prefs.getInt('$_newestWirePrefix$pubkey');
+
+  /// Records that an event carrying wire timestamp [createdAt] has been
+  /// successfully processed for [pubkey], advancing [newestWireSyncedAt]
+  /// monotonically upward.
+  ///
+  /// Clamped to now for the same reason [recordSeen] is. The outer wrap is
+  /// signed, but only by a throwaway NIP-59 ephemeral key, so the signature
+  /// proves who chose the stamp and not that the stamp is honest — a wrap
+  /// stamped in the future would otherwise push `since:` past every event a
+  /// relay could return and blackhole the inbox exactly as an unbounded rumor
+  /// timestamp once did.
+  Future<void> recordWireSeen(String pubkey, {required int createdAt}) async {
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final capped = createdAt.clamp(minPlausibleCreatedAt, nowSec);
+    final newest = newestWireSyncedAt(pubkey);
+    if (newest == null || capped > newest) {
+      await _prefs.setInt('$_newestWirePrefix$pubkey', capped);
+    }
+  }
+
   /// Records that a DM with the given [createdAt] unix seconds has been
   /// successfully processed for [pubkey]. Advances `newestSyncedAt`
   /// upward and `oldestSyncedAt` downward monotonically — older events
@@ -145,6 +187,12 @@ class DmSyncState {
     final newest = newestSyncedAt(pubkey);
     if (newest != null && newest > nowSec) {
       await _prefs.setInt('$_newestPrefix$pubkey', nowSec);
+      repaired = true;
+    }
+
+    final newestWire = newestWireSyncedAt(pubkey);
+    if (newestWire != null && newestWire > nowSec) {
+      await _prefs.setInt('$_newestWirePrefix$pubkey', nowSec);
       repaired = true;
     }
 
@@ -250,6 +298,7 @@ class DmSyncState {
   /// Removes all sync state for [pubkey]. Called on account switch.
   Future<void> clear(String pubkey) async {
     await _prefs.remove('$_newestPrefix$pubkey');
+    await _prefs.remove('$_newestWirePrefix$pubkey');
     await _prefs.remove('$_oldestPrefix$pubkey');
     await _prefs.remove('$_drainCompletePrefix$pubkey');
     await _prefs.remove('$_drainCursorPrefix$pubkey');
@@ -267,6 +316,7 @@ class DmSyncState {
         .where(
           (key) =>
               key.startsWith(_newestPrefix) ||
+              key.startsWith(_newestWirePrefix) ||
               key.startsWith(_oldestPrefix) ||
               key.startsWith(_drainCompletePrefix) ||
               key.startsWith(_drainCursorPrefix) ||

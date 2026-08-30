@@ -467,5 +467,130 @@ void main() {
         },
       );
     });
+
+    group('newestWireSyncedAt (#8209)', () {
+      const year2100 = 4102444800;
+      int nowSec() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      test('defaults to null when nothing has been processed', () {
+        expect(state.newestWireSyncedAt(pkA), isNull);
+      });
+
+      test('recordWireSeen persists the wire stamp', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+
+        expect(state.newestWireSyncedAt(pkA), equals(tsMid));
+      });
+
+      test(
+        'recordWireSeen advances monotonically — an older wire stamp does '
+        'not roll the boundary back',
+        () async {
+          await state.recordWireSeen(pkA, createdAt: tsNewer);
+          await state.recordWireSeen(pkA, createdAt: tsMid);
+
+          expect(state.newestWireSyncedAt(pkA), equals(tsNewer));
+        },
+      );
+
+      test(
+        'the wire boundary is independent of the rumor boundary, so a '
+        'backdated wrap cannot advance `since:` past its own stamp',
+        () async {
+          // One NIP-17 message: the rumor carries the honest send time, the
+          // outer wrap is backdated ~1 day per NIP-17. Recording only the
+          // rumor clock is what left `since:` a day ahead of the stamp the
+          // relay filters. See #8209.
+          const rumorAt = tsNewest;
+          const wireAt = tsNewest - 86400;
+
+          await state.recordSeen(pkA, createdAt: rumorAt);
+          await state.recordWireSeen(pkA, createdAt: wireAt);
+
+          expect(state.newestSyncedAt(pkA), equals(rumorAt));
+          expect(state.newestWireSyncedAt(pkA), equals(wireAt));
+        },
+      );
+
+      test('recordWireSeen is scoped per pubkey', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+
+        expect(state.newestWireSyncedAt(pkB), isNull);
+      });
+
+      test(
+        'recordWireSeen clamps a future wire stamp to now — an ephemeral '
+        'key signs its own stamp, so the signature does not make it honest',
+        () async {
+          await state.recordWireSeen(pkA, createdAt: year2100);
+
+          final stored = state.newestWireSyncedAt(pkA);
+          expect(stored, isNotNull);
+          expect(stored, lessThan(year2100));
+          expect(stored, closeTo(nowSec(), 5));
+        },
+      );
+
+      test(
+        'recordWireSeen floors an implausibly old wire stamp',
+        () async {
+          await state.recordWireSeen(pkA, createdAt: 1);
+
+          expect(
+            state.newestWireSyncedAt(pkA),
+            equals(DmSyncState.minPlausibleCreatedAt),
+          );
+        },
+      );
+
+      test(
+        'repairPoisonedBoundaries heals a wire boundary poisoned by a build '
+        'without the clamp, and re-arms the drain',
+        () async {
+          await prefs.setInt('dm.newestWireSyncedAt.$pkA', year2100);
+          await state.markHistoryDrainComplete(pkA);
+          expect(state.historyDrainComplete(pkA), isTrue);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestWireSyncedAt(pkA), closeTo(nowSec(), 5));
+          expect(state.historyDrainComplete(pkA), isFalse);
+        },
+      );
+
+      test(
+        'repairPoisonedBoundaries leaves a healthy wire boundary alone',
+        () async {
+          final honest = nowSec() - 3600;
+          await state.recordWireSeen(pkA, createdAt: honest);
+          await state.markHistoryDrainComplete(pkA);
+
+          await state.repairPoisonedBoundaries(pkA);
+
+          expect(state.newestWireSyncedAt(pkA), equals(honest));
+          expect(state.historyDrainComplete(pkA), isTrue);
+        },
+      );
+
+      test('clear removes the wire boundary for that pubkey only', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+        await state.recordWireSeen(pkB, createdAt: tsNewer);
+
+        await state.clear(pkA);
+
+        expect(state.newestWireSyncedAt(pkA), isNull);
+        expect(state.newestWireSyncedAt(pkB), equals(tsNewer));
+      });
+
+      test('clearAll removes the wire boundary for every pubkey', () async {
+        await state.recordWireSeen(pkA, createdAt: tsMid);
+        await state.recordWireSeen(pkB, createdAt: tsNewer);
+
+        await state.clearAll();
+
+        expect(state.newestWireSyncedAt(pkA), isNull);
+        expect(state.newestWireSyncedAt(pkB), isNull);
+      });
+    });
   });
 }

@@ -721,7 +721,8 @@ class DmRepository {
   /// separately by the provider via [startListening] right after this
   /// returns, so DM ingestion runs for the whole authenticated session.
   /// Cold-start cost stays bounded thanks to the count-based windowing
-  /// (`since: newestSyncedAt - 2d`) and the isolate decryption worker.
+  /// (`since: (newestWireSyncedAt ?? newestSyncedAt) - 2d`) and the isolate
+  /// decryption worker.
   /// See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
@@ -893,7 +894,28 @@ class DmRepository {
       // filter. The 2-day overlap absorbs NIP-17 randomized created_at
       // jitter (gift wraps tweak their outer created_at within a ~2 day
       // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+      //
+      // The boundary must come from the clock the relay filters in. A relay
+      // evaluates `since:` against the stamp on the event it stored — the
+      // outer kind-1059 wrap, never the inner rumor — and NIP-17 requires
+      // that outer stamp to be backdated by a random 0..2 days. Deriving the
+      // boundary from the rumor clock therefore consumes part of the 2-day
+      // overlap before the window opens, and a wrap whose backdate exceeds
+      // the remainder is dropped by the relay. Nothing asks for it again:
+      // `newestWireSyncedAt` only advances, so `since:` only rises, and the
+      // history drain that would otherwise repair the gap latches complete.
+      // The measured erosion equals the newest wrap's own backdate, which is
+      // uniform on [0, 2d) — half the intended margin, on average. See #8209.
+      //
+      // Falling back to the rumor boundary keeps the previous behavior for an
+      // install that has not processed an event since upgrading. A delayed
+      // retry may re-wrap an old rumor with a recent wire stamp, so switching
+      // to the wire boundary can narrow that fallback window. It still keeps
+      // the full required overlap in the relay's clock: a compliant wrap's
+      // wire stamp is at most its publication time, and every later compliant
+      // wrap is stamped no earlier than its publication time minus two days.
       final newest = _syncState?.newestSyncedAt(_userPubkey);
+      final newestWire = _syncState?.newestWireSyncedAt(_userPubkey);
       final isFirstOpen = newest == null;
       final filter = nostr_filter.Filter(
         kinds: [
@@ -903,7 +925,7 @@ class DmRepository {
         ],
         p: [_userPubkey],
         limit: isFirstOpen ? 50 : null,
-        since: isFirstOpen ? null : (newest - 2 * 86400),
+        since: newest == null ? null : (newestWire ?? newest) - 2 * 86400,
       );
 
       Log.info(
@@ -2088,6 +2110,17 @@ class DmRepository {
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
       if (await _alreadyProcessed(giftWrapEvent.id)) {
+        // Still advance the wire boundary. A duplicate is by definition a
+        // wrap we have processed, so its outer stamp belongs in the maximum
+        // this boundary tracks, and without this an install that upgraded
+        // into the #8209 fix keeps the old eroded window until its next
+        // genuinely new message — every wrap already in the window returns
+        // here first. Monotonic, so the drain replaying old pages cannot
+        // drag it backwards.
+        await _syncState?.recordWireSeen(
+          ownerPubkey,
+          createdAt: giftWrapEvent.createdAt,
+        );
         // History drain pass 2 re-routes already-persisted wraps through this
         // handler (preDecrypted miss). Per-wrap debug would fill the 50k
         // capture ring and evict the persist lines that diagnose #7631.
@@ -2503,10 +2536,18 @@ class DmRepository {
         return;
       }
 
-      // Advance sync boundaries from the bounded local timestamp. The outer
-      // gift wrap randomizes its own created_at within a ~2 day window
-      // (NIP-17) so it must not be used for boundary tracking.
+      // Advance sync boundaries in BOTH clocks, because they answer two
+      // different questions. The rumor timestamp is the honest send time the
+      // UI orders by, and its randomized outer wrap must not be used for
+      // that. But the relay indexes and filters the outer stamp, so the live
+      // subscription's `since:` has to be derived from that one instead —
+      // recording only the rumor clock is what made a backdated wrap fall
+      // outside the window and never be requested again. See #8209.
       await _syncState?.recordSeen(ownerPubkey, createdAt: persistedCreatedAt);
+      await _syncState?.recordWireSeen(
+        ownerPubkey,
+        createdAt: giftWrapEvent.createdAt,
+      );
 
       Log.debug(
         'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
@@ -2940,12 +2981,20 @@ class DmRepository {
   }
 
   Future<void> _handleNip04Event(Event nip04Event) async {
+    final ownerPubkey = _userPubkey;
     try {
       // Dedup: use event ID as giftWrapId for the unique index. The
       // processed-wraps ledger also carries NIP-04 event ids that were
       // suppressed by a removed-conversation tombstone, so replays skip
       // decryption entirely — matching the terminal NIP-17 behavior. #7804.
       if (await _alreadyProcessed(nip04Event.id)) {
+        // Advance the wire boundary for the same reason the gift-wrap dedup
+        // path does. A kind 4 is its own envelope, so the stamp the relay
+        // filtered to deliver this replay is the event's own `created_at`.
+        await _syncState?.recordWireSeen(
+          ownerPubkey,
+          createdAt: nip04Event.createdAt,
+        );
         if (_historyDrain == null) {
           Log.debug(
             'Skipping already-processed NIP-04 event ${nip04Event.id}',
@@ -3170,8 +3219,23 @@ class DmRepository {
 
       // NIP-04 created_at values are not randomized (unlike NIP-17 gift
       // wraps), so this bounded timestamp is a real send time and safe to
-      // record as a cursor.
-      await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
+      // record as a cursor. A kind 4 is its own envelope — the stamp the
+      // relay filters and the stamp the UI orders by are the same value — so
+      // it advances both boundaries. The live subscription's `since:` covers
+      // kinds [1059, 4, 5] with one filter, so the wire boundary has to track
+      // whichever kind carried the newest wire stamp. See #8209.
+      // Scoped to the delivering account, not whichever is current after the
+      // decrypt and transaction return: this handler has no generation guard
+      // to abandon on, and a switch inside that window would import this
+      // stamp into the next account's maximum, narrowing its `since:`.
+      await _syncState?.recordSeen(
+        ownerPubkey,
+        createdAt: persistedCreatedAt,
+      );
+      await _syncState?.recordWireSeen(
+        ownerPubkey,
+        createdAt: nip04Event.createdAt,
+      );
 
       Log.debug(
         'Persisted NIP-04 DM ${nip04Event.id} '

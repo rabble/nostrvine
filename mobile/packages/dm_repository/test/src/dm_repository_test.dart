@@ -390,6 +390,7 @@ class _GatedPubkeySigner implements NostrSigner {
 /// [recordSeen] calls for assertions.
 class _FakeDmSyncState implements DmSyncState {
   int? newestOverride;
+  int? newestWireOverride;
   int? oldestOverride;
   bool drainCompleteOverride = false;
   int? drainCursorOverride;
@@ -400,9 +401,14 @@ class _FakeDmSyncState implements DmSyncState {
   final List<String> repairedPubkeys = <String>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
+  final List<({String pubkey, int createdAt})> recordedWire =
+      <({String pubkey, int createdAt})>[];
 
   @override
   int? newestSyncedAt(String pubkey) => newestOverride;
+
+  @override
+  int? newestWireSyncedAt(String pubkey) => newestWireOverride;
 
   @override
   int? oldestSyncedAt(String pubkey) => oldestOverride;
@@ -464,6 +470,14 @@ class _FakeDmSyncState implements DmSyncState {
   @override
   Future<void> markDmRelayListPublished(String pubkey) async {
     dmRelayListPublishedPubkeys.add(pubkey);
+  }
+
+  @override
+  Future<void> recordWireSeen(String pubkey, {required int createdAt}) async {
+    recordedWire.add((pubkey: pubkey, createdAt: createdAt));
+    if (newestWireOverride == null || createdAt > newestWireOverride!) {
+      newestWireOverride = createdAt;
+    }
   }
 
   @override
@@ -2498,6 +2512,100 @@ void main() {
         await repository.stopListening();
       });
 
+      test(
+        'gift-wrap persist records the OUTER wrap stamp as the wire '
+        'boundary, not the rumor stamp (#8209)',
+        () async {
+          // The fixture wrap is stamped 500s below its rumor, standing in for
+          // the NIP-17 backdate. `since:` is filtered by the relay against the
+          // outer stamp, so tracking only the rumor clock leaves the window
+          // starting 500s above the event it is meant to include.
+          const rumorCreatedAt = 1700000500;
+          const outerCreatedAt = 1700000000;
+          final giftWrap = createGiftWrapEvent();
+          expect(
+            giftWrap.createdAt,
+            outerCreatedAt,
+            reason: 'fixture must keep the outer stamp below the rumor',
+          );
+          final rumor = createRumorEvent(createdAt: rumorCreatedAt);
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async => rumor,
+            syncState: syncState,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, outerCreatedAt);
+          // The rumor boundary keeps the honest send time the UI orders by.
+          expect(syncState.recorded.single.createdAt, rumorCreatedAt);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'an already-processed gift wrap still advances the wire boundary so '
+        'an upgraded install does not keep the eroded window (#8209)',
+        () async {
+          // Every wrap already inside the window returns at the dedup guard,
+          // so if that path recorded nothing the wire boundary would stay
+          // null — and `since:` would keep falling back to the rumor clock —
+          // until the account received a genuinely new message. Confirmed on
+          // an iOS simulator before this branch existed.
+          const outerCreatedAt = 1700000000;
+          final giftWrap = createGiftWrapEvent();
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => true);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(syncState: syncState);
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.createdAt, outerCreatedAt);
+          // A duplicate persisted no message, so the rumor boundary — which
+          // tracks send times for ordering — must not move.
+          expect(syncState.recorded, isEmpty);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
       test('successful NIP-04 persist advances sync boundaries', () async {
         const nip04CreatedAt = 1700000600;
         final nip04Event = Event.fromJson({
@@ -2540,6 +2648,9 @@ void main() {
         expect(syncState.recorded, hasLength(1));
         expect(syncState.recorded.single.pubkey, _validPubkeyA);
         expect(syncState.recorded.single.createdAt, nip04CreatedAt);
+        expect(syncState.recordedWire, hasLength(1));
+        expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+        expect(syncState.recordedWire.single.createdAt, nip04CreatedAt);
 
         await controller.close();
         await repository.stopListening();
@@ -4000,6 +4111,92 @@ void main() {
           expect(captured, hasLength(1));
           expect(captured.single.since, newest - 2 * 86400);
           expect(captured.single.limit, isNull);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+
+      test(
+        'startListening derives since from the WIRE boundary, not the rumor '
+        'boundary, once one has been recorded (#8209)',
+        () async {
+          // One NIP-17 message: honest send time in the rumor, outer wrap
+          // backdated a day per NIP-17. A relay evaluates `since:` against the
+          // outer stamp, so deriving the window from the rumor clock starts it
+          // a day above the events it is supposed to admit.
+          const rumorNewest = 1700000000;
+          const wireNewest = rumorNewest - 86400;
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState()
+            ..newestOverride = rumorNewest
+            ..newestWireOverride = wireNewest;
+          final repository = createRepository(syncState: syncState);
+          await repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured.single.since, wireNewest - 2 * 86400);
+
+          await repository.stopListening();
+          await controller.close();
+        },
+      );
+
+      test(
+        'since leaves the whole 2-day overlap below the wire boundary, so a '
+        'wrap carrying the maximum NIP-17 backdate still matches (#8209)',
+        () async {
+          // The invariant the window has to hold: our newest processed wrap
+          // was stamped at or below the moment it was published, so any wrap
+          // published from that moment onward — even one backdated the full
+          // two days NIP-17 allows — is at or above `wire - 2d`. Use an old
+          // rumor re-wrapped recently (the retry behavior in GiftWrapUtil) to
+          // cover the case where the wire boundary narrows the rumor fallback.
+          const publishedAt = 1700000000;
+          const wireNewest = publishedAt - 3600;
+          const rumorNewest = publishedAt - 86400;
+          const worstCaseOuter = publishedAt - 2 * 86400;
+
+          expect(wireNewest, greaterThan(rumorNewest));
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState()
+            ..newestOverride = rumorNewest
+            ..newestWireOverride = wireNewest;
+          final repository = createRepository(syncState: syncState);
+          await repository.startListening();
+
+          final captured =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: any(named: 'subscriptionId'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(captured.single.since, wireNewest - 2 * 86400);
+          expect(captured.single.since, lessThanOrEqualTo(worstCaseOuter));
 
           await repository.stopListening();
           await controller.close();
@@ -10882,7 +11079,7 @@ void main() {
         await repository.stopListening();
       });
 
-      test('skips duplicate NIP-04 events', () async {
+      test('duplicate NIP-04 events still advance the wire boundary', () async {
         final nip04Event = createNip04Event();
 
         when(
@@ -10897,8 +11094,10 @@ void main() {
           ),
         ).thenAnswer((_) => controller.stream);
 
+        final syncState = _FakeDmSyncState();
         final repository = createRepository(
           nip04Decryptor: (_, _) async => 'should not reach',
+          syncState: syncState,
         );
 
         await repository.startListening();
@@ -10931,10 +11130,129 @@ void main() {
             sendBatchId: any(named: 'sendBatchId'),
           ),
         );
+        expect(syncState.recordedWire, hasLength(1));
+        expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+        expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+        expect(syncState.recorded, isEmpty);
 
         await controller.close();
         await repository.stopListening();
       });
+
+      test(
+        'duplicate NIP-04 wire boundary stays scoped to the event owner during '
+        'an account switch',
+        () async {
+          final nip04Event = createNip04Event();
+          final dedupStarted = Completer<void>();
+          final dedupResult = Completer<bool>();
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_rumorEventId),
+          ).thenAnswer((_) {
+            dedupStarted.complete();
+            return dedupResult.future;
+          });
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            nip04Decryptor: (_, _) async => 'should not reach',
+            syncState: syncState,
+          );
+
+          await repository.startListening();
+          controller.add(nip04Event);
+          await dedupStarted.future;
+
+          final nextUserSelfConversationId = DmRepository.computeConversationId(
+            [_validPubkeyB, _validPubkeyB],
+          );
+          when(
+            () => mockConversationsDao.getConversation(
+              nextUserSelfConversationId,
+              ownerPubkey: _validPubkeyB,
+            ),
+          ).thenAnswer((_) async => null);
+          repository.setCredentials(
+            userPubkey: _validPubkeyB,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+          dedupResult.complete(true);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'persisted NIP-04 boundaries stay scoped to the event owner during '
+        'an account switch',
+        () async {
+          final nip04Event = createNip04Event();
+          final decryptStarted = Completer<void>();
+          final decryptResult = Completer<String?>();
+
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(any()),
+          ).thenAnswer((_) async => false);
+          stubDaoInserts();
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final syncState = _FakeDmSyncState();
+          final repository = createRepository(
+            nip04Decryptor: (_, _) {
+              decryptStarted.complete();
+              return decryptResult.future;
+            },
+            syncState: syncState,
+          );
+
+          await repository.startListening();
+          controller.add(nip04Event);
+          await decryptStarted.future;
+
+          // The decrypt is a remote-signer round trip on the real path, so
+          // this is the widest window a switch can land in — wider than the
+          // dedup read the sibling test above covers. Unlike the NIP-17
+          // handler, this one has no generation guard to abandon on.
+          repository.setCredentials(
+            userPubkey: _validPubkeyC,
+            signer: LocalNostrSigner(_validPrivateKey),
+            messageService: mockMessageService,
+          );
+          decryptResult.complete('Hello over NIP-04');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(syncState.recordedWire, hasLength(1));
+          expect(syncState.recordedWire.single.pubkey, _validPubkeyA);
+          expect(syncState.recordedWire.single.createdAt, nip04Event.createdAt);
+          expect(syncState.recorded, hasLength(1));
+          expect(syncState.recorded.single.pubkey, _validPubkeyA);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
 
       test('skips NIP-04 events with no p tag', () async {
         final nip04Event = createNip04Event(tags: []);
