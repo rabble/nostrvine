@@ -74,17 +74,97 @@ void main() {
     DmReactionRetryConfig retryConfig = const DmReactionRetryConfig(),
     DateTime Function()? now,
     Stream<void>? retryTriggerStream,
+    OfflineProbe? isOffline,
   }) {
     return DmReactionRetryService(
       reactionsRepository: repository,
       appForegroundStream: foregroundController.stream,
       retryTriggerStream: retryTriggerStream,
+      isOffline: isOffline,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
     );
   }
 
   group(DmReactionRetryService, () {
+    test(
+      'offline sweeps do not charge a pending removal its retry budget',
+      () async {
+        // #7319. retryDeletion would hit NIP17MessageService's offline
+        // fail-fast and return a plain (non-blocked) failure, which
+        // _driveTargets charges unconditionally. maxRetries foreground
+        // transitions in airplane mode therefore exhausted the row, and the
+        // sweep skipped it for the rest of the process — so the kind-5 never
+        // published even after the network returned. The removal is
+        // invisible in the thread (watchForConversation filters
+        // is_deleted = 1), so unlike the add path there is no chip to re-tap.
+        const rumorId = 'deletion-offline';
+        var offline = true;
+        var clock = DateTime.utc(2026, 5, 10, 12);
+
+        when(
+          repository.retryableDeletions,
+        ).thenAnswer((_) async => [_target(rumorId: rumorId)]);
+
+        final service = buildService(
+          now: () => clock,
+          isOffline: () async => offline,
+        );
+
+        // Burn more passes than the budget allows, advancing well past the
+        // backoff each time so nothing is skipped for being too young.
+        const config = DmReactionRetryConfig();
+        for (var i = 0; i < config.maxRetries + 1; i++) {
+          await service.sweep();
+          clock = clock.add(const Duration(minutes: 5));
+        }
+
+        verifyNever(
+          () => repository.retryDeletion(
+            rumorId: any(named: 'rumorId'),
+            targetMessageAuthor: any(named: 'targetMessageAuthor'),
+          ),
+        );
+
+        // The budget survived the offline session: the row is still driven
+        // once the network returns.
+        offline = false;
+        await service.sweep();
+
+        verify(
+          () => repository.retryDeletion(
+            rumorId: rumorId,
+            targetMessageAuthor: _authorPubkey,
+          ),
+        ).called(1);
+
+        service.dispose();
+      },
+    );
+
+    test('a throwing offline probe is treated as online', () async {
+      // A broken probe must never disable retries outright.
+      const rumorId = 'deletion-probe-throws';
+      when(
+        repository.retryableDeletions,
+      ).thenAnswer((_) async => [_target(rumorId: rumorId)]);
+
+      final service = buildService(
+        isOffline: () async => throw StateError('probe exploded'),
+      );
+
+      await service.sweep();
+
+      verify(
+        () => repository.retryDeletion(
+          rumorId: rumorId,
+          targetMessageAuthor: _authorPubkey,
+        ),
+      ).called(1);
+
+      service.dispose();
+    });
+
     test(
       'initialize subscribes to the foreground stream, dispose cancels',
       () async {

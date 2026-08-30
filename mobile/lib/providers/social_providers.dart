@@ -54,9 +54,13 @@ part 'social_providers.g.dart';
 /// `connectivity_plus` reports any non-`none` result, so work queued during a
 /// brief network drop is re-driven the moment connectivity returns — without
 /// waiting for an app-foreground transition. The sweep short-circuits when
-/// nothing is retryable. `→ none` transitions are filtered out because
-/// [DmReactionRetryService] has no offline gate of its own — an offline pass
-/// would burn each row's retry budget on attempts that deterministically fail.
+/// nothing is retryable. `→ none` transitions are filtered out because a
+/// sweep fired on going offline has nothing to do: since #7319
+/// [DmReactionRetryService] carries its own offline gate and would skip the
+/// pass anyway. The filter is a cheap short-circuit, not the safety property
+/// — the gate is, and it also covers the unfiltered foreground trigger
+/// below, which is the path that actually burned retry budgets in airplane
+/// mode.
 Stream<void> _dmRetryConnectivityTriggerStream() => Connectivity()
     .onConnectivityChanged
     .where((results) => results.any((r) => r != ConnectivityResult.none))
@@ -474,6 +478,7 @@ DmReactionRetryService? dmReactionRetryService(Ref ref) {
     reactionsRepository: reactionsRepository,
     appForegroundStream: foregroundController.stream,
     retryTriggerStream: retryTriggerStream,
+    isOffline: dmSendConnectivityIsOffline,
   );
 
   service.initialize().catchError((e) {
