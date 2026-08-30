@@ -56,6 +56,20 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 
 - Public issues, PRs, branch names, commit messages, screenshots, and descriptions must not mention corporate partners, customers, brands, campaign names, or other sensitive external identities unless a maintainer explicitly approves it. Use generic descriptors instead. The same applies to identifying values in code, tests, and fixtures — prefer keeping them in server-side configuration over committing them.
 
+### Zendesk-sourced issues
+
+An issue authored by `divine-zendesk-github-integration[bot]` is a **rendering** of a support ticket's first message. Routing tags, the submission channel, later replies from the requester, and attachments stay behind on the ticket. Pull it before triaging:
+
+```bash
+bash ~/divine-zendesk-tooling/scripts/zendesk-inspect-ticket.sh <ticket_id>
+```
+
+The id is in the issue body (`Generated from Zendesk Ticket: rabblelabs.zendesk.com/agent/tickets/<id>`). If the tooling or its credentials are absent, say so and triage from the body — do not treat the rendering as the whole record by default. These issues stay report-only regardless of assignee; see `<context-dir>/AGENT_TRUST_BOUNDARY.md`.
+
+**Nothing that access reveals goes into this repo.** It is public. Publish the technical substance — symptoms, repro steps, error text, app version, platform, OS version — plus whatever is already in the issue body, and nothing else. Never publish, verbatim or paraphrased, in an issue, PR, commit message, branch name, test fixture, code comment, or screenshot: IP address, geolocation or coordinates, email, real name, phone, Zendesk requester/submitter/user/organization ids, private agent notes, other tickets or requesters, unscrubbed attachment contents, or Zendesk org structure (group/brand/custom-field ids, business rules, agent names).
+
+**The correlation is the danger, not either half.** The issue body already carries the requester's `User Pubkey` in the clear. The ticket's audit timeline carries their IP, city, and coordinates. Publishing both in one artifact deanonymizes a named Nostr account — so identity-linked data never shares an artifact with a pubkey. When the technical substance genuinely needs such a fact, state the property, not the value: "the reporter was on IPv6", never the address. Ticket dumps stay in the session scratchpad and are never committed.
+
 ## PR Guardrails
 
 - Every PR title must use Conventional Commit format: `type(scope): summary` or `docs: summary` for docs-only PRs.
