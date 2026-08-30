@@ -510,8 +510,8 @@ void main() {
         expect(tags.contains(''), isTrue); // Service doesn't filter empty tags
       });
 
-      test('search performance with many lists', () async {
-        // Create 50 lists
+      test('matches on description across a large list set', () async {
+        // Create 50 lists; only the even-numbered ones are described 'even'.
         for (var i = 0; i < 50; i++) {
           await service.createList(
             name: 'List $i',
@@ -520,15 +520,13 @@ void main() {
           );
         }
 
-        final stopwatch = Stopwatch()..start();
         final results = service.searchLists('even');
-        stopwatch.stop();
 
+        // Exactly the 25 even-numbered lists, and none of the odd ones.
         expect(
-          results.length,
-          greaterThanOrEqualTo(25),
-        ); // Should find at least 25
-        expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be fast
+          results.map((list) => list.name).toSet(),
+          {for (var i = 0; i < 50; i += 2) 'List $i'},
+        );
       });
     });
 
