@@ -118,13 +118,14 @@ void main() {
       required List<List<String>> tags,
       required String content,
       String? id,
+      int? createdAt,
     }) {
       final event = Event(
         pubkey,
         kind,
         tags,
         content,
-        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
       event.id = id ?? 'test_event_${DateTime.now().millisecondsSinceEpoch}';
       event.sig = 'test_signature';
@@ -551,6 +552,187 @@ void main() {
 
         // Verify publishEvent was NOT called
         verifyNever(() => mockNostrService.publishEventAwaitOk(any()));
+      },
+    );
+
+    test(
+      'publishes nothing when kind 62 signing fails after preparing a sweep',
+      () async {
+        final contentEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [],
+          content: 'note',
+        );
+        final kind5Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', contentEvent.id],
+            ['k', '1'],
+          ],
+          content: 'deletion',
+        );
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [contentEvent]);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          return kind == 5 ? kind5Event : null;
+        });
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isFalse);
+        expect(result.failureReason, DeleteAccountFailureReason.signingFailed);
+        verifyNever(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+      },
+    );
+
+    test('publishes nothing when any sweep batch cannot be signed', () async {
+      final contentEvents = [
+        createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [],
+          content: 'note',
+        ),
+        createTestEvent(
+          pubkey: testPublicKey,
+          kind: 6,
+          tags: const [],
+          content: 'repost',
+        ),
+      ];
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => contentEvents);
+      var kind5Signatures = 0;
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async {
+        kind5Signatures++;
+        if (kind5Signatures == 2) return null;
+        return createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: const [],
+          content: 'deletion',
+        );
+      });
+
+      final result = await service.deleteAccount();
+
+      expect(result.success, isFalse);
+      expect(result.failureReason, DeleteAccountFailureReason.signingFailed);
+      verifyNever(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      );
+      verifyNever(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      );
+    });
+
+    test(
+      'signs every sweep batch before vanish and publishes vanish last',
+      () async {
+        final contentEvents = [
+          createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1,
+            tags: const [],
+            content: 'note',
+          ),
+          createTestEvent(
+            pubkey: testPublicKey,
+            kind: 6,
+            tags: const [],
+            content: 'repost',
+          ),
+        ];
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => contentEvents);
+        final signedEvents = <Event>[];
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          final event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: kind,
+            tags: const [],
+            content: 'deletion',
+            createdAt: 100 + signedEvents.length,
+          );
+          signedEvents.add(event);
+          return event;
+        });
+        final publishedEvents = <Event>[];
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          publishedEvents.add(invocation.positionalArguments.single as Event);
+          return _confirmed;
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((invocation) async {
+          publishedEvents.add(invocation.positionalArguments.single as Event);
+          return _confirmed;
+        });
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(signedEvents.map((event) => event.kind), [5, 5, 62]);
+        expect(publishedEvents.map((event) => event.kind), [5, 5, 62]);
+        expect(
+          signedEvents.last.createdAt,
+          greaterThanOrEqualTo(
+            signedEvents
+                .take(2)
+                .map((event) => event.createdAt)
+                .reduce((first, second) => first > second ? first : second),
+          ),
+        );
       },
     );
 

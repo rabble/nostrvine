@@ -767,6 +767,10 @@ void main() {
           find.text(_englishL10n().accountDeletionCancelAttemptBody),
           findsOneWidget,
         );
+        verifyNever(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        );
       },
     );
 
@@ -1157,6 +1161,9 @@ void main() {
           ).accountDeletionRecoveryBody,
         ),
         findsOneWidget,
+      );
+      verifyNever(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       );
     });
 
