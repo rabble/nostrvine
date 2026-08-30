@@ -100,6 +100,7 @@ class _FollowingUserButton extends ConsumerWidget {
       profile: profileAsync.asData?.value,
       isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(pubkey)
         : displayName;
@@ -120,7 +121,7 @@ class _FollowingUserButton extends ConsumerWidget {
           spacing: 8,
           children: [
             IdentitySkeletonizer(
-              isLoading: isResolving,
+              isLoading: isIdentityResolving,
               child: UserAvatar(
                 imageUrl: imageUrl,
                 name: visualDisplayName,
@@ -129,7 +130,7 @@ class _FollowingUserButton extends ConsumerWidget {
               ),
             ),
             IdentitySkeletonizer(
-              isLoading: isResolving,
+              isLoading: isIdentityResolving,
               child: Text(
                 visualDisplayName,
                 textScaler: TextScaler.noScaling,

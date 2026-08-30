@@ -1146,6 +1146,8 @@ void main() {
         WidgetTester tester, {
         required bool vanished,
         Locale? locale,
+        bool identityResolving = false,
+        bool settle = true,
       }) async {
         await tester.pumpWidget(
           testMaterialApp(
@@ -1157,6 +1159,9 @@ void main() {
               profileVanishedProvider(
                 otherPubkey,
               ).overrideWith((ref) => Stream.value(vanished)),
+              profileIdentityResolvingProvider(
+                otherPubkey,
+              ).overrideWithValue(identityResolving),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -1170,7 +1175,12 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        if (settle) {
+          await tester.pumpAndSettle();
+        } else {
+          await tester.pump();
+          await tester.pump();
+        }
       }
 
       testWidgets('replaces the display name for a deleted account', (
@@ -1197,6 +1207,30 @@ void main() {
         await pumpTile(tester, vanished: true);
 
         expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets('does not hide a deleted identity behind profile loading', (
+        tester,
+      ) async {
+        await pumpTile(
+          tester,
+          vanished: true,
+          identityResolving: true,
+          settle: false,
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        expect(
+          tileSemantics(tester).label,
+          contains(l10n.profileDeletedAccountName),
+        );
+        expect(
+          tester
+              .widgetList<Skeletonizer>(find.bySubtype<Skeletonizer>())
+              .every((skeletonizer) => !skeletonizer.enabled),
+          isTrue,
+        );
       });
 
       testWidgets('leaves a live account untouched', (tester) async {

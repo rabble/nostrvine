@@ -57,6 +57,7 @@ class RequestTile extends ConsumerWidget {
       profile: profileAsync.asData?.value,
       isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
         : displayName;
@@ -80,7 +81,7 @@ class RequestTile extends ConsumerWidget {
     return Semantics(
       button: true,
       label: context.l10n.inboxRequestTileLabel(
-        isResolving ? context.l10n.commonLoading : displayName,
+        isIdentityResolving ? context.l10n.commonLoading : displayName,
       ),
       child: GestureDetector(
         onTap: () {
@@ -104,7 +105,7 @@ class RequestTile extends ConsumerWidget {
               spacing: 20,
               children: [
                 IdentitySkeletonizer(
-                  isLoading: isResolving,
+                  isLoading: isIdentityResolving,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: UserAvatar(
@@ -126,7 +127,7 @@ class RequestTile extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: IdentitySkeletonizer(
-                              isLoading: isResolving,
+                              isLoading: isIdentityResolving,
                               child: Text(
                                 visualDisplayName,
                                 style: VineTheme.titleMediumFont(

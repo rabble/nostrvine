@@ -163,6 +163,7 @@ class _ReactorRow extends ConsumerWidget {
       profile: profile,
       isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && name.isEmpty;
     final visualName = name.isEmpty
         ? UserProfile.defaultDisplayNameFor(reaction.reactorPubkey)
         : name;
@@ -179,7 +180,7 @@ class _ReactorRow extends ConsumerWidget {
             _ => context.l10n.dmReactionChipOwnA11yLabel(reaction.emoji),
           }
         : context.l10n.dmReactionChipOtherA11yLabel(
-            isResolving ? context.l10n.commonLoading : name,
+            isIdentityResolving ? context.l10n.commonLoading : name,
             reaction.emoji,
           );
 
@@ -197,7 +198,7 @@ class _ReactorRow extends ConsumerWidget {
           // also circular. Wrapping the rounded-square UserAvatar in ClipOval
           // would slice its border into arcs (the "cut border" artifact).
           leading: IdentitySkeletonizer(
-            isLoading: isResolving,
+            isLoading: isIdentityResolving,
             child: UserAvatar(
               // `watchProfile` is an ungated `select(userProfiles)`, so a row
               // that outlived its tombstone still streams a picture here.
@@ -208,7 +209,7 @@ class _ReactorRow extends ConsumerWidget {
             ),
           ),
           title: IdentitySkeletonizer(
-            isLoading: isResolving,
+            isLoading: isIdentityResolving,
             child: Text(
               visualName,
               maxLines: 1,

@@ -176,6 +176,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       profile: profile,
       isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
         : displayName;
@@ -258,7 +259,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                       children: [
                         ConversationAppBar(
                           displayName: displayName,
-                          isResolving: isResolving,
+                          isResolving: isIdentityResolving,
                           loadingDisplayName: visualDisplayName,
                           handle: handle,
                           onBack: () => context.pop(),
@@ -289,7 +290,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
-                                  isResolving: isResolving,
+                                  isResolving: isIdentityResolving,
                                   reactionsEnabled:
                                       !isRetiredModerationThread &&
                                       !isBlockedByUs,

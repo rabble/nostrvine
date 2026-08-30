@@ -125,6 +125,7 @@ class RequestPreviewView extends ConsumerWidget {
       profile: visibleProfile,
       isResolving: isResolving,
     );
+    final isIdentityResolving = isResolving && displayName.isEmpty;
     final visualDisplayName = displayName.isEmpty
         ? UserProfile.defaultDisplayNameFor(otherPubkey)
         : displayName;
@@ -132,8 +133,8 @@ class RequestPreviewView extends ConsumerWidget {
     return Scaffold(
       backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
-        title: isResolving ? null : displayName,
-        titleWidget: isResolving
+        title: isIdentityResolving ? null : displayName,
+        titleWidget: isIdentityResolving
             ? IdentitySkeletonizer(
                 isLoading: true,
                 child: Text(
@@ -163,7 +164,7 @@ class RequestPreviewView extends ConsumerWidget {
                 currentPubkey: currentPubkey,
                 messageCount: messageCount,
                 messages: messages,
-                isResolving: isResolving,
+                isResolving: isIdentityResolving,
               ),
             ),
             _ActionButtons(

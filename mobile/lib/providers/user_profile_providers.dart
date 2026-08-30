@@ -27,20 +27,17 @@ final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
 /// The reactive profile stream intentionally emits `null` while the read
 /// repository is unavailable, so its value alone cannot distinguish that
 /// cold-start state from a settled account with no profile. The one-shot
-/// provider owns the cache lookup and fresh fetch, which gives this derived
-/// provider a settled loading boundary without widening [ProfileReader].
+/// provider owns the cache lookup and fresh fetch. Waiting for both paths keeps
+/// the signal aligned with widgets that consume either one, and auto-disposal
+/// releases their per-pubkey watchers when the surface unmounts.
 // ignore: specify_nonobvious_property_types
-final profileIdentityResolvingProvider = Provider.family<bool, String>((
-  ref,
-  pubkey,
-) {
-  if (ref.watch(profileReadRepositoryProvider) == null) return true;
-  final fetched = ref.watch(fetchUserProfileProvider(pubkey));
-  if (fetched.hasValue) return false;
-  final reactive = ref.watch(userProfileReactiveProvider(pubkey));
-  if (reactive.hasValue && reactive.value != null) return false;
-  return fetched.isLoading || reactive.isLoading;
-});
+final profileIdentityResolvingProvider = Provider.autoDispose
+    .family<bool, String>((ref, pubkey) {
+      if (ref.watch(profileReadRepositoryProvider) == null) return true;
+      final fetched = ref.watch(fetchUserProfileProvider(pubkey));
+      final reactive = ref.watch(userProfileReactiveProvider(pubkey));
+      return fetched.isLoading || reactive.isLoading;
+    });
 
 /// One-shot durable vanish lookup for imperative paths that must resolve the
 /// state before acting instead of treating [profileVanishedProvider]'s loading

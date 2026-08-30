@@ -86,7 +86,8 @@ class ConversationTile extends ConsumerWidget {
       profile: profileAsync.asData?.value,
       isResolving: isResolving,
     );
-    final accessibilityName = isResolving
+    final isIdentityResolving = isResolving && displayName.isEmpty;
+    final accessibilityName = isIdentityResolving
         ? context.l10n.commonLoading
         : displayName;
     final visualDisplayName = displayName.isEmpty
@@ -152,7 +153,7 @@ class ConversationTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IdentitySkeletonizer(
-                  isLoading: isResolving,
+                  isLoading: isIdentityResolving,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: UserAvatar(
@@ -178,7 +179,7 @@ class ConversationTile extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: IdentitySkeletonizer(
-                              isLoading: isResolving,
+                              isLoading: isIdentityResolving,
                               child: DivineHeartText(
                                 visualDisplayName,
                                 style: VineTheme.titleMediumFont(

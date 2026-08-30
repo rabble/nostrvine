@@ -99,6 +99,9 @@ void main() {
       when(
         () => profileRepository.fetchFreshProfile(pubkey: pubkey),
       ).thenAnswer((_) => fetch.future);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => Stream.value(null));
 
       final container = ProviderContainer(
         overrides: [
@@ -106,17 +109,102 @@ void main() {
         ],
       );
       addTearDown(container.dispose);
-
-      expect(
-        container.read(profileIdentityResolvingProvider(pubkey)),
-        isTrue,
+      final subscription = container.listen(
+        profileIdentityResolvingProvider(pubkey),
+        (_, _) {},
+        fireImmediately: true,
       );
+      addTearDown(subscription.close);
+
+      expect(subscription.read(), isTrue);
 
       fetch.complete(null);
       await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(subscription.read(), isFalse);
+    });
+
+    test(
+      'stays resolving until the one-shot and reactive reads both settle',
+      () async {
+        final profileRepository = _MockProfileRepository();
+        final fetch = Completer<UserProfile?>();
+        final profiles = StreamController<UserProfile?>();
+        addTearDown(profiles.close);
+        when(
+          () => profileRepository.getCachedProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+        ).thenAnswer((_) => fetch.future);
+        when(
+          () => profileRepository.watchProfile(pubkey: pubkey),
+        ).thenAnswer((_) => profiles.stream);
+
+        final container = ProviderContainer(
+          overrides: [
+            profileReadRepositoryProvider.overrideWithValue(profileRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+        final subscription = container.listen(
+          profileIdentityResolvingProvider(pubkey),
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        fetch.complete(null);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(subscription.read(), isTrue);
+
+        profiles.add(null);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(subscription.read(), isFalse);
+      },
+    );
+
+    test('releases profile watchers after the last listener closes', () async {
+      final profileRepository = _MockProfileRepository();
+      final profiles = StreamController<UserProfile?>();
+      addTearDown(profiles.close);
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => profiles.stream);
+
+      final container = ProviderContainer(
+        overrides: [
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        profileIdentityResolvingProvider(pubkey),
+        (_, _) {},
+        fireImmediately: true,
+      );
 
       expect(
-        container.read(profileIdentityResolvingProvider(pubkey)),
+        container.exists(profileIdentityResolvingProvider(pubkey)),
+        isTrue,
+      );
+
+      subscription.close();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.exists(profileIdentityResolvingProvider(pubkey)),
         isFalse,
       );
     });
