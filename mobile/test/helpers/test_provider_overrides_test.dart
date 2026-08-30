@@ -12,6 +12,37 @@ import 'test_provider_overrides.dart';
 class _FakeAuthService extends Fake implements AuthService {}
 
 void main() {
+  group('createMockAuthService', () {
+    for (final authState in AuthState.values) {
+      test('keeps isAuthenticated consistent with $authState', () {
+        final auth = createMockAuthService(authState: authState);
+
+        expect(auth.authState, authState);
+        expect(auth.isAuthenticated, authState == AuthState.authenticated);
+      });
+    }
+
+    test('defaults to an unauthenticated session without a public key', () {
+      final auth = createMockAuthService();
+
+      expect(auth.authState, AuthState.unauthenticated);
+      expect(auth.isAuthenticated, isFalse);
+      expect(auth.currentPublicKeyHex, isNull);
+    });
+
+    test('accepts an authenticated state and public key together', () {
+      final publicKeyHex = 'a' * 64;
+      final auth = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: publicKeyHex,
+      );
+
+      expect(auth.authState, AuthState.authenticated);
+      expect(auth.isAuthenticated, isTrue);
+      expect(auth.currentPublicKeyHex, publicKeyHex);
+    });
+  });
+
   group('getStandardTestOverrides', () {
     test('standard overrides give auth mocks a session-cleanup callback', () {
       final auth = MockAuthService();

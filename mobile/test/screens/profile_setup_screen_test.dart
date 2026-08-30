@@ -16,6 +16,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
@@ -601,9 +602,10 @@ void main() {
     late MockProfileRepository mockProfileRepository;
 
     setUp(() {
-      mockAuthService = createMockAuthService();
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      mockAuthService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testPubkeyHex,
+      );
       when(() => mockAuthService.currentNpub).thenReturn(testNpub);
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 
@@ -712,9 +714,10 @@ void main() {
     late _MockMyProfileBloc mockMyProfileBloc;
 
     setUp(() {
-      mockAuthService = createMockAuthService();
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      mockAuthService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testPubkeyHex,
+      );
       when(() => mockAuthService.currentNpub).thenReturn('npub-test-profile');
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 

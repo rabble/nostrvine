@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata_update_error.dart';
@@ -80,7 +81,10 @@ void main() {
   });
 
   setUp(() {
-    mockAuthService = createMockAuthService();
+    mockAuthService = createMockAuthService(
+      authState: AuthState.authenticated,
+      currentPublicKeyHex: _ownerPubkey,
+    );
     mockNostrService = createMockNostrService();
     mockBlossomUploadService = _MockBlossomUploadService();
     mockDmRepository = _MockDmRepository();
@@ -88,9 +92,6 @@ void main() {
     mockVideoEventService = _MockVideoEventService();
     capturedTags = [];
     capturedCreatedAt = 0;
-
-    when(() => mockAuthService.isAuthenticated).thenReturn(true);
-    when(() => mockAuthService.currentPublicKeyHex).thenReturn(_ownerPubkey);
 
     late Event signedEvent;
     when(
@@ -140,6 +141,9 @@ void main() {
     group('auth guard', () {
       test('returns VideoUpdateFailure when not authenticated', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          () => mockAuthService.authState,
+        ).thenReturn(AuthState.unauthenticated);
 
         final result = await service.updateVideo(
           originalVideo: _testVideo(),

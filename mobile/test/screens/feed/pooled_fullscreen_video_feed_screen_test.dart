@@ -29,6 +29,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/view_traffic_source.dart';
 import 'package:openvine/models/viewer_auth_result.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -820,11 +821,10 @@ void main() {
         'resizes for the keyboard only while its OWN composer is focused — '
         'not for a modal (e.g. the share sheet) on top (#5758)',
         (tester) async {
-          final mockAuth = createMockAuthService();
-          when(() => mockAuth.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuth.currentPublicKeyHex,
-          ).thenReturn('a' * 64);
+          final mockAuth = createMockAuthService(
+            authState: AuthState.authenticated,
+            currentPublicKeyHex: 'a' * 64,
+          );
 
           final videos = createTestVideos();
 
@@ -1736,9 +1736,10 @@ void main() {
         tester,
       ) async {
         final videos = createTestVideos();
-        final mockAuth = createMockAuthService();
-        when(() => mockAuth.isAuthenticated).thenReturn(true);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(testPubkey);
+        final mockAuth = createMockAuthService(
+          authState: AuthState.authenticated,
+          currentPublicKeyHex: testPubkey,
+        );
 
         await tester.pumpWidget(
           buildSubject(
@@ -1767,9 +1768,10 @@ void main() {
         'hides owner edit and delete actions for non-owned videos in the more menu',
         (tester) async {
           final videos = createTestVideos();
-          final mockAuth = createMockAuthService();
-          when(() => mockAuth.isAuthenticated).thenReturn(true);
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(otherPubkey);
+          final mockAuth = createMockAuthService(
+            authState: AuthState.authenticated,
+            currentPublicKeyHex: otherPubkey,
+          );
 
           await tester.pumpWidget(
             buildSubject(

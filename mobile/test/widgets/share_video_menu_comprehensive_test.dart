@@ -15,6 +15,7 @@ import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_delete_enforcement_providers.dart';
@@ -347,11 +348,10 @@ void main() {
     testWidgets(
       'More actions row prompts for a clip title and confirms saved title for owned videos',
       (tester) async {
-        final authService = createMockAuthService();
-        when(() => authService.isAuthenticated).thenReturn(true);
-        when(
-          () => authService.currentPublicKeyHex,
-        ).thenReturn(testVideo.pubkey);
+        final authService = createMockAuthService(
+          authState: AuthState.authenticated,
+          currentPublicKeyHex: testVideo.pubkey,
+        );
 
         await tester.pumpWidget(buildSubject(mockAuthService: authService));
         await tester.tap(find.byType(ShareActionButton));
@@ -385,9 +385,10 @@ void main() {
     testWidgets('More actions row shows owner edit and delete actions', (
       tester,
     ) async {
-      final authService = createMockAuthService();
-      when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentPublicKeyHex).thenReturn(testVideo.pubkey);
+      final authService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testVideo.pubkey,
+      );
 
       await tester.pumpWidget(buildSubject(mockAuthService: authService));
       await tester.tap(find.byType(ShareActionButton));
@@ -400,14 +401,15 @@ void main() {
     testWidgets('More actions row disables Edit during relay deletion', (
       tester,
     ) async {
-      final authService = createMockAuthService();
+      final authService = createMockAuthService(
+        authState: AuthState.authenticated,
+        currentPublicKeyHex: testVideo.pubkey,
+      );
       final deletionService = _MockContentDeletionService();
       final enforcementRepository = _MockEnforcementRepository();
       final videoEventService = _MockVideoEventService();
       final relayCompleter = Completer<DeleteResult>();
       final l10n = lookupAppLocalizations(const Locale('en'));
-      when(() => authService.isAuthenticated).thenReturn(true);
-      when(() => authService.currentPublicKeyHex).thenReturn(testVideo.pubkey);
       when(
         () => deletionService.quickDelete(
           video: testVideo,
