@@ -202,14 +202,11 @@ class _FeedModeContent extends StatelessWidget {
               child: GestureDetector(
                 behavior: .opaque,
                 onTap: onTap,
-                // The label and caret are intrinsically 36dp tall, which fails
-                // androidTapTargetGuideline (48). Free to fix: the trailing
-                // settings button is already 48dp, so the header row does not
-                // grow. minHeight, not a fixed height, so it still grows with
-                // the system font scale (.claude/rules/accessibility.md).
+                // Interactive instances need a 48dp target. Preview instances
+                // have no onTap and retain their intrinsic height.
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: kMinInteractiveDimension,
+                  constraints: BoxConstraints(
+                    minHeight: onTap == null ? 0 : kMinInteractiveDimension,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

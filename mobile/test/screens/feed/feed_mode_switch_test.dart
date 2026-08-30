@@ -49,8 +49,11 @@ void main() {
       mockVolumeCubit.close();
     });
 
-    // ignore: strict_raw_type
-    Widget createTestWidget({List overrides = const []}) {
+    Widget createTestWidget({
+      // ignore: strict_raw_type
+      List overrides = const [],
+      bool isPreviewMode = false,
+    }) {
       return ProviderScope(
         overrides: overrides.cast(),
         child: MaterialApp(
@@ -66,7 +69,7 @@ void main() {
                       value: mockVolumeCubit,
                     ),
                   ],
-                  child: const FeedModeSwitch(),
+                  child: FeedModeSwitch(isPreviewMode: isPreviewMode),
                 ),
               ],
             ),
@@ -143,6 +146,17 @@ void main() {
             )
             .first;
         expect(tester.getSize(header).height, 80.0);
+      });
+
+      testWidgets('does not reserve a tap target in preview mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget(isPreviewMode: true));
+
+        expect(
+          tester.getSize(labelTarget()).height,
+          lessThan(kMinInteractiveDimension),
+        );
       });
     });
 
