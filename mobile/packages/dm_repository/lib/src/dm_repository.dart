@@ -3222,7 +3222,7 @@ class DmRepository {
       await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
       await _syncState?.recordWireSeen(
         _userPubkey,
-        createdAt: persistedCreatedAt,
+        createdAt: nip04Event.createdAt,
       );
 
       Log.debug(
