@@ -1,11 +1,13 @@
 // ABOUTME: Tests for VideoFeedBuilder helper class that encapsulates common feed logic
 // ABOUTME: Validates debouncing, streaming return, and state management patterns
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/state/video_feed_state.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -77,7 +79,7 @@ void main() {
         },
       );
 
-      test('should return immediately without waiting for stability', () async {
+      test('should return immediately without waiting for stability', () {
         // Arrange - subscribe adds videos asynchronously but buildFeed
         // should NOT wait for them
         final config = VideoFeedConfig(
@@ -87,15 +89,20 @@ void main() {
           sortVideos: (videos) => videos,
         );
 
-        // Act
-        final stopwatch = Stopwatch()..start();
-        final state = await builder.buildFeed(config: config);
-        stopwatch.stop();
+        VideoFeedState? state;
 
-        // Assert - should return nearly instantly (no 300ms+ stability wait)
-        expect(stopwatch.elapsedMilliseconds, lessThan(100));
-        expect(state.videos, isEmpty);
-        expect(state.isInitialLoad, isTrue);
+        fakeAsync((async) {
+          // Act
+          builder.buildFeed(config: config).then((value) => state = value);
+          // Drains microtasks without advancing the clock, so a reintroduced
+          // stability wait leaves `state` null rather than merely slow.
+          async.flushMicrotasks();
+
+          // Assert - resolved with no elapsed time at all
+          expect(state, isNotNull, reason: 'buildFeed awaited a timer');
+          expect(state!.videos, isEmpty);
+          expect(state!.isInitialLoad, isTrue);
+        });
       });
 
       test('should set isInitialLoad true when no videos available', () async {

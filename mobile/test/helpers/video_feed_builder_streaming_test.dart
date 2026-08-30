@@ -4,11 +4,13 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/state/video_feed_state.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -35,7 +37,7 @@ void main() {
       builder = VideoFeedBuilder(mockService);
     });
 
-    test('buildFeed returns immediately with available videos', () async {
+    test('buildFeed returns immediately with available videos', () {
       final videos = [_createMockVideo(id: 'v1'), _createMockVideo(id: 'v2')];
       final config = VideoFeedConfig(
         subscriptionType: SubscriptionType.discovery,
@@ -44,14 +46,18 @@ void main() {
         sortVideos: (videos) => videos,
       );
 
-      final stopwatch = Stopwatch()..start();
-      final state = await builder.buildFeed(config: config);
-      stopwatch.stop();
+      VideoFeedState? state;
 
-      expect(state.videos.length, 2);
-      expect(state.isInitialLoad, isFalse);
-      // Should be nearly instant (no stability wait)
-      expect(stopwatch.elapsedMilliseconds, lessThan(100));
+      fakeAsync((async) {
+        builder.buildFeed(config: config).then((value) => state = value);
+        // Drains microtasks without advancing the clock, so a reintroduced
+        // stability wait leaves `state` null rather than merely slow.
+        async.flushMicrotasks();
+
+        expect(state, isNotNull, reason: 'buildFeed awaited a timer');
+        expect(state!.videos.length, 2);
+        expect(state!.isInitialLoad, isFalse);
+      });
     });
 
     test('buildFeed returns isInitialLoad state when no videos yet', () async {
