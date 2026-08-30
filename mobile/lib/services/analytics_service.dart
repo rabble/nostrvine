@@ -102,6 +102,11 @@ class AnalyticsService implements BackgroundAwareService {
   // Track disposal state
   bool _isDisposed = false;
 
+  /// Whether this instance is in [BackgroundActivityManager]'s registry.
+  /// Registration is best-effort (see [initialize]), so the flag records
+  /// whether it actually succeeded rather than whether it was attempted.
+  bool _isBackgroundRegistered = false;
+
   /// Update the view event publisher (e.g. when Nostr client reconnects).
   void updateViewEventPublisher(ViewEventPublisher? publisher) {
     _viewEventPublisher = publisher;
@@ -109,6 +114,10 @@ class AnalyticsService implements BackgroundAwareService {
 
   /// Initialize the analytics service.
   Future<void> initialize() async {
+    // A disposed instance must not come back. `analyticsServiceProvider`
+    // defers this call onto a microtask, so a container torn down before that
+    // microtask lands calls dispose() first (#8398).
+    if (_isDisposed) return;
     if (_isInitialized) return;
 
     try {
@@ -138,6 +147,12 @@ class AnalyticsService implements BackgroundAwareService {
         _recoverQueuedProductEvents();
       }
 
+      // The guard above is not enough on its own: dispose() may have run while
+      // the awaits above were in flight. Re-check before the two side effects
+      // it can no longer undo — the periodic timer, and joining the
+      // process-global registry that has no owner left to leave it (#8398).
+      if (_isDisposed) return;
+
       // Set up periodic cleanup of tracked views
       _cleanupTimer = Timer.periodic(const Duration(minutes: 5), (_) {
         _recentlyTrackedViews.clear();
@@ -146,6 +161,7 @@ class AnalyticsService implements BackgroundAwareService {
       // Register with background activity manager
       try {
         BackgroundActivityManager().registerService(this);
+        _isBackgroundRegistered = true;
       } catch (e) {
         Log.warning(
           'Could not register with background activity manager: $e',
@@ -826,6 +842,14 @@ class AnalyticsService implements BackgroundAwareService {
   }
 
   void dispose() {
+    // Unregister before tearing down. The manager is a process-global
+    // singleton, so an instance left in its registry keeps receiving
+    // lifecycle callbacks forever — across provider rebuilds in the app, and
+    // across every later suite in the merged test isolate (#6880).
+    if (_isBackgroundRegistered) {
+      BackgroundActivityManager().unregisterService(this);
+      _isBackgroundRegistered = false;
+    }
     _isDisposed = true;
     _cleanupTimer?.cancel();
   }
