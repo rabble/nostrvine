@@ -427,9 +427,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// This deliberately ignores [isRpcUpgradeInProgress]. That flag does not
   /// emit on every transition, while identity changes and [authRpcCapability]
   /// together provide the complete observable state.
+  ///
+  /// No stream carries this value, so sample it at the moment of use. A push
+  /// consumer that waits for it to change must also watch a rebuild trigger
+  /// such as `currentAuthRpcCapabilityProvider` (#6977).
   SignerReadiness get signerReadiness =>
       resolveSignerReadiness(_currentIdentity, _authRpcCapability);
 
+  /// Whether this identity can publish Nostr writes right now.
+  ///
+  /// Shorthand for [signerReadiness] being ready; same sampling contract.
   bool get canPublishNostrWritesNow => signerReadiness == SignerReadiness.ready;
 
   /// True when a divineOAuth user's session expired and refresh failed.
