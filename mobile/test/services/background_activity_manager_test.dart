@@ -70,16 +70,51 @@ void main() {
 
     setUp(() async {
       manager = BackgroundActivityManager();
-      manager.dispose();
       testService = TestBackgroundService();
 
       // BackgroundActivityManager is a process-wide singleton. Tests in this
-      // file share the same instance and run in random order, so clear any
-      // prior registrations/timers, reset its state to foreground, and drain
-      // pending lifecycle notifications before each test. Otherwise a prior
-      // test can leak services or stale background state into the next case.
-      manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
+      // file share the same instance and run in random order, so restore it to
+      // its construction state and drain pending lifecycle notifications
+      // before each test. Otherwise a prior test can leak services or stale
+      // background state into the next case.
+      manager.resetForTesting();
       await pumpEventQueue();
+    });
+
+    // Several cases below deliberately end in the background state. Restore
+    // the singleton so it is not left that way for the rest of the process —
+    // a stale `false` turns the next `resumed` anywhere into a fan-out (#6880).
+    tearDown(() => manager.resetForTesting());
+
+    group('resetForTesting', () {
+      test('clears registrations', () {
+        manager.registerService(testService);
+
+        manager.resetForTesting();
+
+        expect(manager.getStatus()['registeredServices'], 0);
+      });
+
+      test('restores the foreground state', () {
+        manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
+        expect(manager.isAppInForeground, isFalse);
+
+        manager.resetForTesting();
+
+        expect(manager.isAppInForeground, isTrue);
+      });
+
+      test('clears the initialized latch so initialize runs again', () async {
+        await manager.initialize();
+
+        manager.resetForTesting();
+        await manager.initialize();
+
+        // dispose() leaves the latch set, so a second initialize would no-op
+        // and never re-arm the periodic cleanup. reset must not.
+        expect(manager.isAppInForeground, isTrue);
+        expect(manager.getStatus()['registeredServices'], 0);
+      });
     });
 
     test('should start in foreground state', () {
