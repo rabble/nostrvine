@@ -427,17 +427,17 @@ class DmRepository {
   /// `null` in fixtures that don't exercise the publish; when `null`,
   /// [ensureDmRelayListPublished] is a no-op (nothing to advertise).
   ///
-  /// This is both the sole `relay` tag in the published list and the relay
-  /// whose `OK` decides success — it is where divine actually reads.
+  /// This is the primary `relay` tag in the published list and the relay whose
+  /// `OK` decides success — it is where Divine always reads.
   final String? _dmInboxRelayUrl;
 
   /// Extra relays the kind-10050 EVENT is published to so third-party senders
-  /// can discover it. They are publish targets only and never appear as
-  /// `relay` tags: the list's contents stay at one relay, per NIP-17's
-  /// "keep kind:10050 lists small (1-3 relays)", while NIP-17's "SHOULD spread
-  /// them to as many relays as viable" is satisfied by where the event lands.
+  /// can discover it. The tagged subset also belongs in Divine's active pool
+  /// so the session reads every relay it advertises; discovery-only relays
+  /// receive the event but are not advertised.
   ///
-  /// Best-effort by construction. A relay here that refuses kind 10050 is
+  /// Discovery publication is best-effort by construction. A relay here that
+  /// refuses kind 10050 is
   /// logged once and otherwise ignored: it neither fails the publish nor
   /// blocks the idempotence flag, so it can never cause a republish loop.
   final List<String> _dmInboxDiscoveryRelays;
@@ -1082,9 +1082,9 @@ class DmRepository {
   ///
   /// Every reader treats a non-null result as relays to reach IN ADDITION to
   /// the pool — `tempRelays` on the live subscription and on each drain page.
-  /// Read markers deliberately publish through the normal pool because the
-  /// publish API's `targetRelays` parameter filters that pool rather than
-  /// adding to it. See the `targetRelays` note in [startListening] and #7320.
+  /// Read markers deliberately publish through the normal pool so they retain
+  /// the pool's write redundancy; the publish API can also open temporary
+  /// connections for explicit targets, unlike subscription/query filtering.
   Future<List<String>?> _ownInboxRelays() async {
     final res = await _resolveOwnDmInbox();
     return res.state == _OwnDmInboxState.found ? res.relays : null;
@@ -3574,7 +3574,7 @@ class DmRepository {
       final taggedRelays = <String>[
         relayUrl,
         ..._dmInboxTaggedRelays
-            .where(isRelayUrlAllowed)
+            .where(_nostrClient.isRelayAllowed)
             .where((relay) => relay != relayUrl),
       ];
       final unsigned = Event(
@@ -3604,7 +3604,7 @@ class DmRepository {
       // env-locked build drops the latter in `NostrClient._allowedRelays`, so
       // a LOCAL run still targets only its own relay.
       final discoveryTargets = _dmInboxDiscoveryRelays
-          .where(isRelayUrlAllowed)
+          .where(_nostrClient.isRelayAllowed)
           .toList();
       final outcome = await _nostrClient.publishEventAwaitOk(
         signed,

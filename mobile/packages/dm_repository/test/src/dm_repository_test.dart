@@ -573,6 +573,7 @@ void main() {
       // Stub relay properties used by startListening() log.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
+      when(() => mockNostrClient.isRelayAllowed(any())).thenReturn(true);
 
       // Stub getNewestMessageTimestamp for startListening() windowing.
       when(
@@ -725,7 +726,6 @@ void main() {
           content: any(named: 'content'),
           tags: any(named: 'tags'),
           eventKind: any(named: 'eventKind'),
-          targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -4935,6 +4935,10 @@ void main() {
           'drops a discovery relay whose URL is not a usable relay',
           () async {
             when(
+              () =>
+                  mockNostrClient.isRelayAllowed('http://not-a-relay.example'),
+            ).thenReturn(false);
+            when(
               () => mockNostrClient.publishEventAwaitOk(
                 any(),
                 targetRelays: any(named: 'targetRelays'),
@@ -8617,7 +8621,6 @@ void main() {
               content: captureAny(named: 'content'),
               tags: captureAny(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: captureAny(named: 'targetRelays'),
             ),
           ).captured;
           expect(captured, isNotEmpty);
@@ -8626,8 +8629,6 @@ void main() {
           expect(payload['v'], 1);
           expect((payload['read'] as Map)[tupleKey], 1700000200);
           expect(tags, contains(equals(['d', 'divine/dm-read/v1'])));
-          expect(captured[2], isNull);
-
           // Self-only: a read marker never goes out as a counterparty message.
           verifyNever(
             () => mockMessageService.sendRumor(
@@ -8663,7 +8664,6 @@ void main() {
               content: any(named: 'content'),
               tags: any(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           );
         },
@@ -8689,7 +8689,6 @@ void main() {
             content: any(named: 'content'),
             tags: any(named: 'tags'),
             eventKind: any(named: 'eventKind'),
-            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       });
@@ -8812,7 +8811,6 @@ void main() {
               content: any(named: 'content'),
               tags: any(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           ).called(1);
         },
@@ -8836,7 +8834,6 @@ void main() {
             content: any(named: 'content'),
             tags: any(named: 'tags'),
             eventKind: any(named: 'eventKind'),
-            targetRelays: any(named: 'targetRelays'),
           ),
         );
       });
@@ -8878,7 +8875,6 @@ void main() {
               content: any(named: 'content'),
               tags: any(named: 'tags'),
               eventKind: any(named: 'eventKind'),
-              targetRelays: any(named: 'targetRelays'),
             ),
           );
         },
@@ -8903,7 +8899,6 @@ void main() {
             content: any(named: 'content'),
             tags: any(named: 'tags'),
             eventKind: any(named: 'eventKind'),
-            targetRelays: any(named: 'targetRelays'),
           ),
         );
       });

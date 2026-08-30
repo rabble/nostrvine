@@ -3001,7 +3001,7 @@ class RelayPool {
         tempRelays.isNotEmpty &&
         relayTypes.contains(RelayType.temp)) {
       for (var tempRelayAddr in tempRelays) {
-        Relay? relay = _relays[tempRelayAddr];
+        Relay? relay = _pooledRelayForTempAddr(tempRelayAddr);
         relay ??= checkAndGenTempRelay(tempRelayAddr);
         relaysToTry.add(relay);
       }

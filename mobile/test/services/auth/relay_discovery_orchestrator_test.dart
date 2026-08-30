@@ -155,11 +155,16 @@ void main() {
         await buildOrchestrator().discoverUserRelays(testNpub, testPubkey);
 
         expect(userRelaysWrites, equals([relays]));
-        expect(externalRelayCalls, hasLength(1));
-        expect(externalRelayCalls.single.$1, equals(testPubkey));
+        expect(externalRelayCalls, hasLength(2));
+        expect(externalRelayCalls.first.$1, equals(testPubkey));
         expect(
-          externalRelayCalls.single.$2,
+          externalRelayCalls.first.$2,
           equals(['wss://a.example', 'wss://b.example']),
+        );
+        expect(externalRelayCalls.last.$1, equals(testPubkey));
+        expect(
+          externalRelayCalls.last.$2,
+          equals(IndexerRelayConfig.dmInboxTaggedRelays),
         );
       });
 
@@ -400,6 +405,21 @@ void main() {
           equals(IndexerRelayConfig.safeFallbackRelays),
         );
       });
+
+      test(
+        'pushes the tagged DM inbox relays without reporting user relays',
+        () {
+          buildOrchestrator().connectToDmInboxRelays(testPubkey);
+
+          expect(externalRelayCalls, hasLength(1));
+          expect(externalRelayCalls.single.$1, equals(testPubkey));
+          expect(
+            externalRelayCalls.single.$2,
+            equals(IndexerRelayConfig.dmInboxTaggedRelays),
+          );
+          expect(userRelaysWrites, isEmpty);
+        },
+      );
     });
   });
 }

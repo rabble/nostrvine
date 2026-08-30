@@ -834,31 +834,7 @@ void main() {
         );
       });
 
-      test('routes the self marker to the provided targetRelays', () async {
-        List<String>? routedTo;
-        when(
-          () => mockNostrClient.publishEvent(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((inv) async {
-          routedTo = inv.namedArguments[#targetRelays] as List<String>?;
-          return PublishSuccess(event: inv.positionalArguments[0] as Event);
-        });
-
-        final ok = await service.publishSelfApplicationMarker(
-          content: '{"v":1,"read":{}}',
-          tags: const [
-            ['d', 'divine/dm-read/v1'],
-          ],
-          targetRelays: const ['wss://inbox.example.com'],
-        );
-
-        expect(ok, isTrue);
-        expect(routedTo, const ['wss://inbox.example.com']);
-      });
-
-      test('falls back to the default pool when no targetRelays', () async {
+      test('publishes through the default pool', () async {
         var bareCalls = 0;
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
           bareCalls++;
