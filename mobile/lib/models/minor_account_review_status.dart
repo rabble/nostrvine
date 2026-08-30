@@ -89,12 +89,14 @@ class MinorReviewResponseDeadline {
     if (json == null) return const MinorReviewResponseDeadline.unavailable();
 
     final clock = MinorReviewResponseClock.fromJsonValue(
-      json['clock'] as String?,
+      json['clock'] is String ? json['clock'] as String : null,
     );
     final serverNow = _parseDateTime(json['serverNow']);
     final deadlineAt = _parseDateTime(json['deadlineAt']);
     final pausedAt = _parseDateTime(json['pausedAt']);
-    final remainingDays = (json['remainingDaysWhenPaused'] as num?)?.toDouble();
+    final remainingDays = json['remainingDaysWhenPaused'] is num
+        ? (json['remainingDaysWhenPaused'] as num).toDouble()
+        : null;
 
     final valid = switch (clock) {
       MinorReviewResponseClock.running || MinorReviewResponseClock.expired =>
@@ -260,7 +262,7 @@ class MinorReviewCase {
       supportEmail:
           json['supportEmail'] as String? ?? AppConstants.supportEmail,
       responseDeadline: MinorReviewResponseDeadline.fromJson(
-        json['responseDeadline'] as Map<String, dynamic>?,
+        _asJsonMap(json['responseDeadline']),
       ),
       moderationConversationPubkey:
           json['moderationConversationPubkey'] as String?,
@@ -333,6 +335,14 @@ class MinorReviewCase {
     'moderationConversationPubkey': moderationConversationPubkey,
     'moderationConversationId': moderationConversationId,
   };
+}
+
+Map<String, dynamic>? _asJsonMap(Object? value) {
+  if (value is! Map) return null;
+  if (value.keys.any((key) => key is! String)) return null;
+  return value.map<String, dynamic>(
+    (key, value) => MapEntry(key as String, value),
+  );
 }
 
 class MinorAccountReviewStatus {

@@ -118,6 +118,12 @@ void main() {
             'pausedAt': serverNow,
             'remainingDaysWhenPaused': -1,
           },
+          {'clock': 42},
+          {
+            'clock': 'paused',
+            'pausedAt': serverNow,
+            'remainingDaysWhenPaused': '7.5',
+          },
           {'clock': 'unknown'},
         ];
 
@@ -133,6 +139,22 @@ void main() {
         }
       },
     );
+
+    test('treats a non-map responseDeadline as unavailable', () {
+      final reviewCase = MinorReviewCase.fromJson({
+        'id': 'case-1',
+        'state': 'restricted_pending_user_response',
+        'suspectedAgeBand': 'age_13_15',
+        'allowedResolution': 'parent_video_or_email',
+        'instructions': <String, dynamic>{},
+        'responseDeadline': 'malformed',
+      });
+
+      expect(
+        reviewCase.responseDeadline.clock,
+        MinorReviewResponseClock.unavailable,
+      );
+    });
 
     test(
       'clamps a running deadline that has passed without using device time',
