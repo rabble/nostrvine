@@ -139,9 +139,15 @@ const Set<String> kDivineTeamPubkeys = {
 /// ([isRetiredModerationAccount]), and for the `ModerationLabelService`
 /// subscription migration.
 ///
-/// `121b915b…` was retired in #2321 (2026-03-20); `ModerationLabelService`
-/// carries the matching one-time migration for labeler subscriptions.
+/// Every entry carries its rotation commit and date below. The register of
+/// what each key was, the roles it held, and what a rotation has to do is
+/// `mobile/docs/RETIRED_MODERATION_KEYS.md` — read it before adding one.
 const List<String> kLegacyModerationPubkeys = [
+  // Retired 2026-03-15 by divine-moderation-service#31 (8dd56cbc9), which
+  // unified the service onto one signing key after it and the clients drifted
+  // apart — a mismatch, not a compromise. Also held relay admin and the NIP-32
+  // labeler role that `ModerationLabelService` migrates away. #2321
+  // (2026-03-20) was the client catching up, not the retirement itself.
   '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72',
 ];
 
@@ -151,6 +157,10 @@ const List<String> kLegacyModerationPubkeys = [
 /// old pubkey, and it is the same team on the other end of it. Callers that
 /// need a *send target* must use [kModerationPubkeyHex] instead — this answers
 /// "is this the moderation team", not "where do replies go".
+///
+/// Keyed on the pubkey alone, with no freshness gate: a message a retired key
+/// signs today is recognised exactly like one predating the rotation. See
+/// `mobile/docs/RETIRED_MODERATION_KEYS.md`.
 bool isModerationAccount(String pubkeyHex) =>
     pubkeyHex == kModerationPubkeyHex ||
     kLegacyModerationPubkeys.contains(pubkeyHex);
