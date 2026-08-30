@@ -1036,10 +1036,16 @@ void main() {
       });
 
       // The cases above stub a kind-0 that already carries the right name, so
-      // they cannot catch the naming half. In production there is no kind-0 to
-      // read: the account's is not on the single relay the app queries, and a
-      // retired key has no events at all (#6416).
-      group('with no kind-0 on the relay', () {
+      // they cannot catch the naming half. A retired key is the case that
+      // still has no kind-0 to read anywhere — funnelcake answers for it with
+      // `profile: null`, which maps to `UserProfileNotPublished` and
+      // short-circuits the relay fallback outright, so the lookup can only
+      // return null (#6416). The CURRENT key does resolve today: its kind-0
+      // (`17e11af3…`, 2026-03-12) is on relay.divine.video and funnelcake
+      // serves it — see mobile/docs/RETIRED_MODERATION_KEYS.md. The
+      // substitution still has to hold for both, because a name the viewer
+      // has never seen on an enforcement notice is the failure either way.
+      group('with no profile to resolve', () {
         final l10n = lookupAppLocalizations(const Locale('en'));
 
         Future<void> pumpUnprofiledTileFor(

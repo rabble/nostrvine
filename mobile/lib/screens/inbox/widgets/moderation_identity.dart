@@ -1,27 +1,12 @@
-// ABOUTME: Divine Moderation's name, avatar and closed-thread status for DM
+// ABOUTME: Divine Moderation's avatar and closed-thread status for DM
 // ABOUTME: surfaces. One place, so the inbox list, the message-requests flow
-// ABOUTME: and the conversation header all recognise the account and agree on
-// ABOUTME: which of its threads is dead.
+// ABOUTME: and the conversation header agree on which of its threads is dead.
+// ABOUTME: The account's NAME is resolved by dmPeerName, not here.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/l10n.dart';
-
-/// Divine's own name for [pubkeyHex], or `null` for any other account.
-///
-/// Every DM surface otherwise resolves the peer as
-/// `profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey)`.
-/// That is wrong for moderation twice over: the account's kind-0 is not on the
-/// single relay production reads, and a retired key has no kind-0 at all — so
-/// the profile is `null` and the fallback is a generated "Adjective Animal N".
-/// An enforcement notice then arrives from a random-looking stranger.
-///
-/// Answers for retired keys too, via [isModerationAccount]: it is the same team
-/// on the other end of a pre-rotation thread. Callers that need a *send target*
-/// must not use this — see [isRetiredModerationAccount].
-String? moderationDisplayName(BuildContext context, String pubkeyHex) =>
-    isModerationAccount(pubkeyHex) ? context.l10n.inboxSupportRowTitle : null;
 
 /// Brand artwork for the Divine moderation account's avatar.
 ///
