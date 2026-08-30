@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -112,48 +113,52 @@ class _FollowingUserButton extends ConsumerWidget {
             orElse: () => null,
           );
 
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 72,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 8,
-          children: [
-            IdentitySkeletonizer(
-              isLoading: isIdentityResolving,
-              excludeSemantics: true,
-              child: UserAvatar(
-                imageUrl: imageUrl,
-                name: visualDisplayName,
-                placeholderSeed: pubkey,
-                size: 48,
+    return Semantics(
+      button: true,
+      label: isIdentityResolving ? context.l10n.commonLoading : displayName,
+      child: GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          width: 72,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              IdentitySkeletonizer(
+                isLoading: isIdentityResolving,
+                excludeSemantics: true,
+                child: UserAvatar(
+                  imageUrl: imageUrl,
+                  name: visualDisplayName,
+                  placeholderSeed: pubkey,
+                  size: 48,
+                ),
               ),
-            ),
-            IdentitySkeletonizer(
-              isLoading: isIdentityResolving,
-              excludeSemantics: true,
-              child: Text(
-                visualDisplayName,
-                textScaler: TextScaler.noScaling,
-                style:
-                    VineTheme.bodySmallFont(
-                      color: context.vineColors.onSurfaceVariant,
-                    ).copyWith(
-                      fontSize: MediaQuery.textScalerOf(context)
-                          .scale(
-                            VineTheme.bodySmallFont(
-                              color: context.vineColors.primaryText,
-                            ).fontSize!,
-                          )
-                          .clamp(0, 18),
-                    ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              IdentitySkeletonizer(
+                isLoading: isIdentityResolving,
+                excludeSemantics: true,
+                child: Text(
+                  visualDisplayName,
+                  textScaler: TextScaler.noScaling,
+                  style:
+                      VineTheme.bodySmallFont(
+                        color: context.vineColors.onSurfaceVariant,
+                      ).copyWith(
+                        fontSize: MediaQuery.textScalerOf(context)
+                            .scale(
+                              VineTheme.bodySmallFont(
+                                color: context.vineColors.primaryText,
+                              ).fontSize!,
+                            )
+                            .clamp(0, 18),
+                      ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

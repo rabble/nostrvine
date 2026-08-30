@@ -135,16 +135,19 @@ class RequestPreviewView extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: isIdentityResolving ? null : displayName,
         titleWidget: isIdentityResolving
-            ? IdentitySkeletonizer(
-                isLoading: true,
-                excludeSemantics: true,
-                child: Text(
-                  visualDisplayName,
-                  style: VineTheme.titleMediumFont(
-                    color: context.vineColors.primaryText,
+            ? Semantics(
+                label: context.l10n.commonLoading,
+                child: IdentitySkeletonizer(
+                  isLoading: true,
+                  excludeSemantics: true,
+                  child: Text(
+                    visualDisplayName,
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               )
             : null,
@@ -308,17 +311,20 @@ class _ProfileContent extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IdentitySkeletonizer(
-                isLoading: isResolving,
-                excludeSemantics: true,
-                child: UserAvatar(
-                  imageUrl: imageUrl,
-                  name: visualDisplayName,
-                  placeholderSeed: otherPubkey,
-                  size: 96,
-                  contentOverride: isModerationAccount(otherPubkey)
-                      ? const ModerationAvatar()
-                      : null,
+              Semantics(
+                label: isResolving ? context.l10n.commonLoading : null,
+                child: IdentitySkeletonizer(
+                  isLoading: isResolving,
+                  excludeSemantics: true,
+                  child: UserAvatar(
+                    imageUrl: imageUrl,
+                    name: visualDisplayName,
+                    placeholderSeed: otherPubkey,
+                    size: 96,
+                    contentOverride: isModerationAccount(otherPubkey)
+                        ? const ModerationAvatar()
+                        : null,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),

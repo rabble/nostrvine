@@ -188,6 +188,7 @@ void main() {
       String counterparty = otherPubkey,
       ConversationState? previousState,
       Future<UserProfile?>? otherProfileFuture,
+      Future<bool>? otherProfileVanishedFuture,
       bool isIdentityResolving = false,
     }) {
       final effectiveState = state ?? const ConversationState();
@@ -228,7 +229,11 @@ void main() {
           ).overrideWith((ref) => Stream.value(otherProfileVanished)),
           profileVanishedSnapshotProvider(
             counterparty,
-          ).overrideWith((ref) async => otherProfileVanished),
+          ).overrideWith(
+            (ref) =>
+                otherProfileVanishedFuture ??
+                Future.value(otherProfileVanished),
+          ),
           profileIdentityResolvingProvider(
             counterparty,
           ).overrideWithValue(isIdentityResolving),
@@ -698,6 +703,9 @@ void main() {
           await tester.tap(
             find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
           );
+          await tester.tap(
+            find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+          );
           await tester.pump();
 
           expect(find.byType(MoreSheetContent), findsNothing);
@@ -709,6 +717,54 @@ void main() {
           expect(find.byType(MoreSheetContent), findsOneWidget);
         },
       );
+
+      testWidgets('opens profile options when identity lookups fail', (
+        tester,
+      ) async {
+        final profileCompleter = Completer<UserProfile?>();
+        final vanishedCompleter = Completer<bool>();
+        await tester.pumpWidget(
+          buildSubject(
+            otherProfileFuture: profileCompleter.future,
+            otherProfileVanishedFuture: vanishedCompleter.future,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+        );
+        await tester.pump();
+        vanishedCompleter.completeError(StateError('vanish read failed'));
+        await tester.pump();
+        profileCompleter.completeError(StateError('profile read failed'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(MoreSheetContent), findsOneWidget);
+      });
+
+      testWidgets('opens known moderation options without awaiting a profile', (
+        tester,
+      ) async {
+        final profileCompleter = Completer<UserProfile?>();
+        await tester.pumpWidget(
+          buildSubject(
+            counterparty: kModerationPubkeyHex,
+            otherProfileFuture: profileCompleter.future,
+            isIdentityResolving: true,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.inboxConversationOptionsLabel),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(MoreSheetContent), findsOneWidget);
+      });
 
       testWidgets('renders $MessageInputBar', (tester) async {
         await tester.pumpWidget(buildSubject());

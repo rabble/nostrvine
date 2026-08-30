@@ -40,16 +40,19 @@ class ConversationAppBar extends StatelessWidget
     return DiVineAppBar(
       title: isResolving ? null : displayName,
       titleWidget: isResolving
-          ? IdentitySkeletonizer(
-              isLoading: true,
-              excludeSemantics: true,
-              child: Text(
-                loadingDisplayName ?? context.l10n.commonLoading,
-                style: VineTheme.titleMediumFont(
-                  color: context.vineColors.primaryText,
+          ? Semantics(
+              label: context.l10n.commonLoading,
+              child: IdentitySkeletonizer(
+                isLoading: true,
+                excludeSemantics: true,
+                child: Text(
+                  loadingDisplayName ?? context.l10n.commonLoading,
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             )
           : null,

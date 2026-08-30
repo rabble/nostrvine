@@ -11,6 +11,7 @@ void main() {
       String handle = '@alice',
       VoidCallback? onBack,
       VoidCallback? onOptions,
+      bool isResolving = false,
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -21,6 +22,8 @@ void main() {
             handle: handle,
             onBack: onBack ?? () {},
             onOptions: onOptions ?? () {},
+            isResolving: isResolving,
+            loadingDisplayName: 'Generated Name',
           ),
         ),
       );
@@ -50,6 +53,17 @@ void main() {
 
         expect(find.text('Alice'), findsOneWidget);
         expect(find.text(''), findsNothing);
+      });
+
+      testWidgets('announces loading instead of the placeholder identity', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(buildSubject(isResolving: true));
+
+        expect(find.bySemanticsLabel('Loading'), findsOneWidget);
+        expect(find.bySemanticsLabel('Generated Name'), findsNothing);
+        semantics.dispose();
       });
     });
 

@@ -51,17 +51,20 @@ class EmptyConversation extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          IdentitySkeletonizer(
-            isLoading: isIdentityResolving,
-            excludeSemantics: true,
-            child: UserAvatar(
-              imageUrl: imageUrl,
-              name: displayName,
-              placeholderSeed: pubkey,
-              size: 96,
-              contentOverride: isModerationAccount(pubkey)
-                  ? const ModerationAvatar()
-                  : null,
+          Semantics(
+            label: isIdentityResolving ? context.l10n.commonLoading : null,
+            child: IdentitySkeletonizer(
+              isLoading: isIdentityResolving,
+              excludeSemantics: true,
+              child: UserAvatar(
+                imageUrl: imageUrl,
+                name: displayName,
+                placeholderSeed: pubkey,
+                size: 96,
+                contentOverride: isModerationAccount(pubkey)
+                    ? const ModerationAvatar()
+                    : null,
+              ),
             ),
           ),
           const SizedBox(height: 32),

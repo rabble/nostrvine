@@ -100,6 +100,29 @@ void main() {
 
         expect(find.text('View profile'), findsOneWidget);
       });
+
+      testWidgets('announces loading instead of the placeholder identity', (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: EmptyConversation(
+                displayName: 'Generated Name',
+                pubkey: 'pk1',
+                isIdentityResolving: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.bySemanticsLabel('Loading'), findsOneWidget);
+        expect(find.bySemanticsLabel('Generated Name'), findsNothing);
+        semantics.dispose();
+      });
     });
 
     group('interactions', () {

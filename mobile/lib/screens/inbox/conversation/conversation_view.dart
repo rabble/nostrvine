@@ -40,6 +40,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// View for a single DM conversation.
 ///
@@ -63,6 +64,8 @@ class ConversationView extends ConsumerStatefulWidget {
 enum _FailedMessageAction { resend, delete }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
+  bool _isOpeningOptions = false;
+
   /// The account this thread addresses. The route passes `participantPubkeys`
   /// as the counterparty list, so self is already excluded.
   String get _otherPubkey => widget.participantPubkeys.isNotEmpty
@@ -81,67 +84,109 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   }
 
   Future<void> _onOptions(String otherPubkey) async {
-    if (otherPubkey.isEmpty) return;
-
-    final profileFuture = ref.read(
-      fetchUserProfileProvider(otherPubkey).future,
-    );
-    final vanishedFuture = ref.read(
-      profileVanishedSnapshotProvider(otherPubkey).future,
-    );
-    final profile = await profileFuture;
-    final isVanished = await vanishedFuture;
-    if (!mounted) return;
-    final displayName = dmPeerDisplayName(
-      context,
-      pubkeyHex: otherPubkey,
-      isVanished: isVanished,
-      profile: profile,
-    );
-
-    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    final followRepository = ref.read(followRepositoryProvider);
-    final isBlocked = blocklistRepository.isBlocked(otherPubkey);
-    final isFollowing = followRepository.isFollowing(otherPubkey);
-
-    final result = await VineBottomSheet.show<MoreSheetResult>(
-      context: context,
-      expanded: false,
-      scrollable: false,
-      isScrollControlled: true,
-      body: MoreSheetContent(
-        userIdHex: otherPubkey,
-        displayName: displayName,
-        isFollowing: isFollowing,
-        isBlocked: isBlocked,
-        showReport: true,
-      ),
-      children: const [],
-    );
-
-    if (!mounted || result == null) return;
-
-    switch (result) {
-      case MoreSheetResult.copy:
-        final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-        await ClipboardUtils.copyPubkey(context, npub);
-      case MoreSheetResult.unfollow:
-        await followRepository.toggleFollow(otherPubkey);
-      case MoreSheetResult.report:
-        if (!mounted) return;
-        await ReportContentDialog.showForUser(context, userPubkey: otherPubkey);
-      case MoreSheetResult.blockConfirmed:
-        await blocklistRepository.blockUser(
-          otherPubkey,
-          ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+    if (otherPubkey.isEmpty || _isOpeningOptions) return;
+    _isOpeningOptions = true;
+    try {
+      bool isVanished;
+      try {
+        isVanished = await ref.read(
+          profileVanishedSnapshotProvider(otherPubkey).future,
         );
-        if (mounted) context.pop();
-      case MoreSheetResult.unblockConfirmed:
-        await blocklistRepository.unblockUser(otherPubkey);
-      case MoreSheetResult.addToList:
-        // addToList is not surfaced from this caller (showAddToList defaults
-        // to false on MoreSheetContent here), so this branch is unreachable.
-        break;
+      } catch (error, stackTrace) {
+        Log.warning(
+          'Could not read durable vanish state; opening conversation options '
+          'with the live-account identity fallback',
+          name: 'ConversationView',
+          category: LogCategory.ui,
+          error: error,
+          stackTrace: stackTrace,
+        );
+        isVanished = false;
+      }
+      if (!mounted) return;
+
+      final String displayName;
+      final knownName = dmPeerNameWithoutProfile(
+        context,
+        pubkeyHex: otherPubkey,
+        isVanished: isVanished,
+      );
+      if (knownName != null) {
+        displayName = knownName;
+      } else {
+        UserProfile? profile;
+        try {
+          profile = await ref.read(
+            fetchUserProfileProvider(otherPubkey).future,
+          );
+        } catch (error, stackTrace) {
+          Log.warning(
+            'Could not read the conversation peer profile; opening '
+            'conversation options with the generated identity fallback',
+            name: 'ConversationView',
+            category: LogCategory.ui,
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+        if (!mounted) return;
+        displayName = dmPeerDisplayName(
+          context,
+          pubkeyHex: otherPubkey,
+          isVanished: isVanished,
+          profile: profile,
+        );
+      }
+
+      final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+      final followRepository = ref.read(followRepositoryProvider);
+      final isBlocked = blocklistRepository.isBlocked(otherPubkey);
+      final isFollowing = followRepository.isFollowing(otherPubkey);
+
+      final result = await VineBottomSheet.show<MoreSheetResult>(
+        context: context,
+        expanded: false,
+        scrollable: false,
+        isScrollControlled: true,
+        body: MoreSheetContent(
+          userIdHex: otherPubkey,
+          displayName: displayName,
+          isFollowing: isFollowing,
+          isBlocked: isBlocked,
+          showReport: true,
+        ),
+        children: const [],
+      );
+
+      if (!mounted || result == null) return;
+
+      switch (result) {
+        case MoreSheetResult.copy:
+          final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+          await ClipboardUtils.copyPubkey(context, npub);
+        case MoreSheetResult.unfollow:
+          await followRepository.toggleFollow(otherPubkey);
+        case MoreSheetResult.report:
+          if (!mounted) return;
+          await ReportContentDialog.showForUser(
+            context,
+            userPubkey: otherPubkey,
+          );
+        case MoreSheetResult.blockConfirmed:
+          await blocklistRepository.blockUser(
+            otherPubkey,
+            ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
+          );
+          if (mounted) context.pop();
+        case MoreSheetResult.unblockConfirmed:
+          await blocklistRepository.unblockUser(otherPubkey);
+        case MoreSheetResult.addToList:
+          // addToList is not surfaced from this caller (showAddToList defaults
+          // to false on MoreSheetContent here), so this branch is unreachable.
+          break;
+      }
+    } finally {
+      _isOpeningOptions = false;
     }
   }
 
