@@ -720,7 +720,8 @@ class DmRepository {
   /// separately by the provider via [startListening] right after this
   /// returns, so DM ingestion runs for the whole authenticated session.
   /// Cold-start cost stays bounded thanks to the count-based windowing
-  /// (`since: newestSyncedAt - 2d`) and the isolate decryption worker.
+  /// (`since: (newestWireSyncedAt ?? newestSyncedAt) - 2d`) and the isolate
+  /// decryption worker.
   /// See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   ///
   /// Safe to call multiple times — subsequent calls for the same user are
