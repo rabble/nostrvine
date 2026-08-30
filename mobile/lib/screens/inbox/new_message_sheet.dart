@@ -21,11 +21,16 @@ class NewMessageSheet extends StatelessWidget {
   const NewMessageSheet({
     required this.profileRepository,
     required this.followRepository,
+    required this.currentUserPubkey,
     super.key,
   });
 
   final ProfileRepository profileRepository;
   final FollowRepository followRepository;
+
+  /// The signed-in user, excluded from the candidate list — Divine does not
+  /// support a self-addressed conversation (#8351).
+  final String currentUserPubkey;
 
   /// Shows the sheet and returns the selected [UserProfile], or null if
   /// the user dismissed without selecting.
@@ -33,6 +38,7 @@ class NewMessageSheet extends StatelessWidget {
     BuildContext context, {
     required ProfileRepository profileRepository,
     required FollowRepository followRepository,
+    required String currentUserPubkey,
   }) {
     return showModalBottomSheet<UserProfile>(
       context: context,
@@ -42,6 +48,7 @@ class NewMessageSheet extends StatelessWidget {
       builder: (context) => NewMessageSheet(
         profileRepository: profileRepository,
         followRepository: followRepository,
+        currentUserPubkey: currentUserPubkey,
       ),
     );
   }
@@ -52,6 +59,7 @@ class NewMessageSheet extends StatelessWidget {
       create: (_) => NewMessageSearchBloc(
         profileRepository: profileRepository,
         followRepository: followRepository,
+        currentUserPubkey: currentUserPubkey,
       )..add(const NewMessageSearchStarted()),
       child: const _NewMessageSheetView(),
     );

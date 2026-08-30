@@ -16,15 +16,38 @@ import 'package:openvine/widgets/user_avatar.dart';
 /// Displays a row of avatars with display names from [MyFollowingBloc].
 /// Tapping a user triggers [onUserTapped] with their pubkey.
 class FollowingBar extends StatelessWidget {
-  const FollowingBar({required this.onUserTapped, super.key});
+  const FollowingBar({
+    required this.onUserTapped,
+    required this.currentUserPubkey,
+    super.key,
+  });
 
   final ValueChanged<String> onUserTapped;
+
+  /// The signed-in user, never offered as a conversation partner — Divine
+  /// does not support a self-addressed conversation (#8351).
+  final String currentUserPubkey;
 
   @override
   Widget build(BuildContext context) {
     return BlocSelector<MyFollowingBloc, MyFollowingState, List<String>>(
+      // Selects the list unchanged so its identity is stable across
+      // emissions — BlocSelector compares with `==`, and List does not
+      // override it, so filtering here would rebuild the bar on every
+      // MyFollowingState emission.
       selector: (state) => state.followingPubkeys,
-      builder: (context, followingPubkeys) {
+      builder: (context, allFollowingPubkeys) {
+        // Drop the viewer here rather than in [MyFollowingBloc], which nine
+        // other screens share and where following yourself is a legitimate
+        // thing to render. A contact list written by another Nostr client
+        // can self-follow, and only the merge path strips that — every other
+        // path assigns the list as received. Case-insensitive: a pubkey
+        // arriving from another client may be upper-case hex. See #8351.
+        final viewer = currentUserPubkey.toLowerCase();
+        final followingPubkeys = [
+          for (final pubkey in allFollowingPubkeys)
+            if (pubkey.toLowerCase() != viewer) pubkey,
+        ];
         if (followingPubkeys.isEmpty) return const SizedBox.shrink();
 
         return DecoratedBox(

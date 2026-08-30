@@ -92,6 +92,15 @@ void main() {
       picture: 'https://example.com/alice.png',
     );
 
+    const currentUserPubkey =
+        'facade00facade00facade00facade00facade00facade00facade00facade00';
+
+    const viewerAsRecipient = ShareableUser(
+      pubkey: currentUserPubkey,
+      displayName: 'Me',
+      picture: 'https://example.com/me.png',
+    );
+
     setUp(() {
       mockSharingService = _MockVideoSharingService();
       mockProfileRepository = _MockProfileRepository();
@@ -142,6 +151,7 @@ void main() {
       videoSharingService: mockSharingService,
       profileRepository: mockProfileRepository,
       followRepository: followRepository ?? mockFollowRepository,
+      currentUserPubkey: currentUserPubkey,
       bookmarksRepositoryFuture:
           bookmarksRepositoryFuture ?? Future.value(mockBookmarksRepository),
       cacheManager: cacheManager,
@@ -165,6 +175,76 @@ void main() {
     // -----------------------------------------------------------------------
     // Contact loading
     // -----------------------------------------------------------------------
+
+    group('excludes the current user (#8351)', () {
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'omits the viewer from contacts when their contact list self-follows',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([
+            currentUserPubkey,
+            'bbbb456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          ]);
+          when(
+            () => mockProfileRepository.getCachedProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: currentUserPubkey,
+                createdAt: DateTime.now(),
+                eventId: 'event-self',
+                rawData: const {},
+                name: 'Me',
+              ),
+              UserProfile(
+                pubkey:
+                    'bbbb456789abcdef0123456789abcdef0123456789abcdef'
+                    '0123456789abcdef',
+                createdAt: DateTime.now(),
+                eventId: 'event-bob',
+                rawData: const {},
+                name: 'Bob',
+              ),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        verify: (bloc) {
+          expect(
+            bloc.state.contacts.map((c) => c.pubkey),
+            isNot(contains(currentUserPubkey)),
+          );
+          expect(bloc.state.contacts, isNotEmpty);
+        },
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'omits the viewer from the recently-shared-with row',
+        setUp: () {
+          when(
+            () => mockSharingService.recentlySharedWith,
+          ).thenReturn([viewerAsRecipient, testRecipient]);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        verify: (bloc) {
+          expect(
+            bloc.state.contacts.map((c) => c.pubkey),
+            [testRecipient.pubkey],
+          );
+        },
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'ignores a Find People selection that resolves to the viewer',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ShareSheetRecipientToggled(viewerAsRecipient)),
+        expect: () => <ShareSheetState>[],
+      );
+    });
 
     group('ShareSheetContactsLoadRequested', () {
       const profiledFollow =
@@ -1908,6 +1988,7 @@ void main() {
           videoSharingService: mockSharingService,
           profileRepository: mockProfileRepository,
           followRepository: mockFollowRepository,
+          currentUserPubkey: currentUserPubkey,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventJsonRequested()),
         errors: () => [
@@ -1959,6 +2040,7 @@ void main() {
           videoSharingService: mockSharingService,
           profileRepository: mockProfileRepository,
           followRepository: mockFollowRepository,
+          currentUserPubkey: currentUserPubkey,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventIdRequested()),
         errors: () => [

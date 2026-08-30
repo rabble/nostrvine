@@ -161,6 +161,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             videoSharingService: widget.videoSharingService,
             profileRepository: widget.profileRepository,
             followRepository: ref.read(followRepositoryProvider),
+            // Empty when signed out: no viewer to exclude, and an empty
+            // string never matches a real pubkey (#8351).
+            currentUserPubkey:
+                ref.read(authServiceProvider).currentPublicKeyHex ?? '',
             bookmarksRepositoryFuture: ref.read(
               bookmarksRepositoryProvider.future,
             ),

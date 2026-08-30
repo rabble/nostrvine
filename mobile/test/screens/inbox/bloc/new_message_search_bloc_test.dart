@@ -19,6 +19,9 @@ void main() {
     late _MockFollowRepository mockFollowRepo;
 
     const debounceDuration = Duration(milliseconds: 400);
+    const currentUserPubkey =
+        'facade00facade00facade00facade00'
+        'facade00facade00facade00facade00';
 
     setUp(() {
       mockProfileRepo = _MockProfileRepository();
@@ -28,6 +31,7 @@ void main() {
     NewMessageSearchBloc createBloc() => NewMessageSearchBloc(
       profileRepository: mockProfileRepo,
       followRepository: mockFollowRepo,
+      currentUserPubkey: currentUserPubkey,
     );
 
     UserProfile createTestProfile(
@@ -53,6 +57,89 @@ void main() {
       expect(bloc.state.query, isEmpty);
       expect(bloc.state.results, isEmpty);
       bloc.close();
+    });
+
+    group('excludes the current user (#8351)', () {
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'omits the viewer from contacts when their contact list self-follows',
+        setUp: () {
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([currentUserPubkey, 'a' * 64]);
+          when(
+            () => mockProfileRepo.getCachedProfile(pubkey: currentUserPubkey),
+          ).thenAnswer((_) async => createTestProfile(currentUserPubkey, 'Me'));
+          when(
+            () => mockProfileRepo.getCachedProfile(pubkey: 'a' * 64),
+          ).thenAnswer((_) async => createTestProfile('a' * 64, 'Alice'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const NewMessageSearchStarted()),
+        expect: () => [
+          isA<NewMessageSearchState>().having(
+            (s) => s.contacts.map((c) => c.pubkey),
+            'contact pubkeys',
+            ['a' * 64],
+          ),
+        ],
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'omits the viewer from network search results',
+        setUp: () {
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
+          when(
+            () => mockProfileRepo.searchUsers(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTestProfile(currentUserPubkey, 'Me'),
+              createTestProfile('a' * 64, 'Alice'),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const NewMessageSearchStarted());
+          bloc.add(const NewMessageSearchQueryChanged('al'));
+        },
+        wait: debounceDuration,
+        verify: (bloc) {
+          expect(
+            bloc.state.results.map((r) => r.pubkey),
+            ['a' * 64],
+          );
+        },
+      );
+
+      blocTest<NewMessageSearchBloc, NewMessageSearchState>(
+        'omits the viewer when their contact list stores upper-case hex',
+        setUp: () {
+          when(
+            () => mockFollowRepo.followingPubkeys,
+          ).thenReturn([currentUserPubkey.toUpperCase()]);
+          when(
+            () => mockProfileRepo.getCachedProfile(
+              pubkey: currentUserPubkey.toUpperCase(),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                createTestProfile(currentUserPubkey.toUpperCase(), 'Me'),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const NewMessageSearchStarted()),
+        expect: () => [
+          isA<NewMessageSearchState>().having(
+            (s) => s.contacts,
+            'contacts',
+            isEmpty,
+          ),
+        ],
+      );
     });
 
     group('NewMessageSearchStarted', () {

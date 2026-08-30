@@ -22,6 +22,8 @@ void main() {
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   const pubkey2 =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const currentUserPubkey =
+      'facade00facade00facade00facade00facade00facade00facade00facade00';
 
   final now = DateTime.now();
 
@@ -53,6 +55,7 @@ void main() {
       List<dynamic> additionalOverrides = const [],
       ValueChanged<String>? onUserTapped,
       Locale? locale,
+      String viewerPubkey = currentUserPubkey,
     }) {
       whenListen(
         mockFollowingBloc,
@@ -66,7 +69,10 @@ void main() {
         home: BlocProvider<MyFollowingBloc>.value(
           value: mockFollowingBloc,
           child: Scaffold(
-            body: FollowingBar(onUserTapped: onUserTapped ?? (_) {}),
+            body: FollowingBar(
+              onUserTapped: onUserTapped ?? (_) {},
+              currentUserPubkey: viewerPubkey,
+            ),
           ),
         ),
       );
@@ -80,6 +86,67 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(FollowingBar), findsOneWidget);
+        expect(find.byType(UserAvatar), findsNothing);
+        expect(find.byType(SizedBox), findsOneWidget);
+      });
+
+      testWidgets('omits the viewer when their contact list self-follows', (
+        tester,
+      ) async {
+        final profile1 = createTestProfile(
+          pubkey: pubkey1,
+          displayName: 'Alice',
+        );
+        final selfProfile = createTestProfile(
+          pubkey: currentUserPubkey,
+          displayName: 'Me',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [pubkey1, currentUserPubkey],
+            ),
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                pubkey1,
+              ).overrideWith((ref) async => profile1),
+              fetchUserProfileProvider(
+                currentUserPubkey,
+              ).overrideWith((ref) async => selfProfile),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(UserAvatar), findsOneWidget);
+        expect(find.text('Me'), findsNothing);
+      });
+
+      testWidgets('collapses when the viewer is the only followed pubkey', (
+        tester,
+      ) async {
+        final selfProfile = createTestProfile(
+          pubkey: currentUserPubkey,
+          displayName: 'Me',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [currentUserPubkey],
+            ),
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                currentUserPubkey,
+              ).overrideWith((ref) async => selfProfile),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
         expect(find.byType(UserAvatar), findsNothing);
         expect(find.byType(SizedBox), findsOneWidget);
       });
