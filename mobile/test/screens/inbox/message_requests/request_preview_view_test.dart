@@ -274,14 +274,26 @@ void main() {
       testWidgets('omits the video count when it is zero', (tester) async {
         await pumpStats(tester, buildStatsSubject(statsWith(followers: 5)));
 
-        expect(find.textContaining('video'), findsNothing);
+        expect(
+          find.textContaining(
+            l10n.messageRequestVideosCount(0, '0'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
       });
 
       // Null followers means "not known yet", never zero.
       testWidgets('omits the follower count when it is null', (tester) async {
         await pumpStats(tester, buildStatsSubject(statsWith(videoCount: 3)));
 
-        expect(find.textContaining('Follower'), findsNothing);
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(0, '0'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
       });
 
       testWidgets('omits the follower count when it is zero', (tester) async {
@@ -290,7 +302,13 @@ void main() {
           buildStatsSubject(statsWith(followers: 0, videoCount: 3)),
         );
 
-        expect(find.textContaining('Follower'), findsNothing);
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(0, '0'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
       });
 
       testWidgets('omits loops below the visibility floor', (tester) async {
@@ -304,7 +322,16 @@ void main() {
           ),
         );
 
-        expect(find.textContaining('loop'), findsNothing);
+        expect(
+          find.textContaining(
+            l10n.videoFeedLoopCountLine(
+              '10K',
+              profileLoopsVisibilityFloor - 1,
+            ),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
       });
 
       // The sender is never the viewer, so the profile header's owner
@@ -332,17 +359,39 @@ void main() {
       testWidgets('hides the line once the skeleton times out', (
         tester,
       ) async {
+        final semantics = tester.ensureSemantics();
         await pumpStats(tester, buildStatsSubject(null));
 
         // A placeholder line stands in while the counts are still arriving.
-        expect(find.textContaining('Followers'), findsOneWidget);
+        final placeholderFollowers = l10n.messageRequestFollowersCount(
+          99,
+          '99',
+        );
+        final placeholderVideos = l10n.messageRequestVideosCount(99, '99');
+        expect(
+          find.textContaining(placeholderFollowers, findRichText: true),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(
+            '$placeholderFollowers \u2022 $placeholderVideos',
+          ),
+          findsNothing,
+        );
 
         await tester.pump(const Duration(seconds: 8));
 
         // Once the store has plainly not answered, the line goes rather than
         // shimmering forever or degrading to a dash it cannot pluralise.
-        expect(find.textContaining('Followers'), findsNothing);
-        expect(find.textContaining('video'), findsNothing);
+        expect(
+          find.textContaining(placeholderFollowers, findRichText: true),
+          findsNothing,
+        );
+        expect(
+          find.textContaining(placeholderVideos, findRichText: true),
+          findsNothing,
+        );
+        semantics.dispose();
       });
 
       // Matches the avatar/handle suppression: a vanished account shows no
@@ -356,8 +405,20 @@ void main() {
           ),
         );
 
-        expect(find.textContaining('Followers'), findsNothing);
-        expect(find.textContaining('video'), findsNothing);
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(2100, '2.1K'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
+        expect(
+          find.textContaining(
+            l10n.messageRequestVideosCount(9, '9'),
+            findRichText: true,
+          ),
+          findsNothing,
+        );
       });
     });
 

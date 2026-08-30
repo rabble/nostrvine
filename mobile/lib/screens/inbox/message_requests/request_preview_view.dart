@@ -567,12 +567,16 @@ class _StatsLineState extends State<_StatsLine> {
 
     return Skeletonizer(
       enabled: showSkeleton,
-      child: Text(
-        parts.join(' \u2022 '),
-        style: VineTheme.bodySmallFont(
-          color: context.vineColors.onSurfaceVariant,
+      effect: vineSkeletonEffectOf(context),
+      child: ExcludeSemantics(
+        excluding: showSkeleton,
+        child: Text(
+          parts.join(' \u2022 '),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }
