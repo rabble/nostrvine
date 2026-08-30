@@ -3607,6 +3607,9 @@ class DmRepository {
   /// Throws [ArgumentError] if [recipientPubkey] is not a 64-character
   /// hex string or if [content] is empty.
   ///
+  /// Returns a failure result, publishing nothing, when [recipientPubkey] is
+  /// the sender — see the refusal below.
+  ///
   /// When an [OutgoingDmsDao] is injected, the send goes through the
   /// durable queue: build the rumor, enqueue a `pending`/`pending` row
   /// keyed by the rumor's id, publish, then transition the queue row
@@ -3631,6 +3634,25 @@ class DmRepository {
     validatePubkey(recipientPubkey);
     if (content.trim().isEmpty) {
       throw ArgumentError.value(content, 'content', 'must not be empty');
+    }
+
+    // Divine does not support a self-addressed conversation (#8351, decided
+    // on #8261). Refused here rather than in the UI so every caller is covered —
+    // share-to-DM, collaborator invites, the retry paths, and whatever is
+    // added next. Returned rather than thrown because callers already branch
+    // on `success` and one of them, `CollaboratorInviteService.sendInvites`,
+    // loops without a catch: a throw would abort the remaining invites.
+    //
+    // A published self-send is not merely useless, it is permanent. The
+    // receive path drops a wrap whose participants collapse to a single
+    // pubkey (#2824), so the app cannot read its own message back; and a
+    // NIP-59 gift wrap is signed by a throwaway ephemeral key, which is the
+    // author funnelcake matches a kind-5 against, so the real sender is never
+    // authorized to delete it.
+    if (_isSelf(recipientPubkey)) {
+      return const NIP17SendResult.failure(
+        'refused: a message cannot be addressed to its own sender',
+      );
     }
 
     // Send gate (#176): block before building or enqueuing a doomed intent.
@@ -6003,6 +6025,14 @@ class DmRepository {
       throw ArgumentError.value(fileUrl, 'fileUrl', 'must not be empty');
     }
 
+    // Self-addressed sends are refused (#8351) — see [sendMessage] for why a
+    // published one cannot be read back or deleted.
+    if (_isSelf(recipientPubkey)) {
+      return const NIP17SendResult.failure(
+        'refused: a message cannot be addressed to its own sender',
+      );
+    }
+
     // Protected-minor gate (#176): the file path intentionally relies on the
     // single authoritative choke point in `sendRumor` (via sendPrivateMessage)
     // rather than adding its own pre-check like sendMessage/sendGroupMessage. A
@@ -7236,6 +7266,14 @@ class DmRepository {
       );
     }
   }
+
+  /// Whether [pubkey] addresses the signed-in user.
+  ///
+  /// Compared case-insensitively because [validatePubkey] accepts upper-case
+  /// hex (`[0-9a-fA-F]{64}`), so an exact `==` would let `A1B2…` through as a
+  /// different person from `a1b2…`.
+  bool _isSelf(String pubkey) =>
+      pubkey.toLowerCase() == _userPubkey.toLowerCase();
 
   Never _dummyRelay(String url) {
     throw UnimplementedError('Relay not needed for decryption');

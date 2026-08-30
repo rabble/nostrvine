@@ -1004,6 +1004,39 @@ void main() {
         );
       });
 
+      test('refuses a self-addressed recipient before any publish', () async {
+        final repository = createRepository();
+
+        final result = await repository.sendMessage(
+          recipientPubkey: _validPubkeyA,
+          content: 'Note to self',
+        );
+
+        expect(result.success, isFalse);
+        verifyNever(() => mockMessageService.canSendTo(any()));
+        verifyNever(
+          () => mockMessageService.sendRumor(
+            rumorEvent: any(named: 'rumorEvent'),
+            recipientPubkey: any(named: 'recipientPubkey'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: any(named: 'awaitRecipientOk'),
+            selfWrapOnSoftUnconfirmed: any(named: 'selfWrapOnSoftUnconfirmed'),
+          ),
+        );
+      });
+
+      test('refuses a self-addressed recipient in upper-case hex', () async {
+        final repository = createRepository();
+
+        final result = await repository.sendMessage(
+          recipientPubkey: _validPubkeyA.toUpperCase(),
+          content: 'Note to self',
+        );
+
+        expect(result.success, isFalse);
+        verifyNever(() => mockMessageService.canSendTo(any()));
+      });
+
       test('sendMessage forwards additional NIP-17 tags', () async {
         stubSendRumor(
           (rumorEvent, recipientPubkey) async =>
@@ -9579,6 +9612,26 @@ void main() {
             fileMetadata: testFileMetadata,
           ),
           throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('refuses a self-addressed recipient before any publish', () async {
+        final repository = createRepository();
+
+        final result = await repository.sendFileMessage(
+          recipientPubkey: _validPubkeyA,
+          fileUrl: 'https://blossom.example.com/file.enc',
+          fileMetadata: testFileMetadata,
+        );
+
+        expect(result.success, isFalse);
+        verifyNever(
+          () => mockMessageService.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
         );
       });
 
