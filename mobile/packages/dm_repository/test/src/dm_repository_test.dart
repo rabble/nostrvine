@@ -9635,6 +9635,26 @@ void main() {
         );
       });
 
+      test('refuses a self-addressed recipient in upper-case hex', () async {
+        final repository = createRepository();
+
+        final result = await repository.sendFileMessage(
+          recipientPubkey: _validPubkeyA.toUpperCase(),
+          fileUrl: 'https://blossom.example.com/file.enc',
+          fileMetadata: testFileMetadata,
+        );
+
+        expect(result.success, isFalse);
+        verifyNever(
+          () => mockMessageService.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        );
+      });
+
       test('sends kind 15 event and persists with file metadata', () async {
         when(
           () => mockMessageService.sendPrivateMessage(

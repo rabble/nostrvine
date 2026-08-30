@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/dm_peer_identity.dart';
@@ -43,10 +44,9 @@ class FollowingBar extends StatelessWidget {
         // can self-follow, and only the merge path strips that — every other
         // path assigns the list as received. Case-insensitive: a pubkey
         // arriving from another client may be upper-case hex. See #8351.
-        final viewer = currentUserPubkey.toLowerCase();
         final followingPubkeys = [
           for (final pubkey in allFollowingPubkeys)
-            if (pubkey.toLowerCase() != viewer) pubkey,
+            if (!pubkeysEqual(pubkey, currentUserPubkey)) pubkey,
         ];
         if (followingPubkeys.isEmpty) return const SizedBox.shrink();
 

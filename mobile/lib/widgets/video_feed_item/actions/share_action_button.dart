@@ -421,6 +421,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     final selectedUser = await FindPeopleSheet.show(
       context,
       contacts: _shareSheetBloc.state.contacts,
+      currentUserPubkey:
+          ref.read(authServiceProvider).currentPublicKeyHex ?? '',
     );
     if (selectedUser != null && mounted) {
       _shareSheetBloc.add(ShareSheetRecipientToggled(selectedUser));

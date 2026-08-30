@@ -32,6 +32,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip19/pubkey_for_logs.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_batch_unwrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
@@ -3638,8 +3639,8 @@ class DmRepository {
 
     // Divine does not support a self-addressed conversation (#8351, decided
     // on #8261). Refused here rather than in the UI so every caller is
-    // covered — share-to-DM, collaborator invites, the retry paths, and
-    // whatever is added next. Returned rather than thrown because callers
+    // covered — share-to-DM, collaborator invites, and whatever is added
+    // next. Returned rather than thrown because callers
     // already branch on `success` and one of them,
     // `CollaboratorInviteService.sendInvites`, loops without a catch: a
     // throw would abort the remaining invites.
@@ -7273,8 +7274,7 @@ class DmRepository {
   /// Compared case-insensitively because [validatePubkey] accepts upper-case
   /// hex (`[0-9a-fA-F]{64}`), so an exact `==` would let `A1B2…` through as a
   /// different person from `a1b2…`.
-  bool _isSelf(String pubkey) =>
-      pubkey.toLowerCase() == _userPubkey.toLowerCase();
+  bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _userPubkey);
 
   Never _dummyRelay(String url) {
     throw UnimplementedError('Relay not needed for decryption');

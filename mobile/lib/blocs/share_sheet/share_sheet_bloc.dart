@@ -13,6 +13,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/blocs/share_sheet/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
@@ -108,9 +109,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       // contact list written by another Nostr client can self-follow, and
       // recents accumulate whoever a share was sent to.
       final recentUsers = _videoSharingService.recentlySharedWith
-          .where((user) => _isNotSelf(user.pubkey))
+          .where((user) => !_isSelf(user.pubkey))
           .toList();
-      final followList = _followRepository.followingPubkeys.where(_isNotSelf);
+      final followList = _followRepository.followingPubkeys.where(
+        (pubkey) => !_isSelf(pubkey),
+      );
       final recentPubkeys = recentUsers.map((u) => u.pubkey).toSet();
 
       final remainingFollows = followList
@@ -243,12 +246,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     }
   }
 
-  /// Whether [pubkey] is somebody other than the viewer.
+  /// Whether [pubkey] addresses the viewer.
   ///
   /// Case-insensitive, because a pubkey that reaches Divine from another
   /// client may be upper-case hex.
-  bool _isNotSelf(String pubkey) =>
-      pubkey.toLowerCase() != _currentUserPubkey.toLowerCase();
+  bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _currentUserPubkey);
 
   // --------------------------------------------------------------------------
   // Recipient selection
@@ -261,7 +263,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     final recipient = event.recipient;
     // Find People searches all users, so it can surface the viewer even
     // though neither contact source offers them (#8351).
-    if (!_isNotSelf(recipient.pubkey)) return;
+    if (_isSelf(recipient.pubkey)) return;
 
     final updatedSelection = state.isSelected(recipient)
         ? [

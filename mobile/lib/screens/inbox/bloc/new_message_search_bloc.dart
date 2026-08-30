@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/pubkeys_equal.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -40,7 +41,9 @@ class NewMessageSearchBloc
     NewMessageSearchStarted event,
     Emitter<NewMessageSearchState> emit,
   ) async {
-    final pubkeys = _followRepository.followingPubkeys.where(_isNotSelf);
+    final pubkeys = _followRepository.followingPubkeys.where(
+      (pubkey) => !_isSelf(pubkey),
+    );
     final futures = pubkeys.map(
       (pk) => _profileRepository.getCachedProfile(pubkey: pk),
     );
@@ -90,7 +93,7 @@ class NewMessageSearchBloc
         query: query,
         limit: 50,
         sortBy: profileSearchSortFollowers,
-      )).where((profile) => _isNotSelf(profile.pubkey)).toList();
+      )).where((profile) => !_isSelf(profile.pubkey)).toList();
 
       Log.debug(
         'Query "$query": ${networkResults.length} network results',
@@ -125,7 +128,7 @@ class NewMessageSearchBloc
     );
   }
 
-  /// Whether [pubkey] is somebody other than the viewer.
+  /// Whether [pubkey] addresses the viewer.
   ///
   /// Divine does not support a self-addressed conversation (#8351, decided
   /// on #8261), so the viewer is never a candidate recipient. Filtered here in
@@ -135,8 +138,7 @@ class NewMessageSearchBloc
   ///
   /// Case-insensitive, because a pubkey that reaches Divine from another
   /// client may be upper-case hex.
-  bool _isNotSelf(String pubkey) =>
-      pubkey.toLowerCase() != _currentUserPubkey.toLowerCase();
+  bool _isSelf(String pubkey) => pubkeysEqual(pubkey, _currentUserPubkey);
 
   /// Filters contacts by display name or NIP-05.
   static List<UserProfile> _filterContacts(

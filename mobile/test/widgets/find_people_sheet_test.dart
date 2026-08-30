@@ -20,6 +20,8 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   group(FindPeopleSheet, () {
+    const currentUserPubkey =
+        'facade00facade00facade00facade00facade00facade00facade00facade00';
     late _MockProfileRepository mockProfileRepo;
 
     setUp(() {
@@ -49,6 +51,7 @@ void main() {
                       height: 600,
                       child: FindPeopleSheet(
                         contacts: contacts,
+                        currentUserPubkey: currentUserPubkey,
                         searchTimeout: searchTimeout,
                       ),
                     ),
@@ -221,6 +224,50 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pumpAndSettle();
 
+        expect(find.text('Bob'), findsOneWidget);
+      });
+
+      testWidgets('does not offer the viewer in search results', (
+        tester,
+      ) async {
+        when(
+          () => mockProfileRepo.searchUsersProgressive(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value(
+            ProgressiveSearchResult(
+              profiles: [
+                UserProfile(
+                  pubkey: currentUserPubkey.toUpperCase(),
+                  displayName: 'Me',
+                  createdAt: DateTime.now(),
+                  eventId: 'event-$currentUserPubkey',
+                  rawData: const {'display_name': 'Me'},
+                ),
+                UserProfile(
+                  pubkey: 'b' * 64,
+                  displayName: 'Bob',
+                  createdAt: DateTime.now(),
+                  eventId: 'event-${'b' * 64}',
+                  rawData: const {'display_name': 'Bob'},
+                ),
+              ],
+              sources: const {},
+              isComplete: true,
+            ),
+          ),
+        );
+
+        await openSheet(tester);
+        await tester.enterText(find.byType(TextField), 'me');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Me'), findsNothing);
         expect(find.text('Bob'), findsOneWidget);
       });
 
@@ -416,6 +463,7 @@ void main() {
                         result = await FindPeopleSheet.show(
                           context,
                           contacts: [contact],
+                          currentUserPubkey: currentUserPubkey,
                         );
                       },
                       child: const Text('Open Sheet'),
@@ -467,8 +515,11 @@ void main() {
             home: Builder(
               builder: (context) => Scaffold(
                 body: ElevatedButton(
-                  onPressed: () =>
-                      FindPeopleSheet.show(context, contacts: contacts),
+                  onPressed: () => FindPeopleSheet.show(
+                    context,
+                    contacts: contacts,
+                    currentUserPubkey: currentUserPubkey,
+                  ),
                   child: const Text('Open Sheet'),
                 ),
               ),
