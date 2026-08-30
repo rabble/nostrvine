@@ -1,5 +1,5 @@
 // ABOUTME: Conversation tile variant for message requests.
-// ABOUTME: Always shows "Sent a message request" as the subtitle.
+// ABOUTME: Subtitle states the request, or that the thread is closed.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +16,9 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// A conversation row in the message requests list.
 ///
-/// Layout matches [ConversationTile] but the subtitle always reads
-/// "Sent a message request" regardless of last message content.
+/// Layout matches [ConversationTile], but the subtitle never previews the
+/// last message: it reads "Sent a message request", or — for a thread keyed
+/// on a retired moderation account — the [ClosedThreadSubtitle] status line.
 class RequestTile extends ConsumerWidget {
   const RequestTile({
     required this.conversation,
@@ -67,9 +68,7 @@ class RequestTile extends ConsumerWidget {
             locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
-    final subtitle = isRetiredModerationAccount(otherPubkey)
-        ? context.l10n.dmRetiredThreadClosedTitle
-        : context.l10n.inboxRequestTileSubtitle;
+    final isClosedThread = isRetiredModerationAccount(otherPubkey);
 
     return Semantics(
       button: true,
@@ -139,14 +138,17 @@ class RequestTile extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: VineTheme.bodyMediumFont(
-                          color: context.vineColors.onSurfaceVariant,
+                      if (isClosedThread)
+                        const ClosedThreadSubtitle()
+                      else
+                        Text(
+                          context.l10n.inboxRequestTileSubtitle,
+                          style: VineTheme.bodyMediumFont(
+                            color: context.vineColors.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ],
                   ),
                 ),

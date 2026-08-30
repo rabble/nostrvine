@@ -895,6 +895,12 @@ void main() {
           .firstWhere((account) => account.role == 'moderation')
           .pubkeyHex;
 
+      Finder lockFinder() => find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineIcon && widget.icon == DivineIconName.lockSimple,
+        description: 'closed-thread lock',
+      );
+
       Finder wordmarkFinder() => find.byWidgetPredicate(
         (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
         description: 'bundled Divine wordmark',
@@ -1032,6 +1038,33 @@ void main() {
             find.text(UserProfile.defaultDisplayNameFor(retired)),
             findsNothing,
           );
+        });
+
+        testWidgets('a retired thread is marked closed, not previewed', (
+          tester,
+        ) async {
+          // Name and wordmark are deliberately identical to the live pinned
+          // support row, so the closed sentence used to be the only thing
+          // separating them — rendered in the preview's own slot, font and
+          // colour, which reads as "the last thing they said" rather than as
+          // a status (#7847). The lock is what makes it scan as one.
+          await pumpUnprofiledTileFor(tester, kLegacyModerationPubkeys.first);
+
+          expect(lockFinder(), findsOneWidget);
+        });
+
+        testWidgets('a live moderation thread carries no lock', (
+          tester,
+        ) async {
+          await pumpUnprofiledTileFor(tester, moderationPubkey);
+
+          expect(lockFinder(), findsNothing);
+        });
+
+        testWidgets('an ordinary thread carries no lock', (tester) async {
+          await pumpUnprofiledTileFor(tester, otherPubkey);
+
+          expect(lockFinder(), findsNothing);
         });
 
         testWidgets('the current key is named without a kind-0 too', (

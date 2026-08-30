@@ -227,6 +227,12 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      Finder lockFinder() => find.byWidgetPredicate(
+        (widget) =>
+            widget is DivineIcon && widget.icon == DivineIconName.lockSimple,
+        description: 'closed-thread lock',
+      );
+
       Finder wordmarkFinder() => find.byWidgetPredicate(
         (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
         description: 'bundled Divine wordmark',
@@ -247,6 +253,30 @@ void main() {
           findsNothing,
         );
         expect(wordmarkFinder(), findsOneWidget);
+      });
+
+      testWidgets('a retired moderation request is marked closed', (
+        tester,
+      ) async {
+        // Same shape as the inbox row: the request list also names a retired
+        // key "Divine Moderation" beside the same wordmark, so the closed
+        // sentence needs the same status affordance on both surfaces or a
+        // thread reads as dead in one list and live in the other (#7847).
+        await pumpTileFor(tester, kLegacyModerationPubkeys.first);
+
+        expect(lockFinder(), findsOneWidget);
+      });
+
+      testWidgets('a live moderation request carries no lock', (tester) async {
+        await pumpTileFor(tester, kModerationPubkeyHex);
+
+        expect(lockFinder(), findsNothing);
+      });
+
+      testWidgets('an ordinary request carries no lock', (tester) async {
+        await pumpTileFor(tester, otherPubkey);
+
+        expect(lockFinder(), findsNothing);
       });
 
       testWidgets('the current moderation key is named and badged too', (
