@@ -3823,6 +3823,31 @@ void main() {
         expect(await repository.fetchUserLikes(otherUserPubkey), [targetId]);
       });
 
+      test(
+        'binds to the last e tag when a peer threads its reaction',
+        () async {
+          const threadRoot = 'thread_root_event_1234567890abcdef';
+          const reactedTo = 'reacted_to_event_abcdef1234567890';
+
+          // NIP-25: "If a client decides to include other `e`, which not
+          // recommended, the target event `id` should be last of the `e` tags."
+          final mockReaction = MockEvent();
+          when(() => mockReaction.content).thenReturn('+');
+          when(() => mockReaction.createdAt).thenReturn(defaultTimestamp);
+          when(() => mockReaction.tags).thenReturn([
+            ['e', threadRoot],
+            ['e', reactedTo],
+          ]);
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [mockReaction]);
+
+          repository = createRepository();
+          expect(await repository.fetchUserLikes(otherUserPubkey), [reactedTo]);
+        },
+      );
+
       test('returns likes ordered by recency', () async {
         const olderId = 'older_target_1234567890abcdef';
         const newerId = 'newer_target_1234567890abcdef';
