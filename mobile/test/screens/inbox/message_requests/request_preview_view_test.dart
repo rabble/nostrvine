@@ -13,6 +13,7 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/config/profile_metrics.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -173,6 +174,183 @@ void main() {
         ),
       );
     }
+
+    // #7486. These counts had never rendered. The widget read
+    // `UserProfile.followerCount` / `videoCount`, whose REST disjunct is only
+    // ever populated by the people-search shape (never written to the cache
+    // this screen reads) and whose Kind 0 disjunct reads `rawData` for keys
+    // the archive importer writes as tags. Both were structurally null, so the
+    // line was dead. Counts now come from the `profile_statistics` store.
+    group('stats line', () {
+      Widget buildStatsSubject(ProfileStats? stats, {bool vanished = false}) {
+        return testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockNostrService: mockNostrClient,
+          additionalOverrides: [
+            goRouterProvider.overrideWithValue(mockGoRouter),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            userProfileReactiveProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(testProfile)),
+            userProfileStatsReactiveProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(stats)),
+            profileVanishedProvider(
+              otherPubkey,
+            ).overrideWith((ref) => Stream.value(vanished)),
+          ],
+          home: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<RequestPreviewCubit>.value(
+                  value: mockPreviewCubit,
+                ),
+                BlocProvider<MessageRequestActionsCubit>.value(
+                  value: mockActionsCubit,
+                ),
+                BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                ),
+              ],
+              child: const RequestPreviewView(),
+            ),
+          ),
+        );
+      }
+
+      // The skeleton shimmer animates forever, so `pumpAndSettle` would time
+      // out. Pump explicitly instead.
+      Future<void> pumpStats(WidgetTester tester, Widget subject) async {
+        await tester.pumpWidget(subject);
+        await tester.pump();
+        await tester.pump();
+      }
+
+      ProfileStats statsWith({
+        int? followers,
+        int videoCount = 0,
+        int totalViews = 0,
+      }) => ProfileStats(
+        pubkey: otherPubkey,
+        followers: followers,
+        videoCount: videoCount,
+        totalViews: totalViews,
+      );
+
+      // The regression guard: on the pre-fix build the widget ignored
+      // ProfileStats entirely and rendered no counts at all, so this fails
+      // without the source change rather than merely re-asserting it.
+      testWidgets('renders the follower count from ProfileStats', (
+        tester,
+      ) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(followers: 2100)));
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestFollowersCount(2100, '2.1K'),
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders the video count from ProfileStats', (tester) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(videoCount: 15)));
+
+        expect(
+          find.textContaining(
+            l10n.messageRequestVideosCount(15, '15'),
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      // A zero is indistinguishable from "never indexed" and from a stats
+      // outage — funnelcake collapses a ClickHouse failure into zeros behind
+      // an HTTP 200 — so it is withheld, matching the repository's own
+      // follower/following guard.
+      testWidgets('omits the video count when it is zero', (tester) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(followers: 5)));
+
+        expect(find.textContaining('video'), findsNothing);
+      });
+
+      // Null followers means "not known yet", never zero.
+      testWidgets('omits the follower count when it is null', (tester) async {
+        await pumpStats(tester, buildStatsSubject(statsWith(videoCount: 3)));
+
+        expect(find.textContaining('Follower'), findsNothing);
+      });
+
+      testWidgets('omits loops below the visibility floor', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(
+            statsWith(
+              videoCount: 3,
+              totalViews: profileLoopsVisibilityFloor - 1,
+            ),
+          ),
+        );
+
+        expect(find.textContaining('loop'), findsNothing);
+      });
+
+      // The sender is never the viewer, so the profile header's owner
+      // exemption does not apply — only the floor decides.
+      testWidgets('renders loops at the visibility floor', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(
+            statsWith(videoCount: 3, totalViews: profileLoopsVisibilityFloor),
+          ),
+        );
+
+        expect(
+          find.textContaining(
+            l10n.videoFeedLoopCountLine('10K', profileLoopsVisibilityFloor),
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      // An ICU plural fuses its numeral and its noun, so there is no numeral
+      // to swap for a dash the way the profile header's columns do. The line
+      // shimmers, then gives up.
+      testWidgets('hides the line once the skeleton times out', (
+        tester,
+      ) async {
+        await pumpStats(tester, buildStatsSubject(null));
+
+        // A placeholder line stands in while the counts are still arriving.
+        expect(find.textContaining('Followers'), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 8));
+
+        // Once the store has plainly not answered, the line goes rather than
+        // shimmering forever or degrading to a dash it cannot pluralise.
+        expect(find.textContaining('Followers'), findsNothing);
+        expect(find.textContaining('video'), findsNothing);
+      });
+
+      // Matches the avatar/handle suppression: a vanished account shows no
+      // counts, and does not shimmer waiting for counts that never arrive.
+      testWidgets('renders no stats for a vanished account', (tester) async {
+        await pumpStats(
+          tester,
+          buildStatsSubject(
+            statsWith(followers: 2100, videoCount: 9),
+            vanished: true,
+          ),
+        );
+
+        expect(find.textContaining('Followers'), findsNothing);
+        expect(find.textContaining('video'), findsNothing);
+      });
+    });
 
     // #6416. This screen is where an inbound-first moderation notice is first
     // seen, and it offered "Decline and remove" against an unidentified

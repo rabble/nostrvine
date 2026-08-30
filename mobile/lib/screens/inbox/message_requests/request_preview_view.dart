@@ -1,6 +1,8 @@
 // ABOUTME: View for the message request preview screen.
 // ABOUTME: Shows sender profile info, message count, and accept/decline actions.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/config/official_accounts.dart';
+import 'package:openvine/config/profile_metrics.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
@@ -25,6 +28,7 @@ import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// View for the message request preview screen.
 ///
@@ -115,6 +119,22 @@ class RequestPreviewView extends ConsumerWidget {
     // downstream.
     final visibleProfile = isDeleted ? null : profile;
 
+    // Counts come from the profile-statistics store, not from the profile.
+    // `UserProfile.rawData` only carries `follower_count` / `video_count` on
+    // the people-search shape (`ProfileSearchResult.toUserProfile`), which is
+    // never written to the Drift cache this screen reads — so the REST-only
+    // getters are structurally null here and the Kind 0 `vine_*` fallback is
+    // dead too (the archive importer writes those as tags, not content).
+    // `_cacheProfileStatsFromResult` routes `social` / `stats` from
+    // `GET /api/users/{pubkey}` into `profile_statistics`, which is where the
+    // numbers actually live (#7486).
+    final stats = isDeleted
+        ? null
+        : ref
+              .watch(userProfileStatsReactiveProvider(otherPubkey))
+              .asData
+              ?.value;
+
     final displayName = dmPeerDisplayName(
       context,
       pubkeyHex: otherPubkey,
@@ -139,6 +159,10 @@ class RequestPreviewView extends ConsumerWidget {
               child: _ProfileContent(
                 displayName: displayName,
                 profile: visibleProfile,
+                stats: stats,
+                // A vanished account shows no counts and no shimmer waiting
+                // for counts that will never arrive.
+                statsPending: !isDeleted && stats == null,
                 otherPubkey: otherPubkey,
                 currentPubkey: currentPubkey,
                 messageCount: messageCount,
@@ -252,6 +276,8 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.displayName,
     required this.profile,
+    required this.stats,
+    required this.statsPending,
     required this.otherPubkey,
     required this.currentPubkey,
     required this.messageCount,
@@ -260,6 +286,13 @@ class _ProfileContent extends StatelessWidget {
 
   final String displayName;
   final UserProfile? profile;
+  final ProfileStats? stats;
+
+  /// Whether counts are still expected to arrive for this account.
+  ///
+  /// False for a vanished account, whose stats are suppressed outright rather
+  /// than awaited.
+  final bool statsPending;
   final String otherPubkey;
   final String currentPubkey;
   final int messageCount;
@@ -269,8 +302,22 @@ class _ProfileContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = profile?.picture;
     final nip05 = profile?.shortDisplayNip05;
-    final followerCount = profile?.followerCount;
-    final videoCount = profile?.videoCount;
+    // A zero is not data on any of the three. Funnelcake collapses a stats
+    // failure into zeros behind an HTTP 200 — `get_social_stats` never
+    // surfaces an error, and `get_user_stats` maps both a miss and a failure
+    // to a default — so "never indexed", "genuinely zero" and "the summary
+    // table is down" are indistinguishable. The repository already withholds
+    // a zero follower/following count for that reason; videos get the same
+    // treatment here (#7486).
+    final followerCount = stats?.followers;
+    final videoCount = (stats?.videoCount ?? 0) > 0 ? stats!.videoCount : null;
+
+    // The sender of a message request is never the viewer, so the owner
+    // exemption the profile header applies does not exist here — the floor
+    // always applies.
+    final loopCount = (stats?.totalViews ?? 0) >= profileLoopsVisibilityFloor
+        ? stats!.totalViews
+        : null;
 
     return ColoredBox(
       color: VineTheme.scrim15,
@@ -310,11 +357,16 @@ class _ProfileContent extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              if (followerCount != null || videoCount != null) ...[
+              if (statsPending ||
+                  followerCount != null ||
+                  videoCount != null ||
+                  loopCount != null) ...[
                 const SizedBox(height: 4),
                 _StatsLine(
                   followerCount: followerCount,
                   videoCount: videoCount,
+                  loopCount: loopCount,
+                  isLoading: statsPending,
                 ),
               ],
               const SizedBox(height: 16),
@@ -382,38 +434,146 @@ class _InvitePreview extends StatelessWidget {
   }
 }
 
-class _StatsLine extends StatelessWidget {
-  const _StatsLine({this.followerCount, this.videoCount});
+/// Followers · videos · loops for the account behind a message request.
+///
+/// Mirrors the profile header's loading vocabulary — a Skeletonizer shimmer
+/// while the counts are still arriving, bounded by [_skeletonTimeout] so a
+/// pubkey the stats store never answers for does not shimmer forever. Where
+/// the header then degrades each column to a `—`, this line hides instead:
+/// its counts are ICU plurals whose number and noun are one string, so there
+/// is no numeral to swap out without picking a plural form for a dash.
+class _StatsLine extends StatefulWidget {
+  const _StatsLine({
+    this.followerCount,
+    this.videoCount,
+    this.loopCount,
+    this.isLoading = false,
+  });
 
   final int? followerCount;
   final int? videoCount;
+  final int? loopCount;
+
+  /// Whether counts are still expected. Drives the shimmer, and the timeout
+  /// that eventually gives up on it.
+  final bool isLoading;
+
+  @override
+  State<_StatsLine> createState() => _StatsLineState();
+}
+
+class _StatsLineState extends State<_StatsLine> {
+  /// Matches the profile header's stats row, so the two surfaces give up on a
+  /// silent stats store at the same moment.
+  static const _skeletonTimeout = Duration(seconds: 7);
+
+  /// Painted behind the shimmer only. The number is never legible — it exists
+  /// to give the skeleton bar a realistic width.
+  static const _skeletonPlaceholderCount = 99;
+
+  Timer? _timer;
+  bool _timedOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isLoading) _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(_StatsLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLoading && !oldWidget.isLoading) {
+      _timedOut = false;
+      _startTimer();
+    } else if (!widget.isLoading && oldWidget.isLoading) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer(_skeletonTimeout, () {
+      if (mounted) setState(() => _timedOut = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final showSkeleton = widget.isLoading && !_timedOut;
+
     final parts = <String>[];
-    if (followerCount != null) {
-      parts.add(
-        StringUtils.compactPlural(
-          followerCount!,
-          context.l10n.messageRequestFollowersCount,
-        ),
-      );
-    }
-    if (videoCount != null) {
-      parts.add(
-        StringUtils.compactPlural(
-          videoCount!,
-          context.l10n.messageRequestVideosCount,
-        ),
-      );
+    if (showSkeleton) {
+      // Two placeholder parts set the shimmer's width. Followers and videos
+      // are the pair every account can have; loops are floored, so promising
+      // a third bar would usually shimmer into nothing.
+      parts
+        ..add(
+          StringUtils.compactPlural(
+            _skeletonPlaceholderCount,
+            l10n.messageRequestFollowersCount,
+          ),
+        )
+        ..add(
+          StringUtils.compactPlural(
+            _skeletonPlaceholderCount,
+            l10n.messageRequestVideosCount,
+          ),
+        );
+    } else {
+      final followerCount = widget.followerCount;
+      final videoCount = widget.videoCount;
+      final loopCount = widget.loopCount;
+      if (followerCount != null) {
+        parts.add(
+          StringUtils.compactPlural(
+            followerCount,
+            l10n.messageRequestFollowersCount,
+          ),
+        );
+      }
+      if (videoCount != null) {
+        parts.add(
+          StringUtils.compactPlural(
+            videoCount,
+            l10n.messageRequestVideosCount,
+          ),
+        );
+      }
+      if (loopCount != null) {
+        // `videoFeedLoopCountLine` declares its display string before its
+        // plural selector, the reverse of the two keys above, so it cannot be
+        // handed to `compactPlural` directly. Reused rather than duplicated
+        // into a new key because it already carries this wording in all 22
+        // locales.
+        parts.add(
+          StringUtils.compactPlural(
+            loopCount,
+            (value, display) => l10n.videoFeedLoopCountLine(display, value),
+          ),
+        );
+      }
     }
 
-    return Text(
-      parts.join(' \u2022 '),
-      style: VineTheme.bodySmallFont(
-        color: context.vineColors.onSurfaceVariant,
+    if (parts.isEmpty) return const SizedBox.shrink();
+
+    return Skeletonizer(
+      enabled: showSkeleton,
+      child: Text(
+        parts.join(' \u2022 '),
+        style: VineTheme.bodySmallFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
+        textAlign: TextAlign.center,
       ),
-      textAlign: TextAlign.center,
     );
   }
 }
