@@ -40,14 +40,22 @@ void main() {
     late PathProviderPlatform originalPathProvider;
 
     setUp(() async {
+      originalPathProvider = PathProviderPlatform.instance;
+      addTearDown(() {
+        PathProviderPlatform.instance = originalPathProvider;
+        HiveStorageService.resetForTesting();
+      });
+
       // A box another suite left open short-circuits `Hive.openBox`, which
       // returns the registered box without consulting the home path — these
-      // assertions would then read a stale location. Closing one flushes it,
-      // which throws when that suite already deleted the directory under it;
-      // the registry is what matters here, not the flush.
+      // assertions would then read a stale location. Hive unregisters a box
+      // before its backend close, so a missing prior home can be tolerated
+      // without hiding other close failures.
       try {
         await Hive.close();
-      } catch (_) {}
+      } on FileSystemException {
+        // The stale box is already out of Hive's registry.
+      }
 
       root = await Directory.systemTemp.createTemp('hive_storage_service_');
       documentsDir = await Directory(
@@ -61,7 +69,6 @@ void main() {
         HiveStorageService.homeDirectoryName,
       );
 
-      originalPathProvider = PathProviderPlatform.instance;
       PathProviderPlatform.instance = _FakePathProviderPlatform(
         documentsPath: documentsDir.path,
         appSupportPath: appSupportDir.path,
@@ -71,13 +78,14 @@ void main() {
     });
 
     tearDown(() async {
-      await Hive.close();
-      // close() leaves the home path pointing at the directory deleted below,
-      // and resetForTesting() only clears this service's own latch.
-      Hive.init(null);
-      PathProviderPlatform.instance = originalPathProvider;
-      HiveStorageService.resetForTesting();
-      if (root.existsSync()) root.deleteSync(recursive: true);
+      try {
+        await Hive.close();
+      } finally {
+        // close() leaves the home path pointing at the directory deleted below,
+        // and resetForTesting() only clears this service's own latch.
+        Hive.init(null);
+        if (root.existsSync()) root.deleteSync(recursive: true);
+      }
     });
 
     test('opens boxes under the Application Support home directory', () async {

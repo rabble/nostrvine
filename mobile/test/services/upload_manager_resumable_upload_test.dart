@@ -25,7 +25,7 @@ void _mockConnectivity(String result) {
         return null;
       });
   // Test-local channel, so it is not covered by the shared-channel
-  // heal-and-blame tearDown; clear what we installed.
+  // heal-and-blame tearDown; remove the per-test override.
   addTearDown(
     () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null),
@@ -92,6 +92,7 @@ void main() {
       // dispose() nulls the store's reference without closing the box, so
       // close and delete it before the directory underneath it goes away.
       await TestHelpers.cleanupHiveBox('pending_uploads');
+      Hive.init(null);
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
@@ -813,6 +814,7 @@ void main() {
       // dispose() nulls the store's reference without closing the box, so
       // close and delete it before the directory underneath it goes away.
       await TestHelpers.cleanupHiveBox('pending_uploads');
+      Hive.init(null);
       PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
