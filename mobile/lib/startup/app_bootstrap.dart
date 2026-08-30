@@ -18,6 +18,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:openvine/app/divine_app.dart';
 import 'package:openvine/bootstrap/font_licenses.dart';
+import 'package:openvine/bootstrap/shorebird_licenses.dart';
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
@@ -153,6 +154,11 @@ Future<void> startOpenVineApp({
   // Register bundled OFL font licenses so they surface on the in-app
   // Open Source Licenses page (Settings → Legal). See #3659.
   registerBundledFontLicenses();
+
+  // Shorebird's Rust updater is linked into store engines but is outside
+  // Flutter's generated NOTICES asset. Register its licenses explicitly so
+  // they appear on the in-app Open Source Licenses page. See #7206.
+  registerShorebirdLicenses();
 
   // Give the in-memory image cache a larger byte budget than Flutter's 100 MB
   // default so thumbnails survive fast scrolling instead of being evicted and
