@@ -9,9 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/account_deletion_recovery/account_deletion_recovery_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/account_deletion_recovery_providers.dart';
 import 'package:openvine/providers/auth_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/route_paths.dart';
 
 class AccountDeletionRecoveryScreen extends ConsumerWidget {
@@ -24,10 +24,11 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final repository = ref.watch(accountDeletionRecoveryRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
-    final isReady = ref.watch(nostrSessionProvider).isReadyForActiveClient;
+    ref.watch(currentAuthRpcCapabilityProvider);
+    final signerReadiness = authService.signerReadiness;
 
     return BlocProvider<AccountDeletionRecoveryCubit>(
-      key: ValueKey((repository, authService, isReady)),
+      key: ValueKey((repository, authService, signerReadiness)),
       create: (_) {
         final cubit = AccountDeletionRecoveryCubit(
           repository: repository,
@@ -36,7 +37,14 @@ class AccountDeletionRecoveryScreen extends ConsumerWidget {
             ref.invalidate(currentAccountDeletionAttemptProvider);
           },
         );
-        if (isReady) cubit.load();
+        switch (signerReadiness) {
+          case SignerReadiness.ready:
+            cubit.load();
+          case SignerReadiness.unavailable:
+            cubit.signerUnavailable();
+          case SignerReadiness.pending:
+            break;
+        }
         return cubit;
       },
       child: const AccountDeletionRecoveryView(),
@@ -99,7 +107,9 @@ class _RecoveryStateContent extends StatelessWidget {
         child: CircularProgressIndicator(),
       ),
       AccountDeletionRecoveryStatus.loadFailed => _RecoveryContent(
-        body: context.l10n.authUnexpectedError,
+        body: state.failure == AccountDeletionRecoveryFailure.signerUnavailable
+            ? context.l10n.authSessionExpired
+            : context.l10n.authUnexpectedError,
         actionLabel: context.l10n.commonRetry,
         onPressed: cubit.retry,
         secondaryActionLabel: context.l10n.accountDeletionSignOut,

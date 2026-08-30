@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
@@ -56,6 +57,24 @@ Future<AsyncValue<AccountDeletionAttempt?>> _retainedNullRefetch() async {
   return container.read(lookup);
 }
 
+Future<AsyncValue<AccountDeletionAttempt?>> _retainedRecoveryError() async {
+  var shouldFail = false;
+  final lookup = FutureProvider<AccountDeletionAttempt?>((ref) async {
+    if (shouldFail) throw StateError('signer unavailable');
+    return const AccountDeletionAttempt(
+      id: 'attempt-id',
+      status: AccountDeletionAttemptStatus.recoverable,
+    );
+  }, retry: (_, _) => null);
+  final container = ProviderContainer();
+  addTearDown(container.dispose);
+  await container.read(lookup.future);
+  shouldFail = true;
+  container.invalidate(lookup);
+  await expectLater(container.read(lookup.future), throwsStateError);
+  return container.read(lookup);
+}
+
 void main() {
   group('Account deletion recovery gate', () {
     test('stays inactive while the attempt is loading', () {
@@ -76,6 +95,13 @@ void main() {
           ),
         ),
         isFalse,
+      );
+    });
+
+    test('retains a confirmed recovery gate when a refresh errors', () async {
+      expect(
+        accountDeletionRecoveryGateActive(await _retainedRecoveryError()),
+        isTrue,
       );
     });
 
@@ -158,6 +184,16 @@ void main() {
           ),
           isTrue,
         );
+        expect(
+          authenticatedDeletionLookupSettled(
+            AuthState.authenticated,
+            AsyncError<AccountDeletionAttempt?>(
+              StateError('signer unavailable'),
+              StackTrace.empty,
+            ),
+          ),
+          isTrue,
+        );
       },
     );
   });
@@ -180,6 +216,9 @@ void main() {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn('user-pubkey');
+      when(
+        () => mockAuthService.signerReadiness,
+      ).thenReturn(SignerReadiness.ready);
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());

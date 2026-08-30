@@ -22,12 +22,14 @@ import 'package:openvine/models/auth_state.dart';
 import 'package:openvine/models/auth_user_profile.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/services/auth/known_accounts_registry.dart';
 import 'package:openvine/services/auth/nostr_connect_coordinator.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth/oauth_session_coordinator.dart';
 import 'package:openvine/services/auth/relay_discovery_orchestrator.dart';
 import 'package:openvine/services/auth/signer_factory.dart';
+import 'package:openvine/services/auth/signer_readiness_resolver.dart';
 import 'package:openvine/services/auth/signer_secure_store.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -252,6 +254,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   // RPC capability state — separate from AuthState so the router doesn't
   // need to know about remote signer warmup.
   AuthRpcCapability _authRpcCapability = AuthRpcCapability.unavailable;
+  bool _authRpcCapabilityInitialized = false;
 
   // NIP-46 bunker signer state
   NostrRemoteSigner? _bunkerSigner;
@@ -420,28 +423,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Stream<AuthRpcCapability> get authRpcCapabilityStream =>
       _rpcCapabilityController.stream;
 
+  /// Whether signing is ready, still warming up, or permanently unavailable.
+  ///
+  /// This deliberately ignores [isRpcUpgradeInProgress]. That flag does not
+  /// emit on every transition, while identity changes and [authRpcCapability]
+  /// together provide the complete observable state.
+  ///
+  /// No stream carries this value, so sample it at the moment of use. A push
+  /// consumer that waits for it to change must also watch a rebuild trigger
+  /// such as `currentAuthRpcCapabilityProvider` (#6977).
+  SignerReadiness get signerReadiness => resolveSignerReadiness(
+    _currentIdentity,
+    _authRpcCapability,
+    rpcCapabilityInitialized: _authRpcCapabilityInitialized,
+  );
+
   /// Whether this identity can publish Nostr writes right now.
   ///
-  /// True when the identity has a local private key (can sign locally)
-  /// OR when RPC is fully ready. False for pubkey-only identities that
-  /// are still waiting for RPC warmup.
-  ///
-  /// This answers "is this identity *capable* of signing", not "is the
-  /// signer-backed client ready". It has no direct stream, so it is safe to
-  /// sample at the moment of use. Push consumers that wait for this to flip must
-  /// also watch a rebuild trigger such as `currentAuthRpcCapabilityProvider`.
-  bool get canPublishNostrWritesNow {
-    return switch (_currentIdentity) {
-      null => false,
-      LocalNostrIdentity() => true,
-      KeycastNostrIdentity(:final signsWithLocalKey) =>
-        signsWithLocalKey || _authRpcCapability == AuthRpcCapability.rpcReady,
-      PubkeyOnlyNostrIdentity() => false,
-      AmberNostrIdentity() => true,
-      BunkerNostrIdentity() => true,
-      Nip07NostrIdentity() => true,
-    };
-  }
+  /// Shorthand for [signerReadiness] being ready; same sampling contract.
+  bool get canPublishNostrWritesNow => signerReadiness == SignerReadiness.ready;
 
   /// True when a divineOAuth user's session expired and refresh failed.
   /// The user's identity is intact but remote signing is unavailable.
@@ -2726,6 +2726,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _setAuthState(AuthState.authenticating);
     _lastError = null;
     _hasExpiredOAuthSession = false;
+    _authRpcCapabilityInitialized = false;
 
     try {
       // Unbound session: pubkey unknown here, treat as same — a wrong close
@@ -4380,6 +4381,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   void _setRpcCapability(AuthRpcCapability capability) {
+    _authRpcCapabilityInitialized = true;
     if (_authRpcCapability != capability) {
       final previous = _authRpcCapability;
       _authRpcCapability = capability;

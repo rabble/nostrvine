@@ -245,6 +245,32 @@ void main() {
         find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
         findsOneWidget,
       );
+      await tester.tap(find.widgetWithText(DivineButton, l10n.commonRetry));
+      verify(cubit.retry).called(1);
+    });
+
+    testWidgets('signer failure asks the user to sign in again', (
+      tester,
+    ) async {
+      when(() => cubit.state).thenReturn(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.loadFailed,
+          failure: AccountDeletionRecoveryFailure.signerUnavailable,
+        ),
+      );
+      await tester.pumpWidget(_app(cubit));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.authSessionExpired), findsOneWidget);
+      expect(find.text(l10n.authUnexpectedError), findsNothing);
+      expect(
+        find.widgetWithText(DivineButton, l10n.commonRetry),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DivineButton, l10n.accountDeletionSignOut),
+        findsOneWidget,
+      );
     });
 
     testWidgets(

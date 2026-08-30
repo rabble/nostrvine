@@ -9,6 +9,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/blocs/close_guard.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -79,7 +80,35 @@ class AccountDeletionRecoveryCubit extends Cubit<AccountDeletionRecoveryState>
     }
   }
 
-  Future<void> retry() => load();
+  Future<void> retry() async {
+    if (_authService.signerReadiness == SignerReadiness.unavailable) {
+      final generation = _beginOperation();
+      emitIfOpen(
+        const AccountDeletionRecoveryState(
+          status: AccountDeletionRecoveryStatus.loading,
+        ),
+      );
+      final refreshed = await _authService.tryRefreshExpiredSession();
+      if (!_isCurrent(generation)) return;
+      if (refreshed) {
+        await load();
+      } else {
+        signerUnavailable();
+      }
+      return;
+    }
+    return load();
+  }
+
+  void signerUnavailable() {
+    _beginOperation();
+    emitIfOpen(
+      const AccountDeletionRecoveryState(
+        status: AccountDeletionRecoveryStatus.loadFailed,
+        failure: AccountDeletionRecoveryFailure.signerUnavailable,
+      ),
+    );
+  }
 
   Future<void> cancel() async {
     final attempt = state.attempt;

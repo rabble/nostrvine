@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/account_deletion_recovery/account_deletion_recovery_cubit.dart';
 import 'package:openvine/models/account_deletion_attempt.dart';
+import 'package:openvine/models/signer_readiness.dart';
 import 'package:openvine/repositories/account_deletion_recovery_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -105,6 +106,47 @@ void main() {
     authService = _MockAuthService();
     timers = _ManualTimers();
     resolvedCalls = 0;
+    when(() => authService.signerReadiness).thenReturn(SignerReadiness.ready);
+  });
+
+  group('signer readiness', () {
+    test('unavailable signer enters a typed load failure', () async {
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      cubit.signerUnavailable();
+
+      expect(cubit.state.status, AccountDeletionRecoveryStatus.loadFailed);
+      expect(
+        cubit.state.failure,
+        AccountDeletionRecoveryFailure.signerUnavailable,
+      );
+      verifyNever(repository.fetchCurrent);
+    });
+
+    test(
+      'retry refreshes an expired session while signer is unavailable',
+      () async {
+        when(
+          () => authService.signerReadiness,
+        ).thenReturn(SignerReadiness.unavailable);
+        when(
+          () => authService.tryRefreshExpiredSession(),
+        ).thenAnswer((_) async => false);
+        final cubit = buildCubit();
+        cubit.signerUnavailable();
+        addTearDown(cubit.close);
+
+        await cubit.retry();
+
+        verify(authService.tryRefreshExpiredSession).called(1);
+        expect(
+          cubit.state.failure,
+          AccountDeletionRecoveryFailure.signerUnavailable,
+        );
+        verifyNever(repository.fetchCurrent);
+      },
+    );
   });
 
   group('load', () {
@@ -401,5 +443,31 @@ void main() {
 
       expect(cubit.state.status, AccountDeletionRecoveryStatus.loading);
     });
+
+    test(
+      'close while waiting for signer refresh drops the resumed emit',
+      () async {
+        final refresh = Completer<bool>();
+        when(
+          () => authService.signerReadiness,
+        ).thenReturn(SignerReadiness.unavailable);
+        when(
+          () => authService.tryRefreshExpiredSession(),
+        ).thenAnswer((_) => refresh.future);
+        final cubit = buildCubit();
+        cubit.signerUnavailable();
+
+        final retry = cubit.retry();
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        refresh.complete(false);
+        await retry;
+
+        expect(
+          cubit.state.status,
+          AccountDeletionRecoveryStatus.loading,
+        );
+      },
+    );
   });
 }

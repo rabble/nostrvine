@@ -16,6 +16,7 @@ enum AccountDeletionRecoveryStatus {
 }
 
 enum AccountDeletionRecoveryFailure {
+  signerUnavailable,
   statusLookup,
   usernameRestore,
   keychainCleanup,
