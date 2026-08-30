@@ -554,6 +554,190 @@ void main() {
       },
     );
 
+    test(
+      'publishes nothing when kind 62 signing fails after preparing a sweep',
+      () async {
+        final contentEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [],
+          content: 'note',
+        );
+        final kind5Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', contentEvent.id],
+            ['k', '1'],
+          ],
+          content: 'deletion',
+        );
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [contentEvent]);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          return kind == 5 ? kind5Event : null;
+        });
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isFalse);
+        expect(result.failureReason, DeleteAccountFailureReason.signingFailed);
+        verifyNever(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+      },
+    );
+
+    test('publishes nothing when any sweep batch cannot be signed', () async {
+      final contentEvents = [
+        createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [],
+          content: 'note',
+        ),
+        createTestEvent(
+          pubkey: testPublicKey,
+          kind: 6,
+          tags: const [],
+          content: 'repost',
+        ),
+      ];
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => contentEvents);
+      var kind5Signatures = 0;
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async {
+        kind5Signatures++;
+        if (kind5Signatures == 2) return null;
+        return createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: const [],
+          content: 'deletion',
+        );
+      });
+
+      final result = await service.deleteAccount();
+
+      expect(result.success, isFalse);
+      expect(result.failureReason, DeleteAccountFailureReason.signingFailed);
+      verifyNever(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      );
+      verifyNever(
+        () => mockNostrService.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      );
+    });
+
+    test(
+      'signs every sweep batch before vanish and publishes vanish last',
+      () async {
+        final contentEvents = [
+          createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1,
+            tags: const [],
+            content: 'note',
+          ),
+          createTestEvent(
+            pubkey: testPublicKey,
+            kind: 6,
+            tags: const [],
+            content: 'repost',
+          ),
+        ];
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => contentEvents);
+        // One interleaved timeline, not two per-phase lists: separate
+        // sign-order and publish-order lists are each satisfied by the
+        // sign/publish/sign/publish interleaving this change exists to
+        // remove, so only a merged timeline can fail on it.
+        final timeline = <String>[];
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          timeline.add('sign:$kind');
+          return createTestEvent(
+            pubkey: testPublicKey,
+            kind: kind,
+            tags: const [],
+            content: 'deletion',
+          );
+        });
+        void recordPublish(Invocation invocation) {
+          final event = invocation.positionalArguments.single as Event;
+          timeline.add('publish:${event.kind}');
+        }
+
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          recordPublish(invocation);
+          return _confirmed;
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((invocation) async {
+          recordPublish(invocation);
+          return _confirmed;
+        });
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(timeline, [
+          'sign:5',
+          'sign:5',
+          'sign:62',
+          'publish:5',
+          'publish:5',
+          'publish:62',
+        ]);
+      },
+    );
+
     group('NIP-09 batch deletion', () {
       test('should fetch all user events before deletion', () async {
         // Arrange
