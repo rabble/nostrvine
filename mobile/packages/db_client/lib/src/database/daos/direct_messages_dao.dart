@@ -595,8 +595,6 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Move all messages from one conversation to another.
-  ///
-  /// Used when merging duplicate conversations into a canonical one.
   Future<int> reassignConversation({
     required String fromConversationId,
     required String toConversationId,

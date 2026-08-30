@@ -16201,6 +16201,11 @@ void main() {
           _validPubkeyB,
           _validPubkeyC,
         ]..sort();
+        expect(
+          groupParticipants.firstWhere((pubkey) => pubkey != _validPubkeyA),
+          _validPubkeyB,
+          reason: 'the group must collide with the 1:1 peer',
+        );
         final groupId = DmRepository.computeConversationId(groupParticipants);
 
         when(
