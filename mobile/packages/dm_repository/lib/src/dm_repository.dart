@@ -892,7 +892,27 @@ class DmRepository {
       // filter. The 2-day overlap absorbs NIP-17 randomized created_at
       // jitter (gift wraps tweak their outer created_at within a ~2 day
       // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+      //
+      // The boundary must come from the clock the relay filters in. A relay
+      // evaluates `since:` against the stamp on the event it stored — the
+      // outer kind-1059 wrap, never the inner rumor — and NIP-17 requires
+      // that outer stamp to be backdated by a random 0..2 days. Deriving the
+      // boundary from the rumor clock therefore consumes part of the 2-day
+      // overlap before the window opens, and a wrap whose backdate exceeds
+      // the remainder is dropped by the relay. Nothing asks for it again:
+      // `newestWireSyncedAt` only advances, so `since:` only rises, and the
+      // history drain that would otherwise repair the gap latches complete.
+      // The measured erosion equals the newest wrap's own backdate, which is
+      // uniform on [0, 2d) — half the intended margin, on average. See #8209.
+      //
+      // Falling back to the rumor boundary keeps the previous behavior for an
+      // install that has not processed an event since upgrading. The fallback
+      // can only ever widen: for any single event the wire stamp is at or
+      // below the rumor stamp, so `newestWireSyncedAt <= newestSyncedAt` and
+      // the derived `since:` never moves later than it does today.
       final newest = _syncState?.newestSyncedAt(_userPubkey);
+      final newestWire = _syncState?.newestWireSyncedAt(_userPubkey);
+      final sinceBoundary = newestWire ?? newest;
       final isFirstOpen = newest == null;
       final filter = nostr_filter.Filter(
         kinds: [
@@ -902,7 +922,7 @@ class DmRepository {
         ],
         p: [_userPubkey],
         limit: isFirstOpen ? 50 : null,
-        since: isFirstOpen ? null : (newest - 2 * 86400),
+        since: isFirstOpen ? null : (sinceBoundary! - 2 * 86400),
       );
 
       Log.info(
@@ -2502,10 +2522,18 @@ class DmRepository {
         return;
       }
 
-      // Advance sync boundaries from the bounded local timestamp. The outer
-      // gift wrap randomizes its own created_at within a ~2 day window
-      // (NIP-17) so it must not be used for boundary tracking.
+      // Advance sync boundaries in BOTH clocks, because they answer two
+      // different questions. The rumor timestamp is the honest send time the
+      // UI orders by, and its randomized outer wrap must not be used for
+      // that. But the relay indexes and filters the outer stamp, so the live
+      // subscription's `since:` has to be derived from that one instead —
+      // recording only the rumor clock is what made a backdated wrap fall
+      // outside the window and never be requested again. See #8209.
       await _syncState?.recordSeen(ownerPubkey, createdAt: persistedCreatedAt);
+      await _syncState?.recordWireSeen(
+        ownerPubkey,
+        createdAt: giftWrapEvent.createdAt,
+      );
 
       Log.debug(
         'Persisted NIP-17 DM ${rumor.id} (kind ${rumor.kind}) in conversation '
@@ -3169,8 +3197,16 @@ class DmRepository {
 
       // NIP-04 created_at values are not randomized (unlike NIP-17 gift
       // wraps), so this bounded timestamp is a real send time and safe to
-      // record as a cursor.
+      // record as a cursor. A kind 4 is its own envelope — the stamp the
+      // relay filters and the stamp the UI orders by are the same value — so
+      // it advances both boundaries. The live subscription's `since:` covers
+      // kinds [1059, 4, 5] with one filter, so the wire boundary has to track
+      // whichever kind carried the newest wire stamp. See #8209.
       await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
+      await _syncState?.recordWireSeen(
+        _userPubkey,
+        createdAt: persistedCreatedAt,
+      );
 
       Log.debug(
         'Persisted NIP-04 DM ${nip04Event.id} '
