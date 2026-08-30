@@ -4224,7 +4224,7 @@ void main() {
       });
 
       test('returns null when no kind-10050 event exists', () async {
-        // setUp already stubs queryEvents -> [].
+        // setUp already stubs queryEventsDetailed -> [].
         final repository = createRepository();
         expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
       });
@@ -4491,7 +4491,7 @@ void main() {
         'live subscription falls back to the default pool (null targeting) '
         'when the user has no kind-10050',
         () async {
-          // setUp default queryEvents -> [] : no kind-10050.
+          // setUp default queryEventsDetailed -> [] : no kind-10050.
           final controller = StreamController<Event>();
           when(
             () => mockNostrClient.subscribe(
@@ -4666,7 +4666,12 @@ void main() {
           ).thenAnswer((_) async {});
 
           final repository = createRepository(); // user A
-          final pendingA = repository.startListening(); // suspends at resolve
+          final pendingA = repository.startListening();
+
+          // A's resolve must genuinely be in flight at the moment of the
+          // switch, or this test proves nothing about the race it names.
+          await pumpEventQueue();
+          expect(resolveCalls, 1);
 
           // Switch A -> B while A's resolve is still in flight.
           repository.setCredentials(
@@ -4675,11 +4680,13 @@ void main() {
             messageService: mockMessageService,
           );
 
-          // A's resolve must genuinely be in flight at the moment of the
-          // switch, or this test proves nothing about the race it names.
+          // B can begin its own resolve without waiting for A's stale one.
+          final pendingB = repository.startListening();
           await pumpEventQueue();
-          expect(resolveCalls, 1);
+          expect(resolveCalls, 2);
 
+          // Resume A first so the generation guard, rather than B's completed
+          // subscription, is what prevents A from opening a stale stream.
           resolveA.complete(answeredList(const <Event>[]));
           await pendingA;
 
@@ -4693,18 +4700,19 @@ void main() {
             ),
           );
 
-          // _subscribing was released, so B opens its own subscription.
-          final pendingB = repository.startListening();
           resolveB.complete(answeredList(const <Event>[]));
           await pendingB;
-          verify(
-            () => mockNostrClient.subscribe(
-              any(),
-              subscriptionId: 'dm_inbox_$_validPubkeyB',
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).called(1);
+          final filter =
+              verify(
+                    () => mockNostrClient.subscribe(
+                      captureAny(),
+                      subscriptionId: 'dm_inbox_$_validPubkeyB',
+                      tempRelays: any(named: 'tempRelays'),
+                      targetRelays: any(named: 'targetRelays'),
+                    ),
+                  ).captured.single
+                  as List<nostr_filter.Filter>;
+          expect(filter.single.p, [_validPubkeyB]);
 
           await repository.stopListening();
           await controller.close();
@@ -4736,7 +4744,7 @@ void main() {
         'publishes a kind-10050 advertising the injected stable relay when '
         'absent and records the flag on a confirmed OK',
         () async {
-          // setUp default queryEvents -> [] : user has no existing kind-10050.
+          // setUp default queryEventsDetailed -> [] : no existing kind-10050.
           when(
             () => mockNostrClient.publishEventAwaitOk(
               any(),
